@@ -1,0 +1,2505 @@
+{
+ "version": 2,
+ "baseDps": {
+  "normal": 10,
+  "rare": 35,
+  "unique": 120,
+  "hero": 400,
+  "legend": 1400,
+  "god": 6000,
+  "hidden": 3000
+ },
+ "notes": "atk=물리 공격력, matk=마법 공격력, tatk=고정 피해. aps=초당 공격 횟수, range=사거리(칸), shapeValue=광역 반경 또는 관통/연쇄/다중 수. design.ratio=등급 기준 DPS 대비 목표 전투력. 특색 수치 params는 [Lv1, Lv15].",
+ "towers": [
+  {
+   "id": "miner",
+   "name": "광부",
+   "grade": "normal",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "경제"
+   ],
+   "damageType": "physical",
+   "shape": "melee",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 1.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "공격할 때마다 1% → 20% 확률로 +5원",
+   "awaken": "획득 금액 +5원 → +10원",
+   "params": {
+    "goldChance": [
+     0.01,
+     0.2
+    ],
+    "gold": 5
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.7,
+    "shapeFactor": 1.0
+   },
+   "atk": 7,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "drummer",
+   "name": "북치기",
+   "grade": "normal",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "지원"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 2.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "주변 8칸 타워 공격속도 +5% → +15%",
+   "awaken": "주변 8칸 공격력 +5%도 추가",
+   "params": {
+    "auraAps": [
+     0.05,
+     0.15
+    ],
+    "aura": "around8"
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.45,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 4.5,
+   "tatk": 0
+  },
+  {
+   "id": "goblin",
+   "name": "고블린",
+   "grade": "normal",
+   "special": 0,
+   "unlock": "base",
+   "tags": [
+    "고블린"
+   ],
+   "damageType": "physical",
+   "shape": "melee",
+   "shapeValue": 0,
+   "aps": 2.5,
+   "range": 1.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "—",
+   "awaken": "3번째 공격마다 2연타",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.0,
+    "shapeFactor": 1.0
+   },
+   "atk": 4,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "archer",
+   "name": "궁수",
+   "grade": "normal",
+   "special": 0,
+   "unlock": "base",
+   "tags": [
+    "궁수"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "—",
+   "awaken": "화살 2발 (2마리)",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.0,
+    "shapeFactor": 1.0
+   },
+   "atk": 10,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "apprentice",
+   "name": "견습 마법사",
+   "grade": "normal",
+   "special": 0,
+   "unlock": "base",
+   "tags": [
+    "마법사"
+   ],
+   "damageType": "magic",
+   "shape": "aoe",
+   "shapeValue": 0.8,
+   "aps": 0.8,
+   "range": 2.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "—",
+   "awaken": "폭발 반경 +30%",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.15,
+    "shapeFactor": 2.2
+   },
+   "atk": 0,
+   "matk": 6.5,
+   "tatk": 0
+  },
+  {
+   "id": "warrior",
+   "name": "전사",
+   "grade": "normal",
+   "special": 0,
+   "unlock": "base",
+   "tags": [
+    "전사"
+   ],
+   "damageType": "physical",
+   "shape": "melee",
+   "shapeValue": 0,
+   "aps": 0.6,
+   "range": 1.5,
+   "armorPen": 0.1,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "—",
+   "awaken": "10% 확률 기절 0.5초",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.1,
+    "shapeFactor": 1.0
+   },
+   "atk": 18,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "spearman",
+   "name": "창병",
+   "grade": "normal",
+   "special": 0,
+   "unlock": "unlock",
+   "tags": [
+    "전사"
+   ],
+   "damageType": "physical",
+   "shape": "pierce",
+   "shapeValue": 2,
+   "aps": 0.9,
+   "range": 2.5,
+   "armorPen": 0.2,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "—",
+   "awaken": "관통 4",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.15,
+    "shapeFactor": 1.5
+   },
+   "atk": 8.5,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "slinger",
+   "name": "투석병",
+   "grade": "normal",
+   "special": 0,
+   "unlock": "unlock",
+   "tags": [],
+   "damageType": "physical",
+   "shape": "aoe",
+   "shapeValue": 1.2,
+   "aps": 0.4,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "—",
+   "awaken": "맞은 몹 기절 0.3초",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.15,
+    "shapeFactor": 2.8
+   },
+   "atk": 10,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "ninja",
+   "name": "표창 닌자",
+   "grade": "normal",
+   "special": 0,
+   "unlock": "unlock",
+   "tags": [],
+   "damageType": "physical",
+   "shape": "multi",
+   "shapeValue": 3,
+   "aps": 1.2,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0.1,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "—",
+   "awaken": "다중 5",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.15,
+    "shapeFactor": 2.2
+   },
+   "atk": 4,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "houndmaster",
+   "name": "사냥개 조련사",
+   "grade": "normal",
+   "special": 0,
+   "unlock": "unlock",
+   "tags": [],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.5,
+   "range": 2.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": {
+    "kind": "bleed",
+    "perSec": 0.5,
+    "dur": 2,
+    "stacks": 1
+   },
+   "ability": "출혈: 2초간 초당 공격력 50% (고정 피해)",
+   "awaken": "사냥개 2마리 (공격 2회)",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.1,
+    "shapeFactor": 1.0
+   },
+   "atk": 4.6,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "merchant",
+   "name": "상인",
+   "grade": "rare",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "경제"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 2.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "lowest",
+   "dot": null,
+   "ability": "사거리 안에서 처치된 몹 1마리당 +1원 → +5원 (누가 잡아도)",
+   "awaken": "보스 처치 시 +200원 추가",
+   "params": {
+    "killGold": [
+     1,
+     5
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.6,
+    "shapeFactor": 1.0
+   },
+   "atk": 21,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "trapper",
+   "name": "덫 사냥꾼",
+   "grade": "rare",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "제어"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "8초 → 5초마다 경로에 덫, 밟은 몹 기절 1초 → 2초",
+   "awaken": "덫 2개 동시 설치",
+   "params": {
+    "trapCd": [
+     8,
+     5
+    ],
+    "stun": [
+     1,
+     2
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.55,
+    "shapeFactor": 1.0
+   },
+   "atk": 19,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "bard",
+   "name": "음유시인",
+   "grade": "rare",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "지원"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "주변 8칸 타워 공격속도 +10% → +25%",
+   "awaken": "범위 주변 24칸 (5×5)",
+   "params": {
+    "auraAps": [
+     0.1,
+     0.25
+    ],
+    "aura": "around8"
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.45,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 16,
+   "tatk": 0
+  },
+  {
+   "id": "scout",
+   "name": "정찰병",
+   "grade": "rare",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "지원",
+    "감지"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.2,
+   "range": 4.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "aura",
+   "detectRange": 3.0,
+   "target": "unmarked",
+   "dot": null,
+   "ability": "감지 오라(반경 3 → 4) + 맞은 몹 방어력·마법 저항 -20% → -40% (5초)",
+   "awaken": "표식 몹 처치 시 +3원",
+   "params": {
+    "detectRange": [
+     3,
+     4
+    ],
+    "markShred": [
+     0.2,
+     0.4
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.65,
+    "shapeFactor": 1.0
+   },
+   "atk": 19,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "flamemage",
+   "name": "화염 마법사",
+   "grade": "rare",
+   "special": 0,
+   "unlock": "base",
+   "tags": [
+    "마법사"
+   ],
+   "damageType": "magic",
+   "shape": "aoe",
+   "shapeValue": 1.0,
+   "aps": 0.8,
+   "range": 2.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": {
+    "kind": "burn",
+    "perSec": 0.3,
+    "dur": 3,
+    "stacks": 1
+   },
+   "ability": "화상 3초 (초당 공격력 30%, 고정 피해)",
+   "awaken": "화상 최대 3중첩",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.15,
+    "shapeFactor": 2.5
+   },
+   "atk": 0,
+   "matk": 13,
+   "tatk": 0
+  },
+  {
+   "id": "cleaver",
+   "name": "광역딜 전사",
+   "grade": "rare",
+   "special": 0,
+   "unlock": "base",
+   "tags": [
+    "전사"
+   ],
+   "damageType": "physical",
+   "shape": "melee_aoe",
+   "shapeValue": 1.2,
+   "aps": 0.8,
+   "range": 1.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "—",
+   "awaken": "휩쓸기 반경 +30%",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.15,
+    "shapeFactor": 2.8
+   },
+   "atk": 18,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "duelist",
+   "name": "단일딜 전사",
+   "grade": "rare",
+   "special": 0,
+   "unlock": "base",
+   "tags": [
+    "전사"
+   ],
+   "damageType": "physical",
+   "shape": "melee",
+   "shapeValue": 0,
+   "aps": 0.7,
+   "range": 1.5,
+   "armorPen": 0.3,
+   "magicPen": 0,
+   "crit": 0.2,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "치명타 20% (×2), 방어 관통 30%",
+   "awaken": "치명타 피해 ×3",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.15,
+    "shapeFactor": 1.0
+   },
+   "atk": 48,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "crossbow",
+   "name": "석궁수",
+   "grade": "rare",
+   "special": 0,
+   "unlock": "unlock",
+   "tags": [
+    "궁수"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 3.0,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "—",
+   "awaken": "3발마다 관통 3",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.05,
+    "shapeFactor": 1.0
+   },
+   "atk": 12,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "bomber",
+   "name": "고블린 폭탄병",
+   "grade": "rare",
+   "special": 0,
+   "unlock": "unlock",
+   "tags": [
+    "고블린"
+   ],
+   "damageType": "physical",
+   "shape": "aoe",
+   "shapeValue": 1.3,
+   "aps": 0.5,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "—",
+   "awaken": "폭발 자리에 불바닥 2초",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.15,
+    "shapeFactor": 2.95
+   },
+   "atk": 27,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "windarcher",
+   "name": "바람 궁수",
+   "grade": "rare",
+   "special": 0,
+   "unlock": "unlock",
+   "tags": [
+    "궁수",
+    "감지"
+   ],
+   "damageType": "magic",
+   "shape": "pierce",
+   "shapeValue": 3,
+   "aps": 1.2,
+   "range": 4.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "self",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "감지(자신) + 10% 확률 넉백 0.5칸 (보스 제외)",
+   "awaken": "넉백 확률 25%",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.0,
+    "shapeFactor": 2.0
+   },
+   "atk": 0,
+   "matk": 15,
+   "tatk": 0
+  },
+  {
+   "id": "icemage",
+   "name": "얼음 마법사",
+   "grade": "unique",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "마법사",
+    "제어"
+   ],
+   "damageType": "magic",
+   "shape": "aoe",
+   "shapeValue": 1.2,
+   "aps": 0.8,
+   "range": 2.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "둔화 30% → 45%, 2초",
+   "awaken": "5% 확률 빙결 1초",
+   "params": {
+    "slow": [
+     0.3,
+     0.45
+    ],
+    "slowDur": 2
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.75,
+    "shapeFactor": 2.8
+   },
+   "atk": 0,
+   "matk": 40,
+   "tatk": 0
+  },
+  {
+   "id": "gambler",
+   "name": "도박꾼",
+   "grade": "unique",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "확률"
+   ],
+   "damageType": "hybrid",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "판 위에 있는 동안 도박 ×0 확률 -3%p → -10%p. 피해 = 공격력 × 주사위(1~6) ÷ 3.5",
+   "awaken": "단계마다 무료 100원 도박 1회",
+   "params": {
+    "gambleZero": [
+     -0.03,
+     -0.1
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.65,
+    "shapeFactor": 1.0
+   },
+   "atk": 39,
+   "matk": 39,
+   "tatk": 0
+  },
+  {
+   "id": "blacksmith",
+   "name": "대장장이",
+   "grade": "unique",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "지원"
+   ],
+   "damageType": "physical",
+   "shape": "melee",
+   "shapeValue": 0,
+   "aps": 0.8,
+   "range": 1.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "주변 8칸 타워 공격력 +10% → +25%",
+   "awaken": "주변 8칸 공격속도 +10%",
+   "params": {
+    "auraAtk": [
+     0.1,
+     0.25
+    ],
+    "aura": "around8"
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.6,
+    "shapeFactor": 1.0
+   },
+   "atk": 90,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "goblinchief",
+   "name": "고블린 족장",
+   "grade": "unique",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "고블린",
+    "지원"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 2.0,
+   "range": 2.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "판 위 고블린 계열 1개당 고블린 계열 공격력 +3% → +6% (최대 20개)",
+   "awaken": "10초마다 고블린 병사 소환",
+   "params": {
+    "perGoblin": [
+     0.03,
+     0.06
+    ],
+    "max": 20
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.65,
+    "shapeFactor": 1.0
+   },
+   "atk": 39,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "astrologer",
+   "name": "점성술사",
+   "grade": "unique",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "확률",
+    "감지"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "aura",
+   "detectRange": 3.5,
+   "target": "first",
+   "dot": null,
+   "ability": "감지 오라(반경 3.5) + 다음 소환 결과 미리보기 + 단계마다 소환 다시 뽑기 1회 → 3회",
+   "awaken": "미리보기 2개 앞까지",
+   "params": {
+    "rerolls": [
+     1,
+     3
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.55,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 66,
+   "tatk": 0
+  },
+  {
+   "id": "banker",
+   "name": "은행가",
+   "grade": "unique",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "경제"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "30초마다 보유금의 1% → 3% 이자 (1회 최대 100 → 300원)",
+   "awaken": "이자 1회 최대치 2배",
+   "params": {
+    "interest": [
+     0.01,
+     0.03
+    ],
+    "cap": [
+     100,
+     300
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.5,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 60,
+   "tatk": 0
+  },
+  {
+   "id": "sniper",
+   "name": "저격 궁수",
+   "grade": "unique",
+   "special": 0,
+   "unlock": "base",
+   "tags": [
+    "궁수",
+    "감지"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 0.3,
+   "range": 6.0,
+   "armorPen": 0.4,
+   "magicPen": 0,
+   "crit": 0.3,
+   "critMul": 3.0,
+   "detect": "self",
+   "detectRange": 0,
+   "target": "maxhp",
+   "dot": null,
+   "ability": "감지(자신), 치명타 30% (×3), 방어 관통 40%",
+   "awaken": "치명타 시 반경 1칸 폭발",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.15,
+    "shapeFactor": 1.0
+   },
+   "atk": 290,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "berserker",
+   "name": "광전사",
+   "grade": "unique",
+   "special": 0,
+   "unlock": "base",
+   "tags": [
+    "전사"
+   ],
+   "damageType": "physical",
+   "shape": "melee",
+   "shapeValue": 0,
+   "aps": 1.2,
+   "range": 1.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "같은 대상 연속 공격 시 공격속도 증가 (최대 +50%)",
+   "awaken": "최대 +80%",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.0,
+    "shapeFactor": 1.0
+   },
+   "atk": 100,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "lightning",
+   "name": "번개 마법사",
+   "grade": "unique",
+   "special": 0,
+   "unlock": "unlock",
+   "tags": [
+    "마법사"
+   ],
+   "damageType": "magic",
+   "shape": "chain",
+   "shapeValue": 3,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0.2,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "마법 관통 20%",
+   "awaken": "연쇄 5",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.15,
+    "shapeFactor": 2.01
+   },
+   "atk": 0,
+   "matk": 69,
+   "tatk": 0
+  },
+  {
+   "id": "poisonarcher",
+   "name": "독 궁수",
+   "grade": "unique",
+   "special": 0,
+   "unlock": "unlock",
+   "tags": [
+    "궁수",
+    "어둠"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.2,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "boss",
+   "dot": {
+    "kind": "poison",
+    "perSec": 0.5,
+    "dur": 5,
+    "stacks": 5
+   },
+   "ability": "독 5초 (초당 공격력 50%, 고정 피해), 최대 5중첩",
+   "awaken": "독 최대 7중첩",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.2,
+    "shapeFactor": 1.0
+   },
+   "atk": 39,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "summoner",
+   "name": "소환사",
+   "grade": "hero",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "마법사"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 0.8,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "5초 → 3초마다 병사 소환 (공격력 = 소환사 × 0.8, 몹 3마리 공격 또는 6초 후 소멸)",
+   "awaken": "병사 2명씩",
+   "params": {
+    "summonCd": [
+     5,
+     3
+    ],
+    "soldierAtk": 0.8
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.5,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 250,
+   "tatk": 0
+  },
+  {
+   "id": "scholar",
+   "name": "학자",
+   "grade": "hero",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "지원"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "전체 타워 공격력 +20% → +35%",
+   "awaken": "판 내 강화 비용 -20%",
+   "params": {
+    "globalAtk": [
+     0.2,
+     0.35
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.5,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 200,
+   "tatk": 0
+  },
+  {
+   "id": "chronomancer",
+   "name": "시간술사",
+   "grade": "hero",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "제어"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "15초마다 맵 위 모든 몹 정지 1초 → 2.5초 (보스 30%)",
+   "awaken": "주기 15초 → 10초",
+   "params": {
+    "freeze": [
+     1.0,
+     2.5
+    ],
+    "cd": 15
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.6,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 240,
+   "tatk": 0
+  },
+  {
+   "id": "alchemist",
+   "name": "연금술사",
+   "grade": "hero",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "경제"
+   ],
+   "damageType": "magic",
+   "shape": "aoe",
+   "shapeValue": 1.0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "10초마다 +20원 → +80원, 맞은 몹 방어력·마법 저항 -15% (3초)",
+   "awaken": "승급할 때마다 +100원",
+   "params": {
+    "gold": [
+     20,
+     80
+    ],
+    "cd": 10,
+    "shred": 0.15
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.55,
+    "shapeFactor": 2.5
+   },
+   "atk": 0,
+   "matk": 88,
+   "tatk": 0
+  },
+  {
+   "id": "paladin",
+   "name": "수호 기사",
+   "grade": "hero",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "지원",
+    "제어"
+   ],
+   "damageType": "physical",
+   "shape": "melee_aoe",
+   "shapeValue": 1.2,
+   "aps": 0.8,
+   "range": 2.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "사거리 안 몹 이동속도 -20% (오라) + 주변 8칸 공격력 +10% → +20%",
+   "awaken": "오라 둔화 -30%, 오라 사거리 +1",
+   "params": {
+    "auraAtk": [
+     0.1,
+     0.2
+    ],
+    "auraSlow": 0.2
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.6,
+    "shapeFactor": 2.8
+   },
+   "atk": 110,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "necromancer",
+   "name": "사령술사",
+   "grade": "hero",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "어둠"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "처치된 몹이 10% → 30% 확률로 해골 병사가 되어 경로를 거슬러 공격 (8초)",
+   "awaken": "해골이 사라질 때 폭발 (공격력 ×3)",
+   "params": {
+    "raise": [
+     0.1,
+     0.3
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.55,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 220,
+   "tatk": 0
+  },
+  {
+   "id": "pirate",
+   "name": "해적 선장",
+   "grade": "hero",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "경제"
+   ],
+   "damageType": "physical",
+   "shape": "aoe",
+   "shapeValue": 1.5,
+   "aps": 0.5,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "단계를 넘길 때마다 보물 50~300원 → 100~600원",
+   "awaken": "보스 처치 시 행운석 +1 (판당 최대 5)",
+   "params": {
+    "treasure": [
+     [
+      50,
+      300
+     ],
+     [
+      100,
+      600
+     ]
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.6,
+    "shapeFactor": 3.25
+   },
+   "atk": 150,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "prophet",
+   "name": "예언자",
+   "grade": "hero",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "확률",
+    "감지"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "aura",
+   "detectRange": 4.0,
+   "target": "first",
+   "dot": null,
+   "ability": "감지 오라(반경 4) + 승급할 때 20% → 50% 확률로 결과 2개 중 선택",
+   "awaken": "3개 중 선택",
+   "params": {
+    "choose2": [
+     0.2,
+     0.5
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.55,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 220,
+   "tatk": 0
+  },
+  {
+   "id": "swordsaint",
+   "name": "검성",
+   "grade": "hero",
+   "special": 0,
+   "unlock": "base",
+   "tags": [
+    "전사"
+   ],
+   "damageType": "physical",
+   "shape": "melee_aoe",
+   "shapeValue": 1.5,
+   "aps": 0.8,
+   "range": 1.5,
+   "armorPen": 0.3,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "방어 관통 30%",
+   "awaken": "베기 2연속",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.15,
+    "shapeFactor": 3.25
+   },
+   "atk": 180,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "stormarcher",
+   "name": "폭풍 궁수",
+   "grade": "hero",
+   "special": 0,
+   "unlock": "unlock",
+   "tags": [
+    "궁수"
+   ],
+   "damageType": "physical",
+   "shape": "multi",
+   "shapeValue": 5,
+   "aps": 1.0,
+   "range": 4.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "—",
+   "awaken": "다중 8",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.15,
+    "shapeFactor": 3.4
+   },
+   "atk": 140,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "dragoncaller",
+   "name": "용 소환사",
+   "grade": "legend",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "마법사"
+   ],
+   "damageType": "magic",
+   "shape": "aoe",
+   "shapeValue": 1.5,
+   "aps": 1.0,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "브레스에 맞은 몹이 받는 피해 +10% → +25% (5초)",
+   "awaken": "용 2마리",
+   "params": {
+    "vuln": [
+     0.1,
+     0.25
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.8,
+    "shapeFactor": 3.25
+   },
+   "atk": 0,
+   "matk": 340,
+   "tatk": 0
+  },
+  {
+   "id": "warlord",
+   "name": "전쟁 군주",
+   "grade": "legend",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "전사",
+    "지원"
+   ],
+   "damageType": "physical",
+   "shape": "melee_aoe",
+   "shapeValue": 1.5,
+   "aps": 0.8,
+   "range": 1.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "전체 타워 공격속도 +15% → +30%",
+   "awaken": "보스 단계 동안 공격속도 +20% 추가",
+   "params": {
+    "globalAps": [
+     0.15,
+     0.3
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.7,
+    "shapeFactor": 3.25
+   },
+   "atk": 380,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "archmage",
+   "name": "대마법사",
+   "grade": "legend",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "마법사"
+   ],
+   "damageType": "magic",
+   "shape": "aoe",
+   "shapeValue": 1.5,
+   "aps": 0.6,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0.3,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "12초마다 운석: 드러난 모든 몹에 현재 체력 8% → 15% 피해 (보스 2%), 마법 관통 30%",
+   "awaken": "주기 12초 → 8초",
+   "params": {
+    "meteorPct": [
+     0.08,
+     0.15
+    ],
+    "cd": 12
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.75,
+    "shapeFactor": 3.25
+   },
+   "atk": 0,
+   "matk": 540,
+   "tatk": 0
+  },
+  {
+   "id": "assassin",
+   "name": "그림자 암살자",
+   "grade": "legend",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "어둠",
+    "감지"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 0.8,
+   "range": 3.0,
+   "armorPen": 0.5,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "aura",
+   "detectRange": 3.0,
+   "target": "boss",
+   "dot": null,
+   "ability": "감지 오라(반경 3) + 보스 피해 ×2 → ×3.5, 체력 5% → 12% 이하 일반 몹 즉사, 방어 관통 50%",
+   "awaken": "처치 시 순간이동 연속 공격",
+   "params": {
+    "bossMul": [
+     2.0,
+     3.5
+    ],
+    "execute": [
+     0.05,
+     0.12
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.85,
+    "shapeFactor": 1.0
+   },
+   "atk": 1500,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "fortuna",
+   "name": "행운의 여신",
+   "grade": "legend",
+   "special": 1,
+   "unlock": "base",
+   "tags": [
+    "확률"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "소환 시 3% → 10% 레어 직행, 승급 시 0.5% → 2% 2등급 상승",
+   "awaken": "신 타워 확률 ×2",
+   "params": {
+    "rareSummon": [
+     0.03,
+     0.1
+    ],
+    "doubleUp": [
+     0.005,
+     0.02
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.6,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 840,
+   "tatk": 0
+  },
+  {
+   "id": "spearsgod",
+   "name": "창술의 신",
+   "grade": "legend",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "전사"
+   ],
+   "damageType": "physical",
+   "shape": "pierce",
+   "shapeValue": 5,
+   "aps": 0.7,
+   "range": 3.5,
+   "armorPen": 0.3,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "맞은 몹 방어력 -5% 중첩 (최대 -20% → -30%, 영구), 방어 관통 30%",
+   "awaken": "관통 수 제한 없음",
+   "params": {
+    "shredMax": [
+     0.2,
+     0.3
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.8,
+    "shapeFactor": 3.0
+   },
+   "atk": 530,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "stormlord",
+   "name": "폭풍의 군주",
+   "grade": "legend",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "마법사",
+    "제어"
+   ],
+   "damageType": "magic",
+   "shape": "chain",
+   "shapeValue": 5,
+   "aps": 1.0,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "20초마다 폭풍: 드러난 모든 몹 둔화 50% 3초 + 공격력 ×5 → ×10 피해",
+   "awaken": "주기 20초 → 12초",
+   "params": {
+    "stormMul": [
+     5,
+     10
+    ],
+    "cd": 20
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.75,
+    "shapeFactor": 2.65
+   },
+   "atk": 0,
+   "matk": 400,
+   "tatk": 0
+  },
+  {
+   "id": "tycoon",
+   "name": "재벌",
+   "grade": "legend",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "경제"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "사거리 안 처치 보상 ×2, 보유금 1만원당 전체 공격력 +2% → +5% (최대 +50%)",
+   "awaken": "일꾼 최대 수 +5",
+   "params": {
+    "perWealth": [
+     0.02,
+     0.05
+    ],
+    "cap": 0.5
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.6,
+    "shapeFactor": 1.0
+   },
+   "atk": 840,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "saint",
+   "name": "성녀",
+   "grade": "legend",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "지원"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "승급할 때마다 전체 공격력 +20% → +30% (10초), 보스 등장 시 보스 최대 체력 -5% → -12%",
+   "awaken": "버프 지속 15초",
+   "params": {
+    "mergeBuff": [
+     0.2,
+     0.3
+    ],
+    "bossCut": [
+     0.05,
+     0.12
+    ]
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.6,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 840,
+   "tatk": 0
+  },
+  {
+   "id": "dimensionist",
+   "name": "차원술사",
+   "grade": "legend",
+   "special": 1,
+   "unlock": "unlock",
+   "tags": [
+    "제어",
+    "감지"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 0.8,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "self",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "감지(자신) + 15초마다 선두 몹 3 → 6마리를 출발 지점으로 (보스 제외, 무한 모드는 3초 정지 + 공격력 ×3)",
+   "awaken": "되돌린 몹이 받는 피해 +30% (10초)",
+   "params": {
+    "rewind": [
+     3,
+     6
+    ],
+    "cd": 15
+   },
+   "recipe": null,
+   "design": {
+    "ratio": 0.65,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 1100,
+   "tatk": 0
+  },
+  {
+   "id": "fate",
+   "name": "운명의 신",
+   "grade": "god",
+   "special": 1,
+   "unlock": "god",
+   "tags": [
+    "확률",
+    "감지"
+   ],
+   "damageType": "true",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 4.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "self",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "감지(자신). 공격마다 무작위: 대형 광역 r2 (50%) / +5원 (30%) / 전체 공격력 +10% 5초 (19%) / 즉사 (1%, 보스 제외)",
+   "awaken": "즉사 확률 2%",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 0.75,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 0,
+   "tatk": 4500
+  },
+  {
+   "id": "plenty",
+   "name": "풍요의 신",
+   "grade": "god",
+   "special": 1,
+   "unlock": "god",
+   "tags": [
+    "경제"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "판 위에 있는 동안 모든 돈 획득 ×2, 공격마다 +2원",
+   "awaken": "돈 획득 ×2.5",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 0.5,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 3000,
+   "tatk": 0
+  },
+  {
+   "id": "ruin",
+   "name": "파멸의 신",
+   "grade": "god",
+   "special": 1,
+   "unlock": "god",
+   "tags": [],
+   "damageType": "true",
+   "shape": "global",
+   "shapeValue": 0,
+   "aps": 0.5,
+   "range": 99,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "공격마다 드러난 모든 몹에 피해 + 최대 체력 0.5% 추가 (보스 0.1%)",
+   "awaken": "1% (보스 0.2%)",
+   "params": {},
+   "recipe": null,
+   "design": {
+    "ratio": 1.0,
+    "shapeFactor": 5.0
+   },
+   "atk": 0,
+   "matk": 0,
+   "tatk": 2400
+  },
+  {
+   "id": "elemental",
+   "name": "원소 지배자",
+   "grade": "hidden",
+   "special": 1,
+   "unlock": "recipe",
+   "tags": [
+    "마법사"
+   ],
+   "damageType": "hybrid",
+   "shape": "aoe",
+   "shapeValue": 2.0,
+   "aps": 1.0,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": {
+    "kind": "burn",
+    "perSec": 0.3,
+    "dur": 3,
+    "stacks": 1
+   },
+   "ability": "화상 + 둔화 40% + 10초마다 운석 (현재 체력 10%)",
+   "awaken": "—",
+   "params": {},
+   "recipe": [
+    "flamemage",
+    "icemage",
+    "archmage"
+   ],
+   "design": {
+    "ratio": 0.9,
+    "shapeFactor": 4.0
+   },
+   "atk": 220,
+   "matk": 220,
+   "tatk": 0
+  },
+  {
+   "id": "goldking",
+   "name": "황금 왕",
+   "grade": "hidden",
+   "special": 1,
+   "unlock": "recipe",
+   "tags": [
+    "경제"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "모든 돈 획득 +30%, 공격마다 +1원",
+   "awaken": "—",
+   "params": {},
+   "recipe": [
+    "miner",
+    "merchant",
+    "alchemist"
+   ],
+   "design": {
+    "ratio": 0.55,
+    "shapeFactor": 1.0
+   },
+   "atk": 1700,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "celestial",
+   "name": "천상의 궁수",
+   "grade": "hidden",
+   "special": 1,
+   "unlock": "recipe",
+   "tags": [
+    "궁수",
+    "감지"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.2,
+   "range": 99,
+   "armorPen": 0.5,
+   "magicPen": 0,
+   "crit": 0.5,
+   "critMul": 3.0,
+   "detect": "aura",
+   "detectRange": 99,
+   "target": "first",
+   "dot": null,
+   "ability": "맵 전체 감지 오라, 맵 전체 사거리, 치명타 50% (×3), 방어 관통 50%",
+   "awaken": "—",
+   "params": {},
+   "recipe": [
+    "archer",
+    "sniper",
+    "assassin"
+   ],
+   "design": {
+    "ratio": 1.2,
+    "shapeFactor": 1.0
+   },
+   "atk": 1500,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "legion",
+   "name": "불멸의 군단장",
+   "grade": "hidden",
+   "special": 1,
+   "unlock": "recipe",
+   "tags": [
+    "지원"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "2초마다 병사 (사라지지 않음, 최대 10), 전체 공격속도 +20%",
+   "awaken": "—",
+   "params": {},
+   "recipe": [
+    "summoner",
+    "blacksmith",
+    "warlord"
+   ],
+   "design": {
+    "ratio": 0.6,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 1800,
+   "tatk": 0
+  },
+  {
+   "id": "infiniteblade",
+   "name": "무한의 검",
+   "grade": "hidden",
+   "special": 1,
+   "unlock": "recipe",
+   "tags": [
+    "전사"
+   ],
+   "damageType": "physical",
+   "shape": "melee_aoe",
+   "shapeValue": 1.5,
+   "aps": 1.0,
+   "range": 1.5,
+   "armorPen": 0.3,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "공격마다 이번 판 공격력 +0.2% (최대 +200%), 방어 관통 30%",
+   "awaken": "—",
+   "params": {},
+   "recipe": [
+    "warrior",
+    "duelist",
+    "cleaver",
+    "berserker",
+    "swordsaint"
+   ],
+   "design": {
+    "ratio": 1.0,
+    "shapeFactor": 3.25
+   },
+   "atk": 920,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "timelord",
+   "name": "시간의 지배자",
+   "grade": "hidden",
+   "special": 1,
+   "unlock": "recipe",
+   "tags": [
+    "제어"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "20초마다 전체 정지 3초, 신 확률 ×2, 전체 공격력 +15%",
+   "awaken": "—",
+   "params": {},
+   "recipe": [
+    "chronomancer",
+    "scholar",
+    "fortuna"
+   ],
+   "design": {
+    "ratio": 0.6,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 1800,
+   "tatk": 0
+  },
+  {
+   "id": "goblinking",
+   "name": "고블린 대왕",
+   "grade": "hidden",
+   "special": 1,
+   "unlock": "recipe",
+   "tags": [
+    "고블린"
+   ],
+   "damageType": "physical",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 2.0,
+   "range": 2.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "5초마다 고블린 병사 3마리, 고블린 계열 공격력 +50%",
+   "awaken": "—",
+   "params": {},
+   "recipe": [
+    "goblin",
+    "goblin",
+    "goblin",
+    "bomber",
+    "goblinchief"
+   ],
+   "design": {
+    "ratio": 0.7,
+    "shapeFactor": 1.0
+   },
+   "atk": 1000,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "deathlord",
+   "name": "죽음의 군주",
+   "grade": "hidden",
+   "special": 1,
+   "unlock": "recipe",
+   "tags": [
+    "어둠"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": {
+    "kind": "poison",
+    "perSec": 0.5,
+    "dur": 5,
+    "stacks": 10
+   },
+   "ability": "처치 몹 50% 해골 부활, 독 최대 10중첩",
+   "awaken": "—",
+   "params": {},
+   "recipe": [
+    "poisonarcher",
+    "necromancer",
+    "dimensionist"
+   ],
+   "design": {
+    "ratio": 0.9,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 770,
+   "tatk": 0
+  },
+  {
+   "id": "greatpirate",
+   "name": "대해적",
+   "grade": "hidden",
+   "special": 1,
+   "unlock": "recipe",
+   "tags": [
+    "경제"
+   ],
+   "damageType": "physical",
+   "shape": "aoe",
+   "shapeValue": 2.0,
+   "aps": 0.5,
+   "range": 4.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "단계를 넘길 때마다 보물 500~2,000원, 맞은 몹 처치 보상 ×2",
+   "awaken": "—",
+   "params": {},
+   "recipe": [
+    "slinger",
+    "pirate",
+    "tycoon"
+   ],
+   "design": {
+    "ratio": 0.8,
+    "shapeFactor": 4.0
+   },
+   "atk": 1200,
+   "matk": 0,
+   "tatk": 0
+  },
+  {
+   "id": "fateseer",
+   "name": "운명의 예언자",
+   "grade": "hidden",
+   "special": 1,
+   "unlock": "recipe",
+   "tags": [
+    "확률",
+    "감지"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.5,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "aura",
+   "detectRange": 5.0,
+   "target": "first",
+   "dot": null,
+   "ability": "감지 오라(반경 5), 소환·승급 결과 항상 2개 중 선택, 도박 ×0 확률 -15%p",
+   "awaken": "—",
+   "params": {},
+   "recipe": [
+    "gambler",
+    "astrologer",
+    "prophet"
+   ],
+   "design": {
+    "ratio": 0.55,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 1700,
+   "tatk": 0
+  },
+  {
+   "id": "festival",
+   "name": "축제의 왕",
+   "grade": "hidden",
+   "special": 1,
+   "unlock": "recipe",
+   "tags": [
+    "지원"
+   ],
+   "damageType": "magic",
+   "shape": "single",
+   "shapeValue": 0,
+   "aps": 1.0,
+   "range": 3.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "전체 공격속도 +30%, 전체 공격력 +20%",
+   "awaken": "—",
+   "params": {},
+   "recipe": [
+    "drummer",
+    "bard",
+    "saint"
+   ],
+   "design": {
+    "ratio": 0.5,
+    "shapeFactor": 1.0
+   },
+   "atk": 0,
+   "matk": 1500,
+   "tatk": 0
+  },
+  {
+   "id": "stormavatar",
+   "name": "폭풍의 화신",
+   "grade": "hidden",
+   "special": 1,
+   "unlock": "recipe",
+   "tags": [
+    "마법사"
+   ],
+   "damageType": "magic",
+   "shape": "chain",
+   "shapeValue": 8,
+   "aps": 1.0,
+   "range": 4.0,
+   "armorPen": 0,
+   "magicPen": 0,
+   "crit": 0,
+   "critMul": 2.0,
+   "detect": "none",
+   "detectRange": 0,
+   "target": "first",
+   "dot": null,
+   "ability": "10초마다 폭풍 (드러난 모든 몹 둔화 50% 3초 + 공격력 ×10 피해)",
+   "awaken": "—",
+   "params": {},
+   "recipe": [
+    "windarcher",
+    "lightning",
+    "stormlord"
+   ],
+   "design": {
+    "ratio": 0.85,
+    "shapeFactor": 3.21
+   },
+   "atk": 0,
+   "matk": 790,
+   "tatk": 0
+  }
+ ]
+}

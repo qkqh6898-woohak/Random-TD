@@ -2,7 +2,7 @@
   "id": "crossroads",
   "name": "사거리 미로",
   "mode": "stage",
-  "version": 1,
+  "version": 2,
   "width": 13,
   "height": 13,
   "legend": {
@@ -11,19 +11,19 @@
     "X": "장식(배치 불가)"
   },
   "tiles": [
-    "PXXXPXXXPPPPP",
+    "PBBBPBBBPPPPP",
     "PBBBPBBBPBBBP",
     "PBBBPBBBPBBBP",
     "PBBBPBBBPBBBP",
     "PPPPPPPPPPPPP",
-    "XBBBPBBBPBBBX",
-    "XBBBPBBBPBBBX",
-    "XBBBPBBBPBBBX",
+    "BBBBPBBBPBBBB",
+    "BBBBPBBBPBBBB",
+    "BBBBPBBBPBBBB",
     "PPPPPPPPPPPPP",
     "PBBBPBBBPBBBP",
     "PBBBPBBBPBBBP",
     "PBBBPBBBPBBBP",
-    "PPPPPXXXPPPPP"
+    "PPPPPBBBPPPPP"
   ],
   "waypoints": [
     [
@@ -160,6 +160,78 @@
       "h": 3
     }
   },
-  "buildableCount": 81,
-  "notes": "사용자 스케치(docs/images/crossroads_sketch.jpg)를 13x13 타일로 옮긴 맵. 블록 1개 = 3x3 배치 칸."
+  "buildableCount": 96,
+  "notes": "사용자 스케치(docs/images/crossroads_sketch.jpg)를 13x13 타일로 옮긴 맵. 블록 1개 = 3x3 배치 칸. v2: A·B·D·F·H 옆 여백 15칸도 배치 칸(가장자리 땅).",
+  "edgePlots": {
+    "A위": [
+      [
+        1,
+        0
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        3,
+        0
+      ]
+    ],
+    "B위": [
+      [
+        5,
+        0
+      ],
+      [
+        6,
+        0
+      ],
+      [
+        7,
+        0
+      ]
+    ],
+    "D왼쪽": [
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        6
+      ],
+      [
+        0,
+        7
+      ]
+    ],
+    "F오른쪽": [
+      [
+        12,
+        5
+      ],
+      [
+        12,
+        6
+      ],
+      [
+        12,
+        7
+      ]
+    ],
+    "H아래": [
+      [
+        5,
+        12
+      ],
+      [
+        6,
+        12
+      ],
+      [
+        7,
+        12
+      ]
+    ]
+  }
 }

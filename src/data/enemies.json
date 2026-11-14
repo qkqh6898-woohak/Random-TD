@@ -1,0 +1,524 @@
+{
+ "version": 2,
+ "formulas": {
+  "hp": "1~20: 120*1.151^(s-1); 21~50: HP(20)*1.08^(s-20); 51~100: HP(50)*1.06^(s-50); 101~: HP(100)*1.05^(s-100)",
+  "armor": "기본 방어력 * (1 + 0.02*s) + max(0, s-100)  (마법 저항도 동일)",
+  "reduction": "피해 감소율 = A / (A + 100), A = max(0, 방어력*(1-관통%) - 고정 관통)",
+  "reward": "(10 + floor(s/10)) * rewardMul"
+ },
+ "mobs": [
+  {
+   "id": "slime",
+   "name": "슬라임",
+   "look": "말랑한 초록 젤리",
+   "fromStage": 1,
+   "hpMul": 1.0,
+   "armor": 0,
+   "magicRes": 0,
+   "speed": 1.5,
+   "ccResist": 0,
+   "traits": [],
+   "lifeDamage": 1,
+   "rewardMul": 1.0,
+   "size": "소형"
+  },
+  {
+   "id": "bat",
+   "name": "박쥐",
+   "look": "작은 보라 박쥐",
+   "fromStage": 6,
+   "hpMul": 0.6,
+   "armor": 0,
+   "magicRes": 15,
+   "speed": 2.4,
+   "ccResist": 0,
+   "traits": [
+    "빠름"
+   ],
+   "lifeDamage": 1,
+   "rewardMul": 1.0,
+   "size": "소형"
+  },
+  {
+   "id": "golem",
+   "name": "골렘",
+   "look": "이끼 낀 돌덩이",
+   "fromStage": 15,
+   "hpMul": 2.0,
+   "armor": 60,
+   "magicRes": 0,
+   "speed": 1.2,
+   "ccResist": 0.2,
+   "traits": [
+    "물리 저항"
+   ],
+   "lifeDamage": 2,
+   "rewardMul": 1.0,
+   "size": "대형"
+  },
+  {
+   "id": "turtle",
+   "name": "수정 거북",
+   "look": "등에 마법 수정이 박힌 거북",
+   "fromStage": 20,
+   "hpMul": 1.8,
+   "armor": 10,
+   "magicRes": 60,
+   "speed": 1.1,
+   "ccResist": 0.2,
+   "traits": [
+    "마법 저항"
+   ],
+   "lifeDamage": 2,
+   "rewardMul": 1.0,
+   "size": "대형"
+  },
+  {
+   "id": "ghost",
+   "name": "유령",
+   "look": "반투명 하얀 천",
+   "fromStage": 25,
+   "hpMul": 1.0,
+   "armor": 30,
+   "magicRes": 30,
+   "speed": 1.5,
+   "ccResist": 0,
+   "traits": [
+    "단일 공격 30% 회피"
+   ],
+   "lifeDamage": 1,
+   "rewardMul": 1.0,
+   "size": "중형"
+  },
+  {
+   "id": "splitter",
+   "name": "분열 슬라임",
+   "look": "큰 파란 젤리",
+   "fromStage": 35,
+   "hpMul": 1.5,
+   "armor": 10,
+   "magicRes": 10,
+   "speed": 1.3,
+   "ccResist": 0,
+   "traits": [
+    "죽으면 작은 슬라임 2마리 (체력 30%, 속도 1.8, 보상 없음)"
+   ],
+   "lifeDamage": 1,
+   "rewardMul": 1.0,
+   "size": "중형"
+  },
+  {
+   "id": "thief",
+   "name": "투명 도둑",
+   "look": "두건 쓴 그림자 고블린",
+   "fromStage": 35,
+   "hpMul": 1.0,
+   "armor": 20,
+   "magicRes": 20,
+   "speed": 1.8,
+   "ccResist": 0,
+   "traits": [
+    "투명",
+    "출구 도달 시 목숨 2"
+   ],
+   "lifeDamage": 2,
+   "rewardMul": 2.0,
+   "size": "소형"
+  },
+  {
+   "id": "healer",
+   "name": "치유사",
+   "look": "버섯 모자 요정",
+   "fromStage": 45,
+   "hpMul": 1.2,
+   "armor": 20,
+   "magicRes": 40,
+   "speed": 1.4,
+   "ccResist": 0,
+   "traits": [
+    "3초마다 반경 2칸 몹 체력 5% 회복"
+   ],
+   "lifeDamage": 1,
+   "rewardMul": 1.0,
+   "size": "중형"
+  },
+  {
+   "id": "shield",
+   "name": "방패병",
+   "look": "나무 방패 든 해골",
+   "fromStage": 55,
+   "hpMul": 1.5,
+   "armor": 50,
+   "magicRes": 50,
+   "speed": 1.3,
+   "ccResist": 0.3,
+   "traits": [
+    "최대 체력 30% 보호막 (광역 피해 2배로 받음)"
+   ],
+   "lifeDamage": 2,
+   "rewardMul": 1.0,
+   "size": "중형"
+  },
+  {
+   "id": "shadowwolf",
+   "name": "그림자 늑대",
+   "look": "검은 연기 늑대",
+   "fromStage": 70,
+   "hpMul": 1.3,
+   "armor": 30,
+   "magicRes": 30,
+   "speed": 2.0,
+   "ccResist": 0,
+   "traits": [
+    "투명",
+    "체력 50% 이하에서 이동속도 +30%"
+   ],
+   "lifeDamage": 2,
+   "rewardMul": 2.0,
+   "size": "중형"
+  }
+ ],
+ "composition": [
+  {
+   "stages": [
+    1,
+    5
+   ],
+   "mix": {
+    "slime": 20
+   }
+  },
+  {
+   "stages": [
+    6,
+    14
+   ],
+   "mix": {
+    "slime": 16,
+    "bat": 4
+   }
+  },
+  {
+   "stages": [
+    15,
+    19
+   ],
+   "mix": {
+    "slime": 12,
+    "bat": 4,
+    "golem": 4
+   }
+  },
+  {
+   "stages": [
+    20,
+    24
+   ],
+   "mix": {
+    "slime": 9,
+    "bat": 4,
+    "golem": 4,
+    "turtle": 3
+   }
+  },
+  {
+   "stages": [
+    25,
+    34
+   ],
+   "mix": {
+    "slime": 6,
+    "bat": 4,
+    "golem": 3,
+    "turtle": 3,
+    "ghost": 4
+   }
+  },
+  {
+   "stages": [
+    35,
+    44
+   ],
+   "mix": {
+    "slime": 4,
+    "bat": 3,
+    "golem": 3,
+    "turtle": 3,
+    "ghost": 3,
+    "splitter": 2,
+    "thief": 2
+   }
+  },
+  {
+   "stages": [
+    45,
+    54
+   ],
+   "mix": {
+    "slime": 2,
+    "bat": 3,
+    "golem": 3,
+    "turtle": 3,
+    "ghost": 2,
+    "splitter": 2,
+    "thief": 3,
+    "healer": 2
+   }
+  },
+  {
+   "stages": [
+    55,
+    69
+   ],
+   "mix": {
+    "bat": 3,
+    "golem": 3,
+    "turtle": 3,
+    "ghost": 2,
+    "splitter": 2,
+    "thief": 3,
+    "healer": 2,
+    "shield": 2
+   }
+  },
+  {
+   "stages": [
+    70,
+    99
+   ],
+   "mix": {
+    "bat": 2,
+    "golem": 2,
+    "turtle": 2,
+    "ghost": 2,
+    "splitter": 2,
+    "thief": 3,
+    "healer": 2,
+    "shield": 2,
+    "shadowwolf": 3
+   }
+  },
+  {
+   "stages": [
+    100,
+    9999
+   ],
+   "mix": {
+    "bat": 2,
+    "golem": 2,
+    "turtle": 2,
+    "ghost": 1,
+    "splitter": 2,
+    "thief": 4,
+    "healer": 2,
+    "shield": 2,
+    "shadowwolf": 3
+   }
+  }
+ ],
+ "bosses": [
+  {
+   "stage": 10,
+   "id": "kingslime",
+   "name": "킹 슬라임",
+   "look": "왕관 쓴 거대 슬라임",
+   "hpMul": 40,
+   "armor": 20,
+   "magicRes": 20,
+   "speed": 0.9,
+   "ccResist": 0.7,
+   "invisible": false,
+   "pattern": "체력 50%에서 둘로 분열 (각각 남은 체력의 50%). 둘 다 잡아야 처치"
+  },
+  {
+   "stage": 20,
+   "id": "batqueen",
+   "name": "박쥐 여왕",
+   "look": "망토 두른 거대 박쥐",
+   "hpMul": 45,
+   "armor": 30,
+   "magicRes": 50,
+   "speed": 1.0,
+   "ccResist": 0.7,
+   "invisible": false,
+   "pattern": "10초마다 박쥐 5마리 소환. 15초마다 3초간 날아올라 사거리 2 이하 타워의 공격을 받지 않음"
+  },
+  {
+   "stage": 30,
+   "id": "ancientgolem",
+   "name": "고대 골렘",
+   "look": "룬이 빛나는 바위 거인",
+   "hpMul": 50,
+   "armor": 150,
+   "magicRes": 30,
+   "speed": 0.7,
+   "ccResist": 0.7,
+   "invisible": false,
+   "pattern": "체력 30% 이하에서 이동속도 2배, 방어력 0"
+  },
+  {
+   "stage": 40,
+   "id": "wraithlord",
+   "name": "망령 군주",
+   "look": "낫을 든 유령 왕",
+   "hpMul": 55,
+   "armor": 60,
+   "magicRes": 60,
+   "speed": 0.9,
+   "ccResist": 0.7,
+   "invisible": true,
+   "pattern": "**항상 투명** — 감지 범위 안에서만 피해를 받음. 12초마다 주변 몹 체력 10% 회복 + 투명 유령 3마리 소환"
+  },
+  {
+   "stage": 50,
+   "id": "chaosdragon",
+   "name": "혼돈의 용",
+   "look": "머리 둘 달린 검붉은 용",
+   "hpMul": 60,
+   "armor": 100,
+   "magicRes": 100,
+   "speed": 0.8,
+   "ccResist": 0.7,
+   "invisible": false,
+   "pattern": "15초마다 무작위 타워 3개 5초 기절. 체력 66%·33%에서 5초간 받는 피해 -50%"
+  }
+ ],
+ "challenges": [
+  {
+   "level": 1,
+   "id": "goldslime",
+   "name": "황금 슬라임",
+   "look": "반짝이는 금색 젤리",
+   "hp": 2700,
+   "reward": 20,
+   "armor": 0,
+   "magicRes": 0,
+   "speed": 1.2,
+   "invisible": false,
+   "ability": "— (입문용)"
+  },
+  {
+   "level": 2,
+   "id": "thiefgoblin",
+   "name": "도둑 고블린",
+   "look": "보따리 멘 고블린",
+   "hp": 5940,
+   "reward": 50,
+   "armor": 10,
+   "magicRes": 10,
+   "speed": 1.2,
+   "invisible": false,
+   "ability": "이동속도 1.8"
+  },
+  {
+   "level": 3,
+   "id": "stoneturtle",
+   "name": "돌거북",
+   "look": "등껍질이 바위",
+   "hp": 13068,
+   "reward": 100,
+   "armor": 80,
+   "magicRes": 10,
+   "speed": 1.2,
+   "invisible": false,
+   "ability": "물리 저항"
+  },
+  {
+   "level": 4,
+   "id": "twinbats",
+   "name": "쌍둥이 박쥐",
+   "look": "두 마리가 붙어 다님",
+   "hp": 28750,
+   "reward": 200,
+   "armor": 20,
+   "magicRes": 40,
+   "speed": 1.2,
+   "invisible": false,
+   "ability": "두 마리가 체력 공유"
+  },
+  {
+   "level": 5,
+   "id": "irongolem",
+   "name": "강철 골렘",
+   "look": "쇠로 된 골렘",
+   "hp": 63249,
+   "reward": 400,
+   "armor": 120,
+   "magicRes": 20,
+   "speed": 1.2,
+   "invisible": false,
+   "ability": "둔화 면역"
+  },
+  {
+   "level": 6,
+   "id": "shadowfang",
+   "name": "그림자 늑대",
+   "look": "연기 늑대",
+   "hp": 139148,
+   "reward": 800,
+   "armor": 40,
+   "magicRes": 40,
+   "speed": 1.2,
+   "invisible": false,
+   "ability": "5초마다 2칸 앞으로 순간이동"
+  },
+  {
+   "level": 7,
+   "id": "frostgiant",
+   "name": "서리 거인",
+   "look": "얼음 수염 거인",
+   "hp": 306126,
+   "reward": 1500,
+   "armor": 60,
+   "magicRes": 100,
+   "speed": 1.2,
+   "invisible": false,
+   "ability": "8초마다 주변 타워 2초 동결(공격 불가)"
+  },
+  {
+   "level": 8,
+   "id": "flamelord",
+   "name": "화염 정령왕",
+   "look": "불꽃 몸",
+   "hp": 673477,
+   "reward": 2500,
+   "armor": 40,
+   "magicRes": 150,
+   "speed": 1.2,
+   "invisible": false,
+   "ability": "화상 면역, 초당 체력 1% 회복"
+  },
+  {
+   "level": 9,
+   "id": "wraithknight",
+   "name": "망령 기사",
+   "look": "유령 말 탄 기사",
+   "hp": 1481649,
+   "reward": 4000,
+   "armor": 80,
+   "magicRes": 80,
+   "speed": 1.2,
+   "invisible": true,
+   "ability": "**투명** (감지 필요)"
+  },
+  {
+   "level": 10,
+   "id": "ancientdragon",
+   "name": "고대 드래곤",
+   "look": "금빛 비늘 드래곤",
+   "hp": 3259627,
+   "reward": 6000,
+   "armor": 150,
+   "magicRes": 150,
+   "speed": 1.2,
+   "invisible": false,
+   "ability": "체력 50%에서 5초 무적 + 이동속도 2배"
+  }
+ ],
+ "eliteChance": {
+  "fromStage": 51,
+  "chance": 0.015,
+  "hpMul": 5,
+  "rewardMul": 10
+ }
+}
