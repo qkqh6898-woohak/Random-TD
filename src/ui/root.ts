@@ -54,6 +54,8 @@ export class UiRoot {
    */
   toast(text: string, ms = 1600): HTMLElement {
     const layer = this.layers.toast;
+    // 같은 글자가 이미 떠 있으면 그것을 지우고 새로 띄운다 (연타해도 같은 알림이 쌓이지 않게)
+    for (const child of [...layer.children]) if (child.textContent === text) child.remove();
     while (layer.childElementCount >= UiRoot.MAX_TOASTS) layer.firstElementChild?.remove();
     const el = h('div', { class: 'toast', text });
     layer.append(el);
@@ -62,6 +64,12 @@ export class UiRoot {
   }
 
   private static readonly MAX_TOASTS = 3;
+
+  /** 알림이 뜨는 높이 (무대 위쪽에서 CSS px). HUD 띠 바로 아래에 띄우려고 Game 장면이 넣는다. null이면 기본값. */
+  setToastTop(cssPx: number | null): void {
+    if (cssPx === null || !Number.isFinite(cssPx)) this.layers.toast.style.removeProperty('--toast-top');
+    else this.layers.toast.style.setProperty('--toast-top', `${Math.round(cssPx)}px`);
+  }
 
   clearAll(): void {
     (Object.keys(this.layers) as LayerName[]).forEach((l) => this.clear(l));

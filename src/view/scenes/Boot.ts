@@ -60,7 +60,7 @@ export class BootScene extends Phaser.Scene {
     this.ctx.ui.show(
       'screen',
       createTitleScreen({
-        version: `v${this.ctx.version} · M1`,
+        version: `v${this.ctx.version} · M2`,
         onStart: () => this.startGame('infinite'),
         onCampaign: this.ctx.debug ? () => this.startGame('campaign') : undefined,
       }),

@@ -10,16 +10,21 @@
  * 경고 (UI.md 4.2): 남은 10초 이하 노란색 / 몹 120 이상 빨간색 깜빡 + 화면 가장자리 붉은 테두리 /
  *   목숨 5 이하 빨간색(깜빡이지 않음), 목숨이 줄 때마다 하트가 깨지는 연출.
  *
+ * 아래 띠 (M2): 🗼 놓인 타워 수/배치 칸 수 · 소환 안내. 맵 아래쪽 끝은 Game 장면이 이 띠의 위쪽 끝을 재서 정한다.
+ * 돈이 들어오면 (동전이 도착하면) 돈 글자가 반짝이고 '+n원'이 떠오른다 (UI.md 4.2).
+ *
  * 값 계산은 hudModel.ts(순수 함수, 단위 테스트)에서 하고, 여기서는 바뀐 글자만 DOM에 쓴다.
  * HUD는 sim을 읽기만 한다. 배속은 화면 설정(TickClock), 단계 건너뛰기(debug)는 명령으로 보낸다.
  * 루트의 data-tick 속성 = 지금 틱 (E2E가 게임 시간이 흐르는지 볼 때 쓴다, 화면에는 안 보임).
  */
 import { h } from '../dom';
 import type { UiView } from '../root';
-import { livesDropped, type HudModel } from './hudModel';
+import { livesDropped, withCommas, type HudModel } from './hudModel';
 
 /** 하트 깨짐 연출 길이 (ms) — styles.css `heart-break`와 같게 */
 export const HEART_BREAK_MS = 600;
+/** 돈 '+n원' 떠오름 길이 (ms) — styles.css `gold-gain`과 같게. 이 안에 또 들어오면 숫자를 합친다 */
+export const GOLD_GAIN_MS = 700;
 
 export interface HudOptions {
   onSpeed: () => void;
@@ -34,6 +39,14 @@ export interface HudView extends UiView {
   readonly band: HTMLElement;
   /** HUD 띠 아래 끝 = 무대 위쪽에서 잰 CSS px */
   bandBottom(): number;
+  /** 아래 띠 (타워 수·소환 안내). 크기가 바뀌면 맵 배치를 다시 한다 */
+  readonly bottomBand: HTMLElement;
+  /** 아래 띠 위쪽 끝 = 무대 위쪽에서 잰 CSS px */
+  bottomTop(): number;
+  /** 돈 글자 가운데 (무대 기준 CSS px) — 동전이 날아갈 곳 */
+  goldAnchor(): { x: number; y: number };
+  /** 돈이 들어옴: 돈 글자 반짝 + '+n원' (짧은 사이에 여러 번이면 합친다) */
+  gainGold(amount: number): void;
   update(model: HudModel): void;
 }
 
@@ -89,6 +102,24 @@ export function createHud(opts: HudOptions): HudView {
   const bannerEl = h('div', { class: 'hud-banner', attrs: { 'data-testid': 'hud-boss', hidden: '' }, text: ' ' });
   // 화면 가장자리 붉은 테두리 (몹 120 이상, 무한)
   const edgeEl = h('div', { class: 'hud-edge', attrs: { 'aria-hidden': 'true', 'data-testid': 'hud-edge' } });
+  // 돈 '+n원' (돈 글자 옆에서 떠오름)
+  const gainEl = h('span', { class: 'hud-gold-gain', attrs: { 'data-testid': 'hud-gold-gain', 'aria-hidden': 'true' } });
+  const goldItem = h(
+    'span',
+    { class: 'hud-item hud-gold-item' },
+    h('span', { class: 'hud-label', text: '💰', attrs: { 'aria-hidden': 'true' } }),
+    goldEl,
+    gainEl,
+  );
+  // 아래 띠: 타워 수 · 소환 안내
+  const towersEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-towers', 'aria-label': '놓인 타워 수', ...off }, text: '0/0' });
+  const hintEl = h('span', { class: 'hud-hint', attrs: { 'data-testid': 'hud-hint', ...off }, text: '' });
+  const bottomBand = h(
+    'div',
+    { class: 'hud-bottom' },
+    h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl),
+    hintEl,
+  );
 
   const band = h(
     'div',
@@ -108,7 +139,7 @@ export function createHud(opts: HudOptions): HudView {
       h(
         'div',
         { class: 'hud-row' },
-        h('span', { class: 'hud-item' }, h('span', { class: 'hud-label', text: '💰', attrs: { 'aria-hidden': 'true' } }), goldEl),
+        goldItem,
         h('span', { class: 'hud-spacer' }),
         skipBtn,
         speedBtn,
@@ -116,10 +147,12 @@ export function createHud(opts: HudOptions): HudView {
     ),
     bannerEl,
   );
-  const el = h('div', { class: 'hud-root', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band);
+  const el = h('div', { class: 'hud-root', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band, bottomBand);
 
   let last: Partial<HudModel> = {};
   let breakTimer: ReturnType<typeof setTimeout> | undefined;
+  let gainTimer: ReturnType<typeof setTimeout> | undefined;
+  let gainSum = 0;
   const breakHeart = (): void => {
     countIcon.textContent = '💔';
     countIcon.classList.remove('is-break');
@@ -141,6 +174,32 @@ export function createHud(opts: HudOptions): HudView {
     bandBottom() {
       return band.getBoundingClientRect().bottom - el.getBoundingClientRect().top;
     },
+    bottomBand,
+    bottomTop() {
+      return bottomBand.getBoundingClientRect().top - el.getBoundingClientRect().top;
+    },
+    goldAnchor() {
+      const r = goldEl.getBoundingClientRect();
+      const root = el.getBoundingClientRect();
+      return { x: r.left + Math.min(r.width, 40) / 2 - root.left, y: r.top + r.height / 2 - root.top };
+    },
+    gainGold(amount) {
+      if (!(amount > 0)) return;
+      gainSum = gainTimer === undefined ? amount : gainSum + amount;
+      gainEl.textContent = `+${withCommas(gainSum)}원`;
+      gainEl.classList.remove('is-on');
+      goldEl.classList.remove('is-gain');
+      void gainEl.offsetWidth; // 애니메이션을 처음부터 다시
+      gainEl.classList.add('is-on');
+      goldEl.classList.add('is-gain');
+      clearTimeout(gainTimer);
+      gainTimer = setTimeout(() => {
+        gainTimer = undefined;
+        gainSum = 0;
+        gainEl.classList.remove('is-on');
+        goldEl.classList.remove('is-gain');
+      }, GOLD_GAIN_MS);
+    },
     update(m) {
       if (last.tick !== m.tick) el.dataset.tick = String(m.tick);
       if (last.stage !== m.stage || last.boss !== m.boss) {
@@ -160,6 +219,9 @@ export function createHud(opts: HudOptions): HudView {
       if (last.countBlink !== m.countBlink) countItem.classList.toggle('is-blink', m.countBlink);
       if (last.edgeWarn !== m.edgeWarn) edgeEl.classList.toggle('is-on', m.edgeWarn);
       setText(goldEl, 'gold', m.gold);
+      setText(towersEl, 'towers', m.towers);
+      setText(hintEl, 'summonHint', m.summonHint);
+      if (last.summonAffordable !== m.summonAffordable) hintEl.classList.toggle('is-short', !m.summonAffordable);
       setText(speedBtn, 'speed', m.speed);
       if (last.bossBanner !== m.bossBanner) {
         if (m.bossBanner) {
@@ -173,6 +235,8 @@ export function createHud(opts: HudOptions): HudView {
     destroy() {
       clearTimeout(breakTimer);
       breakTimer = undefined;
+      clearTimeout(gainTimer);
+      gainTimer = undefined;
     },
   };
 }

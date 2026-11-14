@@ -137,6 +137,16 @@ for (const vp of VIEWPORTS) {
     const tap = await page.evaluate(() => (window as unknown as { __taps: number[][] }).__taps[0]!);
     const tile = { tx: Math.floor((tap[0]! - g.originX) / g.tile), ty: Math.floor((tap[1]! - g.originY) / g.tile) };
     expect(tile).toEqual({ tx: 4, ty: 0 });
+    // M2: 그 탭으로 (4, 0) 배치 칸에 소환된다 (보스 배너 아래 칸도 터치가 통과)
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const w = window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } };
+          const s = w.__rtd.game.scene.getScene('Game') as { match: { towers(): { tx: number; ty: number }[] } };
+          return s.match.towers().map((t) => `${t.tx},${t.ty}`);
+        }),
+      )
+      .toEqual(['4,0']);
     mkdirSync('test-results/screens', { recursive: true });
     await page.screenshot({ path: `test-results/screens/M1r-boss-${vp.width}x${vp.height}.png`, animations: 'disabled' });
     expect(errors).toEqual([]);

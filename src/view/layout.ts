@@ -2,8 +2,8 @@
  * 맵 화면 배치 (순수 계산, Phaser 없음 → 단위 테스트 가능).
  *
  * - MAPS.md 0장: 맵은 화면 가로폭에 맞춰 확대 (13칸 기준 1칸 ≈ 화면 폭의 1/13.5).
- * - 위는 DOM HUD(2줄 + 보스 막대 자리, 실제 높이를 잼), 아래는 M2부터 들어갈 버튼·하단 메뉴 자리
- *   → 그 사이 영역에 맵 전체(화면 밖 등장·퇴장 칸 포함)가 들어가게. HUD가 맵 칸을 덮지 않는다.
+ * - 위는 DOM HUD(2줄 + 보스 막대 자리), 아래는 DOM 아래 띠(M2: 타워 수·소환 안내, M4·M5에서 버튼·하단 메뉴가 늘어남).
+ *   둘 다 실제 높이를 재서 그 사이 영역에 맵 전체(화면 밖 등장·퇴장 칸 포함)가 들어가게 → HUD가 맵 칸을 덮지 않는다.
  * - 좌표 변환: sim 단위(1칸 = 1000) → 화면 픽셀. sim 칸 중심 (x·1000 + 500)이 화면 칸 중심에 온다.
  */
 import { TILE } from '../sim/Fixed';
@@ -16,8 +16,10 @@ import { GAME_HEIGHT, GAME_WIDTH } from './config';
  * (버튼 최소 44px 때문에 좁은 화면일수록 HUD가 기준 px로 더 커진다.)
  */
 export const HUD_TOP_PX = 330;
-/** 아래 버튼·하단 메뉴 자리 (M2~). */
+/** 아래 띠를 아직 재지 못했을 때 비워 두는 높이 (기준 px). 실제로는 아래 띠 위쪽 끝을 잰다 → `mapAreaBelowHud`. */
 export const BOTTOM_UI_PX = 330;
+/** 맵과 아래 띠 사이 여백 (기준 px) */
+export const MAP_BOTTOM_GAP_PX = 12;
 /** HUD 아래 끝과 맵 사이 여백 (기준 px) */
 export const MAP_TOP_GAP_PX = 12;
 /** 맵 영역 최소 높이 (기준 px): 아주 납작한 화면에서 HUD가 커져도 맵이 사라지지 않게 */
@@ -52,15 +54,19 @@ export interface MapLayout {
 }
 
 /**
- * DOM HUD가 실제로 차지하는 높이(기준 px)를 받아 맵 영역을 정한다 (UI.md 4.1: HUD 2줄 → 보스 막대 줄 → 맵).
- * HUD 아래 끝 + 여백부터 아래 메뉴 자리 위까지. HUD가 작게 재져도(측정 전 0 등) `HUD_TOP_PX`보다 위로 올리지 않고,
- * 맵 영역이 `MIN_MAP_AREA_PX`보다 작아지게 내리지도 않는다.
+ * DOM HUD가 실제로 차지하는 높이(기준 px)를 받아 맵 영역을 정한다 (UI.md 4.1: HUD 2줄 → 보스 막대 줄 → 맵 → 아래 띠).
+ * HUD 아래 끝 + 여백부터 아래 띠 위쪽 끝 − 여백까지. 아래 띠를 재지 못하면(생략·0) `BOTTOM_UI_PX`를 비워 둔다.
+ * HUD가 작게 재져도(측정 전 0 등) `HUD_TOP_PX`보다 위로 올리지 않고, 맵 영역이 `MIN_MAP_AREA_PX`보다 작아지게 내리지도 않는다.
  */
-export function mapAreaBelowHud(hudBottomPx: number): Rect {
+export function mapAreaBelowHud(hudBottomPx: number, bottomTopPx?: number): Rect {
   const measured = Number.isFinite(hudBottomPx) && hudBottomPx > 0 ? Math.ceil(hudBottomPx) + MAP_TOP_GAP_PX : 0;
-  const maxTop = GAME_HEIGHT - BOTTOM_UI_PX - MIN_MAP_AREA_PX;
+  const measuredBottom =
+    bottomTopPx !== undefined && Number.isFinite(bottomTopPx) && bottomTopPx > 0 ? Math.floor(bottomTopPx) - MAP_BOTTOM_GAP_PX : 0;
+  // 아래 끝: 잰 값 (단, HUD 최소 높이 + 맵 최소 높이보다 위로는 올리지 않음)
+  const bottom = measuredBottom > 0 ? Math.min(GAME_HEIGHT, Math.max(HUD_TOP_PX + MIN_MAP_AREA_PX, measuredBottom)) : GAME_HEIGHT - BOTTOM_UI_PX;
+  const maxTop = bottom - MIN_MAP_AREA_PX;
   const y = Math.min(maxTop, Math.max(HUD_TOP_PX, measured));
-  return { x: 0, y, w: GAME_WIDTH, h: GAME_HEIGHT - y - BOTTOM_UI_PX };
+  return { x: 0, y, w: GAME_WIDTH, h: bottom - y };
 }
 
 /** 무대의 CSS px → 기준 px (캔버스가 무대 너비에 맞춰 FIT 되므로 비율 = 1080 / 무대 너비). 무대가 아직 0이면 0. */

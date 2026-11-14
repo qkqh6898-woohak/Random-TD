@@ -277,7 +277,8 @@ body {
   .btn-start::after,
   .hud-count.is-blink,
   .hud-edge.is-on,
-  .hud-count-icon.is-break {
+  .hud-count-icon.is-break,
+  .hud-gold.is-gain {
     animation: none;
   }
 }
@@ -451,6 +452,108 @@ body {
 .hud-gold {
   color: var(--gold);
   min-width: 20cqw;
+  display: inline-block;
+}
+
+/* 돈이 들어오면 반짝 (동전 도착) */
+.hud-gold.is-gain {
+  animation: gold-pop 260ms ease-out;
+}
+
+@keyframes gold-pop {
+  0% {
+    transform: scale(1);
+    text-shadow: none;
+  }
+  40% {
+    transform: scale(1.14);
+    text-shadow: 0 0 2cqw rgba(255, 216, 74, 0.9);
+  }
+  100% {
+    transform: scale(1);
+    text-shadow: none;
+  }
+}
+
+.hud-gold-item {
+  position: relative;
+}
+
+/* '+n원' 떠오름 (GOLD_GAIN_MS = 700ms) */
+.hud-gold-gain {
+  position: absolute;
+  left: 6cqw;
+  top: 100%;
+  font-size: 3.4cqw;
+  font-weight: 900;
+  color: #ffe27a;
+  text-shadow:
+    0 0.3cqw 0 var(--outline),
+    0 0 1.2cqw rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.hud-gold-gain.is-on {
+  animation: gold-gain 700ms ease-out forwards;
+}
+
+@keyframes gold-gain {
+  0% {
+    opacity: 0;
+    transform: translateY(1.2cqw) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0) scale(1.05);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-2.4cqw) scale(1);
+  }
+}
+
+/* ---------- 아래 띠 (M2): 타워 수 · 소환 안내. 터치는 통과 ---------- */
+.hud-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 3cqw;
+  min-height: max(11cqw, 44px);
+  padding: 2cqw 3cqw calc(2cqw + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(0deg, rgba(13, 18, 32, 0.92) 0%, rgba(13, 18, 32, 0.6) 100%);
+  border-top: 0.3cqw solid var(--panel-line);
+  font-size: 3.8cqw;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.hud-towers {
+  padding: 0.6cqw 2.2cqw;
+  border-radius: 1.6cqw;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hud-hint {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 소환할 돈이 없으면 안내를 빨갛게 */
+.hud-hint.is-short {
+  color: #ff8a7a;
 }
 
 .hud-skip {
@@ -579,7 +682,8 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 1.6cqw;
-  padding-top: 36cqw;
+  /* HUD 띠 바로 아래 (Game 장면이 실제 높이를 재서 --toast-top을 넣는다). 없으면 36cqw */
+  padding-top: var(--toast-top, 36cqw);
 }
 
 .toast {

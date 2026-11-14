@@ -8,6 +8,7 @@
  * - 고블린 떼는 같은 진행도라 떼 안 순번(swarmIndex)으로 진행 방향의 옆으로 살짝 벌려 그린다 (화면만, sim과 무관).
  * - 투명 몹: 일렁이는 반투명 실루엣 + 머리 위 👁 아이콘 (ENEMIES.md 5장 '화면 표시'). 드러난 상태의 보라 외곽선은 M4.
  * - 아래쪽 몹이 위에 그려지게 깊이 = 화면 y.
+ * - M2: 체력이 닳으면 머리 위 체력 바, 맞으면 0.1초 하얀 깜빡, 처치되면 0.3초 동안 납작해지며 사라짐 (ART.md 2.1).
  */
 import Phaser from 'phaser';
 import { EYE_ICON_H, EYE_ICON_W, MOB_TEX_SIZE, SIZE_SCALE, MOB_LOOKS, ensureEyeIconTexture, ensureMobTexture } from '../../art/mobs';
@@ -15,6 +16,11 @@ import type { Mob } from '../../sim/entities/Mob';
 import { directionAt, positionAt, type SimPath } from '../../sim/map';
 import { unitsToPx, type MapLayout } from '../layout';
 import { approachLean, leanTarget, mobPose, type MobMotion } from './mobPose';
+
+/** 피격 깜빡 (ms) — ART.md 2.1 */
+export const MOB_HIT_FLASH_MS = 100;
+/** 사망 연출 (ms) — ART.md 2.1 */
+export const MOB_DEATH_MS = 300;
 
 /** 떼 안 순번별 옆 간격 (칸) */
 const SWARM_SPREAD = 0.24;
@@ -39,6 +45,16 @@ export class MobSprite {
   private readonly motion: MobMotion;
   private readonly invisible: boolean;
   private readonly swarmOffset: number;
+  /** 피격 깜빡: 몸 위에 겹치는 하얀 그림 (몸 모양이 보이게 반투명) */
+  private readonly flashImg: Phaser.GameObjects.Image;
+  private readonly hpBg: Phaser.GameObjects.Rectangle;
+  private readonly hpFill: Phaser.GameObjects.Rectangle;
+  private readonly hpW: number;
+  private readonly baseTint: number | null;
+  private flashUntil = -1;
+  private flashing = false;
+  /** 처치 연출 시작 시각 (아니면 null) */
+  private dyingAt: number | null = null;
   private facing = 1;
   /** 지금 기울기 (rad) — 목표 쪽으로 부드럽게 따라간다 */
   private lean = 0;
@@ -59,13 +75,62 @@ export class MobSprite {
     this.eyeIcon = this.invisible
       ? scene.add.image(0, this.eyeY, ensureEyeIconTexture(scene)).setDisplaySize(eyeW, (eyeW * EYE_ICON_H) / EYE_ICON_W).setAlpha(0.95)
       : null;
-    this.root = scene.add.container(0, 0, this.eyeIcon ? [this.shadow, this.body, this.eyeIcon] : [this.shadow, this.body]);
+    // 체력 바: 머리 위 (투명 몹은 👁 위). 체력이 닳았을 때만 보인다
+    this.hpW = Math.max(diameter * 0.8, layout.tile * 0.5);
+    const hpH = Math.max(4, layout.tile * 0.075);
+    const hpY = (this.eyeIcon ? this.eyeY - eyeW * 0.45 : -diameter * 0.62) - hpH * 1.6;
+    this.hpBg = scene.add.rectangle(0, hpY, this.hpW + 2, hpH + 2, 0x1a1020, 0.85).setVisible(false);
+    this.hpFill = scene.add.rectangle(-this.hpW / 2, hpY, this.hpW, hpH, 0x5ee05e, 1).setOrigin(0, 0.5).setVisible(false);
+    this.flashImg = scene.add.image(0, 0, key).setScale(this.baseScale).setOrigin(0.5, 0.62).setTintFill(0xffffff).setAlpha(0.6).setVisible(false);
+    const parts: Phaser.GameObjects.GameObject[] = [this.shadow, this.body, this.flashImg];
+    if (this.eyeIcon) parts.push(this.eyeIcon);
+    parts.push(this.hpBg, this.hpFill);
+    this.root = scene.add.container(0, 0, parts);
     // 황금비 위상: ID가 이웃해도 흔들림이 겹치지 않게
     this.phase = (mob.id * 2.399963) % (Math.PI * 2);
     const shape = MOB_LOOKS[mob.mob]?.shape;
     this.motion = shape === 'bat' ? 'flap' : shape === 'ghost' ? 'float' : 'walk';
     this.swarmOffset = mob.swarmIndex === 0 ? 0 : (mob.swarmIndex % 2 === 1 ? -1 : 1) * Math.ceil(mob.swarmIndex / 2) * SWARM_SPREAD * layout.tile;
-    if (this.invisible) this.body.setTint(0xd8c8ff);
+    this.baseTint = this.invisible ? 0xd8c8ff : null;
+    if (this.baseTint !== null) this.body.setTint(this.baseTint);
+  }
+
+  /** 맞음: 0.1초 하얀 깜빡. */
+  flash(timeMs: number): void {
+    this.flashUntil = timeMs + MOB_HIT_FLASH_MS;
+  }
+
+  /** 처치됨: 납작해지며 사라지는 연출 시작. */
+  die(timeMs: number): void {
+    if (this.dyingAt === null) this.dyingAt = timeMs;
+    this.hpBg.setVisible(false);
+    this.hpFill.setVisible(false);
+  }
+
+  /** 처치 연출이 끝났는가. 연출 중이면 자세를 갱신한다. */
+  updateDying(timeMs: number): boolean {
+    if (this.dyingAt === null) return true;
+    const k = (timeMs - this.dyingAt) / MOB_DEATH_MS;
+    if (k >= 1) return true;
+    const s = this.baseScale;
+    this.flashImg.setVisible(true);
+    this.body.setScale(s * (1 + 0.4 * k) * this.facing, s * (1 - 0.8 * k));
+    this.flashImg.setScale(this.body.scaleX, this.body.scaleY).setPosition(this.body.x, this.body.y).setRotation(0);
+    this.body.setRotation(0);
+    this.root.setAlpha(1 - k);
+    return false;
+  }
+
+  private setHp(ratio: number): void {
+    const show = ratio < 1;
+    if (this.hpBg.visible !== show) {
+      this.hpBg.setVisible(show);
+      this.hpFill.setVisible(show);
+    }
+    if (!show) return;
+    const r = ratio < 0 ? 0 : ratio;
+    this.hpFill.width = this.hpW * r;
+    this.hpFill.fillColor = r > 0.5 ? 0x5ee05e : r > 0.25 ? 0xffc93c : 0xff5a4e;
   }
 
   /** 머리 위 👁가 있는가 (투명 몹) */
@@ -77,7 +142,7 @@ export class MobSprite {
    * @param progress 보간한 진행도 (단위, 소수 가능)
    * @param timeMs 화면 시간 (흔들림용)
    */
-  update(path: SimPath, layout: MapLayout, progress: number, timeMs: number): void {
+  update(path: SimPath, layout: MapLayout, progress: number, timeMs: number, hpRatio = 1): void {
     const p = positionAt(path, progress);
     const dir = directionAt(path, progress);
     let { x, y } = unitsToPx(layout, p.x, p.y);
@@ -100,6 +165,18 @@ export class MobSprite {
     this.shadow.setScale(1 + bob / (this.bobAmp * 12), 1);
     if (this.invisible) this.body.setAlpha(0.38 + 0.14 * Math.sin(timeMs * 0.006 + this.phase));
     if (this.eyeIcon) this.eyeIcon.setY(this.eyeY + bob);
+    // 피격 깜빡
+    const flash = timeMs < this.flashUntil;
+    if (flash !== this.flashing) {
+      this.flashing = flash;
+      this.flashImg.setVisible(flash);
+    }
+    if (flash) {
+      this.flashImg.setPosition(this.body.x, this.body.y);
+      this.flashImg.setScale(this.body.scaleX, this.body.scaleY);
+      this.flashImg.setRotation(this.body.rotation);
+    }
+    this.setHp(hpRatio);
     this.root.setPosition(x, y);
     this.root.setDepth(MOB_DEPTH_BASE + y);
   }
@@ -113,6 +190,10 @@ export class MobSprite {
 export class MobLayer {
   private readonly sprites = new Map<number, MobSprite>();
   private seen = new Set<number>();
+  /** 처치 연출 중인 그림 (sim에서는 이미 사라짐) */
+  private dying: MobSprite[] = [];
+  /** 이번 프레임에 처치된 몹 id (sync에서 사라질 때 연출) */
+  private readonly killed = new Set<number>();
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -126,6 +207,16 @@ export class MobLayer {
    * @param prevProgress 직전 틱의 진행도 (id → 진행도). 없으면 보간 없이 지금 값
    * @param alpha 다음 틱까지 진행 비율 (0~1)
    */
+  /** 처치 사건: 다음 sync에서 사라질 때 납작해지는 연출. */
+  markKilled(id: number): void {
+    this.killed.add(id);
+  }
+
+  /** 피격 사건: 하얀 깜빡. */
+  flash(id: number, timeMs: number): void {
+    this.sprites.get(id)?.flash(timeMs);
+  }
+
   sync(mobs: readonly Mob[], prevProgress: ReadonlyMap<number, number>, alpha: number, timeMs: number): void {
     const seen = new Set<number>();
     for (const mob of mobs) {
@@ -137,15 +228,28 @@ export class MobLayer {
       }
       const prev = prevProgress.get(mob.id);
       const progress = prev === undefined ? mob.progress : prev + (mob.progress - prev) * alpha;
-      sprite.update(this.path, this.layout, progress, timeMs);
+      sprite.update(this.path, this.layout, progress, timeMs, mob.maxHp > 0 ? mob.hp / mob.maxHp : 1);
     }
     for (const id of this.seen) {
       if (!seen.has(id)) {
-        this.sprites.get(id)?.destroy();
+        const sprite = this.sprites.get(id);
         this.sprites.delete(id);
+        if (!sprite) continue;
+        if (this.killed.has(id)) {
+          sprite.die(timeMs);
+          this.dying.push(sprite);
+        } else sprite.destroy();
       }
     }
+    this.killed.clear();
     this.seen = seen;
+    if (this.dying.length > 0) {
+      this.dying = this.dying.filter((s) => {
+        if (!s.updateDying(timeMs)) return true;
+        s.destroy();
+        return false;
+      });
+    }
   }
 
   get count(): number {
@@ -161,7 +265,10 @@ export class MobLayer {
 
   destroy(): void {
     for (const s of this.sprites.values()) s.destroy();
+    for (const s of this.dying) s.destroy();
     this.sprites.clear();
+    this.dying = [];
     this.seen.clear();
+    this.killed.clear();
   }
 }

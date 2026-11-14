@@ -1,6 +1,7 @@
 /**
  * HUD 표시값 계산 (순수 함수, DOM 없음 → 단위 테스트로 "값이 sim과 일치"를 확인한다).
  * UI.md 4.1·4.2: 1줄 = 단계·타이머·몹 수(무한)/목숨(캠페인)·⏸, 2줄 = 돈·배속.
+ * 아래 띠 (M2): 놓인 타워 수/배치 칸 수 · 소환 안내 (돈이 모자라면 빨간색). 일꾼·승급·하단 메뉴는 M4·M3·M5.
  */
 import type { HudConfig } from '../../data/load';
 import type { MatchState } from '../../sim/state';
@@ -15,6 +16,12 @@ export interface HudInput {
   speed: number;
   /** 캠페인 테마 보스 배치표 (단계 → 보스 이름). 무한 모드는 없음 */
   bossNames?: Readonly<Record<string, string>>;
+  /** 판 위 타워 수 (생략하면 0) */
+  towerCount?: number;
+  /** 배치 칸 수 (생략하면 0) */
+  buildableCount?: number;
+  /** 소환 비용 (생략하면 0) */
+  summonCost?: number;
 }
 
 export interface HudModel {
@@ -37,6 +44,12 @@ export interface HudModel {
   /** 보스 단계 배너 (아니면 null) */
   bossBanner: string | null;
   tick: number;
+  /** 놓인 타워 수 / 배치 칸 수 */
+  towers: string;
+  /** 소환 안내 글자 */
+  summonHint: string;
+  /** 소환할 돈이 있는가 (없으면 안내가 빨간색) */
+  summonAffordable: boolean;
 }
 
 /** 남은 틱 → m:ss (올림: 0.1초 남아도 0:01). */
@@ -98,6 +111,22 @@ export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
     speed: `×${input.speed}`,
     bossBanner: state.bossStage ? `👑 보스 단계${bossName ? ` · ${bossName}` : ''} — 보스 준비 중` : null,
     tick: input.tick,
+    ...summonInfo(state.gold, input.towerCount ?? 0, input.buildableCount ?? 0, input.summonCost ?? 0),
+  };
+}
+
+/** 아래 띠: 타워 수와 소환 안내 (UI.md 4.3 '빈 배치 칸 터치 = 즉시 소환'). */
+export function summonInfo(
+  gold: number,
+  towerCount: number,
+  buildableCount: number,
+  cost: number,
+): Pick<HudModel, 'towers' | 'summonHint' | 'summonAffordable'> {
+  const full = buildableCount > 0 && towerCount >= buildableCount;
+  return {
+    towers: `${towerCount}/${buildableCount}`,
+    summonHint: full ? '빈 칸이 없어요' : `빈 칸을 눌러 소환 · ${withCommas(cost)}원`,
+    summonAffordable: !full && gold >= cost,
   };
 }
 
