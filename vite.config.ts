@@ -1,8 +1,14 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
 
 // 상대 경로(base './')로 빌드해야 Capacitor(파일 경로)와 PWA 하위 경로에서 그대로 동작한다.
 export default defineConfig({
   base: './',
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   server: {
     port: 5173,
     strictPort: true,

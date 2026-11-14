@@ -1,0 +1,352 @@
+/*
+ * DOM 오버레이 스타일.
+ * #stage는 9:16 상자 (기준 1080×1920). 글자·여백은 상자 너비 기준 컨테이너 단위(cqw)로 잡아
+ * 어떤 화면 크기에서도 캔버스와 같은 비율로 커지고 작아진다. 1cqw = 상자 너비의 1% (= 기준 10.8px).
+ */
+:root {
+  --bg: #0d1220;
+  --panel: rgba(13, 18, 32, 0.78);
+  --panel-line: rgba(255, 255, 255, 0.14);
+  --text: #f7f3e9;
+  --text-dim: #c9c3b4;
+  --gold: #f5b700;
+  --gold-deep: #c98a00;
+  --danger: #e53935;
+  --outline: #3b2416;
+  --font: -apple-system, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(120% 60% at 50% 0%, #1b2a52 0%, var(--bg) 70%);
+}
+
+#stage {
+  position: relative;
+  width: min(100vw, calc(100vh * 9 / 16));
+  width: min(100vw, calc(100dvh * 9 / 16));
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  container-type: size;
+  background: var(--bg);
+}
+
+#game,
+#ui-root {
+  position: absolute;
+  inset: 0;
+}
+
+#game canvas {
+  display: block;
+  touch-action: none;
+}
+
+#ui-root {
+  pointer-events: none;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.layer > * {
+  pointer-events: auto;
+}
+
+/* ---------- 버튼 ---------- */
+.btn {
+  font: inherit;
+  color: var(--text);
+  background: #2b3550;
+  border: 0.4cqw solid var(--panel-line);
+  border-radius: 2.4cqw;
+  padding: 2cqw 4cqw;
+  font-size: 4cqw;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.6cqw;
+  transition: transform 80ms ease-out, filter 80ms ease-out;
+}
+
+.btn:active {
+  transform: translateY(0.4cqw) scale(0.97);
+  filter: brightness(0.92);
+}
+
+.btn:disabled {
+  filter: grayscale(0.4) brightness(0.8);
+  cursor: default;
+}
+
+.btn:focus-visible {
+  outline: 0.6cqw solid #fff;
+  outline-offset: 0.6cqw;
+}
+
+.btn-primary {
+  color: #3b2416;
+  background: linear-gradient(180deg, #ffd85a 0%, var(--gold) 55%, var(--gold-deep) 100%);
+  border: 0.6cqw solid #fff3c4;
+  box-shadow:
+    0 1.2cqw 0 #8a5a00,
+    0 2.4cqw 4cqw rgba(0, 0, 0, 0.45);
+}
+
+.btn-primary:active {
+  box-shadow:
+    0 0.6cqw 0 #8a5a00,
+    0 1.6cqw 3cqw rgba(0, 0, 0, 0.45);
+}
+
+.btn-chip {
+  padding: 1.2cqw 2.6cqw;
+  font-size: 3.6cqw;
+  border-radius: 2cqw;
+  min-width: 10cqw;
+  min-height: 8.8cqw; /* 터치 영역 약 44px 이상 (기준 해상도) */
+}
+
+/* ---------- 화면 공통 ---------- */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ---------- 타이틀 ---------- */
+.title-screen {
+  justify-content: flex-start;
+}
+
+.title-logo {
+  margin-top: 46cqw;
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+  animation: logo-float 3s ease-in-out infinite;
+}
+
+.title-name {
+  margin: 0;
+  font-size: 12.4cqw;
+  font-weight: 900;
+  letter-spacing: -0.2cqw;
+  color: #fff7d6;
+  -webkit-text-stroke: 0.5cqw var(--outline);
+  paint-order: stroke fill;
+  text-shadow:
+    0 1.2cqw 0 #7a4a12,
+    0 2.4cqw 4cqw rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
+}
+
+.title-dice {
+  font-size: 9cqw;
+  filter: drop-shadow(0 1cqw 1.2cqw rgba(0, 0, 0, 0.5));
+  animation: dice-tilt 2.4s ease-in-out infinite;
+  display: inline-block;
+}
+
+.title-dice-right {
+  animation-delay: -1.2s;
+}
+
+.title-sub {
+  margin: 3.2cqw 0 0;
+  padding: 1.2cqw 3.6cqw;
+  font-size: 3.7cqw;
+  font-weight: 700;
+  color: var(--text);
+  background: rgba(13, 18, 32, 0.55);
+  border-radius: 10cqw;
+  text-shadow: 0 0.3cqw 0.6cqw rgba(0, 0, 0, 0.6);
+}
+
+.title-actions {
+  margin-top: auto;
+  margin-bottom: 21cqw; /* 아래쪽은 M8 하단 메뉴(상점·타워·덱…) 자리 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3cqw;
+}
+
+.btn-start {
+  position: relative;
+  min-width: 52cqw;
+  padding: 3.2cqw 8cqw;
+  font-size: 7cqw;
+  font-weight: 900;
+  border-radius: 4cqw;
+}
+
+/* 눌러 달라는 빛 고리. 버튼 자체는 움직이지 않게(터치 위치 고정) 가상 요소만 맥동한다. */
+.btn-start::after {
+  content: '';
+  position: absolute;
+  inset: -1.6cqw;
+  border-radius: 5.2cqw;
+  border: 0.8cqw solid rgba(255, 236, 160, 0.85);
+  pointer-events: none;
+  animation: start-pulse 1.6s ease-out infinite;
+}
+
+.btn-start .btn-icon {
+  font-size: 5.2cqw;
+}
+
+.title-version {
+  position: absolute;
+  right: 3cqw;
+  bottom: 2.4cqw;
+  font-size: 2.8cqw;
+  color: var(--text-dim);
+  opacity: 0.8;
+}
+
+@keyframes logo-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.2cqw);
+  }
+}
+
+@keyframes dice-tilt {
+  0%,
+  100% {
+    transform: rotate(-10deg);
+  }
+  50% {
+    transform: rotate(12deg) translateY(-0.8cqw);
+  }
+}
+
+@keyframes start-pulse {
+  0% {
+    transform: scale(0.96);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-logo,
+  .title-dice,
+  .btn-start::after {
+    animation: none;
+  }
+}
+
+/* ---------- HUD ---------- */
+.hud {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  padding: 2cqw 2.4cqw;
+  background: linear-gradient(180deg, rgba(13, 18, 32, 0.92) 0%, rgba(13, 18, 32, 0.6) 100%);
+  border-bottom: 0.3cqw solid var(--panel-line);
+}
+
+.hud-row {
+  display: flex;
+  align-items: center;
+  gap: 2.4cqw;
+  font-size: 4cqw;
+  font-weight: 700;
+}
+
+.hud-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.2cqw;
+}
+
+.hud-label {
+  color: var(--text-dim);
+  font-size: 3.4cqw;
+}
+
+.hud-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-tick .hud-value {
+  min-width: 12cqw;
+}
+
+.hud-spacer {
+  flex: 1;
+}
+
+.hud-speed {
+  color: var(--gold);
+}
+
+/* ---------- 오류 ---------- */
+.error-screen {
+  justify-content: center;
+  gap: 3cqw;
+  padding: 6cqw;
+  background: rgba(13, 18, 32, 0.95);
+}
+
+.error-screen h2 {
+  margin: 0;
+  font-size: 5.4cqw;
+  color: #ffb4a8;
+}
+
+.error-detail {
+  width: 100%;
+  max-height: 60%;
+  overflow: auto;
+  margin: 0;
+  padding: 3cqw;
+  font-size: 3cqw;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 2cqw;
+  -webkit-user-select: text;
+  user-select: text;
+}
