@@ -106,6 +106,11 @@ export interface WorldOptions {
   maxPlayers?: number;
   /** 틱마다 돌릴 시스템 (기본 없음) */
   systems?: System[];
+  /**
+   * 판 상태 (단계·목숨·돈 …). 시스템이 고치고 해시에 들어간다 → 정수·문자열·불리언과 그 배열/객체만.
+   * 모양은 쓰는 쪽이 정한다 (M1: `src/sim/state.ts` MatchState). 기본 빈 객체.
+   */
+  state?: object;
 }
 
 /** 난수 흐름 이름. 흐름끼리 독립이다 (MULTIPLAYER.md 4.2). */
@@ -122,6 +127,8 @@ export class World {
   readonly queue: CommandQueue;
   /** 실행된 명령 기록 (리플레이 M3-12의 재료). 각 명령은 얼린 객체다. */
   readonly executed: Command[] = [];
+  /** 판 상태 (해시에 들어감). WorldOptions.state 참고. */
+  readonly state: object;
 
   private readonly rngRoot: Rng;
   private readonly streams = new Map<string, Rng>();
@@ -149,6 +156,7 @@ export class World {
       this.streams.set(streamGamble(p), this.rngRoot.fork(streamGamble(p)));
     }
     this.systems = [...(options.systems ?? [])];
+    this.state = options.state ?? {};
     this.handlers = {
       noop: () => {},
     };
@@ -221,6 +229,7 @@ export class World {
       rng,
       nextId: this.entities.nextId,
       entities: this.entities.list(),
+      state: this.state,
     };
   }
 
