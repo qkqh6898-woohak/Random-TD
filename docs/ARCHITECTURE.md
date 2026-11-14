@@ -30,12 +30,14 @@ Random-TD/
 │  ├─ main.ts               진입점 (업데이트 확인 → 게임 시작)
 │  ├─ config/               화면 크기, 상수
 │  ├─ data/                 ★ 밸런스·콘텐츠 데이터 (JSON) — 업데이트로 가장 자주 바뀜
-│  │  ├─ towers.json        타워 32종 스탯·특색 능력(Lv1~15 수치)·각성 능력
+│  │  ├─ towers.json        타워 65종 스탯·특색 능력(Lv1~15 수치)·각성 능력·해금 구분
+│  │  ├─ decks.json         기본 덱, 추천 덱, 덱 규칙(등급별 5종, 특색 최소 수)
+│  │  ├─ enemies.json       몹 8종, 보스 5종, 도전 보스 10종, 단계별 등장 구성
+│  │  ├─ cards.json         보스 효과 카드 12장
 │  │  ├─ grades.json        등급 배율, 소환·신 확률
 │  │  ├─ recipes.json       히든 조합식
 │  │  ├─ mobs.json          몹 종류, 체력 공식 계수
 │  │  ├─ stages.json        단계 시간, 몹 수, 보스 단계
-│  │  ├─ cards.json         보스 효과 카드
 │  │  ├─ challenges.json    도전 단계표
 │  │  ├─ upgrades.json      강화 비용·효과
 │  │  ├─ gamble.json        도박 배율표
@@ -50,8 +52,8 @@ Random-TD/
 │  │  ├─ account_missions.json 일일·주간 미션 풀
 │  │  ├─ achievements.json  업적·칭호
 │  │  ├─ animations.json    타워·몹별 대기/공격/특색 동작 정의
-│  │  └─ maps/              원형(무한)·지그재그(스테이지) 타일맵
-│  │                        (지그재그는 직각 회전 5번 이상 검증 테스트 포함)
+│  │  └─ maps/              ✅ crossroads.json(사거리 미로), circle.json(순환의 정원) 작성됨
+│  │                        (스테이지 맵은 직각 회전 5번 이상 자동 검사)
 │  ├─ core/                 게임 상태, 시드 난수(RNG), 이벤트 버스
 │  ├─ systems/              게임 규칙 (화면과 분리 → 단위 테스트 가능)
 │  │  ├─ SpawnSystem.ts     몹 생성, 단계 진행
