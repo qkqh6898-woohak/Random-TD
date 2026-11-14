@@ -58,17 +58,22 @@ export interface MapRendererOptions {
 
 export class MapRenderer {
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
+  /** 구운 바닥 텍스처 키 (배치가 같으면 다시 그리지 않고 같이 쓴다) */
+  readonly textureKey: string;
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly map: SimMap,
     private readonly layout: MapLayout,
     private readonly opts: MapRendererOptions,
-  ) {}
+  ) {
+    // 칸 크기만이 아니라 위치도 키에 넣는다: HUD 높이에 따라 같은 칸 크기로 위아래만 달라질 수 있다
+    this.textureKey = `map-${map.id}-${layout.tile}-${layout.originX}-${layout.originY}`;
+  }
 
   /** 바닥 텍스처를 굽고 장면에 올린다. */
   draw(): void {
-    const key = `map-${this.map.id}-${this.layout.tile}`;
+    const key = this.textureKey;
     if (!this.scene.textures.exists(key)) {
       const g = this.scene.make.graphics({}, false);
       this.drawBackground(g);
@@ -81,9 +86,17 @@ export class MapRenderer {
     if (this.map.exit) this.drawExitGate(this.map.exit[0], this.map.exit[1]);
   }
 
-  destroy(): void {
-    for (const o of this.objects) o.destroy();
+  /**
+   * 장면에서 내린다 (화면 크기가 바뀌어 다시 배치할 때).
+   * @param removeTexture 구운 바닥 텍스처도 지운다 (다른 배치로 바뀌어 다시 쓰지 않을 때)
+   */
+  destroy(removeTexture = false): void {
+    for (const o of this.objects) {
+      this.scene.tweens.killTweensOf(o);
+      o.destroy();
+    }
     this.objects.length = 0;
+    if (removeTexture && this.scene.textures.exists(this.textureKey)) this.scene.textures.remove(this.textureKey);
   }
 
   private drawBackground(g: Phaser.GameObjects.Graphics): void {

@@ -2,17 +2,26 @@
  * 맵 화면 배치 (순수 계산, Phaser 없음 → 단위 테스트 가능).
  *
  * - MAPS.md 0장: 맵은 화면 가로폭에 맞춰 확대 (13칸 기준 1칸 ≈ 화면 폭의 1/13.5).
- * - 위는 DOM HUD(2줄), 아래는 M2부터 들어갈 버튼·하단 메뉴 자리 → 그 사이 영역에 맵 전체(화면 밖 등장·퇴장 칸 포함)가 들어가게.
+ * - 위는 DOM HUD(2줄 + 보스 막대 자리, 실제 높이를 잼), 아래는 M2부터 들어갈 버튼·하단 메뉴 자리
+ *   → 그 사이 영역에 맵 전체(화면 밖 등장·퇴장 칸 포함)가 들어가게. HUD가 맵 칸을 덮지 않는다.
  * - 좌표 변환: sim 단위(1칸 = 1000) → 화면 픽셀. sim 칸 중심 (x·1000 + 500)이 화면 칸 중심에 온다.
  */
 import { TILE } from '../sim/Fixed';
 import type { SimMap } from '../sim/map';
 import { GAME_HEIGHT, GAME_WIDTH } from './config';
 
-/** 위 HUD가 덮는 높이 (기준 해상도 px). DOM HUD 2줄 ≈ 무대 높이의 16%. */
+/**
+ * 위 HUD가 덮는 높이의 최소값 (기준 해상도 px). DOM HUD 2줄 ≈ 무대 높이의 16%.
+ * 실제 맵 위쪽 끝은 DOM HUD(2줄 + 보스 막대 자리)를 재서 정한다 → `mapAreaBelowHud`.
+ * (버튼 최소 44px 때문에 좁은 화면일수록 HUD가 기준 px로 더 커진다.)
+ */
 export const HUD_TOP_PX = 330;
 /** 아래 버튼·하단 메뉴 자리 (M2~). */
 export const BOTTOM_UI_PX = 330;
+/** HUD 아래 끝과 맵 사이 여백 (기준 px) */
+export const MAP_TOP_GAP_PX = 12;
+/** 맵 영역 최소 높이 (기준 px): 아주 납작한 화면에서 HUD가 커져도 맵이 사라지지 않게 */
+export const MIN_MAP_AREA_PX = 640;
 
 export interface Rect {
   x: number;
@@ -40,6 +49,28 @@ export interface MapLayout {
   minRow: number;
   cols: number;
   rows: number;
+}
+
+/**
+ * DOM HUD가 실제로 차지하는 높이(기준 px)를 받아 맵 영역을 정한다 (UI.md 4.1: HUD 2줄 → 보스 막대 줄 → 맵).
+ * HUD 아래 끝 + 여백부터 아래 메뉴 자리 위까지. HUD가 작게 재져도(측정 전 0 등) `HUD_TOP_PX`보다 위로 올리지 않고,
+ * 맵 영역이 `MIN_MAP_AREA_PX`보다 작아지게 내리지도 않는다.
+ */
+export function mapAreaBelowHud(hudBottomPx: number): Rect {
+  const measured = Number.isFinite(hudBottomPx) && hudBottomPx > 0 ? Math.ceil(hudBottomPx) + MAP_TOP_GAP_PX : 0;
+  const maxTop = GAME_HEIGHT - BOTTOM_UI_PX - MIN_MAP_AREA_PX;
+  const y = Math.min(maxTop, Math.max(HUD_TOP_PX, measured));
+  return { x: 0, y, w: GAME_WIDTH, h: GAME_HEIGHT - y - BOTTOM_UI_PX };
+}
+
+/** 무대의 CSS px → 기준 px (캔버스가 무대 너비에 맞춰 FIT 되므로 비율 = 1080 / 무대 너비). 무대가 아직 0이면 0. */
+export function cssToGamePx(cssPx: number, stageCssWidth: number): number {
+  return stageCssWidth > 0 ? (cssPx * GAME_WIDTH) / stageCssWidth : 0;
+}
+
+/** 기준 px → 무대의 CSS px. */
+export function gameToCssPx(gamePx: number, stageCssWidth: number): number {
+  return (gamePx * stageCssWidth) / GAME_WIDTH;
 }
 
 /** 맵(격자 + 웨이포인트)이 영역 안에 꽉 차게 들어가는 배치. 가로·세로 반 칸씩 여백. */

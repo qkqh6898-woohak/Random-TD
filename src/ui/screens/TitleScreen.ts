@@ -1,6 +1,7 @@
 /**
  * 타이틀 화면 (UI.md 2장). M1: 로고 + [시작] = 무한 모드(순환의 정원).
- * ?debug=1 이면 [캠페인 1 (디버그)] = 테마 1 사거리 미로 (월드맵·덱 확인 화면은 M6).
+ * ?debug=1 이면 [캠페인 1 (디버그)] = 테마 1 사거리 미로 (월드맵·덱 확인 화면은 M6). 이 버튼은 [시작] 아래 여백에 따로 띄워
+ * [시작] 위치가 debug와 같게 둔다.
  * 계정 레벨·행운석·하단 메뉴·이어하기는 M6~M8에서 붙인다.
  * 배경(하늘·성벽·대기 동작 타워)은 Phaser Boot 장면이 그린다 — 이 화면은 그 위의 DOM 층.
  */
@@ -58,7 +59,8 @@ export function createTitleScreen(opts: TitleScreenOptions): UiView {
       h('span', { class: 'title-dice title-dice-right', text: '🎲', attrs: { 'aria-hidden': 'true' } }),
     ),
     h('p', { class: 'title-sub', text: '아트라 연합군이여, 녹스 군단을 막아라!' }),
-    h('div', { class: 'title-actions' }, start, campaign),
+    // debug 버튼은 따로 띄워 [시작] 자리가 debug 여부와 상관없이 같게 (가운데 캐릭터를 덮지 않게)
+    h('div', { class: 'title-actions' }, start, campaign ? h('div', { class: 'title-debug' }, campaign) : null),
     h('div', { class: 'title-version', text: opts.version }),
   );
   return { el };

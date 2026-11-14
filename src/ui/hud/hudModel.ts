@@ -26,7 +26,12 @@ export interface HudModel {
   /** 무한: 몹 수, 캠페인: 목숨 */
   countKind: 'mobs' | 'lives';
   count: string;
+  /** 빨간색 (몹 120 이상 / 목숨 5 이하) */
   countWarn: boolean;
+  /** 깜빡임 — 몹 수 경고만 (UI.md 4.2: 목숨은 빨간색만) */
+  countBlink: boolean;
+  /** 화면 가장자리 붉은 테두리 — 무한 모드 몹 120 이상 */
+  edgeWarn: boolean;
   gold: string;
   speed: string;
   /** 보스 단계 배너 (아니면 null) */
@@ -78,6 +83,7 @@ export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
   const campaign = state.mode === 'campaign';
   const secLeft = input.ticksLeft <= 0 ? 0 : Math.ceil(input.ticksLeft / TICK_HZ);
   const bossName = input.bossNames?.[String(state.stage)];
+  const mobWarn = !campaign && input.mobCount >= cfg.mobWarnCount;
   return {
     stage: formatStage(state),
     boss: state.bossStage,
@@ -85,12 +91,20 @@ export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
     timerWarn: secLeft <= cfg.timerWarnSeconds,
     countKind: campaign ? 'lives' : 'mobs',
     count: campaign ? String(state.lives) : `${input.mobCount}/${state.mobLimit}`,
-    countWarn: campaign ? state.lives <= cfg.livesWarn : input.mobCount >= cfg.mobWarnCount,
+    countWarn: campaign ? state.lives <= cfg.livesWarn : mobWarn,
+    countBlink: mobWarn,
+    edgeWarn: mobWarn,
     gold: formatGold(state.gold),
     speed: `×${input.speed}`,
     bossBanner: state.bossStage ? `👑 보스 단계${bossName ? ` · ${bossName}` : ''} — 보스 준비 중` : null,
     tick: input.tick,
   };
+}
+
+/** 목숨이 줄었는가 → 하트 깨짐 연출 (UI.md 4.2). 앞뒤 모두 목숨 표시(캠페인)일 때만 비교한다. */
+export function livesDropped(prev: Partial<Pick<HudModel, 'countKind' | 'count'>>, next: Pick<HudModel, 'countKind' | 'count'>): boolean {
+  if (prev.countKind !== 'lives' || next.countKind !== 'lives' || prev.count === undefined) return false;
+  return Number(next.count) < Number(prev.count);
 }
 
 /** 패배 화면 글자. */

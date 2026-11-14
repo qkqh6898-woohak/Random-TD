@@ -2,10 +2,24 @@
  * M1-8 HUD 표시값 (값이 sim과 일치) + M1-7 맵 화면 배치 (순수 함수, DOM·Phaser 없음).
  */
 import { describe, expect, it } from 'vitest';
-import { buildHudModel, defeatText, formatGold, formatStage, formatTimer, stageToastText, withCommas, type HudInput } from '../../src/ui/hud/hudModel';
-import { computeMapLayout, MAP_AREA, pathCells, pxToTile, tileCenterPx, unitsToPx } from '../../src/view/layout';
+import { buildHudModel, defeatText, formatGold, formatStage, formatTimer, livesDropped, stageToastText, withCommas, type HudInput } from '../../src/ui/hud/hudModel';
+import {
+  BOTTOM_UI_PX,
+  HUD_TOP_PX,
+  MAP_AREA,
+  MAP_TOP_GAP_PX,
+  MIN_MAP_AREA_PX,
+  computeMapLayout,
+  cssToGamePx,
+  gameToCssPx,
+  mapAreaBelowHud,
+  pathCells,
+  pxToTile,
+  tileCenterPx,
+  unitsToPx,
+} from '../../src/view/layout';
 import { buildSimMap, positionAt, tileCenter } from '../../src/sim/map';
-import { GAME_WIDTH } from '../../src/view/config';
+import { GAME_HEIGHT, GAME_WIDTH } from '../../src/view/config';
 import type { Match } from '../../src/sim/match';
 import { campaign, data, infinite, jumpToStage } from '../helpers/match';
 
@@ -86,6 +100,35 @@ describe('HUD 값 = sim 값', () => {
     expect(buildHudModel(inputOf(camp), cfg)).toMatchObject({ count: '5', countWarn: true });
   });
 
+  it('경고 연출 (UI.md 4.2, 검토 반영): 몹 120 이상 = 빨강 + 깜빡 + 가장자리 테두리 / 목숨 5 이하 = 빨강만', () => {
+    const base = inputOf(infinite(3));
+    expect(buildHudModel({ ...base, mobCount: 119 }, cfg)).toMatchObject({ countWarn: false, countBlink: false, edgeWarn: false });
+    expect(buildHudModel({ ...base, mobCount: 120 }, cfg)).toMatchObject({ countWarn: true, countBlink: true, edgeWarn: true });
+    expect(buildHudModel({ ...base, mobCount: 151 }, cfg)).toMatchObject({ countWarn: true, countBlink: true, edgeWarn: true });
+    const camp = campaign(1);
+    camp.state.lives = 5;
+    // 캠페인은 몹이 많아도 몹 수 경고가 아니다 (목숨으로 판정)
+    expect(buildHudModel({ ...inputOf(camp), mobCount: 140 }, cfg)).toMatchObject({ countWarn: true, countBlink: false, edgeWarn: false });
+    camp.state.lives = 6;
+    expect(buildHudModel({ ...inputOf(camp), mobCount: 140 }, cfg)).toMatchObject({ countWarn: false, countBlink: false, edgeWarn: false });
+  });
+
+  it('하트 깨짐: 목숨이 줄었을 때만 (늘거나 같거나, 무한 모드·처음 그릴 때는 아님)', () => {
+    const lives = (n: number) => ({ countKind: 'lives' as const, count: String(n) });
+    expect(livesDropped(lives(20), lives(19))).toBe(true);
+    expect(livesDropped(lives(3), lives(1))).toBe(true);
+    expect(livesDropped(lives(19), lives(19))).toBe(false);
+    expect(livesDropped(lives(5), lives(6))).toBe(false);
+    expect(livesDropped({}, lives(20))).toBe(false);
+    expect(livesDropped({ countKind: 'mobs', count: '30/150' }, lives(20))).toBe(false);
+    expect(livesDropped({ countKind: 'mobs', count: '30/150' }, { countKind: 'mobs', count: '29/150' })).toBe(false);
+    // sim에서 몹이 출구에 닿은 틱 앞뒤 모델
+    const camp = campaign(1);
+    const before = buildHudModel(inputOf(camp), cfg);
+    camp.state.lives -= 1;
+    expect(livesDropped(before, buildHudModel(inputOf(camp), cfg))).toBe(true);
+  });
+
   it('보스 단계: 👑 표시 + 배너 (캠페인은 보스 배치표 이름)', () => {
     const match = infinite(4);
     jumpToStage(match, 10);
@@ -149,6 +192,32 @@ describe('맵 화면 배치 (MAPS.md 0장: 화면 가로폭에 맞춤)', () => {
     const p = positionAt(map.path, 7000);
     const t = pxToTile(L, unitsToPx(L, p.x, p.y).x, unitsToPx(L, p.x, p.y).y);
     expect(t).toEqual({ tx: 7, ty: 2 });
+  });
+
+  it('맵 영역 = 실제 HUD 아래 (검토 반영: 보스 막대·44px 버튼 때문에 커진 HUD가 맵 윗줄을 덮지 않게)', () => {
+    // 측정 전(0·NaN)이나 HUD가 작으면 최소 HUD_TOP_PX
+    expect(mapAreaBelowHud(0)).toEqual(MAP_AREA);
+    expect(mapAreaBelowHud(Number.NaN)).toEqual(MAP_AREA);
+    expect(mapAreaBelowHud(200).y).toBe(HUD_TOP_PX);
+    // 412×915: HUD 2줄 + 보스 막대 자리 ≈ 383 기준 px → 맵은 그 아래 + 여백
+    const area = mapAreaBelowHud(382.4);
+    expect(area.y).toBe(383 + MAP_TOP_GAP_PX);
+    expect(area.y + area.h).toBe(GAME_HEIGHT - BOTTOM_UI_PX);
+    expect(area.w).toBe(GAME_WIDTH);
+    const L = computeMapLayout(circle, area);
+    expect(L.originY + L.minRow * L.tile).toBeGreaterThanOrEqual(383);
+    expect(L.originY + (L.minRow + L.rows) * L.tile).toBeLessThanOrEqual(GAME_HEIGHT - BOTTOM_UI_PX);
+    // 가로 화면처럼 HUD가 아주 커도 맵 영역은 최소 높이를 지킨다
+    const flat = mapAreaBelowHud(5000);
+    expect(flat.h).toBe(MIN_MAP_AREA_PX);
+    expect(computeMapLayout(circle, flat).tile).toBeGreaterThan(40);
+  });
+
+  it('CSS px ↔ 기준 px (무대 너비 기준), 무대 너비 0이면 0', () => {
+    expect(cssToGamePx(146, 412)).toBeCloseTo(382.7, 1);
+    expect(cssToGamePx(100, 360)).toBe(300);
+    expect(cssToGamePx(100, 0)).toBe(0);
+    expect(gameToCssPx(cssToGamePx(123, 412), 412)).toBeCloseTo(123, 9);
   });
 
   it('경로 칸 목록: 순환 28칸, 사거리 미로는 맵 안 73칸 + 화면 밖 2칸', () => {

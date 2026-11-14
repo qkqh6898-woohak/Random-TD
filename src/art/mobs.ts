@@ -303,3 +303,46 @@ export function ensureMobTexture(scene: Phaser.Scene, mobId: string, legionColor
   g.destroy();
   return key;
 }
+
+/** 투명 몹 머리 위 👁 아이콘 텍스처 (ENEMIES.md 5장 '화면 표시', ART.md 2.4) */
+export const EYE_ICON_KEY = 'mob-eye-icon';
+export const EYE_ICON_W = 64;
+export const EYE_ICON_H = 44;
+
+/**
+ * 👁 아이콘: 흰 아몬드 눈 + 보라 눈동자 + 반짝임, 어두운 테두리 (글꼴 이모지에 기대지 않고 직접 그림 → 어느 기기에서나 같게).
+ * 한 번 구워 모든 투명 몹이 같이 쓴다.
+ */
+export function ensureEyeIconTexture(scene: Phaser.Scene): string {
+  if (scene.textures.exists(EYE_ICON_KEY)) return EYE_ICON_KEY;
+  const g = scene.make.graphics({}, false);
+  const cx = EYE_ICON_W / 2;
+  const cy = EYE_ICON_H / 2;
+  const hw = EYE_ICON_W / 2 - 4;
+  const hh = EYE_ICON_H / 2 - 5;
+  // 아몬드 모양: 위아래 호를 점으로 이어 붙인다
+  const pts: number[] = [];
+  const n = 14;
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const x = cx - hw + t * hw * 2;
+    pts.push(x, cy - Math.sin(t * Math.PI) * hh);
+  }
+  for (let i = n - 1; i > 0; i--) {
+    const t = i / n;
+    const x = cx - hw + t * hw * 2;
+    pts.push(x, cy + Math.sin(t * Math.PI) * hh);
+  }
+  g.fillStyle(0x000000, 0.35);
+  g.fillCircle(cx, cy + 3, hw * 0.9);
+  fillPoly(g, pts, 0xffffff);
+  g.fillStyle(EYE, 1);
+  g.fillCircle(cx, cy, hh * 0.78);
+  g.fillStyle(0x2a0b4d, 1);
+  g.fillCircle(cx, cy, hh * 0.38);
+  g.fillStyle(0xffffff, 1);
+  g.fillCircle(cx + hh * 0.3, cy - hh * 0.3, hh * 0.22);
+  g.generateTexture(EYE_ICON_KEY, EYE_ICON_W, EYE_ICON_H);
+  g.destroy();
+  return EYE_ICON_KEY;
+}

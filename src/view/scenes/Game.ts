@@ -8,6 +8,8 @@
  * - 무한 모드: 순환의 정원 / 캠페인(debug): 테마 1 사거리 미로.
  * - ⏸ 또는 앱이 백그라운드로 가면 일시정지 메뉴(UI.md 4.6). 열려 있는 동안 TickClock 배속 0 = 게임 시간 정지.
  * - 패배하면 시간을 멈추고 패배 화면 ([다시 하기] / [타이틀로]).
+ * - 맵 배치: DOM HUD(2줄 + 보스 막대 자리)의 실제 높이를 재서 그 아래에 맵을 놓는다 → HUD가 맵 칸을 가리지 않는다.
+ *   버튼 최소 44px 때문에 좁은·가로 화면일수록 HUD가 기준 px로 커지므로, 화면 크기가 바뀌면(ResizeObserver) 다시 배치한다.
  */
 import Phaser from 'phaser';
 import { hexToInt } from '../../art/palette';
@@ -21,7 +23,7 @@ import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
 import { createPauseMenu } from '../../ui/screens/PauseMenu';
 import { SCENE_BOOT, SCENE_GAME } from '../config';
 import type { GameContext } from '../context';
-import { computeMapLayout, type MapLayout } from '../layout';
+import { computeMapLayout, cssToGamePx, mapAreaBelowHud, type MapLayout, type Rect } from '../layout';
 import { MapRenderer } from '../render/MapRenderer';
 import { MobLayer } from '../render/MobSprite';
 
@@ -43,7 +45,12 @@ export class GameScene extends Phaser.Scene {
   private clock!: TickClock;
   private hud!: HudView;
   private layout!: MapLayout;
+  private mapArea!: Rect;
+  private mapRenderer: MapRenderer | null = null;
   private mobLayer!: MobLayer;
+  /** HUD 크기가 바뀌었다 → 다음 프레임에 맵 배치를 다시 확인 */
+  private layoutDirty = false;
+  private resizeObserver: ResizeObserver | null = null;
   private speeds: number[] = [1];
   private paused = false;
   private gameOver = false;
@@ -59,7 +66,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(data: GameSceneData): void {
-    const { game: config, maps, towers, enemies, campaign } = this.ctx.data;
+    const { game: config, campaign } = this.ctx.data;
     this.sceneData = { seed: data?.seed ?? 0, mode: data?.mode ?? 'infinite', theme: data?.theme ?? 1 };
     this.match = createMatch(this.ctx.data, {
       seed: this.sceneData.seed,
@@ -76,23 +83,7 @@ export class GameScene extends Phaser.Scene {
     this.bossNames =
       this.sceneData.mode === 'campaign' ? campaign.themes.find((t) => t.theme === this.sceneData.theme)?.bossSchedule : undefined;
 
-    const mapData = maps[this.match.state.mapId];
-    if (!mapData) throw new Error(`맵 데이터가 없다: ${this.match.state.mapId}`);
-    this.layout = computeMapLayout(mapData);
-    new MapRenderer(this, this.match.map, this.layout, {
-      kingdomColor: hexToInt(towers.factions.kingdom?.color ?? '#2E5AAC'),
-    }).draw();
-
-    const legions = (enemies.hierarchy as { legions?: Record<string, { color?: string }> }).legions ?? {};
-    const sizes = new Map(enemies.mobs.map((m) => [m.id, m.size]));
-    this.mobLayer = new MobLayer(
-      this,
-      this.layout,
-      this.match.map.path,
-      { legionColor: (legion) => hexToInt(legions[legion]?.color ?? '#9B4DFF') },
-      (id) => sizes.get(id) ?? '소형',
-    );
-
+    // HUD를 먼저 띄워 높이를 잰 뒤 그 아래에 맵을 놓는다
     this.hud = createHud({
       onSpeed: () => {
         if (this.paused || this.gameOver) return;
@@ -106,11 +97,25 @@ export class GameScene extends Phaser.Scene {
     this.ctx.ui.show('hud', this.hud);
     this.refreshHud();
 
+    this.mapRenderer = null;
+    this.applyLayout(this.measureMapArea());
+    this.layoutDirty = false;
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.layoutDirty = true;
+      });
+      this.resizeObserver.observe(this.hud.band);
+      this.resizeObserver.observe(this.ctx.ui.el);
+    }
+
     // 앱이 백그라운드로 가면 자동 일시정지 (UI.md 7장: 돌아오면 일시정지 메뉴)
     this.game.events.on(Phaser.Core.Events.HIDDEN, this.pause, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.game.events.off(Phaser.Core.Events.HIDDEN, this.pause, this);
+      this.resizeObserver?.disconnect();
+      this.resizeObserver = null;
       this.mobLayer.destroy();
+      this.mapRenderer = null;
       this.ctx.ui.clear('hud');
       if (this.paused || this.gameOver) this.ctx.ui.clear('screen');
       this.paused = false;
@@ -121,6 +126,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   override update(time: number, deltaMs: number): void {
+    if (this.layoutDirty) {
+      this.layoutDirty = false;
+      const area = this.measureMapArea();
+      // 글자 반올림 같은 작은 흔들림으로 맵을 다시 굽지 않게 (기준 px 2 이상 바뀔 때만)
+      if (Math.abs(area.y - this.mapArea.y) >= 2) this.applyLayout(area);
+    }
     if (!this.gameOver) this.runTicks(this.clock.advance(deltaMs));
     this.handleEvents();
     this.mobLayer.sync(this.match.mobs(), this.prevProgress, this.gameOver ? 1 : this.clock.alpha, time);
@@ -156,6 +167,48 @@ export class GameScene extends Phaser.Scene {
   /** 화면에 그려진 몹 수 (E2E가 sim 몹 수와 비교). */
   get renderedMobCount(): number {
     return this.mobLayer.count;
+  }
+
+  /** 머리 위 👁를 단 몹 그림 수 (E2E가 sim 투명 몹 수와 비교). */
+  get renderedEyeIconCount(): number {
+    return this.mobLayer.eyeIconCount;
+  }
+
+  /** 지금 맵 배치 (E2E가 칸 위치를 화면 좌표로 바꿀 때, M2 탭 입력). 읽기 전용. */
+  get mapLayout(): Readonly<MapLayout> {
+    return this.layout;
+  }
+
+  /** HUD 띠 아래 끝(기준 px)으로 맵 영역을 정한다. */
+  private measureMapArea(): Rect {
+    return mapAreaBelowHud(cssToGamePx(this.hud.bandBottom(), this.ctx.ui.el.clientWidth));
+  }
+
+  /** 맵 영역에 맞춰 바닥을 굽고 몹 층을 (다시) 만든다. 몹 그림은 다음 sync에서 새 배치로 다시 생긴다. */
+  private applyLayout(area: Rect): void {
+    const { maps, towers, enemies } = this.ctx.data;
+    const mapData = maps[this.match.state.mapId];
+    if (!mapData) throw new Error(`맵 데이터가 없다: ${this.match.state.mapId}`);
+    const prevRenderer = this.mapRenderer;
+    if (this.mobLayer && prevRenderer) this.mobLayer.destroy();
+    this.mapArea = area;
+    this.layout = computeMapLayout(mapData, area);
+    const renderer = new MapRenderer(this, this.match.map, this.layout, {
+      kingdomColor: hexToInt(towers.factions.kingdom?.color ?? '#2E5AAC'),
+    });
+    if (prevRenderer) prevRenderer.destroy(prevRenderer.textureKey !== renderer.textureKey);
+    renderer.draw();
+    this.mapRenderer = renderer;
+
+    const legions = (enemies.hierarchy as { legions?: Record<string, { color?: string }> }).legions ?? {};
+    const sizes = new Map(enemies.mobs.map((m) => [m.id, m.size]));
+    this.mobLayer = new MobLayer(
+      this,
+      this.layout,
+      this.match.map.path,
+      { legionColor: (legion) => hexToInt(legions[legion]?.color ?? '#9B4DFF') },
+      (id) => sizes.get(id) ?? '소형',
+    );
   }
 
   private handleEvents(): void {

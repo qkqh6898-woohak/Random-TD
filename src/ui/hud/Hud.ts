@@ -1,9 +1,14 @@
 /**
  * 게임 HUD (DOM, UI.md 4.1·4.2, DEV_PLAN M1-8).
  *
- * 1줄: 단계(보스 단계는 👑) · ⏱ 단계 남은 시간 · 👾 몹 수/한도(무한) 또는 ❤ 목숨(캠페인) · [⏭ debug] · ⏸
- * 2줄: 💰 돈 · 배속
- * 보스 단계에는 아래에 보스 배너.
+ * 1줄: 단계(보스 단계는 👑) · ⏱ 단계 남은 시간 · 👾 몹 수/한도(무한) 또는 ❤ 목숨(캠페인) · ⏸
+ * 2줄: 💰 돈 · [⏭ debug] · 배속
+ * 그 아래: 보스 막대 자리 (UI.md 4.1 '보스가 있을 때만'). 자리는 늘 비워 두고 보스 단계에만 보인다
+ *   → 보스 단계가 와도 HUD 높이가 그대로라 맵이 밀리거나 가려지지 않는다. 맵 위쪽 끝은 Game 장면이 이 높이를 재서 정한다.
+ *
+ * 터치: HUD 띠 자체는 터치를 통과시키고(pointer-events: none) 버튼만 받는다 → HUD가 캔버스(맵 칸) 터치를 막지 않는다.
+ * 경고 (UI.md 4.2): 남은 10초 이하 노란색 / 몹 120 이상 빨간색 깜빡 + 화면 가장자리 붉은 테두리 /
+ *   목숨 5 이하 빨간색(깜빡이지 않음), 목숨이 줄 때마다 하트가 깨지는 연출.
  *
  * 값 계산은 hudModel.ts(순수 함수, 단위 테스트)에서 하고, 여기서는 바뀐 글자만 DOM에 쓴다.
  * HUD는 sim을 읽기만 한다. 배속은 화면 설정(TickClock), 단계 건너뛰기(debug)는 명령으로 보낸다.
@@ -11,7 +16,10 @@
  */
 import { h } from '../dom';
 import type { UiView } from '../root';
-import type { HudModel } from './hudModel';
+import { livesDropped, type HudModel } from './hudModel';
+
+/** 하트 깨짐 연출 길이 (ms) — styles.css `heart-break`와 같게 */
+export const HEART_BREAK_MS = 600;
 
 export interface HudOptions {
   onSpeed: () => void;
@@ -22,6 +30,10 @@ export interface HudOptions {
 }
 
 export interface HudView extends UiView {
+  /** 위쪽 HUD 띠 (2줄 + 보스 막대 자리). 크기가 바뀌면 맵 배치를 다시 한다 */
+  readonly band: HTMLElement;
+  /** HUD 띠 아래 끝 = 무대 위쪽에서 잰 CSS px */
+  bandBottom(): number;
   update(model: HudModel): void;
 }
 
@@ -44,7 +56,11 @@ export function createHud(opts: HudOptions): HudView {
     attrs: { 'data-testid': 'hud-timer', role: 'timer', 'aria-label': '단계 남은 시간', ...off },
     text: '1:00',
   });
-  const countIcon = h('span', { class: 'hud-label', text: '👾', attrs: { 'aria-hidden': 'true' } });
+  const countIcon = h('span', {
+    class: 'hud-label hud-count-icon',
+    text: '👾',
+    attrs: { 'aria-hidden': 'true', 'data-testid': 'hud-count-icon' },
+  });
   const countEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-count', ...off }, text: '0' });
   const countItem = h('span', { class: 'hud-item hud-count' }, countIcon, countEl);
   const goldEl = h('span', { class: 'hud-value hud-gold', attrs: { 'data-testid': 'hud-gold', ...off }, text: '0원' });
@@ -60,6 +76,7 @@ export function createHud(opts: HudOptions): HudView {
     text: '⏸',
     on: { click: () => opts.onPause() },
   });
+  // debug 전용 ⏭는 2줄(배속 옆)에 둔다: 1줄에 넣으면 보스 배지·세 자리 몹 수와 함께 넘쳐 ⏸가 잘린다
   const skipBtn = opts.onSkipStage
     ? h('button', {
         class: 'btn btn-chip hud-skip',
@@ -68,37 +85,62 @@ export function createHud(opts: HudOptions): HudView {
         on: { click: () => opts.onSkipStage?.() },
       })
     : null;
-  const bannerEl = h('div', { class: 'hud-banner', attrs: { 'data-testid': 'hud-boss', hidden: '' } });
+  // 보스 막대 자리: 숨길 때도 자리는 남긴다 (visibility). 빈 글자면 높이가 줄어드니 공백 하나
+  const bannerEl = h('div', { class: 'hud-banner', attrs: { 'data-testid': 'hud-boss', hidden: '' }, text: ' ' });
+  // 화면 가장자리 붉은 테두리 (몹 120 이상, 무한)
+  const edgeEl = h('div', { class: 'hud-edge', attrs: { 'aria-hidden': 'true', 'data-testid': 'hud-edge' } });
 
-  const el = h(
+  const band = h(
     'div',
-    { class: 'hud', attrs: { 'data-screen': 'game', 'data-tick': '0' } },
+    { class: 'hud' },
     h(
       'div',
-      { class: 'hud-row' },
-      stageEl,
-      h('span', { class: 'hud-item' }, h('span', { class: 'hud-label', text: '⏱', attrs: { 'aria-hidden': 'true' } }), timerEl),
-      countItem,
-      h('span', { class: 'hud-spacer' }),
-      skipBtn,
-      pauseBtn,
-    ),
-    h(
-      'div',
-      { class: 'hud-row' },
-      h('span', { class: 'hud-item' }, h('span', { class: 'hud-label', text: '💰', attrs: { 'aria-hidden': 'true' } }), goldEl),
-      h('span', { class: 'hud-spacer' }),
-      speedBtn,
+      { class: 'hud-bar' },
+      h(
+        'div',
+        { class: 'hud-row' },
+        stageEl,
+        h('span', { class: 'hud-item' }, h('span', { class: 'hud-label', text: '⏱', attrs: { 'aria-hidden': 'true' } }), timerEl),
+        countItem,
+        h('span', { class: 'hud-spacer' }),
+        pauseBtn,
+      ),
+      h(
+        'div',
+        { class: 'hud-row' },
+        h('span', { class: 'hud-item' }, h('span', { class: 'hud-label', text: '💰', attrs: { 'aria-hidden': 'true' } }), goldEl),
+        h('span', { class: 'hud-spacer' }),
+        skipBtn,
+        speedBtn,
+      ),
     ),
     bannerEl,
   );
+  const el = h('div', { class: 'hud-root', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band);
 
   let last: Partial<HudModel> = {};
+  let breakTimer: ReturnType<typeof setTimeout> | undefined;
+  const breakHeart = (): void => {
+    countIcon.textContent = '💔';
+    countIcon.classList.remove('is-break');
+    void countIcon.offsetWidth; // 연달아 줄어도 애니메이션을 처음부터 다시
+    countIcon.classList.add('is-break');
+    clearTimeout(breakTimer);
+    breakTimer = setTimeout(() => {
+      breakTimer = undefined;
+      countIcon.classList.remove('is-break');
+      countIcon.textContent = last.countKind === 'lives' ? '❤' : '👾';
+    }, HEART_BREAK_MS);
+  };
   const setText = (node: HTMLElement, key: keyof HudModel, value: string): void => {
     if (last[key] !== value) node.textContent = value;
   };
   return {
     el,
+    band,
+    bandBottom() {
+      return band.getBoundingClientRect().bottom - el.getBoundingClientRect().top;
+    },
     update(m) {
       if (last.tick !== m.tick) el.dataset.tick = String(m.tick);
       if (last.stage !== m.stage || last.boss !== m.boss) {
@@ -107,12 +149,16 @@ export function createHud(opts: HudOptions): HudView {
       }
       setText(timerEl, 'timer', m.timer);
       if (last.timerWarn !== m.timerWarn) timerEl.classList.toggle('is-warn', m.timerWarn);
+      const dropped = livesDropped(last, m);
       if (last.countKind !== m.countKind) {
         countIcon.textContent = m.countKind === 'lives' ? '❤' : '👾';
+        countIcon.classList.toggle('hud-heart', m.countKind === 'lives');
         countEl.setAttribute('aria-label', m.countKind === 'lives' ? '목숨' : '맵 위 몹 수');
       }
       setText(countEl, 'count', m.count);
       if (last.countWarn !== m.countWarn) countItem.classList.toggle('is-danger', m.countWarn);
+      if (last.countBlink !== m.countBlink) countItem.classList.toggle('is-blink', m.countBlink);
+      if (last.edgeWarn !== m.edgeWarn) edgeEl.classList.toggle('is-on', m.edgeWarn);
       setText(goldEl, 'gold', m.gold);
       setText(speedBtn, 'speed', m.speed);
       if (last.bossBanner !== m.bossBanner) {
@@ -122,6 +168,11 @@ export function createHud(opts: HudOptions): HudView {
         } else bannerEl.hidden = true;
       }
       last = { ...m };
+      if (dropped) breakHeart();
+    },
+    destroy() {
+      clearTimeout(breakTimer);
+      breakTimer = undefined;
     },
   };
 }
