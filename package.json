@@ -17,7 +17,8 @@
     "curves": "node tools/precompute-curves.mjs",
     "e2e": "playwright test --trace off",
     "screens": "SAVE_SCREENS=1 playwright test --trace off",
-    "sim": "node tools/sim.mjs"
+    "sim": "node tools/sim.mjs",
+    "replays": "UPDATE_REPLAYS=1 vitest run tests/integration/replay.test.ts"
   },
   "dependencies": {
     "phaser": "3.90.0"
