@@ -6,10 +6,12 @@
  * - 투사체 헛발: 그 자리에서 작은 연기. 맞음: 작은 불꽃.
  * - 동전: 처치 자리에서 살짝 튀어 오른 뒤 HUD 돈 쪽으로 날아간다 (도착하면 콜백 → HUD 돈 반짝 + '+n원').
  * - M3: 승급(빛 구슬이 빨려 들어간 뒤 빛 기둥), 광역 폭발 고리, 연쇄 번개.
+ * - M3b 특색: 운석(불덩이가 떨어져 폭발), 진흙 웅덩이 튐, 도박꾼 주사위 눈, 시간 정지(화면 흑백 0.2초 + 시계 고리, TOWERS.md 11장).
  * 동전은 매 프레임 시각으로 위치를 계산하고(fxModel.coinPath), 나머지는 Phaser 트윈을 쓴다 (화면 전용, sim과 무관).
  */
 import Phaser from 'phaser';
 import { TEX_COIN, TEX_ORB, TEX_PILLAR, TEX_SPARK, ensureFxTextures } from '../../art/fx';
+import { diceKey, ensureStatusTextures } from '../../art/status';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { COIN_FLY_MS, coinPath } from './fxModel';
 
@@ -127,6 +129,86 @@ export class FxLayer {
     g.lineStyle(Math.max(2, L.tile * 0.05), 0xbfe6ff, 1);
     g.strokePoints(pts, false);
     this.scene.tweens.add({ targets: g, alpha: 0, duration: 180, onComplete: () => g.destroy() });
+  }
+
+  /** 운석 (대마법사): 오른쪽 위에서 불덩이가 떨어져 그 자리에서 주황 폭발. */
+  meteor(ux: number, uy: number): void {
+    const L = this.layout;
+    const p = unitsToPx(L, ux, uy);
+    const ball = this.track(this.scene.add.image(p.x + L.tile * 0.9, p.y - L.tile * 3, TEX_ORB))
+      .setTint(0xff7a2a)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(FX_DEPTH)
+      .setDisplaySize(L.tile * 0.5, L.tile * 0.5);
+    this.scene.tweens.add({
+      targets: ball,
+      x: p.x,
+      y: p.y,
+      duration: 260,
+      ease: 'Cubic.easeIn',
+      onComplete: () => {
+        ball.destroy();
+        this.blastRing(ux, uy, 650, 0xff7a2a);
+      },
+    });
+  }
+
+  /** 진흙 웅덩이가 생김: 갈색 물결 고리. */
+  splash(ux: number, uy: number, radiusUnits: number): void {
+    const L = this.layout;
+    const p = unitsToPx(L, ux, uy);
+    const r = (radiusUnits / 1000) * L.tile;
+    const ring = this.track(this.scene.add.ellipse(p.x, p.y, r * 2, r * 1.24))
+      .setStrokeStyle(Math.max(2, L.tile * 0.05), 0x9c6b43, 0.9)
+      .setDepth(FX_DEPTH)
+      .setScale(0.3);
+    this.scene.tweens.add({ targets: ring, scale: 1.15, alpha: 0, duration: 320, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+  }
+
+  /** 도박꾼 주사위: 타워 머리 위에 나온 눈이 튀어 올랐다 사라진다. */
+  dicePop(ux: number, uy: number, value: number): void {
+    ensureStatusTextures(this.scene);
+    const L = this.layout;
+    const p = unitsToPx(L, ux, uy);
+    const s = L.tile * 0.36;
+    const img = this.track(this.scene.add.image(p.x + L.tile * 0.3, p.y - L.tile * 0.75, diceKey(Math.min(6, Math.max(1, value)))))
+      .setDepth(FX_DEPTH + 10)
+      .setDisplaySize(s * 0.4, s * 0.4)
+      .setAngle(-25);
+    this.scene.tweens.add({
+      targets: img,
+      displayWidth: s,
+      displayHeight: s,
+      angle: 0,
+      y: img.y - L.tile * 0.25,
+      duration: 180,
+      ease: 'Back.easeOut',
+      onComplete: () => this.scene.tweens.add({ targets: img, alpha: 0, delay: 260, duration: 200, onComplete: () => img.destroy() }),
+    });
+  }
+
+  /** 시간 정지 (시간술사): 화면 흑백 0.2초 + 타워에서 퍼지는 시계 고리. WebGL이 아니면 회색 막만. */
+  timeStop(ux: number, uy: number): void {
+    const L = this.layout;
+    const p = unitsToPx(L, ux, uy);
+    const ring = this.track(this.scene.add.circle(p.x, p.y, L.tile * 4, 0xffffff, 0.06))
+      .setStrokeStyle(Math.max(3, L.tile * 0.06), 0xdfe6ff, 0.9)
+      .setDepth(FX_DEPTH)
+      .setScale(0.1);
+    this.scene.tweens.add({ targets: ring, scale: 1.4, alpha: 0, duration: 420, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+    const cam = this.scene.cameras.main;
+    try {
+      const fx = this.scene.game.renderer.type === Phaser.WEBGL ? cam.postFX?.addColorMatrix() : undefined;
+      if (fx) {
+        fx.grayscale(1);
+        this.scene.time.delayedCall(200, () => cam.postFX?.remove(fx as unknown as Phaser.FX.Controller));
+        return;
+      }
+    } catch {
+      // 흑백 효과를 못 쓰는 기기: 회색 막으로
+    }
+    const veil = this.track(this.scene.add.rectangle(cam.midPoint.x, cam.midPoint.y, cam.width, cam.height, 0x9a9aa8, 0.35)).setDepth(FX_DEPTH - 1);
+    this.scene.tweens.add({ targets: veil, alpha: 0, duration: 200, onComplete: () => veil.destroy() });
   }
 
   /** 돈 부족: 칸이 빨갛게 깜빡이며 흔들림. */

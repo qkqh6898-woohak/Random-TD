@@ -108,3 +108,15 @@ export function towerBonus(ctx: MatchContext, tower: Tower, auras: AuraMap): Tow
   if (atk < -BP_ONE) atk = -BP_ONE;
   return { atkPctBp: atk, apsPctBp: aps, bossMulBp: boss };
 }
+
+/** 타워 하나가 주는 지원 효과 (없으면 null) — 화면이 범위를 그릴 때 읽는다. */
+export function auraSpecOf(ctx: MatchContext, tower: Pick<Tower, 'tower' | 'owner'>): AuraSpec | null {
+  const def = abilityOf(tower.tower);
+  if (!def?.aura) return null;
+  return def.aura(abilityParams(ctx, tower.owner, def));
+}
+
+/** 지원 효과 범위 → 칸 거리 (주변 8칸 1, 24칸 2, 전체 0). */
+export function auraRadiusOf(rules: Pick<MatchRules, 'auraAround8' | 'auraAround24'>, area: AuraArea): number {
+  return area === 'around8' ? rules.auraAround8 : area === 'around24' ? rules.auraAround24 : 0;
+}

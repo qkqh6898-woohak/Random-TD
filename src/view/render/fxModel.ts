@@ -12,6 +12,8 @@ export const DAMAGE_COLORS = {
   magic: '#8FD8FF',
   true: '#FFD84A',
   gold: '#F5B700',
+  /** 그림자 암살자 즉사 글자 (M3b) */
+  execute: '#FF5A6E',
 } as const;
 
 /** 연출을 만드는 대량 사건(공격·피해·처치·헛발)의 범위: 지금 틱에서 이만큼 안쪽 */

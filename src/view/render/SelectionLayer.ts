@@ -2,6 +2,7 @@
  * 고른 타워 표시 (DEV_PLAN M3-10·M3-11, UI.md 4.3).
  *
  * - 타워를 터치하면: 사거리 원(흰색) + 같은 종류 타워 모두 강조(금색 고리). 감지 오라 타워는 👁 감지 범위 원(보라 점선)도.
+ * - 지원 효과(오라) 타워(M3b): 주변 8칸(3×3)·24칸(5×5)을 초록 네모로 (자신 칸은 빼고 칠함), 그 안에서 효과를 받는 타워 발밑에 초록 고리.
  * - 길게 눌러 끄는 동안: 놓을 칸을 색으로 미리 보여준다 (빈 칸 이동 = 초록, 교환 = 파랑, 못 놓음 = 빨강)
  *   + 그 칸에 놓았을 때의 사거리 원.
  * 화면 전용 (sim을 바꾸지 않는다). 몇 개 안 되는 도형이라 매 프레임 다시 그린다.
@@ -18,10 +19,13 @@ export const DROP_DEPTH = 6400;
 const DETECT_COLOR = 0xb36bff;
 const RANGE_COLOR = 0xffffff;
 const SAME_KIND_COLOR = 0xffc93c;
+const AURA_COLOR = 0x5ee05e;
 
 export interface SelectionView {
-  /** 고른 타워 칸 (없으면 null) */
-  selected: { tx: number; ty: number; range: number; detectRange: number } | null;
+  /** 고른 타워 칸 (없으면 null). auraRadius = 지원 효과 칸 거리 (주변 8칸 = 1, 24칸 = 2, 없거나 '전체'면 0) */
+  selected: { tx: number; ty: number; range: number; detectRange: number; auraRadius?: number } | null;
+  /** 고른 오라 타워의 효과를 받는 타워 칸 */
+  buffed?: readonly { tx: number; ty: number }[];
   /** 같은 종류 타워 칸 (고른 타워 포함) */
   sameKind: readonly { tx: number; ty: number }[];
   /** 끄는 중 놓을 칸 미리 보기 (없으면 null) */
@@ -60,6 +64,16 @@ export class SelectionLayer {
         g.lineStyle(line, RANGE_COLOR, 0.55).strokeCircle(c.x, c.y, r);
       }
       if (view.selected.detectRange > 0) this.dashedCircle(g, c.x, c.y, this.px(view.selected.detectRange), line, DETECT_COLOR, timeMs);
+      const ar = view.selected.auraRadius ?? 0;
+      if (ar > 0) {
+        const half = (ar + 0.5) * L.tile;
+        g.fillStyle(AURA_COLOR, 0.1).fillRoundedRect(c.x - half, c.y - half, half * 2, half * 2, L.tile * 0.15);
+        g.lineStyle(line, AURA_COLOR, 0.75).strokeRoundedRect(c.x - half, c.y - half, half * 2, half * 2, L.tile * 0.15);
+      }
+    }
+    for (const t of view.buffed ?? []) {
+      const c = tileCenterPx(L, t.tx, t.ty);
+      g.lineStyle(line * 1.2, AURA_COLOR, 0.85).strokeEllipse(c.x, c.y + L.tile * FOOT_OFFSET_TILES, L.tile * 0.7, L.tile * 0.32);
     }
     // 같은 종류: 발밑에 금색 고리 (천천히 맥동)
     const pulse = 0.55 + 0.25 * Math.sin(timeMs / 260);

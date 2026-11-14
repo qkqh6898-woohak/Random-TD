@@ -41,3 +41,12 @@ export function mergeFailText(reason: string, count: number): string | null {
 export function mergedToast(name: string, gradeName: string): string {
   return `⬆ ${gradeName} ${name}!`;
 }
+
+/** 행운의 여신 소환 레어 직행 (M3b) */
+export const FORTUNA_RARE = '🍀 행운의 여신 — 레어 직행!';
+
+/** 행운의 여신 승급 2등급 상승 (M3b) */
+export const FORTUNA_DOUBLE = '🍀 행운의 여신 — 2등급 상승!';
+
+/** 그림자 암살자 즉사 (피해 숫자 자리) */
+export const EXECUTE_LABEL = '즉사!';

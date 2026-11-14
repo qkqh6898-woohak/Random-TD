@@ -9,6 +9,8 @@
  * - 투명 몹: 일렁이는 반투명 실루엣 + 머리 위 👁 아이콘 (ENEMIES.md 5장 '화면 표시'). 드러난 상태의 보라 외곽선은 M4.
  * - 아래쪽 몹이 위에 그려지게 깊이 = 화면 y.
  * - M2: 체력이 닳으면 머리 위 체력 바, 맞으면 0.1초 하얀 깜빡, 처치되면 0.3초 동안 납작해지며 사라짐 (ART.md 2.1).
+ * - M3b 상태 이상 (statusModel.ts): 몸 색(빙결 하늘·정지 회색·기절 노랑·화상 주황·독 연두·둔화 갈색), 체력 바 위 아이콘 최대 4개,
+ *   빙결이면 얼음 덩어리를 덧그림, 행동 불가(빙결·정지·기절) 동안은 걷기 흔들림을 멈춘다.
  */
 import Phaser from 'phaser';
 import { EYE_ICON_H, EYE_ICON_W, MOB_TEX_SIZE, SIZE_SCALE, MOB_LOOKS, ensureEyeIconTexture, ensureMobTexture } from '../../art/mobs';
@@ -16,6 +18,8 @@ import type { Mob } from '../../sim/entities/Mob';
 import { directionAt, positionAt, type SimPath } from '../../sim/map';
 import { unitsToPx, type MapLayout } from '../layout';
 import { approachLean, leanTarget, mobPose, type MobMotion } from './mobPose';
+import { ensureStatusTextures, statusIconKey } from '../../art/status';
+import { MAX_STATUS_ICONS, NO_STATUS, type MobStatusView, type StatusIcon } from './statusModel';
 
 /** 피격 깜빡 (ms) — ART.md 2.1 */
 export const MOB_HIT_FLASH_MS = 100;
@@ -59,11 +63,28 @@ export class MobSprite {
   /** 지금 기울기 (rad) — 목표 쪽으로 부드럽게 따라간다 */
   private lean = 0;
   private lastTimeMs: number | null = null;
+  private readonly scene: Phaser.Scene;
+  private readonly diameter: number;
+  /** 상태 아이콘 (필요할 때 만든다, 최대 4개) */
+  private readonly icons: Phaser.GameObjects.Image[] = [];
+  private iconKeys: string = '';
+  private readonly iconY: number;
+  private readonly iconSize: number;
+  /** 빙결 얼음 덩어리 (필요할 때 만든다) */
+  private ice: Phaser.GameObjects.Rectangle | null = null;
+  /** 지금 몸에 칠한 상태 색 (없으면 null) */
+  private statusTint: number | null = null;
+  /** 행동 불가로 걷기 흔들림을 멈춘 화면 시각 (아니면 null) */
+  private pausedAt: number | null = null;
+  /** 지금 상태 아이콘 수 (E2E) */
+  iconCount = 0;
 
   constructor(scene: Phaser.Scene, mob: Mob, size: string, layout: MapLayout, art: MobArt) {
     this.id = mob.id;
+    this.scene = scene;
     const key = ensureMobTexture(scene, mob.mob, art.legionColor(mob.legion));
     const diameter = layout.tile * (SIZE_SCALE[size] ?? 0.7);
+    this.diameter = diameter;
     this.baseScale = diameter / MOB_TEX_SIZE;
     this.shadow = scene.add.ellipse(0, diameter * 0.36, diameter * 0.78, diameter * 0.26, 0x000000, 0.22);
     this.body = scene.add.image(0, 0, key).setScale(this.baseScale).setOrigin(0.5, 0.62);
@@ -82,6 +103,9 @@ export class MobSprite {
     this.hpBg = scene.add.rectangle(0, hpY, this.hpW + 2, hpH + 2, 0x1a1020, 0.85).setVisible(false);
     this.hpFill = scene.add.rectangle(-this.hpW / 2, hpY, this.hpW, hpH, 0x5ee05e, 1).setOrigin(0, 0.5).setVisible(false);
     this.flashImg = scene.add.image(0, 0, key).setScale(this.baseScale).setOrigin(0.5, 0.62).setTintFill(0xffffff).setAlpha(0.6).setVisible(false);
+    // 상태 아이콘 줄: 체력 바 바로 위
+    this.iconSize = Math.max(16, layout.tile * 0.32);
+    this.iconY = hpY - hpH - this.iconSize * 0.6;
     const parts: Phaser.GameObjects.GameObject[] = [this.shadow, this.body, this.flashImg];
     if (this.eyeIcon) parts.push(this.eyeIcon);
     parts.push(this.hpBg, this.hpFill);
@@ -142,7 +166,64 @@ export class MobSprite {
    * @param progress 보간한 진행도 (단위, 소수 가능)
    * @param timeMs 화면 시간 (흔들림용)
    */
-  update(path: SimPath, layout: MapLayout, progress: number, timeMs: number, hpRatio = 1): void {
+  /** 상태 이상 표시 (몸 색·아이콘·얼음). 바뀐 것만 다시 그린다. */
+  private applyStatus(status: MobStatusView): void {
+    const tint = status.tint;
+    if (tint !== this.statusTint) {
+      this.statusTint = tint;
+      if (tint !== null) this.body.setTint(tint);
+      else if (this.baseTint !== null) this.body.setTint(this.baseTint);
+      else this.body.clearTint();
+    }
+    const keys = status.icons.join(',');
+    if (keys !== this.iconKeys) {
+      this.iconKeys = keys;
+      this.layoutIcons(status.icons);
+    }
+    if (status.frozen && !this.ice) {
+      const d = this.diameter;
+      // 얼음 덩어리: 몸을 덮는 하늘색 반투명 네모 + 흰 테두리
+      this.ice = this.scene.add.rectangle(0, -d * 0.14, d * 1.1, d * 1.1, 0x9fe8ff, 0.5).setStrokeStyle(Math.max(3, d * 0.07), 0xffffff, 0.95);
+      this.root.addAt(this.ice, 3);
+    }
+    if (this.ice && this.ice.visible !== status.frozen) this.ice.setVisible(status.frozen);
+  }
+
+  private layoutIcons(list: readonly StatusIcon[]): void {
+    const n = Math.min(list.length, MAX_STATUS_ICONS);
+    while (this.icons.length < n) {
+      ensureStatusTextures(this.scene);
+      const img = this.scene.add.image(0, this.iconY, statusIconKey('slow')).setDisplaySize(this.iconSize, this.iconSize);
+      this.icons.push(img);
+      this.root.add(img);
+    }
+    const gap = this.iconSize * 1.05;
+    for (let i = 0; i < this.icons.length; i++) {
+      const img = this.icons[i] as Phaser.GameObjects.Image;
+      if (i >= n) {
+        img.setVisible(false);
+        continue;
+      }
+      img
+        .setTexture(statusIconKey(list[i] as StatusIcon))
+        .setDisplaySize(this.iconSize, this.iconSize)
+        .setPosition((i - (n - 1) / 2) * gap, this.iconY)
+        .setVisible(true);
+    }
+    this.iconCount = n;
+  }
+
+  /** 상태 이상으로 몸 색이 바뀌었는가 (E2E) */
+  get tinted(): boolean {
+    return this.statusTint !== null;
+  }
+
+  update(path: SimPath, layout: MapLayout, progress: number, timeMs: number, hpRatio = 1, status: MobStatusView = NO_STATUS): void {
+    this.applyStatus(status);
+    // 행동 불가 동안은 걷기 자세를 멈춘 시각에 고정한다
+    if (status.paused) this.pausedAt ??= timeMs;
+    else this.pausedAt = null;
+    const poseTime = this.pausedAt ?? timeMs;
     const p = positionAt(path, progress);
     const dir = directionAt(path, progress);
     let { x, y } = unitsToPx(layout, p.x, p.y);
@@ -156,7 +237,7 @@ export class MobSprite {
     const target = leanTarget(this.motion, dir.dx);
     this.lean = this.lastTimeMs === null ? target : approachLean(this.lean, target, timeMs - this.lastTimeMs);
     this.lastTimeMs = timeMs;
-    const pose = mobPose(this.motion, timeMs, this.phase);
+    const pose = mobPose(this.motion, poseTime, this.phase);
     const s = this.baseScale;
     const bob = pose.bob * this.bobAmp;
     this.body.setPosition(0, bob);
@@ -165,6 +246,7 @@ export class MobSprite {
     this.shadow.setScale(1 + bob / (this.bobAmp * 12), 1);
     if (this.invisible) this.body.setAlpha(0.38 + 0.14 * Math.sin(timeMs * 0.006 + this.phase));
     if (this.eyeIcon) this.eyeIcon.setY(this.eyeY + bob);
+    if (this.iconCount > 0) for (const img of this.icons) img.setY(this.iconY + bob);
     // 피격 깜빡
     const flash = timeMs < this.flashUntil;
     if (flash !== this.flashing) {
@@ -218,7 +300,7 @@ export class MobLayer {
    * @param prevProgress 직전 틱의 진행도 (id → 진행도). 없으면 보간 없이 지금 값
    * @param alpha 다음 틱까지 진행 비율 (0~1)
    */
-  sync(mobs: readonly Mob[], prevProgress: ReadonlyMap<number, number>, alpha: number, timeMs: number): void {
+  sync(mobs: readonly Mob[], prevProgress: ReadonlyMap<number, number>, alpha: number, timeMs: number, statusOf?: (mob: Mob) => MobStatusView): void {
     const seen = new Set<number>();
     for (const mob of mobs) {
       seen.add(mob.id);
@@ -229,7 +311,7 @@ export class MobLayer {
       }
       const prev = prevProgress.get(mob.id);
       const progress = prev === undefined ? mob.progress : prev + (mob.progress - prev) * alpha;
-      sprite.update(this.path, this.layout, progress, timeMs, mob.maxHp > 0 ? mob.hp / mob.maxHp : 1);
+      sprite.update(this.path, this.layout, progress, timeMs, mob.maxHp > 0 ? mob.hp / mob.maxHp : 1, statusOf ? statusOf(mob) : NO_STATUS);
     }
     for (const id of this.seen) {
       if (!seen.has(id)) {
@@ -255,6 +337,20 @@ export class MobLayer {
 
   get count(): number {
     return this.sprites.size;
+  }
+
+  /** 상태 아이콘 전체 수 (E2E) */
+  get statusIconCount(): number {
+    let n = 0;
+    for (const s of this.sprites.values()) n += s.iconCount;
+    return n;
+  }
+
+  /** 상태 이상 색이 칠해진 몹 그림 수 (E2E) */
+  get tintedCount(): number {
+    let n = 0;
+    for (const s of this.sprites.values()) if (s.tinted) n++;
+    return n;
   }
 
   /** 머리 위 👁를 단 몹 그림 수 (E2E가 sim 투명 몹 수와 비교) */

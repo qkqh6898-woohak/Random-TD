@@ -372,6 +372,12 @@ describe('원소 5종 — 판 안 실제 타워', () => {
     expect(mob.slowBp).toBe(2500);
   });
 
+  it('출혈 (군견병): 맞은 몹에 2초 출혈 — 초당 공격력 4.6 × 50% = 2.3 (× ATK_SCALE 230), 고정 피해', () => {
+    const { m, mob } = duel('k9', 3);
+    expect(mob.dots).toEqual([expect.objectContaining({ src: 'k9', kind: 'bleed', dps: 230 })]);
+    expect(dotStacks(mob, 'bleed', m.tick)).toBe(1);
+  });
+
   it('드러나지 않은 투명 몹은 광역에 맞지 않아 상태 이상도 걸리지 않는다 (GDD 5.7)', () => {
     const m = arena();
     const target = mobAt(m, 'slime', 3000);

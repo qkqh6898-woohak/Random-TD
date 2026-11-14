@@ -17,6 +17,8 @@
  *   손을 떼면 hold 해제 + move 명령. 명령이 실행될 때까지 놓은 자리에 붙잡아 둔다. 움직이지 않고 떼면 느린 탭 = 정보 패널.
  *   타워를 누르고 있는 동안 다른 손가락의 터치는 받지 않는다 (두 손가락 확대는 M11).
  * - 승급 연출: 사라진 2칸에서 빛 구슬이 결과 칸으로 빨려 들어간 뒤 빛 기둥 (레전드·신은 화면 흔들림). 치명타 숫자는 크게 + '!'.
+ * - M3b: 몹 상태 이상(색·머리 위 아이콘·얼음·멈춘 걸음), 진흙 웅덩이·소환 병사, 특색 연출(운석·시간 정지 흑백·주사위·
+ *   '+n원' 특색 돈·즉사), 행운의 여신 알림, 오라 타워를 고르면 효과 범위(3×3·5×5)와 효과를 받는 타워 표시, 패널에 오라 반영 값.
  * - 무한 모드: 순환의 정원 / 캠페인(debug): 테마 1 사거리 미로.
  * - ⏸ 또는 앱이 백그라운드로 가면 일시정지 메뉴(UI.md 4.6). 열려 있는 동안 TickClock 배속 0 = 게임 시간 정지.
  * - 패배하면 시간을 멈추고 패배 화면 ([다시 하기] / [타이틀로]).
@@ -35,10 +37,10 @@ import type { MatchMode } from '../../sim/state';
 import { NO_MODS, effectiveStats } from '../../sim/stats';
 import { mergeableGroups, sameKindTowers } from '../../sim/systems/Merge';
 import { isPaused, moveCheck } from '../../sim/systems/Move';
-import { computeAuras, towerBonus } from '../../sim/systems/Aura';
+import { auraCovers, auraRadiusOf, auraSpecOf, computeAuras, towerBonus } from '../../sim/systems/Aura';
 import { towerLevel } from '../../sim/abilities';
 import { summonCheck, towerCount } from '../../sim/systems/Summon';
-import { BOARD_FULL, godDescends, mergeFailText, mergeReadyToast } from '../../ui/messages';
+import { BOARD_FULL, EXECUTE_LABEL, FORTUNA_DOUBLE, FORTUNA_RARE, godDescends, mergeFailText, mergeReadyToast } from '../../ui/messages';
 import { createTowerPanel, type TowerPanelView } from '../../ui/panels/TowerPanel';
 import { buildTowerPanelModel } from '../../ui/panels/towerPanelModel';
 import { createHud, type HudView } from '../../ui/hud/Hud';
@@ -80,6 +82,8 @@ import { SelectionLayer } from '../render/SelectionLayer';
 import { TowerLayer } from '../render/TowerSprite';
 import { DAMAGE_COLORS, damageColor, eventFxVisible } from '../render/fxModel';
 import { FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../render/towerGeom';
+import { PuddleLayer, SoldierLayer } from '../render/AbilitySprites';
+import { mobStatusView } from '../render/statusModel';
 /** HUD 띠 아래 끝과 알림 사이 간격 (무대 너비 비율, 2cqw) */
 const TOAST_GAP_OF_WIDTH = 0.02;
 /** 한 프레임에 띄우는 피해 숫자 최대 수 */
@@ -88,6 +92,8 @@ const MAX_DAMAGE_TEXTS_PER_FRAME = 16;
 const MAX_SPARKS_PER_FRAME = 12;
 /** 한 프레임에 만드는 광역 폭발·연쇄 번개 최대 수 */
 const MAX_AREA_FX_PER_FRAME = 8;
+/** 운석 한 번에 떨어뜨리는 불덩이 최대 수 */
+const MAX_METEOR_FX = 8;
 /** '{타워} 승급 가능!' 알림은 판당 처음 몇 번만 (UI.md 8장) */
 const MERGE_READY_TOASTS_PER_MATCH = 3;
 /** 끌어 놓은 뒤 이동 명령이 실행될 때까지 그 자리에 붙잡아 두는 최대 시간 (ms) */
@@ -138,6 +144,14 @@ export class GameScene extends Phaser.Scene {
   private mobLayer!: MobLayer;
   private towerLayer!: TowerLayer;
   private projectileLayer!: ProjectileLayer;
+  private puddleLayer!: PuddleLayer;
+  private soldierLayer!: SoldierLayer;
+  /** 마지막 틱 직전의 병사 진행도 (보간용) */
+  private prevSoldiers = new Map<number, number>();
+  /** 고른 오라 타워의 효과 범위 표시 (E2E 확인용, 오라 타워가 아니면 null) */
+  private auraView: { area: string; radius: number; buffed: number } | null = null;
+  /** 특색 연출 수 (E2E 확인용): 종류 → 횟수 */
+  private abilityFx = new Map<string, number>();
   private floatingText!: FloatingTextLayer;
   private fx!: FxLayer;
   /** 마지막 틱 직전의 투사체 위치 (보간용) */
@@ -204,6 +218,8 @@ export class GameScene extends Phaser.Scene {
     this.gameOver = false;
     this.prevProgress = new Map();
     this.prevProjectiles = new Map();
+    this.prevSoldiers = new Map();
+    this.abilityFx = new Map();
     this.lastTapMs = null;
     this.frameStartTick = 0;
     this.summonFxCount = 0;
@@ -297,7 +313,10 @@ export class GameScene extends Phaser.Scene {
     // 들려 있어야 할 타워(끄는 중 / 놓고 명령을 기다리는 중) 말고는 내려놓는다 — 끌기를 끝내는 길을 놓쳐도 유령 그림이 남지 않게
     this.towerLayer.releaseDragsExcept(this.press?.dragging ? this.press.id : (this.pendingDrop?.id ?? null), this.time.now);
     const alpha = this.gameOver ? 1 : this.clock.alpha;
-    this.mobLayer.sync(this.match.mobs(), this.prevProgress, alpha, time);
+    const tick = this.match.tick;
+    this.puddleLayer.sync(this.match.puddles(), tick, alpha);
+    this.mobLayer.sync(this.match.mobs(), this.prevProgress, alpha, time, (m) => mobStatusView(m, tick));
+    this.soldierLayer.sync(this.match.soldiers(), this.prevSoldiers, alpha, time);
     this.towerLayer.sync(this.match.towers(), time);
     this.updateSelection(time);
     this.projectileLayer.sync(this.match.projectiles(), this.prevProjectiles, (p) => this.projectileOrigin(p), alpha);
@@ -315,6 +334,8 @@ export class GameScene extends Phaser.Scene {
         for (const m of this.match.mobs()) this.prevProgress.set(m.id, m.progress);
         this.prevProjectiles.clear();
         for (const p of this.match.projectiles()) this.prevProjectiles.set(p.id, { x: p.x, y: p.y });
+        this.prevSoldiers.clear();
+        for (const s of this.match.soldiers()) this.prevSoldiers.set(s.id, s.progress);
       }
       this.match.step();
     }
@@ -332,6 +353,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.prevProgress.clear();
     this.prevProjectiles.clear();
+    this.prevSoldiers.clear();
     return done;
   }
 
@@ -353,6 +375,40 @@ export class GameScene extends Phaser.Scene {
   /** 화면에 그려진 타워 수 (E2E가 sim 타워 수와 비교). */
   get renderedTowerCount(): number {
     return this.towerLayer.count;
+  }
+
+  /** 화면에 그려진 진흙 웅덩이 수 (E2E가 sim 웅덩이 수와 비교). */
+  get renderedPuddleCount(): number {
+    return this.puddleLayer.count;
+  }
+
+  /** 화면에 그려진 소환 병사 수 (E2E가 sim 병사 수와 비교). */
+  get renderedSoldierCount(): number {
+    return this.soldierLayer.count;
+  }
+
+  /** 몹 머리 위 상태 아이콘 수 (E2E). */
+  get statusIconCount(): number {
+    return this.mobLayer.statusIconCount;
+  }
+
+  /** 상태 이상 색이 칠해진 몹 수 (E2E). */
+  get tintedMobCount(): number {
+    return this.mobLayer.tintedCount;
+  }
+
+  /** 고른 오라 타워의 효과 범위 표시: 범위 종류·칸 거리·효과를 받는 타워 수 (E2E). */
+  get selectedAura(): { area: string; radius: number; buffed: number } | null {
+    return this.auraView;
+  }
+
+  /** 지금까지 만든 특색 연출 수 (종류별, E2E). */
+  abilityFxCount(kind: string): number {
+    return this.abilityFx.get(kind) ?? 0;
+  }
+
+  private noteFx(kind: string): void {
+    this.abilityFx.set(kind, (this.abilityFx.get(kind) ?? 0) + 1);
   }
 
   /** 화면에 그려진 투사체 수. */
@@ -452,6 +508,8 @@ export class GameScene extends Phaser.Scene {
     this.mobLayer?.destroy();
     this.towerLayer?.destroy();
     this.projectileLayer?.destroy();
+    this.puddleLayer?.destroy();
+    this.soldierLayer?.destroy();
     this.floatingText?.destroy();
     this.fx?.destroy();
   }
@@ -745,9 +803,24 @@ export class GameScene extends Phaser.Scene {
     const rules = this.match.rules;
     const p = this.press?.dragging ? this.press : null;
     const stats = t ? rules.towers.get(t.tower) : undefined;
+    // 오라 타워: 효과 범위(3×3·5×5)와 지금 효과를 받는 타워 (전체 오라는 판 위 내 타워 모두)
+    const aura = t && !p ? auraSpecOf(this.match.ctx, t) : null;
+    const buffed =
+      t && aura ? this.match.towers().filter((x) => x.owner === t.owner && auraCovers(rules, aura.area, t, x)).map((x) => ({ tx: x.tx, ty: x.ty })) : [];
+    this.auraView = aura ? { area: aura.area, radius: auraRadiusOf(rules, aura.area), buffed: buffed.length } : null;
     this.selectionLayer.draw(
       {
-        selected: t && stats && !p ? { tx: t.tx, ty: t.ty, range: stats.range, detectRange: stats.detect === 'aura' ? stats.detectRange : 0 } : null,
+        selected:
+          t && stats && !p
+            ? {
+                tx: t.tx,
+                ty: t.ty,
+                range: stats.range,
+                detectRange: stats.detect === 'aura' ? stats.detectRange : 0,
+                auraRadius: aura ? auraRadiusOf(rules, aura.area) : 0,
+              }
+            : null,
+        buffed,
         sameKind: t && !p ? sameKindTowers(this.match.world, t.tower, t.owner).map((x) => ({ tx: x.tx, ty: x.ty })) : [],
         drop: p && p.drop && stats ? { ...p.drop, range: stats.range } : null,
       },
@@ -801,6 +874,8 @@ export class GameScene extends Phaser.Scene {
         return type === 'magic' || type === 'hybrid' ? 'magic' : type === 'true' ? 'true' : 'arrow';
       },
     });
+    this.puddleLayer = new PuddleLayer(this, this.layout);
+    this.soldierLayer = new SoldierLayer(this, this.layout, this.match.map.path);
     this.floatingText = new FloatingTextLayer(this, this.layout.tile);
     this.fx = new FxLayer(this, this.layout);
     this.selectionLayer = new SelectionLayer(this, this.layout);
@@ -817,6 +892,9 @@ export class GameScene extends Phaser.Scene {
     let texts = 0;
     let sparks = 0;
     let areaFx = 0;
+    let meteors = 0;
+    /** 이번 프레임에 운석을 떨어뜨린 '타워:틱' (그 틱의 그 타워 피해 자리마다 불덩이) */
+    const meteorKeys = new Set<string>();
     for (const ev of this.match.world.drainEvents()) {
       const recent = eventFxVisible('bulk', ev.tick, now, frameStart);
       switch (ev.type) {
@@ -834,6 +912,10 @@ export class GameScene extends Phaser.Scene {
           this.towerLayer.noteSummoned(Number(ev.id));
           this.fx.summonPillar(Number(ev.x), Number(ev.y), hexToInt(GRADE_COLORS[(ev.grade as Grade) || 'normal'] ?? GRADE_COLORS.normal));
           this.summonFxCount++;
+          if (ev.rare === true && ev.player === LOCAL_PLAYER) {
+            this.ctx.ui.toast(FORTUNA_RARE);
+            this.noteFx('fortuna');
+          }
           break;
         case 'summonFail': {
           if (!eventFxVisible('action', ev.tick, now, frameStart) || ev.player !== 0) break;
@@ -864,6 +946,10 @@ export class GameScene extends Phaser.Scene {
           this.fx.mergeSuck(from, { tx: Number(ev.x), ty: Number(ev.y) }, hexToInt(GRADE_COLORS[(ev.grade as Grade) || 'normal'] ?? GRADE_COLORS.normal));
           this.mergeFxCount++;
           if (ev.grade === 'legend' || ev.grade === 'god') this.cameras.main.shake(260, 0.006);
+          if (ev.double === true) {
+            this.ctx.ui.toast(FORTUNA_DOUBLE);
+            this.noteFx('fortuna');
+          }
           break;
         }
         case 'mergeFail': {
@@ -891,7 +977,12 @@ export class GameScene extends Phaser.Scene {
           break;
         case 'hit': {
           if (!recent) break;
-          this.mobLayer.flash(Number(ev.target), time);
+          if (meteors < MAX_METEOR_FX && meteorKeys.has(`${ev.source}:${ev.tick}`)) {
+            meteors++;
+            this.fx.meteor(Number(ev.x), Number(ev.y));
+          }
+          // 지속 피해(화상·독·출혈)는 깜빡이지 않고 숫자만 (0.5초마다라 몹이 늘 하얗게 보이지 않게)
+          if (ev.dot !== true) this.mobLayer.flash(Number(ev.target), time);
           const color = damageColor(Number(ev.p), Number(ev.m), Number(ev.t));
           const crit = ev.crit === true;
           if (texts < MAX_DAMAGE_TEXTS_PER_FRAME || crit) {
@@ -918,6 +1009,43 @@ export class GameScene extends Phaser.Scene {
         }
         case 'miss':
           if (recent) this.fx.missPuff(Number(ev.x), Number(ev.y));
+          break;
+        case 'abilityGold': {
+          // 특색 돈 (광부·상인·연금술사): 타워 위 '+n원' + 동전이 HUD로
+          if (!recent) break;
+          const amount = Number(ev.amount);
+          const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
+          this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.55, `+${amount}원`, DAMAGE_COLORS.gold, time, true);
+          this.fx.coin(Number(ev.x), Number(ev.y), time, () => this.hud.gainGold(amount));
+          this.noteFx('gold');
+          break;
+        }
+        case 'dice':
+          if (!recent) break;
+          this.fx.dicePop(Number(ev.x), Number(ev.y), Number(ev.value));
+          this.noteFx('dice');
+          break;
+        case 'execute': {
+          if (!recent) break;
+          const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
+          this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.6, EXECUTE_LABEL, DAMAGE_COLORS.execute, time, true);
+          this.noteFx('execute');
+          break;
+        }
+        case 'puddle':
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
+          this.fx.splash(Number(ev.x), Number(ev.y), Number(ev.r));
+          this.noteFx('puddle');
+          break;
+        case 'meteor':
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
+          meteorKeys.add(`${ev.tower}:${ev.tick}`);
+          this.noteFx('meteor');
+          break;
+        case 'timeStop':
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
+          this.fx.timeStop(Number(ev.x), Number(ev.y));
+          this.noteFx('timeStop');
           break;
       }
     }
