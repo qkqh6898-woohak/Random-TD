@@ -5,7 +5,7 @@
  * 규칙 수치(MatchRules)·맵(SimMap)은 데이터에서 만든 고정 값이라 해시에 넣지 않는다.
  */
 import type { SimMap } from './map';
-import type { MatchRules, ThemeMods } from './rules';
+import type { Deck, MatchRules, ThemeMods } from './rules';
 
 export type MatchMode = 'infinite' | 'campaign';
 export type MatchPhase = 'playing' | 'defeat';
@@ -37,6 +37,12 @@ export interface MatchState {
   leaked: number;
   /** 지금까지 나온 몹 수 (떼는 마리 수로) */
   spawned: number;
+  /** 지금까지 소환한 횟수 */
+  summons: number;
+  /** 지금까지 처치한 몹 수 */
+  kills: number;
+  /** 지금까지 번 돈 (처치 보상 등, 시작 자금 제외) */
+  goldEarned: number;
   phase: MatchPhase;
   defeatReason: DefeatReason;
   /** 패배한 틱 (-1 = 아직) */
@@ -60,4 +66,6 @@ export interface MatchContext {
   readonly map: SimMap;
   readonly theme: ThemeMods;
   readonly state: MatchState;
+  /** 플레이어별 덱 (판 시작 때 정해져 바뀌지 않는다 → 해시 밖. 리플레이는 시드와 함께 덱을 기록한다) */
+  readonly decks: readonly Deck[];
 }

@@ -111,7 +111,15 @@ export interface WorldOptions {
    * 모양은 쓰는 쪽이 정한다 (M1: `src/sim/state.ts` MatchState). 기본 빈 객체.
    */
   state?: object;
+  /**
+   * 화면이 가져가지 않은 사건을 최대 몇 개까지 들고 있을지 (기본 DEFAULT_MAX_EVENTS).
+   * 헤드리스 판(테스트·M11 봇)은 drainEvents를 부르지 않아 피해 사건이 계속 쌓이므로, 넘치면 오래된 것부터 버린다.
+   */
+  maxEvents?: number;
 }
+
+/** 쌓아 두는 사건 수 기본 한도. 화면은 매 프레임 가져가므로 한 프레임에 이만큼 쌓일 일은 없다. */
+export const DEFAULT_MAX_EVENTS = 10_000;
 
 /** 난수 흐름 이름. 흐름끼리 독립이다 (MULTIPLAYER.md 4.2). */
 export const STREAM_WORLD = 'world';
@@ -135,6 +143,7 @@ export class World {
   private readonly systems: System[];
   private readonly handlers: Record<Command['type'], CommandHandler>;
   private events: SimEvent[] = [];
+  private readonly maxEvents: number;
 
   constructor(options: WorldOptions) {
     if (!Number.isSafeInteger(options.seed)) throw new Error(`시드는 정수여야 한다 (받은 값: ${options.seed})`);
@@ -157,6 +166,8 @@ export class World {
     }
     this.systems = [...(options.systems ?? [])];
     this.state = options.state ?? {};
+    this.maxEvents = options.maxEvents ?? DEFAULT_MAX_EVENTS;
+    if (!Number.isSafeInteger(this.maxEvents) || this.maxEvents < 1) throw new Error(`maxEvents는 1 이상 정수 (받은 값: ${this.maxEvents})`);
     // 처리기를 붙이지 않은 명령은 아무 일도 하지 않는다 (noop, 아직 시스템이 없는 명령)
     const nothing: CommandHandler = () => {};
     this.handlers = Object.fromEntries(COMMAND_TYPES.map((t) => [t, nothing])) as Record<CommandType, CommandHandler>;
@@ -209,6 +220,8 @@ export class World {
   /** 사건 알림 (시스템에서 호출). */
   emit(type: string, data: Record<string, string | number | boolean> = {}): void {
     this.events.push({ ...data, tick: this.tick, type });
+    // 한도의 2배가 되면 최근 한도만큼만 남긴다 (매번 자르지 않아서 평균 O(1))
+    if (this.events.length >= this.maxEvents * 2) this.events = this.events.slice(-this.maxEvents);
   }
 
   /** 쌓인 사건을 모두 가져가고 비운다 (화면용). */

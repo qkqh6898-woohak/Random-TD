@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "notes": "덱 = 등급별 5종, 총 25종 (GDD.md 4.2). 소환은 덱의 노말 5종 중 균등 랜덤, 승급 결과는 덱의 다음 등급 5종 중 균등 랜덤(M3). base = 처음 지급하는 기본 덱 (TOWERS.md 10장, towers.json unlock = base 25종). 프리셋·추천 덱·특색 최소 수 검사는 M7.",
+  "perGrade": 5,
+  "base": {
+    "normal": ["miner", "goblin", "archer", "apprentice", "warrior"],
+    "rare": ["merchant", "mudshaman", "flamemage", "cleaver", "duelist"],
+    "unique": ["icemage", "gambler", "blacksmith", "sniper", "berserker"],
+    "hero": ["summoner", "scholar", "chronomancer", "alchemist", "swordsaint"],
+    "legend": ["dragoncaller", "warlord", "archmage", "assassin", "fortuna"]
+  }
+}

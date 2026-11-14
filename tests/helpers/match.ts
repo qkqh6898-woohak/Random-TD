@@ -1,7 +1,9 @@
 /** 테스트 도우미: 판 만들기·몹 넣기. */
 import { loadGameData, type GameData } from '../../src/data/load';
 import { createMatch, type Match, type MatchOptions } from '../../src/sim/match';
+import type { CommandInput } from '../../src/sim/Commands';
 import type { Mob } from '../../src/sim/entities/Mob';
+import { towerAt, type Tower } from '../../src/sim/entities/Tower';
 import { spawnMob } from '../../src/sim/systems/Spawn';
 
 export const data: GameData = loadGameData();
@@ -34,4 +36,17 @@ export function jumpToStage(match: Match, stage: number): void {
   match.state.stage = stage - 1;
   match.state.nextStageTick = match.tick;
   match.step();
+}
+
+/** 명령 하나를 넣고 1틱 진행 (명령은 그 틱에 실행된다). */
+export function command(match: Match, input: CommandInput): void {
+  const r = match.world.enqueue(input);
+  if (!r.ok) throw new Error(`명령 거절: ${r.reason}`);
+  match.step();
+}
+
+/** 칸 (x, y)에 소환 명령을 넣고 1틱 진행. 놓인 타워 (없으면 undefined). */
+export function summonAt(match: Match, x: number, y: number, player = 0): Tower | undefined {
+  command(match, { type: 'summon', x, y, player });
+  return towerAt(match.world, x, y);
 }

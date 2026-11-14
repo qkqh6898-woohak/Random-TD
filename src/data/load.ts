@@ -6,6 +6,7 @@
  *   예: `towers.json: towers[3].aps: 숫자여야 하는데 문자열 "fast"`
  * - 맵은 `src/data/maps/*.json`을 모두 자동으로 읽는다 (M6에서 테마 맵 추가 시 코드 수정 불필요).
  * - `curves.json`은 `tools/precompute-curves.mjs`가 enemies.json growth로 만든 표다 (sim은 거듭제곱을 못 쓴다).
+ * - `decks.json`은 덱 규칙(등급별 5종)과 기본 덱이다. 덱의 타워 id·등급은 towers.json과 교차 검사한다.
  * - 수치 해석(소수 → 정수 단위 변환)은 각 시스템이 로드할 때 `src/sim/Fixed.ts`로 한다.
  */
 
@@ -14,8 +15,12 @@ import enemiesJson from './enemies.json';
 import campaignJson from './campaign.json';
 import gameJson from './game.json';
 import curvesJson from './curves.json';
+import decksJson from './decks.json';
 import { TICK_HZ } from '../sim/World';
 import { s, validate, type Issue, type Schema } from './schema';
+import { DECK_GRADES, deckIssues, type DeckData } from './deck';
+
+export { DECK_GRADES, deckIssues, type DeckData, type DeckGrade } from './deck';
 
 // ---------------------------------------------------------------------------
 // 에러
@@ -50,6 +55,14 @@ export const TARGETS = ['first', 'boss', 'lowest', 'unmarked', 'maxhp'] as const
 export type TargetRule = (typeof TARGETS)[number];
 export const UNLOCKS = ['base', 'unlock', 'recipe', 'god'] as const;
 export type UnlockKind = (typeof UNLOCKS)[number];
+
+export interface DecksFile {
+  version: number;
+  /** 등급별 종류 수 (5) */
+  perGrade: number;
+  /** 처음 지급하는 기본 덱 (TOWERS.md 10장) */
+  base: DeckData;
+}
 /** towers.json의 factions에 없는 특수 종족 (연합·고대신). */
 export const SPECIAL_FACTIONS = ['alliance', 'ancient'] as const;
 
@@ -284,6 +297,20 @@ export interface MatchConfig {
   infiniteMapId: string;
 }
 
+/** 소환 (GDD.md 3·4.3). */
+export interface SummonConfig {
+  /** 소환 비용 (원) */
+  cost: number;
+  /** 신 타워 확률 (0.0001 = 0.01%) */
+  godChance: number;
+}
+
+/** 전투 (GDD.md 5.2). */
+export interface CombatConfig {
+  /** 원거리 투사체 속도 (칸/초) */
+  projectileSpeed: number;
+}
+
 /** HUD 경고 기준 (UI.md 4.2). */
 export interface HudConfig {
   timerWarnSeconds: number;
@@ -297,6 +324,8 @@ export interface GameConfig {
   maxFrameMs: number;
   maxPlayers: number;
   match: MatchConfig;
+  summon: SummonConfig;
+  combat: CombatConfig;
   hud: HudConfig;
 }
 
@@ -320,6 +349,7 @@ export interface GameData {
   maps: Record<string, MapData>;
   game: GameConfig;
   curves: CurvesFile;
+  decks: DecksFile;
 }
 
 // ---------------------------------------------------------------------------
@@ -717,6 +747,17 @@ export const gameSchema: Schema = s.obj({
     bossEvery: s.int({ min: 1 }),
     infiniteMapId: s.str({ nonEmpty: true }),
   }),
+  summon: s.obj({
+    cost: s.int({ min: 1 }),
+    godChance: s.num({ min: 0, max: 1 }),
+  }),
+  combat: s.obj({
+    projectileSpeed: s.withCheck<number>(s.num({ min: 0.02 }), (v, path, issues) => {
+      // 1틱에 정수 단위(1칸 = 1000)만큼 움직여야 한다: 칸/초 × 1000 ÷ 20 이 정수 → 0.02칸/초 단위
+      const perTick = (v * 1000) / TICK_HZ;
+      if (Math.abs(perTick - Math.round(perTick)) > 1e-9) issues.push({ path, message: `0.02칸/초 단위여야 하는데 ${v}` });
+    }),
+  }),
   hud: s.obj({
     timerWarnSeconds: s.int({ min: 0 }),
     mobWarnCount: s.int({ min: 0 }),
@@ -756,6 +797,15 @@ export const curvesSchema: Schema = s.withCheck<CurvesFile>(
 // ---------------------------------------------------------------------------
 
 /** 값 하나를 스키마로 검사하고 통과하면 T로 돌려준다. 실패하면 DataError. */
+const deckIds = s.arr(s.str({ nonEmpty: true }), { minLength: 1 });
+
+export const decksSchema: Schema = s.obj({
+  version: s.int({ min: 1 }),
+  notes: s.opt(s.str()),
+  perGrade: s.int({ min: 1, max: 10 }),
+  base: s.obj(Object.fromEntries(DECK_GRADES.map((g) => [g, deckIds]))),
+});
+
 export function parseData<T>(file: string, raw: unknown, schema: Schema): T {
   const issues: Issue[] = [];
   validate(raw, schema, '', issues);
@@ -848,6 +898,19 @@ export function crossCheck(data: GameData): Issue[] {
       message: `growth.hp.base(${enemies.growth.hp.base})와 다르다 → node tools/precompute-curves.mjs`,
     });
   }
+  // 덱: 기본 덱은 등급별 perGrade종이고 모두 처음부터 해금(unlock = base)된 타워 (PROGRESSION.md: 처음 해금 = 기본 덱)
+  for (const i of deckIssues(data.decks.base, towers.towers, data.decks.perGrade, 'base')) issues.push({ ...i, file: 'decks.json' });
+  for (const g of DECK_GRADES) {
+    data.decks.base[g].forEach((id, i) => {
+      const t = towers.towers.find((x) => x.id === id);
+      if (t && t.unlock !== 'base') {
+        issues.push({ file: 'decks.json', path: `base.${g}[${i}]`, message: `${id}는 처음부터 해금된 타워가 아니다 (unlock: ${t.unlock})` });
+      }
+    });
+  }
+  if (!towers.towers.some((t) => t.grade === 'god') && data.game.summon.godChance > 0) {
+    issues.push({ file: 'game.json', path: 'summon.godChance', message: '신 타워가 없는데 확률이 0보다 크다' });
+  }
   return issues;
 }
 
@@ -858,6 +921,7 @@ export interface RawGameData {
   campaign: unknown;
   game: unknown;
   curves: unknown;
+  decks: unknown;
   /** 키 = 파일 이름(확장자 없이) */
   maps: Record<string, unknown>;
 }
@@ -871,7 +935,7 @@ export function bundledRawData(): RawGameData {
     const name = path.replace(/^.*\//, '').replace(/\.json$/, '');
     maps[name] = mod;
   }
-  return { towers: towersJson, enemies: enemiesJson, campaign: campaignJson, game: gameJson, curves: curvesJson, maps };
+  return { towers: towersJson, enemies: enemiesJson, campaign: campaignJson, game: gameJson, curves: curvesJson, decks: decksJson, maps };
 }
 
 /** 원본 JSON 묶음 → 검사 → GameData. 문제가 있으면 DataError (모든 파일의 문제를 모아서). */
@@ -893,6 +957,7 @@ export function buildGameData(raw: RawGameData): GameData {
   const campaign = attempt<CampaignFile>('campaign.json', raw.campaign, campaignSchema);
   const game = attempt<GameConfig>('game.json', raw.game, gameSchema);
   const curves = attempt<CurvesFile>('curves.json', raw.curves, curvesSchema);
+  const decks = attempt<DecksFile>('decks.json', raw.decks, decksSchema);
   const maps: Record<string, MapData> = {};
   for (const [name, value] of Object.entries(raw.maps)) {
     const m = attempt<MapData>(`maps/${name}.json`, value, mapSchema);
@@ -905,7 +970,7 @@ export function buildGameData(raw: RawGameData): GameData {
       errors.flatMap((e) => e.issues.map((i) => ({ ...i, file: i.file ?? e.file }))),
     );
   }
-  const data: GameData = { towers: towers!, enemies: enemies!, campaign: campaign!, game: game!, curves: curves!, maps };
+  const data: GameData = { towers: towers!, enemies: enemies!, campaign: campaign!, game: game!, curves: curves!, decks: decks!, maps };
   const cross = crossCheck(data);
   if (cross.length > 0) throw new DataError('교차 참조', cross);
   return data;

@@ -17,16 +17,27 @@ export type CommandPayload =
   /** 빈 명령: 락스텝에서 "이 틱엔 할 일 없음"을 알리는 용도 (M13). 상태를 바꾸지 않는다. */
   | { type: 'noop' }
   /** 개발용 치트 (?debug=1, CLAUDE.md 4장): 다음 단계로 바로 넘어간다. debug 판에서만 듣고, 쓰면 판 상태에 표시된다. */
-  | { type: 'debugSkipStage' };
+  | { type: 'debugSkipStage' }
+  /** 소환 (M2-1, GDD 4.3): 빈 배치 칸 (x, y)에 소환 비용을 내고 덱 노말 5종 중 하나를 놓는다. 실행 때 다시 검사한다 */
+  | { type: 'summon'; x: number; y: number }
+  /** 개발용 치트: 돈 추가 (debug 판에서만) */
+  | { type: 'debugAddGold'; amount: number };
 
 export type CommandType = CommandPayload['type'];
 
-export const COMMAND_TYPES: readonly CommandType[] = ['noop', 'debugSkipStage'];
+export const COMMAND_TYPES: readonly CommandType[] = ['noop', 'debugSkipStage', 'summon', 'debugAddGold'];
+
+/** 칸 좌표 상한 (맵은 이보다 훨씬 작다. 네트워크로 받은 터무니없는 값을 거른다) */
+export const MAX_TILE_COORD = 255;
+/** 개발용 돈 추가 한 번의 상한 */
+export const MAX_DEBUG_GOLD = 1_000_000_000;
 
 /** 종류별 내용 필드 (type·tick·player·seq 제외). 여기 없는 필드는 거절한다. */
 export const PAYLOAD_FIELDS: { readonly [K in CommandType]: readonly string[] } = {
   noop: [],
   debugSkipStage: [],
+  summon: ['x', 'y'],
+  debugAddGold: ['amount'],
 };
 
 /** 모든 명령에 공통인 필드. */
@@ -73,10 +84,22 @@ export function validatePayload(cmd: unknown): string | null {
   for (const key of Object.keys(cmd)) {
     if (!ENVELOPE_FIELDS.includes(key) && !allowed.includes(key)) return `모르는 필드: ${key} (${type} 명령)`;
   }
+  const c = cmd as Record<string, unknown>;
   switch (type as CommandType) {
     case 'noop':
     case 'debugSkipStage':
       return null;
+    case 'summon':
+      for (const k of ['x', 'y']) {
+        const v = c[k];
+        if (!isNonNegInt(v) || v > MAX_TILE_COORD) return `${k}가 0~${MAX_TILE_COORD} 정수가 아님: ${String(v)} (summon 명령)`;
+      }
+      return null;
+    case 'debugAddGold': {
+      const v = c.amount;
+      if (!isNonNegInt(v) || v < 1 || v > MAX_DEBUG_GOLD) return `amount가 1~${MAX_DEBUG_GOLD} 정수가 아님: ${String(v)} (debugAddGold 명령)`;
+      return null;
+    }
   }
 }
 

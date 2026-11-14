@@ -327,3 +327,47 @@ describe('M1 데이터: 곡선 표·등장 규칙·판 설정', () => {
     expect(msgs).toContain('경로가 지나지 않는 P 칸: [4,5]');
   });
 });
+
+describe('M2 데이터: 덱·소환·전투', () => {
+  const decksOf = (raw: RawGameData): Json => raw.decks as Json;
+  const gameOf = (raw: RawGameData): Json => raw.game as Json;
+
+  it('decks.json 기본 덱: 등급별 5종, 소환 비용 100원, 투사체 12칸/초', () => {
+    const data = loadGameData();
+    expect(data.decks.perGrade).toBe(5);
+    expect(data.decks.base.normal).toEqual(['miner', 'goblin', 'archer', 'apprentice', 'warrior']);
+    expect(data.game.summon.cost).toBe(100);
+    expect(data.game.combat.projectileSpeed).toBe(12);
+  });
+
+  it('덱 교차 검사: 없는 타워·다른 등급·개수·중복·처음 해금이 아닌 타워를 잡는다', () => {
+    const raw = rawCopy();
+    const base = decksOf(raw).base as Record<string, string[]>;
+    base.normal = ['miner', 'goblin', 'archer', 'apprentice', 'ghostking'];
+    base.rare = ['merchant', 'mudshaman', 'flamemage', 'cleaver', 'icemage'];
+    base.unique = ['icemage', 'icemage', 'blacksmith', 'sniper', 'berserker'];
+    base.hero = ['summoner', 'scholar', 'chronomancer', 'alchemist'];
+    base.legend = ['dragoncaller', 'warlord', 'archmage', 'assassin', 'fortuna'];
+    base.legend[4] = towersOf(raw).find((t) => t.grade === 'legend' && t.unlock === 'unlock')!.id as string;
+    const issues = issuesOf(() => buildGameData(raw));
+    const msgs = issues.filter((i) => i.file === 'decks.json').map((i) => `${i.path}: ${i.message}`);
+    expect(msgs).toContain('base.normal[4]: 없는 타워: ghostking');
+    expect(msgs).toContain('base.rare[4]: icemage는 unique 등급이다 (rare 자리)');
+    expect(msgs).toContain('base.unique[1]: 같은 타워가 두 번: icemage');
+    expect(msgs).toContain('base.hero: hero 등급이 4종 (5종이어야 한다)');
+    expect(msgs.some((m) => m.startsWith('base.legend[4]:') && m.includes('처음부터 해금된 타워가 아니다'))).toBe(true);
+  });
+
+  it('game.json summon·combat 스키마: 비용은 1 이상 정수, 확률 0~1, 투사체 속도는 0.02칸/초 단위', () => {
+    const raw = rawCopy();
+    (gameOf(raw).summon as Json).cost = 0;
+    (gameOf(raw).summon as Json).godChance = 2;
+    (gameOf(raw).combat as Json).projectileSpeed = 12.01;
+    const issues = issuesOf(() => buildGameData(raw));
+    const paths = issues.filter((i) => i.file === 'game.json').map((i) => i.path);
+    expect(paths).toEqual(expect.arrayContaining(['summon.cost', 'summon.godChance', 'combat.projectileSpeed']));
+    const raw2 = rawCopy();
+    delete (gameOf(raw2) as Json).summon;
+    expect(() => buildGameData(raw2)).toThrow(/summon/);
+  });
+});

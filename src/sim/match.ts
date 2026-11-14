@@ -4,19 +4,26 @@
  * - 무한 모드: game.json match.infiniteMapId(순환의 정원), 몹 한도 = 맵 mobLimit(150).
  * - 캠페인 테마 t: campaign.json themes[t].mapId(테마 1 = 사거리 미로), 목숨 = 맵 lives(20), 마지막 단계 = stagesPerTheme(50),
  *   체력·방어 보정 = 테마 hpMul·armorOffset (BALANCE.md 5.4).
- * - 시스템 순서 (틱마다): 단계 → 등장 → 이동(출구 도달) → 패배. M2부터 대상 선택·공격이 이동과 패배 사이에 들어간다.
- * 화면은 match.state·mobs()를 읽기만 하고, 바꾸려면 명령을 world.enqueue() 한다.
+ * - 시스템 순서 (틱마다): 단계 → 등장 → 이동(출구 도달) → 전투(공격·투사체·처치) → 패배.
+ *   전투가 패배 판정보다 먼저라서 같은 틱의 처치가 몹 수에 먼저 반영된다 (UI.md 9장).
+ * - 명령: summon(소환), debugSkipStage·debugAddGold(개발용, debug 판에서만).
+ * - 덱: 플레이어별 (생략하면 decks.json 기본 덱). 판 시작 때 검사한다.
+ * 화면은 match.state·mobs()·towers()를 읽기만 하고, 바꾸려면 명령을 world.enqueue() 한다.
  */
 import type { GameData } from '../data/load';
 import { World } from './World';
 import { listMobs, countMobs, type Mob } from './entities/Mob';
+import { listProjectiles, type Projectile } from './entities/Projectile';
+import { listTowers, type Tower } from './entities/Tower';
 import { buildSimMap, type SimMap } from './map';
-import { NO_THEME, buildMatchRules, themeMods, type MatchRules, type ThemeMods } from './rules';
+import { NO_THEME, buildMatchRules, checkDeck, themeMods, type Deck, type MatchRules, type ThemeMods } from './rules';
 import type { MatchContext, MatchMode, MatchState } from './state';
+import { createCombatSystem } from './systems/Combat';
 import { createDefeatSystem } from './systems/Defeat';
 import { createMovementSystem } from './systems/Movement';
 import { createSpawnSystem } from './systems/Spawn';
 import { createStageSystem, skipStage, ticksToNextStage } from './systems/Stage';
+import { summon } from './systems/Summon';
 
 export interface MatchOptions {
   seed: number;
@@ -28,6 +35,8 @@ export interface MatchOptions {
   maxPlayers?: number;
   /** 개발용 치트 명령을 들어 줄지 (?debug=1). 기본 false */
   debug?: boolean;
+  /** 플레이어별 덱 (생략하면 모두 decks.json 기본 덱) */
+  decks?: readonly Deck[];
 }
 
 export class Match {
@@ -70,6 +79,16 @@ export class Match {
 
   mobCount(): number {
     return countMobs(this.world);
+  }
+
+  /** 판 위 타워 (ID 순). */
+  towers(): Tower[] {
+    return listTowers(this.world);
+  }
+
+  /** 날아가는 투사체 (ID 순). */
+  projectiles(): Projectile[] {
+    return listProjectiles(this.world);
   }
 
   /** 다음 단계까지 남은 틱. */
@@ -123,6 +142,9 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     mobLimit: opts.mode === 'infinite' ? (map.mobLimit as number) : 0,
     leaked: 0,
     spawned: 0,
+    summons: 0,
+    kills: 0,
+    goldEarned: 0,
     phase: 'playing',
     defeatReason: '',
     defeatTick: -1,
@@ -133,14 +155,35 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     debug: opts.debug === true,
     debugUsed: false,
   };
-  const ctx: MatchContext = { rules, map, theme, state };
+  const players = opts.players ?? 1;
+  const decks: Deck[] = [];
+  for (let p = 0; p < players; p++) {
+    const deck = opts.decks?.[p] ?? rules.baseDeck;
+    checkDeck(rules, deck, `플레이어 ${p} 덱`);
+    decks.push(deck);
+  }
+  const ctx: MatchContext = { rules, map, theme, state, decks: Object.freeze(decks) };
   const world = new World({
     seed: opts.seed,
-    players: opts.players ?? 1,
+    players,
     maxPlayers: opts.maxPlayers ?? data.game.maxPlayers,
     state,
-    systems: [createStageSystem(ctx), createSpawnSystem(ctx), createMovementSystem(ctx), createDefeatSystem(ctx)],
+    systems: [
+      createStageSystem(ctx),
+      createSpawnSystem(ctx),
+      createMovementSystem(ctx),
+      createCombatSystem(ctx),
+      createDefeatSystem(ctx),
+    ],
   });
   world.setCommandHandler('debugSkipStage', () => skipStage(ctx));
+  world.setCommandHandler('summon', (w, cmd) => {
+    if (cmd.type === 'summon') summon(ctx, w, cmd.player, cmd.x, cmd.y);
+  });
+  world.setCommandHandler('debugAddGold', (_w, cmd) => {
+    if (cmd.type !== 'debugAddGold' || !state.debug || state.phase !== 'playing') return;
+    state.debugUsed = true;
+    state.gold += cmd.amount;
+  });
   return new Match(world, ctx);
 }

@@ -323,3 +323,15 @@ describe('TickClock (누적 시간 방식 + 배속)', () => {
     expect(w2.tick).toBe(80);
   });
 });
+
+describe('사건 버퍼 한도 (M2: 헤드리스 판에서 피해 사건이 끝없이 쌓이지 않게)', () => {
+  it('가져가지 않은 사건이 한도의 2배가 되면 최근 한도만큼만 남긴다 (순서 유지)', () => {
+    const w = new World({ seed: 1, maxEvents: 3 });
+    for (let i = 0; i < 6; i++) w.emit('e', { i });
+    const ev = w.drainEvents();
+    expect(ev.map((e) => e.i)).toEqual([3, 4, 5]);
+    for (let i = 0; i < 5; i++) w.emit('e', { i });
+    expect(w.drainEvents().map((e) => e.i)).toEqual([0, 1, 2, 3, 4]);
+    expect(() => new World({ seed: 1, maxEvents: 0 })).toThrow();
+  });
+});
