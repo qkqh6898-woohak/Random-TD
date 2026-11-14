@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-check-build:
+    name: 테스트 · 검사 · 빌드
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 단위·통합 테스트 (Vitest)
+        run: npm test
+
+      - name: 타입·결정성·데이터 검사
+        run: npm run check
+
+      - name: 프로덕션 빌드
+        run: npm run build
+
+      - name: 번들 크기 기록
+        run: du -sh dist && ls -l dist/assets
