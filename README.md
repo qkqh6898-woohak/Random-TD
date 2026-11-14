@@ -8,7 +8,7 @@
 
 ```bash
 npm ci              # 의존성 설치 (처음 한 번)
-npm run dev         # 개발 서버 → 브라우저에서 http://localhost:5173 열기
+npm start           # 게임 실행 (= npm run dev) → 브라우저에서 http://localhost:5173 열기
 ```
 
 - 휴대폰으로 보기: 같은 Wi-Fi에서 `npm run dev -- --host` 후 휴대폰 브라우저로 `http://<PC IP>:5173`
@@ -17,7 +17,7 @@ npm run dev         # 개발 서버 → 브라우저에서 http://localhost:5173
 
 | 명령 | 하는 일 |
 |------|--------|
-| `npm run dev` | 개발 서버 (바로 플레이) |
+| `npm start` / `npm run dev` | 개발 서버 (바로 플레이) |
 | `npm test` | Vitest 단위·통합 테스트 |
 | `npm run check` | 타입 검사 + 결정성 검사(`tools/check-determinism.mjs`) + 곡선 표 최신 여부(`tools/precompute-curves.mjs --check`) + 데이터 검사(`tools/gen_tables.py --check`) |
 | `npm run curves` | `enemies.json` growth로 몹 성장 곡선 표 `src/data/curves.json` 다시 만들기 (수치를 바꾼 뒤) |

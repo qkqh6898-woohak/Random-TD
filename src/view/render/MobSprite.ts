@@ -129,6 +129,10 @@ export class MobSprite {
     if (this.dyingAt === null) this.dyingAt = timeMs;
     this.hpBg.setVisible(false);
     this.hpFill.setVisible(false);
+    // 죽는 동안에는 상태 아이콘·얼음을 지운다 (사라지는 몸 위에 아이콘만 떠 있지 않게)
+    for (const img of this.icons) img.setVisible(false);
+    this.iconCount = 0;
+    this.ice?.setVisible(false);
   }
 
   /** 처치 연출이 끝났는가. 연출 중이면 자세를 갱신한다. */
