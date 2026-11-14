@@ -7,13 +7,15 @@
  * - 신 타워: 덱과 무관하게 소환·승급마다 0.01% (신 3종 중 균등). 판정은 확률과 상관없이 매번 난수 1개를 쓴다
  *   → 확률 데이터가 바뀌어도 소환·승급 흐름의 난수 사용 횟수가 같다 (Summon과 같은 규칙).
  * - 레전드·신·히든은 승급할 수 없다 (레전드는 히든 재료, GDD 4.4).
- * - 행운의 여신 '2등급 상승'·예언자 '결과 2개 중 선택' 같은 특색은 M3-9 (판정 자리만 남겨 둠).
+ * - 행운의 여신 '2등급 상승'(M3-9): 승급 결과가 다음 등급 대신 그다음 등급 (노말 → 유니크 …, 레전드를 넘지 않음).
+ *   예언자 '결과 2개 중 선택'은 해금 타워(M7-2).
  * 난수는 플레이어별 소환·승급 흐름(`p{n}.summon`)만 쓴다 (MULTIPLAYER.md 4.2 'P1 소환·승급').
  */
 import { DECK_GRADES, type DeckGrade } from '../data/deck';
 import type { Grade } from '../data/load';
 import type { Rng } from './Rng';
 import type { Deck, MatchRules } from './rules';
+import { rollChanceBp } from './systems/Damage';
 
 export { DECK_GRADES, type DeckGrade };
 
@@ -49,18 +51,24 @@ export function mergeOutcomes(deck: Deck, grade: Grade): readonly string[] {
 export interface MergeRoll {
   tower: string;
   god: boolean;
+  /** 2등급 상승이었는가 (행운의 여신) */
+  double: boolean;
 }
 
 /**
- * 승급 결과 고르기: ① 신 타워 0.01% (난수 1개, 확률이 0이어도 쓴다) → ② (M3-9 행운의 여신 2등급 상승 자리) → ③ 덱의 다음 등급 5종 균등.
+ * 승급 결과 고르기: ① 신 타워 0.01% (난수 1개, 확률이 0이어도 쓴다) → ② 2등급 상승 (행운의 여신, 그다음 등급이 덱에 있을 때만.
+ * 확률이 0이거나 해당 없으면 난수를 쓰지 않음) → ③ 덱의 다음 등급 5종 균등.
  * 승급할 수 없는 등급이거나 덱의 다음 등급이 비어 있으면 에러 (명령 실행 전에 검사한다).
+ * @param doubleBp 2등급 상승 확률 (bp)
  */
-export function rollMerge(rng: Rng, rules: MatchRules, deck: Deck, grade: Grade): MergeRoll {
+export function rollMerge(rng: Rng, rules: MatchRules, deck: Deck, grade: Grade, doubleBp = 0): MergeRoll {
   const g = nextGrade(grade);
   if (!g) throw new Error(`승급할 수 없는 등급: ${grade}`);
   const pool = deck[g];
   if (pool.length === 0) throw new Error(`덱의 ${g} 등급이 비어 있다`);
   const god = rng.chanceBp(rules.godChanceBp);
-  if (god && rules.godTowers.length > 0) return { tower: rng.pick(rules.godTowers), god: true };
-  return { tower: rng.pick(pool), god: false };
+  if (god && rules.godTowers.length > 0) return { tower: rng.pick(rules.godTowers), god: true, double: false };
+  const g2 = nextGrade(g);
+  if (doubleBp > 0 && g2 && deck[g2].length > 0 && rollChanceBp(rng, doubleBp)) return { tower: rng.pick(deck[g2]), god: false, double: true };
+  return { tower: rng.pick(pool), god: false, double: false };
 }

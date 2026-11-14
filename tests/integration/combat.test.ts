@@ -39,8 +39,13 @@ describe('타워가 있는 무한 모드', () => {
     const bare = infinite(42);
     runToStage(bare, 6);
     expect(withTowers.state.kills).toBeGreaterThan(30);
-    expect(withTowers.state.gold).toBe(withTowers.state.goldEarned); // 처치 보상만큼
-    expect(withTowers.state.goldEarned).toBe(withTowers.state.kills * 10); // 1~5단계 슬라임 = 10원
+    expect(withTowers.state.gold).toBe(withTowers.state.goldEarned); // 처치 보상 + 특색 돈만큼
+    // 1~5단계 슬라임 = 10원 + 광부 특색(공격마다 1% 확률 +5원, M3-9)이 번 돈
+    const abilityGold = withTowers.world
+      .drainEvents()
+      .filter((e) => e.type === 'abilityGold')
+      .reduce((a, e) => a + Number(e.amount), 0);
+    expect(withTowers.state.goldEarned).toBe(withTowers.state.kills * 10 + abilityGold);
     expect(withTowers.mobCount()).toBeLessThan(bare.mobCount() - 30);
     expect(withTowers.mobCount() + withTowers.state.kills).toBe(bare.mobCount()); // 나온 수는 같다 (등장은 세계 난수)
   });

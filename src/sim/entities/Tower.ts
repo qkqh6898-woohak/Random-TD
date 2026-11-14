@@ -52,6 +52,15 @@ export interface Tower extends Entity {
    * 타이머는 1회분까지만 모은다. 놓으면(hold off) 또는 옮겨지면(move) false.
    */
   held: boolean;
+  /**
+   * 주기 특색 능력(진흙 웅덩이·시간 정지·연금·운석·병사 소환, M3-9)이 다음에 발동하는 틱. -1 = 아직 시작 안 함
+   * (능력 시스템이 처음 볼 때 '지금 + 주기'로 정한다 → 놓인 뒤 주기만큼 지나야 첫 발동).
+   */
+  abilityAt: number;
+  /** 판 내 스택 (광전사: 같은 대상 연속 공격 수). 승급하면 새 엔티티라 0부터 (GDD 4.4) */
+  stacks: number;
+  /** 스택을 쌓는 대상 몹 id (광전사, 0 = 없음) */
+  stackTarget: number;
 }
 
 export function isTower(e: Entity): e is Tower {

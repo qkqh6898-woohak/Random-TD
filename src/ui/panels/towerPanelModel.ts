@@ -12,7 +12,7 @@
  *   [⬆ 승급] [⬆⬆ 모두 승급] — 같은 종류 3개 이상이고 승급할 수 있는 등급일 때만 켜짐
  *   승급 결과 미리 보기: 덱의 다음 등급 5종 이름
  *   대상: 선두 (우선순위 변경은 계정 Lv8, 아직 없음)
- * 타워 레벨(M9)이 아직 없으므로 Lv1로 보인다.
+ * 타워 레벨은 판의 레벨(MatchContext.levels, 계정 성장 M9 전까지 모두 1)을 보여준다. 공격력·공속에는 오라·레벨 보정이 들어간다 (M3-7).
  */
 import { GRADE_COLORS } from '../../art/palette';
 import { GRADE_STARS } from '../../art/towerLook';
@@ -127,6 +127,8 @@ export interface TowerPanelInput {
   paused: boolean;
   /** 관통 최대 (bp, game.json combat.penMax) */
   penMaxBp: number;
+  /** 타워 레벨 (계정 성장 M9, 지금은 1). 생략하면 1 */
+  level?: number;
 }
 
 export interface TowerPanelModel {
@@ -198,7 +200,7 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
     grade: data.grade,
     stars: gradeStars(data.grade),
     gradeColor: data.grade === 'god' || data.grade === 'hidden' ? '#F1C40F' : GRADE_COLORS[data.grade],
-    level: 'Lv1',
+    level: `Lv${input.level ?? 1}`,
     subtitle: `${GRADE_NAMES[data.grade]} · ${shortFactionName(input.factionName)} · ${DAMAGE_TYPE_NAMES[data.damageType]}${tags}`,
     stats: [
       [

@@ -1,0 +1,110 @@
+/**
+ * 지원 효과 — 오라 (DEV_PLAN M3-7, GDD 5.6).
+ *
+ * - "주변 8칸" = 자신을 둘러싼 3×3 (자신 제외), "주변 24칸" = 5×5 (자신 제외): 칸 거리(체비쇼프, max(|dx|, |dy|)) ≤ 1 / 2.
+ *   범위는 game.json aura (around8 = 1, around24 = 2).
+ * - "전체" = 판 위 모든 (내) 타워, **자신 포함**.
+ * - **같은 타워의 지원 효과는 중첩되지 않음** (학자 2개 = +20%만, 대장장이 둘 사이 타워 = +10%만).
+ *   **서로 다른 타워의 효과는 중첩** (대장장이 +10% + 학자 +20% = +30%, 공격력%는 합연산).
+ *   같은 종류 둘이 서로를 감싸면 서로에게는 준다 (대장장이 A 옆 대장장이 B = 둘 다 +10%, 자기 자신에게만 안 줌).
+ * - 위치로 매 틱 다시 계산한다 → 이동·교환하면 바로 반영 (DEV_PLAN 3.1 '이동 후 재계산'). 끄는 중인 타워는 원래 칸에서 준다.
+ * - 주는 쪽과 받는 쪽은 같은 주인끼리만 (2인 판에서 남의 타워를 버프하지 않는다 — 협동 모드 규칙은 M13에서 다시 정한다).
+ * 타워 한 개의 최종 보정(TowerBonus) = 오라 + 타워 레벨 공격력(레벨당 +4%) + 자기 특색(광전사 공속·암살자 보스 배율) → stats.effectiveStats.
+ */
+import type { World } from '../World';
+import { BP_ONE, mulBp } from '../Fixed';
+import { isTower, type Tower } from '../entities/Tower';
+import type { MatchRules } from '../rules';
+import type { MatchContext } from '../state';
+import type { TowerBonus } from '../stats';
+import { abilityOf, abilityParams, towerLevel } from '../abilities';
+import type { AuraArea, AuraSpec } from '../abilities/types';
+
+/** 오라 하나가 받는 타워에게 닿는가. */
+export function auraCovers(
+  rules: Pick<MatchRules, 'auraAround8' | 'auraAround24'>,
+  area: AuraArea,
+  src: Pick<Tower, 'id' | 'tx' | 'ty'>,
+  dst: Pick<Tower, 'id' | 'tx' | 'ty'>,
+): boolean {
+  if (area === 'global') return true;
+  if (src.id === dst.id) return false;
+  const r = area === 'around8' ? rules.auraAround8 : rules.auraAround24;
+  const dx = dst.tx - src.tx;
+  const dy = dst.ty - src.ty;
+  return dx <= r && dx >= -r && dy <= r && dy >= -r;
+}
+
+/** 오라를 주는 타워 하나. */
+export interface AuraSource {
+  tower: Tower;
+  spec: AuraSpec;
+}
+
+/** 판 위 오라 타워 (ID 순). */
+export function auraSources(ctx: MatchContext, world: World): AuraSource[] {
+  const out: AuraSource[] = [];
+  for (const e of world.entities.list()) {
+    if (!isTower(e)) continue;
+    const def = abilityOf(e.tower);
+    if (!def?.aura) continue;
+    out.push({ tower: e, spec: def.aura(abilityParams(ctx, e.owner, def)) });
+  }
+  return out;
+}
+
+/** 타워 하나가 받는 오라 합 (공격력%·공속%)과 준 타워 종류. */
+export interface AuraBonus {
+  atkPctBp: number;
+  apsPctBp: number;
+  /** 효과를 준 타워 종류 (id, 처음 닿은 순) — 화면 표시용 */
+  from: string[];
+}
+
+/** 타워 엔티티 id → 받는 오라 합. 오라를 하나도 받지 않는 타워는 없다(맵에 없음). */
+export type AuraMap = ReadonlyMap<number, AuraBonus>;
+
+/**
+ * 모든 타워가 받는 오라를 계산한다. 같은 주인의 오라만, 같은 타워 종류는 한 번만(닿는 것이 하나라도 있으면), 다른 종류는 합.
+ * 같은 종류의 수치는 주인·레벨이 같아 모두 같으므로 '한 번만' = 그 값.
+ */
+export function computeAuras(ctx: MatchContext, world: World, sources: readonly AuraSource[] = auraSources(ctx, world)): AuraMap {
+  const out = new Map<number, AuraBonus>();
+  if (sources.length === 0) return out;
+  for (const e of world.entities.list()) {
+    if (!isTower(e)) continue;
+    let bonus: AuraBonus | null = null;
+    const got = new Set<string>();
+    for (const s of sources) {
+      if (s.tower.owner !== e.owner || got.has(s.tower.tower)) continue;
+      if (!auraCovers(ctx.rules, s.spec.area, s.tower, e)) continue;
+      got.add(s.tower.tower);
+      bonus ??= { atkPctBp: 0, apsPctBp: 0, from: [] };
+      bonus.atkPctBp += s.spec.atkPctBp;
+      bonus.apsPctBp += s.spec.apsPctBp;
+      bonus.from.push(s.tower.tower);
+    }
+    if (bonus) out.set(e.id, bonus);
+  }
+  return out;
+}
+
+/**
+ * 타워 하나의 최종 보정: 받는 오라 + 타워 레벨 공격력((레벨 − 1) × 4%) + 자기 특색 (광전사 연속 공격 공속%, 암살자 보스 배율 ×).
+ * @param auras computeAuras 결과 (한 틱에 한 번 계산해 모든 타워가 같이 쓴다)
+ */
+export function towerBonus(ctx: MatchContext, tower: Tower, auras: AuraMap): TowerBonus {
+  const a = auras.get(tower.id);
+  const level = towerLevel(ctx, tower.owner, tower.tower);
+  let atk = (a?.atkPctBp ?? 0) + (level - 1) * ctx.rules.atkPerLevelBp;
+  let aps = a?.apsPctBp ?? 0;
+  let boss = BP_ONE;
+  const def = abilityOf(tower.tower);
+  if (def) {
+    const p = abilityParams(ctx, tower.owner, def);
+    if (def.apsBonusBp) aps += def.apsBonusBp(tower, p);
+    if (def.bossMulBp) boss = mulBp(boss, def.bossMulBp(p));
+  }
+  if (atk < -BP_ONE) atk = -BP_ONE;
+  return { atkPctBp: atk, apsPctBp: aps, bossMulBp: boss };
+}

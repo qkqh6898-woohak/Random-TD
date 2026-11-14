@@ -335,6 +335,38 @@ export interface MergeConfig {
   count: number;
 }
 
+/** 상태 이상 (GDD.md 5.5, M3b). */
+export interface StatusConfig {
+  /** 둔화 최대 (0.7 = 70%). 둔화는 가장 강한 것 하나만 적용 */
+  slowMax: number;
+  /** 보스 둔화 배율 (0.5 = 효과 절반) */
+  bossSlowMul: number;
+  /** 보스 기절·정지·빙결 지속시간 배율 (0.3 = 30%) */
+  bossCcDurationMul: number;
+  /** 기절·정지·빙결이 끝난 직후 행동 불가 면역 (초, 1틱 단위) */
+  ccImmuneSeconds: number;
+  /** 빙결 중 받는 피해 증가 (0.1 = +10%) */
+  freezeVuln: number;
+  /** 지속 피해(화상·독·출혈)가 들어가는 간격 (초, 1틱 단위) */
+  dotIntervalSeconds: number;
+}
+
+/** 지원 효과 범위 (GDD.md 5.6): 체비쇼프 거리. */
+export interface AuraConfig {
+  /** '주변 8칸' (3×3, 자신 제외) = 1 */
+  around8: number;
+  /** '주변 24칸' (5×5, 자신 제외) = 2 */
+  around24: number;
+}
+
+/** 타워 레벨 (TOWERS.md 0.1, M9에서 계정이 레벨을 준다. 지금은 모두 1). */
+export interface TowerLevelConfig {
+  /** 최대 레벨 (15). 특색 params [Lv1, Lv15]는 (lv − 1) ÷ (max − 1)로 보간 */
+  max: number;
+  /** 레벨당 공격력 증가 (0.04 = +4%, Lv1 = 0) */
+  atkPerLevel: number;
+}
+
 /** HUD 경고 기준 (UI.md 4.2). */
 export interface HudConfig {
   timerWarnSeconds: number;
@@ -359,6 +391,9 @@ export interface GameConfig {
   merge: MergeConfig;
   hud: HudConfig;
   debug: DebugConfig;
+  status: StatusConfig;
+  aura: AuraConfig;
+  towerLevel: TowerLevelConfig;
 }
 
 /** 미리 계산한 성장 곡선 표 (tools/precompute-curves.mjs). 인덱스 = 단계 (0 ~ maxStage). */
@@ -751,6 +786,14 @@ export const mapSchema: Schema = s.withCheck<MapData>(
   checkMap,
 );
 
+/** 0.05초(1틱) 단위 초 (min ~ max). */
+function tickSeconds(min: number, max: number): Schema {
+  return s.withCheck<number>(s.num({ min, max }), (v, path, issues) => {
+    const ticks = v * TICK_HZ;
+    if (Math.abs(ticks - Math.round(ticks)) > 1e-9) issues.push({ path, message: `0.05초(1틱) 단위여야 하는데 ${v}` });
+  });
+}
+
 export const gameSchema: Schema = s.obj({
   version: s.int({ min: 1 }),
   speeds: s.withCheck<SpeedOption[]>(
@@ -813,6 +856,22 @@ export const gameSchema: Schema = s.obj({
   debug: s.obj({
     // debugAddGold 명령 한도(MAX_DEBUG_GOLD = 10억)를 넘지 않게
     addGold: s.int({ min: 1, max: 1_000_000_000 }),
+  }),
+  status: s.obj({
+    slowMax: s.num({ min: 0, max: 1 }),
+    bossSlowMul: s.num({ min: 0, max: 1 }),
+    bossCcDurationMul: s.num({ min: 0, max: 1 }),
+    ccImmuneSeconds: tickSeconds(0, 60),
+    freezeVuln: s.num({ min: 0, max: 10 }),
+    dotIntervalSeconds: tickSeconds(0.05, 10),
+  }),
+  aura: s.obj({
+    around8: s.int({ min: 1, max: 10 }),
+    around24: s.int({ min: 1, max: 10 }),
+  }),
+  towerLevel: s.obj({
+    max: s.int({ min: 2, max: 100 }),
+    atkPerLevel: s.num({ min: 0, max: 1 }),
   }),
 });
 

@@ -38,6 +38,10 @@ export interface Projectile extends Entity {
   flatArmorPen: number;
   flatMagicPen: number;
   bossMulBp: number;
+  /** 쏜 타워의 주인 (특색 수치 레벨, M3b) */
+  owner: number;
+  /** 지속 피해 초당 피해 (× ATK_SCALE, 0 = 없음) — 맞은 몹에게 쏜 타워 종류(tower)의 dot을 건다 */
+  dotDps: number;
   /** 공격 형태 (도착할 때 맞는 몹을 고르는 방법, Shapes): 단일·광역·관통·연쇄·다중 */
   shape: string;
   /** 광역 반경 (단위) */

@@ -4,18 +4,27 @@
  * - 무한 모드: game.json match.infiniteMapId(순환의 정원), 몹 한도 = 맵 mobLimit(150).
  * - 캠페인 테마 t: campaign.json themes[t].mapId(테마 1 = 사거리 미로), 목숨 = 맵 lives(20), 마지막 단계 = stagesPerTheme(50),
  *   체력·방어 보정 = 테마 hpMul·armorOffset (BALANCE.md 5.4).
- * - 시스템 순서 (틱마다): 단계 → 등장 → 이동(출구 도달) → 전투(공격·투사체·처치) → 패배.
+ * - 시스템 순서 (틱마다): 단계 → 등장 → 상태 이상(지속 피해·풀림) → 이동(출구 도달) → 특색 능력(주기 능력·진흙 웅덩이)
+ *   → 소환 병사 → 전투(공격·투사체·처치) → 패배.
  *   전투가 패배 판정보다 먼저라서 같은 틱의 처치가 몹 수에 먼저 반영된다 (UI.md 9장).
- * - 명령: summon(소환), merge·mergeAll(승급·모두 승급), move(이동·교환), hold(끄는 동안 공격 정지), debugSkipStage·debugAddGold(개발용, debug 판에서만).
+ * - 명령: summon(소환), merge·mergeAll(승급·모두 승급), move(이동·교환), hold(끄는 동안 공격 정지),
+ *   debugSkipStage·debugAddGold·debugTower(개발용, debug 판에서만).
  * - 덱: 플레이어별 (생략하면 decks.json 기본 덱). 판 시작 때 등급별로 복사·동결하고 검사한다 (판 도중 바깥에서 못 바꿈).
+ * - 타워 레벨: 플레이어별 (타워 id → 1~15, 생략하면 모두 1). 판 시작 때 복사·동결 (특색 수치 보간·레벨당 공격력, M3-8).
  * 화면은 match.state·mobs()·towers()를 읽기만 하고, 바꾸려면 명령을 world.enqueue() 한다.
  */
 import type { GameData } from '../data/load';
 import { World } from './World';
 import { listMobs, countMobs, type Mob } from './entities/Mob';
 import { listProjectiles, type Projectile } from './entities/Projectile';
-import { listTowers, type Tower } from './entities/Tower';
-import { buildSimMap, type SimMap } from './map';
+import { listTowers, towerAt, type Tower } from './entities/Tower';
+import { listPuddles, type Puddle } from './entities/Puddle';
+import { listSoldiers, type Soldier } from './entities/Soldier';
+import { buildSimMap, isBuildable, type SimMap } from './map';
+import { checkAllAbilityParams } from './abilities';
+import { createAbilitySystem } from './systems/Abilities';
+import { createSoldierSystem } from './systems/Soldiers';
+import { createStatusSystem } from './systems/Status';
 import { NO_THEME, buildMatchRules, checkDeck, freezeDeck, themeMods, type Deck, type MatchRules, type ThemeMods } from './rules';
 import type { MatchContext, MatchMode, MatchState } from './state';
 import { newPlayerMods } from './stats';
@@ -26,7 +35,7 @@ import { createSpawnSystem } from './systems/Spawn';
 import { createStageSystem, skipStage, ticksToNextStage } from './systems/Stage';
 import { merge, mergeAll } from './systems/Merge';
 import { holdTower, moveTower } from './systems/Move';
-import { summon } from './systems/Summon';
+import { placeTower, summon } from './systems/Summon';
 
 export interface MatchOptions {
   seed: number;
@@ -40,6 +49,8 @@ export interface MatchOptions {
   debug?: boolean;
   /** 플레이어별 덱 (생략하면 모두 decks.json 기본 덱) */
   decks?: readonly Deck[];
+  /** 플레이어별 타워 레벨 (타워 id → 1~15, 없는 타워는 1). 계정 성장(M9)이 넣는다 */
+  levels?: readonly Readonly<Record<string, number>>[];
 }
 
 export class Match {
@@ -92,6 +103,16 @@ export class Match {
   /** 날아가는 투사체 (ID 순). */
   projectiles(): Projectile[] {
     return listProjectiles(this.world);
+  }
+
+  /** 진흙 웅덩이 (ID 순). */
+  puddles(): Puddle[] {
+    return listPuddles(this.world);
+  }
+
+  /** 소환 병사 (ID 순). */
+  soldiers(): Soldier[] {
+    return listSoldiers(this.world);
   }
 
   /** 다음 단계까지 남은 틱. */
@@ -170,7 +191,23 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     checkDeck(rules, deck, `플레이어 ${p} 덱`);
     decks.push(deck);
   }
-  const ctx: MatchContext = { rules, map, theme, state, decks: Object.freeze(decks) };
+  const levels: Readonly<Record<string, number>>[] = [];
+  for (let p = 0; p < players; p++) {
+    const src = opts.levels?.[p] ?? {};
+    const out: Record<string, number> = {};
+    for (const id of Object.keys(src).sort()) {
+      const lv = src[id] as number;
+      if (!rules.towers.has(id)) throw new Error(`플레이어 ${p} 타워 레벨: 없는 타워 ${id}`);
+      if (!Number.isSafeInteger(lv) || lv < 1 || lv > rules.towerLevelMax) {
+        throw new Error(`플레이어 ${p} 타워 레벨: ${id} = ${lv} (1~${rules.towerLevelMax} 정수여야 한다)`);
+      }
+      out[id] = lv;
+    }
+    levels.push(Object.freeze(out));
+  }
+  const ctx: MatchContext = { rules, map, theme, state, decks: Object.freeze(decks), levels: Object.freeze(levels), cache: new Map() };
+  // 특색 수치가 잘못되면 판을 만들 때 바로 드러나게 (덱에 있는 타워만이 아니라 모든 능력 모듈)
+  checkAllAbilityParams(ctx);
   const world = new World({
     seed: opts.seed,
     players,
@@ -179,7 +216,10 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     systems: [
       createStageSystem(ctx),
       createSpawnSystem(ctx),
+      createStatusSystem(ctx),
       createMovementSystem(ctx),
+      createAbilitySystem(ctx),
+      createSoldierSystem(ctx),
       createCombatSystem(ctx),
       createDefeatSystem(ctx),
     ],
@@ -204,6 +244,14 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     if (cmd.type !== 'debugAddGold' || !state.debug || state.phase !== 'playing') return;
     state.debugUsed = true;
     state.gold += cmd.amount;
+  });
+  world.setCommandHandler('debugTower', (w, cmd) => {
+    if (cmd.type !== 'debugTower' || !state.debug || state.phase !== 'playing') return;
+    const id = rules.towerOrder[cmd.t];
+    if (id === undefined || !isBuildable(map, cmd.x, cmd.y) || towerAt(w, cmd.x, cmd.y)) return;
+    state.debugUsed = true;
+    const t = placeTower(w, id, cmd.player, cmd.x, cmd.y);
+    w.emit('summon', { id: t.id, tower: id, grade: rules.towers.get(id)?.grade ?? '', god: false, rare: false, player: cmd.player, x: cmd.x, y: cmd.y });
   });
   return new Match(world, ctx);
 }

@@ -1,6 +1,6 @@
 {
-  "version": 5,
-  "notes": "판 공통 설정. 로직 틱(초당 20틱)은 결정성 규칙이라 코드 상수(src/sim/World.ts TICK_HZ)로 고정한다. speeds = 배속 버튼 순환 목록(UI.md 4.2, ×3은 계정 Lv12 해금). maxFrameMs = 한 프레임에 따라잡는 최대 시간(탭 전환 후 폭주 방지). match = 한 판의 흐름(GDD.md 2.2): 시작 자금, 0단계 준비 시간, 단계 길이, 단계당 등장 칸 수와 간격(초는 0.05초 = 1틱 단위), 보스 단계 주기, 무한 모드 맵. summon = 소환(GDD.md 3·4.3): 비용(원), 신 타워 확률(0.0001 = 0.01%, 덱과 무관하게 신 3종 중 균등). combat = 전투(GDD.md 5.2~5.4, M3): 원거리 투사체 속도(칸/초, 1틱에 정수 단위만큼 움직이게 0.02칸 단위), 공속 한도(기본의 apsMaxMul배, 초당 apsMaxPerSec회), 방어·마법 관통 최대(penMax), 치명타 확률 최대(critChanceMax), 받는 피해 증가(약화) 최대(vulnMax, 1 = +100%), 연쇄 튕길 때마다 피해 감소(chainFalloff, 곱연산 0.8^k)·다음 몹을 찾는 반경(chainRange 칸), 관통 직선의 폭(pierceWidth 칸, 몹 중심이 직선에서 폭의 절반 안), 이동·교환 뒤 공격 정지(movePauseSeconds, GDD.md 4.5). merge = 승급(GDD.md 4.4): 같은 종류·같은 등급 count개 → 다음 등급 1개 (신 판정 확률은 summon.godChance와 같다). hud = HUD 경고 기준(UI.md 4.2): 남은 시간 이하 노란색, 몹 수 이상 빨간색, 목숨 이하 빨간색. debug = 개발용 치트(?debug=1, CLAUDE.md 4장): HUD [💰+] 한 번에 더하는 돈.",
+  "version": 6,
+  "notes": "판 공통 설정. 로직 틱(초당 20틱)은 결정성 규칙이라 코드 상수(src/sim/World.ts TICK_HZ)로 고정한다. speeds = 배속 버튼 순환 목록(UI.md 4.2, ×3은 계정 Lv12 해금). maxFrameMs = 한 프레임에 따라잡는 최대 시간(탭 전환 후 폭주 방지). match = 한 판의 흐름(GDD.md 2.2): 시작 자금, 0단계 준비 시간, 단계 길이, 단계당 등장 칸 수와 간격(초는 0.05초 = 1틱 단위), 보스 단계 주기, 무한 모드 맵. summon = 소환(GDD.md 3·4.3): 비용(원), 신 타워 확률(0.0001 = 0.01%, 덱과 무관하게 신 3종 중 균등). combat = 전투(GDD.md 5.2~5.4, M3): 원거리 투사체 속도(칸/초, 1틱에 정수 단위만큼 움직이게 0.02칸 단위), 공속 한도(기본의 apsMaxMul배, 초당 apsMaxPerSec회), 방어·마법 관통 최대(penMax), 치명타 확률 최대(critChanceMax), 받는 피해 증가(약화) 최대(vulnMax, 1 = +100%), 연쇄 튕길 때마다 피해 감소(chainFalloff, 곱연산 0.8^k)·다음 몹을 찾는 반경(chainRange 칸), 관통 직선의 폭(pierceWidth 칸, 몹 중심이 직선에서 폭의 절반 안), 이동·교환 뒤 공격 정지(movePauseSeconds, GDD.md 4.5). merge = 승급(GDD.md 4.4): 같은 종류·같은 등급 count개 → 다음 등급 1개 (신 판정 확률은 summon.godChance와 같다). hud = HUD 경고 기준(UI.md 4.2): 남은 시간 이하 노란색, 몹 수 이상 빨간색, 목숨 이하 빨간색. debug = 개발용 치트(?debug=1, CLAUDE.md 4장): HUD [💰+] 한 번에 더하는 돈. status = 상태 이상(GDD.md 5.5, M3b): 둔화 최대(slowMax, 가장 강한 것 하나만), 보스 둔화 배율(bossSlowMul 0.5 = 절반) · 보스 기절·정지·빙결 지속 배율(bossCcDurationMul 0.3), 기절·정지·빙결이 끝난 직후 행동 불가 면역(ccImmuneSeconds), 빙결 중 받는 피해 증가(freezeVuln), 지속 피해(화상·독·출혈)가 들어가는 간격(dotIntervalSeconds). 보스가 아닌 몹은 enemies.json ccResist만큼 둔화 세기·기절·정지·빙결 지속시간이 줄어든다. aura = 지원 효과 범위(GDD.md 5.6): '주변 8칸'(3×3) = 체비쇼프 거리 1, '주변 24칸'(5×5) = 2 (자신 제외, '전체'는 자신 포함). towerLevel = 타워 레벨(TOWERS.md 0.1): 최대 레벨(특색 params [Lv1, Lv15] 보간의 끝), 레벨당 공격력 +4%.",
   "speeds": [
     {
       "mul": 1,
@@ -52,5 +52,21 @@
   },
   "debug": {
     "addGold": 1000
+  },
+  "status": {
+    "slowMax": 0.7,
+    "bossSlowMul": 0.5,
+    "bossCcDurationMul": 0.3,
+    "ccImmuneSeconds": 1,
+    "freezeVuln": 0.1,
+    "dotIntervalSeconds": 0.5
+  },
+  "aura": {
+    "around8": 1,
+    "around24": 2
+  },
+  "towerLevel": {
+    "max": 15,
+    "atkPerLevel": 0.04
   }
 }

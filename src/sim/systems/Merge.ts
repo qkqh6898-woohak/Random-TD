@@ -11,7 +11,8 @@
  *   그다음부터는 남은 같은 종류 중 **가장 먼저 소환된 타워**(ID가 가장 작은 타워) 자리에 결과가 생기고 가장 나중의 2개가 사라진다.
  *   결과가 또 3개가 되어도 이어서 승급하지 않는다 (터치한 종류만).
  * - 실패하면 상태·난수를 바꾸지 않고 `mergeFail` 사건 { player, x, y, reason }.
- * - 성공하면 승급마다 `merge` 사건 { player, id(새 타워), from(터치한 타워), fromTower, tower, grade, god, x, y, removed("x,y;x,y") }.
+ * - 성공하면 승급마다 `merge` 사건 { player, id(새 타워), from(터치한 타워), fromTower, tower, grade, god, double(2등급 상승), x, y, removed("x,y;x,y") }.
+ * - 행운의 여신(M3-9)이 판 위에 있으면 2등급 상승 판정 (Deck.rollMerge ②). 확률은 승급하기 전 판 위 타워로 정한다.
  * 승급 개수(3)는 game.json merge.count.
  */
 import type { World } from '../World';
@@ -20,6 +21,7 @@ import { isTower, type Tower } from '../entities/Tower';
 import { canMergeGrade, rollMerge } from '../Deck';
 import type { MatchContext } from '../state';
 import { placeTower } from './Summon';
+import { ownerBonus } from '../abilities';
 
 /** 승급 실패 이유: 판이 끝남 / 그 칸에 타워가 없음 / 남의 타워 / 승급할 수 없는 등급(레전드·신·히든) / 같은 종류가 모자람 */
 export type MergeFail = 'phase' | 'noTower' | 'notOwner' | 'maxGrade' | 'count';
@@ -96,7 +98,8 @@ function mergeOnce(ctx: MatchContext, world: World, player: number, anchor: Towe
   if (!stats) throw new Error(`없는 타워: ${anchor.tower}`);
   const consumed = pickConsumed(group, anchor, ctx.rules.mergeCount - 1);
   const deck = ctx.decks[player] ?? ctx.rules.baseDeck;
-  const roll = rollMerge(world.rng(streamSummon(player)), ctx.rules, deck, stats.grade);
+  const doubleBp = ownerBonus(ctx, world, player, (def, p) => def.mergeDoubleBp?.(p));
+  const roll = rollMerge(world.rng(streamSummon(player)), ctx.rules, deck, stats.grade, doubleBp);
   world.entities.remove(anchor.id);
   for (const t of consumed) world.entities.remove(t.id);
   const result = placeTower(world, roll.tower, player, anchor.tx, anchor.ty);
@@ -110,6 +113,7 @@ function mergeOnce(ctx: MatchContext, world: World, player: number, anchor: Towe
     tower: roll.tower,
     grade,
     god: roll.god,
+    double: roll.double,
     x: anchor.tx,
     y: anchor.ty,
     removed: consumed.map((t) => `${t.tx},${t.ty}`).join(';'),

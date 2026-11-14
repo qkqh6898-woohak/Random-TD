@@ -11,6 +11,7 @@ interface View {
   tick: number;
   stage: number;
   gold: number;
+  goldEarned: number;
   towers: number;
   renderedTowers: number;
   mobs: number;
@@ -21,7 +22,7 @@ interface View {
 type SceneLike = {
   match: {
     tick: number;
-    state: { stage: number; gold: number; kills: number; summons: number };
+    state: { stage: number; gold: number; goldEarned: number; kills: number; summons: number };
     towers(): { id: number; tx: number; ty: number; tower: string }[];
     mobCount(): number;
     map: { buildable: [number, number][] };
@@ -57,6 +58,7 @@ async function view(page: Page): Promise<View> {
       tick: m.tick,
       stage: m.state.stage,
       gold: m.state.gold,
+      goldEarned: m.state.goldEarned,
       towers: m.towers().length,
       renderedTowers: s.renderedTowerCount,
       mobs: m.mobCount(),
@@ -245,10 +247,13 @@ test('자동 공격: 몹을 잡으면 피해 숫자·+10원·동전이 뜨고 �
     const l = await labels(page);
     return l.labels.includes('+10원') || l.coins > 0;
   }, { timeout: 15000 }).toBe(true);
-  // 멈추고 비교: 돈 = 처치 × 10원 (1단계 슬라임), HUD 돈 = sim 돈
+  // 멈추고 비교: 돈 = 번 돈 = 처치 × 10원 (1단계 슬라임) + 광부 특색 돈(+5원씩, M3b), HUD 돈 = sim 돈
   await page.getByRole('button', { name: '일시정지' }).click();
   const v = await view(page);
-  expect(v.gold).toBe(v.kills * 10);
+  expect(v.gold).toBe(v.goldEarned);
+  const extra = v.goldEarned - v.kills * 10;
+  expect(extra).toBeGreaterThanOrEqual(0);
+  expect(extra % 5).toBe(0);
   await expect(page.getByTestId('hud-gold')).toHaveText(won(v.gold));
   await page.getByRole('button', { name: '계속' }).click();
 

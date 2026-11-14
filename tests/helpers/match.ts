@@ -50,3 +50,28 @@ export function summonAt(match: Match, x: number, y: number, player = 0): Tower 
   command(match, { type: 'summon', x, y, player });
   return towerAt(match.world, x, y);
 }
+
+/**
+ * 시험장: 무한 판 1단계, 단계·등장 시스템이 끼어들지 않게 (다음 단계를 멀리, 1단계 등장 대기열은 이미 만든 것으로).
+ * 순환의 정원 경로: 진행도 0 = 칸 (1, 1), 3000 = 칸 (4, 1) — 칸 (4, 2)·(4, 0)의 타워와 1칸.
+ */
+export function arena(seed = 1, extra: Partial<MatchOptions> = {}): Match {
+  const m = infinite(seed, extra);
+  m.state.stage = 1;
+  m.state.nextStageTick = 1_000_000;
+  m.state.spawnStage = 1;
+  return m;
+}
+
+/** 시험장에 몹 한 마리를 진행도 progress에 세운다 (기본 속도 0 = 제자리). */
+export function mobAt(match: Match, mobId: string, progress: number, speed = 0): Mob {
+  const mob = addMob(match, mobId);
+  mob.progress = progress;
+  mob.speed = speed;
+  return mob;
+}
+
+/** 그 틱까지 난 사건 중 종류가 type인 것 (헤드리스 판은 사건이 쌓여 있다). */
+export function eventsOf(match: Match, type: string): ReturnType<Match['world']['drainEvents']> {
+  return match.world.drainEvents().filter((e) => e.type === type);
+}

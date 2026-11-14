@@ -35,6 +35,8 @@ import type { MatchMode } from '../../sim/state';
 import { NO_MODS, effectiveStats } from '../../sim/stats';
 import { mergeableGroups, sameKindTowers } from '../../sim/systems/Merge';
 import { isPaused, moveCheck } from '../../sim/systems/Move';
+import { computeAuras, towerBonus } from '../../sim/systems/Aura';
+import { towerLevel } from '../../sim/abilities';
 import { summonCheck, towerCount } from '../../sim/systems/Summon';
 import { BOARD_FULL, godDescends, mergeFailText, mergeReadyToast } from '../../ui/messages';
 import { createTowerPanel, type TowerPanelView } from '../../ui/panels/TowerPanel';
@@ -706,7 +708,9 @@ export class GameScene extends Phaser.Scene {
     const model = buildTowerPanelModel({
       data,
       stats,
-      eff: effectiveStats(rules, stats, state.mods[t.owner] ?? NO_MODS),
+      // 오라·타워 레벨·자기 특색까지 반영한 지금 값 (버프로 오른 값은 초록, M3-7)
+      eff: effectiveStats(rules, stats, state.mods[t.owner] ?? NO_MODS, towerBonus(this.match.ctx, t, computeAuras(this.match.ctx, this.match.world))),
+      level: towerLevel(this.match.ctx, t.owner, t.tower),
       factionName,
       owned: sameKindTowers(this.match.world, t.tower, t.owner).length,
       mergeCount: rules.mergeCount,

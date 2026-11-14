@@ -11,7 +11,7 @@
 import type { Rng } from '../Rng';
 import type { System, World } from '../World';
 import { STREAM_WORLD } from '../World';
-import { MOB_KIND, type Mob } from '../entities/Mob';
+import { MOB_KIND, emptyMobStatus, type Mob } from '../entities/Mob';
 import { compositionFor, isBossStage, spawnStats, type MatchRules } from '../rules';
 import type { MatchContext } from '../state';
 
@@ -116,6 +116,7 @@ export function spawnMob(ctx: MatchContext, world: World, mobId: string, swarmIn
     boss: false,
     vulnBp: 0,
     markBp: 0,
+    ...emptyMobStatus(),
   } satisfies Omit<Mob, 'id'>) as Mob;
   ctx.state.spawned += 1;
   return mob;

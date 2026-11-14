@@ -18,7 +18,7 @@
 import type { TargetRule } from '../../data/load';
 import type { World } from '../World';
 import { dist2 } from '../Fixed';
-import { isMob } from '../entities/Mob';
+import { isMob, type Mob } from '../entities/Mob';
 import { positionAt, type SimPath } from '../map';
 
 /** 대상 후보 하나 (이번 틱의 몹 위치). 처치되면 alive = false. */
@@ -36,11 +36,19 @@ export interface TargetCandidate {
   marked?: boolean;
 }
 
+/**
+ * 타워·능력이 건드릴 수 있는 몹인가: 드러나지 않은 투명 몹은 대상·광역·전체 효과·상태 이상·지속 피해 모두 무효 (GDD 5.7).
+ * 감지 오라로 '드러남'은 M4 (지금은 투명 몹 = 늘 드러나지 않음).
+ */
+export function isRevealed(mob: Pick<Mob, 'invisible'>): boolean {
+  return !mob.invisible;
+}
+
 /** 이번 틱 대상 후보 (ID 순). 드러나지 않은 투명 몹은 뺀다. */
 export function targetCandidates(world: World, path: SimPath): TargetCandidate[] {
   const out: TargetCandidate[] = [];
   for (const e of world.entities.list()) {
-    if (!isMob(e) || e.invisible) continue;
+    if (!isMob(e) || !isRevealed(e)) continue;
     const p = positionAt(path, e.progress);
     out.push({ id: e.id, x: p.x, y: p.y, progress: e.progress, alive: true, hp: e.hp, boss: e.boss, marked: e.markBp > 0 });
   }

@@ -8,7 +8,8 @@
  * - 방어·마법 관통: 타워 + 강화 + 상점 (+ 몹의 표식은 맞을 때 더한다), 각각 최대 90%.
  * - 보스 피해 배율: ×(1 + 보스 피해% 합) — 특성 '거인 사냥꾼'. 그림자 암살자 ×2 → ×3.5는 특색(M3-9)이 여기에 곱한다.
  * PlayerMods는 판 상태(MatchState.mods)라 해시에 들어간다. 판 내 강화(M5)·카드(M4)·상점(M8)·특성이 값을 더한다. 지금은 모두 0.
- * 오라·종족 시너지(M3-7, 타워마다 다른 보정)는 이 함수에 타워별 보정을 더해 넘기면 된다.
+ * 타워마다 다른 보정(TowerBonus: 오라 M3-7, 타워 레벨 공격력, 특색의 자기 보정 — 광전사 공속·암살자 보스 배율)은
+ * 네 번째 인자로 더한다 (Aura.towerBonus가 만든다). 종족 시너지(M7)도 여기에 더하면 된다.
  */
 import type { MatchRules, TowerStats } from './rules';
 import { BP_ONE, mulBp } from './Fixed';
@@ -50,6 +51,18 @@ export function newPlayerMods(): PlayerMods {
 
 export const NO_MODS: Readonly<PlayerMods> = Object.freeze(newPlayerMods());
 
+/** 타워 한 개에만 붙는 보정 (오라·레벨·자기 특색). 공격력%·공속%는 PlayerMods에 더하고(합연산), 보스 배율은 곱한다. */
+export interface TowerBonus {
+  /** 공격력% (bp) — 오라(대장장이·학자) + 타워 레벨 (레벨당 +4%) */
+  atkPctBp: number;
+  /** 공속% (bp) — 오라(전쟁 군주) + 광전사 연속 공격 */
+  apsPctBp: number;
+  /** 보스 피해 배율 (bp, ×1 = 10000) — 그림자 암살자 ×2 → ×3.5 */
+  bossMulBp: number;
+}
+
+export const NO_BONUS: Readonly<TowerBonus> = Object.freeze({ atkPctBp: 0, apsPctBp: 0, bossMulBp: BP_ONE });
+
 /** 타워의 지금 능력치 (정수). */
 export interface EffectiveStats {
   /** 최종 공속 × APS_SCALE (한도 적용) */
@@ -88,11 +101,17 @@ export function capPen(penBp: number, maxBp: number): number {
   return penBp < 0 ? 0 : penBp > maxBp ? maxBp : penBp;
 }
 
-export function effectiveStats(rules: MatchRules, stats: TowerStats, mods: Readonly<PlayerMods> = NO_MODS): EffectiveStats {
-  const apsMilli = cappedAps(rules, stats.apsMilli, mods.apsPctBp);
-  const uncapped = mulBp(stats.apsMilli, BP_ONE + mods.apsPctBp);
+export function effectiveStats(
+  rules: MatchRules,
+  stats: TowerStats,
+  mods: Readonly<PlayerMods> = NO_MODS,
+  bonus: Readonly<TowerBonus> = NO_BONUS,
+): EffectiveStats {
+  const apsPct = mods.apsPctBp + bonus.apsPctBp;
+  const apsMilli = cappedAps(rules, stats.apsMilli, apsPct);
+  const uncapped = mulBp(stats.apsMilli, BP_ONE + apsPct);
   const crit = stats.critBp + mods.critChanceBp;
-  const atkMul = BP_ONE + mods.atkPctBp;
+  const atkMul = BP_ONE + mods.atkPctBp + bonus.atkPctBp;
   return {
     apsMilli,
     apsMulBp: stats.apsMilli > 0 ? Math.floor((apsMilli * BP_ONE) / stats.apsMilli) : BP_ONE,
@@ -104,6 +123,6 @@ export function effectiveStats(rules: MatchRules, stats: TowerStats, mods: Reado
     flatMagicPen: mods.flatMagicPen,
     critBp: crit < 0 ? 0 : crit > rules.critChanceMaxBp ? rules.critChanceMaxBp : crit,
     critMulBp: stats.critMulBp + mods.critMulBp,
-    bossMulBp: BP_ONE + mods.bossDmgPctBp,
+    bossMulBp: mulBp(BP_ONE + mods.bossDmgPctBp, bonus.bossMulBp),
   };
 }

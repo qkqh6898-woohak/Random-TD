@@ -109,6 +109,42 @@ export interface TowerStats {
   /** 감지: 없음·오라·자신, 오라 반경 (단위) — 투명 몹 처리는 M4 */
   readonly detect: Detect;
   readonly detectRange: number;
+  /** 특색 타워인가 (towers.json special) */
+  readonly special: boolean;
+  /** 원소 (towers.json element, 없으면 null) — 원소 효과는 dot·특색 능력이 실제로 건다 */
+  readonly element: string | null;
+  /** 지속 피해 (화상·독·출혈, towers.json dot → 정수). 없으면 null */
+  readonly dot: DotStats | null;
+  /** 특색 수치 원본 (towers.json params). 능력 모듈(src/sim/abilities)이 레벨에 맞춰 정수로 바꾼다 */
+  readonly params: Readonly<Record<string, unknown>>;
+}
+
+/** 지속 피해 (GDD 5.4·5.5): 맞을 때마다 1중첩, 초당 1회 공격력 × perSec, 고정 피해·치명타 없음. */
+export interface DotStats {
+  /** burn 화상 · poison 독 · bleed 출혈 */
+  readonly kind: string;
+  /** 초당 피해 = 1회 공격력 × 이 비율 (bp) */
+  readonly perSecBp: number;
+  /** 지속 (틱) */
+  readonly durTicks: number;
+  /** 최대 중첩 (같은 종류 타워에서 온 것끼리) */
+  readonly stacks: number;
+}
+
+/** 상태 이상 규칙 (game.json status → 정수, GDD 5.5). */
+export interface StatusRules {
+  /** 둔화 최대 (bp, 70% = 7000) */
+  readonly slowMaxBp: number;
+  /** 보스 둔화 배율 (bp, 절반 = 5000) */
+  readonly bossSlowMulBp: number;
+  /** 보스 기절·정지·빙결 지속 배율 (bp, 30% = 3000) */
+  readonly bossCcDurMulBp: number;
+  /** 행동 불가 면역 (틱) */
+  readonly ccImmuneTicks: number;
+  /** 빙결 중 받는 피해 증가 (bp) */
+  readonly freezeVulnBp: number;
+  /** 지속 피해 간격 (틱) */
+  readonly dotIntervalTicks: number;
 }
 
 /** 덱 (등급별 타워 id). */
@@ -165,6 +201,16 @@ export interface MatchRules {
   readonly movePauseTicks: number;
   /** 승급에 드는 같은 타워 수 (3) */
   readonly mergeCount: number;
+  /** 상태 이상 규칙 (M3-6) */
+  readonly status: StatusRules;
+  /** 지원 효과 범위 (체비쇼프 거리, M3-7): 주변 8칸 = 1, 주변 24칸 = 2 */
+  readonly auraAround8: number;
+  readonly auraAround24: number;
+  /** 타워 최대 레벨 (15)·레벨당 공격력 (bp, +4% = 400) */
+  readonly towerLevelMax: number;
+  readonly atkPerLevelBp: number;
+  /** towers.json 순서의 타워 id (개발용 debugTower 명령이 번호로 고른다) */
+  readonly towerOrder: readonly string[];
 }
 
 /** 정수여야 하는 데이터 값 확인 (스키마가 num만 보장하는 필드). */
@@ -245,6 +291,17 @@ export function buildTowerStats(t: TowerData): TowerStats {
     critMulBp: bp(t.critMul),
     detect: t.detect,
     detectRange: tiles(t.detectRange),
+    special: t.special > 0,
+    element: t.element,
+    dot: t.dot
+      ? Object.freeze({
+          kind: t.dot.kind,
+          perSecBp: bp(t.dot.perSec),
+          durTicks: secondsToTicksExact(t.dot.dur),
+          stacks: int(`${t.id}.dot.stacks`, t.dot.stacks),
+        })
+      : null,
+    params: Object.freeze({ ...t.params }),
   });
 }
 
@@ -318,6 +375,19 @@ export function buildMatchRules(data: GameData): MatchRules {
     pierceHalfWidth: idiv(tiles(game.combat.pierceWidth), 2),
     movePauseTicks: secondsToTicksExact(game.combat.movePauseSeconds),
     mergeCount: int('game.json merge.count', game.merge.count),
+    status: Object.freeze({
+      slowMaxBp: bp(game.status.slowMax),
+      bossSlowMulBp: bp(game.status.bossSlowMul),
+      bossCcDurMulBp: bp(game.status.bossCcDurationMul),
+      ccImmuneTicks: secondsToTicksExact(game.status.ccImmuneSeconds),
+      freezeVulnBp: bp(game.status.freezeVuln),
+      dotIntervalTicks: secondsToTicksExact(game.status.dotIntervalSeconds),
+    }),
+    auraAround8: int('game.json aura.around8', game.aura.around8),
+    auraAround24: int('game.json aura.around24', game.aura.around24),
+    towerLevelMax: int('game.json towerLevel.max', game.towerLevel.max),
+    atkPerLevelBp: bp(game.towerLevel.atkPerLevel),
+    towerOrder: Object.freeze(data.towers.towers.map((t) => t.id)),
   });
   // 한 단계의 등장이 다음 단계 시작 전에 끝나야 한다 (GDD 2.2: 50초 등장 + 10초 휴식)
   if ((rules.slotsPerStage - 1) * rules.spawnIntervalTicks >= rules.stageTicks) {

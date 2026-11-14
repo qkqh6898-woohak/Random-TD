@@ -225,4 +225,23 @@ describe('summon 명령', () => {
     expect(dbg.state.gold).toBe(6000);
     expect(dbg.state.debugUsed).toBe(true);
   });
+
+  it('개발용 타워 놓기 (debugTower, M3b): debug 판의 빈 배치 칸에만, towers.json 순서 번호로, 돈 없이', () => {
+    expect(validatePayload({ type: 'debugTower', x: 1, y: 2, t: 3 })).toBeNull();
+    expect(validatePayload({ type: 'debugTower', x: 1, y: 2, t: -1 })).toMatch(/t/);
+    const idx = rules.towerOrder.indexOf('icemage');
+    const normal = infinite(1);
+    command(normal, { type: 'debugTower', x: 4, y: 4, t: idx });
+    expect(normal.towers()).toHaveLength(0);
+    const dbg = infinite(1, { debug: true });
+    command(dbg, { type: 'debugTower', x: 4, y: 4, t: idx });
+    expect(dbg.towers().map((t) => t.tower)).toEqual(['icemage']);
+    expect(dbg.state.gold).toBe(1000);
+    expect(dbg.state.debugUsed).toBe(true);
+    // 이미 찬 칸·경로 칸·없는 번호는 무시
+    command(dbg, { type: 'debugTower', x: 4, y: 4, t: 0 });
+    command(dbg, { type: 'debugTower', x: 1, y: 1, t: 0 });
+    command(dbg, { type: 'debugTower', x: 4, y: 5, t: 200 });
+    expect(dbg.towers()).toHaveLength(1);
+  });
 });

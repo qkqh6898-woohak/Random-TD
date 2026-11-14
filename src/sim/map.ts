@@ -158,6 +158,23 @@ export function buildSimMap(data: MapData): SimMap {
   };
 }
 
+/**
+ * 경로에서 점 (x, y)에 가장 가까운 지점의 진행도와 제곱 거리 (단위). 같으면 앞쪽 구간.
+ * 구간이 축에 나란해서 정수만으로 정확하다 (소환 병사가 나올 자리 등).
+ */
+export function nearestProgress(path: SimPath, x: number, y: number): { progress: number; x: number; y: number; d2: number } {
+  let best = { progress: 0, x: 0, y: 0, d2: -1 };
+  for (const seg of path.segments) {
+    const along = (x - seg.x) * seg.dx + (y - seg.y) * seg.dy;
+    const t = along < 0 ? 0 : along > seg.length ? seg.length : along;
+    const px = seg.x + seg.dx * t;
+    const py = seg.y + seg.dy * t;
+    const d2 = (x - px) * (x - px) + (y - py) * (y - py);
+    if (best.d2 < 0 || d2 < best.d2) best = { progress: seg.start + t, x: px, y: py, d2 };
+  }
+  return best;
+}
+
 /** 칸 종류 (맵 밖이면 null). */
 export function tileAt(map: SimMap, x: number, y: number): TileKind | null {
   if (x < 0 || y < 0 || x >= map.width || y >= map.height) return null;

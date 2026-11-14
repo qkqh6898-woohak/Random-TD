@@ -75,4 +75,11 @@ export interface MatchContext {
   readonly state: MatchState;
   /** 플레이어별 덱 (판 시작 때 정해져 바뀌지 않는다 → 해시 밖. 리플레이는 시드와 함께 덱을 기록한다) */
   readonly decks: readonly Deck[];
+  /**
+   * 플레이어별 타워 레벨 (타워 id → 1~15, 없으면 1). 판 시작 때 정해져 바뀌지 않는다 (해시 밖, 리플레이에 기록).
+   * 특색 수치 보간(M3-8)과 레벨당 공격력 +4%에 쓴다. 계정 성장(M9)이 넣는다.
+   */
+  readonly levels: readonly Readonly<Record<string, number>>[];
+  /** compile한 특색 수치 캐시 (주인:타워 id → 값). 데이터 + 레벨에서 정해지는 값이라 해시 밖 */
+  readonly cache: Map<string, unknown>;
 }

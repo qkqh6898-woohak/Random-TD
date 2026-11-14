@@ -1,5 +1,5 @@
 {
- "version": 4,
+ "version": 5,
  "baseDps": {
   "normal": 10,
   "rare": 35,
@@ -9,7 +9,7 @@
   "god": 6000,
   "hidden": 3000
  },
- "notes": "atk=물리 공격력, matk=마법 공격력, tatk=고정 피해. aps=초당 공격 횟수, range=사거리(칸), shapeValue=광역 반경 또는 관통/연쇄/다중 수. design.ratio=등급 기준 DPS 대비 목표 전투력. 특색 수치 params는 [Lv1, Lv15].",
+ "notes": "atk=물리 공격력, matk=마법 공격력, tatk=고정 피해. aps=초당 공격 횟수, range=사거리(칸), shapeValue=광역 반경 또는 관통/연쇄/다중 수. design.ratio=등급 기준 DPS 대비 목표 전투력. 특색 수치 params는 [Lv1, Lv15]. 특색 수치 params는 [Lv1, Lv15] 배열(타워 레벨로 균등 보간) 또는 레벨과 무관한 상수. 초 단위 값은 0.05초(1틱) 단위, 비율은 0~1 소수 (M3b: 능력 모듈 src/sim/abilities/<id>.ts가 읽는다).",
  "towers": [
   {
    "id": "miner",
@@ -460,7 +460,8 @@
      5
     ],
     "puddleSlow": 0.5,
-    "puddleDur": 3
+    "puddleDur": 3,
+    "puddleRadius": 0.75
    },
    "recipe": null,
    "design": {
@@ -854,7 +855,8 @@
     "gambleZero": [
      -0.03,
      -0.1
-    ]
+    ],
+    "dice": 6
    },
    "recipe": null,
    "design": {
@@ -1100,7 +1102,10 @@
    "dot": null,
    "ability": "같은 대상 연속 공격 시 공격속도 증가 (최대 +50%)",
    "awaken": "최대 +80%",
-   "params": {},
+   "params": {
+    "rampPerHit": 0.1,
+    "rampMax": 0.5
+   },
    "recipe": null,
    "design": {
     "ratio": 1.0,
@@ -1219,7 +1224,11 @@
      5,
      3
     ],
-    "soldierAtk": 0.8
+    "soldierAtk": 0.8,
+    "soldierHits": 3,
+    "soldierLife": 6,
+    "soldierSpeed": 1.5,
+    "soldierReach": 0.5
    },
    "recipe": null,
    "design": {
@@ -1345,7 +1354,8 @@
      80
     ],
     "cd": 10,
-    "shred": 0.15
+    "shred": 0.15,
+    "shredDur": 3
    },
    "recipe": null,
    "design": {
@@ -1631,7 +1641,8 @@
     "vuln": [
      0.1,
      0.25
-    ]
+    ],
+    "vulnDur": 5
    },
    "recipe": null,
    "design": {
@@ -1715,7 +1726,8 @@
      0.08,
      0.15
     ],
-    "cd": 12
+    "cd": 12,
+    "meteorBossPct": 0.02
    },
    "recipe": null,
    "design": {
