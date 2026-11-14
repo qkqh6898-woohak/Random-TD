@@ -1,7 +1,8 @@
 /**
- * M0 스모크 테스트 (휴대폰 뷰포트 412×915).
+ * 스모크 테스트 (휴대폰 뷰포트 412×915).
  * 타이틀 → [시작] → 게임(고정 틱이 돈다, 배속 순환) → ⏸ 일시정지 메뉴(시간 멈춤) → [계속] / [타이틀로] → 타이틀.
- * 스크린샷: test-results/screens/ (항상), docs/screens/M0.png (SAVE_SCREENS=1 일 때, `npm run screens`).
+ * 스크린샷: test-results/screens/ (항상). docs/screens/M0.png는 M0 기록으로 그대로 둔다 (M1 화면은 m1.spec.ts).
+ * 틱은 HUD 루트의 data-tick 속성으로 읽는다 (화면에는 안 보임).
  */
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -18,7 +19,7 @@ function collectErrors(page: Page): string[] {
 }
 
 async function tickValue(page: Page): Promise<number> {
-  return Number(await page.getByTestId('hud-tick').textContent());
+  return Number(await page.locator('[data-screen="game"]').getAttribute('data-tick'));
 }
 
 async function shot(page: Page, name: string, docsName?: string): Promise<void> {
@@ -60,7 +61,9 @@ test('타이틀 화면: 운빨 디펜스 글자와 [시작] 버튼이 Phaser 캔
   expect(startBox!.height).toBeGreaterThanOrEqual(44);
 
   await page.waitForTimeout(700); // 페이드 인이 끝난 뒤 촬영
-  await shot(page, 'M0-title', 'M0');
+  await shot(page, 'title');
+  // debug가 아니면 캠페인 버튼은 없다
+  await expect(page.getByRole('button', { name: '캠페인 1 (디버그)' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
@@ -79,14 +82,15 @@ test('[시작] → 게임 장면: 고정 틱이 돌고 배속 버튼이 ×1 → 
   await page.waitForTimeout(500);
   const t2 = await tickValue(page);
   expect(t2).toBeGreaterThan(t1);
-  await expect(page.getByTestId('hud-time')).not.toHaveText('0:00.0');
+  // 0단계 준비 60초가 줄어든다
+  await expect(page.getByTestId('hud-timer')).not.toHaveText('1:00');
 
   // 배속: 계정 Lv1이라 ×3은 잠김 → ×1, ×2만 순환
   const speed = page.getByRole('button', { name: '배속' });
   await expect(speed).toHaveText('×1');
   await speed.click();
   await expect(speed).toHaveText('×2');
-  await shot(page, 'M0-game');
+  await shot(page, 'game-x2');
   await speed.click();
   await expect(speed).toHaveText('×1');
 
@@ -105,7 +109,7 @@ test('[시작] → 게임 장면: 고정 틱이 돌고 배속 버튼이 ×1 → 
   const p1 = await tickValue(page);
   await page.waitForTimeout(600);
   expect(await tickValue(page)).toBe(p1);
-  await shot(page, 'M0-pause');
+  await shot(page, 'pause');
 
   // [계속] → 다시 흐른다 (배속은 그대로 ×1)
   await page.getByRole('button', { name: '계속' }).click();
@@ -122,17 +126,19 @@ test('[시작] → 게임 장면: 고정 틱이 돌고 배속 버튼이 ×1 → 
   expect(errors).toEqual([]);
 });
 
-test('화면 읽기: 초당 20번 바뀌는 틱·시간은 aria-live 영역 밖, 알림은 toast 층에서만', async ({ page }) => {
+test('화면 읽기: 자주 바뀌는 타이머·몹 수는 aria-live 영역 밖, 알림은 toast 층에서만', async ({ page }) => {
   await page.goto('/?seed=3');
   await page.getByRole('button', { name: '시작' }).click();
   await expect.poll(() => tickValue(page), { timeout: 5000 }).toBeGreaterThan(0);
   expect(await page.locator('#ui-root').getAttribute('aria-live')).toBeNull();
-  const liveAncestor = await page.getByTestId('hud-tick').evaluate((el) => {
-    const live = el.parentElement?.closest('[aria-live]:not([aria-live="off"]), [role="status"], [role="log"], [role="alert"]');
-    return live ? live.outerHTML.slice(0, 80) : null;
-  });
-  expect(liveAncestor).toBeNull();
-  await expect(page.getByTestId('hud-time')).toHaveAttribute('role', 'timer');
+  for (const id of ['hud-timer', 'hud-count', 'hud-gold', 'hud-stage']) {
+    const liveAncestor = await page.getByTestId(id).evaluate((el) => {
+      const live = el.parentElement?.closest('[aria-live]:not([aria-live="off"]), [role="status"], [role="log"], [role="alert"]');
+      return live ? live.outerHTML.slice(0, 80) : null;
+    });
+    expect(liveAncestor, id).toBeNull();
+  }
+  await expect(page.getByTestId('hud-timer')).toHaveAttribute('role', 'timer');
   await expect(page.locator('.layer-toast')).toHaveAttribute('aria-live', 'polite');
 });
 

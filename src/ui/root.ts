@@ -4,7 +4,7 @@
  * 층(layer):
  *  - screen: 전체 화면 (타이틀, 결과 …) — 한 번에 하나
  *  - hud: 게임 중 상단·하단 HUD
- *  - toast: 짧은 알림 (M2). 화면 읽기 프로그램이 읽어 주는 곳(aria-live)은 이 층뿐이다.
+ *  - toast: 짧은 알림 (단계 시작 등). 화면 읽기 프로그램이 읽어 주는 곳(aria-live)은 이 층뿐이다.
  *    HUD의 틱·시간처럼 초당 수십 번 바뀌는 값을 live 영역에 두면 계속 읽어 대므로 루트에는 aria-live를 달지 않는다.
  * UI는 sim 상태를 읽기만 하고, 바꾸려면 명령을 만들어 world.enqueue() 한다 (CLAUDE.md 2장).
  */
@@ -47,6 +47,21 @@ export class UiRoot {
       delete this.mounted[layer];
     }
   }
+
+  /**
+   * 짧은 알림 (toast 층, 화면 읽기 프로그램이 읽어 줌). 같은 때 최대 3개, ms 뒤 사라진다.
+   * 알림은 게임 상태를 바꾸지 않는다 (보여주기만).
+   */
+  toast(text: string, ms = 1600): HTMLElement {
+    const layer = this.layers.toast;
+    while (layer.childElementCount >= UiRoot.MAX_TOASTS) layer.firstElementChild?.remove();
+    const el = h('div', { class: 'toast', text });
+    layer.append(el);
+    setTimeout(() => el.remove(), ms);
+    return el;
+  }
+
+  private static readonly MAX_TOASTS = 3;
 
   clearAll(): void {
     (Object.keys(this.layers) as LayerName[]).forEach((l) => this.clear(l));

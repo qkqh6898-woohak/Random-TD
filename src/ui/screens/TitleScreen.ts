@@ -1,5 +1,6 @@
 /**
- * 타이틀 화면 (UI.md 2장). M0: 로고 + [시작] 버튼.
+ * 타이틀 화면 (UI.md 2장). M1: 로고 + [시작] = 무한 모드(순환의 정원).
+ * ?debug=1 이면 [캠페인 1 (디버그)] = 테마 1 사거리 미로 (월드맵·덱 확인 화면은 M6).
  * 계정 레벨·행운석·하단 메뉴·이어하기는 M6~M8에서 붙인다.
  * 배경(하늘·성벽·대기 동작 타워)은 Phaser Boot 장면이 그린다 — 이 화면은 그 위의 DOM 층.
  */
@@ -8,7 +9,10 @@ import type { UiView } from '../root';
 
 export interface TitleScreenOptions {
   version: string;
+  /** [시작] → 무한 모드 */
   onStart: () => void;
+  /** 있으면 [캠페인 1] 버튼을 보여준다 (debug) */
+  onCampaign?: () => void;
 }
 
 export function createTitleScreen(opts: TitleScreenOptions): UiView {
@@ -18,10 +22,30 @@ export function createTitleScreen(opts: TitleScreenOptions): UiView {
     on: {
       click: () => {
         start.disabled = true; // 두 번 눌러도 한 번만
+        if (campaign) campaign.disabled = true;
         opts.onStart();
       },
     },
   }, h('span', { class: 'btn-icon', text: '▶' }), h('span', { text: '시작' }));
+
+  const campaign = opts.onCampaign
+    ? h(
+        'button',
+        {
+          class: 'btn btn-campaign',
+          attrs: { type: 'button', 'data-action': 'campaign', 'aria-label': '캠페인 1 (디버그)' },
+          on: {
+            click: () => {
+              campaign!.disabled = true;
+              start.disabled = true;
+              opts.onCampaign?.();
+            },
+          },
+        },
+        h('span', { class: 'btn-icon', text: '🏰', attrs: { 'aria-hidden': 'true' } }),
+        h('span', { text: '캠페인 1 (디버그)' }),
+      )
+    : null;
 
   const el = h(
     'div',
@@ -34,7 +58,7 @@ export function createTitleScreen(opts: TitleScreenOptions): UiView {
       h('span', { class: 'title-dice title-dice-right', text: '🎲', attrs: { 'aria-hidden': 'true' } }),
     ),
     h('p', { class: 'title-sub', text: '아트라 연합군이여, 녹스 군단을 막아라!' }),
-    h('div', { class: 'title-actions' }, start),
+    h('div', { class: 'title-actions' }, start, campaign),
     h('div', { class: 'title-version', text: opts.version }),
   );
   return { el };

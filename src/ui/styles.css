@@ -271,9 +271,17 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .title-logo,
   .title-dice,
-  .btn-start::after {
+  .btn-start::after,
+  .hud-count.is-danger {
     animation: none;
   }
+}
+
+.btn-campaign {
+  min-width: 52cqw;
+  min-height: max(11cqw, 44px);
+  font-size: 4.4cqw;
+  background: rgba(43, 53, 80, 0.92);
 }
 
 /* ---------- HUD ---------- */
@@ -310,8 +318,68 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.hud-tick .hud-value {
-  min-width: 12cqw;
+/* 1줄 단계 이름: 보스 단계는 빨간 왕관 */
+.hud-stage {
+  padding: 0.6cqw 2cqw;
+  border-radius: 1.6cqw;
+  background: rgba(255, 255, 255, 0.1);
+  font-weight: 900;
+  font-size: 4.2cqw;
+  white-space: nowrap;
+}
+
+.hud-stage.is-boss {
+  color: #fff;
+  background: linear-gradient(180deg, #e53935 0%, #a31d1a 100%);
+}
+
+/* 타이머: 숫자 폭이 변해도 옆 칸이 흔들리지 않게 */
+[data-testid='hud-timer'] {
+  min-width: 9cqw;
+}
+
+/* 10초 이하 노란색 */
+.hud-value.is-warn {
+  color: #ffd84a;
+}
+
+/* 몹 120 이상 / 목숨 5 이하: 빨간색 깜빡 */
+.hud-count.is-danger {
+  color: #ff6b5e;
+  animation: hud-blink 0.8s steps(2, jump-none) infinite;
+}
+
+.hud-gold {
+  color: var(--gold);
+  min-width: 20cqw;
+}
+
+.hud-skip {
+  color: #b9a6ff;
+}
+
+.hud-banner {
+  margin-top: 1.6cqw;
+  padding: 1.2cqw 3cqw;
+  border-radius: 2cqw;
+  background: linear-gradient(90deg, rgba(163, 29, 26, 0.92), rgba(91, 58, 140, 0.92));
+  border: 0.3cqw solid rgba(255, 255, 255, 0.25);
+  text-align: center;
+  font-size: 3.6cqw;
+  font-weight: 800;
+}
+
+.hud-banner[hidden] {
+  display: none;
+}
+
+@keyframes hud-blink {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.45;
+  }
 }
 
 .hud-spacer {
@@ -393,4 +461,66 @@ body {
   border-radius: 2cqw;
   -webkit-user-select: text;
   user-select: text;
+}
+
+/* ---------- 알림 (toast) ---------- */
+.layer-toast {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.6cqw;
+  padding-top: 36cqw;
+}
+
+.toast {
+  padding: 1.6cqw 4.4cqw;
+  border-radius: 10cqw;
+  background: rgba(13, 18, 32, 0.82);
+  border: 0.3cqw solid rgba(255, 255, 255, 0.2);
+  font-size: 4.4cqw;
+  font-weight: 900;
+  text-shadow: 0 0.3cqw 0.6cqw rgba(0, 0, 0, 0.6);
+  animation: toast-in 180ms ease-out;
+  pointer-events: none;
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateY(-2cqw) scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ---------- 패배 화면 ---------- */
+.gameover-screen {
+  justify-content: center;
+  background: rgba(13, 18, 32, 0.66);
+}
+
+.gameover-title {
+  margin: 0;
+  text-align: center;
+  font-size: 9cqw;
+  font-weight: 900;
+  color: #ff8a7a;
+  -webkit-text-stroke: 0.4cqw var(--outline);
+  paint-order: stroke fill;
+}
+
+.gameover-reason {
+  margin: 0;
+  text-align: center;
+  font-size: 4cqw;
+  font-weight: 700;
+}
+
+.gameover-record {
+  margin: 0 0 1cqw;
+  text-align: center;
+  font-size: 3.4cqw;
+  color: var(--text-dim);
 }

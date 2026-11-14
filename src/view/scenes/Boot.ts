@@ -1,6 +1,6 @@
 /**
  * Boot 장면: 타이틀 배경과 대기 동작하는 타워들을 그리고, 그 위에 DOM 타이틀 화면을 띄운다.
- * [시작] → Game 장면으로.
+ * [시작] → Game 장면 (무한 모드, 순환의 정원). ?debug=1 이면 [캠페인 1] → 테마 1 사거리 미로.
  */
 import Phaser from 'phaser';
 import { GRADE_COLORS } from '../../art/palette';
@@ -9,6 +9,8 @@ import { createTitleScreen } from '../../ui/screens/TitleScreen';
 import { GAME_HEIGHT, GAME_WIDTH, SCENE_BOOT, SCENE_GAME } from '../config';
 import { drawTitleBackdrop } from '../render/TitleBackdrop';
 import type { GameContext } from '../context';
+import type { MatchMode } from '../../sim/state';
+import { randomSeed, type GameSceneData } from './Game';
 
 interface TitleTower {
   towerId: string;
@@ -58,16 +60,17 @@ export class BootScene extends Phaser.Scene {
     this.ctx.ui.show(
       'screen',
       createTitleScreen({
-        version: `v${this.ctx.version} · M0`,
-        onStart: () => this.startGame(),
+        version: `v${this.ctx.version} · M1`,
+        onStart: () => this.startGame('infinite'),
+        onCampaign: this.ctx.debug ? () => this.startGame('campaign') : undefined,
       }),
     );
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.ctx.ui.clear('screen'));
     this.game.events.emit('rtd:title-ready');
   }
 
-  private startGame(): void {
-    const seed = this.ctx.seed ?? Math.floor(Math.random() * 4294967296);
-    this.scene.start(SCENE_GAME, { seed });
+  private startGame(mode: MatchMode): void {
+    const data: GameSceneData = { seed: this.ctx.seed ?? randomSeed(), mode, theme: 1 };
+    this.scene.start(SCENE_GAME, data);
   }
 }

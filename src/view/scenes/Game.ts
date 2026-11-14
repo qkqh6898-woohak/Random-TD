@@ -1,65 +1,106 @@
 /**
- * Game 장면: World(고정 20틱) + TickClock(누적 시간·배속)으로 로직과 렌더를 분리한다 (DEV_PLAN M0-4).
+ * Game 장면: 한 판(Match = World 고정 20틱 + 시스템) + TickClock(누적 시간·배속)으로 로직과 렌더를 분리한다.
  *
- * 프레임마다: 흐른 시간 → TickClock이 돌릴 틱 수 계산 → world.step() n번 → 상태를 읽어 그림 (alpha로 보간).
- * M0에는 맵·몹이 없어서, 고정 틱이 도는 것을 보여주는 표식(슬라임 이동 속도로 사각형을 도는 점)만 그린다.
- * M1에서 MapRenderer·MobSprite로 바뀐다.
+ * 프레임마다: 흐른 시간 → TickClock이 돌릴 틱 수 → match.step() n번 (마지막 틱 직전 진행도를 기억)
+ *           → 사건 처리(단계 알림·패배) → 몹을 진행도 보간(alpha)으로 그림 → HUD 갱신.
+ * 화면은 sim 상태를 읽기만 한다. 바꾸는 것은 명령(world.enqueue)으로만 (지금은 debug 단계 건너뛰기).
  *
- * ⏸ 또는 앱이 백그라운드로 가면 일시정지 메뉴(UI.md 4.6)를 연다. 열려 있는 동안 TickClock 배속 0 = 게임 시간 정지.
+ * - 무한 모드: 순환의 정원 / 캠페인(debug): 테마 1 사거리 미로.
+ * - ⏸ 또는 앱이 백그라운드로 가면 일시정지 메뉴(UI.md 4.6). 열려 있는 동안 TickClock 배속 0 = 게임 시간 정지.
+ * - 패배하면 시간을 멈추고 패배 화면 ([다시 하기] / [타이틀로]).
  */
 import Phaser from 'phaser';
-import { TICK_HZ, TickClock, World } from '../../sim/World';
+import { hexToInt } from '../../art/palette';
+import { TickClock } from '../../sim/World';
+import { createMatch, type Match } from '../../sim/match';
+import type { MatchMode } from '../../sim/state';
 import { createHud, type HudView } from '../../ui/hud/Hud';
-import { createPauseMenu } from '../../ui/screens/PauseMenu';
+import { buildHudModel, defeatText, stageToastText } from '../../ui/hud/hudModel';
 import { availableSpeeds, nextSpeed } from '../../ui/hud/speed';
-import { FONT_FAMILY, GAME_HEIGHT, GAME_WIDTH, SCENE_BOOT, SCENE_GAME } from '../config';
+import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
+import { createPauseMenu } from '../../ui/screens/PauseMenu';
+import { SCENE_BOOT, SCENE_GAME } from '../config';
 import type { GameContext } from '../context';
-
-const TILE_PX = 108; // 화면에서 1칸 = 108px (가로 10칸)
-const LOOP_TILES = 6; // 표식이 도는 사각형 한 변 (칸)
-/** 표식 속도의 기준이 되는 몹 (없으면 enemies.json의 첫 몹). */
-const PROBE_MOB_ID = 'slime';
+import { computeMapLayout, type MapLayout } from '../layout';
+import { MapRenderer } from '../render/MapRenderer';
+import { MobLayer } from '../render/MobSprite';
 
 export interface GameSceneData {
   seed: number;
+  mode?: MatchMode;
+  /** 캠페인 테마 (기본 1) */
+  theme?: number;
+}
+
+/** 무작위 시드 (화면 쪽에서만 만든다. sim 안에서는 Math.random 금지). */
+export function randomSeed(): number {
+  return Math.floor(Math.random() * 4294967296);
 }
 
 export class GameScene extends Phaser.Scene {
-  private world!: World;
+  /** 지금 판 (E2E·디버그가 읽을 수 있게 공개, 화면은 읽기만) */
+  match!: Match;
   private clock!: TickClock;
   private hud!: HudView;
+  private layout!: MapLayout;
+  private mobLayer!: MobLayer;
   private speeds: number[] = [1];
-  private probe!: Phaser.GameObjects.Arc;
-  private probeGlow!: Phaser.GameObjects.Arc;
-  /** 표식 속도 (칸/초) = 슬라임 이동 속도 (enemies.json에서 읽음) */
-  private probeTilesPerSec = 0;
   private paused = false;
+  private gameOver = false;
   /** 일시정지 전 배속 (계속하면 되돌린다) */
   private resumeSpeed = 1;
+  /** 마지막 틱 직전의 몹 진행도 (보간용) */
+  private prevProgress = new Map<number, number>();
+  private sceneData: Required<GameSceneData> = { seed: 0, mode: 'infinite', theme: 1 };
+  private bossNames: Readonly<Record<string, string>> | undefined;
 
   constructor(private readonly ctx: GameContext) {
     super({ key: SCENE_GAME });
   }
 
   create(data: GameSceneData): void {
-    const { game: config, enemies } = this.ctx.data;
-    this.world = new World({ seed: data?.seed ?? 0, maxPlayers: config.maxPlayers });
+    const { game: config, maps, towers, enemies, campaign } = this.ctx.data;
+    this.sceneData = { seed: data?.seed ?? 0, mode: data?.mode ?? 'infinite', theme: data?.theme ?? 1 };
+    this.match = createMatch(this.ctx.data, {
+      seed: this.sceneData.seed,
+      mode: this.sceneData.mode,
+      theme: this.sceneData.theme,
+      maxPlayers: config.maxPlayers,
+      debug: this.ctx.debug,
+    });
     this.clock = new TickClock({ speed: 1, maxFrameMs: config.maxFrameMs });
     this.speeds = availableSpeeds(config.speeds, this.ctx.accountLevel, this.ctx.debug);
     this.paused = false;
-    // 스키마가 mobs를 1개 이상 보장한다
-    const probeMob = enemies.mobs.find((m) => m.id === PROBE_MOB_ID) ?? enemies.mobs[0];
-    this.probeTilesPerSec = probeMob?.speed ?? 0;
+    this.gameOver = false;
+    this.prevProgress = new Map();
+    this.bossNames =
+      this.sceneData.mode === 'campaign' ? campaign.themes.find((t) => t.theme === this.sceneData.theme)?.bossSchedule : undefined;
 
-    this.drawPlaceholderField();
+    const mapData = maps[this.match.state.mapId];
+    if (!mapData) throw new Error(`맵 데이터가 없다: ${this.match.state.mapId}`);
+    this.layout = computeMapLayout(mapData);
+    new MapRenderer(this, this.match.map, this.layout, {
+      kingdomColor: hexToInt(towers.factions.kingdom?.color ?? '#2E5AAC'),
+    }).draw();
+
+    const legions = (enemies.hierarchy as { legions?: Record<string, { color?: string }> }).legions ?? {};
+    const sizes = new Map(enemies.mobs.map((m) => [m.id, m.size]));
+    this.mobLayer = new MobLayer(
+      this,
+      this.layout,
+      this.match.map.path,
+      { legionColor: (legion) => hexToInt(legions[legion]?.color ?? '#9B4DFF') },
+      (id) => sizes.get(id) ?? '소형',
+    );
 
     this.hud = createHud({
       onSpeed: () => {
-        if (this.paused) return;
+        if (this.paused || this.gameOver) return;
         this.clock.speed = nextSpeed(this.clock.speed, this.speeds);
         this.refreshHud();
       },
       onPause: () => this.pause(),
+      onSkipStage: this.ctx.debug ? () => this.match.world.enqueue({ type: 'debugSkipStage' }) : undefined,
     });
     this.ctx.ui.clear('screen');
     this.ctx.ui.show('hud', this.hud);
@@ -69,25 +110,89 @@ export class GameScene extends Phaser.Scene {
     this.game.events.on(Phaser.Core.Events.HIDDEN, this.pause, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.game.events.off(Phaser.Core.Events.HIDDEN, this.pause, this);
+      this.mobLayer.destroy();
       this.ctx.ui.clear('hud');
-      if (this.paused) this.ctx.ui.clear('screen');
+      if (this.paused || this.gameOver) this.ctx.ui.clear('screen');
       this.paused = false;
+      this.gameOver = false;
     });
     this.cameras.main.fadeIn(200, 13, 18, 32);
-    this.game.events.emit('rtd:game-ready', { seed: this.world.seed });
+    this.game.events.emit('rtd:game-ready', { seed: this.match.world.seed, mode: this.sceneData.mode });
   }
 
-  override update(_time: number, deltaMs: number): void {
-    const ticks = this.clock.advance(deltaMs);
-    if (ticks > 0) this.world.stepN(ticks);
-    this.world.drainEvents(); // M1부터 사건(피해 숫자·소리)을 여기서 처리
-    this.renderProbe();
+  override update(time: number, deltaMs: number): void {
+    if (!this.gameOver) this.runTicks(this.clock.advance(deltaMs));
+    this.handleEvents();
+    this.mobLayer.sync(this.match.mobs(), this.prevProgress, this.gameOver ? 1 : this.clock.alpha, time);
     this.refreshHud();
+  }
+
+  /** 틱 n번 실행. 마지막 틱 직전의 진행도를 기억해 보간에 쓴다. 패배하면 그 자리에서 멈춘다. */
+  private runTicks(n: number): void {
+    for (let i = 0; i < n; i++) {
+      if (this.match.defeated) break;
+      if (i === n - 1) {
+        this.prevProgress.clear();
+        for (const m of this.match.mobs()) this.prevProgress.set(m.id, m.progress);
+      }
+      this.match.step();
+    }
+  }
+
+  /**
+   * 화면 없이 틱을 빨리 돌린다 (?debug=1·E2E 확인용, 배속을 크게 올린 것과 같다 → 결정성에 영향 없음).
+   * 패배하면 멈춘다. 실제로 돈 틱 수를 돌려준다.
+   */
+  debugFastForward(ticks: number): number {
+    let done = 0;
+    while (done < ticks && !this.match.defeated) {
+      this.match.step();
+      done++;
+    }
+    this.prevProgress.clear();
+    return done;
+  }
+
+  /** 화면에 그려진 몹 수 (E2E가 sim 몹 수와 비교). */
+  get renderedMobCount(): number {
+    return this.mobLayer.count;
+  }
+
+  private handleEvents(): void {
+    // 한 프레임에 단계가 여러 번 바뀌면(빨리 감기·높은 배속) 마지막 단계 알림 하나만
+    let lastStage: { stage: number; boss: boolean } | null = null;
+    let defeated = false;
+    for (const ev of this.match.world.drainEvents()) {
+      if (ev.type === 'stageStart') lastStage = { stage: Number(ev.stage), boss: ev.boss === true };
+      else if (ev.type === 'defeat') defeated = true;
+    }
+    if (lastStage) {
+      const { mode, theme } = this.match.state;
+      this.ctx.ui.toast(stageToastText({ mode, theme, stage: lastStage.stage, bossStage: lastStage.boss }));
+    }
+    if (defeated) this.showGameOver();
+  }
+
+  private showGameOver(): void {
+    if (this.gameOver) return;
+    this.gameOver = true;
+    if (this.paused) this.paused = false;
+    this.clock.speed = 0;
+    const text = defeatText(this.match.state);
+    this.ctx.ui.show(
+      'screen',
+      createGameOverScreen({
+        ...text,
+        onRetry: () => this.scene.restart({ ...this.sceneData, seed: this.ctx.seed ?? randomSeed() }),
+        onExit: () => this.scene.start(SCENE_BOOT),
+      }),
+    );
+    this.game.events.emit('rtd:game-over', { stage: this.match.state.stage, reason: this.match.state.defeatReason });
   }
 
   /** 일시정지 메뉴 열기: 게임 시간을 멈춘다 (배속 0). */
   private pause(): void {
-    if (this.paused) return;
+    if (this.paused || this.gameOver) return;
     this.paused = true;
     this.resumeSpeed = this.clock.speed;
     this.clock.speed = 0;
@@ -112,67 +217,19 @@ export class GameScene extends Phaser.Scene {
 
   private refreshHud(): void {
     // 일시정지 중에도 배속 칩은 계속하면 돌아갈 배속을 보여준다
-    const speed = this.paused ? this.resumeSpeed : this.clock.speed;
-    this.hud.update({ tick: this.world.tick, elapsedMs: this.world.elapsedMs, speed });
-  }
-
-  private drawPlaceholderField(): void {
-    const cx = GAME_WIDTH / 2;
-    const cy = GAME_HEIGHT / 2;
-    const half = (LOOP_TILES * TILE_PX) / 2;
-    const key = 'game-placeholder-field';
-    if (!this.textures.exists(key)) {
-      // 정적인 바탕은 한 번 그려서 텍스처로 굽는다
-      const g = this.make.graphics({}, false);
-      g.fillStyle(0x24452b, 1);
-      g.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-      g.lineStyle(2, 0x2f5a37, 1);
-      for (let x = 0; x <= GAME_WIDTH; x += TILE_PX) g.lineBetween(x, 0, x, GAME_HEIGHT);
-      for (let y = 0; y <= GAME_HEIGHT; y += TILE_PX) g.lineBetween(0, y, GAME_WIDTH, y);
-      g.lineStyle(10, 0xc9a36b, 0.9);
-      g.strokeRect(cx - half, cy - half, half * 2, half * 2);
-      g.generateTexture(key, GAME_WIDTH, GAME_HEIGHT);
-      g.destroy();
-    }
-    this.add.image(0, 0, key).setOrigin(0);
-
-    this.add
-      .text(cx, cy - 40, '전투 화면 준비 중', { fontFamily: FONT_FAMILY, fontSize: '64px', color: '#f7f3e9', fontStyle: 'bold' })
-      .setOrigin(0.5);
-    this.add
-      .text(cx, cy + 40, `M1에서 맵·몹이 나와요 · 로직 ${TICK_HZ}틱/초`, { fontFamily: FONT_FAMILY, fontSize: '34px', color: '#c9c3b4' })
-      .setOrigin(0.5);
-
-    this.probeGlow = this.add.circle(cx - half, cy - half, 44, 0x7ed957, 0.18);
-    this.probe = this.add.circle(cx - half, cy - half, 26, 0x7ed957).setStrokeStyle(6, 0x3b2416);
-  }
-
-  /** 틱 + 보간(alpha)으로 표식 위치 계산. 화면 전용 계산이라 sim 상태를 바꾸지 않는다. */
-  private renderProbe(): void {
-    const ticks = this.world.tick + this.clock.alpha;
-    const perimeterPx = LOOP_TILES * 4 * TILE_PX;
-    const distPx = ((ticks / TICK_HZ) * this.probeTilesPerSec * TILE_PX) % perimeterPx;
-    const side = LOOP_TILES * TILE_PX;
-    const cx = GAME_WIDTH / 2;
-    const cy = GAME_HEIGHT / 2;
-    const x0 = cx - side / 2;
-    const y0 = cy - side / 2;
-    let x: number;
-    let y: number;
-    if (distPx < side) {
-      x = x0 + distPx;
-      y = y0;
-    } else if (distPx < side * 2) {
-      x = x0 + side;
-      y = y0 + (distPx - side);
-    } else if (distPx < side * 3) {
-      x = x0 + side - (distPx - side * 2);
-      y = y0 + side;
-    } else {
-      x = x0;
-      y = y0 + side - (distPx - side * 3);
-    }
-    this.probe.setPosition(x, y);
-    this.probeGlow.setPosition(x, y);
+    const speed = this.paused ? this.resumeSpeed : this.gameOver ? 1 : this.clock.speed;
+    this.hud.update(
+      buildHudModel(
+        {
+          state: this.match.state,
+          ticksLeft: this.match.ticksToNextStage(),
+          mobCount: this.match.mobCount(),
+          tick: this.match.tick,
+          speed,
+          bossNames: this.bossNames,
+        },
+        this.ctx.data.game.hud,
+      ),
+    );
   }
 }
