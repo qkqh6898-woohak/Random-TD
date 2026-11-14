@@ -88,9 +88,7 @@ function drawProp(g: Phaser.GameObjects.Graphics, prop: ChibiProp): void {
   }
 }
 
-/** 그림 크기 (발밑 원점 기준, 받침대·별 포함 바깥 경계). 텍스처를 구울 때 쓴다. */
-export const CHIBI_BOUNDS = { left: -100, right: 120, top: -268, bottom: 6 } as const;
-export const PEDESTAL_BOUNDS = { left: -98, right: 98, top: -26, bottom: 44 } as const;
+export { CHIBI_BOUNDS, PEDESTAL_BOUNDS } from './chibiBounds';
 
 /** 받침대 (등급 색). 원점 = 발밑 중심. */
 export function drawPedestal(g: Phaser.GameObjects.Graphics, pedestal: number, ox = 0, oy = 0): void {

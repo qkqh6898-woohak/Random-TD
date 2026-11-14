@@ -2,7 +2,7 @@
  * 게임 HUD (DOM, UI.md 4.1·4.2, DEV_PLAN M1-8).
  *
  * 1줄: 단계(보스 단계는 👑) · ⏱ 단계 남은 시간 · 👾 몹 수/한도(무한) 또는 ❤ 목숨(캠페인) · ⏸
- * 2줄: 💰 돈 · [⏭ debug] · 배속
+ * 2줄: 💰 돈 · [💰+ debug] · [⏭ debug] · 배속
  * 그 아래: 보스 막대 자리 (UI.md 4.1 '보스가 있을 때만'). 자리는 늘 비워 두고 보스 단계에만 보인다
  *   → 보스 단계가 와도 HUD 높이가 그대로라 맵이 밀리거나 가려지지 않는다. 맵 위쪽 끝은 Game 장면이 이 높이를 재서 정한다.
  *
@@ -14,7 +14,7 @@
  * 돈이 들어오면 (동전이 도착하면) 돈 글자가 반짝이고 '+n원'이 떠오른다 (UI.md 4.2).
  *
  * 값 계산은 hudModel.ts(순수 함수, 단위 테스트)에서 하고, 여기서는 바뀐 글자만 DOM에 쓴다.
- * HUD는 sim을 읽기만 한다. 배속은 화면 설정(TickClock), 단계 건너뛰기(debug)는 명령으로 보낸다.
+ * HUD는 sim을 읽기만 한다. 배속은 화면 설정(TickClock), 돈 추가·단계 건너뛰기(debug)는 명령으로 보낸다.
  * 루트의 data-tick 속성 = 지금 틱 (E2E가 게임 시간이 흐르는지 볼 때 쓴다, 화면에는 안 보임).
  */
 import { h } from '../dom';
@@ -32,6 +32,8 @@ export interface HudOptions {
   onPause: () => void;
   /** ?debug=1 일 때만: 다음 단계로 건너뛰기 */
   onSkipStage?: () => void;
+  /** ?debug=1 일 때만: 돈 추가 (CLAUDE.md 4장 개발용 치트) */
+  onAddGold?: () => void;
 }
 
 export interface HudView extends UiView {
@@ -98,6 +100,14 @@ export function createHud(opts: HudOptions): HudView {
         on: { click: () => opts.onSkipStage?.() },
       })
     : null;
+  const addGoldBtn = opts.onAddGold
+    ? h('button', {
+        class: 'btn btn-chip hud-add-gold',
+        attrs: { type: 'button', 'data-action': 'add-gold', 'aria-label': '돈 추가 (디버그)' },
+        text: '💰+',
+        on: { click: () => opts.onAddGold?.() },
+      })
+    : null;
   // 보스 막대 자리: 숨길 때도 자리는 남긴다 (visibility). 빈 글자면 높이가 줄어드니 공백 하나
   const bannerEl = h('div', { class: 'hud-banner', attrs: { 'data-testid': 'hud-boss', hidden: '' }, text: ' ' });
   // 화면 가장자리 붉은 테두리 (몹 120 이상, 무한)
@@ -141,6 +151,7 @@ export function createHud(opts: HudOptions): HudView {
         { class: 'hud-row' },
         goldItem,
         h('span', { class: 'hud-spacer' }),
+        addGoldBtn,
         skipBtn,
         speedBtn,
       ),

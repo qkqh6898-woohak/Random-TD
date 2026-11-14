@@ -107,6 +107,12 @@ for (const vp of VIEWPORTS) {
     const g = await geometry(page);
     expect(g.originY).toBe(before.originY); // 보스 막대가 보여도 맵이 밀리지 않음
     expect(g.hudBottom).toBeLessThanOrEqual(g.mapTop + 0.5);
+    // M2 검토 반영: 단계 시작 알림은 HUD 띠와 맵 사이 비워 둔 자리에 뜬다 → 맵 0줄(타워·피해 숫자)을 가리지 않는다
+    const toast = page.locator('.toast').first();
+    await expect(toast).toBeVisible();
+    const tb = (await toast.boundingBox())!;
+    expect(tb.y).toBeGreaterThanOrEqual(g.hudBottom - 0.5);
+    expect(tb.y + tb.height).toBeLessThanOrEqual(g.mapTop + 0.5);
 
     // 0줄 (4, 0) 칸의 위쪽 10% 지점
     const x = g.stageLeft + (g.originX + 4.5 * g.tile) * g.k;

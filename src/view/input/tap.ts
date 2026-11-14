@@ -7,9 +7,13 @@
  * - 타워가 있는 칸 (빈 칸이 남아 있음): 아무 일 없음 (타워 정보 패널은 M3).
  * - 경로·장식·맵 밖: 아무 일 없음.
  * - 소환 연타는 0.1초 간격까지 받는다 (UI.md 9장).
+ * - 탭 위치 → 칸 (`tapTile`): 타워 그림의 머리는 위 칸으로 삐져나와 있으므로, 아래 칸에 타워가 있고 그 머리 영역을 눌렀으면
+ *   위 칸이 아니라 그 타워 칸을 누른 것으로 본다 (보이는 캐릭터를 눌렀는데 위 칸에 소환되던 문제).
  */
 import type { SummonFail } from '../../sim/systems/Summon';
 import { BOARD_FULL, needGoldForSummon } from '../../ui/messages';
+import { pxToTile, type MapLayout } from '../layout';
+import { towerHeadZone } from '../render/towerGeom';
 
 /** 소환 탭 최소 간격 (ms) — UI.md 9장 '소환 연타 0.1초 간격까지 허용' */
 export const TAP_MIN_INTERVAL_MS = 100;
@@ -45,4 +49,18 @@ export function summonFailText(reason: string, cost: number): string | null {
 /** 연타 거르기: 마지막으로 받은 탭에서 0.1초가 지났는가. */
 export function tapAllowed(lastAcceptedMs: number | null, nowMs: number): boolean {
   return lastAcceptedMs === null || nowMs - lastAcceptedMs >= TAP_MIN_INTERVAL_MS;
+}
+
+/**
+ * 탭한 화면 px → 누른 칸. 기본은 그 자리의 칸이고, 바로 아래 칸에 타워가 있으며 그 타워의 머리 영역(위 칸으로 삐져나온 부분)을
+ * 눌렀으면 그 타워 칸. 아래 타워가 앞에 그려지므로(깊이 = 발밑 y) 위 칸에 타워가 있어도 아래 타워가 이긴다.
+ */
+export function tapTile(layout: MapLayout, px: number, py: number, hasTower: (tx: number, ty: number) => boolean): { tx: number; ty: number } {
+  const base = pxToTile(layout, px, py);
+  const below = { tx: base.tx, ty: base.ty + 1 };
+  if (!hasTower(below.tx, below.ty)) return base;
+  const fx = (px - layout.originX) / layout.tile;
+  const fy = (py - layout.originY) / layout.tile;
+  const z = towerHeadZone(below.tx, below.ty);
+  return fx >= z.left && fx <= z.right && fy >= z.top ? below : base;
 }

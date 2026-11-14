@@ -32,10 +32,11 @@ export interface Tower extends Entity {
   y: number;
   /** 공격 타이머 누적값 (0 이상). ATTACK_COST 이상이면 공격할 수 있다 */
   atkAcc: number;
-  /** 공격력(× 100)의 나머지 0~99: 물리·마법·고정. 소수 공격력이 평균적으로 정확히 들어가게 */
-  remP: number;
-  remM: number;
-  remT: number;
+  /**
+   * 피해 나머지 0~99 (× ATK_SCALE). 1회 피해(방어 적용 후 물리 + 마법 + 고정, × 100)를 정수로 자를 때 남은 몫을 이어 간다
+   * → 소수 공격력·방어로 깎인 소수 피해도 평균이 정확하다 (Combat.applyHit).
+   */
+  remDmg: number;
   /** 놓인 틱 */
   bornTick: number;
   /** 지금까지 공격한 횟수 */

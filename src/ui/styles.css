@@ -556,7 +556,8 @@ body {
   color: #ff8a7a;
 }
 
-.hud-skip {
+.hud-skip,
+.hud-add-gold {
   color: #b9a6ff;
 }
 

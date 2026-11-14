@@ -203,10 +203,6 @@ export class MobLayer {
     private readonly sizeOf: (mobId: string) => string,
   ) {}
 
-  /**
-   * @param prevProgress 직전 틱의 진행도 (id → 진행도). 없으면 보간 없이 지금 값
-   * @param alpha 다음 틱까지 진행 비율 (0~1)
-   */
   /** 처치 사건: 다음 sync에서 사라질 때 납작해지는 연출. */
   markKilled(id: number): void {
     this.killed.add(id);
@@ -217,6 +213,11 @@ export class MobLayer {
     this.sprites.get(id)?.flash(timeMs);
   }
 
+  /**
+   * sim 몹 목록과 그림을 맞추고 위치·자세를 갱신한다.
+   * @param prevProgress 직전 틱의 진행도 (id → 진행도). 없으면 보간 없이 지금 값
+   * @param alpha 다음 틱까지 진행 비율 (0~1)
+   */
   sync(mobs: readonly Mob[], prevProgress: ReadonlyMap<number, number>, alpha: number, timeMs: number): void {
     const seen = new Set<number>();
     for (const mob of mobs) {

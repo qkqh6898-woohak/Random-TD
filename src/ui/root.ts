@@ -65,6 +65,21 @@ export class UiRoot {
 
   private static readonly MAX_TOASTS = 3;
 
+  /**
+   * 알림 한 줄의 높이 (CSS px). 보이지 않는 알림을 잠깐 넣어 실제 DOM 높이를 잰다 (글자 크기가 무대 너비(cqw)를 따라 바뀜).
+   * Game 장면이 HUD 띠와 맵 사이에 알림 자리를 비워 두는 데 쓴다 → 알림이 맵 첫 줄을 가리지 않는다.
+   */
+  measureToastHeight(): number {
+    const probe = h('div', { class: 'toast', text: '가', attrs: { 'aria-hidden': 'true' } });
+    probe.style.visibility = 'hidden';
+    probe.style.position = 'absolute';
+    probe.style.animation = 'none';
+    this.layers.toast.append(probe);
+    const height = probe.offsetHeight;
+    probe.remove();
+    return height;
+  }
+
   /** 알림이 뜨는 높이 (무대 위쪽에서 CSS px). HUD 띠 바로 아래에 띄우려고 Game 장면이 넣는다. null이면 기본값. */
   setToastTop(cssPx: number | null): void {
     if (cssPx === null || !Number.isFinite(cssPx)) this.layers.toast.style.removeProperty('--toast-top');

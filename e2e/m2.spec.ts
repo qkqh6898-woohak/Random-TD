@@ -32,6 +32,10 @@ type SceneLike = {
   floatingLabels: string[];
   flyingCoins: number;
   mapLayout: { originX: number; originY: number; tile: number };
+  summonEffects: number;
+  time: { now: number };
+  update(time: number, deltaMs: number): void;
+  floatingTextBounds(): { label: string; big: boolean; x: number; y: number; w: number; h: number }[];
   debugFastForward(n: number): number;
   towerFigureTransform(id: number): { y: number; scaleY: number; angle: number } | null;
 };
@@ -263,5 +267,135 @@ test('자동 공격: 몹을 잡으면 피해 숫자·+10원·동전이 뜨고 �
   expect(end.stage).toBe(6);
   expect(end.mobs).toBeLessThan(40); // 타워 14개가 몹을 잡고 있다 (타워 없으면 100마리 넘게 쌓임)
   await shot(page, 'M2-combat', 'M2');
+  expect(errors).toEqual([]);
+});
+
+/** 페이지 안에서 Game 장면을 꺼내는 코드 (page.evaluate 안에서만 쓴다). */
+type W = { __rtd: { game: { scene: { getScene(k: string): unknown } } } };
+
+test('검토 반영: 타워 머리(위 칸으로 삐져나온 헬멧·별)를 탭해도 위 칸에 소환되지 않는다', async ({ page }) => {
+  const errors = collectErrors(page);
+  await start(page, '?seed=7');
+  await tapTile(page, 3, 4);
+  await expect(page.getByTestId('hud-towers')).toHaveText('1/71');
+  await expect.poll(async () => (await view(page)).renderedTowers).toBe(1);
+  // (3, 4) 칸 위쪽 경계에서 0.12칸·0.25칸 위 = 캐릭터 헬멧·별이 그려진 자리 (리뷰 재현: 여기를 누르면 (3, 3)에 소환됐다)
+  for (const up of [0.12, 0.25]) {
+    const p = await page.evaluate(
+      ([dy]) => {
+        const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
+        const L = s.mapLayout;
+        const r = document.getElementById('stage')!.getBoundingClientRect();
+        const k = r.width / 1080;
+        return { x: r.left + (L.originX + 3.5 * L.tile) * k, y: r.top + (L.originY + (4 - dy!) * L.tile) * k };
+      },
+      [up] as const,
+    );
+    await page.touchscreen.tap(p.x, p.y);
+    await page.waitForTimeout(150);
+  }
+  let v = await view(page);
+  expect(v.towers).toBe(1);
+  expect(v.gold).toBe(900);
+  // 위 칸 가운데는 그대로 소환된다
+  await tapTile(page, 3, 3);
+  await expect(page.getByTestId('hud-towers')).toHaveText('2/71');
+  v = await view(page);
+  expect(v.gold).toBe(800);
+  expect(errors).toEqual([]);
+});
+
+test('검토 반영: 느린 프레임(한 번에 5틱)에도 소환 연출과 "100원이 필요해요" 알림이 빠지지 않는다', async ({ page }) => {
+  const errors = collectErrors(page);
+  await start(page, '?seed=42');
+  // 소환 명령을 넣고 같은 동기 구간에서 300ms짜리 프레임 하나를 돌린다 (maxFrameMs 250 → 5틱).
+  // 예전에는 '최근 3틱' 사건만 연출해서, 첫 틱에 실행된 소환의 빛 기둥·등장 동작이 사라졌다.
+  const r = await page.evaluate(() => {
+    const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
+    const before = { fx: s.summonEffects, tick: s.match.tick };
+    s.match.world.enqueue({ type: 'summon', x: 2, y: 2 });
+    s.update(s.time.now, 300);
+    return { fx: s.summonEffects - before.fx, ticks: s.match.tick - before.tick, towers: s.match.towers().length };
+  });
+  expect(r.ticks).toBeGreaterThanOrEqual(4);
+  expect(r.towers).toBe(1);
+  expect(r.fx).toBe(1);
+  // 돈을 다 쓴 뒤, 화면 검사 없이 들어간 소환(sim이 거절) → 느린 프레임에도 알림
+  await page.evaluate(() => {
+    const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
+    const cells: [number, number][] = [[6, 2], [2, 8], [6, 8], [4, 0], [0, 5], [8, 5], [4, 10], [3, 2], [5, 8]];
+    for (const [x, y] of cells) s.match.world.enqueue({ type: 'summon', x, y });
+    s.debugFastForward(1);
+  });
+  await expect(page.getByTestId('hud-gold')).toHaveText('0원');
+  await expect(page.locator('.toast')).toHaveCount(0);
+  await page.evaluate(() => {
+    const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
+    s.match.world.enqueue({ type: 'summon', x: 4, y: 4 });
+    s.update(s.time.now, 300);
+  });
+  await expect(page.locator('.toast', { hasText: '100원이 필요해요' })).toBeVisible();
+  expect((await view(page)).towers).toBe(10);
+  expect(errors).toEqual([]);
+});
+
+test('검토 반영: ?debug=1 HUD [💰+] 버튼으로 돈 추가 (일반 판에는 없음)', async ({ page }) => {
+  const errors = collectErrors(page);
+  await start(page, '?seed=42');
+  await expect(page.getByRole('button', { name: '돈 추가 (디버그)' })).toHaveCount(0);
+  await start(page, '?debug=1&seed=42');
+  const add = page.getByRole('button', { name: '돈 추가 (디버그)' });
+  await expect(add).toBeVisible();
+  await expect(page.locator('.hud-row').nth(1).getByRole('button', { name: '돈 추가 (디버그)' })).toHaveCount(1);
+  await expect(page.getByTestId('hud-gold')).toHaveText('1,000원');
+  await add.click();
+  await expect(page.getByTestId('hud-gold')).toHaveText('2,000원');
+  await add.click();
+  await expect(page.getByTestId('hud-gold')).toHaveText('3,000원');
+  expect((await view(page)).gold).toBe(3000);
+  expect(errors).toEqual([]);
+});
+
+test('검토 반영: 한꺼번에 뜬 피해 숫자가 겹치지 않는다 (타워 20개가 한 몹을 동시에 때림)', async ({ page }) => {
+  test.setTimeout(60_000);
+  const errors = collectErrors(page);
+  await start(page, '?debug=1&seed=7');
+  await page.evaluate(() => {
+    const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
+    s.match.world.enqueue({ type: 'debugAddGold', amount: 1000 });
+    // 경로 바로 안쪽·바깥쪽 칸 20개 (몹이 지나갈 때 여러 타워가 같이 때린다)
+    const near = s.match.map.buildable.filter(([x, y]) => x <= 2 || x >= 6 || y <= 2 || y >= 8).slice(0, 20);
+    for (const [x, y] of near) s.match.world.enqueue({ type: 'summon', x, y });
+    s.debugFastForward(1);
+  });
+  expect((await view(page)).towers).toBe(20);
+  const v0 = await view(page);
+  await fastForward(page, 1200 + 200 - v0.tick); // 1단계 시작 직후
+  type B = { label: string; big: boolean; x: number; y: number; w: number; h: number };
+  let checked = 0;
+  let worst = 0;
+  for (let i = 0; i < 40; i++) {
+    await page.waitForTimeout(120);
+    const boxes = (await page.evaluate(() => {
+      const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
+      return s.floatingTextBounds();
+    })) as B[];
+    const nums = boxes.filter((b) => !b.big && /^\d+$/.test(b.label));
+    for (let a = 0; a < nums.length; a++) {
+      for (let b = a + 1; b < nums.length; b++) {
+        const A = nums[a]!;
+        const Bx = nums[b]!;
+        const ox = Math.min(A.x + A.w, Bx.x + Bx.w) - Math.max(A.x, Bx.x);
+        const oy = Math.min(A.y + A.h, Bx.y + Bx.h) - Math.max(A.y, Bx.y);
+        if (ox <= 0.25 * Math.min(A.w, Bx.w)) continue; // 가로로 거의 안 겹침
+        checked++;
+        worst = Math.max(worst, oy / Math.min(A.h, Bx.h));
+      }
+    }
+  }
+  // 글자 상자(테두리·여백 포함)가 위아래로 살짝 닿는 것은 괜찮지만, 같은 줄에 겹쳐 다른 숫자처럼 읽히면 안 된다
+  expect(checked).toBeGreaterThan(0); // 숫자가 실제로 몰리는 상황을 확인했다 (예전: 214쌍 중 완전히 겹친 쌍이 있었음)
+  expect(worst).toBeLessThan(0.4);
+  test.info().annotations.push({ type: 'overlap', description: `pairs=${checked} worst=${worst.toFixed(2)}` });
   expect(errors).toEqual([]);
 });

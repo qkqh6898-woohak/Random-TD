@@ -7,7 +7,7 @@ import { ATTACK_COST, chargeAttacks, type Tower } from '../../src/sim/entities/T
 import type { Mob } from '../../src/sim/entities/Mob';
 import { positionAt } from '../../src/sim/map';
 import { buildMatchRules } from '../../src/sim/rules';
-import { damageAgainst, reduceDamage, rollHit, splitAtk } from '../../src/sim/systems/Combat';
+import { applyHit, damageAgainst, reduceDamage, rollHit, splitAtk } from '../../src/sim/systems/Combat';
 import { placeTower } from '../../src/sim/systems/Summon';
 import { addMob, data, infinite } from '../helpers/match';
 
@@ -73,31 +73,91 @@ describe('공격 타이머 (M2-4)', () => {
 });
 
 describe('피해 (M2-6 기본 피해)', () => {
-  it('방어 감소 A ÷ (A + 100), 정수 내림: 방어 0 → 100, 25 → 80, 100 → 50, 300 → 25, 6 vs 10 → 5', () => {
+  it('방어 감소 A ÷ (A + 100), × 100 단위에서 내림: 방어 0 → 100, 25 → 80, 100 → 50, 300 → 25, 600 vs 10 → 545', () => {
     expect(reduceDamage(100, 0)).toBe(100);
     expect(reduceDamage(100, 25)).toBe(80);
     expect(reduceDamage(100, 100)).toBe(50);
     expect(reduceDamage(100, 300)).toBe(25);
-    expect(reduceDamage(6, 10)).toBe(5);
+    expect(reduceDamage(600, 10)).toBe(545); // 6 × 100/110 = 5.45 (예전처럼 정수 6에서 자르면 5)
     expect(reduceDamage(0, 50)).toBe(0);
   });
 
-  it('물리는 방어력, 마법은 마법 저항, 고정은 막히지 않음 (도박꾼 물리 39 + 마법 39 vs 방어 100 → 19 + 39)', () => {
-    expect(damageAgainst({ p: 39, m: 39, t: 0 }, { armor: 100, magicRes: 0 })).toEqual({ p: 19, m: 39, t: 0, total: 58 });
-    expect(damageAgainst({ p: 0, m: 100, t: 0 }, { armor: 0, magicRes: 60 })).toMatchObject({ m: 62, total: 62 });
-    expect(damageAgainst({ p: 0, m: 0, t: 100 }, { armor: 300, magicRes: 300 })).toMatchObject({ total: 100 });
+  it('물리는 방어력, 마법은 마법 저항, 고정은 막히지 않음 — 종류별로 자르지 않고 × 100 값으로 합친다', () => {
+    // 도박꾼 물리 39 + 마법 39 vs 방어 100 → 19.5 + 39 = 58.5 (× 100 = 5850)
+    expect(damageAgainst({ p: 3900, m: 3900, t: 0 }, { armor: 100, magicRes: 0 })).toEqual({ p: 1950, m: 3900, t: 0, total: 5850 });
+    expect(damageAgainst({ p: 0, m: 10_000, t: 0 }, { armor: 0, magicRes: 60 })).toMatchObject({ m: 6250, total: 6250 });
+    expect(damageAgainst({ p: 0, m: 0, t: 10_000 }, { armor: 300, magicRes: 300 })).toMatchObject({ total: 10_000 });
   });
 
-  it('소수 공격력은 나머지를 이어 간다: 견습 마법사 마법 6.5 → 6, 7, 6, 7 … (10회 합 65)', () => {
+  it('정수 피해는 합 + 나머지를 100으로 나눈 몫: 견습 마법사 마법 6.5 → 6, 7, 6, 7 … (10회 합 65)', () => {
     expect(splitAtk(650, 0)).toEqual({ dmg: 6, rem: 50 });
     expect(splitAtk(650, 50)).toEqual({ dmg: 7, rem: 0 });
-    const m = infinite(1);
-    const t = placeTower(m.world, 'apprentice', 0, 0, 0);
-    const stats = rules.towers.get('apprentice')!;
-    const hits = Array.from({ length: 10 }, () => rollHit(stats, t).m);
+    expect(rollHit(rules.towers.get('apprentice')!)).toEqual({ p: 0, m: 650, t: 0 });
+    const { m, mob } = setup(3000);
+    mob.hp = 1_000_000;
+    mob.maxHp = 1_000_000;
+    const t = placeTower(m.world, 'apprentice', 0, 4, 0);
+    const hits: number[] = [];
+    while (hits.length < 10) {
+      m.step();
+      for (const e of m.world.drainEvents()) if (e.type === 'hit') hits.push(Number(e.damage));
+    }
     expect(hits.slice(0, 4)).toEqual([6, 7, 6, 7]);
     expect(hits.reduce((a, b) => a + b, 0)).toBe(65);
-    expect([t.remP, t.remM, t.remT]).toEqual([0, 0, 0]);
+    expect(t.remDmg).toBe(0);
+  });
+
+  it('회귀: 공격력 4 타워가 방어 1 몹을 100번 때리면 합 396 (예전: 타격마다 3으로 내림 → 300, −24%)', () => {
+    const { m, mob } = setup(3000);
+    mob.armor = 1;
+    mob.hp = 1_000_000;
+    mob.maxHp = 1_000_000;
+    const g = placeTower(m.world, 'goblin', 0, 4, 0); // 근접 물리 4
+    while (g.attacks < 100) m.step();
+    expect(g.attacks).toBe(100);
+    expect(1_000_000 - mob.hp).toBe(396);
+  });
+
+  it('회귀: 방어가 있는 몹 상대 피해 합 = 이론값 ±1 (골렘 방어 61: 광부·고블린·궁수, 400틱)', () => {
+    for (const towerId of ['miner', 'goblin', 'archer']) {
+      const { m, mob } = setup(3000, 'golem');
+      expect(mob.armor).toBe(61);
+      mob.hp = 1_000_000_000;
+      mob.maxHp = mob.hp;
+      const t = placeTower(m.world, towerId, 0, 4, 0);
+      const stats = rules.towers.get(towerId)!;
+      let hits = 0;
+      for (let i = 0; i < 400; i++) {
+        m.step();
+        for (const e of m.world.drainEvents()) if (e.type === 'hit' && e.source === t.id) hits++;
+      }
+      expect(hits).toBeGreaterThanOrEqual(20);
+      const ideal = (hits * stats.atkC) / (mob.armor + 100); // 공격력 × 100/(A+100), × 100 단위 → ÷ 100
+      expect(Math.abs(1_000_000_000 - mob.hp - ideal)).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('혼합 피해(물리 + 마법)는 한 번만 자른다: 39 + 39 vs 방어 100 → 58, 59, 58, 59 … (평균 58.5)', () => {
+    const { m, mob } = setup(3000);
+    mob.armor = 100;
+    mob.magicRes = 0;
+    mob.hp = 1_000_000;
+    mob.maxHp = 1_000_000;
+    const t = placeTower(m.world, 'goblin', 0, 4, 0);
+    const hit = { p: 3900, m: 3900, t: 0 };
+    const out: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      applyHit(m.ctx, m.world, mob, hit, { x: 0, y: 0 }, t.id);
+      out.push(1_000_000 - mob.hp - out.reduce((a, b) => a + b, 0));
+    }
+    expect(out).toEqual([58, 59, 58, 59]);
+  });
+
+  it('쏜 타워가 없어도 피해는 들어간다 (나머지 없이 자름)', () => {
+    const { m, mob } = setup(3000);
+    mob.hp = 100;
+    applyHit(m.ctx, m.world, mob, { p: 650, m: 0, t: 0 }, { x: 0, y: 0 }, 99_999);
+    expect(mob.hp).toBe(94);
   });
 });
 
@@ -110,14 +170,14 @@ describe('근접 공격: 즉시 피해', () => {
     expect(mob.hp).toBe(116);
     const evs = m.world.drainEvents();
     expect(evs.find((e) => e.type === 'attack')).toMatchObject({ tower: g.id, target: mob.id, instant: true });
-    expect(evs.find((e) => e.type === 'hit')).toMatchObject({ target: mob.id, source: g.id, damage: 4, p: 4, kill: false });
+    expect(evs.find((e) => e.type === 'hit')).toMatchObject({ target: mob.id, source: g.id, damage: 4, p: 400, kill: false });
     expect(listProjectiles(m.world)).toHaveLength(0);
     m.stepN(39); // 0, 8, 16, 24, 32 → 5회
     expect(g.attacks).toBe(5);
     expect(mob.hp).toBe(120 - 20);
   });
 
-  it('선두를 친다: 사거리 안 두 몹 중 진행도가 큰 쪽', () => {
+  it('선두를 친다: 사거리 안 두 몹 중 앞선(먼저 나온) 쪽', () => {
     const { m, mob } = setup(3000);
     const back = addMob(m, 'slime');
     back.progress = 2700;
@@ -160,7 +220,7 @@ describe('투사체 (M2-5)', () => {
     m.step();
     expect(mob.hp).toBe(120);
     const [p] = listProjectiles(m.world);
-    expect(p).toMatchObject({ source: a.id, target: mob.id, x: 4500, y: 1100, dmgP: 10, speed: 600 });
+    expect(p).toMatchObject({ source: a.id, target: mob.id, x: 4500, y: 1100, dmgP: 1000, speed: 600 });
     m.step();
     expect(listProjectiles(m.world)).toHaveLength(0);
     expect(mob.hp).toBe(110);

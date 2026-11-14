@@ -46,7 +46,7 @@ describe('처치 보상 (10 + ⌊s/10⌋) × 배율', () => {
     m.state.stage = 10;
     const mob = addMob(m, 'slime');
     expect(mob.reward).toBe(11);
-    const killed = applyHit(m.ctx, m.world, mob, { p: mob.hp, m: 0, t: 0 }, { x: 0, y: 0 }, 0);
+    const killed = applyHit(m.ctx, m.world, mob, { p: 0, m: 0, t: mob.hp * 100 }, { x: 0, y: 0 }, 0); // 고정 피해 = 체력 (× 100 단위)
     expect(killed).toBe(true);
     expect(m.state.gold).toBe(1011);
     expect(m.state.kills).toBe(1);

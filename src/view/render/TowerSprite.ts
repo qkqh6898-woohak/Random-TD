@@ -25,11 +25,7 @@ import type { Tower } from '../../sim/entities/Tower';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { MOB_DEPTH_BASE } from './MobSprite';
 import { attackAnimMs, towerPose } from './towerPose';
-
-/** 캐릭터 높이 (칸 배수) */
-const FIGURE_TILES = 1.1;
-/** 발밑 위치: 칸 중심에서 아래로 (칸 배수) */
-const FOOT_OFFSET_TILES = 0.3;
+import { FIGURE_TILES, FOOT_OFFSET_TILES } from './towerGeom';
 
 export interface TowerArt {
   look(towerId: string): TowerLookInput;

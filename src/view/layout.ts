@@ -55,6 +55,7 @@ export interface MapLayout {
 
 /**
  * DOM HUD가 실제로 차지하는 높이(기준 px)를 받아 맵 영역을 정한다 (UI.md 4.1: HUD 2줄 → 보스 막대 줄 → 맵 → 아래 띠).
+ * Game 장면은 hudBottomPx에 알림 한 줄 자리(간격 + 실제 알림 높이)를 더해 넘긴다 → 알림이 맵 첫 줄을 가리지 않는다.
  * HUD 아래 끝 + 여백부터 아래 띠 위쪽 끝 − 여백까지. 아래 띠를 재지 못하면(생략·0) `BOTTOM_UI_PX`를 비워 둔다.
  * HUD가 작게 재져도(측정 전 0 등) `HUD_TOP_PX`보다 위로 올리지 않고, 맵 영역이 `MIN_MAP_AREA_PX`보다 작아지게 내리지도 않는다.
  */

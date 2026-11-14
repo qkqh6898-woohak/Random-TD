@@ -7,7 +7,8 @@
  *
  * - 맵 탭 (M2-7): 빈 배치 칸 → 소환 명령, 돈 부족 → "100원이 필요해요" + 칸 흔들림, 칸이 가득 참 → "빈 칸이 없어요 …".
  *   화면이 sim 상태로 미리 검사하고(summonCheck), sim은 실행 틱에 다시 검사한다 (거절되면 summonFail 사건 → 같은 알림).
- * - 연출은 최근 몇 틱의 사건에만 만든다 → 빨리 감기·높은 배속으로 사건이 한꺼번에 쌓여도 화면이 멈추지 않는다.
+ * - 공격·피해·처치 연출은 최근 몇 틱의 사건에만 만든다 → 빨리 감기·높은 배속으로 사건이 한꺼번에 쌓여도 화면이 멈추지 않는다.
+ *   소환·소환 실패(사람이 한 행동의 응답)는 이번 프레임에 돈 틱이면 모두, 신 강림 알림은 언제나 (fxModel.eventFxVisible).
  *
  * - 무한 모드: 순환의 정원 / 캠페인(debug): 테마 1 사거리 미로.
  * - ⏸ 또는 앱이 백그라운드로 가면 일시정지 메뉴(UI.md 4.6). 열려 있는 동안 TickClock 배속 0 = 게임 시간 정지.
@@ -20,6 +21,7 @@ import { GRADE_COLORS, hexToInt } from '../../art/palette';
 import type { Grade } from '../../data/load';
 import { TickClock } from '../../sim/World';
 import type { Projectile } from '../../sim/entities/Projectile';
+import { towerAt } from '../../sim/entities/Tower';
 import { createMatch, type Match } from '../../sim/match';
 import type { MatchMode } from '../../sim/state';
 import { summonCheck, towerCount } from '../../sim/systems/Summon';
@@ -31,18 +33,17 @@ import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
 import { createPauseMenu } from '../../ui/screens/PauseMenu';
 import { SCENE_BOOT, SCENE_GAME } from '../config';
 import type { GameContext } from '../context';
-import { decideTap, summonFailText, tapAllowed } from '../input/tap';
-import { computeMapLayout, cssToGamePx, mapAreaBelowHud, pxToTile, unitsToPx, type MapLayout, type Rect } from '../layout';
+import { decideTap, summonFailText, tapAllowed, tapTile } from '../input/tap';
+import { computeMapLayout, cssToGamePx, mapAreaBelowHud, unitsToPx, type MapLayout, type Rect } from '../layout';
 import { FloatingTextLayer } from '../render/DamageText';
 import { FxLayer } from '../render/Fx';
 import { MapRenderer } from '../render/MapRenderer';
 import { MobLayer } from '../render/MobSprite';
 import { ProjectileLayer, type ProjectileLook } from '../render/ProjectileSprite';
 import { TowerLayer } from '../render/TowerSprite';
-import { DAMAGE_COLORS, damageColor } from '../render/fxModel';
-
-/** 연출을 만드는 사건: 지금 틱에서 이만큼 안쪽 (빨리 감기로 쌓인 옛 사건은 연출 없이 넘긴다) */
-const FX_RECENT_TICKS = 3;
+import { DAMAGE_COLORS, damageColor, eventFxVisible } from '../render/fxModel';
+/** HUD 띠 아래 끝과 알림 사이 간격 (무대 너비 비율, 2cqw) */
+const TOAST_GAP_OF_WIDTH = 0.02;
 /** 한 프레임에 띄우는 피해 숫자 최대 수 */
 const MAX_DAMAGE_TEXTS_PER_FRAME = 16;
 /** 한 프레임에 만드는 맞음 불꽃 최대 수 */
@@ -87,6 +88,10 @@ export class GameScene extends Phaser.Scene {
   private resumeSpeed = 1;
   /** 마지막 틱 직전의 몹 진행도 (보간용) */
   private prevProgress = new Map<number, number>();
+  /** 이번 프레임에 틱을 돌리기 전의 틱 번호 (이 틱부터 난 사건 = 이번 프레임의 사건) */
+  private frameStartTick = 0;
+  /** 만든 소환 연출 수 (E2E 확인용) */
+  private summonFxCount = 0;
   private sceneData: Required<GameSceneData> = { seed: 0, mode: 'infinite', theme: 1 };
   private bossNames: Readonly<Record<string, string>> | undefined;
 
@@ -111,6 +116,8 @@ export class GameScene extends Phaser.Scene {
     this.prevProgress = new Map();
     this.prevProjectiles = new Map();
     this.lastTapMs = null;
+    this.frameStartTick = 0;
+    this.summonFxCount = 0;
     this.bossNames =
       this.sceneData.mode === 'campaign' ? campaign.themes.find((t) => t.theme === this.sceneData.theme)?.bossSchedule : undefined;
 
@@ -123,6 +130,7 @@ export class GameScene extends Phaser.Scene {
       },
       onPause: () => this.pause(),
       onSkipStage: this.ctx.debug ? () => this.match.world.enqueue({ type: 'debugSkipStage' }) : undefined,
+      onAddGold: this.ctx.debug ? () => this.match.world.enqueue({ type: 'debugAddGold', amount: config.debug.addGold }) : undefined,
     });
     this.ctx.ui.clear('screen');
     this.ctx.ui.show('hud', this.hud);
@@ -170,6 +178,7 @@ export class GameScene extends Phaser.Scene {
       if (Math.abs(area.y - this.mapArea.y) >= 2 || Math.abs(area.h - this.mapArea.h) >= 2) this.applyLayout(area);
       this.updateToastTop();
     }
+    this.frameStartTick = this.match.tick;
     if (!this.gameOver) this.runTicks(this.clock.advance(deltaMs));
     this.handleEvents(time);
     const alpha = this.gameOver ? 1 : this.clock.alpha;
@@ -235,9 +244,19 @@ export class GameScene extends Phaser.Scene {
     return this.projectileLayer.count;
   }
 
+  /** 떠 있는 숫자의 화면 상자 (기준 px, E2E: 숫자끼리 겹치지 않는지). */
+  floatingTextBounds(): { label: string; big: boolean; x: number; y: number; w: number; h: number }[] {
+    return this.floatingText.activeBounds();
+  }
+
   /** 떠 있는 숫자 (피해·돈) 글자 목록. */
   get floatingLabels(): string[] {
     return this.floatingText.activeLabels;
+  }
+
+  /** 지금까지 만든 소환 연출(빛 기둥 + 등장 동작) 수 (E2E: 느린 프레임에도 소환 연출이 빠지지 않는지). */
+  get summonEffects(): number {
+    return this.summonFxCount;
   }
 
   /** 날아가는 동전 수. */
@@ -250,16 +269,21 @@ export class GameScene extends Phaser.Scene {
     return this.towerLayer.figureTransform(id);
   }
 
-  /** HUD 띠 아래 끝과 아래 띠 위쪽 끝(기준 px)으로 맵 영역을 정한다. */
+  /**
+   * HUD 띠 아래 끝과 아래 띠 위쪽 끝(기준 px)으로 맵 영역을 정한다.
+   * HUD 띠 바로 아래에는 알림 한 줄 자리(간격 + 실제 알림 높이)를 비워 둔다 → 단계 시작·돈 부족 알림이 맵 첫 줄을 가리지 않는다.
+   */
   private measureMapArea(): Rect {
     const w = this.ctx.ui.el.clientWidth;
-    return mapAreaBelowHud(cssToGamePx(this.hud.bandBottom(), w), cssToGamePx(this.hud.bottomTop(), w));
+    const band = this.hud.bandBottom();
+    const toastLane = band > 0 ? w * TOAST_GAP_OF_WIDTH + this.ctx.ui.measureToastHeight() : 0;
+    return mapAreaBelowHud(cssToGamePx(band + toastLane, w), cssToGamePx(this.hud.bottomTop(), w));
   }
 
-  /** 알림을 HUD 띠 바로 아래에 띄운다. */
+  /** 알림을 HUD 띠 바로 아래(맵 영역 위에 비워 둔 자리)에 띄운다. */
   private updateToastTop(): void {
     const bottom = this.hud.bandBottom();
-    this.ctx.ui.setToastTop(bottom > 0 ? bottom + this.ctx.ui.el.clientWidth * 0.02 : null);
+    this.ctx.ui.setToastTop(bottom > 0 ? bottom + this.ctx.ui.el.clientWidth * TOAST_GAP_OF_WIDTH : null);
   }
 
   /** HUD 돈 글자 위치 (기준 px) — 동전이 날아갈 곳. */
@@ -286,7 +310,9 @@ export class GameScene extends Phaser.Scene {
   /** 맵 탭: 빈 배치 칸이면 소환 명령, 아니면 알림 (UI.md 4.3·8장). */
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
     if (this.paused || this.gameOver) return;
-    const { tx, ty } = pxToTile(this.layout, pointer.worldX, pointer.worldY);
+    // 아래 칸 타워의 머리(위 칸으로 삐져나온 부분)를 누르면 그 타워 칸 (위 칸 소환 아님)
+    const world = this.match.world;
+    const { tx, ty } = tapTile(this.layout, pointer.worldX, pointer.worldY, (x, y) => towerAt(world, x, y) !== undefined);
     const action = decideTap(summonCheck(this.match.ctx, this.match.world, tx, ty), tx, ty, this.match.rules.summonCost);
     if (action.kind === 'summon') {
       const now = this.time.now;
@@ -353,12 +379,13 @@ export class GameScene extends Phaser.Scene {
     // 한 프레임에 단계가 여러 번 바뀌면(빨리 감기·높은 배속) 마지막 단계 알림 하나만
     let lastStage: { stage: number; boss: boolean } | null = null;
     let defeated = false;
-    const recentFrom = this.match.tick - FX_RECENT_TICKS;
+    const now = this.match.tick;
+    const frameStart = this.frameStartTick;
     const cost = this.match.rules.summonCost;
     let texts = 0;
     let sparks = 0;
     for (const ev of this.match.world.drainEvents()) {
-      const recent = ev.tick >= recentFrom;
+      const recent = eventFxVisible('bulk', ev.tick, now, frameStart);
       switch (ev.type) {
         case 'stageStart':
           lastStage = { stage: Number(ev.stage), boss: ev.boss === true };
@@ -367,13 +394,16 @@ export class GameScene extends Phaser.Scene {
           defeated = true;
           break;
         case 'summon':
-          if (!recent) break;
+          if (ev.god === true && eventFxVisible('rare', ev.tick, now, frameStart)) {
+            this.ctx.ui.toast(godDescends(this.ctx.data.towers.towers.find((t) => t.id === ev.tower)?.name ?? String(ev.tower)), 2400);
+          }
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
           this.towerLayer.noteSummoned(Number(ev.id));
           this.fx.summonPillar(Number(ev.x), Number(ev.y), hexToInt(GRADE_COLORS[(ev.grade as Grade) || 'normal'] ?? GRADE_COLORS.normal));
-          if (ev.god === true) this.ctx.ui.toast(godDescends(this.ctx.data.towers.towers.find((t) => t.id === ev.tower)?.name ?? String(ev.tower)), 2400);
+          this.summonFxCount++;
           break;
         case 'summonFail': {
-          if (!recent || ev.player !== 0) break;
+          if (!eventFxVisible('action', ev.tick, now, frameStart) || ev.player !== 0) break;
           const text = summonFailText(String(ev.reason), cost);
           if (text) this.ctx.ui.toast(text);
           if (ev.reason === 'gold') this.fx.shakeTile(Number(ev.x), Number(ev.y));
@@ -387,10 +417,10 @@ export class GameScene extends Phaser.Scene {
           this.mobLayer.flash(Number(ev.target), time);
           const color = damageColor(Number(ev.p), Number(ev.m), Number(ev.t));
           if (texts < MAX_DAMAGE_TEXTS_PER_FRAME) {
-            texts++;
             const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
             const jitter = (Math.random() - 0.5) * this.layout.tile * 0.3;
-            this.floatingText.spawn(px.x + jitter, px.y - this.layout.tile * 0.42, String(ev.damage), color, time);
+            // 같은 자리에 몰리면 위로 쌓고, 쌓을 자리가 없으면 띄우지 않는다 (겹쳐서 다른 숫자처럼 읽히지 않게)
+            if (this.floatingText.spawn(px.x + jitter, px.y - this.layout.tile * 0.42, String(ev.damage), color, time)) texts++;
           }
           if (sparks < MAX_SPARKS_PER_FRAME) {
             sparks++;

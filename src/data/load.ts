@@ -318,6 +318,12 @@ export interface HudConfig {
   livesWarn: number;
 }
 
+/** 개발용 치트 (?debug=1, CLAUDE.md 4장). */
+export interface DebugConfig {
+  /** HUD [💰+] 한 번에 더하는 돈 (원) */
+  addGold: number;
+}
+
 export interface GameConfig {
   version: number;
   speeds: SpeedOption[];
@@ -327,6 +333,7 @@ export interface GameConfig {
   summon: SummonConfig;
   combat: CombatConfig;
   hud: HudConfig;
+  debug: DebugConfig;
 }
 
 /** 미리 계산한 성장 곡선 표 (tools/precompute-curves.mjs). 인덱스 = 단계 (0 ~ maxStage). */
@@ -763,6 +770,10 @@ export const gameSchema: Schema = s.obj({
     mobWarnCount: s.int({ min: 0 }),
     livesWarn: s.int({ min: 0 }),
   }),
+  debug: s.obj({
+    // debugAddGold 명령 한도(MAX_DEBUG_GOLD = 10억)를 넘지 않게
+    addGold: s.int({ min: 1, max: 1_000_000_000 }),
+  }),
 });
 
 const intArray = s.arr(s.int({ min: 0, max: Number.MAX_SAFE_INTEGER }), { minLength: 2 });
@@ -796,9 +807,9 @@ export const curvesSchema: Schema = s.withCheck<CurvesFile>(
 // 로드
 // ---------------------------------------------------------------------------
 
-/** 값 하나를 스키마로 검사하고 통과하면 T로 돌려준다. 실패하면 DataError. */
 const deckIds = s.arr(s.str({ nonEmpty: true }), { minLength: 1 });
 
+/** decks.json: 덱 규칙(등급별 개수)과 기본 덱 (TOWERS.md 10장). 타워 존재·등급·중복 검사는 crossCheck. */
 export const decksSchema: Schema = s.obj({
   version: s.int({ min: 1 }),
   notes: s.opt(s.str()),
@@ -806,6 +817,7 @@ export const decksSchema: Schema = s.obj({
   base: s.obj(Object.fromEntries(DECK_GRADES.map((g) => [g, deckIds]))),
 });
 
+/** 값 하나를 스키마로 검사하고 통과하면 T로 돌려준다. 실패하면 DataError. */
 export function parseData<T>(file: string, raw: unknown, schema: Schema): T {
   const issues: Issue[] = [];
   validate(raw, schema, '', issues);

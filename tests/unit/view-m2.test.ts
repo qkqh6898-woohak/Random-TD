@@ -1,15 +1,27 @@
 /**
  * M2 화면 쪽 순수 계산: 탭 → 소환/알림, 타워 대기 동작(숨쉬기 1.5초·흔들림·무작위 위상·공격·등장),
- * 피해 숫자 색·떠오름, 동전 경로, 아래 띠 안내, 맵 영역(위 HUD·아래 띠 사이), 타워 소품.
+ * 피해 숫자 색·떠오름·겹침 방지, 동전 경로, 아래 띠 안내, 맵 영역(위 HUD·아래 띠 사이), 타워 소품,
+ * 검토 반영: 타워 머리 탭 → 그 타워 칸, 사건 연출 범위(소환·실패는 느린 프레임에도).
  */
 import { describe, expect, it } from 'vitest';
 import { GRADE_STARS, propFor } from '../../src/art/towerLook';
 import { summonInfo } from '../../src/ui/hud/hudModel';
 import { BOARD_FULL, needGoldForSummon } from '../../src/ui/messages';
 import { GAME_HEIGHT } from '../../src/view/config';
-import { decideTap, summonFailText, tapAllowed } from '../../src/view/input/tap';
-import { BOTTOM_UI_PX, HUD_TOP_PX, MIN_MAP_AREA_PX, computeMapLayout, mapAreaBelowHud } from '../../src/view/layout';
-import { DAMAGE_COLORS, coinPath, damageColor, floatingTextFrame } from '../../src/view/render/fxModel';
+import { decideTap, summonFailText, tapAllowed, tapTile } from '../../src/view/input/tap';
+import { BOTTOM_UI_PX, HUD_TOP_PX, MIN_MAP_AREA_PX, computeMapLayout, mapAreaBelowHud, type MapLayout } from '../../src/view/layout';
+import {
+  DAMAGE_COLORS,
+  FX_RECENT_TICKS,
+  boxesOverlap,
+  coinPath,
+  damageColor,
+  eventFxVisible,
+  floatingTextFrame,
+  stackSlot,
+  type TextBox,
+} from '../../src/view/render/fxModel';
+import { FIGURE_TOP_TILES, towerHeadZone } from '../../src/view/render/towerGeom';
 import {
   APPEAR_MS,
   ATTACK_CALM_MS,
@@ -176,6 +188,88 @@ describe('아래 띠·맵 영역', () => {
     const circle = data.maps.circle!;
     const L = computeMapLayout(circle, mapAreaBelowHud(382, 1780));
     expect(L.originY + (L.minRow + L.rows) * L.tile).toBeLessThanOrEqual(1768);
+  });
+});
+
+describe('검토 반영: 타워 머리 탭 → 그 타워 칸 (위 칸 소환 아님)', () => {
+  // 1칸 100px, 칸 (0, 0) 왼쪽 위 = (0, 0)
+  const L: MapLayout = { tile: 100, originX: 0, originY: 0, minCol: 0, minRow: 0, cols: 9, rows: 11 };
+  const towerAt34 = (tx: number, ty: number): boolean => tx === 3 && ty === 4;
+
+  it('캐릭터 맨 위는 칸 중심에서 약 0.78칸 위 → 칸 위쪽 경계보다 약 0.28칸 위 칸으로 삐져나온다', () => {
+    expect(FIGURE_TOP_TILES).toBeCloseTo(-0.776, 2);
+    const z = towerHeadZone(3, 4);
+    expect(z.bottom).toBe(4);
+    expect(z.top).toBeLessThan(4 - 0.28);
+    expect(z.top).toBeGreaterThan(4 - 0.4);
+  });
+
+  it('(3, 4) 타워의 헬멧 자리(위 칸 아래쪽 가운데)를 누르면 (3, 4), 머리에서 먼 위 칸 자리는 (3, 3)', () => {
+    // 리뷰 재현: 칸 위쪽 경계에서 0.12칸 위 = 헬멧
+    expect(tapTile(L, 350, 388, towerAt34)).toEqual({ tx: 3, ty: 4 });
+    expect(tapTile(L, 350, 372, towerAt34)).toEqual({ tx: 3, ty: 4 }); // 0.28칸 위 (별)
+    expect(tapTile(L, 350, 350, towerAt34)).toEqual({ tx: 3, ty: 3 }); // 위 칸 가운데
+    expect(tapTile(L, 305, 390, towerAt34)).toEqual({ tx: 3, ty: 3 }); // 위 칸 왼쪽 아래 구석 (머리 밖)
+    expect(tapTile(L, 350, 450, towerAt34)).toEqual({ tx: 3, ty: 4 }); // 타워 칸 자체
+  });
+
+  it('아래 칸에 타워가 없으면 늘 그 자리의 칸', () => {
+    expect(tapTile(L, 350, 388, () => false)).toEqual({ tx: 3, ty: 3 });
+    expect(tapTile(L, 250, 388, towerAt34)).toEqual({ tx: 2, ty: 3 });
+  });
+});
+
+describe('검토 반영: 사건 연출 범위 (느린 프레임에도 소환 응답이 빠지지 않게)', () => {
+  it("'bulk'(피해·처치): 지금 틱에서 3틱 안쪽만", () => {
+    expect(FX_RECENT_TICKS).toBe(3);
+    expect(eventFxVisible('bulk', 97, 100, 95)).toBe(true);
+    expect(eventFxVisible('bulk', 96, 100, 95)).toBe(false);
+  });
+
+  it("'action'(소환·실패): 한 프레임에 5틱이 돌아도(느린 프레임 250ms) 이번 프레임 사건은 모두", () => {
+    // 소환 명령은 다음 프레임 첫 틱 T에 실행 → 그 프레임에 5틱 돌면 지금 틱 = T + 5
+    const T = 1000;
+    expect(eventFxVisible('bulk', T, T + 5, T)).toBe(false); // 예전: 버려짐
+    expect(eventFxVisible('action', T, T + 5, T)).toBe(true);
+    // 빨리 감기로 프레임 밖에서 돈 옛 사건은 최근 것만
+    expect(eventFxVisible('action', T - 500, T + 5, T)).toBe(false);
+    expect(eventFxVisible('action', T + 3, T + 5, T + 10)).toBe(true);
+  });
+
+  it("'rare'(신 강림): 언제나", () => {
+    expect(eventFxVisible('rare', 0, 1_000_000, 999_999)).toBe(true);
+  });
+});
+
+describe('검토 반영: 피해 숫자 겹침 방지', () => {
+  const box = (cx: number, bottom: number, w = 40, h = 30): TextBox => ({ cx, bottom, w, h });
+
+  it('상자 겹침: 가로·세로 둘 다 겹쳐야 겹침, 모서리만 닿으면 아님', () => {
+    expect(boxesOverlap(box(100, 100), box(110, 100))).toBe(true);
+    expect(boxesOverlap(box(100, 100), box(140, 100))).toBe(false); // 가로로 딱 닿음
+    expect(boxesOverlap(box(100, 100), box(100, 70))).toBe(false); // 세로로 딱 닿음
+    expect(boxesOverlap(box(100, 100), box(100, 80))).toBe(true);
+  });
+
+  it('같은 자리에 몰리면 한 칸씩 위로 쌓고, 빈 칸이 없으면 −1', () => {
+    const others: TextBox[] = [];
+    const slots: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const b = box(100 + (i % 2) * 6, 200);
+      const k = stackSlot(b, others, 4);
+      slots.push(k);
+      if (k >= 0) others.push({ ...b, bottom: b.bottom - k * b.h });
+    }
+    expect(slots).toEqual([0, 1, 2, 3, -1]);
+    // 쌓인 숫자끼리 겹치지 않는다
+    for (let i = 0; i < others.length; i++) for (let j = i + 1; j < others.length; j++) expect(boxesOverlap(others[i]!, others[j]!)).toBe(false);
+    // 옆으로 충분히 떨어져 있으면 원래 자리
+    expect(stackSlot(box(200, 200), others, 4)).toBe(0);
+  });
+
+  it('떠오름은 일정 속도: 먼저 뜬 숫자와의 간격이 끝까지 그대로 (따라잡아 겹치지 않음)', () => {
+    const gapAt = (k: number, lag: number): number => floatingTextFrame(k).rise - floatingTextFrame(k - lag).rise;
+    for (const k of [0.3, 0.5, 0.8, 1]) expect(gapAt(k, 0.2)).toBeCloseTo(gapAt(0.2, 0.2), 9);
   });
 });
 

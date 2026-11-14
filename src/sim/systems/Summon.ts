@@ -75,9 +75,7 @@ export function placeTower(world: World, towerId: string, owner: number, tx: num
     x: c.x,
     y: c.y,
     atkAcc: ATTACK_COST,
-    remP: 0,
-    remM: 0,
-    remT: 0,
+    remDmg: 0,
     bornTick: world.tick,
     attacks: 0,
   } satisfies Omit<Tower, 'id'>) as Tower;
