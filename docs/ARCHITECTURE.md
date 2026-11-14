@@ -30,7 +30,7 @@ Random-TD/
 │  ├─ main.ts               진입점 (업데이트 확인 → 게임 시작)
 │  ├─ config/               화면 크기, 상수
 │  ├─ data/                 ★ 밸런스·콘텐츠 데이터 (JSON) — 업데이트로 가장 자주 바뀜
-│  │  ├─ towers.json        타워 31종 스탯·역할
+│  │  ├─ towers.json        타워 32종 스탯·특색 능력(Lv1~15 수치)·각성 능력
 │  │  ├─ grades.json        등급 배율, 소환·신 확률
 │  │  ├─ recipes.json       히든 조합식
 │  │  ├─ mobs.json          몹 종류, 체력 공식 계수
@@ -41,7 +41,15 @@ Random-TD/
 │  │  ├─ gamble.json        도박 배율표
 │  │  ├─ missions.json      일반·히든 미션
 │  │  ├─ account.json       계정 경험치·레벨 공식, 레벨업 보상
-│  │  ├─ shop.json          계정 상점 영구 효과, 타워 업그레이드 비용
+│  │  ├─ shop.json          계정 상점 영구 효과, 조각 상자
+│  │  ├─ tower_growth.json  타워 레벨업 비용(조각·행운석), 도감 수집 보너스
+│  │  ├─ talents.json       계정 특성 트리
+│  │  ├─ unlocks.json       계정 레벨별 해금
+│  │  ├─ gamble_mastery.json 도박 숙련도·잭팟
+│  │  ├─ attendance.json    출석 7일 주기·월간 누적 보상
+│  │  ├─ account_missions.json 일일·주간 미션 풀
+│  │  ├─ achievements.json  업적·칭호
+│  │  ├─ animations.json    타워·몹별 대기/공격/특색 동작 정의
 │  │  └─ maps/              원형(무한)·지그재그(스테이지) 타일맵
 │  │                        (지그재그는 직각 회전 5번 이상 검증 테스트 포함)
 │  ├─ core/                 게임 상태, 시드 난수(RNG), 이벤트 버스
@@ -53,12 +61,17 @@ Random-TD/
 │  │  ├─ ChallengeSystem.ts 도전, 쿨타임
 │  │  ├─ UpgradeSystem.ts   강화, 도박
 │  │  ├─ MissionSystem.ts   미션 진행 추적
-│  │  └─ AccountSystem.ts   판 종료 정산, 레벨업, 상점 구매·초기화
+│  │  ├─ AccountSystem.ts   판 종료 정산, 레벨업, 해금, 특성, 상점
+│  │  ├─ TowerGrowthSystem.ts 조각, 타워 레벨·각성, 도감 보너스
+│  │  └─ DailySystem.ts     출석, 일일·주간 미션 (기기 날짜 기준, 시간 역행 방지)
 │  ├─ scenes/               Phaser 장면 (타이틀, 게임, 도감, 설정, 결과)
 │  ├─ ui/                   HUD, 하단 세션 탭, 바텀 시트 팝업
 │  ├─ save/                 SaveService, 저장 형식 마이그레이션
 │  └─ update/               ★ UpdateService (자동 업데이트)
-├─ public/assets/           이미지, 사운드
+├─ public/assets/
+│  ├─ characters/<타워id>/  파츠 SVG (head, body, arm_l, arm_r, weapon, prop, awaken_*)
+│  ├─ mobs/                몹 파츠
+│  └─ sfx/                 사운드
 ├─ tests/                   Vitest 테스트
 ├─ android/                 Capacitor가 생성하는 Android 프로젝트
 ├─ .github/workflows/
