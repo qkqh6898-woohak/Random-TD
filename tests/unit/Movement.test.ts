@@ -10,7 +10,7 @@ import type { Mob } from '../../src/sim/entities/Mob';
 import { addMob, campaign, infinite } from '../helpers/match';
 
 function fakeMob(speed: number): Mob {
-  return { id: 1, kind: 'mob', mob: 'x', stage: 1, hp: 1, maxHp: 1, armor: 0, magicRes: 0, speed, ccResistBp: 0, lifeDamage: 1, reward: 0, progress: 0, moveRem: 0, swarmIndex: 0, invisible: false, legion: 'plague' };
+  return { id: 1, kind: 'mob', mob: 'x', stage: 1, hp: 1, maxHp: 1, armor: 0, magicRes: 0, speed, ccResistBp: 0, lifeDamage: 1, reward: 0, progress: 0, moveRem: 0, swarmIndex: 0, invisible: false, legion: 'plague', boss: false, vulnBp: 0, markBp: 0 };
 }
 
 describe('정수 이동 (나머지 누적)', () => {

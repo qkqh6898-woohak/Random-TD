@@ -305,10 +305,34 @@ export interface SummonConfig {
   godChance: number;
 }
 
-/** 전투 (GDD.md 5.2). */
+/** 전투 (GDD.md 5.2~5.4, 4.5). */
 export interface CombatConfig {
   /** 원거리 투사체 속도 (칸/초) */
   projectileSpeed: number;
+  /** 공속 한도: 기본 공속의 몇 배까지 (5) */
+  apsMaxMul: number;
+  /** 공속 한도: 초당 최대 공격 횟수 (15) */
+  apsMaxPerSec: number;
+  /** 방어 관통·마법 관통 최대 (0.9 = 90%) */
+  penMax: number;
+  /** 치명타 확률 최대 (1 = 100%) */
+  critChanceMax: number;
+  /** 받는 피해 증가(약화) 합 최대 (1 = +100%) */
+  vulnMax: number;
+  /** 연쇄: 튕길 때마다 피해 감소 (0.2 = −20%, 곱연산 0.8^k) */
+  chainFalloff: number;
+  /** 연쇄: 다음 몹을 찾는 반경 (칸) */
+  chainRange: number;
+  /** 관통: 직선의 폭 (칸). 몹 중심이 직선에서 폭의 절반 안이면 맞는다 */
+  pierceWidth: number;
+  /** 이동·교환한 타워가 공격하지 않는 시간 (초, 1틱 단위) */
+  movePauseSeconds: number;
+}
+
+/** 승급 (GDD.md 4.4). */
+export interface MergeConfig {
+  /** 같은 종류·같은 등급 몇 개로 승급하는가 (3) */
+  count: number;
 }
 
 /** HUD 경고 기준 (UI.md 4.2). */
@@ -332,6 +356,7 @@ export interface GameConfig {
   match: MatchConfig;
   summon: SummonConfig;
   combat: CombatConfig;
+  merge: MergeConfig;
   hud: HudConfig;
   debug: DebugConfig;
 }
@@ -764,6 +789,21 @@ export const gameSchema: Schema = s.obj({
       const perTick = (v * 1000) / TICK_HZ;
       if (Math.abs(perTick - Math.round(perTick)) > 1e-9) issues.push({ path, message: `0.02칸/초 단위여야 하는데 ${v}` });
     }),
+    apsMaxMul: s.int({ min: 1, max: 100 }),
+    apsMaxPerSec: s.int({ min: 1, max: 1000 }),
+    penMax: s.num({ min: 0, max: 1 }),
+    critChanceMax: s.num({ min: 0, max: 1 }),
+    vulnMax: s.num({ min: 0, max: 10 }),
+    chainFalloff: s.num({ min: 0, max: 1 }),
+    chainRange: s.num({ min: 0 }),
+    pierceWidth: s.num({ min: 0 }),
+    movePauseSeconds: s.withCheck<number>(s.num({ min: 0, max: 10 }), (v, path, issues) => {
+      const ticks = v * TICK_HZ;
+      if (Math.abs(ticks - Math.round(ticks)) > 1e-9) issues.push({ path, message: `0.05초(1틱) 단위여야 하는데 ${v}` });
+    }),
+  }),
+  merge: s.obj({
+    count: s.int({ min: 2, max: 10 }),
   }),
   hud: s.obj({
     timerWarnSeconds: s.int({ min: 0 }),
@@ -920,6 +960,23 @@ export function crossCheck(data: GameData): Issue[] {
       }
     });
   }
+  // 반대 방향: 처음부터 해금된 타워(unlock = base)는 모두 기본 덱에 있다 → 기본 덱 = unlock 'base' 25종 (TOWERS.md 0.2·10장)
+  const baseIds = new Set(DECK_GRADES.flatMap((g) => data.decks.base[g]));
+  towers.towers.forEach((t, i) => {
+    if (t.unlock === 'base' && !baseIds.has(t.id)) {
+      issues.push({ file: 'towers.json', path: `towers[${i}].unlock`, message: `${t.id}는 unlock = base인데 기본 덱(decks.json base)에 없다` });
+    }
+  });
+  // 공격 형태 값: 광역·근접 광역 = 반경(칸, 0보다 큼), 관통·연쇄·다중 = 마리 수(1 이상 정수) (GDD 5.2)
+  towers.towers.forEach((t, i) => {
+    const path = `towers[${i}].shapeValue`;
+    if ((t.shape === 'aoe' || t.shape === 'melee_aoe') && !(t.shapeValue > 0)) {
+      issues.push({ file: 'towers.json', path, message: `${t.shape}의 반경은 0보다 커야 한다 (${t.shapeValue})` });
+    }
+    if ((t.shape === 'pierce' || t.shape === 'chain' || t.shape === 'multi') && !(Number.isInteger(t.shapeValue) && t.shapeValue >= 1)) {
+      issues.push({ file: 'towers.json', path, message: `${t.shape}의 마리 수는 1 이상 정수여야 한다 (${t.shapeValue})` });
+    }
+  });
   if (!towers.towers.some((t) => t.grade === 'god') && data.game.summon.godChance > 0) {
     issues.push({ file: 'game.json', path: 'summon.godChance', message: '신 타워가 없는데 확률이 0보다 크다' });
   }

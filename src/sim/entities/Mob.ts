@@ -31,6 +31,15 @@ export interface Mob extends Entity {
   swarmIndex: number;
   invisible: boolean;
   legion: string;
+  /** 보스·도전 보스인가 (보스 피해 배율·보스 우선 대상, M4에서 보스가 나온다) */
+  boss: boolean;
+  /**
+   * 받는 피해 증가 합 (bp, 약화·빙결 등, GDD 5.4·5.5). 피해 계산 때 game.json combat.vulnMax(+100%)로 자른다.
+   * 걸고 푸는 것(지속 시간)은 상태 이상 시스템(M3-6)이 맡는다.
+   */
+  vulnBp: number;
+  /** 표식: 방어력·마법 저항 감소 (bp, 가장 강한 것만). 타워의 방어·마법 관통 합에 더해진다 (최대 90%). M3-6이 건다 */
+  markBp: number;
 }
 
 export function isMob(e: Entity): e is Mob {

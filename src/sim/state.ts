@@ -6,6 +6,7 @@
  */
 import type { SimMap } from './map';
 import type { Deck, MatchRules, ThemeMods } from './rules';
+import type { PlayerMods } from './stats';
 
 export type MatchMode = 'infinite' | 'campaign';
 export type MatchPhase = 'playing' | 'defeat';
@@ -41,6 +42,12 @@ export interface MatchState {
   summons: number;
   /** 지금까지 처치한 몹 수 */
   kills: number;
+  /** 지금까지 승급한 횟수 (모두 승급은 승급마다 1) */
+  merges: number;
+  /** 지금까지 이동·교환한 횟수 */
+  moves: number;
+  /** 플레이어별 판 내 능력치 보정 (공격력%·공속%·관통·치명타 …, stats.ts). 판 내 강화·카드가 더한다 */
+  mods: PlayerMods[];
   /** 지금까지 번 돈 (처치 보상 등, 시작 자금 제외) */
   goldEarned: number;
   phase: MatchPhase;

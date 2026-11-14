@@ -15,9 +15,11 @@
  *    피해는 ×100 단위로 방어까지 계산한 뒤 정수로 한 번만 자르고, 나머지는 타워마다 이어 간다(Tower.remDmg)
  *    → 소수 공격력·방어로 깎인 소수 피해도 평균적으로 정확하게 들어간다 (Combat).
  *  - 근접(melee·melee_aoe)과 전체(global)는 즉시 피해, 나머지는 투사체(초속 12칸)가 도착할 때 피해 (GDD 5.2).
+ *  - M3: 공격 형태 값(광역 반경 → 단위, 관통·연쇄·다중 → 마리 수), 관통·치명타(bp), 감지. 공속 한도·관통 최대·연쇄 감소 등
+ *    전투 규칙 수치는 game.json combat, 승급 개수는 game.json merge (MatchRules).
  */
 import { DECK_GRADES, deckIssues, type DeckData } from '../data/deck';
-import type { CurvesFile, DamageType, GameData, Grade, MobData, Shape, TargetRule, ThemeData, TowerData } from '../data/load';
+import type { CurvesFile, DamageType, Detect, GameData, Grade, MobData, Shape, TargetRule, ThemeData, TowerData } from '../data/load';
 import { BP_ONE, bp, idiv, mulBp, tiles } from './Fixed';
 import { TICK_HZ, secondsToTicks } from './World';
 
@@ -92,8 +94,21 @@ export interface TowerStats {
   readonly atkC: number;
   readonly matkC: number;
   readonly tatkC: number;
-  /** 대상 우선순위 (M2는 모두 '선두'로 고른다. 최대 체력·보스 우선 등은 M3) */
+  /** 대상 우선순위 (GDD 5.3: 선두·최대 체력·보스 우선·무표식·최저 체력) */
   readonly target: TargetRule;
+  /** 광역·근접 광역 반경 (단위). 그 밖의 형태는 0 */
+  readonly radius: number;
+  /** 관통·연쇄·다중 마리 수. 그 밖의 형태는 1 */
+  readonly count: number;
+  /** 방어 관통·마법 관통 (bp, 30% = 3000) */
+  readonly armorPenBp: number;
+  readonly magicPenBp: number;
+  /** 치명타 확률 (bp)·배율 (bp, ×2 = 20000) */
+  readonly critBp: number;
+  readonly critMulBp: number;
+  /** 감지: 없음·오라·자신, 오라 반경 (단위) — 투명 몹 처리는 M4 */
+  readonly detect: Detect;
+  readonly detectRange: number;
 }
 
 /** 덱 (등급별 타워 id). */
@@ -130,6 +145,26 @@ export interface MatchRules {
   readonly baseDeck: Deck;
   /** 덱의 등급별 종류 수 (5) */
   readonly deckPerGrade: number;
+  /** 공속 한도: 기본의 몇 배 (5) */
+  readonly apsMaxMul: number;
+  /** 공속 한도: 초당 최대 횟수 × APS_SCALE (15회 = 15000) */
+  readonly apsMaxMilli: number;
+  /** 방어·마법 관통 최대 (bp, 90% = 9000) */
+  readonly penMaxBp: number;
+  /** 치명타 확률 최대 (bp) */
+  readonly critChanceMaxBp: number;
+  /** 받는 피해 증가 합 최대 (bp, +100% = 10000) */
+  readonly vulnMaxBp: number;
+  /** 연쇄: 튕길 때마다 남는 피해 비율 (bp, −20% → 8000) */
+  readonly chainKeepBp: number;
+  /** 연쇄: 다음 몹을 찾는 반경 (단위) */
+  readonly chainRange: number;
+  /** 관통: 직선 폭의 절반 (단위) */
+  readonly pierceHalfWidth: number;
+  /** 이동·교환 뒤 공격 정지 (틱) */
+  readonly movePauseTicks: number;
+  /** 승급에 드는 같은 타워 수 (3) */
+  readonly mergeCount: number;
 }
 
 /** 정수여야 하는 데이터 값 확인 (스키마가 num만 보장하는 필드). */
@@ -165,7 +200,29 @@ export function buildMobStats(m: MobData): MobStats {
   });
 }
 
+/** 공격 형태 값 → 반경(광역·근접 광역, 단위)과 마리 수(관통·연쇄·다중). 잘못된 값은 에러 (데이터 검사도 같은 규칙). */
+export function shapeParams(t: Pick<TowerData, 'id' | 'shape' | 'shapeValue'>): { radius: number; count: number } {
+  switch (t.shape) {
+    case 'aoe':
+    case 'melee_aoe': {
+      const radius = tiles(t.shapeValue);
+      if (radius <= 0) throw new Error(`${t.id}: ${t.shape} 반경은 0보다 커야 한다 (${t.shapeValue})`);
+      return { radius, count: 1 };
+    }
+    case 'pierce':
+    case 'chain':
+    case 'multi': {
+      const count = int(`${t.id}.shapeValue`, t.shapeValue);
+      if (count < 1) throw new Error(`${t.id}: ${t.shape} 마리 수는 1 이상 (${t.shapeValue})`);
+      return { radius: 0, count };
+    }
+    default:
+      return { radius: 0, count: 1 };
+  }
+}
+
 export function buildTowerStats(t: TowerData): TowerStats {
+  const { radius, count } = shapeParams(t);
   return Object.freeze({
     id: t.id,
     name: t.name,
@@ -180,6 +237,14 @@ export function buildTowerStats(t: TowerData): TowerStats {
     matkC: Math.round(t.matk * ATK_SCALE),
     tatkC: Math.round(t.tatk * ATK_SCALE),
     target: t.target,
+    radius,
+    count,
+    armorPenBp: bp(t.armorPen),
+    magicPenBp: bp(t.magicPen),
+    critBp: bp(t.crit),
+    critMulBp: bp(t.critMul),
+    detect: t.detect,
+    detectRange: tiles(t.detectRange),
   });
 }
 
@@ -239,6 +304,16 @@ export function buildMatchRules(data: GameData): MatchRules {
     projectileSpeed: projectileUnitsPerSec / TICK_HZ,
     baseDeck: freezeDeck(data.decks.base),
     deckPerGrade: data.decks.perGrade,
+    apsMaxMul: int('game.json combat.apsMaxMul', game.combat.apsMaxMul),
+    apsMaxMilli: int('game.json combat.apsMaxPerSec', game.combat.apsMaxPerSec) * APS_SCALE,
+    penMaxBp: bp(game.combat.penMax),
+    critChanceMaxBp: bp(game.combat.critChanceMax),
+    vulnMaxBp: bp(game.combat.vulnMax),
+    chainKeepBp: BP_ONE - bp(game.combat.chainFalloff),
+    chainRange: tiles(game.combat.chainRange),
+    pierceHalfWidth: idiv(tiles(game.combat.pierceWidth), 2),
+    movePauseTicks: secondsToTicksExact(game.combat.movePauseSeconds),
+    mergeCount: int('game.json merge.count', game.merge.count),
   });
   // 한 단계의 등장이 다음 단계 시작 전에 끝나야 한다 (GDD 2.2: 50초 등장 + 10초 휴식)
   if ((rules.slotsPerStage - 1) * rules.spawnIntervalTicks >= rules.stageTicks) {

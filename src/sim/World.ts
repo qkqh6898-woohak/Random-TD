@@ -123,6 +123,8 @@ export const DEFAULT_MAX_EVENTS = 10_000;
 
 /** 난수 흐름 이름. 흐름끼리 독립이다 (MULTIPLAYER.md 4.2). */
 export const STREAM_WORLD = 'world';
+/** 전투 판정(치명타 등, M3-4). 세계(몹 등장) 흐름과 나눠서 타워 배치가 몹 등장 순서를 바꾸지 않게 한다 */
+export const STREAM_COMBAT = 'combat';
 export const streamSummon = (player: number): string => `p${player}.summon`;
 export const streamGamble = (player: number): string => `p${player}.gamble`;
 
@@ -160,6 +162,7 @@ export class World {
     this.rngRoot = new Rng(this.seed);
     // 흐름은 처음에 모두 만든다 → 해시에 항상 같은 목록이 들어간다.
     this.streams.set(STREAM_WORLD, this.rngRoot.fork(STREAM_WORLD));
+    this.streams.set(STREAM_COMBAT, this.rngRoot.fork(STREAM_COMBAT));
     for (let p = 0; p < players; p++) {
       this.streams.set(streamSummon(p), this.rngRoot.fork(streamSummon(p)));
       this.streams.set(streamGamble(p), this.rngRoot.fork(streamGamble(p)));

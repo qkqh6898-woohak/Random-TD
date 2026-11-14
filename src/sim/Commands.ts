@@ -5,7 +5,7 @@
  * - 명령은 `tick`에 실행된다. 같은 틱 안에서는 (플레이어 번호, 명령 번호 seq) 순서 (MULTIPLAYER.md 4.1).
  * - seq는 플레이어마다 따로 매긴다. 비워 두면 큐가 다음 번호를 붙인다.
  *
- * 마일스톤마다 명령 종류가 늘어난다 (M2 소환, M3 승급·이동, M5 강화·도박·도전 …).
+ * 마일스톤마다 명령 종류가 늘어난다 (M2 소환, M3 승급·모두 승급·이동, M5 강화·도박·도전 …).
  * 새 명령은 `CommandPayload` 합집합에 추가하고 `COMMAND_TYPES`·`PAYLOAD_FIELDS`·`validatePayload`, World의 처리기를 함께 갱신한다.
  * - 큐에 들어가는 명령은 허용한 필드만 골라 새로 만든 **얼린(frozen) 객체**다. 호출자가 넘긴 객체나 돌려받은 객체를
  *   고쳐도 예약·실행·기록(executed)이 바뀌지 않는다. 모르는 필드는 거절한다 (네트워크로 받은 명령이 아무 내용이나 싣지 못하게).
@@ -21,11 +21,17 @@ export type CommandPayload =
   /** 소환 (M2-1, GDD 4.3): 빈 배치 칸 (x, y)에 소환 비용을 내고 덱 노말 5종 중 하나를 놓는다. 실행 때 다시 검사한다 */
   | { type: 'summon'; x: number; y: number }
   /** 개발용 치트: 돈 추가 (debug 판에서만) */
-  | { type: 'debugAddGold'; amount: number };
+  | { type: 'debugAddGold'; amount: number }
+  /** 승급 (M3-1, GDD 4.4): 칸 (x, y)의 타워와 같은 종류 3개 → 그 칸에 덱의 다음 등급 하나. 사라지는 2개 = 가장 나중에 소환된 2개 */
+  | { type: 'merge'; x: number; y: number }
+  /** 모두 승급 (M3-2): 칸 (x, y)의 타워와 같은 종류를 가능한 만큼 연속 승급 (7개 → 2회) */
+  | { type: 'mergeAll'; x: number; y: number }
+  /** 이동·교환 (M3-10, GDD 4.5): 칸 (fx, fy)의 타워를 빈 배치 칸 (tx, ty)로 옮기거나 그 칸의 타워와 자리를 바꾼다 */
+  | { type: 'move'; fx: number; fy: number; tx: number; ty: number };
 
 export type CommandType = CommandPayload['type'];
 
-export const COMMAND_TYPES: readonly CommandType[] = ['noop', 'debugSkipStage', 'summon', 'debugAddGold'];
+export const COMMAND_TYPES: readonly CommandType[] = ['noop', 'debugSkipStage', 'summon', 'debugAddGold', 'merge', 'mergeAll', 'move'];
 
 /** 칸 좌표 상한 (맵은 이보다 훨씬 작다. 네트워크로 받은 터무니없는 값을 거른다) */
 export const MAX_TILE_COORD = 255;
@@ -38,6 +44,9 @@ export const PAYLOAD_FIELDS: { readonly [K in CommandType]: readonly string[] } 
   debugSkipStage: [],
   summon: ['x', 'y'],
   debugAddGold: ['amount'],
+  merge: ['x', 'y'],
+  mergeAll: ['x', 'y'],
+  move: ['fx', 'fy', 'tx', 'ty'],
 };
 
 /** 모든 명령에 공통인 필드. */
@@ -90,9 +99,12 @@ export function validatePayload(cmd: unknown): string | null {
     case 'debugSkipStage':
       return null;
     case 'summon':
-      for (const k of ['x', 'y']) {
+    case 'merge':
+    case 'mergeAll':
+    case 'move':
+      for (const k of PAYLOAD_FIELDS[type as CommandType]) {
         const v = c[k];
-        if (!isNonNegInt(v) || v > MAX_TILE_COORD) return `${k}가 0~${MAX_TILE_COORD} 정수가 아님: ${String(v)} (summon 명령)`;
+        if (!isNonNegInt(v) || v > MAX_TILE_COORD) return `${k}가 0~${MAX_TILE_COORD} 정수가 아님: ${String(v)} (${type} 명령)`;
       }
       return null;
     case 'debugAddGold': {

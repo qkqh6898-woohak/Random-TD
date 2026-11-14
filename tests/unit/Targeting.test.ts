@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { positionAt } from '../../src/sim/map';
 import { placeTower } from '../../src/sim/systems/Summon';
-import { leaderRuleFor, pickLeader, targetCandidates, type TargetCandidate } from '../../src/sim/systems/Targeting';
+import { leaderRuleFor, pickLeader, pickTarget, targetCandidates, type TargetCandidate } from '../../src/sim/systems/Targeting';
 import { addMob, campaign, infinite } from '../helpers/match';
 
 const cand = (id: number, x: number, y: number, progress: number, alive = true): TargetCandidate => ({ id, x, y, progress, alive });
@@ -119,5 +119,78 @@ describe('targetCandidates', () => {
     expect(list.map((c) => c.id)).toEqual([a.id, b.id]);
     expect(list.map((c) => c.id)).not.toContain(thief.id);
     expect({ x: list[1]!.x, y: list[1]!.y }).toEqual(positionAt(m.map.path, 7000));
+  });
+});
+
+describe('타워별 우선순위 (M3, GDD 5.3)', () => {
+  const at = (id: number, x: number, progress: number, extra: Partial<TargetCandidate> = {}): TargetCandidate => ({
+    id,
+    x,
+    y: 0,
+    progress,
+    alive: true,
+    ...extra,
+  });
+
+  it('maxhp: 현재 체력이 가장 높은 몹 (같으면 선두), 사거리 밖은 무시', () => {
+    const list = [at(1, 100, 900, { hp: 50 }), at(2, 200, 100, { hp: 300 }), at(3, 300, 500, { hp: 300 }), at(4, 9000, 0, { hp: 9999 })];
+    expect(pickTarget(list, 0, 0, 1000, 'maxhp', 'progress')?.id).toBe(3);
+    expect(pickTarget(list, 0, 0, 1000, 'maxhp', 'oldest')?.id).toBe(2);
+  });
+
+  it('lowest: 현재 체력이 가장 낮은 몹 (같으면 선두)', () => {
+    const list = [at(1, 100, 900, { hp: 80 }), at(2, 200, 100, { hp: 20 }), at(3, 300, 500, { hp: 20 })];
+    expect(pickTarget(list, 0, 0, 1000, 'lowest', 'progress')?.id).toBe(3);
+  });
+
+  it('boss: 사거리 안 보스가 있으면 그 보스, 없으면 선두', () => {
+    const list = [at(1, 100, 900), at(2, 200, 100, { boss: true }), at(3, 5000, 0, { boss: true })];
+    expect(pickTarget(list, 0, 0, 1000, 'boss', 'progress')?.id).toBe(2);
+    expect(pickTarget(list.slice(0, 1), 0, 0, 1000, 'boss', 'progress')?.id).toBe(1);
+  });
+
+  it('unmarked: 표식이 없는 몹 중 선두, 모두 표식이면 선두', () => {
+    const list = [at(1, 100, 900, { marked: true }), at(2, 200, 100), at(3, 300, 500)];
+    expect(pickTarget(list, 0, 0, 1000, 'unmarked', 'progress')?.id).toBe(3);
+    expect(pickTarget([list[0]!], 0, 0, 1000, 'unmarked', 'progress')?.id).toBe(1);
+  });
+
+  it('exclude: 이미 고른 몹은 건너뛴다 (다중 공격)', () => {
+    const list = [at(1, 100, 900), at(2, 200, 800), at(3, 300, 700)];
+    expect(pickTarget(list, 0, 0, 1000, 'first', 'progress', new Set([1]))?.id).toBe(2);
+    expect(pickTarget(list, 0, 0, 1000, 'first', 'progress', new Set([1, 2, 3]))).toBeNull();
+  });
+
+  it('판 안에서: 저격수(maxhp)는 체력이 더 많은 뒤쪽 몹, 상인(lowest)은 약한 몹을 친다', () => {
+    const m = infinite(1);
+    m.state.stage = 1;
+    m.state.nextStageTick = 1_000_000;
+    m.state.spawnStage = 1;
+    const weak = addMob(m, 'slime');
+    const strong = addMob(m, 'slime');
+    weak.progress = 3000;
+    strong.progress = 2600;
+    weak.speed = 0;
+    strong.speed = 0;
+    weak.hp = 1000;
+    strong.hp = 5000;
+    placeTower(m.world, 'sniper', 0, 4, 0);
+    m.stepN(3);
+    expect(strong.hp).toBeLessThan(5000);
+    expect(weak.hp).toBe(1000);
+    placeTower(m.world, 'merchant', 0, 3, 0);
+    const before = weak.hp;
+    m.stepN(3);
+    expect(weak.hp).toBeLessThan(before);
+  });
+
+  it('후보에 체력·보스·표식이 들어간다', () => {
+    const m = infinite(1);
+    m.state.stage = 1;
+    const a = addMob(m, 'slime');
+    a.markBp = 2000;
+    a.boss = true;
+    const [cand] = targetCandidates(m.world, m.map.path);
+    expect(cand).toMatchObject({ id: a.id, hp: a.hp, boss: true, marked: true });
   });
 });

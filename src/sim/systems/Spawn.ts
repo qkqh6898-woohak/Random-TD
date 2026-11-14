@@ -113,6 +113,9 @@ export function spawnMob(ctx: MatchContext, world: World, mobId: string, swarmIn
     swarmIndex,
     invisible: stats.invisible,
     legion: stats.legion,
+    boss: false,
+    vulnBp: 0,
+    markBp: 0,
   } satisfies Omit<Mob, 'id'>) as Mob;
   ctx.state.spawned += 1;
   return mob;

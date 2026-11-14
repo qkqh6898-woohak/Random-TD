@@ -3,8 +3,9 @@
  *
  * - 원거리 타워가 쏘면 타워 칸 중심에서 출발해 대상 몹의 지금 위치로 틱마다 일정 거리(초속 12칸 = 600단위/틱)씩 날아간다 (따라감).
  * - 남은 거리가 한 틱 거리 이하이면 도착 → 피해. 날아가는 중 대상이 죽거나 사라지면 그 자리에서 사라진다 (헛발).
- * - 1회 공격력(방어 적용 전, 공격력 × ATK_SCALE 정수)은 쏠 때 정해 싣는다. 방어·마법 저항은 도착할 때 대상 값으로 깎고,
- *   쏜 타워의 피해 나머지를 더해 정수 피해로 자른다 (Combat.applyHit).
+ * - 1회 공격력(방어 적용 전, 공격력 × ATK_SCALE 정수, 공격력%·치명타 반영)과 관통·보스 배율·공격 형태는 쏠 때 정해 싣는다.
+ *   방어·마법 저항·약화는 도착할 때 대상 값으로 계산하고, 쏜 타워의 피해 나머지를 더해 정수 피해로 자른다 (Combat.applyHit).
+ * - 도착하면 공격 형태(shape)대로 맞는 몹을 고른다: 광역 = 대상 지점 반경, 관통 = 출발점 → 대상 직선, 연쇄 = 튕김 (Shapes).
  * 모든 값은 정수 (위치는 단위, 1칸 = 1000).
  */
 import type { Entity, World } from '../World';
@@ -22,10 +23,29 @@ export interface Projectile extends Entity {
   target: number;
   x: number;
   y: number;
-  /** 도착 때 줄 1회 공격력 (방어 적용 전, × ATK_SCALE 정수): 물리·마법·고정 */
+  /** 출발점 (쏜 타워 칸 중심, 관통 직선의 시작) */
+  ox: number;
+  oy: number;
+  /** 도착 때 줄 1회 공격력 (방어 적용 전, 공격력%·치명타 반영, × ATK_SCALE 정수): 물리·마법·고정 */
   dmgP: number;
   dmgM: number;
   dmgT: number;
+  /** 치명타였는가 (피해 숫자 크게) */
+  crit: boolean;
+  /** 쏜 타워의 방어·마법 관통 합 (bp, 한도 전)·고정 관통·보스 피해 배율 (bp) — 타워가 승급으로 사라져도 그대로 */
+  armorPenBp: number;
+  magicPenBp: number;
+  flatArmorPen: number;
+  flatMagicPen: number;
+  bossMulBp: number;
+  /** 공격 형태 (도착할 때 맞는 몹을 고르는 방법, Shapes): 단일·광역·관통·연쇄·다중 */
+  shape: string;
+  /** 광역 반경 (단위) */
+  radius: number;
+  /** 관통·연쇄 마리 수 */
+  count: number;
+  /** 쏜 타워의 사거리 (단위, 관통 직선 길이) */
+  range: number;
   /** 한 틱에 움직이는 거리 (단위) */
   speed: number;
 }

@@ -2,7 +2,8 @@
  * 타워 엔티티 (DEV_PLAN M2-1·M2-4). World.entities에 kind = 'tower'로 들어간다 (ID 순 반복, 해시에 포함).
  *
  * - 고정 스탯(사거리·공속·공격력)은 데이터에서 만든 MatchRules.towers에서 id로 찾는다 → 엔티티에는 바뀌는 값만.
- * - 위치: 칸 (tx, ty)과 칸 중심 단위 좌표 (x, y). 1칸에 타워 1개 (GDD 4.3).
+ * - 위치: 칸 (tx, ty)과 칸 중심 단위 좌표 (x, y). 1칸에 타워 1개 (GDD 4.3). 이동·교환(M3-10)하면 바뀐다.
+ * - 소환 순서 = 엔티티 ID (단조 증가). 승급 때 '가장 나중에 소환된 2개'는 ID가 가장 큰 2개다 (M3-1). 승급 결과는 새 엔티티(새 ID).
  * - 공격 타이머 (M2-4, 누적 방식): 틱마다 공속 × 1000을 atkAcc에 더하고, ATTACK_COST(= 1000 × 20)가 찰 때마다 1회 공격.
  *   → 공속 1회/초 = 20틱마다 1회, 12.5회/초 = 1초에 12~13회. 공속이 20회/초를 넘으면 한 틱에 여러 번 공격한다.
  *   대상이 없을 때는 1회분(ATTACK_COST)까지만 모아 둔다 (준비 상태 유지, 여러 발을 쌓아 두지 않음).
@@ -37,10 +38,15 @@ export interface Tower extends Entity {
    * → 소수 공격력·방어로 깎인 소수 피해도 평균이 정확하다 (Combat.applyHit).
    */
   remDmg: number;
-  /** 놓인 틱 */
+  /** 놓인 틱 (소환·승급으로 생긴 틱) */
   bornTick: number;
   /** 지금까지 공격한 횟수 */
   attacks: number;
+  /**
+   * 이 틱부터 다시 공격할 수 있다 (M3-10 이동·교환 뒤 0.5초 정지, GDD 4.5). world.tick < pauseUntil이면 공격하지 않고
+   * 공격 타이머는 대상이 없을 때처럼 1회분까지만 모은다.
+   */
+  pauseUntil: number;
 }
 
 export function isTower(e: Entity): e is Tower {

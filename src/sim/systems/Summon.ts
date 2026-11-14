@@ -78,6 +78,7 @@ export function placeTower(world: World, towerId: string, owner: number, tx: num
     remDmg: 0,
     bornTick: world.tick,
     attacks: 0,
+    pauseUntil: 0,
   } satisfies Omit<Tower, 'id'>) as Tower;
 }
 

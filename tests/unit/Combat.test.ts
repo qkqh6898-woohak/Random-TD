@@ -92,7 +92,7 @@ describe('피해 (M2-6 기본 피해)', () => {
   it('정수 피해는 합 + 나머지를 100으로 나눈 몫: 견습 마법사 마법 6.5 → 6, 7, 6, 7 … (10회 합 65)', () => {
     expect(splitAtk(650, 0)).toEqual({ dmg: 6, rem: 50 });
     expect(splitAtk(650, 50)).toEqual({ dmg: 7, rem: 0 });
-    expect(rollHit(rules.towers.get('apprentice')!)).toEqual({ p: 0, m: 650, t: 0 });
+    expect(rollHit(rules.towers.get('apprentice')!)).toMatchObject({ p: 0, m: 650, t: 0, crit: false });
     const { m, mob } = setup(3000);
     mob.hp = 1_000_000;
     mob.maxHp = 1_000_000;
