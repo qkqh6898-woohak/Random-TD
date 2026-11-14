@@ -40,7 +40,10 @@ Random-TD/
 │  │  ├─ upgrades.json      강화 비용·효과
 │  │  ├─ gamble.json        도박 배율표
 │  │  ├─ missions.json      일반·히든 미션
-│  │  └─ maps/              원형·지그재그 타일맵
+│  │  ├─ account.json       계정 경험치·레벨 공식, 레벨업 보상
+│  │  ├─ shop.json          계정 상점 영구 효과, 타워 업그레이드 비용
+│  │  └─ maps/              원형(무한)·지그재그(스테이지) 타일맵
+│  │                        (지그재그는 직각 회전 5번 이상 검증 테스트 포함)
 │  ├─ core/                 게임 상태, 시드 난수(RNG), 이벤트 버스
 │  ├─ systems/              게임 규칙 (화면과 분리 → 단위 테스트 가능)
 │  │  ├─ SpawnSystem.ts     몹 생성, 단계 진행
@@ -49,7 +52,8 @@ Random-TD/
 │  │  ├─ EconomySystem.ts   돈, 일꾼
 │  │  ├─ ChallengeSystem.ts 도전, 쿨타임
 │  │  ├─ UpgradeSystem.ts   강화, 도박
-│  │  └─ MissionSystem.ts   미션 진행 추적
+│  │  ├─ MissionSystem.ts   미션 진행 추적
+│  │  └─ AccountSystem.ts   판 종료 정산, 레벨업, 상점 구매·초기화
 │  ├─ scenes/               Phaser 장면 (타이틀, 게임, 도감, 설정, 결과)
 │  ├─ ui/                   HUD, 하단 세션 탭, 바텀 시트 팝업
 │  ├─ save/                 SaveService, 저장 형식 마이그레이션
@@ -143,7 +147,8 @@ saveVersion:   3   ← 저장 형식 버전. 바뀌면 마이그레이션 추가
 - 저장 파일에 `saveVersion`을 기록한다.
 - 새 번들이 더 높은 `saveVersion`을 쓰면, 로딩할 때 `save/migrations/`의 변환 함수를 순서대로 적용한다 (v1→v2→v3).
 - 변환 전 원본을 백업해 두고, 변환에 실패하면 원본으로 되돌린다.
-- 도감, 기록, 설정은 업데이트 후에도 유지된다.
+- 도감, 기록, 설정, **계정(레벨·행운석·상점 구매)**은 업데이트 후에도 유지된다.
+- 계정 데이터는 되돌릴 수 없으므로, 업데이트 적용 직전에 저장 파일 전체를 자동 백업한다.
 
 ### 3.7 배포 자동화 (GitHub Actions)
 
