@@ -12,11 +12,17 @@ import json, math, re, sys, pathlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 T = json.load(open(ROOT / "src/data/towers.json", encoding="utf-8"))
 E = json.load(open(ROOT / "src/data/enemies.json", encoding="utf-8"))
+C = json.load(open(ROOT / "src/data/campaign.json", encoding="utf-8"))
 towers = T["towers"]; BASE = T["baseDps"]
 GRADES = ["normal", "rare", "unique", "hero", "legend", "god", "hidden"]
 GK = {"normal": "노말", "rare": "레어", "unique": "유니크", "hero": "히어로", "legend": "레전드", "god": "신", "hidden": "히든"}
+GS = {"normal": "N", "rare": "R", "unique": "U", "hero": "H", "legend": "L", "god": "G", "hidden": "X"}
 SHAPE = {"single": "단일", "melee": "근접 단일", "aoe": "광역", "melee_aoe": "근접 광역", "pierce": "관통", "chain": "연쇄", "multi": "다중", "global": "전체"}
 DMG = {"physical": "물리", "magic": "마법", "hybrid": "혼합", "true": "고정"}
+FACT = {k: v["name"] for k, v in T["factions"].items()} | {"ancient": "고대신", "alliance": "연합"}
+FSHORT = {"modern": "현대군", "kingdom": "왕국", "dwarf": "드워프", "elf": "엘프", "darkelf": "다크 엘프", "orc": "오크", "fairy": "요정", "ancient": "고대신", "alliance": "연합"}
+ELEM = {k: v["name"] for k, v in T["elements"].items()}
+EICON = {"fire": "🔥", "lightning": "⚡", "poison": "☠", "ice": "❄", "mud": "🟫", "multi": "🌈"}
 byid = {t["id"]: t for t in towers}
 
 # ---------- 전투력 모델 (BALANCE.md 2.1과 같은 식) ----------
@@ -75,8 +81,19 @@ for t in towers:
             if rid not in byid: errors.append(f"{t['name']} 조합 재료 {rid} 없음")
 detect = [t["name"] for t in towers if t["detect"] != "none" and t["grade"] in need_special]
 if len(detect) < 6: errors.append("감지 타워가 너무 적음")
-for c in E["composition"]:
-    if sum(c["mix"].values()) != 20: errors.append(f"등장 구성 {c['stages']} 합계가 20이 아님")
+mobids = {m["id"] for m in E["mobs"]}
+for c in E["composition"] + E.get("formations", []):
+    if sum(c["mix"].values()) != 20: errors.append(f"등장 구성 {c.get('stages') or c.get('name')} 합계가 20이 아님")
+    for k in c["mix"]:
+        if k not in mobids: errors.append(f"등장 구성에 없는 몹 {k}")
+from collections import Counter
+fc = Counter(t["faction"] for t in towers if t["grade"] in need_special)
+if sum(fc.values()) != 50 or None in fc: errors.append(f"종족 배정 누락: {dict(fc)}")
+for f, info in T["factions"].items():
+    if fc[f] < info["thresholds"][-1]: errors.append(f"{info['name']} 타워 {fc[f]}종 < 최고 시너지 조건 {info['thresholds'][-1]}")
+for a, b, _ in T["rivals"]:
+    if a not in T["factions"] or b not in T["factions"]: errors.append(f"앙숙 쌍 {a}-{b} 오류")
+if len(C["themes"]) != 10: errors.append("캠페인 테마 수가 10이 아님")
 
 # ---------- 표 생성 ----------
 def fmt(x):
@@ -96,8 +113,8 @@ def rng(t): return "맵 전체" if t["range"] >= 50 else f"{t['range']:g}"
 def pct(x): return f"{x*100:.0f}%" if x else "—"
 
 def tower_table(g):
-    rows = ["| 타워 | 구분 | 피해 | 물리 공격력 | 마법 공격력 | 공속 | 사거리 | 공격 범위 | 방어 관통 | 마법 관통 | 치명타 | 감지 | 단일 DPS | 전투력 지수 | 특수 능력 (Lv1 → Lv15) | 각성 |",
-            "|------|------|------|------|------|------|------|------|------|------|------|------|------|------|------|------|"]
+    rows = ["| 타워 | 구분 | 종족 | 원소 | 피해 | 물리 공격력 | 마법 공격력 | 공속 | 사거리 | 공격 범위 | 방어 관통 | 마법 관통 | 치명타 | 감지 | 단일 DPS | 전투력 지수 | 특수 능력 (Lv1 → Lv15) | 각성 |",
+            "|------|------|------|------|------|------|------|------|------|------|------|------|------|------|------|------|------|------|"]
     for t in [x for x in towers if x["grade"] == g]:
         name = ("★ **" + t["name"] + "**") if t["special"] and g not in ("god", "hidden") else t["name"]
         if g == "god": name = "👑 " + t["name"]
@@ -106,14 +123,15 @@ def tower_table(g):
         dmgtype = DMG[t["damageType"]]
         atk = fmt(t["atk"]) if t["damageType"] != "true" else f"고정 {fmt(t['tatk'])}"
         crit = f"{t['crit']*100:.0f}% ×{t['critMul']:g}" if t["crit"] else "—"
-        rows.append(f"| {name} | {unlock} | {dmgtype} | {atk} | {fmt(t['matk'])} | {t['aps']:g} | {rng(t)} | {area(t)} | {pct(t['armorPen'])} | {pct(t['magicPen'])} | {crit} | {det(t)} | {fmt(single_dps(t))} | {ratio(t):.2f} | {t['ability']} | {t['awaken']} |")
+        el = (EICON[t["element"]] + ELEM[t["element"]]) if t.get("element") else "—"
+        rows.append(f"| {name} | {unlock} | {FSHORT.get(t['faction'], '—')} | {el} | {dmgtype} | {atk} | {fmt(t['matk'])} | {t['aps']:g} | {rng(t)} | {area(t)} | {pct(t['armorPen'])} | {pct(t['magicPen'])} | {crit} | {det(t)} | {fmt(single_dps(t))} | {ratio(t):.2f} | {t['ability']} | {t['awaken']} |")
     return "\n".join(rows)
 
 def recipe_table():
-    rows = ["| 히든 타워 | 조합식 |", "|------|------|"]
+    rows = ["| 히든 타워 | 조합식 (N 노말 · R 레어 · U 유니크 · H 히어로 · L 레전드) |", "|------|------|"]
     for t in towers:
         if t.get("recipe"):
-            parts = [f"{byid[r]['name']}({GK[byid[r]['grade']][0]})" for r in t["recipe"]]
+            parts = [f"{byid[r]['name']}({GS[byid[r]['grade']]})" for r in t["recipe"]]
             rows.append(f"| 💠 {t['name']} | {' + '.join(parts)} |")
     return "\n".join(rows)
 
@@ -129,7 +147,9 @@ def mob_table():
     rows = ["| 몹 | 외형 | 등장 | 체력 배율 | 방어력 | 마법 저항 | 속도 | 상태이상 저항 | 목숨 피해 | 보상 | 특수 |",
             "|------|------|------|------|------|------|------|------|------|------|------|"]
     for m in E["mobs"]:
-        rows.append(f"| {m['name']} | {m['look']} | {m['fromStage']}단계~ | ×{m['hpMul']:g} | {m['armor']} | {m['magicRes']} | {m['speed']:g} | {pct(m['ccResist'])} | {m['lifeDamage']} | ×{m['rewardMul']:g} | {', '.join(m['traits']) or '—'} |")
+        frm = "분열 시" if m.get("spawnOnly") else f"{m['fromStage']}단계~"
+        nm = ("⭐ " + m["name"]) if m.get("special") else m["name"]
+        rows.append(f"| {nm} | {m['look']} | {frm} | ×{m['hpMul']:g} | {m['armor']} | {m['magicRes']} | {m['speed']:g} | {pct(m['ccResist'])} | {m['lifeDamage']} | ×{m['rewardMul']:g} | {', '.join(m['traits']) or '—'} |")
     return "\n".join(rows)
 
 def armor_table():
@@ -144,7 +164,7 @@ def armor_table():
     return "\n".join(rows)
 
 def comp_table():
-    ids = [m["id"] for m in E["mobs"]]; names = {m["id"]: m["name"] for m in E["mobs"]}
+    ids = [m["id"] for m in E["mobs"] if not m.get("spawnOnly")]; names = {m["id"]: m["name"] for m in E["mobs"]}
     rows = ["| 단계 | " + " | ".join(names[i] for i in ids) + " |", "|------|" + "------|" * len(ids)]
     for c in E["composition"]:
         a, b = c["stages"]; label = f"{a}~" if b > 1000 else f"{a}~{b}"
@@ -176,16 +196,69 @@ def matchup_table():
         rows.append(f"| {t['name']} | {DMG[t['damageType']]} | {fmt(single_dps(t))} | {fmt(eff_dps(t, ga, gm))} | {fmt(eff_dps(t, ta, tm))} | {fmt(eff_dps(t, ga, gm, 0.30))} | {fmt(eff_dps(t, ta, tm, 0.30))} |")
     return "\n".join(rows)
 
+def faction_table():
+    rows = ["| 종족 | 타워 (N·R·U·H·L = 노말·레어·유니크·히어로·레전드) | 수 | 시너지 (판 위 서로 다른 타워 종류 수) |", "|------|------|------|------|"]
+    for f, info in T["factions"].items():
+        mem = [f"{t['name']}({GS[t['grade']]})" for t in towers if t["faction"] == f]
+        syn = " / ".join(f"{n}종: {b}" for n, b in zip(info["thresholds"], info["bonus"]))
+        rows.append(f"| **{info['name']}** | {', '.join(mem)} | {len(mem)} | {syn} |")
+    return "\n".join(rows)
+
+def rival_table():
+    rows = ["| 앙숙 | 이유 | 효과 |", "|------|------|------|"]
+    for a, b, why in T["rivals"]:
+        rows.append(f"| {FSHORT[a]} ↔ {FSHORT[b]} | {why} | 주변 8칸에 서로 붙어 있으면 둘 다 공격속도 +8% (\"질 수 없지!\") |")
+    return "\n".join(rows)
+
+def element_table():
+    rows = ["| 원소 | 대표 효과 | 타워 |", "|------|------|------|"]
+    for e, info in T["elements"].items():
+        mem = [t["name"] for t in towers if t.get("element") == e]
+        rows.append(f"| {EICON[e]} {info['name']} | {info['effect']} | {', '.join(mem)} |")
+    return "\n".join(rows)
+
+def formation_table():
+    names = {m["id"]: m["name"] for m in E["mobs"]}
+    rows = ["| 편대 | 구성 (20칸, 고블린 떼는 1칸 = 3마리) | 무한 모드 등장 | 왜 어려운가 | 대응 |", "|------|------|------|------|------|"]
+    for f in E["formations"]:
+        mix = ", ".join(f"{names[k]} {v}" for k, v in f["mix"].items())
+        rows.append(f"| **{f['name']}** | {mix} | {f['from']}단계~ | {f['why']} | {f['counter']} |")
+    return "\n".join(rows)
+
+def theme_table():
+    rows = ["| 테마 | 이름 | 지역 | 해방 종족 | 맵 | 특수 규칙 | 최종 보스 (50단계) | 체력 배율 | 방어 +| 특수 몹 앞당김 |", "|------|------|------|------|------|------|------|------|------|------|"]
+    for t in C["themes"]:
+        rows.append(f"| {t['theme']} | **{t['name']}** | {t['region']} | {FSHORT.get(t['faction'], t['faction'])} | {t['mapName']} | {t['gimmick']} | {t['finalBoss']['name']}: {t['finalBoss']['pattern']} | ×{t['hpMul']:g} | +{t['armorOffset']} | {t['specialOffset']}단계 |")
+    return "\n".join(rows)
+
+def reward_table():
+    r = C["checkpointRewards"]
+    rows = ["| 테마 | 10단계 | 20단계 | 30단계 | 40단계 | 50단계 (테마 클리어) | 테마 합계 💎 |", "|------|------|------|------|------|------|------|"]
+    for t in range(1, 11):
+        cells = []; tot = 0
+        for k, base in (("10", 20), ("20", 30), ("30", 40), ("40", 50), ("50", 150)):
+            g = base * t; tot += g
+            cells.append(f"💎{g} + {', '.join(r[k]['items'][:2])}")
+        rows.append(f"| {t} | " + " | ".join(cells) + f" | {tot:,} |")
+    return "\n".join(rows)
+
+def map_table():
+    rows = ["| 테마 | 맵 | 구조 | 배경 |", "|------|------|------|------|"]
+    for t in C["themes"]:
+        rows.append(f"| {t['theme']} | {t['mapName']} (`{t['mapId']}`) | {t['mapConcept']} | {t['background']} |")
+    return "\n".join(rows)
+
 SECTIONS = {
-    "docs/TOWERS.md": {g.upper(): (lambda g=g: tower_table(g)) for g in GRADES} | {"RECIPES": recipe_table, "DETECT": detect_table},
-    "docs/ENEMIES.md": {"MOBS": mob_table, "ARMOR": armor_table, "COMP": comp_table, "BOSSES": boss_table, "CHALLENGES": challenge_table},
+    "docs/TOWERS.md": {g.upper(): (lambda g=g: tower_table(g)) for g in GRADES} | {"RECIPES": recipe_table, "DETECT": detect_table, "FACTIONS": faction_table, "RIVALS": rival_table, "ELEMENTS": element_table},
+    "docs/ENEMIES.md": {"MOBS": mob_table, "ARMOR": armor_table, "COMP": comp_table, "BOSSES": boss_table, "CHALLENGES": challenge_table, "FORMATIONS": formation_table},
+    "docs/CAMPAIGN.md": {"THEMES": theme_table, "REWARDS": reward_table, "MAPS": map_table},
     "docs/BALANCE.md": {"MATCHUP": matchup_table},
 }
 
 if errors:
     print("❌ 데이터 규칙 위반:"); [print("  -", e) for e in errors]
 else:
-    print(f"✅ 검사 통과: 타워 {len(towers)}종, 몹 {len(E['mobs'])}종, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 감지 타워(노말~레전드) {len(detect)}종")
+    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 감지 타워(노말~레전드) {len(detect)}종")
 if "--check" in sys.argv or errors:
     sys.exit(1 if errors else 0)
 for doc, secs in SECTIONS.items():

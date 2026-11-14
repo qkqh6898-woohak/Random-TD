@@ -1,5 +1,5 @@
 {
- "version": 2,
+ "version": 3,
  "baseDps": {
   "normal": 10,
   "rare": 35,
@@ -49,7 +49,9 @@
    },
    "atk": 7,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "dwarf",
+   "element": null
   },
   {
    "id": "drummer",
@@ -89,16 +91,18 @@
    },
    "atk": 0,
    "matk": 4.5,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "orc",
+   "element": null
   },
   {
-   "id": "goblin",
-   "name": "고블린",
+   "id": "orcraider",
+   "name": "오크 돌격병",
    "grade": "normal",
    "special": 0,
    "unlock": "base",
    "tags": [
-    "고블린"
+    "오크"
    ],
    "damageType": "physical",
    "shape": "melee",
@@ -123,7 +127,9 @@
    },
    "atk": 4,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "orc",
+   "element": null
   },
   {
    "id": "archer",
@@ -157,7 +163,9 @@
    },
    "atk": 10,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "elf",
+   "element": null
   },
   {
    "id": "apprentice",
@@ -191,7 +199,9 @@
    },
    "atk": 0,
    "matk": 6.5,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "kingdom",
+   "element": null
   },
   {
    "id": "warrior",
@@ -225,7 +235,9 @@
    },
    "atk": 18,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "kingdom",
+   "element": null
   },
   {
    "id": "spearman",
@@ -259,7 +271,9 @@
    },
    "atk": 8.5,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "kingdom",
+   "element": null
   },
   {
    "id": "slinger",
@@ -291,7 +305,9 @@
    },
    "atk": 10,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "dwarf",
+   "element": null
   },
   {
    "id": "ninja",
@@ -323,11 +339,13 @@
    },
    "atk": 4,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "darkelf",
+   "element": null
   },
   {
-   "id": "houndmaster",
-   "name": "사냥개 조련사",
+   "id": "k9",
+   "name": "군견병",
    "grade": "normal",
    "special": 0,
    "unlock": "unlock",
@@ -350,8 +368,8 @@
     "dur": 2,
     "stacks": 1
    },
-   "ability": "출혈: 2초간 초당 공격력 50% (고정 피해)",
-   "awaken": "사냥개 2마리 (공격 2회)",
+   "ability": "군견이 물어뜯어 출혈: 2초간 초당 공격력 50% (고정 피해)",
+   "awaken": "군견 2마리 (공격 2회)",
    "params": {},
    "recipe": null,
    "design": {
@@ -360,7 +378,9 @@
    },
    "atk": 4.6,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "modern",
+   "element": null
   },
   {
    "id": "merchant",
@@ -399,18 +419,20 @@
    },
    "atk": 21,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "dwarf",
+   "element": null
   },
   {
-   "id": "trapper",
-   "name": "덫 사냥꾼",
+   "id": "mudshaman",
+   "name": "진흙 주술사",
    "grade": "rare",
    "special": 1,
    "unlock": "base",
    "tags": [
     "제어"
    ],
-   "damageType": "physical",
+   "damageType": "magic",
    "shape": "single",
    "shapeValue": 0,
    "aps": 1.0,
@@ -423,26 +445,31 @@
    "detectRange": 0,
    "target": "first",
    "dot": null,
-   "ability": "8초 → 5초마다 경로에 덫, 밟은 몹 기절 1초 → 2초",
-   "awaken": "덫 2개 동시 설치",
+   "ability": "맞은 몹 둔화 25% → 40% (2초) + 8초 → 5초마다 경로에 진흙 웅덩이 (지나가는 몹 둔화 50%, 웅덩이 3초 유지)",
+   "awaken": "진흙 웅덩이 2개 동시",
    "params": {
-    "trapCd": [
+    "slow": [
+     0.25,
+     0.4
+    ],
+    "slowDur": 2,
+    "puddleCd": [
      8,
      5
     ],
-    "stun": [
-     1,
-     2
-    ]
+    "puddleSlow": 0.5,
+    "puddleDur": 3
    },
    "recipe": null,
    "design": {
     "ratio": 0.55,
     "shapeFactor": 1.0
    },
-   "atk": 19,
-   "matk": 0,
-   "tatk": 0
+   "atk": 0,
+   "matk": 19,
+   "tatk": 0,
+   "faction": "orc",
+   "element": "mud"
   },
   {
    "id": "bard",
@@ -482,7 +509,9 @@
    },
    "atk": 0,
    "matk": 16,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "fairy",
+   "element": null
   },
   {
    "id": "scout",
@@ -507,7 +536,7 @@
    "detectRange": 3.0,
    "target": "unmarked",
    "dot": null,
-   "ability": "감지 오라(반경 3 → 4) + 맞은 몹 방어력·마법 저항 -20% → -40% (5초)",
+   "ability": "정찰 드론 감지 오라(반경 3 → 4) + 맞은 몹 방어력·마법 저항 -20% → -40% (5초)",
    "awaken": "표식 몹 처치 시 +3원",
    "params": {
     "detectRange": [
@@ -526,7 +555,9 @@
    },
    "atk": 19,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "modern",
+   "element": null
   },
   {
    "id": "flamemage",
@@ -565,7 +596,9 @@
    },
    "atk": 0,
    "matk": 13,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "kingdom",
+   "element": "fire"
   },
   {
    "id": "cleaver",
@@ -599,7 +632,9 @@
    },
    "atk": 18,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "orc",
+   "element": null
   },
   {
    "id": "duelist",
@@ -633,11 +668,13 @@
    },
    "atk": 48,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "darkelf",
+   "element": null
   },
   {
-   "id": "crossbow",
-   "name": "석궁수",
+   "id": "gunner",
+   "name": "기관총 사수",
    "grade": "rare",
    "special": 0,
    "unlock": "unlock",
@@ -658,7 +695,7 @@
    "target": "first",
    "dot": null,
    "ability": "—",
-   "awaken": "3발마다 관통 3",
+   "awaken": "과열 사격: 8초마다 2초간 공격속도 +50%",
    "params": {},
    "recipe": null,
    "design": {
@@ -667,16 +704,18 @@
    },
    "atk": 12,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "modern",
+   "element": null
   },
   {
-   "id": "bomber",
-   "name": "고블린 폭탄병",
+   "id": "dwarfbomber",
+   "name": "드워프 폭탄병",
    "grade": "rare",
    "special": 0,
    "unlock": "unlock",
    "tags": [
-    "고블린"
+    "드워프"
    ],
    "damageType": "physical",
    "shape": "aoe",
@@ -692,7 +731,7 @@
    "target": "first",
    "dot": null,
    "ability": "—",
-   "awaken": "폭발 자리에 불바닥 2초",
+   "awaken": "폭발 자리에 불바닥 2초 (초당 공격력 30%)",
    "params": {},
    "recipe": null,
    "design": {
@@ -701,7 +740,9 @@
    },
    "atk": 27,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "dwarf",
+   "element": "fire"
   },
   {
    "id": "windarcher",
@@ -736,7 +777,9 @@
    },
    "atk": 0,
    "matk": 15,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "elf",
+   "element": null
   },
   {
    "id": "icemage",
@@ -761,14 +804,14 @@
    "detectRange": 0,
    "target": "first",
    "dot": null,
-   "ability": "둔화 30% → 45%, 2초",
-   "awaken": "5% 확률 빙결 1초",
+   "ability": "맞은 몹 빙결(일시 정지) 0.5초 → 1.0초, 같은 몹은 3초에 1번 (보스는 지속 30%)",
+   "awaken": "빙결된 몹이 받는 피해 +20%",
    "params": {
-    "slow": [
-     0.3,
-     0.45
+    "freeze": [
+     0.5,
+     1.0
     ],
-    "slowDur": 2
+    "perMobCd": 3
    },
    "recipe": null,
    "design": {
@@ -777,7 +820,9 @@
    },
    "atk": 0,
    "matk": 40,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "elf",
+   "element": "ice"
   },
   {
    "id": "gambler",
@@ -816,7 +861,9 @@
    },
    "atk": 39,
    "matk": 39,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "darkelf",
+   "element": null
   },
   {
    "id": "blacksmith",
@@ -856,16 +903,18 @@
    },
    "atk": 90,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "dwarf",
+   "element": null
   },
   {
-   "id": "goblinchief",
-   "name": "고블린 족장",
+   "id": "orcchief",
+   "name": "오크 족장",
    "grade": "unique",
    "special": 1,
    "unlock": "unlock",
    "tags": [
-    "고블린",
+    "오크",
     "지원"
    ],
    "damageType": "physical",
@@ -881,8 +930,8 @@
    "detectRange": 0,
    "target": "first",
    "dot": null,
-   "ability": "판 위 고블린 계열 1개당 고블린 계열 공격력 +3% → +6% (최대 20개)",
-   "awaken": "10초마다 고블린 병사 소환",
+   "ability": "판 위 오크 계열 1개당 오크 계열 공격력 +3% → +6% (최대 20개)",
+   "awaken": "10초마다 오크 병사 소환",
    "params": {
     "perGoblin": [
      0.03,
@@ -897,7 +946,9 @@
    },
    "atk": 39,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "orc",
+   "element": null
   },
   {
    "id": "astrologer",
@@ -937,7 +988,9 @@
    },
    "atk": 0,
    "matk": 66,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "fairy",
+   "element": null
   },
   {
    "id": "banker",
@@ -980,11 +1033,13 @@
    },
    "atk": 0,
    "matk": 60,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "dwarf",
+   "element": null
   },
   {
    "id": "sniper",
-   "name": "저격 궁수",
+   "name": "저격수",
    "grade": "unique",
    "special": 0,
    "unlock": "base",
@@ -1005,7 +1060,7 @@
    "detectRange": 0,
    "target": "maxhp",
    "dot": null,
-   "ability": "감지(자신), 치명타 30% (×3), 방어 관통 40%",
+   "ability": "감지(자신, 열화상 조준경), 치명타 30% (×3), 방어 관통 40%",
    "awaken": "치명타 시 반경 1칸 폭발",
    "params": {},
    "recipe": null,
@@ -1015,7 +1070,9 @@
    },
    "atk": 290,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "modern",
+   "element": null
   },
   {
    "id": "berserker",
@@ -1049,7 +1106,9 @@
    },
    "atk": 100,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "orc",
+   "element": null
   },
   {
    "id": "lightning",
@@ -1083,7 +1142,9 @@
    },
    "atk": 0,
    "matk": 69,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "kingdom",
+   "element": "lightning"
   },
   {
    "id": "poisonarcher",
@@ -1123,7 +1184,9 @@
    },
    "atk": 39,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "darkelf",
+   "element": "poison"
   },
   {
    "id": "summoner",
@@ -1163,7 +1226,9 @@
    },
    "atk": 0,
    "matk": 250,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "darkelf",
+   "element": null
   },
   {
    "id": "scholar",
@@ -1202,7 +1267,9 @@
    },
    "atk": 0,
    "matk": 200,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "fairy",
+   "element": null
   },
   {
    "id": "chronomancer",
@@ -1242,7 +1309,9 @@
    },
    "atk": 0,
    "matk": 240,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "fairy",
+   "element": null
   },
   {
    "id": "alchemist",
@@ -1283,7 +1352,9 @@
    },
    "atk": 0,
    "matk": 88,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "dwarf",
+   "element": null
   },
   {
    "id": "paladin",
@@ -1324,7 +1395,9 @@
    },
    "atk": 110,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "kingdom",
+   "element": null
   },
   {
    "id": "necromancer",
@@ -1363,11 +1436,13 @@
    },
    "atk": 0,
    "matk": 220,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "darkelf",
+   "element": null
   },
   {
-   "id": "pirate",
-   "name": "해적 선장",
+   "id": "artillery",
+   "name": "포병 대장",
    "grade": "hero",
    "special": 1,
    "unlock": "unlock",
@@ -1387,7 +1462,7 @@
    "detectRange": 0,
    "target": "first",
    "dot": null,
-   "ability": "단계를 넘길 때마다 보물 50~300원 → 100~600원",
+   "ability": "단계를 넘길 때마다 보급 투하 50~300원 → 100~600원",
    "awaken": "보스 처치 시 행운석 +1 (판당 최대 5)",
    "params": {
     "treasure": [
@@ -1408,7 +1483,9 @@
    },
    "atk": 150,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "modern",
+   "element": null
   },
   {
    "id": "prophet",
@@ -1448,7 +1525,9 @@
    },
    "atk": 0,
    "matk": 220,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "elf",
+   "element": null
   },
   {
    "id": "swordsaint",
@@ -1482,7 +1561,9 @@
    },
    "atk": 180,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "elf",
+   "element": null
   },
   {
    "id": "stormarcher",
@@ -1516,7 +1597,9 @@
    },
    "atk": 140,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "elf",
+   "element": null
   },
   {
    "id": "dragoncaller",
@@ -1555,7 +1638,9 @@
    },
    "atk": 0,
    "matk": 340,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "fairy",
+   "element": "fire"
   },
   {
    "id": "warlord",
@@ -1595,7 +1680,9 @@
    },
    "atk": 380,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "orc",
+   "element": null
   },
   {
    "id": "archmage",
@@ -1635,7 +1722,9 @@
    },
    "atk": 0,
    "matk": 540,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "kingdom",
+   "element": "fire"
   },
   {
    "id": "assassin",
@@ -1679,7 +1768,9 @@
    },
    "atk": 1500,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "darkelf",
+   "element": null
   },
   {
    "id": "fortuna",
@@ -1722,7 +1813,9 @@
    },
    "atk": 0,
    "matk": 840,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "fairy",
+   "element": null
   },
   {
    "id": "spearsgod",
@@ -1761,7 +1854,9 @@
    },
    "atk": 530,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "elf",
+   "element": null
   },
   {
    "id": "stormlord",
@@ -1802,7 +1897,9 @@
    },
    "atk": 0,
    "matk": 400,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "elf",
+   "element": "lightning"
   },
   {
    "id": "tycoon",
@@ -1842,7 +1939,9 @@
    },
    "atk": 840,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "modern",
+   "element": null
   },
   {
    "id": "saint",
@@ -1885,7 +1984,9 @@
    },
    "atk": 0,
    "matk": 840,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "kingdom",
+   "element": null
   },
   {
    "id": "dimensionist",
@@ -1926,7 +2027,9 @@
    },
    "atk": 0,
    "matk": 1100,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "modern",
+   "element": null
   },
   {
    "id": "fate",
@@ -1961,7 +2064,9 @@
    },
    "atk": 0,
    "matk": 0,
-   "tatk": 4500
+   "tatk": 4500,
+   "faction": "ancient",
+   "element": null
   },
   {
    "id": "plenty",
@@ -1995,7 +2100,9 @@
    },
    "atk": 0,
    "matk": 3000,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "ancient",
+   "element": null
   },
   {
    "id": "ruin",
@@ -2027,7 +2134,9 @@
    },
    "atk": 0,
    "matk": 0,
-   "tatk": 2400
+   "tatk": 2400,
+   "faction": "ancient",
+   "element": null
   },
   {
    "id": "elemental",
@@ -2070,7 +2179,9 @@
    },
    "atk": 220,
    "matk": 220,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "alliance",
+   "element": "multi"
   },
   {
    "id": "goldking",
@@ -2108,7 +2219,9 @@
    },
    "atk": 1700,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "alliance",
+   "element": null
   },
   {
    "id": "celestial",
@@ -2147,7 +2260,9 @@
    },
    "atk": 1500,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "alliance",
+   "element": null
   },
   {
    "id": "legion",
@@ -2185,7 +2300,9 @@
    },
    "atk": 0,
    "matk": 1800,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "alliance",
+   "element": null
   },
   {
    "id": "infiniteblade",
@@ -2225,7 +2342,9 @@
    },
    "atk": 920,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "alliance",
+   "element": null
   },
   {
    "id": "timelord",
@@ -2263,16 +2382,18 @@
    },
    "atk": 0,
    "matk": 1800,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "alliance",
+   "element": null
   },
   {
-   "id": "goblinking",
-   "name": "고블린 대왕",
+   "id": "orcwarchief",
+   "name": "오크 대족장",
    "grade": "hidden",
    "special": 1,
    "unlock": "recipe",
    "tags": [
-    "고블린"
+    "오크"
    ],
    "damageType": "physical",
    "shape": "single",
@@ -2287,15 +2408,15 @@
    "detectRange": 0,
    "target": "first",
    "dot": null,
-   "ability": "5초마다 고블린 병사 3마리, 고블린 계열 공격력 +50%",
+   "ability": "5초마다 오크 병사 3마리, 오크 계열 공격력 +50%",
    "awaken": "—",
    "params": {},
    "recipe": [
-    "goblin",
-    "goblin",
-    "goblin",
-    "bomber",
-    "goblinchief"
+    "orcraider",
+    "orcraider",
+    "orcraider",
+    "cleaver",
+    "orcchief"
    ],
    "design": {
     "ratio": 0.7,
@@ -2303,7 +2424,9 @@
    },
    "atk": 1000,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "alliance",
+   "element": null
   },
   {
    "id": "deathlord",
@@ -2346,11 +2469,13 @@
    },
    "atk": 0,
    "matk": 770,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "alliance",
+   "element": "poison"
   },
   {
-   "id": "greatpirate",
-   "name": "대해적",
+   "id": "goldbattery",
+   "name": "황금 포격대",
    "grade": "hidden",
    "special": 1,
    "unlock": "recipe",
@@ -2370,12 +2495,12 @@
    "detectRange": 0,
    "target": "first",
    "dot": null,
-   "ability": "단계를 넘길 때마다 보물 500~2,000원, 맞은 몹 처치 보상 ×2",
+   "ability": "단계를 넘길 때마다 보급 500~2,000원, 맞은 몹 처치 보상 ×2",
    "awaken": "—",
    "params": {},
    "recipe": [
     "slinger",
-    "pirate",
+    "artillery",
     "tycoon"
    ],
    "design": {
@@ -2384,7 +2509,9 @@
    },
    "atk": 1200,
    "matk": 0,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "alliance",
+   "element": null
   },
   {
    "id": "fateseer",
@@ -2423,7 +2550,9 @@
    },
    "atk": 0,
    "matk": 1700,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "alliance",
+   "element": null
   },
   {
    "id": "festival",
@@ -2461,7 +2590,9 @@
    },
    "atk": 0,
    "matk": 1500,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "alliance",
+   "element": null
   },
   {
    "id": "stormavatar",
@@ -2499,7 +2630,160 @@
    },
    "atk": 0,
    "matk": 790,
-   "tatk": 0
+   "tatk": 0,
+   "faction": "alliance",
+   "element": "lightning"
   }
- ]
+ ],
+ "factions": {
+  "modern": {
+   "name": "현대 연합군",
+   "color": "#6B7A3A",
+   "thresholds": [
+    3,
+    5,
+    7
+   ],
+   "bonus": [
+    "사거리 +10%",
+    "공격속도 +15%",
+    "현대군 방어 관통 +25%"
+   ]
+  },
+  "kingdom": {
+   "name": "아르덴 왕국 기사단",
+   "color": "#2E5AAC",
+   "thresholds": [
+    3,
+    5,
+    7
+   ],
+   "bonus": [
+    "공격력 +10%",
+    "마법 관통 +15%",
+    "보스 피해 +25%"
+   ]
+  },
+  "dwarf": {
+   "name": "두르가 드워프",
+   "color": "#A0522D",
+   "thresholds": [
+    3,
+    5,
+    7
+   ],
+   "bonus": [
+    "모든 돈 획득 +10%",
+    "판 내 강화 비용 -15%",
+    "드워프 공격력 +30%"
+   ]
+  },
+  "elf": {
+   "name": "실바렌 엘프",
+   "color": "#3A9D5D",
+   "thresholds": [
+    3,
+    5,
+    7
+   ],
+   "bonus": [
+    "사거리 +10%",
+    "치명타 확률 +10%p",
+    "치명타 피해 +50%p"
+   ]
+  },
+  "darkelf": {
+   "name": "모르시엘 다크 엘프",
+   "color": "#5B3A8C",
+   "thresholds": [
+    3,
+    5,
+    7
+   ],
+   "bonus": [
+    "치명타 확률 +5%p",
+    "투명 몹 상대 피해 +30%",
+    "체력 5% 이하 일반 몹 즉사"
+   ]
+  },
+  "orc": {
+   "name": "카라쉬 오크 부족",
+   "color": "#B23A2E",
+   "thresholds": [
+    3,
+    5,
+    7
+   ],
+   "bonus": [
+    "공격속도 +10%",
+    "근접 타워 공격력 +25%",
+    "보스 단계 동안 공격속도 +30%"
+   ]
+  },
+  "fairy": {
+   "name": "루미엘 요정",
+   "color": "#E58FC4",
+   "thresholds": [
+    2,
+    4,
+    6
+   ],
+   "bonus": [
+    "상태이상 지속 +20%",
+    "소환 시 레어 직행 +2%p",
+    "신 타워 확률 ×1.5"
+   ]
+  }
+ },
+ "rivals": [
+  [
+   "elf",
+   "darkelf",
+   "고대의 분열"
+  ],
+  [
+   "dwarf",
+   "elf",
+   "광산과 숲의 다툼"
+  ],
+  [
+   "orc",
+   "kingdom",
+   "국경 전쟁"
+  ],
+  [
+   "modern",
+   "fairy",
+   "과학과 마법"
+  ]
+ ],
+ "alliance": {
+  "desc": "7개 종족이 모두 판 위에 있으면 연합의 힘: 전체 공격력 +15%"
+ },
+ "elements": {
+  "lightning": {
+   "name": "번개",
+   "effect": "여러 적을 연쇄로 튕기며 공격"
+  },
+  "fire": {
+   "name": "화염",
+   "effect": "범위 공격 + 화상 3초 (지속 피해)"
+  },
+  "poison": {
+   "name": "독",
+   "effect": "중독 5초, 서서히 피해 (중첩)"
+  },
+  "ice": {
+   "name": "얼음",
+   "effect": "빙결 = 일시 정지"
+  },
+  "mud": {
+   "name": "진흙",
+   "effect": "둔화 (느리게)"
+  },
+  "multi": {
+   "name": "복합",
+   "effect": "여러 원소 동시"
+  }
+ }
 }

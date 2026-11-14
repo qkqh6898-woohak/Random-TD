@@ -1,0 +1,294 @@
+{
+ "version": 1,
+ "stagesPerTheme": 50,
+ "checkpointEvery": 10,
+ "stageBands": [
+  {
+   "stages": [
+    1,
+    10
+   ],
+   "sky": "맑은 낮"
+  },
+  {
+   "stages": [
+    11,
+    20
+   ],
+   "sky": "노을"
+  },
+  {
+   "stages": [
+    21,
+    30
+   ],
+   "sky": "밤 (달·별)"
+  },
+  {
+   "stages": [
+    31,
+    40
+   ],
+   "sky": "전운 (먹구름·비)"
+  },
+  {
+   "stages": [
+    41,
+    50
+   ],
+   "sky": "침공 절정 (하늘 균열·보라 번개·운석)"
+  }
+ ],
+ "bossStageBackground": "보스 단계: 화면이 어두워지고 보스 색 오라, 50단계는 테마 전용 결전 배경",
+ "checkpointStart": {
+  "prepSeconds": 120,
+  "supportGold": {
+   "10": 9000,
+   "20": 22000,
+   "30": 37000,
+   "40": 54000
+  },
+  "workers": {
+   "10": 5,
+   "20": 10,
+   "30": 10,
+   "40": 10
+  },
+  "note": "발판에서 시작하면 그 단계까지 보통 플레이로 모았을 돈(BALANCE.md 5장 누적 수입의 약 90%)과 일꾼을 지원. 판 안 미션·도전 해금은 처음부터"
+ },
+ "checkpointRewards": {
+  "10": {
+   "gems": "20 × t",
+   "items": [
+    "랜덤 조각 5개"
+   ]
+  },
+  "20": {
+   "gems": "30 × t",
+   "items": [
+    "일반 상자 1개"
+   ]
+  },
+  "30": {
+   "gems": "40 × t",
+   "items": [
+    "고급 상자 1개"
+   ]
+  },
+  "40": {
+   "gems": "50 × t",
+   "items": [
+    "히어로 랜덤 조각 3개"
+   ]
+  },
+  "50": {
+   "gems": "150 × t",
+   "items": [
+    "영웅 상자 1개",
+    "그 테마 종족 타워 선택권 1장",
+    "칭호 「(테마)의 해방자」",
+    "다음 테마 해금",
+    "챕터 엔딩 대화"
+   ]
+  },
+  "repeat": "이미 받은 발판을 다시 넘으면 행운석 2 × t"
+ },
+ "difficulty": {
+  "hp": "HP(s) × hpMul(t)",
+  "armor": "몹 기본 방어력·마법 저항 + armorOffset(t)",
+  "special": "특수 몹·편대 등장 단계 − specialOffset(t) (투명 도둑·고블린 떼 최소 15단계, 보석 골렘 최소 20단계, 편대 최소 25단계)",
+  "bosses": "10~40단계 보스 = 기본 보스 5종(ENEMIES.md 4장) 중 4종을 테마마다 다른 순서로, 단 40단계는 항상 투명 보스. 50단계 = 테마 최종 보스 (체력 배율 ×80)"
+ },
+ "themes": [
+  {
+   "theme": 1,
+   "name": "국경 평원",
+   "region": "아르덴 왕국 국경",
+   "faction": "kingdom",
+   "mapId": "crossroads",
+   "mapName": "사거리 미로",
+   "mapConcept": "사용자 스케치. 3×3 블록, 회전 10, 교차 4 (작성됨)",
+   "background": "초원, 성벽, 풍차",
+   "gimmick": "없음 (입문 테마)",
+   "finalBoss": {
+    "name": "균열 선봉장 그락스",
+    "look": "가시 갑옷을 입은 외계 기사",
+    "pattern": "20초마다 3초간 이동속도 3배 돌격, 체력 50%에서 고블린 떼 6무리 호출"
+   },
+   "hpMul": 1,
+   "armorOffset": 0,
+   "specialOffset": 0
+  },
+  {
+   "theme": 2,
+   "name": "두르가 광산 협곡",
+   "region": "드워프 철망치 산맥",
+   "faction": "dwarf",
+   "mapId": "spiral",
+   "mapName": "나선 갱도",
+   "mapConcept": "13×13 사각 나선, 바깥에서 안으로, 회전 12, 출구가 중앙",
+   "background": "바위 절벽, 광산 수레, 용광로 불빛",
+   "gimmick": "광맥 칸 4곳: 그 칸에 놓은 타워 공격력 +20%",
+   "finalBoss": {
+    "name": "수정 포식자",
+    "look": "수정을 갉아먹는 거대 외계 벌레",
+    "pattern": "15초마다 배치 칸 1곳을 수정으로 봉쇄 (그 칸 타워 10초 공격 불가)"
+   },
+   "hpMul": 1.4,
+   "armorOffset": 8,
+   "specialOffset": 5
+  },
+  {
+   "theme": 3,
+   "name": "실바렌 숲",
+   "region": "엘프의 은빛 숲",
+   "faction": "elf",
+   "mapId": "twinpath",
+   "mapName": "쌍둥이 숲길",
+   "mapConcept": "13×15, 등장 지점 2곳이 출구 1곳으로 합류, 각 회전 6",
+   "background": "거대한 나무, 반딧불, 버섯",
+   "gimmick": "짙은 안개: 투명 몹이 15단계 더 일찍 등장, 감지 범위 -0.5",
+   "finalBoss": {
+    "name": "부패의 나무정령",
+    "look": "보라 덩굴로 뒤덮인 나무 괴물",
+    "pattern": "주변 몹 독 면역 + 초당 1% 회복, 12초마다 덩굴로 타워 2개 5초 묶음"
+   },
+   "hpMul": 1.9,
+   "armorOffset": 16,
+   "specialOffset": 10
+  },
+  {
+   "theme": 4,
+   "name": "카라쉬 황무지",
+   "region": "오크 부족의 붉은 사막",
+   "faction": "orc",
+   "mapId": "canyon",
+   "mapName": "협곡 지그재그",
+   "mapConcept": "11×15, 블록 3×4 배열, 회전 10",
+   "background": "붉은 모래, 해골 토템, 협곡",
+   "gimmick": "모래폭풍: 60초마다 10초간 모든 타워 사거리 -20%",
+   "finalBoss": {
+    "name": "모래 벌레 여왕",
+    "look": "모래 속을 헤엄치는 거대 벌레",
+    "pattern": "10초마다 3초간 땅속 잠수 (피해 무효), 잠수할 때마다 고블린 떼 3무리"
+   },
+   "hpMul": 2.6,
+   "armorOffset": 24,
+   "specialOffset": 15
+  },
+  {
+   "theme": 5,
+   "name": "루미엘 호수",
+   "region": "요정의 거울 호수",
+   "faction": "fairy",
+   "mapId": "islands",
+   "mapName": "섬 다리",
+   "mapConcept": "13×13, 블록 = 섬, 경로 = 다리, 회전 8, 물길 칸",
+   "background": "호수, 연꽃, 무지개",
+   "gimmick": "물길: 물 위의 몹은 번개 피해 +30%, 화염 피해 -30%",
+   "finalBoss": {
+    "name": "심연의 해파리",
+    "look": "빛나는 거대 외계 해파리",
+    "pattern": "5초마다 2초간 물 장막 (마법 피해 -50%), 체력 30%에서 작은 해파리 8마리로 분열"
+   },
+   "hpMul": 3.5,
+   "armorOffset": 32,
+   "specialOffset": 20
+  },
+  {
+   "theme": 6,
+   "name": "모르시엘 지하도시",
+   "region": "다크 엘프의 지하 왕국",
+   "faction": "darkelf",
+   "mapId": "labyrinth",
+   "mapName": "미궁 회랑",
+   "mapConcept": "13×13, 교차 6곳, 회전 14",
+   "background": "동굴, 보라 수정, 등불",
+   "gimmick": "어둠: 투명 몹 비율 2배, 맵 가장자리가 어두움",
+   "finalBoss": {
+    "name": "그림자 군주 녹투르",
+    "look": "그림자 망토를 두른 외계 군주",
+    "pattern": "항상 투명, 15초마다 분신 2개 (분신 체력 20%, 투명)"
+   },
+   "hpMul": 4.7,
+   "armorOffset": 40,
+   "specialOffset": 25
+  },
+  {
+   "theme": 7,
+   "name": "노바 시티",
+   "region": "현대 인간 연합의 수도",
+   "faction": "modern",
+   "mapId": "citygrid",
+   "mapName": "도시 격자",
+   "mapConcept": "13×13, 2×2 블록 16개, 교차 9곳, 몹 수 ×1.2",
+   "background": "빌딩, 네온 간판, 도로",
+   "gimmick": "도로 격자: 교차점이 많아 몹이 여러 방향에서 들이닥침",
+   "finalBoss": {
+    "name": "강철 거신",
+    "look": "도시를 짓밟는 외계 강철 거인",
+    "pattern": "방어력 300, 12초마다 미사일로 타워 3개 4초 기절"
+   },
+   "hpMul": 6.3,
+   "armorOffset": 48,
+   "specialOffset": 30
+  },
+  {
+   "theme": 8,
+   "name": "얼어붙은 북방",
+   "region": "세상의 끝 설원",
+   "faction": "elf",
+   "mapId": "glacier",
+   "mapName": "빙하 고리",
+   "mapConcept": "13×13, 바깥 고리 한 바퀴 → 안쪽 고리, 회전 9",
+   "background": "설원, 빙하, 오로라",
+   "gimmick": "빙판: 몹 이동속도 +15%, 빙결 지속시간 +50%",
+   "finalBoss": {
+    "name": "서리 용",
+    "look": "얼음 날개의 외계 용",
+    "pattern": "빙결 면역, 주변 3칸 타워 공격속도 -30% 오라, 20초마다 얼음 숨결 (타워 5개 3초 빙결)"
+   },
+   "hpMul": 8.5,
+   "armorOffset": 56,
+   "specialOffset": 35
+  },
+  {
+   "theme": 9,
+   "name": "화산 요새",
+   "region": "대륙 중앙의 불의 산",
+   "faction": "dwarf",
+   "mapId": "lavasteps",
+   "mapName": "용암 계단",
+   "mapConcept": "11×15, 계단식 경로, 회전 12",
+   "background": "용암, 흑요석 성채, 화산재",
+   "gimmick": "용암 분출: 45초마다 경로 위 몹 체력 10% 회복, 몹 화염 저항 +30%",
+   "finalBoss": {
+    "name": "용암 거인",
+    "look": "흘러내리는 용암 몸의 거인",
+    "pattern": "화염 면역, 죽으면 용암 정령 3마리로 분열 (각 체력 25%)"
+   },
+   "hpMul": 11.5,
+   "armorOffset": 64,
+   "specialOffset": 40
+  },
+  {
+   "theme": 10,
+   "name": "녹스 균열",
+   "region": "외계 군단이 쏟아져 나오는 차원 균열",
+   "faction": "alliance",
+   "mapId": "vortex",
+   "mapName": "차원 소용돌이",
+   "mapConcept": "13×13, 포털 2쌍 (몹 순간이동), 회전 10",
+   "background": "보라 하늘, 떠다니는 바위, 외계 모선",
+   "gimmick": "차원 포털 + 모든 특수 몹·편대 등장",
+   "finalBoss": {
+    "name": "균열의 여왕 녹시아",
+    "look": "녹스 군단을 이끄는 차원의 여왕",
+    "pattern": "3페이즈: ① 항상 투명 ② 분신 4개 ③ 10초마다 물리·마법 저항이 번갈아 90%"
+   },
+   "hpMul": 15,
+   "armorOffset": 72,
+   "specialOffset": 45
+  }
+ ]
+}

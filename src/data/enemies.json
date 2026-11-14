@@ -20,7 +20,8 @@
    "traits": [],
    "lifeDamage": 1,
    "rewardMul": 1.0,
-   "size": "소형"
+   "size": "소형",
+   "special": false
   },
   {
    "id": "bat",
@@ -37,7 +38,8 @@
    ],
    "lifeDamage": 1,
    "rewardMul": 1.0,
-   "size": "소형"
+   "size": "소형",
+   "special": false
   },
   {
    "id": "golem",
@@ -54,7 +56,8 @@
    ],
    "lifeDamage": 2,
    "rewardMul": 1.0,
-   "size": "대형"
+   "size": "대형",
+   "special": false
   },
   {
    "id": "turtle",
@@ -71,7 +74,8 @@
    ],
    "lifeDamage": 2,
    "rewardMul": 1.0,
-   "size": "대형"
+   "size": "대형",
+   "special": false
   },
   {
    "id": "ghost",
@@ -88,7 +92,8 @@
    ],
    "lifeDamage": 1,
    "rewardMul": 1.0,
-   "size": "중형"
+   "size": "중형",
+   "special": false
   },
   {
    "id": "splitter",
@@ -105,7 +110,8 @@
    ],
    "lifeDamage": 1,
    "rewardMul": 1.0,
-   "size": "중형"
+   "size": "중형",
+   "special": false
   },
   {
    "id": "thief",
@@ -123,7 +129,8 @@
    ],
    "lifeDamage": 2,
    "rewardMul": 2.0,
-   "size": "소형"
+   "size": "소형",
+   "special": false
   },
   {
    "id": "healer",
@@ -140,7 +147,8 @@
    ],
    "lifeDamage": 1,
    "rewardMul": 1.0,
-   "size": "중형"
+   "size": "중형",
+   "special": false
   },
   {
    "id": "shield",
@@ -157,7 +165,8 @@
    ],
    "lifeDamage": 2,
    "rewardMul": 1.0,
-   "size": "중형"
+   "size": "중형",
+   "special": false
   },
   {
    "id": "shadowwolf",
@@ -175,7 +184,70 @@
    ],
    "lifeDamage": 2,
    "rewardMul": 2.0,
-   "size": "중형"
+   "size": "중형",
+   "special": false
+  },
+  {
+   "id": "goblin",
+   "name": "고블린 떼",
+   "look": "작고 날랜 녹색 외계 고블린 (3마리씩 무리)",
+   "fromStage": 40,
+   "hpMul": 0.35,
+   "armor": 5,
+   "magicRes": 5,
+   "speed": 2.6,
+   "ccResist": 0,
+   "traits": [
+    "떼: 1칸에 3마리씩 등장",
+    "빠름"
+   ],
+   "lifeDamage": 1,
+   "rewardMul": 0.4,
+   "size": "소형",
+   "swarm": 3,
+   "special": true
+  },
+  {
+   "id": "gemgolem",
+   "name": "보석 골렘",
+   "look": "몸에 거대한 보석이 박힌 외계 골렘",
+   "fromStage": 45,
+   "hpMul": 3.0,
+   "armor": 80,
+   "magicRes": 40,
+   "speed": 0.8,
+   "ccResist": 0.3,
+   "traits": [
+    "느림",
+    "죽으면 작은 골렘 2마리로 깨짐"
+   ],
+   "lifeDamage": 3,
+   "rewardMul": 2.0,
+   "size": "대형",
+   "splitInto": {
+    "id": "minigolem",
+    "count": 2
+   },
+   "special": true
+  },
+  {
+   "id": "minigolem",
+   "name": "작은 골렘",
+   "look": "보석 조각 골렘",
+   "fromStage": 0,
+   "hpMul": 1.05,
+   "armor": 60,
+   "magicRes": 20,
+   "speed": 1.2,
+   "ccResist": 0.1,
+   "traits": [
+    "보석 골렘이 깨질 때만 등장 (체력 = 보석 골렘 최대 체력의 35%)"
+   ],
+   "lifeDamage": 1,
+   "rewardMul": 0.5,
+   "size": "소형",
+   "spawnOnly": true,
+   "special": true
   }
  ],
  "composition": [
@@ -237,7 +309,7 @@
   {
    "stages": [
     35,
-    44
+    39
    ],
    "mix": {
     "slime": 4,
@@ -251,8 +323,8 @@
   },
   {
    "stages": [
-    45,
-    54
+    40,
+    44
    ],
    "mix": {
     "slime": 2,
@@ -261,8 +333,25 @@
     "turtle": 3,
     "ghost": 2,
     "splitter": 2,
+    "thief": 2,
+    "goblin": 3
+   }
+  },
+  {
+   "stages": [
+    45,
+    54
+   ],
+   "mix": {
+    "bat": 2,
+    "golem": 2,
+    "turtle": 2,
+    "ghost": 2,
+    "splitter": 2,
     "thief": 3,
-    "healer": 2
+    "healer": 2,
+    "goblin": 3,
+    "gemgolem": 2
    }
   },
   {
@@ -271,14 +360,16 @@
     69
    ],
    "mix": {
-    "bat": 3,
-    "golem": 3,
-    "turtle": 3,
-    "ghost": 2,
+    "bat": 2,
+    "golem": 2,
+    "turtle": 2,
+    "ghost": 1,
     "splitter": 2,
     "thief": 3,
     "healer": 2,
-    "shield": 2
+    "shield": 2,
+    "goblin": 2,
+    "gemgolem": 2
    }
   },
   {
@@ -287,15 +378,17 @@
     99
    ],
    "mix": {
-    "bat": 2,
+    "bat": 1,
     "golem": 2,
     "turtle": 2,
-    "ghost": 2,
-    "splitter": 2,
+    "ghost": 1,
+    "splitter": 1,
     "thief": 3,
     "healer": 2,
     "shield": 2,
-    "shadowwolf": 3
+    "shadowwolf": 2,
+    "goblin": 2,
+    "gemgolem": 2
    }
   },
   {
@@ -304,15 +397,17 @@
     9999
    ],
    "mix": {
-    "bat": 2,
-    "golem": 2,
+    "bat": 1,
+    "golem": 1,
     "turtle": 2,
     "ghost": 1,
-    "splitter": 2,
-    "thief": 4,
+    "splitter": 1,
+    "thief": 3,
     "healer": 2,
     "shield": 2,
-    "shadowwolf": 3
+    "shadowwolf": 3,
+    "goblin": 2,
+    "gemgolem": 2
    }
   }
  ],
@@ -520,5 +615,85 @@
   "chance": 0.015,
   "hpMul": 5,
   "rewardMul": 10
+ },
+ "formations": [
+  {
+   "id": "breakthrough",
+   "name": "돌파 편대",
+   "mix": {
+    "gemgolem": 5,
+    "goblin": 12,
+    "bat": 3
+   },
+   "from": 45,
+   "why": "느리고 단단한 보석 골렘이 광역·단일 화력을 붙잡는 사이 고블린 떼(36마리)가 빠르게 빠져나감. 골렘이 깨지면 작은 골렘 10마리가 더 생김",
+   "counter": "진흙 둔화 + 광역(화염·번개)으로 고블린 처리, 관통·마법으로 골렘 처리"
+  },
+  {
+   "id": "fortress",
+   "name": "치유 요새",
+   "mix": {
+    "golem": 6,
+    "turtle": 6,
+    "healer": 4,
+    "shield": 4
+   },
+   "from": 50,
+   "why": "물리·마법 탱커를 치유사가 계속 회복, 방패병 보호막까지",
+   "counter": "독·화상·고정 피해, 그림자 암살자로 치유사 먼저"
+  },
+  {
+   "id": "shadowraid",
+   "name": "그림자 습격",
+   "mix": {
+    "thief": 8,
+    "bat": 8,
+    "shadowwolf": 4
+   },
+   "from": 55,
+   "why": "빠른 투명 몹 무리. 감지 범위가 좁으면 그대로 통과",
+   "counter": "감지 오라를 교차점에 + 진흙·얼음으로 붙잡기"
+  },
+  {
+   "id": "splitstorm",
+   "name": "분열 폭풍",
+   "mix": {
+    "splitter": 8,
+    "gemgolem": 4,
+    "goblin": 8
+   },
+   "from": 60,
+   "why": "죽을수록 몹 수가 늘어나 무한 모드 150마리 한도를 압박",
+   "counter": "광역 + 연쇄로 작은 몹을 한꺼번에"
+  },
+  {
+   "id": "ironmarch",
+   "name": "철갑 행진",
+   "mix": {
+    "golem": 10,
+    "gemgolem": 6,
+    "shield": 4
+   },
+   "from": 65,
+   "why": "방어력 벽",
+   "counter": "마법 타워, 물리 관통 강화, 정찰병 표식"
+  },
+  {
+   "id": "magicwall",
+   "name": "마법 장벽",
+   "mix": {
+    "turtle": 10,
+    "ghost": 6,
+    "healer": 4
+   },
+   "from": 70,
+   "why": "마법 저항 + 회피",
+   "counter": "물리 광역·관통, 마법 관통 강화"
+  }
+ ],
+ "formationRule": {
+  "stageMode": "테마 t에서 편대 등장 가능 단계 = 편대 from − 5×(t−1) (최소 25). 등장 가능한 편대 중 하나가 5의 배수 단계(보스 단계 제외)에 무작위로",
+  "infinite": "45단계부터 5의 배수 단계(보스 단계 제외)마다 등장 가능한 편대 중 하나",
+  "preview": "편대 단계 10초 전 배너로 예고 + 대응 힌트"
  }
 }
