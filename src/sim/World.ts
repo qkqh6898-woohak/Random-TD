@@ -9,7 +9,7 @@
  * - Phaser·DOM·window를 모른다. 화면은 상태를 읽기만 하고, 바꾸려면 `enqueue()`로 명령을 넣는다.
  */
 
-import { CommandQueue, type Command, type CommandInput, type EnqueueResult } from './Commands';
+import { COMMAND_TYPES, CommandQueue, type Command, type CommandInput, type CommandType, type EnqueueResult } from './Commands';
 import { hashValue } from './hash';
 import { Rng, type RngSnapshot } from './Rng';
 
@@ -157,9 +157,14 @@ export class World {
     }
     this.systems = [...(options.systems ?? [])];
     this.state = options.state ?? {};
-    this.handlers = {
-      noop: () => {},
-    };
+    // 처리기를 붙이지 않은 명령은 아무 일도 하지 않는다 (noop, 아직 시스템이 없는 명령)
+    const nothing: CommandHandler = () => {};
+    this.handlers = Object.fromEntries(COMMAND_TYPES.map((t) => [t, nothing])) as Record<CommandType, CommandHandler>;
+  }
+
+  /** 명령 처리기 붙이기 (판을 만드는 쪽이 시스템과 함께 등록). 같은 종류는 덮어쓴다. */
+  setCommandHandler(type: CommandType, handler: CommandHandler): void {
+    this.handlers[type] = handler;
   }
 
   /** 이름으로 난수 흐름 가져오기. 없는 이름이면 에러 (오타 방지). */

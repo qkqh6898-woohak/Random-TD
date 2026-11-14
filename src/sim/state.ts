@@ -48,6 +48,10 @@ export interface MatchState {
   spawnNextTick: number;
   /** 대기열을 만든 단계 (단계가 바뀌면 새로 만든다) */
   spawnStage: number;
+  /** 개발용 치트를 들어 주는 판인가 (?debug=1) */
+  debug: boolean;
+  /** 치트를 한 번이라도 썼는가 (저장·기록에 표시) */
+  debugUsed: boolean;
 }
 
 /** 시스템이 함께 쓰는 문맥. */

@@ -16,7 +16,7 @@ import type { MatchContext, MatchMode, MatchState } from './state';
 import { createDefeatSystem } from './systems/Defeat';
 import { createMovementSystem } from './systems/Movement';
 import { createSpawnSystem } from './systems/Spawn';
-import { createStageSystem, ticksToNextStage } from './systems/Stage';
+import { createStageSystem, skipStage, ticksToNextStage } from './systems/Stage';
 
 export interface MatchOptions {
   seed: number;
@@ -26,6 +26,8 @@ export interface MatchOptions {
   players?: number;
   /** game.json maxPlayers (생략하면 data에서) */
   maxPlayers?: number;
+  /** 개발용 치트 명령을 들어 줄지 (?debug=1). 기본 false */
+  debug?: boolean;
 }
 
 export class Match {
@@ -128,6 +130,8 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     spawnNext: 0,
     spawnNextTick: 0,
     spawnStage: 0,
+    debug: opts.debug === true,
+    debugUsed: false,
   };
   const ctx: MatchContext = { rules, map, theme, state };
   const world = new World({
@@ -137,5 +141,6 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     state,
     systems: [createStageSystem(ctx), createSpawnSystem(ctx), createMovementSystem(ctx), createDefeatSystem(ctx)],
   });
+  world.setCommandHandler('debugSkipStage', () => skipStage(ctx));
   return new Match(world, ctx);
 }

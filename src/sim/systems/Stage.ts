@@ -21,6 +21,20 @@ export function stageStartTick(prepTicks: number, stageTicks: number, stage: num
   return prepTicks + (stage - 1) * stageTicks;
 }
 
+/**
+ * 개발용 '단계 건너뛰기' (debugSkipStage 명령): 이번 틱에 바로 다음 단계가 시작되게 한다.
+ * 명령은 시스템보다 먼저 실행되므로 같은 틱의 단계 시스템이 단계를 올린다. debug 판이 아니면 무시.
+ * 남은 등장 대기열은 새 단계 대기열로 바뀐다 (건너뛴 단계의 남은 몹은 나오지 않음).
+ */
+export function skipStage(ctx: MatchContext): void {
+  const { state } = ctx;
+  if (!state.debug || state.phase !== 'playing') return;
+  if (state.lastStage > 0 && state.stage >= state.lastStage) return;
+  state.debugUsed = true;
+  // 지금 틱 이하로 당기면 같은 틱 단계 시스템이 바로 다음 단계를 시작하고, 다음 단계 시각을 지금 + 60초로 다시 잡는다
+  state.nextStageTick = 0;
+}
+
 export function createStageSystem(ctx: MatchContext): System {
   return (world) => {
     const { state, rules } = ctx;

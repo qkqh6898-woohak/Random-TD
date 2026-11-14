@@ -15,15 +15,18 @@
 /** 명령 내용 (종류별). */
 export type CommandPayload =
   /** 빈 명령: 락스텝에서 "이 틱엔 할 일 없음"을 알리는 용도 (M13). 상태를 바꾸지 않는다. */
-  { type: 'noop' };
+  | { type: 'noop' }
+  /** 개발용 치트 (?debug=1, CLAUDE.md 4장): 다음 단계로 바로 넘어간다. debug 판에서만 듣고, 쓰면 판 상태에 표시된다. */
+  | { type: 'debugSkipStage' };
 
 export type CommandType = CommandPayload['type'];
 
-export const COMMAND_TYPES: readonly CommandType[] = ['noop'];
+export const COMMAND_TYPES: readonly CommandType[] = ['noop', 'debugSkipStage'];
 
 /** 종류별 내용 필드 (type·tick·player·seq 제외). 여기 없는 필드는 거절한다. */
 export const PAYLOAD_FIELDS: { readonly [K in CommandType]: readonly string[] } = {
   noop: [],
+  debugSkipStage: [],
 };
 
 /** 모든 명령에 공통인 필드. */
@@ -72,6 +75,7 @@ export function validatePayload(cmd: unknown): string | null {
   }
   switch (type as CommandType) {
     case 'noop':
+    case 'debugSkipStage':
       return null;
   }
 }

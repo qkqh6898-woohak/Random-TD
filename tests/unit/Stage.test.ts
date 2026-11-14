@@ -3,7 +3,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { stageStartTick } from '../../src/sim/systems/Stage';
-import { campaign, infinite, jumpToStage } from '../helpers/match';
+import { createMatch } from '../../src/sim/match';
+import { campaign, data, infinite, jumpToStage } from '../helpers/match';
 
 describe('단계 타이머 (GDD 2.2)', () => {
   it('0단계 준비 60초(1200틱): 틱 1199까지 0단계, 틱 1200에 1단계', () => {
@@ -72,5 +73,47 @@ describe('단계 타이머 (GDD 2.2)', () => {
     expect(match.state.lastStage).toBe(0);
     jumpToStage(match, 600);
     expect(match.state.stage).toBe(600);
+  });
+});
+
+describe('개발용 단계 건너뛰기 (debugSkipStage 명령)', () => {
+  it('debug 판: 명령을 넣은 틱에 다음 단계가 시작되고 60초 타이머가 새로 잡힌다, 기록에 표시', () => {
+    const match = createMatch(data, { seed: 1, mode: 'infinite', debug: true });
+    match.stepN(100);
+    expect(match.world.enqueue({ type: 'debugSkipStage' }).ok).toBe(true);
+    match.step(); // 틱 100
+    expect(match.state.stage).toBe(1);
+    expect(match.state.stageStartTick).toBe(100);
+    expect(match.state.nextStageTick).toBe(1300);
+    expect(match.state.debugUsed).toBe(true);
+    expect(match.state.spawned).toBe(1); // 1단계 첫 칸이 바로 나옴
+  });
+
+  it('여러 번 건너뛰면 남은 대기열은 새 단계 것으로 바뀐다 (6단계부터 박쥐)', () => {
+    const match = createMatch(data, { seed: 2, mode: 'infinite', debug: true });
+    for (let i = 0; i < 6; i++) {
+      match.world.enqueue({ type: 'debugSkipStage' });
+      match.step();
+    }
+    expect(match.state.stage).toBe(6);
+    expect(match.state.spawned).toBe(6); // 단계마다 첫 칸 하나씩
+    expect(match.state.spawnQueue.filter((id) => id === 'bat')).toHaveLength(4);
+  });
+
+  it('debug가 아닌 판은 명령을 무시한다 (멀티·일반 판에서 치트 불가)', () => {
+    const match = infinite(3);
+    match.world.enqueue({ type: 'debugSkipStage' });
+    match.step();
+    expect(match.state.stage).toBe(0);
+    expect(match.state.debugUsed).toBe(false);
+    expect(match.world.executed.map((c) => c.type)).toEqual(['debugSkipStage']); // 기록은 남는다
+  });
+
+  it('캠페인 마지막 단계에서는 더 넘어가지 않는다', () => {
+    const match = createMatch(data, { seed: 4, mode: 'campaign', theme: 1, debug: true });
+    jumpToStage(match, 50);
+    match.world.enqueue({ type: 'debugSkipStage' });
+    match.step();
+    expect(match.state.stage).toBe(50);
   });
 });
