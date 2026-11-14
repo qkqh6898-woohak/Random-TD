@@ -21,7 +21,8 @@
    "lifeDamage": 1,
    "rewardMul": 1.0,
    "size": "소형",
-   "special": false
+   "special": false,
+   "legion": "plague"
   },
   {
    "id": "bat",
@@ -39,12 +40,13 @@
    "lifeDamage": 1,
    "rewardMul": 1.0,
    "size": "소형",
-   "special": false
+   "special": false,
+   "legion": "gale"
   },
   {
    "id": "golem",
-   "name": "골렘",
-   "look": "이끼 낀 돌덩이",
+   "name": "암흑 골렘",
+   "look": "보라 룬이 새겨진 돌덩이 (연합의 돌 골렘과 다름)",
    "fromStage": 15,
    "hpMul": 2.0,
    "armor": 60,
@@ -57,7 +59,8 @@
    "lifeDamage": 2,
    "rewardMul": 1.0,
    "size": "대형",
-   "special": false
+   "special": false,
+   "legion": "earth"
   },
   {
    "id": "turtle",
@@ -75,7 +78,8 @@
    "lifeDamage": 2,
    "rewardMul": 1.0,
    "size": "대형",
-   "special": false
+   "special": false,
+   "legion": "earth"
   },
   {
    "id": "ghost",
@@ -93,7 +97,8 @@
    "lifeDamage": 1,
    "rewardMul": 1.0,
    "size": "중형",
-   "special": false
+   "special": false,
+   "legion": "shadow"
   },
   {
    "id": "splitter",
@@ -111,7 +116,8 @@
    "lifeDamage": 1,
    "rewardMul": 1.0,
    "size": "중형",
-   "special": false
+   "special": false,
+   "legion": "plague"
   },
   {
    "id": "thief",
@@ -130,7 +136,8 @@
    "lifeDamage": 2,
    "rewardMul": 2.0,
    "size": "소형",
-   "special": false
+   "special": false,
+   "legion": "shadow"
   },
   {
    "id": "healer",
@@ -148,7 +155,8 @@
    "lifeDamage": 1,
    "rewardMul": 1.0,
    "size": "중형",
-   "special": false
+   "special": false,
+   "legion": "plague"
   },
   {
    "id": "shield",
@@ -166,7 +174,8 @@
    "lifeDamage": 2,
    "rewardMul": 1.0,
    "size": "중형",
-   "special": false
+   "special": false,
+   "legion": "earth"
   },
   {
    "id": "shadowwolf",
@@ -185,12 +194,13 @@
    "lifeDamage": 2,
    "rewardMul": 2.0,
    "size": "중형",
-   "special": false
+   "special": false,
+   "legion": "shadow"
   },
   {
    "id": "goblin",
-   "name": "고블린 떼",
-   "look": "작고 날랜 녹색 외계 고블린 (3마리씩 무리)",
+   "name": "암흑 고블린 떼",
+   "look": "보라 눈의 작고 날랜 고블린 (3마리씩 무리)",
    "fromStage": 40,
    "hpMul": 0.35,
    "armor": 5,
@@ -205,7 +215,8 @@
    "rewardMul": 0.4,
    "size": "소형",
    "swarm": 3,
-   "special": true
+   "special": true,
+   "legion": "gale"
   },
   {
    "id": "gemgolem",
@@ -228,7 +239,8 @@
     "id": "minigolem",
     "count": 2
    },
-   "special": true
+   "special": true,
+   "legion": "earth"
   },
   {
    "id": "minigolem",
@@ -247,7 +259,8 @@
    "rewardMul": 0.5,
    "size": "소형",
    "spawnOnly": true,
-   "special": true
+   "special": true,
+   "legion": "earth"
   }
  ],
  "composition": [
@@ -423,7 +436,9 @@
    "speed": 0.9,
    "ccResist": 0.7,
    "invisible": false,
-   "pattern": "체력 50%에서 둘로 분열 (각각 남은 체력의 50%). 둘 다 잡아야 처치"
+   "pattern": "체력 50%에서 둘로 분열 (각각 남은 체력의 50%). 둘 다 잡아야 처치",
+   "legion": "plague",
+   "rank": "대장"
   },
   {
    "stage": 20,
@@ -436,7 +451,9 @@
    "speed": 1.0,
    "ccResist": 0.7,
    "invisible": false,
-   "pattern": "10초마다 박쥐 5마리 소환. 15초마다 3초간 날아올라 사거리 2 이하 타워의 공격을 받지 않음"
+   "pattern": "10초마다 박쥐 5마리 소환. 15초마다 3초간 날아올라 사거리 2 이하 타워의 공격을 받지 않음",
+   "legion": "gale",
+   "rank": "대장"
   },
   {
    "stage": 30,
@@ -449,7 +466,9 @@
    "speed": 0.7,
    "ccResist": 0.7,
    "invisible": false,
-   "pattern": "체력 30% 이하에서 이동속도 2배, 방어력 0"
+   "pattern": "체력 30% 이하에서 이동속도 2배, 방어력 0",
+   "legion": "earth",
+   "rank": "대장"
   },
   {
    "stage": 40,
@@ -462,7 +481,9 @@
    "speed": 0.9,
    "ccResist": 0.7,
    "invisible": true,
-   "pattern": "**항상 투명** — 감지 범위 안에서만 피해를 받음. 12초마다 주변 몹 체력 10% 회복 + 투명 유령 3마리 소환"
+   "pattern": "**항상 투명** — 감지 범위 안에서만 피해를 받음. 12초마다 주변 몹 체력 10% 회복 + 투명 유령 3마리 소환",
+   "legion": "shadow",
+   "rank": "대장"
   },
   {
    "stage": 50,
@@ -475,7 +496,9 @@
    "speed": 0.8,
    "ccResist": 0.7,
    "invisible": false,
-   "pattern": "15초마다 무작위 타워 3개 5초 기절. 체력 66%·33%에서 5초간 받는 피해 -50%"
+   "pattern": "15초마다 무작위 타워 3개 5초 기절. 체력 66%·33%에서 5초간 받는 피해 -50%",
+   "legion": "lord",
+   "rank": "군주 직속 대장"
   }
  ],
  "challenges": [
@@ -490,7 +513,8 @@
    "magicRes": 0,
    "speed": 1.2,
    "invisible": false,
-   "ability": "— (입문용)"
+   "ability": "— (입문용)",
+   "legion": "plague"
   },
   {
    "level": 2,
@@ -503,7 +527,8 @@
    "magicRes": 10,
    "speed": 1.2,
    "invisible": false,
-   "ability": "이동속도 1.8"
+   "ability": "이동속도 1.8",
+   "legion": "gale"
   },
   {
    "level": 3,
@@ -516,7 +541,8 @@
    "magicRes": 10,
    "speed": 1.2,
    "invisible": false,
-   "ability": "물리 저항"
+   "ability": "물리 저항",
+   "legion": "earth"
   },
   {
    "level": 4,
@@ -529,7 +555,8 @@
    "magicRes": 40,
    "speed": 1.2,
    "invisible": false,
-   "ability": "두 마리가 체력 공유"
+   "ability": "두 마리가 체력 공유",
+   "legion": "gale"
   },
   {
    "level": 5,
@@ -542,7 +569,8 @@
    "magicRes": 20,
    "speed": 1.2,
    "invisible": false,
-   "ability": "둔화 면역"
+   "ability": "둔화 면역",
+   "legion": "earth"
   },
   {
    "level": 6,
@@ -555,7 +583,8 @@
    "magicRes": 40,
    "speed": 1.2,
    "invisible": false,
-   "ability": "5초마다 2칸 앞으로 순간이동"
+   "ability": "5초마다 2칸 앞으로 순간이동",
+   "legion": "shadow"
   },
   {
    "level": 7,
@@ -568,7 +597,8 @@
    "magicRes": 100,
    "speed": 1.2,
    "invisible": false,
-   "ability": "8초마다 주변 타워 2초 동결(공격 불가)"
+   "ability": "8초마다 주변 타워 2초 동결(공격 불가)",
+   "legion": "earth"
   },
   {
    "level": 8,
@@ -581,7 +611,8 @@
    "magicRes": 150,
    "speed": 1.2,
    "invisible": false,
-   "ability": "화상 면역, 초당 체력 1% 회복"
+   "ability": "화상 면역, 초당 체력 1% 회복",
+   "legion": "earth"
   },
   {
    "level": 9,
@@ -594,7 +625,8 @@
    "magicRes": 80,
    "speed": 1.2,
    "invisible": true,
-   "ability": "**투명** (감지 필요)"
+   "ability": "**투명** (감지 필요)",
+   "legion": "shadow"
   },
   {
    "level": 10,
@@ -607,7 +639,8 @@
    "magicRes": 150,
    "speed": 1.2,
    "invisible": false,
-   "ability": "체력 50%에서 5초 무적 + 이동속도 2배"
+   "ability": "체력 50%에서 5초 무적 + 이동속도 2배",
+   "legion": "lord"
   }
  ],
  "eliteChance": {
@@ -626,8 +659,8 @@
     "bat": 3
    },
    "from": 45,
-   "why": "느리고 단단한 보석 골렘이 광역·단일 화력을 붙잡는 사이 고블린 떼(36마리)가 빠르게 빠져나감. 골렘이 깨지면 작은 골렘 10마리가 더 생김",
-   "counter": "진흙 둔화 + 광역(화염·번개)으로 고블린 처리, 관통·마법으로 골렘 처리"
+   "why": "느리고 단단한 보석 골렘이 광역·단일 화력을 붙잡는 사이 암흑 고블린 떼(36마리)가 빠르게 빠져나감. 암흑 골렘이 깨지면 작은 골렘 10마리가 더 생김",
+   "counter": "진흙 둔화 + 광역(화염·번개)으로 고블린 처리, 관통·마법으로 암흑 골렘 처리"
   },
   {
    "id": "fortress",
@@ -695,5 +728,269 @@
   "stageMode": "테마 t에서 편대 등장 가능 단계 = 편대 from − 5×(t−1) (최소 25). 등장 가능한 편대 중 하나가 5의 배수 단계(보스 단계 제외)에 무작위로",
   "infinite": "45단계부터 5의 배수 단계(보스 단계 제외)마다 등장 가능한 편대 중 하나",
   "preview": "편대 단계 10초 전 배너로 예고 + 대응 힌트"
+ },
+ "hierarchy": {
+  "lord": {
+   "id": "nox",
+   "name": "암흑의 군주 녹스",
+   "look": "별빛을 삼키는 검은 갑주와 보라 왕관",
+   "hpMul": 150,
+   "armor": 150,
+   "magicRes": 150,
+   "speed": 0.7,
+   "phases": [
+    "① 그림자 장막: 항상 투명 + 4천왕의 그림자 1명씩 소환 (체력 10%)",
+    "② 원소 역전: 10초마다 물리 저항·마법 저항이 번갈아 90%",
+    "③ 최후의 어둠 (체력 20%~): 모든 타워 공격속도 -30% 오라 + 혼돈의 용 소환"
+   ],
+   "line": "수천 개의 행성이 내 앞에 무릎 꿇었다. 하나로 뭉친다고 달라질 것 같으냐?",
+   "guard": [
+    "chaosdragon"
+   ]
+  },
+  "legions": {
+   "gale": {
+    "name": "질풍 군단",
+    "commander": {
+     "id": "zephira",
+     "name": "질풍의 군단장 제피라",
+     "look": "칼날 날개를 펼친 외계 여기사",
+     "hpMul": 100,
+     "armor": 60,
+     "magicRes": 60,
+     "speed": 1.4,
+     "pattern": "10초마다 암흑 고블린 떼 4무리 소환. 15초마다 3초간 질풍 (맵 위 모든 몹 이동속도 +50%). 체력 50%에서 분신 2 (분신 체력 15%, 속도 2.0)",
+     "line": "느려 터진 행성이군. 바람보다 빠른 자가 있나?"
+    },
+    "minions": [
+     "bat",
+     "goblin"
+    ],
+    "captains": [
+     "grax",
+     "batqueen",
+     "sandqueen",
+     "frostwyrm"
+    ],
+    "color": "#7FD3E8",
+    "theme": "속도·물량"
+   },
+   "earth": {
+    "name": "대지 군단",
+    "commander": {
+     "id": "gordam",
+     "name": "대지의 군단장 고르담",
+     "look": "바위 심장이 빛나는 강철 거신",
+     "hpMul": 100,
+     "armor": 300,
+     "magicRes": 100,
+     "speed": 0.6,
+     "pattern": "12초마다 바위 투척 (타워 3개 4초 기절). 체력 50%에서 보석 골렘 4마리 소환. 체력 30%에서 갑옷 파괴: 방어력 0, 이동속도 2배",
+     "line": "이 행성의 광석은 맛있구나. 너희 성벽까지 삼켜 주마."
+    },
+    "minions": [
+     "golem",
+     "gemgolem",
+     "minigolem",
+     "turtle",
+     "shield"
+    ],
+    "captains": [
+     "ancientgolem",
+     "crystaleater",
+     "steelcolossus",
+     "lavagiant"
+    ],
+    "color": "#B8860B",
+    "theme": "방어·탱커"
+   },
+   "plague": {
+    "name": "역병 군단",
+    "commander": {
+     "id": "morgath",
+     "name": "역병의 군단장 모르가스",
+     "look": "썩은 점액으로 된 거대한 왕",
+     "hpMul": 100,
+     "armor": 40,
+     "magicRes": 120,
+     "speed": 0.8,
+     "pattern": "초당 체력 1% 회복, 8초마다 주변 몹 체력 15% 회복. 독·화상 피해 -50%. 체력 30%에서 분열 슬라임 10마리 소환",
+     "line": "죽음은 끝이 아니다… 나뉠 뿐이지."
+    },
+    "minions": [
+     "slime",
+     "splitter",
+     "healer"
+    ],
+    "captains": [
+     "kingslime",
+     "rotent",
+     "abyssjelly"
+    ],
+    "color": "#7CB342",
+    "theme": "증식·회복"
+   },
+   "shadow": {
+    "name": "그림자 군단",
+    "commander": {
+     "id": "nocturne",
+     "name": "그림자의 군단장 녹투르",
+     "look": "그림자 망토 속 붉은 눈만 보이는 암살자",
+     "hpMul": 100,
+     "armor": 80,
+     "magicRes": 80,
+     "speed": 1.0,
+     "pattern": "항상 투명 (감지 범위 안에서만 피해). 15초마다 투명 분신 2 (체력 20%). 체력 50%에서 감지 타워 1개를 5초간 어둠으로 무력화",
+     "line": "보이지 않는 칼날이 가장 깊이 박히는 법."
+    },
+    "minions": [
+     "ghost",
+     "thief",
+     "shadowwolf"
+    ],
+    "captains": [
+     "wraithlord",
+     "wraithknight"
+    ],
+    "color": "#6A1B9A",
+    "theme": "은신"
+   }
+  },
+  "captains": [
+   {
+    "id": "grax",
+    "name": "선봉장 그락스",
+    "legion": "gale",
+    "look": "가시 갑옷을 입은 외계 기사",
+    "pattern": "20초마다 3초간 이동속도 3배 돌격, 체력 50%에서 암흑 고블린 떼 6무리 호출",
+    "appears": "테마 1 최종 보스, 테마 10 20단계 (강화)"
+   },
+   {
+    "id": "batqueen",
+    "name": "박쥐 여왕",
+    "legion": "gale",
+    "look": "망토 두른 거대 박쥐",
+    "pattern": "10초마다 박쥐 5마리 소환, 15초마다 3초간 날아올라 사거리 2 이하 타워의 공격을 받지 않음",
+    "appears": "기본 보스 (10~30단계)"
+   },
+   {
+    "id": "sandqueen",
+    "name": "모래 벌레 여왕",
+    "legion": "gale",
+    "look": "모래 속을 헤엄치는 거대 벌레",
+    "pattern": "10초마다 3초간 땅속 잠수 (피해 무효), 잠수할 때마다 암흑 고블린 떼 3무리",
+    "appears": "테마 4 30단계"
+   },
+   {
+    "id": "frostwyrm",
+    "name": "서리 용",
+    "legion": "gale",
+    "look": "얼음 날개의 외계 용",
+    "pattern": "빙결 면역, 주변 3칸 타워 공격속도 -30% 오라, 20초마다 얼음 숨결 (타워 5개 3초 빙결)",
+    "appears": "테마 8 30단계"
+   },
+   {
+    "id": "ancientgolem",
+    "name": "고대 골렘",
+    "legion": "earth",
+    "look": "룬이 빛나는 바위 거인",
+    "pattern": "체력 30% 이하에서 이동속도 2배, 방어력 0",
+    "appears": "기본 보스 (10~30단계)"
+   },
+   {
+    "id": "crystaleater",
+    "name": "수정 포식자",
+    "legion": "earth",
+    "look": "수정을 갉아먹는 거대 외계 벌레",
+    "pattern": "15초마다 배치 칸 1곳을 수정으로 봉쇄 (그 칸 타워 10초 공격 불가)",
+    "appears": "테마 2 최종 보스"
+   },
+   {
+    "id": "steelcolossus",
+    "name": "강철 거신",
+    "legion": "earth",
+    "look": "도시를 짓밟는 강철 거인",
+    "pattern": "방어력 300, 12초마다 미사일로 타워 3개 4초 기절",
+    "appears": "테마 7 30단계"
+   },
+   {
+    "id": "lavagiant",
+    "name": "용암 거인",
+    "legion": "earth",
+    "look": "흘러내리는 용암 몸의 거인",
+    "pattern": "화염 면역, 죽으면 용암 정령 3마리로 분열 (각 체력 25%)",
+    "appears": "테마 9 30단계"
+   },
+   {
+    "id": "kingslime",
+    "name": "킹 슬라임",
+    "legion": "plague",
+    "look": "왕관 쓴 거대 슬라임",
+    "pattern": "체력 50%에서 둘로 분열 (각각 남은 체력의 50%)",
+    "appears": "기본 보스 (10~30단계)"
+   },
+   {
+    "id": "rotent",
+    "name": "부패의 나무정령",
+    "legion": "plague",
+    "look": "보라 덩굴로 뒤덮인 나무 괴물",
+    "pattern": "주변 몹 독 면역 + 초당 1% 회복, 12초마다 덩굴로 타워 2개 5초 묶음",
+    "appears": "테마 3 최종 보스"
+   },
+   {
+    "id": "abyssjelly",
+    "name": "심연의 해파리",
+    "legion": "plague",
+    "look": "빛나는 거대 외계 해파리",
+    "pattern": "5초마다 2초간 물 장막 (마법 피해 -50%), 체력 30%에서 작은 해파리 8마리로 분열",
+    "appears": "테마 5 최종 보스"
+   },
+   {
+    "id": "wraithlord",
+    "name": "망령 군주",
+    "legion": "shadow",
+    "look": "낫을 든 유령 왕",
+    "pattern": "항상 투명, 12초마다 주변 몹 체력 10% 회복 + 투명 유령 3마리 소환",
+    "appears": "모든 테마 40단계 (투명 보스)"
+   },
+   {
+    "id": "wraithknight",
+    "name": "망령 기사",
+    "legion": "shadow",
+    "look": "유령 말 탄 기사",
+    "pattern": "항상 투명, 8초마다 앞으로 3칸 돌진",
+    "appears": "테마 6 30단계, 도전 9단계"
+   },
+   {
+    "id": "chaosdragon",
+    "name": "혼돈의 용",
+    "legion": "lord",
+    "look": "머리 둘 달린 검붉은 용 (군주의 탈것)",
+    "pattern": "15초마다 무작위 타워 3개 5초 기절, 체력 66%·33%에서 5초간 받는 피해 -50%",
+    "appears": "군주 직속. 테마 10 10단계, 무한 모드"
+   }
+  ],
+  "ranks": [
+   {
+    "rank": "군주",
+    "desc": "녹스 군단의 주인. 캠페인 최종 보스 (테마 10)"
+   },
+   {
+    "rank": "4천왕 (군단장)",
+    "desc": "군단 하나씩을 이끄는 네 명의 군단장. 테마 4·6·7·8 최종 보스, 테마 9에서 4명 재집결"
+   },
+   {
+    "rank": "대장",
+    "desc": "군단장 아래의 지휘관. 10~40단계 보스와 테마 1·2·3·5 최종 보스, 도전 보스 일부"
+   },
+   {
+    "rank": "하수인",
+    "desc": "일반 몹. 군단마다 종류가 다름"
+   }
+  ]
+ },
+ "infiniteBosses": {
+  "every10": "대장급 순환: 박쥐 여왕 → 킹 슬라임 → 고대 골렘 → 망령 군주(투명) → 혼돈의 용 → 선봉장 그락스 → … (6명)",
+  "every50": "50단계마다 4천왕: 50 제피라 → 100 모르가스 → 150 녹투르 → 200 고르담 → 250 암흑의 군주 녹스, 이후 같은 순서로 반복 (회차마다 패턴 주기 -15%, 소환 수 ×1.3)"
  }
 }

@@ -1,5 +1,5 @@
 {
- "version": 3,
+ "version": 4,
  "baseDps": {
   "normal": 10,
   "rare": 35,
@@ -96,13 +96,13 @@
    "element": null
   },
   {
-   "id": "orcraider",
-   "name": "오크 돌격병",
+   "id": "goblin",
+   "name": "고블린",
    "grade": "normal",
    "special": 0,
    "unlock": "base",
    "tags": [
-    "오크"
+    "고블린"
    ],
    "damageType": "physical",
    "shape": "melee",
@@ -276,12 +276,14 @@
    "element": null
   },
   {
-   "id": "slinger",
-   "name": "투석병",
+   "id": "stonegolem",
+   "name": "돌 골렘",
    "grade": "normal",
    "special": 0,
    "unlock": "unlock",
-   "tags": [],
+   "tags": [
+    "골렘"
+   ],
    "damageType": "physical",
    "shape": "aoe",
    "shapeValue": 1.2,
@@ -296,7 +298,7 @@
    "target": "first",
    "dot": null,
    "ability": "—",
-   "awaken": "맞은 몹 기절 0.3초",
+   "awaken": "던진 바위에 맞은 몹 기절 0.3초",
    "params": {},
    "recipe": null,
    "design": {
@@ -908,13 +910,13 @@
    "element": null
   },
   {
-   "id": "orcchief",
-   "name": "오크 족장",
+   "id": "goblinchief",
+   "name": "고블린 족장",
    "grade": "unique",
    "special": 1,
    "unlock": "unlock",
    "tags": [
-    "오크",
+    "고블린",
     "지원"
    ],
    "damageType": "physical",
@@ -930,8 +932,8 @@
    "detectRange": 0,
    "target": "first",
    "dot": null,
-   "ability": "판 위 오크 계열 1개당 오크 계열 공격력 +3% → +6% (최대 20개)",
-   "awaken": "10초마다 오크 병사 소환",
+   "ability": "판 위 고블린 계열 1개당 고블린 계열 공격력 +3% → +6% (최대 20개)",
+   "awaken": "10초마다 고블린 병사 소환",
    "params": {
     "perGoblin": [
      0.03,
@@ -2387,13 +2389,13 @@
    "element": null
   },
   {
-   "id": "orcwarchief",
-   "name": "오크 대족장",
+   "id": "goblinking",
+   "name": "고블린 대왕",
    "grade": "hidden",
    "special": 1,
    "unlock": "recipe",
    "tags": [
-    "오크"
+    "고블린"
    ],
    "damageType": "physical",
    "shape": "single",
@@ -2408,15 +2410,15 @@
    "detectRange": 0,
    "target": "first",
    "dot": null,
-   "ability": "5초마다 오크 병사 3마리, 오크 계열 공격력 +50%",
+   "ability": "5초마다 고블린 병사 3마리, 고블린 계열 공격력 +50%",
    "awaken": "—",
    "params": {},
    "recipe": [
-    "orcraider",
-    "orcraider",
-    "orcraider",
+    "goblin",
+    "goblin",
+    "goblin",
     "cleaver",
-    "orcchief"
+    "goblinchief"
    ],
    "design": {
     "ratio": 0.7,
@@ -2499,7 +2501,7 @@
    "awaken": "—",
    "params": {},
    "recipe": [
-    "slinger",
+    "stonegolem",
     "artillery",
     "tycoon"
    ],
@@ -2707,7 +2709,7 @@
    ]
   },
   "orc": {
-   "name": "카라쉬 오크 부족",
+   "name": "카라쉬 부족 (오크·고블린)",
    "color": "#B23A2E",
    "thresholds": [
     3,
