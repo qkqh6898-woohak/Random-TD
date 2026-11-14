@@ -3,13 +3,18 @@
  *
  * 프레임마다: 흐른 시간 → TickClock이 돌릴 틱 수 → match.step() n번 (마지막 틱 직전 진행도·투사체 위치를 기억)
  *           → 사건 처리(단계 알림·패배·소환·공격·피해·처치) → 몹·타워·투사체를 보간(alpha)으로 그림 → 숫자·동전 → HUD 갱신.
- * 화면은 sim 상태를 읽기만 한다. 바꾸는 것은 명령(world.enqueue)으로만: 소환(맵 탭), debug 단계 건너뛰기.
+ * 화면은 sim 상태를 읽기만 한다. 바꾸는 것은 명령(world.enqueue)으로만: 소환(맵 탭), 승급·모두 승급(패널), 이동·교환(끌기), debug 치트.
  *
  * - 맵 탭 (M2-7): 빈 배치 칸 → 소환 명령, 돈 부족 → "100원이 필요해요" + 칸 흔들림, 칸이 가득 참 → "빈 칸이 없어요 …".
  *   화면이 sim 상태로 미리 검사하고(summonCheck), sim은 실행 틱에 다시 검사한다 (거절되면 summonFail 사건 → 같은 알림).
  * - 공격·피해·처치 연출은 최근 몇 틱의 사건에만 만든다 → 빨리 감기·높은 배속으로 사건이 한꺼번에 쌓여도 화면이 멈추지 않는다.
  *   소환·소환 실패(사람이 한 행동의 응답)는 이번 프레임에 돈 틱이면 모두, 신 강림 알림은 언제나 (fxModel.eventFxVisible).
  *
+ * - 타워 탭 (M3-11): 정보 패널(DOM) + 사거리 원·같은 종류 강조. 패널의 [승급]·[모두 승급] → merge·mergeAll 명령,
+ *   승급 직후 0.3초는 입력을 받지 않는다 (UI.md 9장). 아래 띠 '⬆ 승급 가능 n'을 누르면 승급할 수 있는 타워를 고른다.
+ * - 타워 길게 눌러 끌기 (M3-10): 0.3초 누르면 타워가 손가락 위로 들리고, 놓을 칸을 초록(이동)·파랑(교환)·빨강(불가)으로 보여준다.
+ *   손을 떼면 move 명령. 명령이 실행될 때까지 놓은 자리에 붙잡아 둔다.
+ * - 승급 연출: 사라진 2칸에서 빛 구슬이 결과 칸으로 빨려 들어간 뒤 빛 기둥 (레전드·신은 화면 흔들림). 치명타 숫자는 크게 + '!'.
  * - 무한 모드: 순환의 정원 / 캠페인(debug): 테마 1 사거리 미로.
  * - ⏸ 또는 앱이 백그라운드로 가면 일시정지 메뉴(UI.md 4.6). 열려 있는 동안 TickClock 배속 0 = 게임 시간 정지.
  * - 패배하면 시간을 멈추고 패배 화면 ([다시 하기] / [타이틀로]).
@@ -21,33 +26,75 @@ import { GRADE_COLORS, hexToInt } from '../../art/palette';
 import type { Grade } from '../../data/load';
 import { TickClock } from '../../sim/World';
 import type { Projectile } from '../../sim/entities/Projectile';
-import { towerAt } from '../../sim/entities/Tower';
+import { towerAt, type Tower } from '../../sim/entities/Tower';
+import { canMergeGrade, mergeOutcomes } from '../../sim/Deck';
 import { createMatch, type Match } from '../../sim/match';
 import type { MatchMode } from '../../sim/state';
+import { NO_MODS, effectiveStats } from '../../sim/stats';
+import { mergeableGroups, sameKindTowers } from '../../sim/systems/Merge';
+import { isPaused, moveCheck } from '../../sim/systems/Move';
 import { summonCheck, towerCount } from '../../sim/systems/Summon';
-import { godDescends } from '../../ui/messages';
+import { BOARD_FULL, godDescends, mergeFailText, mergeReadyToast } from '../../ui/messages';
+import { createTowerPanel, panelSideFor, type TowerPanelView } from '../../ui/panels/TowerPanel';
+import { buildTowerPanelModel } from '../../ui/panels/towerPanelModel';
 import { createHud, type HudView } from '../../ui/hud/Hud';
 import { buildHudModel, defeatText, stageToastText } from '../../ui/hud/hudModel';
 import { availableSpeeds, nextSpeed } from '../../ui/hud/speed';
 import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
 import { createPauseMenu } from '../../ui/screens/PauseMenu';
-import { SCENE_BOOT, SCENE_GAME } from '../config';
+import { GAME_HEIGHT, SCENE_BOOT, SCENE_GAME } from '../config';
 import type { GameContext } from '../context';
+import { DRAG_LIFT_TILES, MERGE_INPUT_LOCK_MS, dropPreview, inputLocked, isTap, pressPhase, type DropPreview } from '../input/press';
 import { decideTap, summonFailText, tapAllowed, tapTile } from '../input/tap';
-import { computeMapLayout, cssToGamePx, mapAreaBelowHud, unitsToPx, type MapLayout, type Rect } from '../layout';
+import {
+  computeMapLayout,
+  cssToGamePx,
+  mapAreaBelowHud,
+  pxToTile,
+  tileCenterPx,
+  unitsToPx,
+  type MapLayout,
+  type Rect,
+} from '../layout';
 import { FloatingTextLayer } from '../render/DamageText';
 import { FxLayer } from '../render/Fx';
 import { MapRenderer } from '../render/MapRenderer';
 import { MobLayer } from '../render/MobSprite';
 import { ProjectileLayer, type ProjectileLook } from '../render/ProjectileSprite';
+import { SelectionLayer } from '../render/SelectionLayer';
 import { TowerLayer } from '../render/TowerSprite';
 import { DAMAGE_COLORS, damageColor, eventFxVisible } from '../render/fxModel';
+import { FOOT_OFFSET_TILES } from '../render/towerGeom';
 /** HUD 띠 아래 끝과 알림 사이 간격 (무대 너비 비율, 2cqw) */
 const TOAST_GAP_OF_WIDTH = 0.02;
 /** 한 프레임에 띄우는 피해 숫자 최대 수 */
 const MAX_DAMAGE_TEXTS_PER_FRAME = 16;
 /** 한 프레임에 만드는 맞음 불꽃 최대 수 */
 const MAX_SPARKS_PER_FRAME = 12;
+/** 한 프레임에 만드는 광역 폭발·연쇄 번개 최대 수 */
+const MAX_AREA_FX_PER_FRAME = 8;
+/** '{타워} 승급 가능!' 알림은 판당 처음 몇 번만 (UI.md 8장) */
+const MERGE_READY_TOASTS_PER_MATCH = 3;
+/** 끌어 놓은 뒤 이동 명령이 실행될 때까지 그 자리에 붙잡아 두는 최대 시간 (ms) */
+const DROP_HOLD_MS = 400;
+/** 로컬 플레이어 (2인 판은 M13) */
+const LOCAL_PLAYER = 0;
+
+/** 타워를 누르고 있는 중 (탭 또는 길게 눌러 끌기). */
+interface PressState {
+  id: number;
+  tx: number;
+  ty: number;
+  downMs: number;
+  downX: number;
+  downY: number;
+  /** 지금 손가락 위치 (기준 px) */
+  x: number;
+  y: number;
+  dragging: boolean;
+  /** 끄는 중 놓을 칸과 미리 보기 */
+  drop: { tx: number; ty: number; preview: DropPreview } | null;
+}
 
 export interface GameSceneData {
   seed: number;
@@ -92,8 +139,25 @@ export class GameScene extends Phaser.Scene {
   private frameStartTick = 0;
   /** 만든 소환 연출 수 (E2E 확인용) */
   private summonFxCount = 0;
+  /** 만든 승급 연출 수 (E2E 확인용) */
+  private mergeFxCount = 0;
   private sceneData: Required<GameSceneData> = { seed: 0, mode: 'infinite', theme: 1 };
   private bossNames: Readonly<Record<string, string>> | undefined;
+  private selectionLayer!: SelectionLayer;
+  /** 고른 타워 (정보 패널) 엔티티 id */
+  private selectedId: number | null = null;
+  private panel: TowerPanelView | null = null;
+  private press: PressState | null = null;
+  /** 끌어 놓고 이동 명령을 기다리는 타워 (그 자리에 붙잡아 둔다) */
+  private pendingDrop: { id: number; at: { x: number; y: number }; untilMs: number } | null = null;
+  /** 승급 직후 맵 입력 잠금 (UI.md 9장) */
+  private inputLockUntil: number | null = null;
+  /** 승급 가능 알림을 띄운 종류와 횟수 (판당 3번) */
+  private mergeReadyKinds = new Set<string>();
+  private mergeReadyToasts = 0;
+  private mergeReadyCount = 0;
+  /** 타워 종류 → 초상화 이미지 주소 */
+  private portraits = new Map<string, string | null>();
 
   constructor(private readonly ctx: GameContext) {
     super({ key: SCENE_GAME });
@@ -118,6 +182,15 @@ export class GameScene extends Phaser.Scene {
     this.lastTapMs = null;
     this.frameStartTick = 0;
     this.summonFxCount = 0;
+    this.mergeFxCount = 0;
+    this.selectedId = null;
+    this.panel = null;
+    this.press = null;
+    this.pendingDrop = null;
+    this.inputLockUntil = null;
+    this.mergeReadyKinds = new Set();
+    this.mergeReadyToasts = 0;
+    this.mergeReadyCount = 0;
     this.bossNames =
       this.sceneData.mode === 'campaign' ? campaign.themes.find((t) => t.theme === this.sceneData.theme)?.bossSchedule : undefined;
 
@@ -131,6 +204,7 @@ export class GameScene extends Phaser.Scene {
       onPause: () => this.pause(),
       onSkipStage: this.ctx.debug ? () => this.match.world.enqueue({ type: 'debugSkipStage' }) : undefined,
       onAddGold: this.ctx.debug ? () => this.match.world.enqueue({ type: 'debugAddGold', amount: config.debug.addGold }) : undefined,
+      onMergeReady: () => this.selectFirstMergeable(),
     });
     this.ctx.ui.clear('screen');
     this.ctx.ui.show('hud', this.hud);
@@ -148,8 +222,10 @@ export class GameScene extends Phaser.Scene {
       this.resizeObserver.observe(this.ctx.ui.el);
     }
 
-    // 맵 탭 → 소환 (M2-7)
+    // 맵 탭 → 소환 (M2-7), 타워 탭 → 정보 패널 (M3-11), 타워 길게 눌러 끌기 → 이동·교환 (M3-10)
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
+    this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
+    this.input.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
 
     // 앱이 백그라운드로 가면 자동 일시정지 (UI.md 7장: 돌아오면 일시정지 메뉴)
     this.game.events.on(Phaser.Core.Events.HIDDEN, this.pause, this);
@@ -158,6 +234,11 @@ export class GameScene extends Phaser.Scene {
       this.resizeObserver?.disconnect();
       this.resizeObserver = null;
       this.input.off(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
+      this.input.off(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
+      this.input.off(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
+      this.closePanel();
+      this.press = null;
+      this.pendingDrop = null;
       this.destroyLayers();
       this.mapRenderer = null;
       this.ctx.ui.clear('hud');
@@ -181,9 +262,11 @@ export class GameScene extends Phaser.Scene {
     this.frameStartTick = this.match.tick;
     if (!this.gameOver) this.runTicks(this.clock.advance(deltaMs));
     this.handleEvents(time);
+    this.updatePress(this.time.now);
     const alpha = this.gameOver ? 1 : this.clock.alpha;
     this.mobLayer.sync(this.match.mobs(), this.prevProgress, alpha, time);
     this.towerLayer.sync(this.match.towers(), time);
+    this.updateSelection(time);
     this.projectileLayer.sync(this.match.projectiles(), this.prevProjectiles, (p) => this.projectileOrigin(p), alpha);
     this.floatingText.update(time);
     this.fx.update(time, () => this.goldAnchorPx());
@@ -259,6 +342,26 @@ export class GameScene extends Phaser.Scene {
     return this.summonFxCount;
   }
 
+  /** 지금까지 만든 승급 연출 수 (E2E). */
+  get mergeEffects(): number {
+    return this.mergeFxCount;
+  }
+
+  /** 고른 타워 엔티티 id (정보 패널, 없으면 null) — E2E. */
+  get selectedTowerId(): number | null {
+    return this.selectedId;
+  }
+
+  /** 끄는 중인가와 놓을 칸 미리 보기 (E2E). */
+  get dragState(): { id: number; drop: { tx: number; ty: number; preview: DropPreview } | null } | null {
+    return this.press?.dragging ? { id: this.press.id, drop: this.press.drop } : null;
+  }
+
+  /** 타워 그림의 지금 발밑 위치 (기준 px, E2E: 끌기·미끄러짐). */
+  towerFootPx(id: number): { x: number; y: number } | null {
+    return this.towerLayer.footPx(id);
+  }
+
   /** 날아가는 동전 수. */
   get flyingCoins(): number {
     return this.fx.activeCoins;
@@ -300,6 +403,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private destroyLayers(): void {
+    this.selectionLayer?.destroy();
     this.mobLayer?.destroy();
     this.towerLayer?.destroy();
     this.projectileLayer?.destroy();
@@ -307,15 +411,41 @@ export class GameScene extends Phaser.Scene {
     this.fx?.destroy();
   }
 
-  /** 맵 탭: 빈 배치 칸이면 소환 명령, 아니면 알림 (UI.md 4.3·8장). */
+  /**
+   * 맵 누름 (UI.md 4.3):
+   * - 내 타워 칸 → 누르기 시작 (떼면 탭 = 정보 패널, 0.3초 누르고 있으면 끌기 = 이동·교환).
+   * - 패널이 열려 있을 때 타워가 아닌 곳 → 패널만 닫는다 (실수로 소환하지 않게).
+   * - 빈 배치 칸 → 즉시 소환 명령, 돈 부족·칸 없음 → 알림 (M2).
+   */
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
     if (this.paused || this.gameOver) return;
+    const now = this.time.now;
+    if (inputLocked(this.inputLockUntil, now)) return;
     // 아래 칸 타워의 머리(위 칸으로 삐져나온 부분)를 누르면 그 타워 칸 (위 칸 소환 아님)
     const world = this.match.world;
     const { tx, ty } = tapTile(this.layout, pointer.worldX, pointer.worldY, (x, y) => towerAt(world, x, y) !== undefined);
+    const tower = towerAt(world, tx, ty);
+    if (tower && tower.owner === LOCAL_PLAYER) {
+      this.press = {
+        id: tower.id,
+        tx,
+        ty,
+        downMs: now,
+        downX: pointer.worldX,
+        downY: pointer.worldY,
+        x: pointer.worldX,
+        y: pointer.worldY,
+        dragging: false,
+        drop: null,
+      };
+      return;
+    }
+    if (this.panel) {
+      this.closePanel();
+      return;
+    }
     const action = decideTap(summonCheck(this.match.ctx, this.match.world, tx, ty), tx, ty, this.match.rules.summonCost);
     if (action.kind === 'summon') {
-      const now = this.time.now;
       if (!tapAllowed(this.lastTapMs, now)) return;
       this.lastTapMs = now;
       this.match.world.enqueue({ type: 'summon', x: action.x, y: action.y });
@@ -323,6 +453,214 @@ export class GameScene extends Phaser.Scene {
       this.ctx.ui.toast(action.text);
       if (action.shake) this.fx.shakeTile(action.x, action.y);
     }
+  }
+
+  private onPointerMove(pointer: Phaser.Input.Pointer): void {
+    const p = this.press;
+    if (!p) return;
+    p.x = pointer.worldX;
+    p.y = pointer.worldY;
+    this.updatePress(this.time.now);
+  }
+
+  private onPointerUp(pointer: Phaser.Input.Pointer): void {
+    const p = this.press;
+    if (!p) return;
+    this.press = null;
+    const now = this.time.now;
+    p.x = pointer.worldX;
+    p.y = pointer.worldY;
+    if (p.dragging) {
+      this.finishDrag(p, now);
+      return;
+    }
+    if (this.paused || this.gameOver) return;
+    const moved = Math.hypot(p.x - p.downX, p.y - p.downY);
+    if (!isTap(now - p.downMs, moved, this.layout.tile)) return;
+    // 탭: 정보 패널 (같은 타워를 다시 누르면 닫기). 칸이 가득 찼으면 M2 안내도 같이
+    if (this.selectedId === p.id && this.panel) this.closePanel();
+    else this.selectTower(p.id);
+    if (summonCheck(this.match.ctx, this.match.world, p.tx, p.ty) === 'full') this.ctx.ui.toast(BOARD_FULL);
+  }
+
+  /** 누르는 중: 0.3초가 지나면 끌기 시작, 끄는 중이면 놓을 칸 미리 보기와 타워 그림 위치 갱신. */
+  private updatePress(now: number): void {
+    if (this.pendingDrop && now >= this.pendingDrop.untilMs) {
+      this.towerLayer.setDrag(this.pendingDrop.id, null, now);
+      this.pendingDrop = null;
+    }
+    const p = this.press;
+    if (!p) return;
+    if (this.paused || this.gameOver || !this.match.world.entities.has(p.id)) {
+      this.cancelPress(now);
+      return;
+    }
+    const moved = Math.hypot(p.x - p.downX, p.y - p.downY);
+    const phase = pressPhase(now - p.downMs, moved, this.layout.tile, p.dragging);
+    if (phase === 'cancel') {
+      this.press = null;
+      return;
+    }
+    if (phase !== 'drag') return;
+    if (!p.dragging) {
+      p.dragging = true;
+      this.closePanel();
+      this.selectedId = p.id;
+    }
+    const L = this.layout;
+    const aimX = p.x;
+    const aimY = p.y - L.tile * DRAG_LIFT_TILES;
+    const t = pxToTile(L, aimX, aimY);
+    const inMap = t.tx >= 0 && t.ty >= 0 && t.tx < this.match.map.width && t.ty < this.match.map.height;
+    const check = inMap ? moveCheck(this.match.ctx, this.match.world, LOCAL_PLAYER, p.tx, p.ty, t.tx, t.ty) : null;
+    p.drop = check ? { tx: t.tx, ty: t.ty, preview: dropPreview(check) } : null;
+    this.towerLayer.setDrag(p.id, { x: aimX, y: aimY + L.tile * FOOT_OFFSET_TILES }, now);
+  }
+
+  /** 끌기 끝: 놓을 수 있는 칸이면 move 명령. 명령이 실행될 때까지 그 자리에 붙잡아 둔다. */
+  private finishDrag(p: PressState, now: number): void {
+    const drop = p.drop;
+    this.selectedId = null;
+    if (drop && (drop.preview === 'move' || drop.preview === 'swap') && !this.paused && !this.gameOver) {
+      const r = this.match.world.enqueue({ type: 'move', fx: p.tx, fy: p.ty, tx: drop.tx, ty: drop.ty });
+      if (r.ok) {
+        const c = tileCenterPx(this.layout, drop.tx, drop.ty);
+        const at = { x: c.x, y: c.y + this.layout.tile * FOOT_OFFSET_TILES };
+        this.towerLayer.setDrag(p.id, at, now);
+        this.pendingDrop = { id: p.id, at, untilMs: now + DROP_HOLD_MS };
+        return;
+      }
+    }
+    this.towerLayer.setDrag(p.id, null, now);
+  }
+
+  /** 누르기·끌기 취소 (일시정지·패배·타워가 사라짐). */
+  private cancelPress(now: number): void {
+    const p = this.press;
+    this.press = null;
+    if (p?.dragging) {
+      this.towerLayer.setDrag(p.id, null, now);
+      this.selectedId = null;
+    }
+  }
+
+  /** 타워 고르기 → 정보 패널 열기 (UI.md 4.4). */
+  private selectTower(id: number): void {
+    const t = this.match.world.entities.get(id);
+    if (!t || t.kind !== 'tower') return;
+    this.selectedId = id;
+    if (!this.panel) {
+      this.panel = createTowerPanel({
+        onMerge: () => this.sendMerge('merge'),
+        onMergeAll: () => this.sendMerge('mergeAll'),
+        onClose: () => this.closePanel(),
+      });
+      this.ctx.ui.show('panel', this.panel);
+    }
+    this.refreshPanel();
+  }
+
+  /** 아래 띠 '⬆ 승급 가능 n': 가장 먼저 소환된 승급 가능 타워를 고른다. */
+  private selectFirstMergeable(): void {
+    if (this.paused || this.gameOver) return;
+    const g = mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER)[0];
+    if (g) this.selectTower(g.first.id);
+  }
+
+  private closePanel(): void {
+    if (this.panel) this.ctx.ui.clear('panel');
+    this.panel = null;
+    if (!this.press?.dragging) this.selectedId = null;
+  }
+
+  /** 정보 패널의 승급 버튼 → 명령. 승급 직후 0.3초는 다시 받지 않는다. */
+  private sendMerge(type: 'merge' | 'mergeAll'): void {
+    if (this.paused || this.gameOver || this.selectedId === null) return;
+    const now = this.time.now;
+    if (inputLocked(this.inputLockUntil, now)) return;
+    const t = this.match.world.entities.get(this.selectedId) as Tower | undefined;
+    if (!t) return;
+    const r = this.match.world.enqueue({ type, x: t.tx, y: t.ty });
+    if (r.ok) this.inputLockUntil = now + MERGE_INPUT_LOCK_MS;
+  }
+
+  /** 지금 고른 타워 (없거나 사라졌으면 null). */
+  private selectedTower(): Tower | null {
+    if (this.selectedId === null) return null;
+    const t = this.match.world.entities.get(this.selectedId);
+    return t && t.kind === 'tower' ? (t as Tower) : null;
+  }
+
+  /** 초상화: 타워 텍스처 → 이미지 주소 (종류마다 한 번). */
+  private portraitOf(towerId: string): string | null {
+    if (!this.portraits.has(towerId)) {
+      let url: string | null = null;
+      try {
+        const key = this.towerLayer.textureKey(towerId);
+        const b64 = this.textures.getBase64(key);
+        url = typeof b64 === 'string' && b64.startsWith('data:') ? b64 : null;
+      } catch {
+        url = null;
+      }
+      this.portraits.set(towerId, url);
+    }
+    return this.portraits.get(towerId) ?? null;
+  }
+
+  /** 정보 패널 글자 갱신 (고른 타워가 사라졌으면 닫는다). */
+  private refreshPanel(): void {
+    if (!this.panel) return;
+    const t = this.selectedTower();
+    if (!t) {
+      this.closePanel();
+      return;
+    }
+    const { rules, decks, state } = this.match.ctx;
+    const data = this.ctx.data.towers.towers.find((x) => x.id === t.tower);
+    const stats = rules.towers.get(t.tower);
+    if (!data || !stats) return;
+    const deck = decks[t.owner] ?? rules.baseDeck;
+    const names = new Map(this.ctx.data.towers.towers.map((x) => [x.id, x.name]));
+    const factions = this.ctx.data.towers.factions;
+    const factionName = factions[data.faction]?.name ?? (data.faction === 'alliance' ? '연합' : data.faction === 'ancient' ? '고대신' : data.faction);
+    const model = buildTowerPanelModel({
+      data,
+      stats,
+      eff: effectiveStats(rules, stats, state.mods[t.owner] ?? NO_MODS),
+      factionName,
+      owned: sameKindTowers(this.match.world, t.tower, t.owner).length,
+      mergeCount: rules.mergeCount,
+      mergeableGrade: canMergeGrade(stats.grade),
+      outcomes: mergeOutcomes(deck, stats.grade).map((id) => names.get(id) ?? id),
+      paused: isPaused(t, this.match.tick),
+      penMaxBp: rules.penMaxBp,
+    });
+    this.panel.update(model, this.portraitOf(t.tower));
+    // 타워가 화면 아래쪽이면 패널을 위에 띄워 가리지 않게
+    const c = tileCenterPx(this.layout, t.tx, t.ty);
+    const w = this.ctx.ui.el.clientWidth;
+    this.panel.setSide(panelSideFor(c.y / GAME_HEIGHT), this.hud.bandBottom() + w * TOAST_GAP_OF_WIDTH);
+  }
+
+  /** 고른 타워의 사거리 원·같은 종류 강조, 끌기 미리 보기 + 패널 갱신. */
+  private updateSelection(timeMs: number): void {
+    const t = this.selectedTower();
+    if (this.selectedId !== null && !t) {
+      this.closePanel();
+      this.selectedId = null;
+    }
+    const rules = this.match.rules;
+    const p = this.press?.dragging ? this.press : null;
+    const stats = t ? rules.towers.get(t.tower) : undefined;
+    this.selectionLayer.draw(
+      {
+        selected: t && stats && !p ? { tx: t.tx, ty: t.ty, range: stats.range, detectRange: stats.detect === 'aura' ? stats.detectRange : 0 } : null,
+        sameKind: t && !p ? sameKindTowers(this.match.world, t.tower, t.owner).map((x) => ({ tx: x.tx, ty: x.ty })) : [],
+        drop: p && p.drop && stats ? { ...p.drop, range: stats.range } : null,
+      },
+      timeMs,
+    );
+    this.refreshPanel();
   }
 
   /** 맵 영역에 맞춰 바닥을 굽고 몹 층을 (다시) 만든다. 몹 그림은 다음 sync에서 새 배치로 다시 생긴다. */
@@ -372,6 +710,7 @@ export class GameScene extends Phaser.Scene {
     });
     this.floatingText = new FloatingTextLayer(this, this.layout.tile);
     this.fx = new FxLayer(this, this.layout);
+    this.selectionLayer = new SelectionLayer(this, this.layout);
     this.updateToastTop();
   }
 
@@ -384,6 +723,7 @@ export class GameScene extends Phaser.Scene {
     const cost = this.match.rules.summonCost;
     let texts = 0;
     let sparks = 0;
+    let areaFx = 0;
     for (const ev of this.match.world.drainEvents()) {
       const recent = eventFxVisible('bulk', ev.tick, now, frameStart);
       switch (ev.type) {
@@ -412,15 +752,61 @@ export class GameScene extends Phaser.Scene {
         case 'attack':
           if (recent) this.towerLayer.attack(Number(ev.tower), Number(ev.x), Number(ev.y), time);
           break;
+        case 'merge': {
+          if (ev.player !== LOCAL_PLAYER) break;
+          // 고른 타워가 승급되면 패널이 결과 타워를 따라간다
+          if (this.selectedId === Number(ev.from)) this.selectedId = Number(ev.id);
+          if (ev.god === true && eventFxVisible('rare', ev.tick, now, frameStart)) {
+            this.ctx.ui.toast(godDescends(this.ctx.data.towers.towers.find((t) => t.id === ev.tower)?.name ?? String(ev.tower)), 2400);
+          }
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
+          this.towerLayer.noteSummoned(Number(ev.id));
+          const from = String(ev.removed)
+            .split(';')
+            .filter((x) => x !== '')
+            .map((xy) => {
+              const [a, b] = xy.split(',');
+              return { tx: Number(a), ty: Number(b) };
+            });
+          this.fx.mergeSuck(from, { tx: Number(ev.x), ty: Number(ev.y) }, hexToInt(GRADE_COLORS[(ev.grade as Grade) || 'normal'] ?? GRADE_COLORS.normal));
+          this.mergeFxCount++;
+          if (ev.grade === 'legend' || ev.grade === 'god') this.cameras.main.shake(260, 0.006);
+          break;
+        }
+        case 'mergeFail': {
+          if (ev.player !== LOCAL_PLAYER || !eventFxVisible('action', ev.tick, now, frameStart)) break;
+          const text = mergeFailText(String(ev.reason), this.match.rules.mergeCount);
+          if (text) this.ctx.ui.toast(text);
+          break;
+        }
+        case 'move':
+        case 'moveFail':
+          if (this.pendingDrop && (Number(ev.id) === this.pendingDrop.id || ev.type === 'moveFail')) {
+            this.towerLayer.setDrag(this.pendingDrop.id, null, this.time.now);
+            this.pendingDrop = null;
+          }
+          break;
+        case 'blast':
+          if (!recent || areaFx >= MAX_AREA_FX_PER_FRAME) break;
+          areaFx++;
+          this.fx.blastRing(Number(ev.x), Number(ev.y), Number(ev.r), this.areaColor(Number(ev.tower)));
+          break;
+        case 'chain':
+          if (!recent || areaFx >= MAX_AREA_FX_PER_FRAME) break;
+          areaFx++;
+          this.fx.chainBolt(Number(ev.x1), Number(ev.y1), Number(ev.x2), Number(ev.y2));
+          break;
         case 'hit': {
           if (!recent) break;
           this.mobLayer.flash(Number(ev.target), time);
           const color = damageColor(Number(ev.p), Number(ev.m), Number(ev.t));
-          if (texts < MAX_DAMAGE_TEXTS_PER_FRAME) {
+          const crit = ev.crit === true;
+          if (texts < MAX_DAMAGE_TEXTS_PER_FRAME || crit) {
             const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
             const jitter = (Math.random() - 0.5) * this.layout.tile * 0.3;
-            // 같은 자리에 몰리면 위로 쌓고, 쌓을 자리가 없으면 띄우지 않는다 (겹쳐서 다른 숫자처럼 읽히지 않게)
-            if (this.floatingText.spawn(px.x + jitter, px.y - this.layout.tile * 0.42, String(ev.damage), color, time)) texts++;
+            // 같은 자리에 몰리면 위로 쌓고, 쌓을 자리가 없으면 띄우지 않는다 (겹쳐서 다른 숫자처럼 읽히지 않게). 치명타는 크게 + '!'
+            const label = crit ? `${ev.damage}!` : String(ev.damage);
+            if (this.floatingText.spawn(px.x + jitter, px.y - this.layout.tile * 0.42, label, color, time, crit)) texts++;
           }
           if (sparks < MAX_SPARKS_PER_FRAME) {
             sparks++;
@@ -446,12 +832,35 @@ export class GameScene extends Phaser.Scene {
       const { mode, theme } = this.match.state;
       this.ctx.ui.toast(stageToastText({ mode, theme, stage: lastStage.stage, bossStage: lastStage.boss }));
     }
+    this.checkMergeReady();
     if (defeated) this.showGameOver();
+  }
+
+  /** 승급 가능한 묶음 수를 세고, 새로 승급할 수 있게 된 종류는 알림 (판당 처음 3번, UI.md 8장). */
+  private checkMergeReady(): void {
+    const groups = mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
+    this.mergeReadyCount = groups.length;
+    const now = new Set(groups.map((g) => g.tower));
+    for (const g of groups) {
+      if (this.mergeReadyKinds.has(g.tower) || this.mergeReadyToasts >= MERGE_READY_TOASTS_PER_MATCH) continue;
+      this.mergeReadyToasts++;
+      this.ctx.ui.toast(mergeReadyToast(this.ctx.data.towers.towers.find((t) => t.id === g.tower)?.name ?? g.tower));
+    }
+    this.mergeReadyKinds = now;
+  }
+
+  /** 광역 폭발 색: 쏜 타워의 피해 종류 (물리 주황 · 마법 하늘 · 고정 노랑). 타워가 없으면 주황. */
+  private areaColor(towerEntityId: number): number {
+    const t = this.match.world.entities.get(towerEntityId);
+    const type = t && t.kind === 'tower' ? this.match.rules.towers.get(String(t.tower))?.damageType : undefined;
+    return type === 'magic' || type === 'hybrid' ? 0x8fd3ff : type === 'true' ? 0xffe066 : 0xffa94d;
   }
 
   private showGameOver(): void {
     if (this.gameOver) return;
     this.gameOver = true;
+    this.cancelPress(this.time.now);
+    this.closePanel();
     if (this.paused) this.paused = false;
     this.clock.speed = 0;
     const text = defeatText(this.match.state);
@@ -470,6 +879,7 @@ export class GameScene extends Phaser.Scene {
   private pause(): void {
     if (this.paused || this.gameOver) return;
     this.paused = true;
+    this.cancelPress(this.time.now);
     this.resumeSpeed = this.clock.speed;
     this.clock.speed = 0;
     this.ctx.ui.show(
@@ -506,6 +916,7 @@ export class GameScene extends Phaser.Scene {
           towerCount: towerCount(this.match.world),
           buildableCount: this.match.map.buildable.length,
           summonCost: this.match.rules.summonCost,
+          mergeReady: this.mergeReadyCount,
         },
         this.ctx.data.game.hud,
       ),

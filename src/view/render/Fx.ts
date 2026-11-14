@@ -5,6 +5,7 @@
  * - 돈 부족: 누른 칸이 빨갛게 깜빡이며 좌우로 흔들림 (UI.md 4.3 '칸이 흔들리고').
  * - 투사체 헛발: 그 자리에서 작은 연기. 맞음: 작은 불꽃.
  * - 동전: 처치 자리에서 살짝 튀어 오른 뒤 HUD 돈 쪽으로 날아간다 (도착하면 콜백 → HUD 돈 반짝 + '+n원').
+ * - M3: 승급(빛 구슬이 빨려 들어간 뒤 빛 기둥), 광역 폭발 고리, 연쇄 번개.
  * 동전은 매 프레임 시각으로 위치를 계산하고(fxModel.coinPath), 나머지는 Phaser 트윈을 쓴다 (화면 전용, sim과 무관).
  */
 import Phaser from 'phaser';
@@ -16,6 +17,8 @@ export const FX_DEPTH = 5500;
 export const COIN_DEPTH = 7000;
 /** 동시에 나는 동전 최대 수 (넘치면 바로 도착 처리) */
 export const MAX_COINS = 24;
+/** 승급 빛 구슬이 결과 칸으로 빨려 드는 시간 (ms) — UI.md 9장 '승급 연출 0.3초' */
+export const MERGE_SUCK_MS = 300;
 
 interface Coin {
   img: Phaser.GameObjects.Image;
@@ -63,6 +66,67 @@ export class FxLayer {
         this.scene.tweens.add({ targets: img, alpha: 0, displayWidth: L.tile * 0.3, duration: 300, onComplete: () => img.destroy() });
       },
     });
+  }
+
+  /**
+   * 승급 (UI.md 10장 '3개가 빨려 들어가 합쳐짐'): 사라진 칸들에서 빛 구슬이 결과 칸으로 0.3초 동안 빨려 들어가고,
+   * 도착하면 결과 등급 색의 빛 기둥.
+   */
+  mergeSuck(from: readonly { tx: number; ty: number }[], to: { tx: number; ty: number }, color: number): void {
+    const L = this.layout;
+    const end = tileCenterPx(L, to.tx, to.ty);
+    for (const f of from) {
+      const start = tileCenterPx(L, f.tx, f.ty);
+      const orb = this.track(this.scene.add.image(start.x, start.y, TEX_ORB))
+        .setTint(0xfff3c4)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDepth(FX_DEPTH)
+        .setDisplaySize(L.tile * 0.55, L.tile * 0.55);
+      this.scene.tweens.add({
+        targets: orb,
+        x: end.x,
+        y: end.y,
+        displayWidth: L.tile * 0.25,
+        displayHeight: L.tile * 0.25,
+        duration: MERGE_SUCK_MS,
+        ease: 'Cubic.easeIn',
+        onComplete: () => orb.destroy(),
+      });
+    }
+    this.scene.time.delayedCall(from.length > 0 ? MERGE_SUCK_MS : 0, () => this.summonPillar(to.tx, to.ty, color));
+  }
+
+  /** 광역 폭발 고리 (반경 = 단위). */
+  blastRing(ux: number, uy: number, radiusUnits: number, color: number): void {
+    const L = this.layout;
+    const p = unitsToPx(L, ux, uy);
+    const r = (radiusUnits / 1000) * L.tile;
+    const ring = this.track(this.scene.add.circle(p.x, p.y, r, color, 0.18))
+      .setStrokeStyle(Math.max(2, L.tile * 0.05), color, 0.85)
+      .setDepth(FX_DEPTH)
+      .setScale(0.4);
+    this.scene.tweens.add({ targets: ring, scale: 1, alpha: 0, duration: 260, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+  }
+
+  /** 연쇄 번개 한 구간 (단위 좌표). */
+  chainBolt(x1: number, y1: number, x2: number, y2: number): void {
+    const L = this.layout;
+    const a = unitsToPx(L, x1, y1);
+    const b = unitsToPx(L, x2, y2);
+    const g = this.track(this.scene.add.graphics()).setDepth(FX_DEPTH);
+    // 지그재그 4마디 (모양은 화면 전용 난수)
+    const pts: { x: number; y: number }[] = [{ x: a.x, y: a.y - L.tile * 0.15 }];
+    for (let i = 1; i < 4; i++) {
+      const k = i / 4;
+      pts.push({
+        x: a.x + (b.x - a.x) * k + (Math.random() - 0.5) * L.tile * 0.3,
+        y: a.y + (b.y - a.y) * k - L.tile * 0.15 + (Math.random() - 0.5) * L.tile * 0.3,
+      });
+    }
+    pts.push({ x: b.x, y: b.y - L.tile * 0.15 });
+    g.lineStyle(Math.max(2, L.tile * 0.05), 0xbfe6ff, 1);
+    g.strokePoints(pts, false);
+    this.scene.tweens.add({ targets: g, alpha: 0, duration: 180, onComplete: () => g.destroy() });
   }
 
   /** 돈 부족: 칸이 빨갛게 깜빡이며 흔들림. */

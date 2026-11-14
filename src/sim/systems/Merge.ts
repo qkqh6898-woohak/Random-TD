@@ -31,6 +31,33 @@ export function sameKindTowers(world: World, towerId: string, owner: number): To
   return out;
 }
 
+/** 승급할 수 있는 묶음 하나: 타워 종류, 판 위 수, 가장 먼저 소환된 타워. */
+export interface MergeGroup {
+  tower: string;
+  count: number;
+  first: Tower;
+}
+
+/**
+ * 그 플레이어가 지금 승급할 수 있는 묶음 (같은 종류 3개 이상 + 승급할 수 있는 등급). 가장 먼저 소환된 타워 순.
+ * 화면의 '⬆ 승급 가능 n' 버튼·알림이 읽는다 (상태를 바꾸지 않음).
+ */
+export function mergeableGroups(ctx: MatchContext, world: World, player: number): MergeGroup[] {
+  const byKind = new Map<string, MergeGroup>();
+  for (const e of world.entities.list()) {
+    if (!isTower(e) || e.owner !== player) continue;
+    const g = byKind.get(e.tower);
+    if (g) g.count += 1;
+    else byKind.set(e.tower, { tower: e.tower, count: 1, first: e });
+  }
+  const out: MergeGroup[] = [];
+  for (const g of byKind.values()) {
+    const grade = ctx.rules.towers.get(g.tower)?.grade;
+    if (grade && canMergeGrade(grade) && g.count >= ctx.rules.mergeCount) out.push(g);
+  }
+  return out.sort((a, b) => a.first.id - b.first.id);
+}
+
 /** 칸의 타워 (없으면 undefined). */
 function towerOn(world: World, x: number, y: number): Tower | undefined {
   for (const e of world.entities.list()) if (isTower(e) && e.tx === x && e.ty === y) return e;

@@ -19,3 +19,20 @@ export const BOARD_FULL = '빈 칸이 없어요 — 승급으로 칸을 비워 �
 export function godDescends(name: string): string {
   return `👑 ${name} 강림!`;
 }
+
+/** 승급 가능 (UI.md 8장, 판당 처음 3번만) */
+export function mergeReadyToast(name: string): string {
+  return `${name} 승급 가능!`;
+}
+
+/** 승급 실패 (sim이 거절한 merge·mergeAll) → 글자. 보여줄 것이 없으면 null. */
+export function mergeFailText(reason: string, count: number): string | null {
+  if (reason === 'count') return `같은 타워가 ${count}개 있어야 승급할 수 있어요`;
+  if (reason === 'maxGrade') return '레전드는 승급할 수 없어요 (히든 재료)';
+  return null;
+}
+
+/** 승급 결과 알림 */
+export function mergedToast(name: string, gradeName: string): string {
+  return `⬆ ${gradeName} ${name}!`;
+}

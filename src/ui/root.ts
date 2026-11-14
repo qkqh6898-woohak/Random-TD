@@ -4,6 +4,7 @@
  * 층(layer):
  *  - screen: 전체 화면 (타이틀, 결과 …) — 한 번에 하나
  *  - hud: 게임 중 상단·하단 HUD
+ *  - panel: 게임 중 타워 정보 패널 (HUD 위, 일시정지·패배 화면 아래)
  *  - toast: 짧은 알림 (단계 시작 등). 화면 읽기 프로그램이 읽어 주는 곳(aria-live)은 이 층뿐이다.
  *    HUD의 틱·시간처럼 초당 수십 번 바뀌는 값을 live 영역에 두면 계속 읽어 대므로 루트에는 aria-live를 달지 않는다.
  * UI는 sim 상태를 읽기만 하고, 바꾸려면 명령을 만들어 world.enqueue() 한다 (CLAUDE.md 2장).
@@ -15,7 +16,7 @@ export interface UiView {
   destroy?(): void;
 }
 
-export type LayerName = 'screen' | 'hud' | 'toast';
+export type LayerName = 'screen' | 'hud' | 'panel' | 'toast';
 
 export class UiRoot {
   private readonly layers: Record<LayerName, HTMLElement>;
@@ -26,9 +27,10 @@ export class UiRoot {
     this.layers = {
       screen: h('div', { class: 'layer layer-screen' }),
       hud: h('div', { class: 'layer layer-hud' }),
+      panel: h('div', { class: 'layer layer-panel' }),
       toast: h('div', { class: 'layer layer-toast', attrs: { role: 'status', 'aria-live': 'polite' } }),
     };
-    el.append(this.layers.hud, this.layers.screen, this.layers.toast);
+    el.append(this.layers.hud, this.layers.panel, this.layers.screen, this.layers.toast);
   }
 
   /** 층에 화면 하나를 띄운다 (그 층의 이전 화면은 닫힘). */

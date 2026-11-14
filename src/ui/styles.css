@@ -739,3 +739,264 @@ body {
   font-size: 3.4cqw;
   color: var(--text-dim);
 }
+
+/* ---------- 타워 정보 패널 (M3-11, UI.md 4.4) ---------- */
+.tower-panel {
+  position: absolute;
+  left: 1.6cqw;
+  right: 1.6cqw;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2cqw;
+  padding: 2.4cqw 3cqw 2.6cqw;
+  background: linear-gradient(180deg, rgba(27, 36, 62, 0.97) 0%, rgba(13, 18, 32, 0.97) 100%);
+  border: 0.4cqw solid rgba(255, 255, 255, 0.18);
+  border-radius: 3.6cqw;
+  box-shadow: 0 2cqw 6cqw rgba(0, 0, 0, 0.55);
+  font-size: 3.4cqw;
+  line-height: 1.35;
+  animation: panel-up 160ms ease-out;
+}
+
+.tower-panel.is-bottom {
+  bottom: calc(1.6cqw + env(safe-area-inset-bottom, 0px));
+}
+
+.tower-panel.is-top {
+  animation-name: panel-down;
+}
+
+@keyframes panel-up {
+  from {
+    transform: translateY(6cqw);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes panel-down {
+  from {
+    transform: translateY(-6cqw);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.tp-head {
+  display: flex;
+  align-items: center;
+  gap: 2.4cqw;
+}
+
+.tp-portrait-wrap {
+  flex: 0 0 auto;
+  width: 14cqw;
+  height: 14cqw;
+  border-radius: 2.6cqw;
+  background: radial-gradient(circle at 50% 70%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 70%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.tp-portrait {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: 50% 100%;
+  animation: tp-breathe 1.5s ease-in-out infinite;
+}
+
+@keyframes tp-breathe {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: translateY(-0.4cqw) scale(1, 1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-portrait,
+  .tower-panel {
+    animation: none;
+  }
+}
+
+.tp-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.tp-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 1.6cqw;
+  white-space: nowrap;
+}
+
+.tp-stars {
+  color: var(--gold);
+  font-size: 3.4cqw;
+  letter-spacing: -0.2cqw;
+}
+
+.tp-name {
+  font-size: 4.8cqw;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tp-level {
+  font-size: 3.2cqw;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+
+.tp-sub {
+  font-size: 3.1cqw;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tp-close {
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+.tp-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6cqw;
+  padding: 1.2cqw 1.8cqw;
+  border-radius: 2cqw;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tp-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4cqw 3cqw;
+}
+
+.tp-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1cqw;
+  white-space: nowrap;
+}
+
+.tp-label {
+  color: var(--text-dim);
+  font-size: 3cqw;
+  margin-right: 1cqw;
+}
+
+.tp-stat .tp-label {
+  margin-right: 0;
+}
+
+.tp-stat.is-buffed .tp-value {
+  color: #6ee08f;
+}
+
+.tp-base {
+  color: var(--text-dim);
+  font-size: 2.8cqw;
+}
+
+.tp-line {
+  display: flex;
+  align-items: baseline;
+  gap: 1cqw;
+}
+
+.tp-ability {
+  align-items: flex-start;
+}
+
+.tp-ability > span:last-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.tp-owned {
+  font-size: 3.8cqw;
+}
+
+.tp-owned.is-ready {
+  color: var(--gold);
+}
+
+.tp-paused {
+  margin-left: 1.6cqw;
+  padding: 0 1.6cqw;
+  border-radius: 1.4cqw;
+  background: rgba(74, 163, 255, 0.25);
+  font-size: 2.8cqw;
+}
+
+.tp-target {
+  font-weight: 700;
+}
+
+.tp-actions {
+  display: flex;
+  gap: 2cqw;
+}
+
+.tp-actions .btn {
+  flex: 1;
+  min-height: max(11cqw, 44px);
+  font-size: 3.8cqw;
+  padding: 1.4cqw 2cqw;
+}
+
+.tp-merge:not(:disabled),
+.tp-merge-all:not(:disabled) {
+  color: #3b2416;
+  background: linear-gradient(180deg, #ffd85a 0%, var(--gold) 55%, var(--gold-deep) 100%);
+  border-color: #fff3c4;
+  box-shadow: 0 0.8cqw 0 #8a5a00;
+}
+
+.tp-actions .btn:disabled {
+  opacity: 0.55;
+}
+
+.tp-note,
+.tp-outcomes {
+  font-size: 2.9cqw;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.tp-outcomes {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 아래 띠의 '⬆ 승급 가능 n' 버튼 (UI.md 4.1) */
+.hud-merge-ready {
+  font-size: 3.4cqw;
+  color: #3b2416;
+  background: linear-gradient(180deg, #ffd85a 0%, var(--gold) 60%, var(--gold-deep) 100%);
+  border-color: #fff3c4;
+  white-space: nowrap;
+}
+
+.hud-merge-ready[hidden] {
+  display: none;
+}

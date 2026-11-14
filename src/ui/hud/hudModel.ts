@@ -1,7 +1,8 @@
 /**
  * HUD 표시값 계산 (순수 함수, DOM 없음 → 단위 테스트로 "값이 sim과 일치"를 확인한다).
  * UI.md 4.1·4.2: 1줄 = 단계·타이머·몹 수(무한)/목숨(캠페인)·⏸, 2줄 = 돈·배속.
- * 아래 띠 (M2): 놓인 타워 수/배치 칸 수 · 소환 안내 (돈이 모자라면 빨간색). 일꾼·승급·하단 메뉴는 M4·M3·M5.
+ * 아래 띠 (M2): 놓인 타워 수/배치 칸 수 · 소환 안내 (돈이 모자라면 빨간색).
+ * M3: 아래 띠에 '⬆ 승급 가능 n' 버튼 (UI.md 4.1, 승급할 수 있는 묶음 수. 0이면 숨김). 일꾼·하단 메뉴는 M4·M5.
  */
 import type { HudConfig } from '../../data/load';
 import type { MatchState } from '../../sim/state';
@@ -22,6 +23,8 @@ export interface HudInput {
   buildableCount?: number;
   /** 소환 비용 (생략하면 0) */
   summonCost?: number;
+  /** 승급할 수 있는 묶음 수 (생략하면 0) */
+  mergeReady?: number;
 }
 
 export interface HudModel {
@@ -50,6 +53,8 @@ export interface HudModel {
   summonHint: string;
   /** 소환할 돈이 있는가 (없으면 안내가 빨간색) */
   summonAffordable: boolean;
+  /** '⬆ 승급 가능 n' 글자 (승급할 묶음이 없으면 빈 글자 → 버튼 숨김) */
+  mergeReady: string;
 }
 
 /** 남은 틱 → m:ss (올림: 0.1초 남아도 0:01). */
@@ -112,7 +117,13 @@ export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
     bossBanner: state.bossStage ? `👑 보스 단계${bossName ? ` · ${bossName}` : ''} — 보스 준비 중` : null,
     tick: input.tick,
     ...summonInfo(state.gold, input.towerCount ?? 0, input.buildableCount ?? 0, input.summonCost ?? 0),
+    mergeReady: mergeReadyText(input.mergeReady ?? 0),
   };
+}
+
+/** 아래 띠 승급 버튼 글자 (UI.md 4.1 '[⬆ 승급 가능 2]'). 0이면 빈 글자. */
+export function mergeReadyText(groups: number): string {
+  return groups > 0 ? `⬆ 승급 가능 ${groups}` : '';
 }
 
 /** 아래 띠: 타워 수와 소환 안내 (UI.md 4.3 '빈 배치 칸 터치 = 즉시 소환'). */

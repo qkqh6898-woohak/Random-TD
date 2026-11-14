@@ -10,7 +10,8 @@
  * 경고 (UI.md 4.2): 남은 10초 이하 노란색 / 몹 120 이상 빨간색 깜빡 + 화면 가장자리 붉은 테두리 /
  *   목숨 5 이하 빨간색(깜빡이지 않음), 목숨이 줄 때마다 하트가 깨지는 연출.
  *
- * 아래 띠 (M2): 🗼 놓인 타워 수/배치 칸 수 · 소환 안내. 맵 아래쪽 끝은 Game 장면이 이 띠의 위쪽 끝을 재서 정한다.
+ * 아래 띠 (M2): 🗼 놓인 타워 수/배치 칸 수 · 소환 안내 · [⬆ 승급 가능 n](M3, 누르면 그 타워의 정보 패널).
+ *   맵 아래쪽 끝은 Game 장면이 이 띠의 위쪽 끝을 재서 정한다.
  * 돈이 들어오면 (동전이 도착하면) 돈 글자가 반짝이고 '+n원'이 떠오른다 (UI.md 4.2).
  *
  * 값 계산은 hudModel.ts(순수 함수, 단위 테스트)에서 하고, 여기서는 바뀐 글자만 DOM에 쓴다.
@@ -34,6 +35,8 @@ export interface HudOptions {
   onSkipStage?: () => void;
   /** ?debug=1 일 때만: 돈 추가 (CLAUDE.md 4장 개발용 치트) */
   onAddGold?: () => void;
+  /** 아래 띠 '⬆ 승급 가능 n': 승급할 수 있는 타워를 골라 정보 패널을 연다 (M3) */
+  onMergeReady?: () => void;
 }
 
 export interface HudView extends UiView {
@@ -124,11 +127,18 @@ export function createHud(opts: HudOptions): HudView {
   // 아래 띠: 타워 수 · 소환 안내
   const towersEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-towers', 'aria-label': '놓인 타워 수', ...off }, text: '0/0' });
   const hintEl = h('span', { class: 'hud-hint', attrs: { 'data-testid': 'hud-hint', ...off }, text: '' });
+  const mergeReadyBtn = h('button', {
+    class: 'btn btn-chip hud-merge-ready',
+    attrs: { type: 'button', 'data-action': 'merge-ready', 'data-testid': 'hud-merge-ready', hidden: '' },
+    text: '',
+    on: { click: () => opts.onMergeReady?.() },
+  });
   const bottomBand = h(
     'div',
     { class: 'hud-bottom' },
     h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl),
     hintEl,
+    mergeReadyBtn,
   );
 
   const band = h(
@@ -233,6 +243,10 @@ export function createHud(opts: HudOptions): HudView {
       setText(towersEl, 'towers', m.towers);
       setText(hintEl, 'summonHint', m.summonHint);
       if (last.summonAffordable !== m.summonAffordable) hintEl.classList.toggle('is-short', !m.summonAffordable);
+      if (last.mergeReady !== m.mergeReady) {
+        mergeReadyBtn.textContent = m.mergeReady;
+        mergeReadyBtn.hidden = m.mergeReady === '';
+      }
       setText(speedBtn, 'speed', m.speed);
       if (last.bossBanner !== m.bossBanner) {
         if (m.bossBanner) {

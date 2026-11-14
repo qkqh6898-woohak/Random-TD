@@ -8,6 +8,7 @@
  * - 공격 사건이 오면 대상 쪽으로 몸을 내밀고(0.25초 또는 공격 간격의 60%) 대상 쪽을 바라본다.
  * - 소환 직후 0.4초 등장 동작.
  * - 깊이 = 발밑 화면 y (몹과 같은 기준) → 아래쪽이 위에 그려진다.
+ * - M3-10: 이동·교환으로 칸이 바뀌면 0.14초 동안 새 칸으로 미끄러진다. 길게 눌러 끄는 동안은 손가락 위로 들려 따라온다.
  */
 import Phaser from 'phaser';
 import {
@@ -27,6 +28,11 @@ import { MOB_DEPTH_BASE } from './MobSprite';
 import { attackAnimMs, towerPose } from './towerPose';
 import { FIGURE_TILES, FOOT_OFFSET_TILES } from './towerGeom';
 
+/** 이동·교환 뒤 새 칸으로 미끄러지는 시간 (ms) */
+const SLIDE_MS = 140;
+/** 끄는 중인 타워는 몹·다른 타워 위에 그린다 */
+const DRAG_DEPTH = 6500;
+
 export interface TowerArt {
   look(towerId: string): TowerLookInput;
   factionColor(faction: string): string | undefined;
@@ -42,8 +48,15 @@ export class TowerSprite {
   private readonly tile: number;
   private readonly seed: number;
   private readonly attackMs: number;
-  private readonly baseX: number;
-  private readonly baseY: number;
+  private readonly layout: MapLayout;
+  private baseX: number;
+  private baseY: number;
+  private tx: number;
+  private ty: number;
+  /** 이동·교환으로 칸이 바뀌면 이전 자리에서 미끄러져 온다 */
+  private slideFrom: { x: number; y: number; at: number } | null = null;
+  /** 끄는 중이면 손가락 위치 (화면 px) */
+  private dragAt: { x: number; y: number } | null = null;
   private facing = 1;
   private attackAtMs: number | null = null;
   private appearAtMs: number | null = null;
@@ -57,7 +70,10 @@ export class TowerSprite {
     const figKey = ensureTowerTexture(scene, look, color);
     const pedKey = ensurePedestalTexture(scene, look.grade);
     this.tile = layout.tile;
+    this.layout = layout;
     this.scale = (layout.tile * FIGURE_TILES) / FIGURE_TEX_H;
+    this.tx = tower.tx;
+    this.ty = tower.ty;
     const c = tileCenterPx(layout, tower.tx, tower.ty);
     this.baseX = c.x;
     this.baseY = c.y + layout.tile * FOOT_OFFSET_TILES;
@@ -89,12 +105,52 @@ export class TowerSprite {
     this.attackAtMs = timeMs;
   }
 
+  /** sim 타워의 칸이 바뀌었으면(이동·교환) 새 자리로 미끄러져 간다. */
+  follow(tower: Tower, timeMs: number): void {
+    if (tower.tx === this.tx && tower.ty === this.ty) return;
+    this.slideFrom = { x: this.root.x, y: this.root.y, at: timeMs };
+    this.tx = tower.tx;
+    this.ty = tower.ty;
+    const c = tileCenterPx(this.layout, tower.tx, tower.ty);
+    this.baseX = c.x;
+    this.baseY = c.y + this.layout.tile * FOOT_OFFSET_TILES;
+  }
+
+  /** 끌기: 손가락 위치(화면 px)로 들어 올림. null이면 지금 자리에서 칸으로 미끄러져 돌아간다. */
+  setDrag(at: { x: number; y: number } | null, timeMs: number): void {
+    if (at === null && this.dragAt !== null) this.slideFrom = { x: this.root.x, y: this.root.y, at: timeMs };
+    this.dragAt = at;
+  }
+
   update(timeMs: number): void {
+    // 위치: 끄는 중 = 손가락 위, 이동 직후 = 미끄러짐(SLIDE_MS), 그 밖 = 칸
+    let rx = this.baseX;
+    let ry = this.baseY;
+    if (this.dragAt) {
+      rx = this.dragAt.x;
+      ry = this.dragAt.y;
+    } else if (this.slideFrom) {
+      const k = (timeMs - this.slideFrom.at) / SLIDE_MS;
+      if (k >= 1) this.slideFrom = null;
+      else {
+        const e = 1 - (1 - k) * (1 - k);
+        rx = this.slideFrom.x + (this.baseX - this.slideFrom.x) * e;
+        ry = this.slideFrom.y + (this.baseY - this.slideFrom.y) * e;
+      }
+    }
+    this.root.setPosition(rx, ry);
+    this.root.setDepth(this.dragAt ? DRAG_DEPTH : MOB_DEPTH_BASE + ry);
+    this.root.setAlpha(this.dragAt ? 0.88 : 1);
     const pose = towerPose({ timeMs, seed: this.seed, attackAtMs: this.attackAtMs, attackMs: this.attackMs, appearAtMs: this.appearAtMs });
     const s = this.scale;
     this.figure.setPosition(this.lungeDx * pose.lunge * this.tile, pose.bob * this.tile + this.lungeDy * pose.lunge * this.tile);
     this.figure.setScale(s * pose.sx * this.facing, s * pose.sy);
     this.figure.setRotation(pose.angle);
+  }
+
+  /** 지금 그려진 발밑 위치 (화면 px) — E2E·끌기 확인용. */
+  get footPx(): { x: number; y: number } {
+    return { x: this.root.x, y: this.root.y };
   }
 
   /** E2E 확인용: 지금 캐릭터 변환 (y, 세로 크기, 기울기). */
@@ -138,7 +194,7 @@ export class TowerLayer {
         sprite = new TowerSprite(this.scene, t, this.layout, this.art);
         this.sprites.set(t.id, sprite);
         if (this.pendingAppear.delete(t.id)) sprite.appear(timeMs);
-      }
+      } else sprite.follow(t, timeMs);
       sprite.update(timeMs);
     }
     for (const [id, s] of this.sprites) {
@@ -152,6 +208,23 @@ export class TowerLayer {
 
   get count(): number {
     return this.sprites.size;
+  }
+
+  /** 끌기: 그 타워를 손가락 위치(화면 px)로 들어 올린다. null이면 내려놓는다 (제자리로 미끄러져 돌아감). */
+  setDrag(id: number, at: { x: number; y: number } | null, timeMs: number): void {
+    this.sprites.get(id)?.setDrag(at, timeMs);
+  }
+
+  /** 그 타워 종류의 캐릭터 텍스처 키 (없으면 굽는다) — 정보 패널 초상화용. */
+  textureKey(towerId: string): string {
+    const look = this.art.look(towerId);
+    const color = this.art.factionColor(look.faction) ?? SPECIAL_FACTION_COLORS[look.faction] ?? '#888888';
+    return ensureTowerTexture(this.scene, look, color);
+  }
+
+  /** 그 타워의 지금 그려진 발밑 위치 (화면 px). */
+  footPx(id: number): { x: number; y: number } | null {
+    return this.sprites.get(id)?.footPx ?? null;
   }
 
   figureTransform(id: number): { y: number; scaleY: number; angle: number } | null {
