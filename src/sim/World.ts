@@ -124,6 +124,7 @@ export class World {
   private events: SimEvent[] = [];
 
   constructor(options: WorldOptions) {
+    if (!Number.isSafeInteger(options.seed)) throw new Error(`시드는 정수여야 한다 (받은 값: ${options.seed})`);
     const players = options.players ?? 1;
     if (!Number.isInteger(players) || players < 1 || players > 2) {
       throw new Error(`플레이어 수는 1~2 (받은 값: ${players})`);

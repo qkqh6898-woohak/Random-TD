@@ -5,7 +5,7 @@
  * 사용법:  node tools/check-determinism.mjs            (src/sim 검사)
  *          node tools/check-determinism.mjs <폴더…>    (지정한 폴더 검사, 테스트용)
  *
- * - 주석과 문자열 안의 글자는 무시한다 (한국어 설명에 'Date'가 들어가도 괜찮음). 템플릿 문자열의 ${…} 안은 코드로 본다.
+ * - 주석·문자열·정규식 리터럴 안의 글자는 무시한다 (한국어 설명에 'Date'가 들어가도 괜찮음). 템플릿 문자열의 ${…} 안은 코드로 본다.
  * - 위반이 있으면 "파일:줄:열  규칙 — 이유"를 출력하고 종료 코드 1.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -73,6 +73,27 @@ export function stripCommentsAndStrings(src) {
       i = stop;
       continue;
     }
+    if (c === '/' && isRegexStart(out, i)) {
+      // 정규식 리터럴: /…/flags — 안의 글자(따옴표·Date 등)는 코드가 아니다
+      let j = i + 1;
+      let inClass = false;
+      while (j < n && src[j] !== '\n') {
+        const ch = src[j];
+        if (ch === '\\') {
+          j += 2;
+          continue;
+        }
+        if (ch === '[') inClass = true;
+        else if (ch === ']') inClass = false;
+        else if (ch === '/' && !inClass) break;
+        j++;
+      }
+      if (j < n && src[j] === '/') {
+        blank(i + 1, j);
+        i = j + 1;
+        continue;
+      }
+    }
     if (c === '"' || c === "'") {
       let j = i + 1;
       while (j < n && src[j] !== c && src[j] !== '\n') j += src[j] === '\\' ? 2 : 1;
@@ -110,6 +131,21 @@ export function stripCommentsAndStrings(src) {
     i++;
   }
   return { code: out.join(''), strings };
+}
+
+const REGEX_PREV_CHARS = new Set(['(', ',', '=', ':', '[', '!', '&', '|', '?', '{', '}', ';', '+', '-', '*', '%', '<', '>', '~', '^']);
+const REGEX_PREV_WORDS = /\b(return|typeof|case|do|else|in|of|new|delete|void|throw|yield|await)\s*$/;
+
+/** i 위치의 '/'가 나눗셈이 아니라 정규식 시작인가 (앞의 코드 글자로 판단). */
+function isRegexStart(out, i) {
+  const next = out[i + 1];
+  if (next === '/' || next === '*') return false;
+  let k = i - 1;
+  while (k >= 0 && /\s/.test(out[k])) k--;
+  if (k < 0) return true;
+  if (REGEX_PREV_CHARS.has(out[k])) return true;
+  const tail = out.slice(Math.max(0, k - 10), k + 1).join('');
+  return REGEX_PREV_WORDS.test(tail);
 }
 
 function lineCol(src, index) {

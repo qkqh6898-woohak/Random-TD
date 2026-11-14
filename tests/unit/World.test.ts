@@ -73,6 +73,12 @@ describe('World 명령', () => {
     expect(w.enqueue({ type: 'noop', player: 1 }).ok).toBe(false);
   });
 
+  it('시드는 정수만 (소수 시드가 조용히 잘리지 않게)', () => {
+    expect(() => new World({ seed: 1.5 })).toThrow();
+    expect(() => new World({ seed: Number.NaN })).toThrow();
+    expect(new World({ seed: -1 }).seed).toBe(0xffffffff);
+  });
+
   it('플레이어 수는 1~2', () => {
     expect(() => new World({ seed: 1, players: 0 })).toThrow();
     expect(() => new World({ seed: 1, players: 3 })).toThrow();

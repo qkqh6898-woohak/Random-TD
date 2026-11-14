@@ -62,6 +62,13 @@ describe('결정성 검사: 금지 API 탐지', () => {
     expect(rules('const s = `a ${ {k: Date.now()}.k } b`;')).toContain('Date');
   });
 
+  it('정규식 리터럴 안의 따옴표·글자는 무시하고, 나눗셈 뒤 코드는 검사한다', () => {
+    expect(rules("const re = /'/; const r = Math.random();")).toEqual(['Math.random']);
+    expect(rules('const re = /Date|[/]window/g;')).toEqual([]);
+    expect(rules('const half = a / 2; const t = Date.now() / 1000;')).toEqual(['Date']);
+    expect(rules("if (x) return /a'b/.test(s); const q = Math.pow(2, 2);")).toEqual(['Math.pow']);
+  });
+
   it('줄·열 위치를 알려준다', () => {
     const v = scanSource('const a = 1;\nconst b = Math.random();', 'src/sim/x.ts');
     expect(v).toEqual([{ file: 'src/sim/x.ts', line: 2, col: 11, rule: 'Math.random', why: expect.any(String) }]);
