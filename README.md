@@ -12,13 +12,15 @@ npm run dev         # 개발 서버 → 브라우저에서 http://localhost:5173
 ```
 
 - 휴대폰으로 보기: 같은 Wi-Fi에서 `npm run dev -- --host` 후 휴대폰 브라우저로 `http://<PC IP>:5173`
-- URL 옵션: `?seed=123` (같은 판 재현), `?debug=1` (개발용: ×3 배속 등)
+- 지금 할 수 있는 것 (M1): 타이틀 [시작] → 무한 모드 '순환의 정원'. 60초 준비 뒤 단계마다 몹 20칸이 2.5초 간격으로 나와 고리를 돌고, 맵 위 몹이 150마리를 넘으면 패배. 소환·공격은 M2부터
+- URL 옵션: `?seed=123` (같은 판 재현), `?debug=1` (개발용: ×3 배속, 타이틀의 [캠페인 1] = 사거리 미로, HUD ⏭ 단계 건너뛰기)
 
 | 명령 | 하는 일 |
 |------|--------|
 | `npm run dev` | 개발 서버 (바로 플레이) |
 | `npm test` | Vitest 단위·통합 테스트 |
-| `npm run check` | 타입 검사 + 결정성 검사(`tools/check-determinism.mjs`) + 데이터 검사(`tools/gen_tables.py --check`) |
+| `npm run check` | 타입 검사 + 결정성 검사(`tools/check-determinism.mjs`) + 곡선 표 최신 여부(`tools/precompute-curves.mjs --check`) + 데이터 검사(`tools/gen_tables.py --check`) |
+| `npm run curves` | `enemies.json` growth로 몹 성장 곡선 표 `src/data/curves.json` 다시 만들기 (수치를 바꾼 뒤) |
 | `npm run build` | 프로덕션 빌드 → `dist/` |
 | `npm run preview` | 빌드 결과 미리보기 (http://localhost:4173) |
 | `npm run e2e` | Playwright 스모크 테스트 (휴대폰 뷰포트 412×915), 스크린샷은 `test-results/screens/` |
@@ -56,17 +58,19 @@ npm run dev         # 개발 서버 → 브라우저에서 http://localhost:5173
 | `src/data/enemies.json` | 몹 13종(보석 골렘·고블린 떼 포함)·보스 5종·도전 보스 10종·조합 편대 6종, 등장 구성 |
 | `src/data/campaign.json` | 캠페인 테마 10개: 맵, 배경, 특수 규칙, 최종 보스, 난이도, 발판 보상·지원금 |
 | `src/data/maps/*.json` | 사거리 미로(96칸), 순환의 정원(71칸) |
-| `src/data/game.json` | 판 공통 설정: 배속 목록(×1/×2/×3 Lv12), 프레임 따라잡기 한도 |
+| `src/data/game.json` | 판 공통 설정: 배속 목록(×1/×2/×3 Lv12), 프레임 따라잡기 한도, 한 판 흐름(시작 자금·준비/단계 시간·등장 간격·보스 주기·무한 맵), HUD 경고 기준 |
+| `src/data/curves.json` | 단계 0~500 기준 체력·방어 성장 계수 표 (자동 생성, 직접 고치지 않음) |
 | `src/data/load.ts` | 데이터 로더 + 스키마 검사 (오류에 파일·필드 경로) |
 | `tools/gen_tables.py` | 데이터 규칙 검사 + 문서 표 자동 생성 (`python3 tools/gen_tables.py`) |
 | `tools/check-determinism.mjs` | `src/sim/` 금지 API 검사 (`Math.random`·`Date`·`Math.pow`·`**` …) |
+| `tools/precompute-curves.mjs` | 몹 체력 곡선(거듭제곱)을 미리 계산해 정수 표로 저장 (sim은 거듭제곱 금지) |
 
 ## 현재 상태
 
 - [x] 기획 확정 (v0.7: 암흑의 군주·4천왕·대장 체계, 착한 고블린·골렘 / v0.6: 세계관, 종족 시너지, 원소, 특수 몹·편대, 캠페인)
 - [x] 데이터: 타워 65종 · 적 · 캠페인 · 맵 2개 JSON + 검사 도구
 - [x] M0 프로젝트 뼈대 (결정적 시뮬레이션 코어, 테스트, CI)
-- [ ] M1 순환의 정원 + 몹 이동 + 단계 타이머
+- [x] M1 순환의 정원 + 몹 이동 + 단계 타이머 + 패배 판정 + HUD 1차
 - [ ] M2 소환 + 자동 공격 + 돈 + 대기 동작
 - [ ] M3 승급 + 덱 + 물리·마법·관통 피해 + 상태 이상 + 기본 25종 특색 + 리플레이
 - [ ] M4 일꾼 + 몹 13종 + 조합 편대 + 보스 5종 + 카드 + 투명·감지

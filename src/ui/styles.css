@@ -367,6 +367,8 @@ body {
   text-align: center;
   font-size: 3.6cqw;
   font-weight: 800;
+  /* 맵 윗줄에 살짝 걸쳐도 칸 터치(M2 소환)를 막지 않게 */
+  pointer-events: none;
 }
 
 .hud-banner[hidden] {
