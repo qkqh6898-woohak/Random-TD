@@ -82,6 +82,8 @@ const LOCAL_PLAYER = 0;
 
 /** 타워를 누르고 있는 중 (탭 또는 길게 눌러 끌기). */
 interface PressState {
+  /** 누른 포인터 (손을 뗀 사건을 놓쳐도 isDown으로 끝을 안다) */
+  pointer: Phaser.Input.Pointer;
   id: number;
   tx: number;
   ty: number;
@@ -149,7 +151,7 @@ export class GameScene extends Phaser.Scene {
   private panel: TowerPanelView | null = null;
   private press: PressState | null = null;
   /** 끌어 놓고 이동 명령을 기다리는 타워 (그 자리에 붙잡아 둔다) */
-  private pendingDrop: { id: number; at: { x: number; y: number }; untilMs: number } | null = null;
+  private pendingDrop: { id: number; untilMs: number } | null = null;
   /** 승급 직후 맵 입력 잠금 (UI.md 9장) */
   private inputLockUntil: number | null = null;
   /** 승급 가능 알림을 띄운 종류와 횟수 (판당 3번) */
@@ -158,6 +160,8 @@ export class GameScene extends Phaser.Scene {
   private mergeReadyCount = 0;
   /** 타워 종류 → 초상화 이미지 주소 */
   private portraits = new Map<string, string | null>();
+  /** 타워 id → 이름 (패널 승급 결과 미리 보기) */
+  private towerNames = new Map<string, string>();
 
   constructor(private readonly ctx: GameContext) {
     super({ key: SCENE_GAME });
@@ -191,6 +195,7 @@ export class GameScene extends Phaser.Scene {
     this.mergeReadyKinds = new Set();
     this.mergeReadyToasts = 0;
     this.mergeReadyCount = 0;
+    this.towerNames = new Map(this.ctx.data.towers.towers.map((t) => [t.id, t.name]));
     this.bossNames =
       this.sceneData.mode === 'campaign' ? campaign.themes.find((t) => t.theme === this.sceneData.theme)?.bossSchedule : undefined;
 
@@ -226,6 +231,8 @@ export class GameScene extends Phaser.Scene {
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
     this.input.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
+    // 캔버스 위의 DOM(HUD 버튼 등)에서 손을 떼면 Phaser는 'pointerupoutside'를 낸다 → 끌기가 붙잡힌 채 남지 않게 같이 받는다
+    this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onPointerUp, this);
 
     // 앱이 백그라운드로 가면 자동 일시정지 (UI.md 7장: 돌아오면 일시정지 메뉴)
     this.game.events.on(Phaser.Core.Events.HIDDEN, this.pause, this);
@@ -236,6 +243,7 @@ export class GameScene extends Phaser.Scene {
       this.input.off(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
       this.input.off(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
       this.input.off(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
+      this.input.off(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onPointerUp, this);
       this.closePanel();
       this.press = null;
       this.pendingDrop = null;
@@ -427,6 +435,7 @@ export class GameScene extends Phaser.Scene {
     const tower = towerAt(world, tx, ty);
     if (tower && tower.owner === LOCAL_PLAYER) {
       this.press = {
+        pointer,
         id: tower.id,
         tx,
         ty,
@@ -457,7 +466,7 @@ export class GameScene extends Phaser.Scene {
 
   private onPointerMove(pointer: Phaser.Input.Pointer): void {
     const p = this.press;
-    if (!p) return;
+    if (!p || p.pointer !== pointer) return;
     p.x = pointer.worldX;
     p.y = pointer.worldY;
     this.updatePress(this.time.now);
@@ -465,7 +474,7 @@ export class GameScene extends Phaser.Scene {
 
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
     const p = this.press;
-    if (!p) return;
+    if (!p || p.pointer !== pointer) return;
     this.press = null;
     const now = this.time.now;
     p.x = pointer.worldX;
@@ -493,6 +502,11 @@ export class GameScene extends Phaser.Scene {
     if (!p) return;
     if (this.paused || this.gameOver || !this.match.world.entities.has(p.id)) {
       this.cancelPress(now);
+      return;
+    }
+    // 손을 뗀 사건을 놓쳤으면 (터치 취소·창 밖) 여기서 끝낸다
+    if (!p.pointer.isDown) {
+      this.onPointerUp(p.pointer);
       return;
     }
     const moved = Math.hypot(p.x - p.downX, p.y - p.downY);
@@ -527,7 +541,7 @@ export class GameScene extends Phaser.Scene {
         const c = tileCenterPx(this.layout, drop.tx, drop.ty);
         const at = { x: c.x, y: c.y + this.layout.tile * FOOT_OFFSET_TILES };
         this.towerLayer.setDrag(p.id, at, now);
-        this.pendingDrop = { id: p.id, at, untilMs: now + DROP_HOLD_MS };
+        this.pendingDrop = { id: p.id, untilMs: now + DROP_HOLD_MS };
         return;
       }
     }
@@ -620,7 +634,7 @@ export class GameScene extends Phaser.Scene {
     const stats = rules.towers.get(t.tower);
     if (!data || !stats) return;
     const deck = decks[t.owner] ?? rules.baseDeck;
-    const names = new Map(this.ctx.data.towers.towers.map((x) => [x.id, x.name]));
+    const names = this.towerNames;
     const factions = this.ctx.data.towers.factions;
     const factionName = factions[data.faction]?.name ?? (data.faction === 'alliance' ? '연합' : data.faction === 'ancient' ? '고대신' : data.faction);
     const model = buildTowerPanelModel({

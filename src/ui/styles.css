@@ -997,6 +997,8 @@ body {
   white-space: nowrap;
 }
 
+/* 숨길 때도 자리는 남긴다: 버튼(44px)이 나타날 때마다 아래 띠 높이가 바뀌면 맵을 다시 배치해 화면이 출렁인다 */
 .hud-merge-ready[hidden] {
-  display: none;
+  display: inline-flex;
+  visibility: hidden;
 }

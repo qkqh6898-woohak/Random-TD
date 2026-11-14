@@ -197,12 +197,17 @@ test('승급: 같은 종류 3개 이상 → 패널 [⬆ 승급] → 터치한 �
 test('모두 승급: 같은 종류 n개 → ⌊n/3⌋번 승급, 아래 띠 [⬆ 승급 가능 n] 버튼이 승급할 타워를 고른다', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
+  const layout0 = await inScene(page, (s) => ({ ...s.mapLayout }), null);
+  await expect(page.getByTestId('hud-merge-ready')).toBeHidden();
   await summonMany(page, await cells(page, 40));
   const before = await towers(page);
   const group = biggestGroup(before);
   expect(group.length).toBeGreaterThanOrEqual(6);
   const readyBtn = page.getByTestId('hud-merge-ready');
   await expect(readyBtn).toBeVisible();
+  // 버튼이 나타나도 아래 띠 높이가 그대로라 맵이 다시 배치되지 않는다
+  await page.waitForTimeout(200);
+  expect(await inScene(page, (s) => ({ ...s.mapLayout }), null)).toEqual(layout0);
   await expect(readyBtn).toHaveText(/⬆ 승급 가능 \d/);
   await readyBtn.click();
   await expect(page.getByTestId('tower-panel')).toBeVisible();
@@ -271,6 +276,19 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   await page.mouse.up();
   await page.waitForTimeout(150);
   expect(await inScene(page, (s) => s.match.state.moves, null)).toBe(2);
+
+  // HUD 버튼(DOM) 위에서 손을 떼도 끌기가 끝난다 (Phaser 'pointerupoutside'), 이동하지 않고 배속도 그대로
+  const from4 = await tilePoint(page, 3, 2);
+  await page.mouse.move(from4.x, from4.y);
+  await page.mouse.down();
+  await page.waitForTimeout(450);
+  await expect.poll(async () => inScene(page, (s) => s.dragState !== null, null)).toBe(true);
+  const speed = await page.locator('[data-action="speed"]').boundingBox();
+  await page.mouse.move(speed!.x + speed!.width / 2, speed!.y + speed!.height / 2, { steps: 6 });
+  await page.mouse.up();
+  await expect.poll(async () => inScene(page, (s) => s.dragState, null)).toBeNull();
+  expect(await inScene(page, (s) => s.match.state.moves, null)).toBe(2);
+  await expect(page.locator('[data-action="speed"]')).toHaveText('×1');
 
   // 짧게 누르면(0.3초 전) 끌기 없이 패널
   await tapTile(page, 3, 2);
