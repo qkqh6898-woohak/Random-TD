@@ -14,18 +14,42 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
+/**
+ * sim에서 직접 불러도 되는 Math 함수 (정수 연산·정확한 반올림만, 모든 기기에서 같은 결과).
+ * 이 목록 밖의 `Math` 사용(별칭 `const M = Math`, 구조 분해 `const { pow } = Math`, `Math?.x`, 다른 함수·상수)은 모두 위반이다.
+ */
+export const ALLOWED_MATH = ['floor', 'ceil', 'round', 'trunc', 'imul', 'min', 'max', 'abs', 'sign', 'clz32', 'fround'];
+
+/** 아래 규칙이 이름을 붙여 따로 잡는 Math 함수 (같은 곳을 두 번 보고하지 않게 일반 규칙에서 뺀다). */
+const NAMED_MATH = String.raw`random|pow|expm1|exp|a?sinh?|a?cosh?|a?tanh?|atan2|log2|log10|log1p|log|sqrt|cbrt|hypot`;
+/** `Math.` 또는 `Math?.` (사이 공백 허용) */
+const MATH_DOT = String.raw`\bMath\s*\??\.\s*`;
+const mathRule = (names) => new RegExp(`${MATH_DOT}(?:${names})\\b`, 'g');
+
 /** 금지 규칙. pattern은 주석·문자열을 지운 코드에 적용한다. */
 export const RULES = [
-  { id: 'Math.random', pattern: /\bMath\s*\.\s*random\b/g, why: '시드 난수 Rng(src/sim/Rng.ts)를 쓴다' },
+  { id: 'Math.random', pattern: mathRule('random'), why: '시드 난수 Rng(src/sim/Rng.ts)를 쓴다' },
   { id: 'Date', pattern: /\bDate\b/g, why: '시계 대신 틱 번호를 쓴다' },
   { id: 'performance', pattern: /\bperformance\b/g, why: '시계 대신 틱 번호를 쓴다' },
-  { id: 'Math.pow', pattern: /\bMath\s*\.\s*pow\b/g, why: '미리 계산한 표(src/data/curves.json)나 정수 곱셈을 쓴다' },
-  { id: 'Math.exp', pattern: /\bMath\s*\.\s*exp(m1)?\b/g, why: '기기마다 결과가 다를 수 있다. 미리 계산한 표를 쓴다' },
-  { id: 'Math.sin/cos/tan', pattern: /\bMath\s*\.\s*(a?sinh?|a?cosh?|a?tanh?|atan2)\b/g, why: '삼각함수는 기기마다 결과가 다를 수 있다. 표나 정수 벡터를 쓴다' },
-  { id: 'Math.log', pattern: /\bMath\s*\.\s*log(2|10|1p)?\b/g, why: '로그는 기기마다 결과가 다를 수 있다. 미리 계산한 표를 쓴다' },
-  { id: 'Math.sqrt/cbrt/hypot', pattern: /\bMath\s*\.\s*(sqrt|cbrt|hypot)\b/g, why: '거리 비교는 제곱 거리(dist2), 꼭 필요하면 isqrt(Fixed.ts)' },
-  { id: 'Math[…]', pattern: /\bMath\s*\[/g, why: '동적 접근으로 금지 API를 우회하지 않는다' },
+  { id: 'Math.pow', pattern: mathRule('pow'), why: '미리 계산한 표(src/data/curves.json)나 정수 곱셈을 쓴다' },
+  { id: 'Math.exp', pattern: mathRule('expm1|exp'), why: '기기마다 결과가 다를 수 있다. 미리 계산한 표를 쓴다' },
+  { id: 'Math.sin/cos/tan', pattern: mathRule('a?sinh?|a?cosh?|a?tanh?|atan2'), why: '삼각함수는 기기마다 결과가 다를 수 있다. 표나 정수 벡터를 쓴다' },
+  { id: 'Math.log', pattern: mathRule('log2|log10|log1p|log'), why: '로그는 기기마다 결과가 다를 수 있다. 미리 계산한 표를 쓴다' },
+  { id: 'Math.sqrt/cbrt/hypot', pattern: mathRule('sqrt|cbrt|hypot'), why: '거리 비교는 제곱 거리(dist2), 꼭 필요하면 isqrt(Fixed.ts)' },
+  { id: 'Math[…]', pattern: /\bMath\s*(?:\?\.)?\s*\[/g, why: '동적 접근으로 금지 API를 우회하지 않는다' },
+  {
+    id: 'Math (허용 목록 밖)',
+    pattern: new RegExp(
+      String.raw`\bMath\b(?!\s*\??\.\s*(?:${ALLOWED_MATH.join('|')}|${NAMED_MATH})\b)(?!\s*(?:\?\.)?\s*\[)`,
+      'g',
+    ),
+    why: `Math는 ${ALLOWED_MATH.join('·')}만 Math.이름(…) 꼴로 직접 부른다 (별칭·구조 분해·다른 함수 금지)`,
+  },
   { id: '**', pattern: /\*\*/g, why: '거듭제곱 연산자 금지. 정수 곱셈이나 미리 계산한 표를 쓴다' },
+  { id: 'eval/Function', pattern: /\b(eval|Function)\b/g, why: '문자열을 코드로 실행하면 검사를 우회한다' },
+  { id: 'Reflect', pattern: /\bReflect\b/g, why: '동적 접근으로 금지 API를 우회하지 않는다' },
+  { id: 'import()', pattern: /\bimport\s*\(/g, why: '동적 import는 대상을 검사할 수 없다. 정적 import만 쓴다' },
+  { id: 'locale', pattern: /\b(localeCompare|toLocale\w*|Intl)\b/g, why: '로케일·기기 설정에 따라 결과가 달라진다. 정렬은 < 비교나 숫자 비교를 쓴다' },
   { id: 'window', pattern: /\bwindow\b/g, why: 'sim은 브라우저를 모른다 (view/ui에서 처리)' },
   { id: 'document', pattern: /\bdocument\b/g, why: 'sim은 DOM을 모른다 (view/ui에서 처리)' },
   { id: 'globalThis', pattern: /\bglobalThis\b/g, why: 'sim은 전역 환경에 의존하지 않는다' },
@@ -143,6 +167,8 @@ function isRegexStart(out, i) {
   let k = i - 1;
   while (k >= 0 && /\s/.test(out[k])) k--;
   if (k < 0) return true;
+  // 후위 증감 `i++ / 2`, `i-- / 2` 뒤의 '/'는 나눗셈이다 (정규식으로 오인하면 그 사이 코드가 검사에서 빠진다)
+  if ((out[k] === '+' || out[k] === '-') && out[k - 1] === out[k]) return false;
   if (REGEX_PREV_CHARS.has(out[k])) return true;
   const tail = out.slice(Math.max(0, k - 10), k + 1).join('');
   return REGEX_PREV_WORDS.test(tail);

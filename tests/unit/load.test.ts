@@ -5,6 +5,7 @@ import {
   bundledRawData,
   loadGameData,
   mapSchema,
+  measurePath,
   parseData,
   parseJsonText,
   towersSchema,
@@ -101,6 +102,62 @@ describe('데이터 로더 에러 메시지 (필드 경로)', () => {
     expect(paths).toContain('maps/circle.json|tiles[3]');
     expect(paths).toContain('maps/circle.json|buildableCount');
     expect(paths).toContain('maps/circle.json|waypoints[1]');
+  });
+
+  it('종족 색은 #RRGGBB만 (이름 색은 그리기에서 예외가 나므로 로드할 때 잡는다)', () => {
+    const raw = rawCopy();
+    const factions = (raw.towers as Json).factions as Record<string, Json>;
+    (factions.kingdom as Json).color = 'blue';
+    (factions.orc as Json).color = '#12345';
+    const issues = issuesOf(() => buildGameData(raw));
+    const paths = issues.map((i) => i.path);
+    expect(paths).toContain('factions.kingdom.color');
+    expect(paths).toContain('factions.orc.color');
+    expect(issues.find((i) => i.path === 'factions.kingdom.color')?.message).toContain('#RRGGBB');
+  });
+
+  it('맵 파생값 검사: spawn = 첫 웨이포인트, exit = 마지막 점', () => {
+    const raw = rawCopy();
+    const cross = raw.maps.crossroads as Json;
+    cross.spawn = [7, 7];
+    cross.exit = [5, -1];
+    const paths = issuesOf(() => buildGameData(raw)).map((i) => `${i.file}|${i.path}`);
+    expect(paths).toContain('maps/crossroads.json|spawn');
+    expect(paths).toContain('maps/crossroads.json|exit');
+  });
+
+  it('맵 파생값 검사: pathLength = 웨이포인트 맨해튼 길이 합, turns = 방향 전환 수', () => {
+    const raw = rawCopy();
+    const cross = raw.maps.crossroads as Json;
+    cross.pathLength = 999;
+    cross.turns = 3;
+    const issues = issuesOf(() => buildGameData(raw));
+    expect(issues.find((i) => i.path === 'pathLength')?.message).toContain('78칸인데 999');
+    expect(issues.find((i) => i.path === 'turns')?.message).toContain('10번인데 3');
+  });
+
+  it('맵 파생값 검사: loop 맵은 첫 점으로 돌아와야 하고, 길이 0 구간은 안 된다', () => {
+    const raw = rawCopy();
+    const circle = raw.maps.circle as Json;
+    const wps = circle.waypoints as number[][];
+    wps[wps.length - 1] = [1, 8];
+    const issues = issuesOf(() => buildGameData(raw));
+    expect(issues.some((i) => i.file === 'maps/circle.json' && i.path === 'waypoints' && i.message.includes('loop'))).toBe(true);
+
+    const raw2 = rawCopy();
+    const wps2 = (raw2.maps.circle as Json).waypoints as number[][];
+    wps2.splice(1, 0, [1, 1]);
+    const issues2 = issuesOf(() => buildGameData(raw2));
+    expect(issues2.some((i) => i.path === 'waypoints[1]' && i.message.includes('길이 0'))).toBe(true);
+  });
+
+  it('measurePath: 지금 맵 두 개의 적힌 값과 같다', () => {
+    const { maps } = loadGameData();
+    for (const m of Object.values(maps)) {
+      expect(measurePath(m.waypoints, m.loop === true)).toEqual({ length: m.pathLength, turns: m.turns });
+    }
+    // 같은 방향으로 이어지는 중간 점은 방향 전환이 아니다
+    expect(measurePath([[0, 0], [2, 0], [5, 0], [5, 3]], false)).toEqual({ length: 8, turns: 1 });
   });
 
   it('여러 파일의 문제를 한 번에 모아서 보여준다', () => {

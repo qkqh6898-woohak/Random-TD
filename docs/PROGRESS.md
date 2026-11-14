@@ -50,6 +50,19 @@
   - `src/data/load.ts`는 맵 수집에 `import.meta.glob`(Vite 기능)을 쓴다 → Vitest·브라우저에서는 되지만, M11 `npm run sim`을 순수 node로 돌리려면 vite-node/tsx를 쓰거나 맵 목록을 정적 import로 바꿔야 한다.
   - 캠페인 테마 2~10의 `mapId`(spiral 등) 맵 파일은 M6에서 만든다. 그때 `crossCheck`에 "테마 mapId → 맵 존재" 검사를 추가할 것.
   - `CommandQueue`는 **대기 중** (플레이어, seq) 중복만 거절한다. 이미 실행된 seq가 미래 틱으로 다시 오면 받아들이므로, M13 락스텝에서 플레이어별 마지막 seq 기준 거절을 추가할 것.
-  - 결정성 검사의 정규식 리터럴 인식은 앞 글자로 판단하는 휴리스틱이다(`x++ / 2`처럼 드문 나눗셈은 정규식으로 오인할 수 있음).
+  - 결정성 검사의 정규식 리터럴 인식은 앞 글자로 판단하는 휴리스틱이다(후위 `x++ / 2`·`x-- / 2`는 검토 반영으로 나눗셈 처리. 그 밖의 드문 경우는 오인할 수 있음).
   - 헤드리스 Chromium(소프트웨어 WebGL)에서 게임 장면은 약 20fps라 E2E의 틱 속도 검사는 느슨하게 잡았다(×1 > 12틱/초, ×2 > ×1의 1.5배).
   - 타이틀 SD 캐릭터·배경은 임시 절차 그림이다. M11에서 파츠 SVG + animations.json으로 교체.
+- 검토 반영 (독립 검토 15건 모두 실제 문제로 확인하고 수정. 같은 문제를 다른 관점에서 짚은 중복 4쌍 포함):
+  - **step 도중 enqueue**(major): `CommandQueue`가 take한 틱을 닫는다(`openFrom`). step 안(시스템·처리기)에서 tick을 생략하면 다음 틱으로 잡히고, 이미 꺼낸 현재 틱을 지정하면 `ok:false`(이미 실행 중인 틱). 받아 놓고 실행하지 않는 명령·남는 `pendingKeys`가 없어짐. 회귀 테스트: World 3개, Commands 2개.
+  - **명령 객체**: 큐에는 허용 필드만 골라 새로 만든 `Object.freeze` 객체를 넣고 그대로 돌려준다(`Command`는 `Readonly`). 모르는 필드는 `validatePayload`가 거절(`PAYLOAD_FIELDS` 표). 새 명령을 추가할 때 `PAYLOAD_FIELDS`에 필드를 적어야 한다.
+  - **최대 인원 한 곳으로**: `Commands.ts`의 `MAX_PLAYERS=4`와 World의 박아 둔 `2`를 지움. `WorldOptions.maxPlayers`(= `game.json` maxPlayers, Game 장면이 넘김), `new CommandQueue(players)`, `validateCommand(cmd, players)`. maxPlayers를 생략하면(헤드리스 테스트) players만 검사.
+  - **hash**: Map 키·Set 값은 '모두 안전한 정수' 또는 '모두 문자열'만(객체·섞인 타입·소수는 `HashError`). 정수 키는 따옴표 없이 `M{1:…}`, 문자열 키는 `M{"1":…}`로 구분 → canonical 문자열 형식이 바뀌었다(아직 저장된 리플레이 없음).
+  - **결정성 검사**: `Math`는 허용 목록(floor·ceil·round·trunc·imul·min·max·abs·sign·clz32·fround)을 `Math.이름` 꼴로 부를 때만 통과 → 별칭·구조 분해·`Math?.`·`Math.PI`도 위반. `eval`/`Function`·`Reflect`·동적 `import(`·`localeCompare`/`toLocale*`/`Intl` 규칙 추가, 후위 `++`/`--` 뒤 `/`는 나눗셈. 탐지 테스트 17개 추가.
+  - **데이터 검사**: 종족 색 `#RRGGBB`, 맵 `spawn = 첫 웨이포인트`, `exit = 마지막 점`(loop면 첫 점으로 복귀), `pathLength = 맨해튼 길이 합`, `turns = 방향 전환 수`(loop는 닫히는 전환 포함, `measurePath`), 길이 0 구간 금지. M6 생성 맵도 이 검사를 통과해야 한다.
+  - **전역 오류 화면**: `src/ui/fatal.ts` — window `error`·`unhandledrejection`을 받아 한 번만 오류 화면(게임 루프 `sleep`). 장면 create·update 안의 예외도 콘솔에만 남지 않는다(E2E로 확인).
+  - **⏸ = 일시정지 메뉴**(UI.md 4.6): 바로 타이틀로 가지 않고 `PauseMenu`([계속]/[타이틀로])를 연다. 열린 동안 TickClock 배속 0(E2E로 틱 정지 확인), 앱이 백그라운드로 가도(Phaser `hidden`) 자동으로 열림. 배속 칩과 간격을 넓힘.
+  - **터치 크기**: `.btn-chip` 최소 `max(11cqw, 44px)` (412px 무대에서 약 45px). E2E가 HUD 칩 44px 이상을 확인.
+  - **화면 읽기**: `#ui-root`의 `aria-live` 제거, toast 층만 `role=status aria-live=polite`. HUD 틱·시간은 `aria-live=off`, 시간은 `role=timer`.
+  - Game 장면 표식 속도는 `enemies.json` slime.speed에서 읽음(코드 상수 제거). 헤드리스 통합 테스트는 seq를 직접 적고 실행 순서(틱→플레이어→seq)를 단언.
+  - 테스트: Vitest 137 → **184개**, E2E 3 → **5개**.

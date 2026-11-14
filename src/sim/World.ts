@@ -3,6 +3,7 @@
  *
  * - 로직은 초당 20틱(1틱 = 50ms) 고정 (CLAUDE.md 2장 4번). 시간은 틱 번호로만 센다.
  * - `step()` 1회 = 1틱: ① 이 틱에 예약된 명령을 (플레이어, seq) 순으로 실행 ② 시스템을 등록 순서대로 실행 ③ tick + 1.
+ *   ①에서 이 틱의 명령을 꺼내면 이 틱은 닫힌다. step 도중(시스템·처리기 안)에 넣는 명령은 다음 틱부터 예약된다.
  * - 렌더 루프와는 `TickClock`(누적 시간 방식)으로 분리한다. 화면은 프레임마다 흐른 시간을 넘기고,
  *   TickClock이 돌려준 수만큼 `step()`을 부른다. 배속은 한 프레임에 여러 틱을 돌리는 것으로 구현한다.
  * - Phaser·DOM·window를 모른다. 화면은 상태를 읽기만 하고, 바꾸려면 `enqueue()`로 명령을 넣는다.
@@ -96,8 +97,13 @@ export type CommandHandler = (world: World, command: Command) => void;
 export interface WorldOptions {
   /** 판 시드 (32비트 정수) */
   seed: number;
-  /** 플레이어 수 (1~2, 기본 1) */
+  /** 플레이어 수 (1 ~ maxPlayers, 기본 1) */
   players?: number;
+  /**
+   * 한 판 최대 인원 = `game.json`의 maxPlayers. 화면은 데이터 값을 그대로 넘긴다 (코드에 숫자를 박지 않는다).
+   * 생략하면 players 자체만 검사한다 (헤드리스 테스트용).
+   */
+  maxPlayers?: number;
   /** 틱마다 돌릴 시스템 (기본 없음) */
   systems?: System[];
 }
@@ -113,8 +119,8 @@ export class World {
   /** 지금까지 실행한 틱 수 = 다음에 실행할 틱 번호. */
   tick = 0;
   readonly entities = new EntityStore<Entity>();
-  readonly queue = new CommandQueue();
-  /** 실행된 명령 기록 (리플레이 M3-12의 재료). */
+  readonly queue: CommandQueue;
+  /** 실행된 명령 기록 (리플레이 M3-12의 재료). 각 명령은 얼린 객체다. */
   readonly executed: Command[] = [];
 
   private readonly rngRoot: Rng;
@@ -126,11 +132,15 @@ export class World {
   constructor(options: WorldOptions) {
     if (!Number.isSafeInteger(options.seed)) throw new Error(`시드는 정수여야 한다 (받은 값: ${options.seed})`);
     const players = options.players ?? 1;
-    if (!Number.isInteger(players) || players < 1 || players > 2) {
-      throw new Error(`플레이어 수는 1~2 (받은 값: ${players})`);
+    if (!Number.isSafeInteger(players) || players < 1) throw new Error(`플레이어 수는 1 이상 정수 (받은 값: ${players})`);
+    const maxPlayers = options.maxPlayers ?? players;
+    if (!Number.isSafeInteger(maxPlayers) || maxPlayers < 1) {
+      throw new Error(`최대 플레이어 수는 1 이상 정수 (받은 값: ${maxPlayers})`);
     }
+    if (players > maxPlayers) throw new Error(`플레이어 수는 1~${maxPlayers} (받은 값: ${players})`);
     this.seed = options.seed >>> 0;
     this.players = players;
+    this.queue = new CommandQueue(players);
     this.rngRoot = new Rng(this.seed);
     // 흐름은 처음에 모두 만든다 → 해시에 항상 같은 목록이 들어간다.
     this.streams.set(STREAM_WORLD, this.rngRoot.fork(STREAM_WORLD));
@@ -157,13 +167,13 @@ export class World {
   }
 
   /**
-   * 명령 예약. tick을 생략하면 현재 틱(= 다음 step에서 실행).
+   * 명령 예약. tick을 생략하면 가장 이른 틱:
+   * step 밖에서는 현재 틱(= 다음 step에서 실행), step 도중(시스템·처리기 안)에는 다음 틱.
+   * 이미 꺼낸(실행 중인) 틱이나 지난 틱을 지정하면 거절한다 → 받아 놓고 실행하지 않는 명령이 생기지 않는다.
    * 멀티에서는 입력 지연을 위해 `tick: world.tick + 3`처럼 미래 틱을 지정한다.
+   * 플레이어 번호는 0 ~ players-1만 받는다.
    */
   enqueue(input: CommandInput): EnqueueResult {
-    if (input.player !== undefined && input.player >= this.players) {
-      return { ok: false, reason: `없는 플레이어: ${input.player}` };
-    }
     return this.queue.enqueue(input, this.tick);
   }
 

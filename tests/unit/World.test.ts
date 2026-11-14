@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { EntityStore, STREAM_WORLD, TICK_HZ, TICK_MS, TickClock, World, secondsToTicks, streamGamble, streamSummon, type Entity } from '../../src/sim/World';
 import { Rng } from '../../src/sim/Rng';
+import { loadGameData } from '../../src/data/load';
 
 describe('고정 틱', () => {
   it('20Hz, 1틱 = 50ms', () => {
@@ -79,9 +80,76 @@ describe('World 명령', () => {
     expect(new World({ seed: -1 }).seed).toBe(0xffffffff);
   });
 
-  it('플레이어 수는 1~2', () => {
-    expect(() => new World({ seed: 1, players: 0 })).toThrow();
-    expect(() => new World({ seed: 1, players: 3 })).toThrow();
+  it('플레이어 수는 1 ~ maxPlayers (game.json 값)', () => {
+    const { maxPlayers } = loadGameData().game;
+    expect(maxPlayers).toBe(2);
+    expect(() => new World({ seed: 1, players: 0, maxPlayers })).toThrow();
+    expect(() => new World({ seed: 1, players: 1.5, maxPlayers })).toThrow();
+    expect(() => new World({ seed: 1, players: maxPlayers + 1, maxPlayers })).toThrow(/1~2/);
+    expect(new World({ seed: 1, players: maxPlayers, maxPlayers }).players).toBe(2);
+    expect(() => new World({ seed: 1, players: 1, maxPlayers: 0 })).toThrow();
+  });
+
+  it('명령의 플레이어 범위는 이 판의 플레이어 수를 따른다', () => {
+    const w = new World({ seed: 1, players: 2, maxPlayers: 2 });
+    expect(w.queue.players).toBe(2);
+    expect(w.enqueue({ type: 'noop', player: 1 }).ok).toBe(true);
+    expect(w.enqueue({ type: 'noop', player: 2 }).ok).toBe(false);
+  });
+});
+
+describe('step 도중 들어온 명령 (시스템·처리기 안의 enqueue)', () => {
+  it('tick을 생략하면 다음 틱에 실행되고, 큐에 남지 않는다', () => {
+    const results: { ok: boolean; tick?: number }[] = [];
+    const w = new World({
+      seed: 1,
+      systems: [
+        (world) => {
+          if (world.tick === 0) {
+            const r = world.enqueue({ type: 'noop' });
+            results.push(r.ok ? { ok: true, tick: r.command.tick } : { ok: false });
+          }
+        },
+      ],
+    });
+    w.step(); // 틱 0: 시스템이 명령을 넣는다
+    expect(results).toEqual([{ ok: true, tick: 1 }]);
+    expect(w.executed).toHaveLength(0);
+    w.stepN(4);
+    expect(w.executed.map((c) => c.tick)).toEqual([1]);
+    expect(w.queue.size).toBe(0);
+    expect(w.queue.pending()).toEqual([]);
+  });
+
+  it('이미 꺼낸 현재 틱을 지정하면 ok:true로 받지 않고 거절한다', () => {
+    const results: { ok: boolean; reason?: string }[] = [];
+    const w = new World({
+      seed: 1,
+      systems: [
+        (world) => {
+          if (world.tick === 3) {
+            const r = world.enqueue({ type: 'noop', tick: world.tick, seq: 0 });
+            results.push(r.ok ? { ok: true } : { ok: false, reason: r.reason });
+          }
+        },
+      ],
+    });
+    w.stepN(10);
+    expect(results).toHaveLength(1);
+    expect(results[0]?.ok).toBe(false);
+    expect(results[0]?.reason).toContain('이미 실행 중인 틱');
+    expect(w.queue.size).toBe(0);
+    // 거절된 seq 0은 대기 목록에 남지 않으므로 다시 보낼 수 있다
+    expect(w.enqueue({ type: 'noop', seq: 0 }).ok).toBe(true);
+  });
+
+  it('step 밖에서는 tick 생략 = 현재 틱 (다음 step에서 실행)', () => {
+    const w = new World({ seed: 1 });
+    w.stepN(3);
+    const r = w.enqueue({ type: 'noop' });
+    expect(r.ok && r.command.tick).toBe(3);
+    w.step();
+    expect(w.executed.map((c) => c.tick)).toEqual([3]);
   });
 });
 

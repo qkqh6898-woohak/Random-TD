@@ -52,8 +52,52 @@ describe('canonicalize / hashValue', () => {
       [2, 'b'],
     ]);
     expect(canonicalize(m1)).toBe(canonicalize(m2));
-    expect(canonicalize(m1)).toBe('M{"1":"a","2":"b","10":"c"}');
+    expect(canonicalize(m1)).toBe('M{1:"a",2:"b",10:"c"}');
     expect(canonicalize(new Set([3, 1, 2]))).toBe(canonicalize(new Set([2, 3, 1])));
+    expect(canonicalize(new Set(['b', 'a', 'c']))).toBe('S["a","b","c"]');
+  });
+
+  it('Map 정수 키와 문자열 키는 서로 다르게 직렬화된다 (9 와 "9" 충돌 없음)', () => {
+    expect(canonicalize(new Map([[9, 1]]))).not.toBe(canonicalize(new Map([['9', 1]])));
+    expect(canonicalize(new Map([['9', 1]]))).toBe('M{"9":1}');
+  });
+
+  it('Set 값·Map 키가 객체이면 거부 (넣은 순서가 해시에 새지 않게)', () => {
+    expect(() => canonicalize(new Set([{ a: 2 }, { a: 1 }]))).toThrow(HashError);
+    expect(() => canonicalize(new Map([[{ id: 1 }, 1]]))).toThrow(/Map 키는 안전한 정수나 문자열/);
+    expect(() => canonicalize({ s: new Set([[1], [2]]) })).toThrow(/Set 값은/);
+  });
+
+  it('정수와 문자열이 섞인 Set·Map은 거부 (비교가 추이적이지 않아 순서가 정해지지 않음)', () => {
+    expect(() => canonicalize(new Set([2, 10, '1a']))).toThrow(/섞어/);
+    expect(() =>
+      canonicalize(
+        new Map<number | string, number>([
+          [1, 1],
+          ['1', 2],
+        ]),
+      ),
+    ).toThrow(/섞어/);
+  });
+
+  it('Map 키·Set 값의 소수·NaN은 거부 (경로 포함)', () => {
+    expect(() => canonicalize({ m: new Map([[1.5, 1]]) })).toThrow(HashError);
+    expect(() => canonicalize(new Map([[Number.NaN, 2]]))).toThrow(HashError);
+    expect(() => canonicalize(new Set([0.5]))).toThrow(HashError);
+    try {
+      canonicalize({ grid: new Map([[1.5, 1]]) });
+    } catch (e) {
+      expect((e as HashError).path).toBe('state.grid');
+    }
+  });
+
+  it('같은 정수/문자열 집합은 넣은 순서와 상관없이 같은 문자열 (모든 순열)', () => {
+    const perms = (xs: number[]): number[][] =>
+      xs.length <= 1 ? [xs] : xs.flatMap((x, i) => perms([...xs.slice(0, i), ...xs.slice(i + 1)]).map((p) => [x, ...p]));
+    const ints = perms([2, 10, 1, -3]).map((p) => canonicalize(new Set(p)));
+    expect(new Set(ints).size).toBe(1);
+    const strs = perms([0, 1, 2]).map((p) => canonicalize(new Set(p.map((i) => ['10', '1a', '2'][i] as string))));
+    expect(new Set(strs).size).toBe(1);
   });
 
   it('undefined 필드는 빠지고, -0은 0과 같다', () => {

@@ -5,6 +5,8 @@
  * - `canonicalize(value)`: 객체를 결정적인 문자열로 직렬화한다.
  *   객체 키는 정렬, Map은 키 순, Set은 값 순, 엔티티 배열은 호출하는 쪽에서 ID 순으로 넘긴다.
  *   sim 상태는 정수만 써야 하므로 정수가 아닌 숫자(소수·NaN·Infinity)를 만나면 경로와 함께 에러를 낸다.
+ *   Map 키와 Set 값은 **모두 안전한 정수이거나 모두 문자열**이어야 한다 (객체·섞인 타입은 넣은 순서가 새므로 거부).
+ *   정수 키는 따옴표 없이(`M{1:…}`), 문자열 키는 따옴표와 함께(`M{"1":…}`) 써서 서로 구분한다.
  * - `hashValue(value)`: canonicalize + fnv1a32.
  *
  * 멀티(MULTIPLAYER.md 4.3)에서 1초마다 이 해시를 주고받아 디싱크를 찾는다.
@@ -76,11 +78,36 @@ function isHashable(v: object): v is Hashable {
   return typeof (v as Partial<Hashable>).toHashable === 'function';
 }
 
-function compareKeys(a: string | number, b: string | number): number {
-  if (typeof a === 'number' && typeof b === 'number') return a - b;
-  const sa = String(a);
-  const sb = String(b);
-  return sa < sb ? -1 : sa > sb ? 1 : 0;
+/** 문자열 비교 (UTF-16 코드 단위 순, 로케일 무관). */
+function compareStrings(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function describeValue(v: unknown): string {
+  if (typeof v === 'number') return `숫자 ${String(v)}`;
+  if (typeof v === 'string') return `문자열 ${JSON.stringify(v)}`;
+  if (v === null) return 'null';
+  if (Array.isArray(v)) return '배열';
+  return typeof v;
+}
+
+/**
+ * Map 키·Set 값 정렬. 모두 안전한 정수(숫자 순)이거나 모두 문자열(코드 단위 순)이어야 한다.
+ * 그 밖의 값(객체·소수·섞인 타입)은 정렬 순서가 정해지지 않아 넣은 순서가 해시에 새므로 거부한다.
+ */
+function sortedKeys(values: unknown[], path: string, what: 'Map 키' | 'Set 값'): { kind: 'int' | 'string'; keys: (number | string)[] } {
+  const topic = what === 'Map 키' ? 'Map 키는' : 'Set 값은';
+  let kind: 'int' | 'string' | null = null;
+  for (const v of values) {
+    let k: 'int' | 'string';
+    if (typeof v === 'string') k = 'string';
+    else if (typeof v === 'number' && Number.isSafeInteger(v)) k = 'int';
+    else throw new HashError(path, `${topic} 안전한 정수나 문자열만 쓴다 (받은 값: ${describeValue(v)})`);
+    if (kind === null) kind = k;
+    else if (kind !== k) throw new HashError(path, `${what}에 정수와 문자열을 섞어 쓰지 않는다`);
+  }
+  if (kind === 'int') return { kind, keys: (values as number[]).sort((a, b) => a - b) };
+  return { kind: 'string', keys: (values as string[]).sort(compareStrings) };
 }
 
 function write(value: unknown, path: string, out: string[]): void {
@@ -125,27 +152,21 @@ function write(value: unknown, path: string, out: string[]): void {
     return;
   }
   if (obj instanceof Map) {
-    const keys = [...obj.keys()] as (string | number)[];
-    for (const k of keys) {
-      if (typeof k !== 'string' && typeof k !== 'number') {
-        throw new HashError(path, 'Map 키는 문자열이나 정수만 쓴다');
-      }
-    }
-    keys.sort(compareKeys);
+    const { keys } = sortedKeys([...obj.keys()], path, 'Map 키');
     out.push('M{');
     keys.forEach((k, i) => {
       if (i > 0) out.push(',');
-      out.push(JSON.stringify(String(k)), ':');
+      // 정수 키는 따옴표 없이, 문자열 키는 JSON 문자열로 → 1 과 "1" 이 서로 다르게 직렬화된다
+      out.push(typeof k === 'number' ? String(k) : JSON.stringify(k), ':');
       write(obj.get(k), `${path}.${String(k)}`, out);
     });
     out.push('}');
     return;
   }
   if (obj instanceof Set) {
-    const vals = [...obj.values()] as (string | number)[];
-    vals.sort(compareKeys);
+    const { keys } = sortedKeys([...obj.values()], path, 'Set 값');
     out.push('S');
-    write(vals, path, out);
+    write(keys, path, out);
     return;
   }
   const record = obj as Record<string, unknown>;

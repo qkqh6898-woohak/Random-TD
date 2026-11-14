@@ -43,7 +43,40 @@ describe('결정성 검사: 금지 API 탐지', () => {
 
   it('허용: Math.floor/imul/min/max/abs/round, 이름에 Date가 섞인 식별자', () => {
     expect(rules('const v = Math.floor(Math.imul(a, b) / 2) + Math.min(1, 2) + Math.abs(-1) + Math.round(1.5);')).toEqual([]);
-    expect(rules('const updateDate = 1; const dateLike = 2; const performanceScore = 3;')).toEqual([]);
+    expect(rules('const w = Math.ceil(1) + Math.trunc(2) + Math.max(1, 2) + Math.sign(-3) + Math.clz32(4) + Math.fround(1);')).toEqual([]);
+    expect(rules('const updateDate = 1; const dateLike = 2; const performanceScore = 3; const MathUtil = 4;')).toEqual([]);
+  });
+
+  describe('우회 시도도 잡는다', () => {
+    it.each([
+      ['const { pow, random } = Math; pow(2, 3);', 'Math (허용 목록 밖)'],
+      ['const { floor, max } = Math;', 'Math (허용 목록 밖)'],
+      ['const M = Math; M.random();', 'Math (허용 목록 밖)'],
+      ['const f = (m = Math) => m.sqrt(2);', 'Math (허용 목록 밖)'],
+      ['const pi = Math.PI;', 'Math (허용 목록 밖)'],
+      ['const r = Math?.random();', 'Math.random'],
+      ['const r = Math?.["random"]();', 'Math[…]'],
+      ["const r = Reflect.get(Math, 'random')();", 'Reflect'],
+      ['eval("Math.random()");', 'eval/Function'],
+      ['const f = new Function("return 1");', 'eval/Function'],
+      ['const m = import(`../view/${name}`);', 'import()'],
+      ["const m = import('../view/Hud');", 'import()'],
+      ['list.sort((a, b) => a.localeCompare(b));', 'locale'],
+      ['const c = new Intl.Collator();', 'locale'],
+      ['const s = n.toLocaleString();', 'locale'],
+    ])('%s → %s', (src, rule) => {
+      expect(rules(src)).toContain(rule);
+    });
+
+    it('후위 ++/-- 뒤의 / 는 나눗셈으로 보고, 그 뒤 코드를 검사한다', () => {
+      expect(rules('const a = i++ / 2 + Math.random() / 3;')).toEqual(['Math.random']);
+      expect(rules('const b = i-- / 2 * Date.now() / 3;')).toEqual(['Date']);
+      expect(rules('const c = a + ++b / 2 + Math.pow(2, 2) / 4;')).toEqual(['Math.pow']);
+    });
+
+    it('이름 붙은 규칙과 일반 Math 규칙이 같은 곳을 두 번 보고하지 않는다', () => {
+      expect(rules('Math.random(); Math.sqrt(2); Math["x"];')).toEqual(['Math.random', 'Math.sqrt/cbrt/hypot', 'Math[…]']);
+    });
   });
 
   it('주석과 문자열 안의 글자는 무시한다', () => {

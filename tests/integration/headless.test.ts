@@ -23,8 +23,15 @@ const churn: System = (world) => {
   }
 };
 
-function runGame(seed: number, commands: CommandInput[], ticks: number): { hashes: number[]; final: number; executed: number } {
-  const w = new World({ seed, players: 2, systems: [churn] });
+interface RunResult {
+  hashes: number[];
+  final: number;
+  /** 실행된 명령 (틱/플레이어/seq) 순서 그대로 */
+  executed: string[];
+}
+
+function runGame(seed: number, commands: CommandInput[], ticks: number): RunResult {
+  const w = new World({ seed, players: 2, maxPlayers: 2, systems: [churn] });
   for (const c of commands) {
     const r = w.enqueue(c);
     if (!r.ok) throw new Error(r.reason);
@@ -34,15 +41,23 @@ function runGame(seed: number, commands: CommandInput[], ticks: number): { hashe
     w.step();
     if (w.tick % 20 === 0) hashes.push(w.hash());
   }
-  return { hashes, final: w.hash(), executed: w.executed.length };
+  return { hashes, final: w.hash(), executed: w.executed.map((c) => `${c.tick}/${c.player}/${c.seq}`) };
 }
 
+/**
+ * seq를 직접 적는다: 자동 번호에 맡기면 넣는 순서를 바꿀 때 명령 자체(seq)가 달라져
+ * '넣는 순서가 달라도 같은 결과'를 검증하지 못한다. 같은 틱에 같은 플레이어 명령 2개를 두어 seq 정렬도 확인한다.
+ */
 const COMMANDS: CommandInput[] = [
-  { type: 'noop', player: 1, tick: 30 },
-  { type: 'noop', player: 0, tick: 30 },
-  { type: 'noop', player: 0, tick: 400 },
-  { type: 'noop', player: 1, tick: 1100 },
+  { type: 'noop', player: 1, tick: 30, seq: 0 },
+  { type: 'noop', player: 0, tick: 30, seq: 1 },
+  { type: 'noop', player: 0, tick: 30, seq: 0 },
+  { type: 'noop', player: 0, tick: 400, seq: 2 },
+  { type: 'noop', player: 1, tick: 1100, seq: 1 },
 ];
+
+/** 정렬 규칙(틱 → 플레이어 → seq)대로라면 이 순서로 실행된다. */
+const EXPECTED_ORDER = ['30/0/0', '30/0/1', '30/1/0', '400/0/2', '1100/1/1'];
 
 describe('헤드리스 결정성', () => {
   it('같은 시드 + 같은 명령 → 1초마다 해시가 모두 같다', () => {
@@ -51,7 +66,11 @@ describe('헤드리스 결정성', () => {
     expect(a.hashes).toHaveLength(60);
     expect(b.hashes).toEqual(a.hashes);
     expect(b.final).toBe(a.final);
-    expect(a.executed).toBe(4);
+  });
+
+  it('넣는 순서가 달라도 실행 순서(틱 → 플레이어 → seq)가 같다', () => {
+    const orders = [COMMANDS, [...COMMANDS].reverse(), [2, 4, 0, 3, 1].map((i) => COMMANDS[i] as CommandInput)];
+    for (const order of orders) expect(runGame(2026, order, 1200).executed).toEqual(EXPECTED_ORDER);
   });
 
   it('시드가 다르면 해시 흐름이 갈린다', () => {

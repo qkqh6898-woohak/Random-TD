@@ -6,11 +6,11 @@
  * - seq는 플레이어마다 따로 매긴다. 비워 두면 큐가 다음 번호를 붙인다.
  *
  * 마일스톤마다 명령 종류가 늘어난다 (M2 소환, M3 승급·이동, M5 강화·도박·도전 …).
- * 새 명령은 `CommandPayload` 합집합에 추가하고 `COMMAND_TYPES`와 `validatePayload`, World의 처리기를 함께 갱신한다.
+ * 새 명령은 `CommandPayload` 합집합에 추가하고 `COMMAND_TYPES`·`PAYLOAD_FIELDS`·`validatePayload`, World의 처리기를 함께 갱신한다.
+ * - 큐에 들어가는 명령은 허용한 필드만 골라 새로 만든 **얼린(frozen) 객체**다. 호출자가 넘긴 객체나 돌려받은 객체를
+ *   고쳐도 예약·실행·기록(executed)이 바뀌지 않는다. 모르는 필드는 거절한다 (네트워크로 받은 명령이 아무 내용이나 싣지 못하게).
+ * - 최대 플레이어 수는 큐를 만들 때 받는다 (World의 플레이어 수 = game.json maxPlayers 이하). 코드에 따로 박지 않는다.
  */
-
-/** 동시에 참여할 수 있는 최대 플레이어 수 (멀티 2인 + 여유). */
-export const MAX_PLAYERS = 4;
 
 /** 명령 내용 (종류별). */
 export type CommandPayload =
@@ -21,15 +21,25 @@ export type CommandType = CommandPayload['type'];
 
 export const COMMAND_TYPES: readonly CommandType[] = ['noop'];
 
-/** 큐에 들어간(확정된) 명령. */
-export type Command = CommandPayload & {
-  /** 실행할 틱 번호 */
-  tick: number;
-  /** 플레이어 번호 (0부터) */
-  player: number;
-  /** 플레이어별 명령 번호 (0부터 증가) */
-  seq: number;
+/** 종류별 내용 필드 (type·tick·player·seq 제외). 여기 없는 필드는 거절한다. */
+export const PAYLOAD_FIELDS: { readonly [K in CommandType]: readonly string[] } = {
+  noop: [],
 };
+
+/** 모든 명령에 공통인 필드. */
+const ENVELOPE_FIELDS: readonly string[] = ['type', 'tick', 'player', 'seq'];
+
+/** 큐에 들어간(확정된) 명령. 얼린 객체라 고칠 수 없다. */
+export type Command = Readonly<
+  CommandPayload & {
+    /** 실행할 틱 번호 */
+    tick: number;
+    /** 플레이어 번호 (0부터) */
+    player: number;
+    /** 플레이어별 명령 번호 (0부터 증가) */
+    seq: number;
+  }
+>;
 
 /** enqueue에 넘기는 명령. tick/player/seq는 생략 가능 (World가 채운다). */
 export type CommandInput = CommandPayload & {
@@ -51,10 +61,14 @@ function isNonNegInt(v: unknown): v is number {
 
 /** 명령 내용 검사. 문제가 있으면 이유(한국어), 없으면 null. 네트워크로 받은 명령도 이걸로 거른다. */
 export function validatePayload(cmd: unknown): string | null {
-  if (typeof cmd !== 'object' || cmd === null) return '명령이 객체가 아님';
+  if (typeof cmd !== 'object' || cmd === null || Array.isArray(cmd)) return '명령이 객체가 아님';
   const type = (cmd as { type?: unknown }).type;
   if (typeof type !== 'string' || !(COMMAND_TYPES as readonly string[]).includes(type)) {
     return `알 수 없는 명령 종류: ${String(type)}`;
+  }
+  const allowed = PAYLOAD_FIELDS[type as CommandType];
+  for (const key of Object.keys(cmd)) {
+    if (!ENVELOPE_FIELDS.includes(key) && !allowed.includes(key)) return `모르는 필드: ${key} (${type} 명령)`;
   }
   switch (type as CommandType) {
     case 'noop':
@@ -62,40 +76,89 @@ export function validatePayload(cmd: unknown): string | null {
   }
 }
 
-/** 확정 명령 전체 검사 (tick·player·seq 포함). */
-export function validateCommand(cmd: unknown): string | null {
+/**
+ * 확정 명령 전체 검사 (tick·player·seq 포함).
+ * @param players 이 판의 플레이어 수 (player는 0 ~ players-1)
+ */
+export function validateCommand(cmd: unknown, players: number): string | null {
   const payloadError = validatePayload(cmd);
   if (payloadError) return payloadError;
   const c = cmd as Partial<Command>;
   if (!isNonNegInt(c.tick)) return `tick이 0 이상 정수가 아님: ${String(c.tick)}`;
-  if (!isNonNegInt(c.player) || c.player >= MAX_PLAYERS) return `player가 0~${MAX_PLAYERS - 1}이 아님: ${String(c.player)}`;
+  if (!isNonNegInt(c.player) || c.player >= players) return `player가 0~${players - 1}이 아님: ${String(c.player)}`;
   if (!isNonNegInt(c.seq)) return `seq가 0 이상 정수가 아님: ${String(c.seq)}`;
   return null;
 }
 
+/** JSON 값 깊은 복사 + 얼리기 (명령 내용 필드용). */
+function frozenCopy<T>(value: T): T {
+  if (Array.isArray(value)) return Object.freeze(value.map((v: unknown) => frozenCopy(v))) as T;
+  if (typeof value === 'object' && value !== null) {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = frozenCopy(v);
+    return Object.freeze(out) as T;
+  }
+  return value;
+}
+
+/** 허용한 필드만 골라 새 명령 객체를 만들고 얼린다 (validatePayload를 통과한 입력에만 쓴다). */
+function buildCommand(input: CommandInput, tick: number, player: number, seq: number): Command {
+  const out: Record<string, unknown> = { type: input.type, tick, player, seq };
+  const source = input as unknown as Record<string, unknown>;
+  for (const field of PAYLOAD_FIELDS[input.type]) out[field] = frozenCopy(source[field]);
+  return Object.freeze(out) as Command;
+}
+
 /** 틱별 명령 예약 큐. */
 export class CommandQueue {
+  /** 이 판의 플레이어 수 (player는 0 ~ players-1). */
+  readonly players: number;
   private readonly byTick = new Map<number, Command[]>();
-  private readonly nextSeq: number[] = new Array<number>(MAX_PLAYERS).fill(0);
+  private readonly nextSeq: number[];
   private readonly pendingKeys = new Set<string>();
+  /**
+   * 이 틱보다 이른 틱은 이미 take했다(닫혔다). step 도중(시스템·명령 처리기 안)에 들어온 명령이
+   * 이미 꺼낸 틱에 들어가 영원히 실행되지 않는 일을 막는다.
+   */
+  private openFrom = 0;
+
+  constructor(players: number) {
+    if (!Number.isSafeInteger(players) || players < 1) throw new Error(`플레이어 수는 1 이상 정수 (받은 값: ${players})`);
+    this.players = players;
+    this.nextSeq = new Array<number>(players).fill(0);
+  }
+
+  /** 지금 예약할 수 있는 가장 이른 틱: currentTick과 '아직 꺼내지 않은 첫 틱' 중 큰 값. */
+  earliestTick(currentTick: number): number {
+    return Math.max(currentTick, this.openFrom);
+  }
 
   /**
-   * 명령 예약. `currentTick`보다 이른 틱은 거절한다 (이미 지난 틱은 바꿀 수 없음).
-   * tick 생략 시 currentTick, player 생략 시 0, seq 생략 시 그 플레이어의 다음 번호.
+   * 명령 예약. 받을 수 있는 가장 이른 틱(`earliestTick`)보다 이른 틱은 거절한다
+   * (이미 지난 틱, 또는 지금 실행 중이라 이미 꺼낸 틱은 바꿀 수 없음).
+   * tick 생략 시 가장 이른 틱, player 생략 시 0, seq 생략 시 그 플레이어의 다음 번호.
+   * 돌려주는 command는 큐 안의 것과 같은 얼린 객체다.
    */
   enqueue(input: CommandInput, currentTick: number): EnqueueResult {
-    const player = input.player ?? 0;
-    const tick = input.tick ?? currentTick;
-    const seq = input.seq ?? this.nextSeq[player] ?? 0;
-    const command = { ...input, tick, player, seq } as Command;
+    const payloadError = validatePayload(input);
+    if (payloadError) return { ok: false, reason: payloadError };
 
-    const error = validateCommand(command);
+    const earliest = this.earliestTick(currentTick);
+    const player = input.player ?? 0;
+    const tick = input.tick ?? earliest;
+    const seq = input.seq ?? this.nextSeq[player] ?? 0;
+
+    const error = validateCommand({ ...input, tick, player, seq }, this.players);
     if (error) return { ok: false, reason: error };
     if (tick < currentTick) return { ok: false, reason: `지난 틱의 명령 (명령 틱 ${tick} < 현재 틱 ${currentTick})` };
+    if (tick < earliest) {
+      return { ok: false, reason: `이미 실행 중인 틱의 명령 (명령 틱 ${tick}, 가장 이른 예약 가능 틱 ${earliest})` };
+    }
 
     const key = `${player}:${seq}`;
     if (this.pendingKeys.has(key)) return { ok: false, reason: `중복 명령 번호 (플레이어 ${player}, seq ${seq})` };
 
+    const command = buildCommand(input, tick, player, seq);
     this.pendingKeys.add(key);
     this.nextSeq[player] = Math.max(this.nextSeq[player] ?? 0, seq + 1);
     const list = this.byTick.get(tick);
@@ -104,8 +167,9 @@ export class CommandQueue {
     return { ok: true, command };
   }
 
-  /** 그 틱의 명령을 실행 순서대로 꺼낸다 (큐에서 빠짐). */
+  /** 그 틱의 명령을 실행 순서대로 꺼낸다 (큐에서 빠짐). 그 틱까지는 닫혀서 더 예약할 수 없다. */
   take(tick: number): Command[] {
+    if (tick + 1 > this.openFrom) this.openFrom = tick + 1;
     const list = this.byTick.get(tick);
     if (!list) return [];
     this.byTick.delete(tick);

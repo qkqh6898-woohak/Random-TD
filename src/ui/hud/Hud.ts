@@ -1,5 +1,5 @@
 /**
- * 게임 HUD (DOM). M0: 틱·게임 시간·배속 버튼·나가기.
+ * 게임 HUD (DOM). M0: 틱·게임 시간·배속 버튼·⏸(일시정지 메뉴, UI.md 4.2).
  * 단계·타이머·몹 수·목숨·돈(M1~M2)은 이 컴포넌트에 칸을 추가해 붙인다.
  * HUD는 값을 읽어 보여주기만 한다. 배속은 화면 설정(TickClock)이라 직접 바꾼다.
  */
@@ -14,7 +14,8 @@ export interface HudState {
 
 export interface HudOptions {
   onSpeed: () => void;
-  onExit: () => void;
+  /** ⏸: 일시정지 메뉴를 연다 (바로 나가지 않는다) */
+  onPause: () => void;
 }
 
 export interface HudView extends UiView {
@@ -32,19 +33,24 @@ export function formatGameTime(ms: number): string {
 }
 
 export function createHud(opts: HudOptions): HudView {
-  const tickEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-tick' }, text: '0' });
-  const timeEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-time' }, text: '0:00.0' });
+  // 초당 20번 바뀌는 값이라 화면 읽기 프로그램이 저절로 읽지 않게 한다 (aria-live off, 시간은 role=timer)
+  const tickEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-tick', 'aria-live': 'off' }, text: '0' });
+  const timeEl = h('span', {
+    class: 'hud-value',
+    attrs: { 'data-testid': 'hud-time', role: 'timer', 'aria-live': 'off', 'aria-label': '게임 시간' },
+    text: '0:00.0',
+  });
   const speedBtn = h('button', {
     class: 'btn btn-chip hud-speed',
     attrs: { type: 'button', 'data-action': 'speed', 'aria-label': '배속' },
     text: '×1',
     on: { click: () => opts.onSpeed() },
   });
-  const exitBtn = h('button', {
-    class: 'btn btn-chip hud-exit',
-    attrs: { type: 'button', 'data-action': 'exit', 'aria-label': '타이틀로' },
+  const pauseBtn = h('button', {
+    class: 'btn btn-chip hud-pause',
+    attrs: { type: 'button', 'data-action': 'pause', 'aria-label': '일시정지' },
     text: '⏸',
-    on: { click: () => opts.onExit() },
+    on: { click: () => opts.onPause() },
   });
   const el = h(
     'div',
@@ -56,7 +62,7 @@ export function createHud(opts: HudOptions): HudView {
       h('span', { class: 'hud-item hud-tick' }, h('span', { class: 'hud-label', text: '틱' }), tickEl),
       h('span', { class: 'hud-spacer' }),
       speedBtn,
-      exitBtn,
+      pauseBtn,
     ),
   );
 

@@ -132,8 +132,9 @@ body {
   padding: 1.2cqw 2.6cqw;
   font-size: 3.6cqw;
   border-radius: 2cqw;
-  min-width: 10cqw;
-  min-height: 8.8cqw; /* 터치 영역 약 44px 이상 (기준 해상도) */
+  /* 터치 영역: 무대 너비 412px에서 11cqw ≈ 45px, 더 작은 화면에서도 44px 아래로 내려가지 않게 */
+  min-width: max(11cqw, 44px);
+  min-height: max(11cqw, 44px);
 }
 
 /* ---------- 화면 공통 ---------- */
@@ -319,6 +320,49 @@ body {
 
 .hud-speed {
   color: var(--gold);
+}
+
+/* 배속을 바꾸다 ⏸를 잘못 누르지 않게 간격을 더 둔다 */
+.hud-pause {
+  margin-left: 2.4cqw;
+}
+
+/* ---------- 일시정지 메뉴 ---------- */
+.pause-screen {
+  justify-content: center;
+  background: rgba(13, 18, 32, 0.72);
+}
+
+.pause-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3cqw;
+  min-width: 60cqw;
+  padding: 6cqw 7cqw;
+  background: var(--panel);
+  border: 0.4cqw solid var(--panel-line);
+  border-radius: 4cqw;
+  box-shadow: 0 2.4cqw 6cqw rgba(0, 0, 0, 0.5);
+}
+
+.pause-title {
+  margin: 0 0 1cqw;
+  text-align: center;
+  font-size: 6.4cqw;
+  font-weight: 900;
+}
+
+.pause-panel .btn {
+  min-height: max(13cqw, 48px);
+  font-size: 5cqw;
+}
+
+.pause-note {
+  margin: 0;
+  text-align: center;
+  font-size: 3cqw;
+  color: var(--text-dim);
 }
 
 /* ---------- 오류 ---------- */

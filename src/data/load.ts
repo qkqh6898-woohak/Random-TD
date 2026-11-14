@@ -272,6 +272,11 @@ const stageRange = s.withCheck<[number, number]>(s.tuple(s.int({ min: 1 }), s.in
   if (v[0] > v[1]) issues.push({ path, message: `시작 단계(${v[0]})가 끝 단계(${v[1]})보다 크다` });
 });
 const mix = s.rec(s.int({ min: 1 }));
+/** 색: `#RRGGBB` (화면이 16진수 정수로 바꿔 쓴다. 'blue' 같은 이름은 그리기에서 예외가 난다). */
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+const color = s.withCheck<string>(s.str({ nonEmpty: true }), (v, path, issues) => {
+  if (!HEX_COLOR.test(v)) issues.push({ path, message: `색은 #RRGGBB 형식이어야 하는데 ${JSON.stringify(v)}` });
+});
 
 const towerSchema = s.obj({
   id: s.str({ nonEmpty: true }),
@@ -314,7 +319,7 @@ export const towersSchema: Schema = s.obj({
   factions: s.rec(
     s.obj({
       name: s.str({ nonEmpty: true }),
-      color: s.str({ nonEmpty: true }),
+      color,
       thresholds: s.arr(s.int({ min: 1 }), { minLength: 1 }),
       bonus: s.arr(s.str(), { minLength: 1 }),
     }),
@@ -446,7 +451,33 @@ export const campaignSchema: Schema = s.obj({
   ),
 });
 
-/** 맵 의미 검사: 격자 크기, 글자, 배치 칸 수, 웨이포인트 직각 연결. */
+const samePoint = (a: Point, b: Point): boolean => a[0] === b[0] && a[1] === b[1];
+const fmtPoint = (p: Point): string => `[${p[0]},${p[1]}]`;
+
+/**
+ * 웨이포인트에서 경로 길이(맨해튼 길이 합)와 방향 전환 수를 계산한다.
+ * loop 맵은 마지막 구간 → 첫 구간으로 이어질 때의 방향 전환도 센다.
+ */
+export function measurePath(waypoints: readonly Point[], loop: boolean): { length: number; turns: number } {
+  let length = 0;
+  const dirs: string[] = [];
+  for (let i = 1; i < waypoints.length; i++) {
+    const [ax, ay] = waypoints[i - 1] as Point;
+    const [bx, by] = waypoints[i] as Point;
+    length += Math.abs(bx - ax) + Math.abs(by - ay);
+    dirs.push(`${Math.sign(bx - ax)},${Math.sign(by - ay)}`);
+  }
+  let turns = 0;
+  for (let i = 1; i < dirs.length; i++) if (dirs[i] !== dirs[i - 1]) turns++;
+  if (loop && dirs.length > 1 && dirs[0] !== dirs[dirs.length - 1]) turns++;
+  return { length, turns };
+}
+
+/**
+ * 맵 의미 검사: 격자 크기, 글자, 배치 칸 수, 웨이포인트 직각 연결,
+ * 그리고 웨이포인트에서 나오는 값(spawn·exit·pathLength·turns)이 적어 둔 값과 맞는지.
+ * M6에서 생성하는 테마 맵도 이 검사를 통과해야 한다.
+ */
 function checkMap(m: MapData, root: string, issues: Issue[]): void {
   const path = root ? `${root}.` : '';
   if (m.tiles.length !== m.height) {
@@ -479,7 +510,29 @@ function checkMap(m: MapData, root: string, issues: Issue[]): void {
   const inside = ([x, y]: Point): boolean => x >= -1 && y >= -1 && x <= m.width && y <= m.height;
   m.waypoints.forEach((p, i) => {
     if (!inside(p)) issues.push({ path: `${path}waypoints[${i}]`, message: `맵 밖 좌표 [${p[0]},${p[1]}]` });
+    if (i > 0 && samePoint(p, m.waypoints[i - 1] as Point)) {
+      issues.push({ path: `${path}waypoints[${i}]`, message: `앞 점과 같은 좌표 ${fmtPoint(p)} (길이 0 구간)` });
+    }
   });
+  const first = m.waypoints[0] as Point;
+  const last = m.waypoints[m.waypoints.length - 1] as Point;
+  if (!samePoint(m.spawn, first)) {
+    issues.push({ path: `${path}spawn`, message: `spawn ${fmtPoint(m.spawn)}이 첫 웨이포인트 ${fmtPoint(first)}와 다르다` });
+  }
+  if (m.loop) {
+    if (!samePoint(first, last)) {
+      issues.push({ path: `${path}waypoints`, message: `loop 맵은 마지막 웨이포인트 ${fmtPoint(last)}가 첫 점 ${fmtPoint(first)}으로 돌아와야 한다` });
+    }
+  } else if (m.exit !== undefined && !samePoint(m.exit, last)) {
+    issues.push({ path: `${path}exit`, message: `exit ${fmtPoint(m.exit)}이 마지막 웨이포인트 ${fmtPoint(last)}와 다르다` });
+  }
+  const measured = measurePath(m.waypoints, m.loop === true);
+  if (measured.length !== m.pathLength) {
+    issues.push({ path: `${path}pathLength`, message: `웨이포인트 길이 합은 ${measured.length}칸인데 ${m.pathLength}로 적혀 있다` });
+  }
+  if (measured.turns !== m.turns) {
+    issues.push({ path: `${path}turns`, message: `웨이포인트 방향 전환은 ${measured.turns}번인데 ${m.turns}로 적혀 있다` });
+  }
   if (m.mode === 'infinite' && m.mobLimit === undefined) {
     issues.push({ path: `${path}mobLimit`, message: '무한 모드 맵에는 mobLimit이 필요하다' });
   }
