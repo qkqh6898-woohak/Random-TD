@@ -1,0 +1,31 @@
+{
+  "name": "random-td",
+  "private": true,
+  "version": "0.1.0",
+  "description": "운빨 디펜스 — 랜덤 소환 + 3개 합성 타워 디펜스 (모바일 세로)",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "tsc --noEmit && node tools/check-determinism.mjs && python3 tools/gen_tables.py --check",
+    "e2e": "playwright test --trace off",
+    "screens": "SAVE_SCREENS=1 playwright test --trace off",
+    "sim": "node tools/sim.mjs"
+  },
+  "dependencies": {
+    "phaser": "3.90.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.20.5",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}
