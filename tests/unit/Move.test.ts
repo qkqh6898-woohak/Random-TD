@@ -3,10 +3,10 @@
  */
 import { describe, expect, it } from 'vitest';
 import { validatePayload } from '../../src/sim/Commands';
-import { towerAt } from '../../src/sim/entities/Tower';
+import { ATTACK_COST, towerAt } from '../../src/sim/entities/Tower';
 import { tileCenter } from '../../src/sim/map';
 import { buildMatchRules } from '../../src/sim/rules';
-import { isPaused, moveCheck } from '../../src/sim/systems/Move';
+import { holdTower, isPaused, moveCheck } from '../../src/sim/systems/Move';
 import { placeTower } from '../../src/sim/systems/Summon';
 import { addMob, command, data, infinite } from '../helpers/match';
 
@@ -117,5 +117,83 @@ describe('이동·교환 (M3-10)', () => {
     expect(validatePayload({ type: 'move', fx: 0, fy: 1, tx: 2, ty: 3 })).toBeNull();
     expect(validatePayload({ type: 'move', fx: 0, fy: 1, tx: 2 })).toMatch(/ty/);
     expect(validatePayload({ type: 'move', fx: 0, fy: 1, tx: 2, ty: 3.5 })).toMatch(/ty/);
+  });
+});
+
+describe('끄는 동안 공격 정지 (hold, GDD 4.5 "이동 중인 타워는 공격하지 않음", 검토 반영)', () => {
+  /** 고블린(4,0) 사거리 안에 움직이지 않는 튼튼한 몹 하나. */
+  function setup(seed: number) {
+    const m = infinite(seed);
+    m.state.stage = 1;
+    m.state.nextStageTick = 1_000_000;
+    m.state.spawnStage = 1;
+    const mob = addMob(m, 'slime');
+    mob.progress = 3000; // (4500, 1500)
+    mob.speed = 0;
+    mob.hp = 1_000_000;
+    const g = placeTower(m.world, 'goblin', 0, 4, 0);
+    m.step(); // 준비분 1발
+    return { m, g };
+  }
+
+  it('들어 올린 동안(on = 1)은 공격하지 않고, 놓으면(on = 0) 바로 다시 공격 (타이머 1회분 보관)', () => {
+    const { m, g } = setup(11);
+    const attacks = g.attacks;
+    command(m, { type: 'hold', x: 4, y: 0, on: 1 });
+    expect(g.held).toBe(true);
+    expect(isPaused(g, m.tick)).toBe(true);
+    m.stepN(60); // 3초 동안 끌고 있음 → 공격 없음
+    expect(g.attacks).toBe(attacks);
+    expect(g.atkAcc).toBeLessThanOrEqual(ATTACK_COST + rules.towers.get('goblin')!.apsMilli);
+    command(m, { type: 'hold', x: 4, y: 0, on: 0 }); // 제자리에 내려놓음 → 0.5초 정지 없이 그 틱에 1발
+    expect(g.held).toBe(false);
+    expect(g.attacks).toBe(attacks + 1);
+    expect(m.world.drainEvents().filter((e) => e.type === 'hold').map((e) => e.on)).toEqual([true, false]);
+  });
+
+  it('들어 올린 채 옮기면(move) 들어 올림이 풀리고 이어서 0.5초 정지', () => {
+    const { m, g } = setup(12);
+    command(m, { type: 'hold', x: 4, y: 0, on: 1 });
+    m.stepN(5);
+    // 화면은 놓을 때 hold off → move를 같은 틱에 보낸다
+    m.world.enqueue({ type: 'hold', x: 4, y: 0, on: 0 });
+    m.world.enqueue({ type: 'move', fx: 4, fy: 0, tx: 5, ty: 0 });
+    const T = m.tick;
+    const attacks = g.attacks;
+    m.step();
+    expect(g.held).toBe(false);
+    expect(g.pauseUntil).toBe(T + 10);
+    m.stepN(9);
+    expect(g.attacks).toBe(attacks);
+    m.step();
+    expect(g.attacks).toBe(attacks + 1);
+    // move만 보내도 들어 올림이 풀린다
+    command(m, { type: 'hold', x: 5, y: 0, on: 1 });
+    command(m, { type: 'move', fx: 5, fy: 0, tx: 4, ty: 0 });
+    expect(g.held).toBe(false);
+  });
+
+  it('남의 타워·빈 칸은 아무 일 없음, 판이 끝나면 무시, 명령 검사 (on = 0·1)', () => {
+    const m = infinite(13, { players: 2 });
+    const mine = placeTower(m.world, 'archer', 0, 4, 0);
+    const theirs = placeTower(m.world, 'archer', 1, 6, 0);
+    expect(holdTower(m.ctx, m.world, 0, 6, 0, true)).toBe(false);
+    expect(holdTower(m.ctx, m.world, 0, 5, 0, true)).toBe(false);
+    expect(theirs.held).toBe(false);
+    expect(holdTower(m.ctx, m.world, 0, 4, 0, true)).toBe(true);
+    expect(holdTower(m.ctx, m.world, 0, 4, 0, true)).toBe(false); // 이미 들어 올림
+    m.state.phase = 'defeat';
+    expect(holdTower(m.ctx, m.world, 0, 4, 0, false)).toBe(false);
+    expect(mine.held).toBe(true);
+    expect(validatePayload({ type: 'hold', x: 4, y: 0, on: 1 })).toBeNull();
+    expect(validatePayload({ type: 'hold', x: 4, y: 0, on: 2 })).toMatch(/on/);
+    expect(validatePayload({ type: 'hold', x: 4, y: 0, on: true })).toMatch(/on/);
+    expect(validatePayload({ type: 'hold', x: 4, y: 256, on: 0 })).toMatch(/y/);
+    expect(validatePayload({ type: 'hold', x: 4, y: 0 })).toMatch(/on/);
+  });
+
+  it('소환·승급으로 생긴 타워는 들어 올리지 않은 상태', () => {
+    const m = infinite(14);
+    expect(placeTower(m.world, 'archer', 0, 4, 0).held).toBe(false);
   });
 });

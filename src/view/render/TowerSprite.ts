@@ -26,7 +26,7 @@ import type { Tower } from '../../sim/entities/Tower';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { MOB_DEPTH_BASE } from './MobSprite';
 import { attackAnimMs, towerPose } from './towerPose';
-import { FIGURE_TILES, FOOT_OFFSET_TILES } from './towerGeom';
+import { FIGURE_TILES, FOOT_OFFSET_TILES, PEDESTAL_WIDTH_TILES } from './towerGeom';
 
 /** 이동·교환 뒤 새 칸으로 미끄러지는 시간 (ms) */
 const SLIDE_MS = 140;
@@ -78,7 +78,7 @@ export class TowerSprite {
     this.baseX = c.x;
     this.baseY = c.y + layout.tile * FOOT_OFFSET_TILES;
     const pedestal = scene.add.image(0, 0, pedKey).setOrigin(0.5, PEDESTAL_ORIGIN_Y);
-    pedestal.setScale((layout.tile * 0.78) / PEDESTAL_TEX_W);
+    pedestal.setScale((layout.tile * PEDESTAL_WIDTH_TILES) / PEDESTAL_TEX_W);
     this.figure = scene.add.image(0, 0, figKey).setOrigin(FIGURE_ORIGIN_X, FIGURE_ORIGIN_Y).setScale(this.scale);
     this.root = scene.add.container(this.baseX, this.baseY, [pedestal, this.figure]);
     this.root.setDepth(MOB_DEPTH_BASE + this.baseY);
@@ -148,6 +148,11 @@ export class TowerSprite {
     this.figure.setRotation(pose.angle);
   }
 
+  /** 끄는 중(손가락 위에 들려 있음)인가. */
+  get dragging(): boolean {
+    return this.dragAt !== null;
+  }
+
   /** 지금 그려진 발밑 위치 (화면 px) — E2E·끌기 확인용. */
   get footPx(): { x: number; y: number } {
     return { x: this.root.x, y: this.root.y };
@@ -213,6 +218,21 @@ export class TowerLayer {
   /** 끌기: 그 타워를 손가락 위치(화면 px)로 들어 올린다. null이면 내려놓는다 (제자리로 미끄러져 돌아감). */
   setDrag(id: number, at: { x: number; y: number } | null, timeMs: number): void {
     this.sprites.get(id)?.setDrag(at, timeMs);
+  }
+
+  /**
+   * keep 말고 들려 있는 타워는 모두 내려놓는다 (Game이 매 프레임 부른다). 끌기를 끝내는 길을 놓쳐도(두 손가락 등)
+   * 그림이 놓은 자리에 유령처럼 남지 않게 하는 안전장치.
+   */
+  releaseDragsExcept(keep: number | null, timeMs: number): void {
+    for (const [id, s] of this.sprites) if (id !== keep && s.dragging) s.setDrag(null, timeMs);
+  }
+
+  /** 들려 있는 타워 그림 수 (E2E). */
+  get draggingCount(): number {
+    let n = 0;
+    for (const s of this.sprites.values()) if (s.dragging) n++;
+    return n;
   }
 
   /** 그 타워 종류의 캐릭터 텍스처 키 (없으면 굽는다) — 정보 패널 초상화용. */

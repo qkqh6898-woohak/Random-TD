@@ -699,6 +699,11 @@ body {
   pointer-events: none;
 }
 
+/* 위쪽 정보 패널이 열려 있는 동안: 알림은 HUD 아래 한 줄 자리에 가장 최근 것 하나만 (쌓여서 패널 머리줄을 덮지 않게) */
+.layer-toast.is-single > .toast:not(:last-child) {
+  display: none;
+}
+
 @keyframes toast-in {
   from {
     transform: translateY(-2cqw) scale(0.94);
@@ -755,31 +760,28 @@ body {
   box-shadow: 0 2cqw 6cqw rgba(0, 0, 0, 0.55);
   font-size: 3.4cqw;
   line-height: 1.35;
-  animation: panel-up 160ms ease-out;
+  animation: panel-in 160ms ease-out;
 }
 
 .tower-panel.is-bottom {
   bottom: calc(1.6cqw + env(safe-area-inset-bottom, 0px));
 }
 
+/*
+ * 등장: 아래 패널은 아래에서, 위 패널은 위에서. 방향은 변수로만 바꾼다 — 자리를 다시 잴 때(TowerPanel.place) 쪽 클래스를
+ * 잠깐 바꿔도 animation-name이 그대로라 열린 패널이 다시 미끄러져 들어오지 않는다.
+ */
+.tower-panel {
+  --panel-from: 6cqw;
+}
+
 .tower-panel.is-top {
-  animation-name: panel-down;
+  --panel-from: -6cqw;
 }
 
-@keyframes panel-up {
+@keyframes panel-in {
   from {
-    transform: translateY(6cqw);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
-
-@keyframes panel-down {
-  from {
-    transform: translateY(-6cqw);
+    transform: translateY(var(--panel-from));
     opacity: 0;
   }
   to {
@@ -862,12 +864,17 @@ body {
   font-weight: 700;
 }
 
+/* 부제는 두 줄까지 (좁은 화면에서 특색 태그가 잘리지 않게). 두 줄이어도 초상화 높이 안이라 패널이 커지지 않는다 */
 .tp-sub {
   font-size: 3.1cqw;
+  line-height: 1.25;
   color: var(--text-dim);
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: keep-all;
 }
 
 .tp-close {
@@ -982,10 +989,27 @@ body {
   text-align: center;
 }
 
+/* 승급 결과 5종은 두 줄까지 (UI.md 4.4 '다음 등급 5종을 작게 미리 보여줌' — 다섯째 이름이 잘리지 않게) */
 .tp-outcomes {
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  word-break: keep-all;
+}
+
+/*
+ * 접기 단계 (패널이 고른 타워를 가리지 않게 Game 장면이 고른다, TowerPanel.place):
+ * 1 = 승급 결과·안내 숨김, 2 = 감지·특색도 숨김
+ */
+.tower-panel[data-density='1'] .tp-outcomes,
+.tower-panel[data-density='1'] .tp-note,
+.tower-panel[data-density='2'] .tp-outcomes,
+.tower-panel[data-density='2'] .tp-note,
+.tower-panel[data-density='2'] .tp-detect,
+.tower-panel[data-density='2'] .tp-ability {
+  display: none;
 }
 
 /* 아래 띠의 '⬆ 승급 가능 n' 버튼 (UI.md 4.1) */

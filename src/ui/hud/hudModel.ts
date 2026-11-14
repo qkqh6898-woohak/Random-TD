@@ -116,7 +116,7 @@ export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
     speed: `×${input.speed}`,
     bossBanner: state.bossStage ? `👑 보스 단계${bossName ? ` · ${bossName}` : ''} — 보스 준비 중` : null,
     tick: input.tick,
-    ...summonInfo(state.gold, input.towerCount ?? 0, input.buildableCount ?? 0, input.summonCost ?? 0),
+    ...summonInfo(state.gold, input.towerCount ?? 0, input.buildableCount ?? 0, input.summonCost ?? 0, (input.mergeReady ?? 0) > 0),
     mergeReady: mergeReadyText(input.mergeReady ?? 0),
   };
 }
@@ -126,17 +126,21 @@ export function mergeReadyText(groups: number): string {
   return groups > 0 ? `⬆ 승급 가능 ${groups}` : '';
 }
 
-/** 아래 띠: 타워 수와 소환 안내 (UI.md 4.3 '빈 배치 칸 터치 = 즉시 소환'). */
+/**
+ * 아래 띠: 타워 수와 소환 안내 (UI.md 4.3 '빈 배치 칸 터치 = 즉시 소환').
+ * @param short 아래 띠에 [⬆ 승급 가능 n]이 보일 때: 짧은 안내 '소환 · 100원' (좁은 화면에서 비용이 잘리지 않게)
+ */
 export function summonInfo(
   gold: number,
   towerCount: number,
   buildableCount: number,
   cost: number,
+  short = false,
 ): Pick<HudModel, 'towers' | 'summonHint' | 'summonAffordable'> {
   const full = buildableCount > 0 && towerCount >= buildableCount;
   return {
     towers: `${towerCount}/${buildableCount}`,
-    summonHint: full ? '빈 칸이 없어요' : `빈 칸을 눌러 소환 · ${withCommas(cost)}원`,
+    summonHint: full ? '빈 칸이 없어요' : short ? `소환 · ${withCommas(cost)}원` : `빈 칸을 눌러 소환 · ${withCommas(cost)}원`,
     summonAffordable: !full && gold >= cost,
   };
 }

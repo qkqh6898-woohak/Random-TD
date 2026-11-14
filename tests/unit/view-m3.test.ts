@@ -8,9 +8,9 @@ import { effectiveStats, newPlayerMods } from '../../src/sim/stats';
 import { mergeableGroups } from '../../src/sim/systems/Merge';
 import { moveCheck } from '../../src/sim/systems/Move';
 import { placeTower } from '../../src/sim/systems/Summon';
-import { buildHudModel, mergeReadyText } from '../../src/ui/hud/hudModel';
+import { buildHudModel, mergeReadyText, summonInfo } from '../../src/ui/hud/hudModel';
 import { mergeFailText, mergeReadyToast } from '../../src/ui/messages';
-import { panelSideFor } from '../../src/ui/panels/TowerPanel';
+import { choosePanelPlacement } from '../../src/ui/panels/TowerPanel';
 import {
   buildTowerPanelModel,
   detectText,
@@ -18,16 +18,23 @@ import {
   fmtPct,
   gradeStars,
   shapeText,
+  shortFactionName,
   type TowerPanelInput,
 } from '../../src/ui/panels/towerPanelModel';
 import {
+  DRAG_LIFT_TILES,
   LONG_PRESS_MS,
   PRESS_SLOP_TILES,
+  dragAim,
+  dragFootPx,
   dropPreview,
   inputLocked,
   isTap,
   pressPhase,
+  releaseAction,
 } from '../../src/view/input/press';
+import { pxToTile, type MapLayout } from '../../src/view/layout';
+import { FIGURE_BOTTOM_TILES, FIGURE_TOP_TILES, FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../../src/view/render/towerGeom';
 import { data, infinite } from '../helpers/match';
 
 const rules = buildMatchRules(data);
@@ -77,6 +84,35 @@ describe('누르기 판정 (M3-10, UI.md 4.3)', () => {
     expect(dropPreview(moveCheck(m.ctx, m.world, 0, 4, 0, 2, 2))).toBe('invalid');
   });
 
+  it('놓을 칸 = 원래 칸 중심 + 손가락이 움직인 만큼: 캐릭터 얼굴·머리를 눌러 들어도 움직이지 않으면 제자리 (검토 반영)', () => {
+    const L: MapLayout = { tile: 100, originX: 0, originY: 0, minCol: 0, minRow: 0, cols: 9, rows: 11 };
+    const center = { x: 250, y: 350 }; // 칸 (2, 3)
+    // 칸 중심보다 0.25칸·0.6칸 위(얼굴·머리)를 누르고 그대로 → 제자리 칸 (예전: 손가락 − 0.45칸을 노려 위 칸으로 옮겨짐)
+    for (const dy of [-25, -60, 10, 45]) {
+      const down = { x: 250, y: 350 + dy };
+      expect(pxToTile(L, dragAim(center, down, down).x, dragAim(center, down, down).y)).toEqual({ tx: 2, ty: 3 });
+    }
+    // 한 칸 위로 끌면 위 칸, 오른쪽으로 두 칸 끌면 오른쪽 둘째 칸 (누른 자리와 무관)
+    const down = { x: 250, y: 325 };
+    const up = dragAim(center, down, { x: 250, y: 225 });
+    expect(pxToTile(L, up.x, up.y)).toEqual({ tx: 2, ty: 2 });
+    const right = dragAim(center, down, { x: 450, y: 325 });
+    expect(pxToTile(L, right.x, right.y)).toEqual({ tx: 4, ty: 3 });
+    // 그림은 노리는 점에서 0.45칸 들어 올려 그린다 (발밑 = 중심 + 0.3칸 − 0.45칸)
+    expect(dragFootPx({ x: 250, y: 350 }, 100)).toEqual({ x: 250, y: 350 + 100 * (FOOT_OFFSET_TILES - DRAG_LIFT_TILES) });
+  });
+
+  it('끌기를 놓을 때: 이동·교환 = move, 제자리에서 거의 안 움직임 = 느린 탭(패널), 그 밖 = 아무것도 안 함', () => {
+    const tile = 100;
+    expect(releaseAction('move', 300, tile)).toBe('move');
+    expect(releaseAction('swap', 300, tile)).toBe('move');
+    expect(releaseAction('none', 0, tile)).toBe('tap');
+    expect(releaseAction('none', 30, tile)).toBe('tap');
+    expect(releaseAction('none', 31, tile)).toBe('none'); // 끌었다가 제자리로 돌아옴
+    expect(releaseAction('invalid', 0, tile)).toBe('none');
+    expect(releaseAction(null, 0, tile)).toBe('none'); // 맵 밖
+  });
+
   it('승급 뒤 입력 잠금 0.3초', () => {
     expect(inputLocked(null, 1000)).toBe(false);
     expect(inputLocked(1300, 1299)).toBe(true);
@@ -120,7 +156,25 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
     expect(m.note).toBe('같은 타워 3개가 모이면 승급할 수 있어요');
     expect(m.outcomes).toBe('상인 · 진흙 주술사');
     expect(m.ability).toBe('—');
+    expect(m.abilityLabel).toBe('특색');
     expect(m.target).toBe('선두');
+  });
+
+  it('특색이 아닌 타워도 능력 설명이 있으면 "능력" 줄에 보여준다 (화염 마법사 화상·군견병 출혈·단일딜 전사·바람 궁수, 검토 반영)', () => {
+    expect(buildTowerPanelModel(panelInput('flamemage'))).toMatchObject({ abilityLabel: '능력', ability: tower('flamemage').ability });
+    expect(buildTowerPanelModel(panelInput('flamemage')).ability).toContain('화상');
+    expect(buildTowerPanelModel(panelInput('k9')).ability).toContain('출혈');
+    expect(buildTowerPanelModel(panelInput('duelist')).ability).toContain('치명타');
+    expect(buildTowerPanelModel(panelInput('windarcher')).ability).toContain('넉백');
+    // 특색 타워는 '특색'
+    expect(buildTowerPanelModel(panelInput('warlord', { outcomes: [] })).abilityLabel).toBe('특색');
+  });
+
+  it('부제의 종족 이름은 괄호 설명을 뺀다 (좁은 화면에서 특색 태그가 잘리지 않게)', () => {
+    expect(shortFactionName('카라쉬 부족 (오크·고블린)')).toBe('카라쉬 부족');
+    expect(shortFactionName('실바렌 엘프')).toBe('실바렌 엘프');
+    const m = buildTowerPanelModel(panelInput('warlord', { factionName: '카라쉬 부족 (오크·고블린)', outcomes: [] }));
+    expect(m.subtitle).toBe(`레전드 · 카라쉬 부족 · 물리 · ${tower('warlord').tags[0]}`);
   });
 
   it('보유 3개 이상이면 승급·모두 승급 켜짐, 7개면 모두 승급 ×2', () => {
@@ -164,10 +218,26 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
     expect(m.note).toBe('이 타워는 승급할 수 없어요');
   });
 
-  it('패널 위치: 타워가 화면 아래쪽(55% 아래)이면 위에, 아니면 아래에', () => {
-    expect(panelSideFor(0.3)).toBe('bottom');
-    expect(panelSideFor(0.55)).toBe('bottom');
-    expect(panelSideFor(0.7)).toBe('top');
+  it('패널 자리: 고른 타워 그림과 겹치지 않는 쪽 (아래 우선), 어느 쪽도 안 되면 접기 1·2단계, 그래도 안 되면 덜 겹치는 쪽 (검토 반영)', () => {
+    // 무대: 위에 붙이면 280부터, 아래에 붙이면 817까지. 패널 높이 접기 0/1/2 = 322/280/233
+    const heights = [322, 280, 233];
+    const at = (top: number, bottom: number) => choosePanelPlacement(heights, { top, bottom }, 280, 817);
+    expect(at(286, 339)).toEqual({ side: 'bottom', density: 0, overlap: 0 }); // 맨 윗줄
+    expect(at(690, 743)).toEqual({ side: 'top', density: 0, overlap: 0 }); // 맨 아랫줄
+    expect(at(448, 501)).toEqual({ side: 'bottom', density: 1, overlap: 0 }); // 4줄: 다 펴면 아래 패널(495~)과 겹침
+    expect(at(529, 582)).toEqual({ side: 'bottom', density: 2, overlap: 0 }); // 6줄 (예전: 위 패널에 83% 가려짐)
+    expect(at(569, 622)).toEqual({ side: 'top', density: 1, overlap: 0 });
+    // 어디에도 안 들어가면 가장 많이 접은 단계에서 덜 겹치는 쪽
+    expect(choosePanelPlacement(heights, { top: 400, bottom: 700 }, 280, 817)).toEqual({ side: 'top', density: 2, overlap: 113 });
+    expect(choosePanelPlacement(heights, { top: 300, bottom: 600 }, 280, 817)).toEqual({ side: 'bottom', density: 2, overlap: 16 });
+  });
+
+  it('타워 그림 세로 범위: 머리·별(+ 대기 동작 여유) ~ 받침대 아래', () => {
+    const span = towerFigureSpanTiles();
+    expect(span.top).toBeLessThan(FIGURE_TOP_TILES);
+    expect(span.top).toBeCloseTo(-0.836, 2);
+    expect(span.bottom).toBe(FIGURE_BOTTOM_TILES);
+    expect(span.bottom).toBeCloseTo(0.475, 2);
   });
 });
 
@@ -207,8 +277,22 @@ describe('아래 띠 승급 버튼·알림 (UI.md 4.1·8장)', () => {
     expect(mergeableGroups(m.ctx, m.world, 1)).toEqual([]);
   });
 
+  it('아래 띠 소환 안내: [⬆ 승급 가능 n]이 보이면 짧게 "소환 · 100원" (비용이 잘리지 않게, 검토 반영)', () => {
+    expect(summonInfo(1000, 3, 71, 100, true).summonHint).toBe('소환 · 100원');
+    expect(summonInfo(1000, 3, 71, 100, false).summonHint).toBe('빈 칸을 눌러 소환 · 100원');
+    expect(summonInfo(1000, 71, 71, 100, true).summonHint).toBe('빈 칸이 없어요');
+    const m = infinite(3);
+    const hud = (mergeReady: number) =>
+      buildHudModel({ state: m.state, ticksLeft: 100, mobCount: 0, tick: 0, speed: 1, towerCount: 3, buildableCount: 71, summonCost: 100, mergeReady }, data.game.hud);
+    expect(hud(0).summonHint).toBe('빈 칸을 눌러 소환 · 100원');
+    expect(hud(2).summonHint).toBe('소환 · 100원');
+  });
+
   it('문구: 승급 가능 · 승급 실패', () => {
     expect(mergeReadyToast('궁수')).toBe('궁수 승급 가능!');
+    // 한 프레임에 여러 종류가 승급 가능해지면 알림 하나로 (검토 반영)
+    expect(mergeReadyToast(['고블린', '전사'])).toBe('고블린·전사 승급 가능!');
+    expect(mergeReadyToast(['고블린', '전사', '견습 마법사'])).toBe('고블린 외 2종 승급 가능!');
     expect(mergeFailText('count', 3)).toBe('같은 타워가 3개 있어야 승급할 수 있어요');
     expect(mergeFailText('maxGrade', 3)).toContain('레전드');
     expect(mergeFailText('noTower', 3)).toBeNull();

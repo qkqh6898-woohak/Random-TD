@@ -47,6 +47,11 @@ export interface Tower extends Entity {
    * 공격 타이머는 대상이 없을 때처럼 1회분까지만 모은다.
    */
   pauseUntil: number;
+  /**
+   * 길게 눌러 끄는 중 (M3-10 hold 명령, GDD 4.5 '이동 중인 타워는 공격하지 않음'). true인 동안 공격하지 않고
+   * 타이머는 1회분까지만 모은다. 놓으면(hold off) 또는 옮겨지면(move) false.
+   */
+  held: boolean;
 }
 
 export function isTower(e: Entity): e is Tower {

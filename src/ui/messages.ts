@@ -20,9 +20,14 @@ export function godDescends(name: string): string {
   return `👑 ${name} 강림!`;
 }
 
-/** 승급 가능 (UI.md 8장, 판당 처음 3번만) */
-export function mergeReadyToast(name: string): string {
-  return `${name} 승급 가능!`;
+/**
+ * 승급 가능 (UI.md 8장, 판당 처음 3번만). 한꺼번에 여러 종류면 한 알림으로: 2종 = '고블린·전사 승급 가능!',
+ * 3종 이상 = '고블린 외 2종 승급 가능!' (412px 화면에서 한 줄에 들어가게).
+ */
+export function mergeReadyToast(names: string | readonly string[]): string {
+  const list = typeof names === 'string' ? [names] : names;
+  if (list.length <= 2) return `${list.join('·')} 승급 가능!`;
+  return `${list[0]} 외 ${list.length - 1}종 승급 가능!`;
 }
 
 /** 승급 실패 (sim이 거절한 merge·mergeAll) → 글자. 보여줄 것이 없으면 null. */

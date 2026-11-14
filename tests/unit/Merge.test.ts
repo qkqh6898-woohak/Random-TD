@@ -25,6 +25,11 @@ function patchRules(m: ReturnType<typeof infinite>, patch: Partial<MatchRules>):
   (m.ctx as { rules: MatchRules }).rules = { ...m.ctx.rules, ...patch };
 }
 
+/** 테스트 전용: 판의 덱을 바꾼다 (createMatch는 덱을 복사·동결하므로 원본을 고쳐서는 바뀌지 않는다). */
+function patchDecks(m: ReturnType<typeof infinite>, decks: Deck[]): void {
+  (m.ctx as { decks: readonly Deck[] }).decks = decks;
+}
+
 /** 같은 타워를 여러 칸에 놓는다 (놓은 순서 = ID 순). */
 function placeAll(m: ReturnType<typeof infinite>, towerId: string, at: [number, number][], owner = 0): Tower[] {
   return at.map(([x, y]) => placeTower(m.world, towerId, owner, x, y));
@@ -102,6 +107,33 @@ describe('덱 모델 (M3-3)', () => {
       const r = rollMerge(rng, rules, deck, 'normal');
       if (!r.god) expect(deck.rare).toContain(r.tower);
     }
+  });
+
+  it('판에 넘긴 덱은 복사·동결된다: 판을 만든 뒤 원본 배열을 고쳐도 소환·승급 결과가 그대로 (검토 반영)', () => {
+    const play = (mutate: boolean): string[] => {
+      const b = rules.baseDeck;
+      const deck = { normal: [...b.normal], rare: [...b.rare], unique: [...b.unique], hero: [...b.hero], legend: [...b.legend] };
+      const m = infinite(31, { decks: [deck] });
+      if (mutate) {
+        deck.normal.fill('archer');
+        deck.rare.fill('merchant');
+      }
+      expect(m.ctx.decks[0]).not.toBe(deck);
+      expect(Object.isFrozen(m.ctx.decks[0])).toBe(true);
+      expect(Object.isFrozen(m.ctx.decks[0]!.rare)).toBe(true);
+      m.state.gold = 1_000_000;
+      for (const [x, y] of cells(m, 15)) m.world.enqueue({ type: 'summon', x, y });
+      m.step();
+      const group = [...new Set(listTowers(m.world).map((t) => t.tower))]
+        .map((id) => sameKindTowers(m.world, id, 0))
+        .find((g) => g.length >= 3)!;
+      command(m, { type: 'merge', x: group[0]!.tx, y: group[0]!.ty });
+      return listTowers(m.world).map((t) => t.tower);
+    };
+    const clean = play(false);
+    expect(play(true)).toEqual(clean);
+    expect(clean.some((id) => rules.towers.get(id)?.grade === 'rare')).toBe(true);
+    expect(clean.filter((id) => id === 'archer').length).toBeLessThan(15);
   });
 });
 
@@ -245,10 +277,9 @@ describe('모두 승급 (M3-2)', () => {
   });
 
   it('결과가 또 3개가 되어도 이어서 승급하지 않는다 (터치한 종류만)', () => {
-    // 덱 레어 자리를 판을 만든 뒤 모두 상인으로 바꿔 결과가 같은 레어 3개가 되게 한다 (신 판정은 0%)
-    const deck = { ...rules.baseDeck, rare: [...rules.baseDeck.rare] };
-    const m = infinite(22, { decks: [deck] });
-    deck.rare.fill('merchant');
+    // 덱 레어 자리를 모두 상인으로 (checkDeck은 중복을 막으므로 테스트 전용으로 판 덱을 바꿈) → 결과가 같은 레어 3개 (신 판정은 0%)
+    const m = infinite(22);
+    patchDecks(m, [{ ...rules.baseDeck, rare: rules.baseDeck.rare.map(() => 'merchant') }]);
     patchRules(m, { godChanceBp: 0 });
     const ts = placeAll(m, 'archer', cells(m, 9));
     command(m, { type: 'mergeAll', x: ts[0]!.tx, y: ts[0]!.ty });

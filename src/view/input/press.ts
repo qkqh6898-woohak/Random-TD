@@ -7,8 +7,13 @@
  * - 0.3초가 되기 전에 손가락이 0.3칸보다 많이 움직이면 탭도 끌기도 아니다 (취소).
  * - 승급 직후 0.3초는 맵 입력을 받지 않는다 (UI.md 9장 '승급 연출 중 다시 터치').
  * 빈 배치 칸은 M2처럼 누르는 즉시 소환한다 (누르기 판정과 무관).
+ *
+ * 놓을 칸 (검토 반영): 처음 누른 자리가 칸의 어디든(캐릭터 얼굴·머리 포함) 손가락이 움직인 만큼만 타워가 움직인다
+ *   → 놓을 칸 = 원래 칸 중심 + (지금 손가락 − 처음 누른 자리). 0.45칸 들어 올림은 그려지는 그림에만 준다.
+ *   그래서 길게 누른 뒤 움직이지 않고 떼면 제자리('none')이고, 그때는 느린 탭으로 보고 정보 패널을 연다.
  */
 import type { MoveCheck } from '../../sim/systems/Move';
+import { FOOT_OFFSET_TILES } from '../render/towerGeom';
 
 /** 길게 누르기 시간 (ms) — UI.md 4.3 '타워 길게 누르기 (0.3초)' */
 export const LONG_PRESS_MS = 300;
@@ -37,6 +42,28 @@ export function pressPhase(heldMs: number, movedPx: number, tilePx: number, drag
 /** 손을 뗐을 때: 끌기 중이 아니고 취소되지 않았으면 탭. */
 export function isTap(heldMs: number, movedPx: number, tilePx: number): boolean {
   return pressPhase(heldMs, movedPx, tilePx, false) === 'pending';
+}
+
+interface Pt {
+  x: number;
+  y: number;
+}
+
+/** 끄는 중 노리는 점 (놓을 칸을 정한다) = 원래 칸 중심 + 손가락이 움직인 만큼. */
+export function dragAim(tileCenter: Pt, down: Pt, finger: Pt): Pt {
+  return { x: tileCenter.x + (finger.x - down.x), y: tileCenter.y + (finger.y - down.y) };
+}
+
+/** 끄는 중 타워 그림의 발밑 = 노리는 점에서 0.45칸 들어 올린 자리 (손가락에 가려지지 않게). */
+export function dragFootPx(aim: Pt, tilePx: number): Pt {
+  return { x: aim.x, y: aim.y + tilePx * (FOOT_OFFSET_TILES - DRAG_LIFT_TILES) };
+}
+
+/** 끌기를 놓았을 때: 옮김(move·swap) / 느린 탭(제자리에서 거의 안 움직임 → 정보 패널) / 아무것도 안 함. */
+export function releaseAction(preview: DropPreview | null, movedPx: number, tilePx: number): 'move' | 'tap' | 'none' {
+  if (preview === 'move' || preview === 'swap') return 'move';
+  if (preview === 'none' && movedPx <= tilePx * PRESS_SLOP_TILES) return 'tap';
+  return 'none';
 }
 
 /** 끄는 중 놓을 칸 미리 보기: move = 빈 칸으로 이동(초록), swap = 교환(파랑), invalid = 못 놓음(빨강), none = 제자리(표시 없음). */

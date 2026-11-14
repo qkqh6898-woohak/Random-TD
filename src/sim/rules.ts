@@ -248,7 +248,11 @@ export function buildTowerStats(t: TowerData): TowerStats {
   });
 }
 
-function freezeDeck(deck: DeckData): Deck {
+/**
+ * 덱을 등급별로 복사해 얼린다. 판은 이 복사본만 들고 있으므로 판을 만든 뒤 호출자가 원본 덱 배열을 고쳐도
+ * 소환·승급 결과가 바뀌지 않는다 (덱은 해시에 들어가지 않으므로 바뀌면 리플레이·멀티가 몰래 어긋난다).
+ */
+export function freezeDeck(deck: DeckData | Deck): Deck {
   return Object.freeze(Object.fromEntries(DECK_GRADES.map((g) => [g, Object.freeze([...deck[g]])]))) as Deck;
 }
 

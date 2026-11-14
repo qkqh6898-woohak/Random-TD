@@ -88,6 +88,14 @@ export class UiRoot {
     else this.layers.toast.style.setProperty('--toast-top', `${Math.round(cssPx)}px`);
   }
 
+  /**
+   * 알림을 가장 최근 하나만 보이게 (true) / 최대 3개 쌓이게 (false). 위쪽 정보 패널이 열려 있으면 Game 장면이 켠다
+   * → 알림이 HUD 아래 한 줄 자리를 넘쳐 패널 머리줄(이름·별·✕)을 덮지 않는다.
+   */
+  setToastSingle(on: boolean): void {
+    this.layers.toast.classList.toggle('is-single', on);
+  }
+
   clearAll(): void {
     (Object.keys(this.layers) as LayerName[]).forEach((l) => this.clear(l));
   }

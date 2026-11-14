@@ -9,6 +9,10 @@
  *   명령이 실행된 틱 T부터 T+9틱까지 쉬고 T+10틱부터 다시 공격 (Tower.pauseUntil). 쉬는 동안 공격 타이머는 1회분까지만 모은다.
  * - 날아가는 투사체는 그대로 날아간다 (쏠 때 피해·출발점을 실어 보냈으므로).
  * - 실패하면 상태를 바꾸지 않고 `moveFail` 사건 { player, reason }. 성공하면 `move` 사건 { player, id, fx, fy, tx, ty, swap(교환한 타워 id, 이동이면 0) }.
+ * - `hold {x, y, on}`: 길게 눌러 끄는 동안(on = 1) 그 타워는 공격하지 않는다 (GDD 4.5 '이동 중인 타워는 공격하지 않음').
+ *   화면은 끌기를 시작할 때 on = 1, 놓을 때 on = 0을 보내고, 옮겼으면 이어서 move를 보낸다 (move도 들어 올림을 푼다).
+ *   남의 타워·빈 칸·판이 끝난 뒤는 아무 일 없음. 들어 올림이 바뀌면 `hold` 사건 { player, id, on }.
+ *   해석: GDD '이동 중' = 끄는 동안 + 놓은 뒤 0.5초 (DEV_PLAN M3-10 '이동 후 0.5초 공격 정지'는 놓은 뒤 부분).
  */
 import type { World } from '../World';
 import { isTower, type Tower } from '../entities/Tower';
@@ -46,6 +50,7 @@ function relocate(world: World, tower: Tower, tx: number, ty: number, pauseTicks
   tower.x = c.x;
   tower.y = c.y;
   tower.pauseUntil = world.tick + pauseTicks;
+  tower.held = false;
 }
 
 /** move 명령 실행. 성공하면 true (move 사건), 실패하면 false (moveFail 사건). */
@@ -63,7 +68,17 @@ export function moveTower(ctx: MatchContext, world: World, player: number, fx: n
   return true;
 }
 
-/** 지금 공격을 쉬는 중인가 (이동·교환 직후). */
-export function isPaused(tower: Pick<Tower, 'pauseUntil'>, tick: number): boolean {
-  return tick < tower.pauseUntil;
+/** hold 명령 실행: 칸 (x, y)의 내 타워를 들어 올리거나(on = 1) 내려놓는다(on = 0). 바뀌었으면 true. */
+export function holdTower(ctx: MatchContext, world: World, player: number, x: number, y: number, on: boolean): boolean {
+  if (ctx.state.phase !== 'playing') return false;
+  const tower = towerOn(world, x, y);
+  if (!tower || tower.owner !== player || tower.held === on) return false;
+  tower.held = on;
+  world.emit('hold', { player, id: tower.id, on });
+  return true;
+}
+
+/** 지금 공격을 쉬는 중인가 (끄는 중, 또는 이동·교환 직후). */
+export function isPaused(tower: Pick<Tower, 'pauseUntil' | 'held'>, tick: number): boolean {
+  return tower.held || tick < tower.pauseUntil;
 }

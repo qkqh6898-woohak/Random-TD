@@ -7,7 +7,7 @@
  *   사거리 r  범위 (단일·근접 단일·광역 r·근접 광역 r·관통 n·연쇄 n·다중 n·전체)
  *   방관 n%  마관 n%  치명 n% ×m
  *   👁 감지: 없음 / 오라 r / 자신
- *   특색: 능력 설명 (특색 타워가 아니면 —)
+ *   특색: 능력 설명 (특색 타워 25종) / 능력: 능력 설명 (특색이 아니어도 화상·출혈·치명타 같은 능력이 있으면) / 둘 다 없으면 특색: —
  *   보유: n/3
  *   [⬆ 승급] [⬆⬆ 모두 승급] — 같은 종류 3개 이상이고 승급할 수 있는 등급일 때만 켜짐
  *   승급 결과 미리 보기: 덱의 다음 등급 5종 이름
@@ -140,6 +140,8 @@ export interface TowerPanelModel {
   subtitle: string;
   stats: StatCell[][];
   detect: string;
+  /** 능력 줄 이름: 특색 타워 = '특색', 그 밖에 능력이 있으면 '능력' */
+  abilityLabel: string;
   ability: string;
   owned: string;
   ownedReady: boolean;
@@ -154,9 +156,21 @@ export interface TowerPanelModel {
   paused: boolean;
 }
 
+/** 종족 이름에서 괄호 설명을 뺀다 (부제가 좁은 화면에서 잘리지 않게): '카라쉬 부족 (오크·고블린)' → '카라쉬 부족'. */
+export function shortFactionName(name: string): string {
+  return name.replace(/\s*\([^)]*\)\s*$/, '');
+}
+
 function cell(label: string, now: number, base: number, fmt: (v: number) => string): StatCell {
   const value = fmt(now);
   return now !== base ? { label, value, buffed: now > base, base: fmt(base) } : { label, value, buffed: false };
+}
+
+/** 능력 줄: 특색 타워는 '특색', 아니어도 능력 설명(화상·출혈·치명타 …)이 있으면 '능력'으로 보여준다. */
+function abilityLine(data: Pick<TowerData, 'special' | 'ability'>): { abilityLabel: string; ability: string } {
+  const text = data.ability && data.ability.trim() !== '' && data.ability !== '—' ? data.ability : '';
+  if (data.special > 0) return { abilityLabel: '특색', ability: text || '—' };
+  return text ? { abilityLabel: '능력', ability: text } : { abilityLabel: '특색', ability: '—' };
 }
 
 export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
@@ -185,7 +199,7 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
     stars: gradeStars(data.grade),
     gradeColor: data.grade === 'god' || data.grade === 'hidden' ? '#F1C40F' : GRADE_COLORS[data.grade],
     level: 'Lv1',
-    subtitle: `${GRADE_NAMES[data.grade]} · ${input.factionName} · ${DAMAGE_TYPE_NAMES[data.damageType]}${tags}`,
+    subtitle: `${GRADE_NAMES[data.grade]} · ${shortFactionName(input.factionName)} · ${DAMAGE_TYPE_NAMES[data.damageType]}${tags}`,
     stats: [
       [
         cell('물리', atk(stats.atkC, eff.atkMulBp), atk(stats.atkC, 10_000), dash),
@@ -204,7 +218,7 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
       ],
     ],
     detect: detectText(data),
-    ability: data.special > 0 && data.ability && data.ability !== '—' ? data.ability : '—',
+    ...abilityLine(data),
     owned: `${input.owned}/${input.mergeCount}`,
     ownedReady: ready,
     mergeEnabled: ready,

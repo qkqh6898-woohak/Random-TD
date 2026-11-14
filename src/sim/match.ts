@@ -6,8 +6,8 @@
  *   체력·방어 보정 = 테마 hpMul·armorOffset (BALANCE.md 5.4).
  * - 시스템 순서 (틱마다): 단계 → 등장 → 이동(출구 도달) → 전투(공격·투사체·처치) → 패배.
  *   전투가 패배 판정보다 먼저라서 같은 틱의 처치가 몹 수에 먼저 반영된다 (UI.md 9장).
- * - 명령: summon(소환), merge·mergeAll(승급·모두 승급), move(이동·교환), debugSkipStage·debugAddGold(개발용, debug 판에서만).
- * - 덱: 플레이어별 (생략하면 decks.json 기본 덱). 판 시작 때 검사한다.
+ * - 명령: summon(소환), merge·mergeAll(승급·모두 승급), move(이동·교환), hold(끄는 동안 공격 정지), debugSkipStage·debugAddGold(개발용, debug 판에서만).
+ * - 덱: 플레이어별 (생략하면 decks.json 기본 덱). 판 시작 때 등급별로 복사·동결하고 검사한다 (판 도중 바깥에서 못 바꿈).
  * 화면은 match.state·mobs()·towers()를 읽기만 하고, 바꾸려면 명령을 world.enqueue() 한다.
  */
 import type { GameData } from '../data/load';
@@ -16,7 +16,7 @@ import { listMobs, countMobs, type Mob } from './entities/Mob';
 import { listProjectiles, type Projectile } from './entities/Projectile';
 import { listTowers, type Tower } from './entities/Tower';
 import { buildSimMap, type SimMap } from './map';
-import { NO_THEME, buildMatchRules, checkDeck, themeMods, type Deck, type MatchRules, type ThemeMods } from './rules';
+import { NO_THEME, buildMatchRules, checkDeck, freezeDeck, themeMods, type Deck, type MatchRules, type ThemeMods } from './rules';
 import type { MatchContext, MatchMode, MatchState } from './state';
 import { newPlayerMods } from './stats';
 import { createCombatSystem } from './systems/Combat';
@@ -25,7 +25,7 @@ import { createMovementSystem } from './systems/Movement';
 import { createSpawnSystem } from './systems/Spawn';
 import { createStageSystem, skipStage, ticksToNextStage } from './systems/Stage';
 import { merge, mergeAll } from './systems/Merge';
-import { moveTower } from './systems/Move';
+import { holdTower, moveTower } from './systems/Move';
 import { summon } from './systems/Summon';
 
 export interface MatchOptions {
@@ -165,7 +165,8 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
   for (let p = 0; p < players; p++) state.mods.push(newPlayerMods());
   const decks: Deck[] = [];
   for (let p = 0; p < players; p++) {
-    const deck = opts.decks?.[p] ?? rules.baseDeck;
+    // 등급별로 복사해 얼린다 → 판 도중 호출자가 원본 덱을 고쳐도 소환·승급이 바뀌지 않는다 (리플레이 = 시드 + 시작 때 덱)
+    const deck = freezeDeck(opts.decks?.[p] ?? rules.baseDeck);
     checkDeck(rules, deck, `플레이어 ${p} 덱`);
     decks.push(deck);
   }
@@ -195,6 +196,9 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
   });
   world.setCommandHandler('move', (w, cmd) => {
     if (cmd.type === 'move') moveTower(ctx, w, cmd.player, cmd.fx, cmd.fy, cmd.tx, cmd.ty);
+  });
+  world.setCommandHandler('hold', (w, cmd) => {
+    if (cmd.type === 'hold') holdTower(ctx, w, cmd.player, cmd.x, cmd.y, cmd.on === 1);
   });
   world.setCommandHandler('debugAddGold', (_w, cmd) => {
     if (cmd.type !== 'debugAddGold' || !state.debug || state.phase !== 'playing') return;

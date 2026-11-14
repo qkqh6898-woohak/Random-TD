@@ -12,8 +12,10 @@
  *
  * - 타워 탭 (M3-11): 정보 패널(DOM) + 사거리 원·같은 종류 강조. 패널의 [승급]·[모두 승급] → merge·mergeAll 명령,
  *   승급 직후 0.3초는 입력을 받지 않는다 (UI.md 9장). 아래 띠 '⬆ 승급 가능 n'을 누르면 승급할 수 있는 타워를 고른다.
- * - 타워 길게 눌러 끌기 (M3-10): 0.3초 누르면 타워가 손가락 위로 들리고, 놓을 칸을 초록(이동)·파랑(교환)·빨강(불가)으로 보여준다.
- *   손을 떼면 move 명령. 명령이 실행될 때까지 놓은 자리에 붙잡아 둔다.
+ * - 타워 길게 눌러 끌기 (M3-10): 0.3초 누르면 타워가 손가락 위로 들리고(hold 명령 → 끄는 동안 공격 정지, GDD 4.5),
+ *   놓을 칸을 초록(이동)·파랑(교환)·빨강(불가)으로 보여준다. 놓을 칸은 손가락이 움직인 만큼만 바뀐다(처음 누른 자리와 무관).
+ *   손을 떼면 hold 해제 + move 명령. 명령이 실행될 때까지 놓은 자리에 붙잡아 둔다. 움직이지 않고 떼면 느린 탭 = 정보 패널.
+ *   타워를 누르고 있는 동안 다른 손가락의 터치는 받지 않는다 (두 손가락 확대는 M11).
  * - 승급 연출: 사라진 2칸에서 빛 구슬이 결과 칸으로 빨려 들어간 뒤 빛 기둥 (레전드·신은 화면 흔들림). 치명타 숫자는 크게 + '!'.
  * - 무한 모드: 순환의 정원 / 캠페인(debug): 테마 1 사거리 미로.
  * - ⏸ 또는 앱이 백그라운드로 가면 일시정지 메뉴(UI.md 4.6). 열려 있는 동안 TickClock 배속 0 = 게임 시간 정지.
@@ -35,20 +37,31 @@ import { mergeableGroups, sameKindTowers } from '../../sim/systems/Merge';
 import { isPaused, moveCheck } from '../../sim/systems/Move';
 import { summonCheck, towerCount } from '../../sim/systems/Summon';
 import { BOARD_FULL, godDescends, mergeFailText, mergeReadyToast } from '../../ui/messages';
-import { createTowerPanel, panelSideFor, type TowerPanelView } from '../../ui/panels/TowerPanel';
+import { createTowerPanel, type TowerPanelView } from '../../ui/panels/TowerPanel';
 import { buildTowerPanelModel } from '../../ui/panels/towerPanelModel';
 import { createHud, type HudView } from '../../ui/hud/Hud';
 import { buildHudModel, defeatText, stageToastText } from '../../ui/hud/hudModel';
 import { availableSpeeds, nextSpeed } from '../../ui/hud/speed';
 import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
 import { createPauseMenu } from '../../ui/screens/PauseMenu';
-import { GAME_HEIGHT, SCENE_BOOT, SCENE_GAME } from '../config';
+import { SCENE_BOOT, SCENE_GAME } from '../config';
 import type { GameContext } from '../context';
-import { DRAG_LIFT_TILES, MERGE_INPUT_LOCK_MS, dropPreview, inputLocked, isTap, pressPhase, type DropPreview } from '../input/press';
+import {
+  MERGE_INPUT_LOCK_MS,
+  dragAim,
+  dragFootPx,
+  dropPreview,
+  inputLocked,
+  isTap,
+  pressPhase,
+  releaseAction,
+  type DropPreview,
+} from '../input/press';
 import { decideTap, summonFailText, tapAllowed, tapTile } from '../input/tap';
 import {
   computeMapLayout,
   cssToGamePx,
+  gameToCssPx,
   mapAreaBelowHud,
   pxToTile,
   tileCenterPx,
@@ -64,7 +77,7 @@ import { ProjectileLayer, type ProjectileLook } from '../render/ProjectileSprite
 import { SelectionLayer } from '../render/SelectionLayer';
 import { TowerLayer } from '../render/TowerSprite';
 import { DAMAGE_COLORS, damageColor, eventFxVisible } from '../render/fxModel';
-import { FOOT_OFFSET_TILES } from '../render/towerGeom';
+import { FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../render/towerGeom';
 /** HUD 띠 아래 끝과 알림 사이 간격 (무대 너비 비율, 2cqw) */
 const TOAST_GAP_OF_WIDTH = 0.02;
 /** 한 프레임에 띄우는 피해 숫자 최대 수 */
@@ -94,6 +107,8 @@ interface PressState {
   x: number;
   y: number;
   dragging: boolean;
+  /** 끌기를 시작하며 hold(on = 1) 명령을 보냈다 → 끝날 때 꼭 on = 0을 보낸다 */
+  holdSent: boolean;
   /** 끄는 중 놓을 칸과 미리 보기 */
   drop: { tx: number; ty: number; preview: DropPreview } | null;
 }
@@ -162,6 +177,10 @@ export class GameScene extends Phaser.Scene {
   private portraits = new Map<string, string | null>();
   /** 타워 id → 이름 (패널 승급 결과 미리 보기) */
   private towerNames = new Map<string, string>();
+  /** 정보 패널 자리를 마지막으로 정한 조건 (고른 타워·칸·배치가 같고 글자가 그대로면 다시 재지 않는다) */
+  private panelPlaceKey = '';
+  /** 위쪽 정보 패널의 위쪽 끝 = HUD 띠 + 알림 한 줄 자리 아래 (무대 CSS px) */
+  private panelTopCss = 0;
 
   constructor(private readonly ctx: GameContext) {
     super({ key: SCENE_GAME });
@@ -195,6 +214,7 @@ export class GameScene extends Phaser.Scene {
     this.mergeReadyKinds = new Set();
     this.mergeReadyToasts = 0;
     this.mergeReadyCount = 0;
+    this.panelPlaceKey = '';
     this.towerNames = new Map(this.ctx.data.towers.towers.map((t) => [t.id, t.name]));
     this.bossNames =
       this.sceneData.mode === 'campaign' ? campaign.themes.find((t) => t.theme === this.sceneData.theme)?.bossSchedule : undefined;
@@ -251,6 +271,7 @@ export class GameScene extends Phaser.Scene {
       this.mapRenderer = null;
       this.ctx.ui.clear('hud');
       this.ctx.ui.setToastTop(null);
+      this.ctx.ui.setToastSingle(false);
       if (this.paused || this.gameOver) this.ctx.ui.clear('screen');
       this.paused = false;
       this.gameOver = false;
@@ -271,6 +292,8 @@ export class GameScene extends Phaser.Scene {
     if (!this.gameOver) this.runTicks(this.clock.advance(deltaMs));
     this.handleEvents(time);
     this.updatePress(this.time.now);
+    // 들려 있어야 할 타워(끄는 중 / 놓고 명령을 기다리는 중) 말고는 내려놓는다 — 끌기를 끝내는 길을 놓쳐도 유령 그림이 남지 않게
+    this.towerLayer.releaseDragsExcept(this.press?.dragging ? this.press.id : (this.pendingDrop?.id ?? null), this.time.now);
     const alpha = this.gameOver ? 1 : this.clock.alpha;
     this.mobLayer.sync(this.match.mobs(), this.prevProgress, alpha, time);
     this.towerLayer.sync(this.match.towers(), time);
@@ -365,6 +388,11 @@ export class GameScene extends Phaser.Scene {
     return this.press?.dragging ? { id: this.press.id, drop: this.press.drop } : null;
   }
 
+  /** 손가락 위에 들려 그려진 타워 그림 수 (E2E: 끌기가 끝나면 0 — 유령 그림이 남지 않는지). */
+  get draggingTowerCount(): number {
+    return this.towerLayer.draggingCount;
+  }
+
   /** 타워 그림의 지금 발밑 위치 (기준 px, E2E: 끌기·미끄러짐). */
   towerFootPx(id: number): { x: number; y: number } | null {
     return this.towerLayer.footPx(id);
@@ -391,10 +419,17 @@ export class GameScene extends Phaser.Scene {
     return mapAreaBelowHud(cssToGamePx(band + toastLane, w), cssToGamePx(this.hud.bottomTop(), w));
   }
 
-  /** 알림을 HUD 띠 바로 아래(맵 영역 위에 비워 둔 자리)에 띄운다. */
+  /**
+   * 알림을 HUD 띠 바로 아래(맵 영역 위에 비워 둔 자리)에 띄운다.
+   * 위쪽 정보 패널은 그 알림 한 줄 자리 아래에 붙인다 → 알림이 패널 머리줄(이름·별·✕)을 덮지 않는다.
+   */
   private updateToastTop(): void {
     const bottom = this.hud.bandBottom();
-    this.ctx.ui.setToastTop(bottom > 0 ? bottom + this.ctx.ui.el.clientWidth * TOAST_GAP_OF_WIDTH : null);
+    const w = this.ctx.ui.el.clientWidth;
+    const gap = w * TOAST_GAP_OF_WIDTH;
+    this.ctx.ui.setToastTop(bottom > 0 ? bottom + gap : null);
+    this.panelTopCss = bottom + gap + this.ctx.ui.measureToastHeight() + gap / 2;
+    this.panelPlaceKey = '';
   }
 
   /** HUD 돈 글자 위치 (기준 px) — 동전이 날아갈 곳. */
@@ -428,6 +463,12 @@ export class GameScene extends Phaser.Scene {
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
     if (this.paused || this.gameOver) return;
     const now = this.time.now;
+    // 다른 손가락이 타워를 누르거나 끄는 중이면 이 터치는 받지 않는다 (누르기를 덮어쓰면 끌던 그림이 놓은 자리에 남는다).
+    // 앞 누르기의 손가락이 이미 떨어졌는데(사건을 놓침) 남아 있으면 취소하고 새로 받는다.
+    if (this.press) {
+      if (this.press.pointer !== pointer && this.press.pointer.isDown) return;
+      this.cancelPress(now);
+    }
     if (inputLocked(this.inputLockUntil, now)) return;
     // 아래 칸 타워의 머리(위 칸으로 삐져나온 부분)를 누르면 그 타워 칸 (위 칸 소환 아님)
     const world = this.match.world;
@@ -445,6 +486,7 @@ export class GameScene extends Phaser.Scene {
         x: pointer.worldX,
         y: pointer.worldY,
         dragging: false,
+        holdSent: false,
         drop: null,
       };
       return;
@@ -486,7 +528,11 @@ export class GameScene extends Phaser.Scene {
     if (this.paused || this.gameOver) return;
     const moved = Math.hypot(p.x - p.downX, p.y - p.downY);
     if (!isTap(now - p.downMs, moved, this.layout.tile)) return;
-    // 탭: 정보 패널 (같은 타워를 다시 누르면 닫기). 칸이 가득 찼으면 M2 안내도 같이
+    this.tapTower(p);
+  }
+
+  /** 타워 탭: 정보 패널 (같은 타워를 다시 누르면 닫기). 칸이 가득 찼으면 M2 안내도 같이. */
+  private tapTower(p: PressState): void {
     if (this.selectedId === p.id && this.panel) this.closePanel();
     else this.selectTower(p.id);
     if (summonCheck(this.match.ctx, this.match.world, p.tx, p.ty) === 'full') this.ctx.ui.toast(BOARD_FULL);
@@ -520,22 +566,37 @@ export class GameScene extends Phaser.Scene {
       p.dragging = true;
       this.closePanel();
       this.selectedId = p.id;
+      // 끄는 동안 이 타워는 공격하지 않는다 (GDD 4.5 '이동 중인 타워는 공격하지 않음'). 끝날 때 on = 0
+      p.holdSent = this.match.world.enqueue({ type: 'hold', x: p.tx, y: p.ty, on: 1 }).ok;
     }
+    // 놓을 칸 = 원래 칸 중심 + 손가락이 움직인 만큼 (처음 누른 자리가 얼굴이든 머리든 같다). 그림만 0.45칸 들어 올린다
     const L = this.layout;
-    const aimX = p.x;
-    const aimY = p.y - L.tile * DRAG_LIFT_TILES;
-    const t = pxToTile(L, aimX, aimY);
+    const aim = dragAim(tileCenterPx(L, p.tx, p.ty), { x: p.downX, y: p.downY }, { x: p.x, y: p.y });
+    const t = pxToTile(L, aim.x, aim.y);
     const inMap = t.tx >= 0 && t.ty >= 0 && t.tx < this.match.map.width && t.ty < this.match.map.height;
     const check = inMap ? moveCheck(this.match.ctx, this.match.world, LOCAL_PLAYER, p.tx, p.ty, t.tx, t.ty) : null;
     p.drop = check ? { tx: t.tx, ty: t.ty, preview: dropPreview(check) } : null;
-    this.towerLayer.setDrag(p.id, { x: aimX, y: aimY + L.tile * FOOT_OFFSET_TILES }, now);
+    this.towerLayer.setDrag(p.id, dragFootPx(aim, L.tile), now);
   }
 
-  /** 끌기 끝: 놓을 수 있는 칸이면 move 명령. 명령이 실행될 때까지 그 자리에 붙잡아 둔다. */
+  /** 끌기를 시작할 때 보낸 hold(on = 1)를 푼다 (놓기·취소 모두). 옮길 때는 이 뒤에 move를 보낸다 (같은 틱, 이 순서로 실행). */
+  private releaseHold(p: PressState): void {
+    if (!p.holdSent) return;
+    p.holdSent = false;
+    this.match.world.enqueue({ type: 'hold', x: p.tx, y: p.ty, on: 0 });
+  }
+
+  /**
+   * 끌기 끝: hold를 풀고, 놓을 수 있는 칸이면 move 명령 (명령이 실행될 때까지 그 자리에 붙잡아 둔다).
+   * 제자리에서 거의 움직이지 않고 떼면 느린 탭으로 보고 정보 패널을 연다.
+   */
   private finishDrag(p: PressState, now: number): void {
     const drop = p.drop;
     this.selectedId = null;
-    if (drop && (drop.preview === 'move' || drop.preview === 'swap') && !this.paused && !this.gameOver) {
+    this.releaseHold(p);
+    const moved = Math.hypot(p.x - p.downX, p.y - p.downY);
+    const action = this.paused || this.gameOver ? 'none' : releaseAction(drop?.preview ?? null, moved, this.layout.tile);
+    if (action === 'move' && drop) {
       const r = this.match.world.enqueue({ type: 'move', fx: p.tx, fy: p.ty, tx: drop.tx, ty: drop.ty });
       if (r.ok) {
         const c = tileCenterPx(this.layout, drop.tx, drop.ty);
@@ -546,13 +607,16 @@ export class GameScene extends Phaser.Scene {
       }
     }
     this.towerLayer.setDrag(p.id, null, now);
+    if (action === 'tap' && this.match.world.entities.has(p.id)) this.tapTower(p);
   }
 
-  /** 누르기·끌기 취소 (일시정지·패배·타워가 사라짐). */
+  /** 누르기·끌기 취소 (일시정지·패배·타워가 사라짐·손을 뗀 사건을 놓침). */
   private cancelPress(now: number): void {
     const p = this.press;
     this.press = null;
-    if (p?.dragging) {
+    if (!p) return;
+    this.releaseHold(p);
+    if (p.dragging) {
       this.towerLayer.setDrag(p.id, null, now);
       this.selectedId = null;
     }
@@ -584,6 +648,8 @@ export class GameScene extends Phaser.Scene {
   private closePanel(): void {
     if (this.panel) this.ctx.ui.clear('panel');
     this.panel = null;
+    this.panelPlaceKey = '';
+    this.ctx.ui.setToastSingle(false);
     if (!this.press?.dragging) this.selectedId = null;
   }
 
@@ -646,14 +712,23 @@ export class GameScene extends Phaser.Scene {
       mergeCount: rules.mergeCount,
       mergeableGrade: canMergeGrade(stats.grade),
       outcomes: mergeOutcomes(deck, stats.grade).map((id) => names.get(id) ?? id),
-      paused: isPaused(t, this.match.tick),
+      // '이동 중' = 놓은 뒤 0.5초 정지만 (끄는 동안에는 패널이 닫혀 있다. 느린 탭으로 다시 열 때 hold 해제 전 한 틱 깜빡이지 않게)
+      paused: isPaused({ pauseUntil: t.pauseUntil, held: false }, this.match.tick),
       penMaxBp: rules.penMaxBp,
     });
-    this.panel.update(model, this.portraitOf(t.tower));
-    // 타워가 화면 아래쪽이면 패널을 위에 띄워 가리지 않게
-    const c = tileCenterPx(this.layout, t.tx, t.ty);
-    const w = this.ctx.ui.el.clientWidth;
-    this.panel.setSide(panelSideFor(c.y / GAME_HEIGHT), this.hud.bandBottom() + w * TOAST_GAP_OF_WIDTH);
+    const changed = this.panel.update(model, this.portraitOf(t.tower));
+    // 패널이 고른 타워 그림을 가리지 않게: 실제 패널 높이와 그림 위치를 재서 쪽·접기 단계를 정한다 (바뀔 때만)
+    const ui = this.ctx.ui.el;
+    const key = `${t.id}|${t.tx},${t.ty}|${this.layout.tile}|${this.layout.originY}|${ui.clientWidth}x${ui.clientHeight}`;
+    if (!changed && key === this.panelPlaceKey) return;
+    this.panelPlaceKey = key;
+    const L = this.layout;
+    const c = tileCenterPx(L, t.tx, t.ty);
+    const span = towerFigureSpanTiles();
+    const w = ui.clientWidth;
+    const figure = { top: gameToCssPx(c.y + L.tile * span.top, w), bottom: gameToCssPx(c.y + L.tile * span.bottom, w) };
+    const placement = this.panel.place(figure, this.panelTopCss);
+    this.ctx.ui.setToastSingle(placement.side === 'top');
   }
 
   /** 고른 타워의 사거리 원·같은 종류 강조, 끌기 미리 보기 + 패널 갱신. */
@@ -850,17 +925,19 @@ export class GameScene extends Phaser.Scene {
     if (defeated) this.showGameOver();
   }
 
-  /** 승급 가능한 묶음 수를 세고, 새로 승급할 수 있게 된 종류는 알림 (판당 처음 3번, UI.md 8장). */
+  /**
+   * 승급 가능한 묶음 수를 세고, 새로 승급할 수 있게 된 종류는 알림 (판당 처음 3번, UI.md 8장).
+   * 한 프레임에 여러 종류가 한꺼번에 승급 가능해지면 알림 하나로 합친다 (알림이 쌓여 맵 위쪽 줄을 가리지 않게).
+   */
   private checkMergeReady(): void {
     const groups = mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
     this.mergeReadyCount = groups.length;
     const now = new Set(groups.map((g) => g.tower));
-    for (const g of groups) {
-      if (this.mergeReadyKinds.has(g.tower) || this.mergeReadyToasts >= MERGE_READY_TOASTS_PER_MATCH) continue;
-      this.mergeReadyToasts++;
-      this.ctx.ui.toast(mergeReadyToast(this.ctx.data.towers.towers.find((t) => t.id === g.tower)?.name ?? g.tower));
-    }
+    const fresh = groups.filter((g) => !this.mergeReadyKinds.has(g.tower));
     this.mergeReadyKinds = now;
+    if (fresh.length === 0 || this.mergeReadyToasts >= MERGE_READY_TOASTS_PER_MATCH) return;
+    this.mergeReadyToasts++;
+    this.ctx.ui.toast(mergeReadyToast(fresh.map((g) => this.towerNames.get(g.tower) ?? g.tower)));
   }
 
   /** 광역 폭발 색: 쏜 타워의 피해 종류 (물리 주황 · 마법 하늘 · 고정 노랑). 타워가 없으면 주황. */

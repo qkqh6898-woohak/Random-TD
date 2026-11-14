@@ -19,7 +19,7 @@ type SceneLike = {
   match: {
     tick: number;
     state: { stage: number; gold: number; merges: number; moves: number };
-    towers(): TowerLite[];
+    towers(): (TowerLite & { held: boolean; attacks: number })[];
     rules: { towers: Map<string, { grade: string }> };
     map: { buildable: [number, number][] };
     world: { enqueue(c: unknown): { ok: boolean } };
@@ -29,6 +29,8 @@ type SceneLike = {
   selectedTowerId: number | null;
   dragState: { id: number; drop: { tx: number; ty: number; preview: string } | null } | null;
   renderedTowerCount: number;
+  draggingTowerCount: number;
+  towerFootPx(id: number): { x: number; y: number } | null;
   debugFastForward(n: number): number;
 };
 
@@ -205,6 +207,11 @@ test('모두 승급: 같은 종류 n개 → ⌊n/3⌋번 승급, 아래 띠 [⬆
   expect(group.length).toBeGreaterThanOrEqual(6);
   const readyBtn = page.getByTestId('hud-merge-ready');
   await expect(readyBtn).toBeVisible();
+  // 한꺼번에 여러 종류가 승급 가능해져도 '승급 가능' 알림은 하나 (쌓여서 맵 위쪽 줄을 가리지 않게, 검토 반영)
+  await expect(page.locator('.toast', { hasText: '승급 가능' })).toHaveCount(1);
+  // 버튼이 보여도 아래 띠 소환 안내(비용)가 잘리지 않는다
+  await expect(page.getByTestId('hud-hint')).toHaveText('소환 · 100원');
+  expect(await page.getByTestId('hud-hint').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
   // 버튼이 나타나도 아래 띠 높이가 그대로라 맵이 다시 배치되지 않는다
   await page.waitForTimeout(200);
   expect(await inScene(page, (s) => ({ ...s.mapLayout }), null)).toEqual(layout0);
@@ -235,12 +242,14 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
     [6, 2],
   ]);
   const [a, b] = await towers(page);
-  // 끌 때 타워는 손가락보다 0.45칸 위에 그려지고 그 칸을 노린다 → 손가락은 목표 칸 중심보다 0.45칸 아래
+  // 놓을 칸은 손가락이 움직인 만큼만 바뀐다 (그림만 0.45칸 들려 그려짐) → 칸 중심에서 목표 칸 중심으로 끌면 된다
   const from = await tilePoint(page, a!.tx, a!.ty);
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   await page.waitForTimeout(450); // 0.3초 넘게 누르기
-  const to = await tilePoint(page, 3, 2, 0.45);
+  // 끄는 동안 그 타워는 공격하지 않는다 (hold 명령, GDD 4.5)
+  await expect.poll(async () => inScene(page, (s, id) => s.match.towers().find((t) => t.id === id)!.held, a!.id)).toBe(true);
+  const to = await tilePoint(page, 3, 2);
   await page.mouse.move(to.x, to.y, { steps: 6 });
   await expect.poll(async () => inScene(page, (s) => s.dragState?.drop?.preview ?? null, null)).toBe('move');
   expect(await inScene(page, (s) => s.dragState?.drop, null)).toMatchObject({ tx: 3, ty: 2 });
@@ -249,6 +258,7 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   await expect.poll(async () => inScene(page, (s) => s.match.state.moves, null)).toBe(1);
   let list = await towers(page);
   expect(list.find((t) => t.id === a!.id)).toMatchObject({ tx: 3, ty: 2 });
+  expect(await inScene(page, (s, id) => s.match.towers().find((t) => t.id === id)!.held, a!.id)).toBe(false);
   await expect(page.getByTestId('tower-panel')).toHaveCount(0);
 
   // 교환: a(3,2)를 b(6,2) 위로
@@ -256,7 +266,7 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   await page.mouse.move(from2.x, from2.y);
   await page.mouse.down();
   await page.waitForTimeout(450);
-  const to2 = await tilePoint(page, b!.tx, b!.ty, 0.45);
+  const to2 = await tilePoint(page, b!.tx, b!.ty);
   await page.mouse.move(to2.x, to2.y, { steps: 6 });
   await expect.poll(async () => inScene(page, (s) => s.dragState?.drop?.preview ?? null, null)).toBe('swap');
   await page.mouse.up();
@@ -270,7 +280,7 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   await page.mouse.move(from3.x, from3.y);
   await page.mouse.down();
   await page.waitForTimeout(450);
-  const to3 = await tilePoint(page, 1, 1, 0.45);
+  const to3 = await tilePoint(page, 1, 1);
   await page.mouse.move(to3.x, to3.y, { steps: 6 });
   await expect.poll(async () => inScene(page, (s) => s.dragState?.drop?.preview ?? null, null)).toBe('invalid');
   await page.mouse.up();
@@ -294,6 +304,182 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   await tapTile(page, 3, 2);
   await expect(page.getByTestId('tower-panel')).toBeVisible();
   expect(await inScene(page, (s) => s.dragState, null)).toBeNull();
+  expect(await inScene(page, (s) => s.draggingTowerCount, null)).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+test('느린 탭: 캐릭터 얼굴·머리를 0.4초 누르고 움직이지 않고 떼면 제자리 (옮겨지거나 위 타워와 바뀌지 않음) + 정보 패널 (검토 반영)', async ({ page }) => {
+  const errors = collectErrors(page);
+  await start(page);
+  await summonMany(page, [
+    [0, 4],
+    [0, 3],
+  ]);
+  const before = await towers(page);
+  const lower = before.find((t) => t.ty === 4)!;
+  // 칸 중심보다 0.25칸 위(얼굴), 0.6칸 위(머리 — 위 칸에 삐져나온 부분)
+  for (const dy of [-0.25, -0.6]) {
+    const p = await tilePoint(page, lower.tx, lower.ty, dy);
+    await page.mouse.move(p.x, p.y);
+    await page.mouse.down();
+    await page.waitForTimeout(420);
+    await expect.poll(async () => inScene(page, (s) => s.dragState?.id ?? null, null)).toBe(lower.id);
+    expect(await inScene(page, (s) => s.dragState?.drop?.preview ?? null, null)).toBe('none');
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+    expect(await inScene(page, (s) => s.match.state.moves, null)).toBe(0);
+    expect(await towers(page)).toEqual(before);
+    // 느린 탭 = 정보 패널
+    await expect(page.getByTestId('tower-panel')).toBeVisible();
+    expect(await inScene(page, (s) => s.selectedTowerId, null)).toBe(lower.id);
+    await page.locator('[data-action="panel-close"]').click();
+    await expect(page.getByTestId('tower-panel')).toHaveCount(0);
+  }
+  expect(await inScene(page, (s, id) => s.match.towers().find((t) => t.id === id)!.held, lower.id)).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test('두 손가락: 끄는 중에 다른 손가락이 다른 타워를 눌러도 처음 끌기가 그대로 이어지고, 다 떼면 그림이 실제 칸에 있다 (검토 반영)', async ({ page }) => {
+  const errors = collectErrors(page);
+  await start(page);
+  await summonMany(page, [
+    [2, 2],
+    [6, 2],
+  ]);
+  const [a, b] = await towers(page);
+  const cdp = await page.context().newCDPSession(page);
+  const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', points: { x: number; y: number; id: number }[]) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+  const pa = await tilePoint(page, a!.tx, a!.ty);
+  await touch('touchStart', [{ ...pa, id: 1 }]);
+  await page.waitForTimeout(450);
+  const to = await tilePoint(page, 3, 4);
+  for (let i = 1; i <= 6; i++) {
+    await touch('touchMove', [{ x: pa.x + ((to.x - pa.x) * i) / 6, y: pa.y + ((to.y - pa.y) * i) / 6, id: 1 }]);
+    await page.waitForTimeout(30);
+  }
+  await expect.poll(async () => inScene(page, (s) => s.dragState?.drop ?? null, null)).toMatchObject({ tx: 3, ty: 4, preview: 'move' });
+  // 둘째 손가락이 타워 b를 눌렀다 뗀다 → 무시 (끌기는 a 그대로)
+  const pb = await tilePoint(page, b!.tx, b!.ty);
+  await touch('touchStart', [
+    { ...to, id: 1 },
+    { ...pb, id: 2 },
+  ]);
+  await page.waitForTimeout(100);
+  expect(await inScene(page, (s) => s.dragState?.id ?? null, null)).toBe(a!.id);
+  await touch('touchEnd', [{ ...pb, id: 2 }]);
+  await page.waitForTimeout(50);
+  await touch('touchEnd', []);
+  await expect.poll(async () => inScene(page, (s) => s.match.state.moves, null)).toBe(1);
+  await page.waitForTimeout(600);
+  const list = await towers(page);
+  const ma = list.find((t) => t.id === a!.id)!;
+  expect(ma).toMatchObject({ tx: 3, ty: 4 });
+  // 그림 발밑 = 실제 칸 (칸 중심 + 0.3칸) — 끌던 자리에 유령 그림이 남지 않는다
+  const foot = await inScene(page, (s, id) => s.towerFootPx(id), a!.id);
+  const want = await inScene(page, (s, xy) => ({ x: s.mapLayout.originX + (xy[0] + 0.5) * s.mapLayout.tile, y: s.mapLayout.originY + (xy[1] + 0.8) * s.mapLayout.tile }), [ma.tx, ma.ty] as const);
+  expect(Math.abs(foot!.x - want.x)).toBeLessThan(1);
+  expect(Math.abs(foot!.y - want.y)).toBeLessThan(1);
+  expect(await inScene(page, (s) => s.draggingTowerCount, null)).toBe(0);
+  expect(await inScene(page, (s) => s.dragState, null)).toBeNull();
+  expect(list.find((t) => t.id === b!.id)).toMatchObject({ tx: b!.tx, ty: b!.ty });
+  expect(errors).toEqual([]);
+});
+
+/** 고른 타워 그림(머리·별 ~ 받침대, 페이지 CSS px)과 패널 상자. 등장 애니메이션이 끝난 뒤 잰다. */
+async function panelVsTower(page: Page, tx: number, ty: number) {
+  return page.evaluate(
+    ([x, y]) => {
+      const s = (window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } }).__rtd.game.scene.getScene('Game') as {
+        mapLayout: { originY: number; tile: number };
+      };
+      const L = s.mapLayout;
+      const st = document.getElementById('stage')!.getBoundingClientRect();
+      const k = st.width / 1080;
+      const cy = L.originY + (y + 0.5) * L.tile;
+      const fig = { top: st.top + (cy - 0.836 * L.tile) * k, bottom: st.top + (cy + 0.475 * L.tile) * k };
+      const el = document.querySelector('[data-testid="tower-panel"]') as HTMLElement;
+      const r = el.getBoundingClientRect();
+      const toasts = [...document.querySelectorAll('.toast')]
+        .filter((t) => getComputedStyle(t).display !== 'none')
+        .map((t) => t.getBoundingClientRect())
+        .map((b) => ({ top: b.top, bottom: b.bottom }));
+      return {
+        side: el.classList.contains('is-top') ? 'top' : 'bottom',
+        density: el.dataset.density,
+        panel: { top: r.top, bottom: r.bottom },
+        fig,
+        overlap: Math.max(0, Math.min(r.bottom, fig.bottom) - Math.max(r.top, fig.top)),
+        toasts,
+        x,
+      };
+    },
+    [tx, ty] as const,
+  );
+}
+
+test('정보 패널은 어느 줄의 타워를 골라도 그 타워 그림을 가리지 않는다 (맵 가운데 줄은 접어서, 검토 반영)', async ({ page }) => {
+  const errors = collectErrors(page);
+  await start(page);
+  const rows = await inScene(page, (s) => {
+    const out: [number, number][] = [];
+    for (let y = 0; y < 11; y++) {
+      const c = s.match.map.buildable.find(([x, yy]) => yy === y && x >= 3) ?? s.match.map.buildable.find(([, yy]) => yy === y);
+      if (c) out.push([c[0], c[1]]);
+    }
+    return out;
+  }, null);
+  expect(rows.length).toBe(11);
+  const seen = new Set<string>();
+  for (const [x, y] of rows) {
+    await summonMany(page, [[x, y]]);
+    await tapTile(page, x, y);
+    await expect(page.getByTestId('tower-panel')).toBeVisible();
+    await page.waitForTimeout(250); // 등장 애니메이션(0.16초) 끝
+    const m = await panelVsTower(page, x, y);
+    expect(m.overlap, `${y}줄: ${JSON.stringify(m)}`).toBe(0);
+    seen.add(`${m.side}${m.density}`);
+    await page.locator('[data-action="panel-close"]').click();
+    await expect(page.getByTestId('tower-panel')).toHaveCount(0);
+    await inScene(page, (s) => {
+      for (const t of s.match.towers()) (s.match.world as unknown as { entities: { remove(id: number): void } }).entities.remove(t.id);
+      return null;
+    }, null);
+  }
+  // 위·아래 모두 쓰이고, 가운데 줄에서는 접힌다
+  expect([...seen].some((k) => k.startsWith('top'))).toBe(true);
+  expect([...seen].some((k) => k.startsWith('bottom'))).toBe(true);
+  expect([...seen].some((k) => !k.endsWith('0'))).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+test('위쪽 패널 + 알림: 칸이 가득 찬 판에서 아래쪽 타워를 누르면 알림이 패널 머리줄(이름·✕)을 덮지 않는다 (검토 반영)', async ({ page }) => {
+  const errors = collectErrors(page);
+  await start(page);
+  const all = await inScene(page, (s) => s.match.map.buildable.map(([x, y]) => [x, y] as [number, number]), null);
+  await summonMany(page, all);
+  const lowest = [...all].sort((p, q) => q[1] - p[1] || p[0] - q[0])[0]!;
+  await page.waitForTimeout(100);
+  await tapTile(page, lowest[0], lowest[1]);
+  await expect(page.getByTestId('tower-panel')).toHaveClass(/is-top/);
+  await page.waitForTimeout(250);
+  await expect(page.locator('.toast', { hasText: '빈 칸이 없어요' })).toBeVisible();
+  const m = await panelVsTower(page, lowest[0], lowest[1]);
+  expect(m.overlap).toBe(0);
+  expect(m.toasts.length).toBeGreaterThanOrEqual(1);
+  for (const t of m.toasts) expect(t.bottom, JSON.stringify(m)).toBeLessThanOrEqual(m.panel.top + 0.5);
+  // ✕ 버튼이 알림에 덮이지 않고 보인다
+  const close = await page.locator('[data-action="panel-close"]').boundingBox();
+  for (const t of m.toasts) expect(close!.y).toBeGreaterThanOrEqual(t.bottom);
+  await shot(page, 'M3a-top-panel-toast');
+  // 열린 패널의 글자가 바뀌어 자리를 다시 재도(쪽 클래스를 잠깐 바꿈) 등장 애니메이션이 다시 시작되지 않는다
+  await inScene(page, (s) => {
+    const t = s.match.towers().find((x) => x.id === s.selectedTowerId) as unknown as { pauseUntil: number };
+    t.pauseUntil = s.match.tick + 200; // '이동 중' 표시 → 패널 글자가 바뀜
+    return null;
+  }, null);
+  await expect(page.locator('.tp-paused')).toBeVisible();
+  expect(await page.getByTestId('tower-panel').evaluate((el) => el.getAnimations().length)).toBe(0);
+  await expect(page.getByTestId('tower-panel')).toHaveClass(/is-top/);
   expect(errors).toEqual([]);
 });
 
