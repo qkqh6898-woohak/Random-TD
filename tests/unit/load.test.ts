@@ -236,3 +236,94 @@ describe('스키마 검사기', () => {
     expect(err?.message).toContain('외 45건');
   });
 });
+
+describe('M1 데이터: 곡선 표·등장 규칙·판 설정', () => {
+  const enemiesOf = (raw: RawGameData): Json => raw.enemies as Json;
+  const gameOf = (raw: RawGameData): Json => raw.game as Json;
+
+  it('curves.json도 함께 읽고 길이·단조 증가를 검사한다', () => {
+    const data = loadGameData();
+    expect(data.curves.maxStage).toBe(500);
+    expect(data.curves.hp).toHaveLength(501);
+    const raw = rawCopy();
+    const curves = raw.curves as { hp: number[]; armorFlat: number[] };
+    curves.hp[10] = 1;
+    curves.armorFlat.pop();
+    const issues = issuesOf(() => buildGameData(raw));
+    expect(issues).toContainEqual(expect.objectContaining({ file: 'curves.json', path: 'hp[10]' }));
+    expect(issues).toContainEqual(expect.objectContaining({ file: 'curves.json', path: 'armorFlat' }));
+  });
+
+  it('enemies.json growth를 바꾸고 표를 다시 만들지 않으면 교차 검사가 잡는다', () => {
+    const raw = rawCopy();
+    ((enemiesOf(raw).growth as Json).hp as Json).base = 150;
+    expect(() => buildGameData(raw)).toThrow(/curves\.json: hp\[1\]: growth\.hp\.base\(150\)와 다르다/);
+    const raw2 = rawCopy();
+    (enemiesOf(raw2).growth as Json).maxStage = 400;
+    expect(() => buildGameData(raw2)).toThrow(/curves\.json: maxStage/);
+  });
+
+  it('growth 구간은 1단계부터 오름차순', () => {
+    const raw = rawCopy();
+    const segs = ((enemiesOf(raw).growth as Json).hp as Json).segments as Json[];
+    segs[0]!.from = 3;
+    segs[2]!.from = 21;
+    const issues = issuesOf(() => buildGameData(raw));
+    const paths = issues.map((i) => i.path);
+    expect(paths).toContain('growth.hp.segments[0].from');
+    expect(paths).toContain('growth.hp.segments[2].from');
+  });
+
+  it('등장 순서 규칙: 없는 몹·칸 수를 넘는 자리·거꾸로 된 범위', () => {
+    const raw = rawCopy();
+    const so = enemiesOf(raw).spawnOrder as Json;
+    (so.middle as Json).mobs = ['healer', 'dragon'];
+    (so.back as Json).slots = [15, 25];
+    const issues = issuesOf(() => buildGameData(raw));
+    expect(issues).toContainEqual(expect.objectContaining({ path: 'spawnOrder.middle.mobs[1]', message: '없는 몹: dragon' }));
+    expect(issues.find((i) => i.path === 'spawnOrder.back.slots')?.message).toContain('slotsPerStage = 20');
+    const raw2 = rawCopy();
+    ((enemiesOf(raw2).spawnOrder as Json).middle as Json).slots = [12, 8];
+    expect(() => buildGameData(raw2)).toThrow(/spawnOrder\.middle\.slots: 시작 칸\(12\)이 끝 칸\(8\)보다 크다/);
+  });
+
+  it('구성표 칸 수 합계는 단계당 칸 수(20)와 같아야 한다', () => {
+    const raw = rawCopy();
+    ((enemiesOf(raw).composition as Json[])[0]!.mix as Json).slime = 19;
+    expect(() => buildGameData(raw)).toThrow(/composition\[0\]\.mix: 칸 수 합계 19 ≠ 단계당 칸 수 20/);
+  });
+
+  it('투명·떼 필드 타입 (swarm은 1 이상 정수)', () => {
+    const data = loadGameData();
+    expect(data.enemies.mobs.filter((m) => m.invisible).map((m) => m.id)).toEqual(['thief', 'shadowwolf']);
+    expect(data.enemies.mobs.find((m) => m.id === 'goblin')?.swarm).toBe(3);
+    const raw = rawCopy();
+    const goblin = (enemiesOf(raw).mobs as Json[]).find((m) => m.id === 'goblin')!;
+    goblin.swarm = 0;
+    expect(() => buildGameData(raw)).toThrow(/mobs\[\d+\]\.swarm: 1 이상이어야 하는데 0/);
+  });
+
+  it('판 설정: 등장 간격은 1틱(0.05초) 단위, 무한 맵은 있는 무한 모드 맵', () => {
+    const raw = rawCopy();
+    (gameOf(raw).match as Json).spawnIntervalSeconds = 2.52;
+    expect(() => buildGameData(raw)).toThrow(/match\.spawnIntervalSeconds: 0\.05초\(1틱\) 단위/);
+    const raw2 = rawCopy();
+    (gameOf(raw2).match as Json).infiniteMapId = 'crossroads';
+    expect(() => buildGameData(raw2)).toThrow(/crossroads는 무한 모드 맵이 아니다/);
+    const raw3 = rawCopy();
+    (gameOf(raw3).match as Json).infiniteMapId = 'nowhere';
+    expect(() => buildGameData(raw3)).toThrow(/match\.infiniteMapId: 없는 맵: nowhere/);
+  });
+
+  it('맵: 경로가 지나는 칸은 P, P 칸은 경로 위 (그림과 이동이 어긋나지 않게)', () => {
+    const raw = rawCopy();
+    const circle = raw.maps.circle as Json;
+    const tiles = circle.tiles as string[];
+    tiles[1] = 'BPPPBPPPB'; // (4,1)은 경로인데 B → 배치 칸 수도 바뀜
+    tiles[5] = 'BPBBPBBPB'; // (4,5)는 P인데 경로가 아님
+    const issues = issuesOf(() => buildGameData(raw));
+    const msgs = issues.filter((i) => i.path === 'tiles').map((i) => i.message);
+    expect(msgs).toContain('경로가 지나는데 P가 아닌 칸: [4,1]');
+    expect(msgs).toContain('경로가 지나지 않는 P 칸: [4,5]');
+  });
+});

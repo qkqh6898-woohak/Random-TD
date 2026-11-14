@@ -13,7 +13,8 @@
     "preview": "vite preview --port 4173",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "tsc --noEmit && node tools/check-determinism.mjs && python3 tools/gen_tables.py --check",
+    "check": "tsc --noEmit && node tools/check-determinism.mjs && node tools/precompute-curves.mjs --check && python3 tools/gen_tables.py --check",
+    "curves": "node tools/precompute-curves.mjs",
     "e2e": "playwright test --trace off",
     "screens": "SAVE_SCREENS=1 playwright test --trace off",
     "sim": "node tools/sim.mjs"

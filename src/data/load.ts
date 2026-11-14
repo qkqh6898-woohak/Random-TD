@@ -5,6 +5,7 @@
  * - 검사에 실패하면 `DataError`를 던진다. 메시지에 **파일 이름 + 필드 경로**가 들어간다.
  *   예: `towers.json: towers[3].aps: 숫자여야 하는데 문자열 "fast"`
  * - 맵은 `src/data/maps/*.json`을 모두 자동으로 읽는다 (M6에서 테마 맵 추가 시 코드 수정 불필요).
+ * - `curves.json`은 `tools/precompute-curves.mjs`가 enemies.json growth로 만든 표다 (sim은 거듭제곱을 못 쓴다).
  * - 수치 해석(소수 → 정수 단위 변환)은 각 시스템이 로드할 때 `src/sim/Fixed.ts`로 한다.
  */
 
@@ -12,6 +13,8 @@ import towersJson from './towers.json';
 import enemiesJson from './enemies.json';
 import campaignJson from './campaign.json';
 import gameJson from './game.json';
+import curvesJson from './curves.json';
+import { TICK_HZ } from '../sim/World';
 import { s, validate, type Issue, type Schema } from './schema';
 
 // ---------------------------------------------------------------------------
@@ -124,7 +127,10 @@ export interface MobData {
   legion: string;
   spawnOnly?: boolean;
   splitInto?: unknown;
-  swarm?: unknown;
+  /** 떼: 1칸에 이만큼 붙어서 등장 (암흑 고블린 떼 3). 없으면 1 */
+  swarm?: number;
+  /** 투명 (ENEMIES.md 5장). 등장 순서에서 무리 뒤쪽에 놓인다 */
+  invisible?: boolean;
 }
 
 export interface BossData {
@@ -172,11 +178,29 @@ export interface FormationData {
   counter: string;
 }
 
+/** 단계별 성장 수치 (ENEMIES.md 2장). curves.json의 원본. */
+export interface GrowthData {
+  note?: string;
+  maxStage: number;
+  hp: { base: number; segments: { from: number; rate: number }[] };
+  armor: { perStage: number; flatFrom: number; flatPerStage: number };
+  reward: { base: number; perStages: number };
+}
+
+/** 한 단계 등장 순서 규칙 (ENEMIES.md 3.2). slots는 1부터 센 [처음, 끝] (양 끝 포함). */
+export interface SpawnOrderData {
+  note?: string;
+  middle: { slots: [number, number]; mobs: string[] };
+  back: { slots: [number, number] };
+}
+
 export interface EnemiesFile {
   version: number;
   formulas: Record<string, string>;
+  growth: GrowthData;
   mobs: MobData[];
   composition: CompositionEntry[];
+  spawnOrder: SpawnOrderData;
   bosses: BossData[];
   challenges: ChallengeData[];
   eliteChance: { fromStage: number; chance: number; hpMul: number; rewardMul: number };
@@ -248,11 +272,45 @@ export interface SpeedOption {
   unlockLevel: number;
 }
 
+/** 한 판의 흐름 (GDD.md 2.2). */
+export interface MatchConfig {
+  startGold: number;
+  prepSeconds: number;
+  stageSeconds: number;
+  slotsPerStage: number;
+  /** 0.05초(1틱) 단위 */
+  spawnIntervalSeconds: number;
+  bossEvery: number;
+  infiniteMapId: string;
+}
+
+/** HUD 경고 기준 (UI.md 4.2). */
+export interface HudConfig {
+  timerWarnSeconds: number;
+  mobWarnCount: number;
+  livesWarn: number;
+}
+
 export interface GameConfig {
   version: number;
   speeds: SpeedOption[];
   maxFrameMs: number;
   maxPlayers: number;
+  match: MatchConfig;
+  hud: HudConfig;
+}
+
+/** 미리 계산한 성장 곡선 표 (tools/precompute-curves.mjs). 인덱스 = 단계 (0 ~ maxStage). */
+export interface CurvesFile {
+  version: number;
+  source: string;
+  maxStage: number;
+  /** 단계별 기준 체력 HP(s), 정수. hp[0] = 0 (준비 단계) */
+  hp: number[];
+  /** 방어력·마법 저항 배율 (bp). 10000 + 200s */
+  armorMulBp: number[];
+  /** 방어력·마법 저항 추가값. max(0, s − 100) */
+  armorFlat: number[];
 }
 
 export interface GameData {
@@ -261,6 +319,7 @@ export interface GameData {
   campaign: CampaignFile;
   maps: Record<string, MapData>;
   game: GameConfig;
+  curves: CurvesFile;
 }
 
 // ---------------------------------------------------------------------------
@@ -348,7 +407,33 @@ const mobSchema = s.obj({
   legion: s.str({ nonEmpty: true }),
   spawnOnly: s.opt(s.bool()),
   splitInto: s.opt(s.any()),
-  swarm: s.opt(s.any()),
+  swarm: s.opt(s.int({ min: 1, max: 10 })),
+  invisible: s.opt(s.bool()),
+});
+
+const slotRange = s.withCheck<[number, number]>(s.tuple(s.int({ min: 1 }), s.int({ min: 1 })), (v, path, issues) => {
+  if (v[0] > v[1]) issues.push({ path, message: `시작 칸(${v[0]})이 끝 칸(${v[1]})보다 크다` });
+});
+
+const growthSchema = s.obj({
+  note: s.opt(s.str()),
+  maxStage: s.int({ min: 1, max: 1000 }),
+  hp: s.obj({
+    base: s.num({ min: 1 }),
+    segments: s.withCheck<{ from: number; rate: number }[]>(
+      s.arr(s.obj({ from: s.int({ min: 1 }), rate: s.num({ min: 1 }) }), { minLength: 1 }),
+      (v, path, issues) => {
+        if (v[0]?.from !== 1) issues.push({ path: `${path}[0].from`, message: '첫 구간은 1단계부터' });
+        for (let i = 1; i < v.length; i++) {
+          if ((v[i] as { from: number }).from <= (v[i - 1] as { from: number }).from) {
+            issues.push({ path: `${path}[${i}].from`, message: '구간 시작 단계는 오름차순이어야 한다' });
+          }
+        }
+      },
+    ),
+  }),
+  armor: s.obj({ perStage: s.num({ min: 0 }), flatFrom: s.int({ min: 0 }), flatPerStage: s.num({ min: 0 }) }),
+  reward: s.obj({ base: s.int({ min: 0 }), perStages: s.int({ min: 1 }) }),
 });
 
 const bossSchema = s.obj({
@@ -386,7 +471,13 @@ export const enemiesSchema: Schema = s.obj({
   version: s.int({ min: 1 }),
   formulas: s.rec(s.str()),
   mobs: s.arr(mobSchema, { minLength: 1, uniqueBy: 'id' }),
+  growth: growthSchema,
   composition: s.arr(s.obj({ stages: stageRange, mix }), { minLength: 1 }),
+  spawnOrder: s.obj({
+    note: s.opt(s.str()),
+    middle: s.obj({ slots: slotRange, mobs: s.arr(s.str({ nonEmpty: true })) }),
+    back: s.obj({ slots: slotRange }),
+  }),
   bosses: s.arr(bossSchema, { minLength: 1, uniqueBy: 'id' }),
   challenges: s.arr(challengeSchema, { minLength: 1, uniqueBy: 'id' }),
   eliteChance: s.obj({
@@ -526,6 +617,35 @@ function checkMap(m: MapData, root: string, issues: Issue[]): void {
   } else if (m.exit !== undefined && !samePoint(m.exit, last)) {
     issues.push({ path: `${path}exit`, message: `exit ${fmtPoint(m.exit)}이 마지막 웨이포인트 ${fmtPoint(last)}와 다르다` });
   }
+  // 경로가 지나는 맵 안 칸은 모두 P, P 칸은 모두 경로 위 (그림과 실제 이동이 어긋나지 않게)
+  const onPath = new Set<string>();
+  for (let i = 1; i < m.waypoints.length; i++) {
+    const [ax, ay] = m.waypoints[i - 1] as Point;
+    const [bx, by] = m.waypoints[i] as Point;
+    if (ax !== bx && ay !== by) continue; // 위에서 이미 보고함
+    const dx = Math.sign(bx - ax);
+    const dy = Math.sign(by - ay);
+    for (let x = ax, y = ay; ; x += dx, y += dy) {
+      onPath.add(`${x},${y}`);
+      if (x === bx && y === by) break;
+    }
+  }
+  const pathNotP: string[] = [];
+  const pNotPath: string[] = [];
+  m.tiles.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const isP = row[x] === 'P';
+      const on = onPath.has(`${x},${y}`);
+      if (on && !isP) pathNotP.push(`[${x},${y}]`);
+      if (isP && !on) pNotPath.push(`[${x},${y}]`);
+    }
+  });
+  if (pathNotP.length > 0) {
+    issues.push({ path: `${path}tiles`, message: `경로가 지나는데 P가 아닌 칸: ${pathNotP.slice(0, 8).join(' ')}` });
+  }
+  if (pNotPath.length > 0) {
+    issues.push({ path: `${path}tiles`, message: `경로가 지나지 않는 P 칸: ${pNotPath.slice(0, 8).join(' ')}` });
+  }
   const measured = measurePath(m.waypoints, m.loop === true);
   if (measured.length !== m.pathLength) {
     issues.push({ path: `${path}pathLength`, message: `웨이포인트 길이 합은 ${measured.length}칸인데 ${m.pathLength}로 적혀 있다` });
@@ -584,7 +704,52 @@ export const gameSchema: Schema = s.obj({
   ),
   maxFrameMs: s.int({ min: 50, max: 2000 }),
   maxPlayers: s.int({ min: 1, max: 4 }),
+  match: s.obj({
+    startGold: s.int({ min: 0 }),
+    prepSeconds: s.int({ min: 0 }),
+    stageSeconds: s.int({ min: 1 }),
+    slotsPerStage: s.int({ min: 1, max: 100 }),
+    spawnIntervalSeconds: s.withCheck<number>(s.num({ min: 0.05 }), (v, path, issues) => {
+      // 1틱(0.05초) 단위가 아니면 틱으로 정확히 바꿀 수 없다
+      const ticks = v * TICK_HZ;
+      if (Math.abs(ticks - Math.round(ticks)) > 1e-9) issues.push({ path, message: `0.05초(1틱) 단위여야 하는데 ${v}` });
+    }),
+    bossEvery: s.int({ min: 1 }),
+    infiniteMapId: s.str({ nonEmpty: true }),
+  }),
+  hud: s.obj({
+    timerWarnSeconds: s.int({ min: 0 }),
+    mobWarnCount: s.int({ min: 0 }),
+    livesWarn: s.int({ min: 0 }),
+  }),
 });
+
+const intArray = s.arr(s.int({ min: 0, max: Number.MAX_SAFE_INTEGER }), { minLength: 2 });
+
+export const curvesSchema: Schema = s.withCheck<CurvesFile>(
+  s.obj({
+    version: s.int({ min: 1 }),
+    source: s.str(),
+    maxStage: s.int({ min: 1 }),
+    hp: intArray,
+    armorMulBp: intArray,
+    armorFlat: intArray,
+  }),
+  (v, path, issues) => {
+    const p = path ? `${path}.` : '';
+    for (const key of ['hp', 'armorMulBp', 'armorFlat'] as const) {
+      if (v[key].length !== v.maxStage + 1) {
+        issues.push({ path: `${p}${key}`, message: `길이가 maxStage + 1(${v.maxStage + 1})이어야 하는데 ${v[key].length}` });
+      }
+    }
+    for (let i = 2; i < v.hp.length; i++) {
+      if ((v.hp[i] as number) < (v.hp[i - 1] as number)) {
+        issues.push({ path: `${p}hp[${i}]`, message: '체력 곡선은 단계가 오를수록 줄면 안 된다' });
+        break;
+      }
+    }
+  },
+);
 
 // ---------------------------------------------------------------------------
 // 로드
@@ -609,8 +774,8 @@ export function parseJsonText<T>(file: string, text: string, schema: Schema): T 
   return parseData<T>(file, raw, schema);
 }
 
-/** 파일 사이 참조 검사 (종족·원소·조합 재료·몹 id). */
-export function crossCheck(data: Omit<GameData, 'game'>): Issue[] {
+/** 파일 사이 참조 검사 (종족·원소·조합 재료·몹 id·맵·곡선 표). */
+export function crossCheck(data: GameData): Issue[] {
   const issues: Issue[] = [];
   const { towers, enemies } = data;
   const factionIds = new Set([...Object.keys(towers.factions), ...SPECIAL_FACTIONS]);
@@ -642,8 +807,46 @@ export function crossCheck(data: Omit<GameData, 'game'>): Issue[] {
       if (!mobIds.has(id)) issues.push({ file: 'enemies.json', path: `formations[${i}].mix.${id}`, message: `없는 몹: ${id}` });
     }
   });
+  enemies.spawnOrder.middle.mobs.forEach((id, i) => {
+    if (!mobIds.has(id)) issues.push({ file: 'enemies.json', path: `spawnOrder.middle.mobs[${i}]`, message: `없는 몹: ${id}` });
+  });
+  for (const [key, slots] of [['middle', enemies.spawnOrder.middle.slots], ['back', enemies.spawnOrder.back.slots]] as const) {
+    if (slots[1] > data.game.match.slotsPerStage) {
+      issues.push({
+        file: 'enemies.json',
+        path: `spawnOrder.${key}.slots`,
+        message: `끝 칸(${slots[1]})이 단계당 칸 수(game.json match.slotsPerStage = ${data.game.match.slotsPerStage})보다 크다`,
+      });
+    }
+  }
+  const slotsPerStage = data.game.match.slotsPerStage;
+  enemies.composition.forEach((c, i) => {
+    const total = Object.values(c.mix).reduce((a, b) => a + b, 0);
+    if (total !== slotsPerStage) {
+      issues.push({ file: 'enemies.json', path: `composition[${i}].mix`, message: `칸 수 합계 ${total} ≠ 단계당 칸 수 ${slotsPerStage}` });
+    }
+  });
   for (const [id, m] of Object.entries(data.maps)) {
     if (m.id !== id) issues.push({ file: `maps/${id}.json`, path: 'id', message: `파일 이름(${id})과 id(${m.id})가 다르다` });
+  }
+  const infinite = data.maps[data.game.match.infiniteMapId];
+  if (!infinite) {
+    issues.push({ file: 'game.json', path: 'match.infiniteMapId', message: `없는 맵: ${data.game.match.infiniteMapId}` });
+  } else if (infinite.mode !== 'infinite') {
+    issues.push({ file: 'game.json', path: 'match.infiniteMapId', message: `${infinite.id}는 무한 모드 맵이 아니다 (mode: ${infinite.mode})` });
+  }
+  if (data.curves.maxStage !== enemies.growth.maxStage) {
+    issues.push({
+      file: 'curves.json',
+      path: 'maxStage',
+      message: `enemies.json growth.maxStage(${enemies.growth.maxStage})와 다르다 → node tools/precompute-curves.mjs`,
+    });
+  } else if (data.curves.hp[1] !== Math.round(enemies.growth.hp.base)) {
+    issues.push({
+      file: 'curves.json',
+      path: 'hp[1]',
+      message: `growth.hp.base(${enemies.growth.hp.base})와 다르다 → node tools/precompute-curves.mjs`,
+    });
   }
   return issues;
 }
@@ -654,6 +857,7 @@ export interface RawGameData {
   enemies: unknown;
   campaign: unknown;
   game: unknown;
+  curves: unknown;
   /** 키 = 파일 이름(확장자 없이) */
   maps: Record<string, unknown>;
 }
@@ -667,7 +871,7 @@ export function bundledRawData(): RawGameData {
     const name = path.replace(/^.*\//, '').replace(/\.json$/, '');
     maps[name] = mod;
   }
-  return { towers: towersJson, enemies: enemiesJson, campaign: campaignJson, game: gameJson, maps };
+  return { towers: towersJson, enemies: enemiesJson, campaign: campaignJson, game: gameJson, curves: curvesJson, maps };
 }
 
 /** 원본 JSON 묶음 → 검사 → GameData. 문제가 있으면 DataError (모든 파일의 문제를 모아서). */
@@ -688,6 +892,7 @@ export function buildGameData(raw: RawGameData): GameData {
   const enemies = attempt<EnemiesFile>('enemies.json', raw.enemies, enemiesSchema);
   const campaign = attempt<CampaignFile>('campaign.json', raw.campaign, campaignSchema);
   const game = attempt<GameConfig>('game.json', raw.game, gameSchema);
+  const curves = attempt<CurvesFile>('curves.json', raw.curves, curvesSchema);
   const maps: Record<string, MapData> = {};
   for (const [name, value] of Object.entries(raw.maps)) {
     const m = attempt<MapData>(`maps/${name}.json`, value, mapSchema);
@@ -700,7 +905,7 @@ export function buildGameData(raw: RawGameData): GameData {
       errors.flatMap((e) => e.issues.map((i) => ({ ...i, file: i.file ?? e.file }))),
     );
   }
-  const data: GameData = { towers: towers!, enemies: enemies!, campaign: campaign!, game: game!, maps };
+  const data: GameData = { towers: towers!, enemies: enemies!, campaign: campaign!, game: game!, curves: curves!, maps };
   const cross = crossCheck(data);
   if (cross.length > 0) throw new DataError('교차 참조', cross);
   return data;

@@ -6,6 +6,40 @@
   "reduction": "피해 감소율 = A / (A + 100), A = max(0, 방어력*(1-관통%) - 고정 관통)",
   "reward": "(10 + floor(s/10)) * rewardMul"
  },
+ "growth": {
+  "note": "단계별 성장 수치 (ENEMIES.md 2장, BALANCE.md 1·3장). tools/precompute-curves.mjs가 이 값으로 src/data/curves.json(단계 0~maxStage 표)을 만든다. hp: HP(1)=base, 구간 from부터 rate배씩 (앞 구간 끝 값 × rate^(s-(from-1))). armor: 기본값 × (1 + perStage × s) + max(0, s - flatFrom) × flatPerStage. reward: (base + floor(s / perStages)) × 몹 rewardMul",
+  "maxStage": 500,
+  "hp": {
+   "base": 120,
+   "segments": [
+    {
+     "from": 1,
+     "rate": 1.151
+    },
+    {
+     "from": 21,
+     "rate": 1.08
+    },
+    {
+     "from": 51,
+     "rate": 1.06
+    },
+    {
+     "from": 101,
+     "rate": 1.05
+    }
+   ]
+  },
+  "armor": {
+   "perStage": 0.02,
+   "flatFrom": 100,
+   "flatPerStage": 1
+  },
+  "reward": {
+   "base": 10,
+   "perStages": 10
+  }
+ },
  "mobs": [
   {
    "id": "slime",
@@ -133,6 +167,7 @@
     "투명",
     "출구 도달 시 목숨 2"
    ],
+   "invisible": true,
    "lifeDamage": 2,
    "rewardMul": 2.0,
    "size": "소형",
@@ -191,6 +226,7 @@
     "투명",
     "체력 50% 이하에서 이동속도 +30%"
    ],
+   "invisible": true,
    "lifeDamage": 2,
    "rewardMul": 2.0,
    "size": "중형",
@@ -424,6 +460,24 @@
    }
   }
  ],
+ "spawnOrder": {
+  "note": "한 단계 20칸의 등장 순서 규칙 (ENEMIES.md 3.2). 칸 번호는 1부터. 섞은 뒤 middle.mobs는 middle.slots 안, 투명 몹(invisible)은 back.slots 안에 놓는다. 자리가 모자라면 가까운 칸으로 넓힌다",
+  "middle": {
+   "slots": [
+    8,
+    12
+   ],
+   "mobs": [
+    "healer"
+   ]
+  },
+  "back": {
+   "slots": [
+    15,
+    20
+   ]
+  }
+ },
  "bosses": [
   {
    "stage": 10,
