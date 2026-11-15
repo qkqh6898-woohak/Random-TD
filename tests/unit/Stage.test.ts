@@ -109,6 +109,85 @@ describe('개발용 단계 건너뛰기 (debugSkipStage 명령)', () => {
     expect(match.world.executed.map((c) => c.type)).toEqual(['debugSkipStage']); // 기록은 남는다
   });
 
+  it('같은 틱에 여러 번 눌러도 누를 때마다 한 단계씩 (빠른 연타, T-1) — 단계마다 stageStart 사건', () => {
+    const match = createMatch(data, { seed: 5, mode: 'infinite', debug: true });
+    match.stepN(30);
+    for (let i = 0; i < 3; i++) expect(match.world.enqueue({ type: 'debugSkipStage' }).ok).toBe(true);
+    match.world.drainEvents();
+    match.step(); // 틱 30
+    expect(match.state.stage).toBe(3);
+    expect(match.state.stageStartTick).toBe(30);
+    expect(match.state.nextStageTick).toBe(30 + match.rules.stageTicks);
+    expect(
+      match.world
+        .drainEvents()
+        .filter((e) => e.type === 'stageStart')
+        .map((e) => e.stage),
+    ).toEqual([1, 2, 3]);
+    // 등장 대기열은 마지막(3단계) 것 하나만, 첫 칸이 바로 나온다
+    expect(match.state.spawnStage).toBe(3);
+    expect(match.state.spawned).toBe(1);
+    // 다음 틱에는 더 넘어가지 않는다
+    match.step();
+    expect(match.state.stage).toBe(3);
+  });
+
+  it('원래 단계가 바뀌는 틱에 누르면 그 단계 + 한 단계 더 (누른 만큼 앞서 간다)', () => {
+    const match = createMatch(data, { seed: 6, mode: 'infinite', debug: true });
+    match.stepN(match.rules.prepTicks); // 다음 틱 = 1단계 시작 틱
+    match.world.enqueue({ type: 'debugSkipStage' });
+    match.step();
+    expect(match.state.stage).toBe(2);
+  });
+
+  it('보스 단계에서 누르면 바로 다음 단계: 보스를 보상·카드 없이 지우고 제한 시간 패배가 없다, 도전 보스는 남는다', () => {
+    const match = createMatch(data, { seed: 7, mode: 'infinite', debug: true });
+    jumpToStage(match, 10);
+    expect(match.state.bossStage).toBe(true);
+    expect(match.state.bossId).not.toBe('');
+    match.world.enqueue({ type: 'startChallenge', lv: 1 });
+    match.step();
+    const chal = () => match.world.entities.list().filter((e) => e.kind === 'mob' && Boolean(e.challenge)).length;
+    expect(chal()).toBe(1);
+    const gold = match.state.gold;
+    match.world.drainEvents();
+    match.world.enqueue({ type: 'debugSkipStage' });
+    match.step();
+    expect(match.state.stage).toBe(11);
+    expect(match.state.bossStage).toBe(false);
+    expect(match.state.bossId).toBe('');
+    expect(match.state.bossDeadline).toBe(0);
+    expect(match.state.gold).toBe(gold);
+    expect(match.state.cardOffers).toHaveLength(0);
+    expect(match.world.drainEvents().map((e) => e.type)).toEqual(expect.arrayContaining(['bossSkip', 'stageStart']));
+    expect(chal()).toBe(1);
+    // 원래 보스 제한 시각(보스 단계 + 60초)이 지나도 패배하지 않는다
+    match.stepN(match.rules.bossTimeTicks + 5);
+    expect(match.defeated).toBe(false);
+  });
+
+  it('보스 단계를 한 틱에 지나쳐도 (9단계에서 3번) 보스가 나오지 않고 패배도 없다', () => {
+    const match = createMatch(data, { seed: 8, mode: 'infinite', debug: true });
+    jumpToStage(match, 9);
+    for (let i = 0; i < 3; i++) match.world.enqueue({ type: 'debugSkipStage' });
+    match.step();
+    expect(match.state.stage).toBe(12);
+    expect(match.state.bossStage).toBe(false);
+    expect(match.state.bossId).toBe('');
+    expect(match.world.entities.list().some((e) => e.kind === 'mob' && e.boss === true)).toBe(false);
+    match.stepN(match.rules.bossTimeTicks + 5);
+    expect(match.defeated).toBe(false);
+  });
+
+  it('캠페인: 49단계에서 한 틱에 3번 눌러도 50단계에서 멈추고 단계 타이머는 정상', () => {
+    const match = createMatch(data, { seed: 9, mode: 'campaign', theme: 1, debug: true });
+    jumpToStage(match, 49);
+    for (let i = 0; i < 3; i++) match.world.enqueue({ type: 'debugSkipStage' });
+    match.step();
+    expect(match.state.stage).toBe(50);
+    expect(match.state.nextStageTick).toBeGreaterThan(match.tick);
+  });
+
   it('캠페인 마지막 단계에서는 더 넘어가지 않는다', () => {
     const match = createMatch(data, { seed: 4, mode: 'campaign', theme: 1, debug: true });
     jumpToStage(match, 50);

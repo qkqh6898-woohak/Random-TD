@@ -28,10 +28,25 @@ export function stageStartTick(prepTicks: number, stageTicks: number, stage: num
   return prepTicks + (stage - 1) * stageTicks;
 }
 
+/** 다음 단계 시작: 단계 +1, 시작 틱 = 지금, 다음 단계 = 지금 + 60초, 'stageStart' 사건. (단계 시스템·단계 건너뛰기 공용) */
+function beginNextStage(ctx: MatchContext, world: World): void {
+  const { state, rules } = ctx;
+  state.stage += 1;
+  state.stageStartTick = world.tick;
+  state.nextStageTick = world.tick + rules.stageTicks;
+  state.bossStage = isBossStage(rules, state.stage);
+  world.emit('stageStart', { stage: state.stage, boss: state.bossStage });
+}
+
 /**
- * 개발용 '단계 건너뛰기' (debugSkipStage 명령): 이번 틱에 바로 다음 단계가 시작되게 한다.
- * 명령은 시스템보다 먼저 실행되므로 같은 틱의 단계 시스템이 단계를 올린다. debug 판이 아니면 무시.
- * 남은 등장 대기열은 새 단계 대기열로 바뀐다 (건너뛴 단계의 남은 몹은 나오지 않음).
+ * 개발용 '다음 단계로 즉시 이동' (debugSkipStage 명령, HUD ⏭): 명령이 실행되는 틱에 바로 다음 단계가 시작된다. debug 판이 아니면 무시.
+ * - 명령은 시스템보다 먼저 실행된다 → 다음 단계 시각을 0으로 당겨 두면 같은 틱의 단계 시스템이 단계를 올리고 타이머를 지금 + 60초로 다시 잡는다.
+ * - 누를 때마다 한 단계 (T-1): 같은 틱에 이미 넘어갈 단계가 있으면(앞선 건너뛰기 또는 원래 바뀌는 틱) 그 단계를 지금 시작하고 하나를 더 걸어 둔다
+ *   → 빠르게 연타해 한 틱에 명령이 여러 개 들어와도 n번 = n단계. 사이 단계의 등장 대기열은 만들지 않는다 (마지막 단계 것만, Spawn).
+ * - 남은 등장 대기열은 새 단계 대기열로 바뀐다 (건너뛴 단계의 남은 몹은 나오지 않음). 맵 위 몹은 그대로 남는다.
+ * - 보스 단계에서 누르면 보스(조각)를 보상·카드 없이 지우고 제한 시간을 끈다 → 제한 시간 패배가 나지 않는다 ('bossSkip' 사건).
+ *   도전 보스는 자기 30초 타이머대로 남는다.
+ * - 캠페인은 마지막 단계(50)에서 멈춘다.
  */
 export function skipStage(ctx: MatchContext, world?: World): void {
   const { state } = ctx;
@@ -44,6 +59,11 @@ export function skipStage(ctx: MatchContext, world?: World): void {
     world.emit('bossSkip', { boss: state.bossId });
     state.bossId = '';
     state.bossDeadline = 0;
+  }
+  if (world && state.nextStageTick <= world.tick) {
+    // 이 틱에 넘어갈 단계가 이미 걸려 있다 → 그 단계를 지금 시작 (단계 시스템이 하나를 더 올린다)
+    beginNextStage(ctx, world);
+    if (state.lastStage > 0 && state.stage >= state.lastStage) return;
   }
   // 지금 틱 이하로 당기면 같은 틱 단계 시스템이 바로 다음 단계를 시작하고, 다음 단계 시각을 지금 + 60초로 다시 잡는다
   state.nextStageTick = 0;
@@ -70,10 +90,6 @@ export function createStageSystem(ctx: MatchContext): System {
       }
       return;
     }
-    state.stage += 1;
-    state.stageStartTick = world.tick;
-    state.nextStageTick = world.tick + rules.stageTicks;
-    state.bossStage = isBossStage(rules, state.stage);
-    world.emit('stageStart', { stage: state.stage, boss: state.bossStage });
+    beginNextStage(ctx, world);
   };
 }
