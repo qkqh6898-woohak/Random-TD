@@ -528,6 +528,8 @@ export interface GambleConfig {
   /** 도박꾼 특색이 줄인 ×0 확률을 더할 배율 (outcomes의 mul 값) */
   zeroShiftTo: number;
   recent: number;
+  /** 화면 대박 연출 최소 배율 (UI.md 10장 '도박 ×5 이상') */
+  bigMul: number;
 }
 
 /** 도전 (GDD.md 6장, M5-2). */
@@ -1225,6 +1227,7 @@ export const gameSchema: Schema = s.obj({
     jackpot: s.obj({ gauge: s.int({ min: 1, max: 100 }), minMul: s.num({ min: 0 }) }),
     zeroShiftTo: s.num({ min: 0 }),
     recent: s.int({ min: 0, max: 20 }),
+    bigMul: s.num({ min: 0 }),
   }),
   challenge: s.obj({
     cooldownSeconds: tickSeconds(0, 3600),

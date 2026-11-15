@@ -8,7 +8,7 @@
  * M5: 도전 보스 막대 (UI.md 4.1 '보스·도전 보스가 있을 때만', 9장 '보스 단계와 도전이 겹치면 체력바 2줄' — 같은 자리를 반씩 나눈다),
  *   하단 메뉴 배지 '⚔ 도전 1 가능' · '⬆ 강화 Lv 5' · '📋 미션 2 받기' (UI.md 4.1, sheets/sheetModels.menuBadges).
  */
-import { BOSS_CLEARED, bossNameplate, bossTag, challengeNameplate } from '../messages';
+import { BOSS_CLEARED, bossNameplate, bossTag, challengeNameplate, withCommas } from '../messages';
 import type { HudConfig } from '../../data/load';
 import type { Mob } from '../../sim/entities/Mob';
 import type { Deck, MatchRules } from '../../sim/rules';
@@ -108,17 +108,8 @@ export function formatTimer(ticksLeft: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-/** 세 자리마다 쉼표 (기기 로케일과 상관없이 같게). */
-export function withCommas(n: number): string {
-  const sign = n < 0 ? '-' : '';
-  const digits = String(Math.abs(Math.trunc(n)));
-  let out = '';
-  for (let i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 === 0) out += ',';
-    out += digits[i];
-  }
-  return sign + out;
-}
+/** 세 자리마다 쉼표 — 알림 문구도 같이 쓰도록 messages.ts에 있다 (여기서 다시 내보낸다). */
+export { withCommas };
 
 /** 소수 한 자리, 끝의 .0은 뺀다 (내림 — 실제보다 많아 보이지 않게). */
 function oneDecimal(v: number): string {
@@ -222,7 +213,7 @@ export function bossHudInput(
   rules: Pick<MatchRules, 'bosses'>,
   legionNames: Readonly<Record<string, string>>,
   state: Pick<MatchState, 'bossId' | 'bossMaxHp' | 'bossDeadline'>,
-  mobs: readonly Pick<Mob, 'boss' | 'hp'>[],
+  mobs: readonly Pick<Mob, 'boss' | 'hp' | 'challenge'>[],
   tick: number,
 ): HudInput['boss'] {
   if (state.bossId === '') return null;
@@ -230,7 +221,8 @@ export function bossHudInput(
   let hp = 0;
   let alive = false;
   for (const m of mobs) {
-    if (!m.boss) continue;
+    // 도전 보스(M5-2)도 boss 취급이지만 판의 보스 막대에는 넣지 않는다 (자기 막대가 따로 — M5 검토 반영)
+    if (!m.boss || m.challenge) continue;
     alive = true;
     hp += m.hp > 0 ? m.hp : 0;
   }

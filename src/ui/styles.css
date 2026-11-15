@@ -802,6 +802,17 @@ body {
   display: none;
 }
 
+/* 바텀 시트를 85%로 펼친 동안: 알림은 시트 아래쪽 (하단 메뉴 바로 위)에 가장 최근 것 하나만 — 시트 머리줄·탭을 덮지 않게 */
+.layer-toast.is-low {
+  justify-content: flex-end;
+  padding-top: 0;
+  padding-bottom: calc(var(--sheet-bottom, 0px) + 3cqw);
+}
+
+.layer-toast.is-low > .toast:not(:last-child) {
+  display: none;
+}
+
 @keyframes toast-in {
   from {
     transform: translateY(-2cqw) scale(0.94);
@@ -1079,6 +1090,18 @@ body {
 
 .tp-actions .btn:disabled {
   opacity: 0.55;
+}
+
+/* [⬆ 승급 가능 n]으로 연 패널: 다음 승급 가능 묶음으로 (패널이 아래 띠의 그 버튼을 덮으므로 패널 안에 둔다) */
+.tp-merge-next {
+  width: 100%;
+  min-height: max(9cqw, 40px);
+  font-size: 3.4cqw;
+  padding: 1cqw 2cqw;
+}
+
+.tp-merge-next[hidden] {
+  display: none;
 }
 
 .tp-note,
@@ -2022,6 +2045,12 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* 기대값 덩어리는 한 줄로 (좁은 화면에서 '기대값'과 '91%'가 갈라지지 않게) */
+.gb-odds-ev {
+  white-space: nowrap;
+  color: var(--text);
+}
+
 /* ---------- 📋 미션 시트 ---------- */
 .ms-claim-all {
   min-height: max(9.5cqw, 38px);
@@ -2090,6 +2119,17 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.ms-desc {
+  font-size: 2.7cqw;
+  color: var(--text-dim);
+  word-break: keep-all;
+  line-height: 1.3;
+}
+
+.ms-desc[hidden] {
+  display: none;
 }
 
 .ms-cat {

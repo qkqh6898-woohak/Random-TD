@@ -69,7 +69,7 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
   const aps = h('span', { class: 'up-aps', attrs: { 'data-testid': 'upgrade-aps', 'aria-label': '지금 공격속도 배율' } });
   sheet.extra.append(aps);
   panes.grade.append(h('div', { class: 'bs-note', text: '등급군의 지금·앞으로 나올 타워 모두 · 길게 누르면 연속 강화' }));
-  panes.stat.append(h('div', { class: 'bs-note', text: '모든 타워 · 한도: 공속 ×5(초당 15회) · 관통 90% · 치명 100%' }));
+  panes.stat.append(h('div', { class: 'bs-note', attrs: { 'data-testid': 'upgrade-stat-note' }, text: first.statNote }));
   sheet.body.append(panes.grade, panes.stat, panes.gamble);
   showPane(sheet.tab ?? 'grade');
 
@@ -136,12 +136,16 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
       return btn;
     }),
   );
-  const odds = h('div', { class: 'gb-odds', attrs: { 'data-testid': 'gamble-odds' } });
+  // 배율표와 기대값은 따로 — 좁은 화면에서 '기대값'과 '91%'가 갈라져 줄이 바뀌지 않게 기대값 덩어리는 줄바꿈 없음 (M5 검토 반영)
+  const oddsList = h('span', { class: 'gb-odds-list' });
+  const oddsEv = h('span', { class: 'gb-odds-ev', attrs: { 'data-testid': 'gamble-ev' } });
+  const odds = h('div', { class: 'gb-odds', attrs: { 'data-testid': 'gamble-odds' } }, oddsList, oddsEv);
   const recent = h('div', { class: 'gb-recent', attrs: { 'data-testid': 'gamble-recent' } });
   panes.gamble.append(h('div', { class: 'gb-slot' }, reel, resultEl), gauge, tables, odds, recent);
 
   let lastAps = '';
   let lastOdds = '';
+  let lastEv = '';
   let lastRecent = '';
   let lastGauge = -1;
   let lastReady = false;
@@ -200,10 +204,15 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
         lastReady = gb.jackpotReady;
         gaugeCells.forEach((c, i) => c.classList.toggle('is-on', i < gb.gauge));
         gauge.classList.toggle('is-ready', gb.jackpotReady);
-        gaugeText.textContent = gb.jackpotReady ? '다음 ×3 이상!' : `${gb.gauge}/${gb.gaugeMax}`;
+        gaugeText.textContent = gb.jackpotReady ? gb.readyText : `${gb.gauge}/${gb.gaugeMax}`;
       }
-      const oddsKey = `${gb.odds.map((o) => `${o.mul} ${o.pct}`).join(' · ')} — ${gb.expectation}`;
-      if (oddsKey !== lastOdds) odds.textContent = lastOdds = oddsKey;
+      const oddsKey = gb.odds
+        .filter((o) => o.pct !== '0%')
+        .map((o) => `${o.mul}\u00a0${o.pct}`) // '×5'와 '2%'가 다른 줄로 갈라지지 않게
+        .join(' · ');
+      if (oddsKey !== lastOdds) oddsList.textContent = lastOdds = oddsKey;
+      const evKey = ` — ${gb.expectation}`;
+      if (evKey !== lastEv) oddsEv.textContent = lastEv = evKey;
       const recentKey = gb.recent.length > 0 ? `최근: ${gb.recent.join(' ')}` : '최근: —';
       if (recentKey !== lastRecent) recent.textContent = lastRecent = recentKey;
       if (slot) {
@@ -215,6 +224,7 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
     },
     destroy() {
       for (const e of rows.values()) e.hold.detach();
+      sheet.destroy?.();
     },
   };
   view.update(first, firstGamble, null);

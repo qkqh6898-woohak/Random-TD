@@ -1,5 +1,6 @@
 /**
- * M3-12 리플레이: 시드 + 명령 기록 저장·재생, 끝 해시 비교. tests/replays/*.json 3개가 같은 해시로 재생되어야 한다.
+ * M3-12 리플레이: 시드 + 명령 기록 저장·재생, 끝 해시 비교. tests/replays/*.json 모두 같은 해시로 재생되어야 한다.
+ * M5 검토 반영: r5-speed(공속 강화 최대 + 오라 → 초당 공격 ≤ 15), r5-menu(도박·강화·도전 10단계·미션 받기).
  * 규칙·수치를 일부러 바꿨으면 `npm run replays`(UPDATE_REPLAYS=1)로 다시 만들고 PROGRESS에 적는다.
  */
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -107,6 +108,45 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
         [4, 6, t('scout')],
         ...innerRing(['dragoncaller', 'archmage', 'warlord', 'fortuna']),
       ],
+    },
+  },
+  {
+    name: 'r5-speed',
+    note: '무한 모드 debug, 21단계로 건너뛴 뒤 대포병(공속 3) 옆에 음유시인·고수, 군주 오라 + 공속 강화 Lv50 (DEV_PLAN 3.2 r5-speed: 초당 공격 ≤ 15)',
+    match: { seed: 5, mode: 'infinite', debug: true, levels: [{ ...allLv(data.decks.base, 15), gunner: 15, bard: 15, drummer: 15 }] },
+    bot: {
+      endTick: 21 + 2400,
+      skipStages: 21,
+      debugGold: 200_000,
+      upgrades: [[3, 50]],
+      debugTowers: [
+        [2, 4, t('gunner')],
+        [2, 3, t('bard')],
+        [2, 5, t('drummer')],
+        [4, 5, t('warlord')],
+      ],
+    },
+  },
+  {
+    name: 'r5-menu',
+    note: '무한 모드 debug, 히든·레전드 안쪽 블록 + 강화(전설·관통·공속·치명) + 100원 도박 5초마다 + 도전 1~10단계(쌍둥이·동결·투명·무적) + 미션 모두 받기 (M5 검토 반영)',
+    match: { seed: 8, mode: 'infinite', debug: true, levels: [allLv(data.decks.base, 15)] },
+    bot: {
+      endTick: 1200 + 10 * 1200,
+      debugGold: 2_000_000,
+      claimMissions: true,
+      challenges: true,
+      upgrades: [
+        [2, 50],
+        [5, 30],
+        [4, 30],
+        [3, 40],
+        [6, 30],
+        [7, 30],
+      ],
+      gamble: { t: 1, every: 100 },
+      pickCard: 0,
+      debugTowers: [[4, 4, t('celestial')], [4, 6, t('celestial')], ...innerRing(['infiniteblade', 'warlord', 'goldking', 'archmage', 'fortuna'])],
     },
   },
 ];
@@ -268,5 +308,63 @@ describe('기록 → 재생', () => {
     const changed = JSON.parse(JSON.stringify(data));
     changed.game.summon.cost = 101;
     expect(dataFingerprint(changed)).not.toBe(dataFingerprint(data));
+  });
+});
+
+describe('M5 리플레이 (검토 반영)', () => {
+  it('r5-speed: 공속 강화 Lv50 + 오라 3종 → 대포병 초당 공격이 기본(3회)의 3배를 넘고, 어느 타워도 1초(20틱)에 15번을 넘지 않는다', () => {
+    const file = JSON.parse(readFileSync(join(DIR, 'r5-speed.json'), 'utf8')) as ReplayFile;
+    const hits = new Map<number, number[]>(); // 타워 id → 공격한 틱들
+    const r = playReplay(data, file, {
+      onStep: (m) => {
+        for (const e of m.world.drainEvents()) {
+          if (e.type !== 'attack') continue;
+          const id = Number(e.tower);
+          const list = hits.get(id) ?? [];
+          list.push(m.tick);
+          hits.set(id, list);
+        }
+      },
+    });
+    expect(r.mismatch).toBeNull();
+    expect(r.match.state.upgrades[0]?.[3]).toBe(50); // 공속 강화 최대
+    const maxPerSecond = (ticks: number[]): number => {
+      let best = 0;
+      let lo = 0;
+      for (let hi = 0; hi < ticks.length; hi++) {
+        while ((ticks[hi] as number) - (ticks[lo] as number) >= 20) lo++;
+        best = Math.max(best, hi - lo + 1);
+      }
+      return best;
+    };
+    const gunner = r.match.towers().find((x) => x.tower === 'gunner')!;
+    expect(maxPerSecond(hits.get(gunner.id) ?? [])).toBeGreaterThanOrEqual(10);
+    for (const [, ticks] of hits) expect(maxPerSecond(ticks)).toBeLessThanOrEqual(rules.apsMaxMilli / 1000);
+    expect(file.commands.filter((c) => c.type === 'upgrade')).toHaveLength(50);
+  });
+
+  it('r5-menu: 도박·강화·도전·미션 받기 명령이 섞인 판 — 도전 10단계까지(쌍둥이는 함께 죽어 처치 1번, 동결·무적), 미션 보상', () => {
+    const file = JSON.parse(readFileSync(join(DIR, 'r5-menu.json'), 'utf8')) as ReplayFile;
+    const seen = new Map<string, number>();
+    const clears: number[] = [];
+    let twinKills = 0;
+    const r = playReplay(data, file, {
+      onStep: (m) => {
+        for (const e of m.world.drainEvents()) {
+          seen.set(e.type, (seen.get(e.type) ?? 0) + 1);
+          if (e.type === 'challengeClear') clears.push(Number(e.lv));
+          if (e.type === 'kill' && e.challenge === 4) twinKills++;
+        }
+      },
+    });
+    expect(r.mismatch).toBeNull();
+    expect(r.match.defeated).toBe(false);
+    for (const type of ['gamble', 'claimAllMissions', 'startChallenge', 'upgrade']) expect(file.commands.some((c) => c.type === type), type).toBe(true);
+    for (const lv of [4, 7, 9, 10]) expect(clears, `도전 ${lv}단계`).toContain(lv);
+    expect(twinKills).toBe(clears.filter((lv) => lv === 4).length);
+    for (const type of ['challengeFreeze', 'challengeGuard', 'challengeInvisible', 'challengeTeleport', 'missionClaim', 'gamble']) {
+      expect(seen.get(type) ?? 0, type).toBeGreaterThan(0);
+    }
+    expect(r.match.state.gambles).toBeGreaterThan(50);
   });
 });

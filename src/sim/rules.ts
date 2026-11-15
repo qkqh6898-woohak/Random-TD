@@ -401,6 +401,8 @@ export interface MatchRules {
   readonly gambleZeroIndex: number;
   /** 화면에 보여줄 최근 결과 수 */
   readonly gambleRecent: number;
+  /** 화면 대박 연출 최소 배율 (bp) */
+  readonly gambleBigMulBp: number;
   /** 도전: 단계별 쿨타임·제한 시간 (틱) */
   readonly challengeCooldownTicks: number;
   readonly challengeTimeTicks: number;
@@ -786,6 +788,7 @@ function buildM5Rules(data: GameData): Pick<
   | 'gambleShiftIndex'
   | 'gambleZeroIndex'
   | 'gambleRecent'
+  | 'gambleBigMulBp'
   | 'challengeCooldownTicks'
   | 'challengeTimeTicks'
   | 'challenges'
@@ -867,6 +870,7 @@ function buildM5Rules(data: GameData): Pick<
     gambleShiftIndex: shift,
     gambleZeroIndex: zero,
     gambleRecent: gb.recent,
+    gambleBigMulBp: exactBp('game.json gamble.bigMul', gb.bigMul),
     challengeCooldownTicks: secondsToTicksExact(game.challenge.cooldownSeconds),
     challengeTimeTicks: secondsToTicksExact(game.challenge.timeLimitSeconds),
     challenges: Object.freeze(enemies.challenges.map(buildChallengeStats)),

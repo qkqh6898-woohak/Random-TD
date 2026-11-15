@@ -5,6 +5,8 @@
  * - moveEvery틱마다: 가장 나중에 놓인 타워를 들어 올렸다가(hold on/off) 빈 칸으로 옮기거나 다른 타워와 교환.
  * - 처음에 debugTowers를 debug 명령으로 놓는다 (debug 판만).
  * - M4: workers까지는 돈이 되면 일꾼을 먼저 고용, pickCard가 있으면 보스 카드를 그 번호로 고른다 (1초마다 한 가지 행동).
+ * - M5 (옵션이 있을 때만 — 예전 리플레이는 그대로): 받을 미션이 있으면 모두 받기, 도전이 비어 있으면 시작할 수 있는 가장 높은
+ *   단계 시작, upgrades 순서대로 목표 레벨까지 강화, gamble.every틱마다 그 테이블 도박. debugGold면 처음에 돈을 더한다 (debug 판).
  */
 import type { Match } from '../../src/sim/match';
 import { towerAt } from '../../src/sim/entities/Tower';
@@ -12,6 +14,10 @@ import { pathTiles } from '../../src/sim/map';
 import { mergeableGroups } from '../../src/sim/systems/Merge';
 import { summonCheck } from '../../src/sim/systems/Summon';
 import { hireCheck } from '../../src/sim/systems/Economy';
+import { challengeCheck } from '../../src/sim/systems/Challenge';
+import { gambleCheck } from '../../src/sim/systems/Gamble';
+import { missionsClaimable } from '../../src/sim/systems/Mission';
+import { upgradeCheck, upgradeLevel } from '../../src/sim/systems/Upgrade';
 
 export interface BotOptions {
   /** 이 틱까지 (패배하면 그 전에 멈춤) */
@@ -28,6 +34,32 @@ export interface BotOptions {
   pickCard?: number;
   /** 처음에 debug 단계 건너뛰기를 이만큼 (1틱에 하나씩, debug 판) */
   skipStages?: number;
+  /** M5: 처음에 debug로 더할 돈 (debug 판) */
+  debugGold?: number;
+  /** M5: 받을 미션이 있으면 [모두 받기] */
+  claimMissions?: boolean;
+  /** M5: 진행 중 도전이 없으면 시작할 수 있는 가장 높은 단계를 시작 */
+  challenges?: boolean;
+  /** M5: 강화 [k, 목표 레벨] — 앞에서부터 목표에 닿을 때까지 (돈이 되면) */
+  upgrades?: [number, number][];
+  /** M5: every틱마다 테이블 t에 도박 (돈이 되면) */
+  gamble?: { t: number; every: number };
+}
+
+/** M5 행동 하나 (없으면 null): 미션 받기 → 도전 → 강화 → 도박. */
+function menuAction(match: Match, opts: BotOptions, t: number): Parameters<Match['world']['enqueue']>[0] | null {
+  const ctx = match.ctx;
+  if (opts.claimMissions && missionsClaimable(match.state) > 0) return { type: 'claimAllMissions' };
+  if (opts.challenges && match.state.challengeLevel === 0) {
+    for (let lv = ctx.rules.challenges.length; lv >= 1; lv--) if (challengeCheck(ctx, lv, t) === null) return { type: 'startChallenge', lv };
+  }
+  for (const [k, target] of opts.upgrades ?? []) {
+    if (upgradeLevel(match.state, 0, k) >= target) continue;
+    if (upgradeCheck(ctx, 0, k) === null) return { type: 'upgrade', k };
+    break; // 앞 강화를 살 돈이 모일 때까지 기다린다
+  }
+  if (opts.gamble && t % opts.gamble.every === 0 && gambleCheck(ctx, 0, opts.gamble.t) === null) return { type: 'gamble', t: opts.gamble.t };
+  return null;
 }
 
 /** 경로에 가까운 배치 칸부터. */
@@ -46,14 +78,18 @@ export function runBot(match: Match, opts: BotOptions): void {
   const w = match.world;
   for (const [x, y, t] of opts.debugTowers ?? []) w.enqueue({ type: 'debugTower', x, y, t });
   for (let i = 0; i < (opts.skipStages ?? 0); i++) w.enqueue({ type: 'debugSkipStage', tick: match.tick + i });
+  if (opts.debugGold) w.enqueue({ type: 'debugAddGold', amount: opts.debugGold });
   let flip = 0;
   while (match.tick < opts.endTick && !match.defeated) {
     const t = match.tick;
     if (t % 20 === 0) {
       const groups = mergeableGroups(match.ctx, w, 0);
       const g = groups[0];
+      const menu = menuAction(match, opts, t);
       if (opts.pickCard !== undefined && match.state.cardOffers.some((o) => o.player === 0)) {
         w.enqueue({ type: 'pickCard', i: opts.pickCard });
+      } else if (menu) {
+        w.enqueue(menu);
       } else if (opts.workers && match.state.workers < opts.workers && hireCheck(match.ctx) === null) {
         w.enqueue({ type: 'hireWorker' });
       } else if (g) {

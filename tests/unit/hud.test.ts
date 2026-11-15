@@ -129,6 +129,27 @@ describe('HUD 값 = sim 값', () => {
     expect(livesDropped(before, buildHudModel(inputOf(camp), cfg))).toBe(true);
   });
 
+  it('보스와 도전 보스가 겹치면 판 보스 막대에는 판 보스 체력만 (도전 보스·쌍둥이 박쥐 체력은 빼고) — M5 검토 반영', () => {
+    const match = infinite(4);
+    jumpToStage(match, 10);
+    const legions = { gale: '질풍 군단' };
+    const queen = match.mobs().find((x) => x.boss)!;
+    queen.hp = 4781; // 최대 체력의 약 25%
+    for (const lv of [3, 4]) {
+      match.state.challengeOpen = lv;
+      match.state.challengeReady = match.state.challengeReady.map(() => 0);
+      match.world.enqueue({ type: 'startChallenge', lv, player: 0 });
+      match.step();
+      expect(match.mobs().filter((x) => x.challenge === lv).length).toBeGreaterThan(0);
+      const boss = bossHudInput(match.rules, legions, match.state, match.mobs(), match.tick);
+      expect(boss?.hp).toBe(queen.hp);
+      expect(buildHudModel({ ...inputOf(match), boss }, cfg).bossHp).toBe(Math.ceil((queen.hp * 1000) / match.state.bossMaxHp));
+      // 다음 단계 도전을 위해 지금 도전을 끝낸다
+      for (const x of match.mobs()) if (x.challenge) match.world.entities.remove(x.id);
+      match.state.challengeLevel = 0;
+    }
+  });
+
   it('보스 단계: 👑 표시 + 보스 막대 (군단·계급 이름표 「이름」, 체력 천분율, 남은 초 — 10초 이하 경고)', () => {
     const match = infinite(4);
     jumpToStage(match, 10);

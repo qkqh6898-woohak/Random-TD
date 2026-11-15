@@ -163,6 +163,44 @@ describe('특수 능력', () => {
     expect(eventsOf(m, 'challengeClear')).toHaveLength(1);
   });
 
+  it('쌍둥이 박쥐가 같은 지속 피해 간격에 함께 죽어도 처치는 한 번 (kills +1, kill 사건 1개, 보상 1번) — M5 검토 반영', () => {
+    const m = arena(1);
+    const a = start(m, 4);
+    const b = listMobs(m.world).filter((e) => e.challenge === 4)[1]!;
+    a.speed = 0;
+    b.speed = 0;
+    a.hp = 5;
+    b.hp = 5;
+    applyDot(a, m.tick, 'poison', 'poison', 100_000, 100, 1);
+    applyDot(b, m.tick, 'poison', 'poison', 100_000, 100, 1);
+    m.world.drainEvents();
+    const kills0 = m.state.kills;
+    const g0 = m.state.gold;
+    m.stepN(20);
+    const ev = m.world.drainEvents();
+    expect(ev.filter((e) => e.type === 'kill')).toHaveLength(1);
+    expect(ev.filter((e) => e.type === 'challengeClear')).toHaveLength(1);
+    expect(m.state.kills).toBe(kills0 + 1);
+    expect(m.state.gold).toBe(g0 + 200);
+    expect(listMobs(m.world).filter((e) => e.challenge)).toHaveLength(0);
+  });
+
+  it('쌍둥이 박쥐: 이미 지운 한 마리를 다시 처치·피해해도 아무 일 없다 (상인 돈·처치 수 그대로)', () => {
+    const m = arena(1);
+    placeTower(m.world, 'merchant', 0, 1, 1);
+    const a = start(m, 4);
+    const b = listMobs(m.world).filter((e) => e.challenge === 4)[1]!;
+    hitFor(m, a, 30000); // 둘 다 죽음 (b는 지워짐, 체력 0 이하)
+    m.world.drainEvents();
+    const kills = m.state.kills;
+    const gold = m.state.gold;
+    killMob(m.ctx, m.world, b, 0, 0);
+    expect(applyHit(m.ctx, m.world, b, { p: 0, m: 0, t: 100 }, { x: 0, y: 0 }, 0)).toBe(true);
+    expect(m.state.kills).toBe(kills);
+    expect(m.state.gold).toBe(gold);
+    expect(m.world.drainEvents().filter((e) => e.type === 'kill' || e.type === 'hit' || e.type === 'abilityGold')).toHaveLength(0);
+  });
+
   it('강철 골렘: 둔화 면역 (기절은 걸림)', () => {
     const m = arena(1);
     const b = start(m, 5);

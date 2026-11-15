@@ -2,11 +2,13 @@
  * 판 안 도박 (DEV_PLAN M5-5, GDD 7.2, PROGRESSION.md 9.2).
  *
  * - 명령 `gamble {t}`: 테이블 t(10원·100원·1000원·10000원)에 비용을 내고 배율을 하나 뽑아 비용 × 배율(내림)을 받는다.
- *   배율표 (game.json gamble.outcomes): ×0 40% · ×0.5 20% · ×1 15% · ×2 15% · ×3 7% · ×5 3% → 기대값 91%.
+ *   배율표 (game.json gamble.outcomes): ×0 40% · ×0.5 20% · ×1 21% · ×2 11% · ×3 6% · ×5 2% → 표만의 기대값 81%,
+ *   잭팟 게이지까지 넣은 실제 기대값 약 91% (M5 검토 반영: GDD 첫 배율표는 잭팟을 빼고 91%라 실제로는 약 101% — 숙련도
+ *   Lv1부터 이득이었다. 기대값 = 잭팟 포함 실제 값으로 정의하고 표를 다시 맞췄다).
  * - 해금: 10원·100원 기본, 1000원 계정 Lv7, 10000원 계정 Lv20 (MatchContext.accountLevels = 메타에서 읽은 판 입력, 기본 1).
  *   debug 판(?debug=1)은 잠긴 테이블도 쓸 수 있고 그러면 debugUsed로 표시한다.
  * - 잭팟 게이지 (플레이어별): ×0이 나올 때마다 +1 (최대 10칸). 10칸이 찬 상태로 도박하면 그 도박은 ×3 이상 확정
- *   (×3·×5를 기본 확률 비율 7 : 3으로) 하고 게이지는 0.
+ *   (×3·×5를 기본 확률 비율 6 : 2로) 하고 게이지는 0.
  * - 도박꾼(유니크) 특색: 판 위에 있는 동안 ×0 확률 −3%p(Lv15 −10%p) → 그만큼 ×1에 더한다 (game.json zeroShiftTo,
  *   PROGRESSION.md 9.1 숙련도와 같은 방식). 같은 타워는 한 번만 (abilities.gambleZeroReduction). 숙련도(M10)는 아직 없다.
  * - 난수: 플레이어별 도박 흐름 `p{n}.gamble` — 도박 1번 = 난수 1개 (확률·잭팟 여부와 상관없이 같은 개수).
@@ -68,21 +70,51 @@ export function rollGamble(rng: Rng, rules: MatchRules, zeroCutBp: number, jackp
   return rules.gambleOutcomes[rng.weightedIndex(gambleWeights(rules, zeroCutBp, jackpot))] as GambleOutcome;
 }
 
+/** 배율표의 가장 큰 배율 (bp) — 테이블 범위 '0 ~ 50,000원'·화면 대박 연출 문턱. */
+export function gambleTopMulBp(rules: Pick<MatchRules, 'gambleOutcomes'>): number {
+  let top = 0;
+  for (const o of rules.gambleOutcomes) if (o.mulBp > top) top = o.mulBp;
+  return top;
+}
+
 /** 이 배율로 받는 돈 = 비용 × 배율 내림. */
 export function gamblePayout(cost: number, mulBpValue: number): number {
   return mulBp(cost, mulBpValue);
 }
 
-/** 기대값 (bp, 비용 대비): Σ 확률 × 배율 — 화면·테스트용 (내림 전 이론값). */
-export function gambleExpectationBp(rules: Pick<MatchRules, 'gambleOutcomes' | 'gambleZeroIndex' | 'gambleShiftIndex' | 'jackpotMinMulBp'>, zeroCutBp = 0): number {
-  const w = gambleWeights(rules, zeroCutBp, false);
+type GambleRules = Pick<MatchRules, 'gambleOutcomes' | 'gambleZeroIndex' | 'gambleShiftIndex' | 'jackpotMinMulBp' | 'jackpotGauge'>;
+
+/** 가중치 합과 Σ 가중치 × 배율. */
+function weightSums(rules: GambleRules, w: readonly number[]): { total: number; sum: number } {
   let total = 0;
   let sum = 0;
   rules.gambleOutcomes.forEach((o, i) => {
     total += w[i] as number;
     sum += (w[i] as number) * o.mulBp;
   });
+  return { total, sum };
+}
+
+/** 한 번 도박의 기대값 (bp, 비용 대비): Σ 확률 × 배율 — jackpot이면 잭팟 도박 한 번 (화면·테스트용, 내림 전 이론값). */
+export function gambleRollExpectationBp(rules: GambleRules, zeroCutBp = 0, jackpot = false): number {
+  const { total, sum } = weightSums(rules, gambleWeights(rules, zeroCutBp, jackpot));
   return total > 0 ? Math.floor(sum / total) : 0;
+}
+
+/**
+ * 실제 기대값 (bp, 비용 대비) = 잭팟 게이지까지 넣은 긴 판 평균 (GDD 7.2·BALANCE '도박 기대값'의 정의, 화면·테스트용).
+ * ×0 확률이 p0이면 잭팟 한 번마다 보통 도박을 평균 gauge ÷ p0번 (×0이 gauge번 나올 때까지, 음이항 평균) 한다 →
+ *   (gauge/p0 × E + J) ÷ (gauge/p0 + 1) = (gauge × ΣwM × Jw + w0 × JwM) ÷ ((gauge × W + w0) × Jw)
+ * (E = 보통 도박 기대값 ΣwM/W, J = 잭팟 도박 기대값 JwM/Jw, w0 = ×0 가중치). ×0이 없으면 잭팟도 없다.
+ */
+export function gambleExpectationBp(rules: GambleRules, zeroCutBp = 0): number {
+  const base = weightSums(rules, gambleWeights(rules, zeroCutBp, false));
+  const jack = weightSums(rules, gambleWeights(rules, 0, true));
+  const w0 = gambleWeights(rules, zeroCutBp, false)[rules.gambleZeroIndex] as number;
+  if (base.total <= 0) return 0;
+  if (w0 <= 0 || jack.total <= 0 || rules.jackpotGauge <= 0) return Math.floor(base.sum / base.total);
+  const g = rules.jackpotGauge;
+  return Math.floor((g * base.sum * jack.total + w0 * jack.sum) / ((g * base.total + w0) * jack.total));
 }
 
 function stateOf(ctx: MatchContext, player: number): GambleState {

@@ -18,7 +18,8 @@ import { gambleZeroReduction } from '../../sim/abilities';
 import type { MatchRules, UpgradeRule } from '../../sim/rules';
 import { MISSION_CLAIMED, MISSION_DONE, MISSION_OPEN, type MatchContext } from '../../sim/state';
 import { challengeCheck, challengeCooldownLeft, challengesAvailable } from '../../sim/systems/Challenge';
-import { gambleCheck, gambleExpectationBp, gambleUnlocked, gambleWeights } from '../../sim/systems/Gamble';
+import { goldWithBonus } from '../../sim/systems/Economy';
+import { gambleCheck, gambleExpectationBp, gambleRollExpectationBp, gambleTopMulBp, gambleUnlocked, gambleWeights } from '../../sim/systems/Gamble';
 import { missionProgress, missionsClaimable, towerCensus } from '../../sim/systems/Mission';
 import { transcendOpen, upgradeCheck, upgradeCost, upgradeEffectBp, upgradeLevel } from '../../sim/systems/Upgrade';
 import { formatGold, formatTimer, withCommas } from '../hud/hudModel';
@@ -109,7 +110,7 @@ export interface ChallengeRowModel {
   name: string;
   /** '체력 13,068' */
   hp: string;
-  /** '+100원' */
+  /** '+100원' (카드 '황금 손'이 있으면 실제로 받는 돈) */
   reward: string;
   /** 특수 능력 한 줄 (데이터 ability, 마크다운 ** 제거) */
   ability: string;
@@ -121,11 +122,21 @@ export interface ChallengeRowModel {
 }
 
 export interface ChallengeSheetModel {
+  /** 안내 줄 '단계마다 30초 · 끝나면 그 단계만 5분 쉬어요 · 실패해도 벌칙 없음' (game.json challenge에서) */
+  note: string;
   /** 맨 위 진행 줄: '진행 중 · 3단계 돌거북 · 18초' (없으면 '') */
   activeText: string;
   /** 진행 중 도전 남은 초 (없으면 0) — 10초 이하 빨강 */
   activeSec: number;
   rows: ChallengeRowModel[];
+}
+
+/** 도전 시트 안내 줄 — 제한 시간·쿨타임은 game.json challenge (M5 검토 반영: 글자에 박지 않는다). */
+export function challengeNote(rules: Pick<MatchRules, 'challengeTimeTicks' | 'challengeCooldownTicks'>): string {
+  const sec = Math.round(rules.challengeTimeTicks / TICK_HZ);
+  const cd = Math.round(rules.challengeCooldownTicks / TICK_HZ);
+  const cdText = cd % 60 === 0 ? `${cd / 60}분` : `${cd}초`;
+  return `단계마다 ${sec}초 · 끝나면 그 단계만 ${cdText} 쉬어요 · 실패해도 벌칙 없음`;
 }
 
 /** 데이터 ability 글자를 한 줄로 (마크다운 **, 앞의 '— ' 정리). */
@@ -168,7 +179,7 @@ export function challengeSheetModel(
       id: c.id,
       name: c.name,
       hp: `체력 ${withCommas(c.hp)}`,
-      reward: `+${withCommas(c.reward)}원`,
+      reward: `+${withCommas(goldWithBonus(state, c.reward))}원`,
       ability: abilityLine(abilities.get(c.level) ?? ''),
       state: st,
       label,
@@ -177,6 +188,7 @@ export function challengeSheetModel(
   });
   const cur = active > 0 ? rules.challenges[active - 1] : undefined;
   return {
+    note: challengeNote(rules),
     activeText: cur ? `진행 중 · ${cur.level}단계 ${cur.name} · ${activeSec}초` : '',
     activeSec,
     rows,
@@ -230,6 +242,8 @@ export interface UpgradeRowModel {
 export interface UpgradeSheetModel {
   /** 맨 위 '⚡×2.6' (지금 공속 배율, 한도까지) */
   apsMul: string;
+  /** 능력치 탭 안내 '모든 타워 · 한도: 공속 ×5(초당 15회) · 관통 90% · 치명 100%' (game.json combat에서) */
+  statNote: string;
   grade: UpgradeRowModel[];
   stat: UpgradeRowModel[];
   /** 초월 (등급 강화가 모두 최대일 때만, 아니면 null) */
@@ -279,7 +293,14 @@ export function upgradeSheetModel(ctx: Pick<MatchContext, 'rules' | 'state'>, pl
     else if (u.kind === 'stat') stat.push(upgradeRow(ctx, player, u));
     else if (transcendOpen(rules, state, player)) transcend = upgradeRow(ctx, player, u);
   }
-  return { apsMul: `⚡${mulText(aps < 0 ? 0 : aps > cap ? cap : aps)}`, grade, stat, transcend };
+  return { apsMul: `⚡${mulText(aps < 0 ? 0 : aps > cap ? cap : aps)}`, statNote: statCapNote(rules), grade, stat, transcend };
+}
+
+/** 능력치 강화 한도 안내 — combat 한도 값에서 만든다 (M5 검토 반영: 글자에 박지 않는다). */
+export function statCapNote(rules: Pick<MatchRules, 'apsMaxMul' | 'apsMaxMilli' | 'penMaxBp' | 'critChanceMaxBp'>): string {
+  const perSec = rules.apsMaxMilli / 1000;
+  const perSecText = Number.isInteger(perSec) ? String(perSec) : perSec.toFixed(1);
+  return `모든 타워 · 한도: 공속 ×${rules.apsMaxMul}(초당 ${perSecText}회) · 관통 ${pctText(rules.penMaxBp)}% · 치명 ${pctText(rules.critChanceMaxBp)}%`;
 }
 
 // ---------------------------------------------------------------- 🎰 도박 탭 (M5-5)
@@ -305,9 +326,11 @@ export interface GambleSheetModel {
   gaugeMax: number;
   /** 다음 도박이 ×3 이상 확정 */
   jackpotReady: boolean;
+  /** 게이지가 찼을 때 글자 '다음 ×3 이상!' (game.json gamble.jackpot.minMul) */
+  readyText: string;
   /** 배율표 (지금 확률: 도박꾼 ×0 감소·잭팟 반영) */
   odds: { mul: string; pct: string }[];
-  /** '기대값 91%' (잭팟이 아닌 보통 도박 기준) */
+  /** '기대값 91% (잭팟 포함)' — 잭팟 게이지까지 넣은 실제 기대값 (도박꾼 반영). 잭팟 차례면 '이번 기대값 350%' */
   expectation: string;
   /** 최근 결과 (오래된 것부터) '×2' */
   recent: string[];
@@ -316,7 +339,7 @@ export interface GambleSheetModel {
 export function gambleSheetModel(ctx: Pick<MatchContext, 'rules' | 'state' | 'accountLevels'>, world: World | null, player: number): GambleSheetModel {
   const { rules, state } = ctx;
   const g = state.gamble[player] ?? { gauge: 0, recent: [] };
-  const maxMulBp = rules.gambleOutcomes.reduce((a, o) => (o.mulBp > a ? o.mulBp : a), 0);
+  const maxMulBp = gambleTopMulBp(rules);
   const tables = rules.gambleTables.map((tb, t): GambleTableModel => {
     const fail = gambleCheck(ctx, player, t);
     const unlocked = gambleUnlocked(ctx, player, t);
@@ -344,8 +367,11 @@ export function gambleSheetModel(ctx: Pick<MatchContext, 'rules' | 'state' | 'ac
     gauge: g.gauge > rules.jackpotGauge ? rules.jackpotGauge : g.gauge,
     gaugeMax: rules.jackpotGauge,
     jackpotReady: jackpot,
+    readyText: `다음 ${mulText(rules.jackpotMinMulBp)} 이상!`,
     odds,
-    expectation: `기대값 ${pctText(Math.floor(gambleExpectationBp(rules, zeroCut) / 100) * 100)}%`,
+    expectation: jackpot
+      ? `이번 기대값 ${pctText(Math.floor(gambleRollExpectationBp(rules, 0, true) / 100) * 100)}%`
+      : `기대값 ${pctText(Math.floor(gambleExpectationBp(rules, zeroCut) / 100) * 100)}% (잭팟 포함)`,
     recent: g.recent.map((m) => mulText(m)),
   };
 }
@@ -361,8 +387,10 @@ export interface MissionRowModel {
   /** 이름이 보이는가 (일반은 늘, 히든은 달성했거나 영구 기록) */
   revealed: boolean;
   name: string;
+  /** 조건 설명 (이름과 다를 때만 — 발견한 히든·방치·위기 미션, 아니면 '') */
+  desc: string;
   cat: string;
-  /** '+300원' / '???' */
+  /** '+300원' / '???' (카드 '황금 손'이 있으면 실제로 받는 돈) */
   reward: string;
   /** 진행도 [지금, 목표] */
   progress: [number, number];
@@ -374,7 +402,7 @@ export interface MissionRowModel {
 export interface MissionSheetModel {
   normal: MissionRowModel[];
   hidden: MissionRowModel[];
-  /** 받을 수 있는 수·돈 합 ([모두 받기 (n)]) */
+  /** 받을 수 있는 수·실제로 받는 돈 합 ([모두 받기 (n)], 황금 손 반영) */
   claimable: number;
   claimableTotal: number;
   /** 탭 아래 요약 '달성 12/30' · '발견 2/11' */
@@ -417,14 +445,15 @@ export function missionSheetModel(
       hidden: m.hidden,
       revealed,
       name: revealed ? m.name : '???',
+      desc: revealed && m.desc && m.desc !== m.name ? m.desc : '',
       cat: revealed ? m.cat : '히든',
-      reward: revealed ? `+${withCommas(m.reward)}원` : '???',
+      reward: revealed ? `+${withCommas(goldWithBonus(state, m.reward))}원` : '???',
       // 발견 전 히든은 진행도도 숨긴다 (조건을 짐작할 수 없게)
       progress: revealed ? progress : [0, 1],
       progressText: revealed && measurable ? `${withCommas(progress[0])}/${withCommas(progress[1])}` : '',
       status,
     };
-    if (status === 'done') claimableTotal += m.reward;
+    if (status === 'done') claimableTotal += goldWithBonus(state, m.reward);
     if (m.hidden) {
       if (revealed) hiddenSeen++;
       hidden.push(row);

@@ -12,13 +12,19 @@ import { HOLD_DELAY_MS, HOLD_MIN_MS, HOLD_START_MS, holdRepeatDelay } from '../.
 import {
   challengeFailText,
   challengeClearText,
+  gambleJackpotText,
   gambleResultText,
+  hiddenMissionText,
+  missionClaimText,
   missionDoneText,
+  needGoldForSummon,
   upgradeFailText,
 } from '../../src/ui/messages';
+import { placeTower } from '../../src/sim/systems/Summon';
 import { SHEET_DRAG_RATIO, sheetDragResult } from '../../src/ui/sheets/BottomSheet';
 import {
   abilityLine,
+  challengeNote,
   challengeHudInput,
   challengeSheetModel,
   gambleSheetModel,
@@ -28,6 +34,7 @@ import {
   mulText,
   pctText,
   sortMissionRows,
+  statCapNote,
   upgradeSheetModel,
   type MissionRowModel,
 } from '../../src/ui/sheets/sheetModels';
@@ -202,25 +209,35 @@ describe('🎰 도박 탭', () => {
     expect(gambleSheetModel(b.ctx, b.world, 0).tables.map((t) => t.state)).toEqual(['ok', 'ok', 'debug', 'debug']);
   });
 
-  it('배율표·기대값 91% · 잭팟 게이지 · 최근 결과', () => {
+  it('배율표·기대값 91% (잭팟 포함 실제 기대값 — M5 검토 반영) · 잭팟 게이지 · 최근 결과', () => {
     const m = arena();
     const g = gambleSheetModel(m.ctx, m.world, 0);
     expect(g.odds).toEqual([
       { mul: '×0', pct: '40%' },
       { mul: '×0.5', pct: '20%' },
-      { mul: '×1', pct: '15%' },
-      { mul: '×2', pct: '15%' },
-      { mul: '×3', pct: '7%' },
-      { mul: '×5', pct: '3%' },
+      { mul: '×1', pct: '21%' },
+      { mul: '×2', pct: '11%' },
+      { mul: '×3', pct: '6%' },
+      { mul: '×5', pct: '2%' },
     ]);
-    expect(g.expectation).toBe('기대값 91%');
+    expect(g.expectation).toBe('기대값 91% (잭팟 포함)');
     expect(g.gaugeMax).toBe(10);
+    expect(g.readyText).toBe('다음 ×3 이상!');
     m.state.gamble[0]!.gauge = 10;
     m.state.gamble[0]!.recent = [0, 5000, 20000];
     const j = gambleSheetModel(m.ctx, m.world, 0);
     expect(j.jackpotReady).toBe(true);
-    expect(j.odds.map((o) => o.pct)).toEqual(['0%', '0%', '0%', '0%', '70%', '30%']);
+    expect(j.odds.map((o) => o.pct)).toEqual(['0%', '0%', '0%', '0%', '75%', '25%']);
+    expect(j.expectation).toBe('이번 기대값 350%');
     expect(j.recent).toEqual(['×0', '×0.5', '×2']);
+  });
+
+  it('도박꾼이 판 위에 있으면 기대값 93% (잭팟 포함), 잭팟 문구는 game.json minMul에서', () => {
+    const m = arena();
+    placeTower(m.world, 'gambler', 0, 4, 0);
+    expect(gambleSheetModel(m.ctx, m.world, 0).expectation).toBe('기대값 93% (잭팟 포함)');
+    const rules = { ...m.rules, jackpotMinMulBp: 20000 };
+    expect(gambleSheetModel({ ...m.ctx, rules }, m.world, 0).readyText).toBe('다음 ×2 이상!');
   });
 });
 
@@ -372,12 +389,67 @@ describe('M5 문구', () => {
     expect(missionDoneText(['소환 10회'], 100)).toBe('📋 미션 달성! 소환 10회 (+100원)');
     expect(missionDoneText(['a', 'b'], 700)).toBe('📋 미션 2개 달성! (+700원)');
     expect(challengeClearText(3, 100, 4)).toBe('⚔ 도전 3단계 클리어! +100원 · 4단계 열림');
-    expect(challengeClearText(10, 6000, null)).toBe('⚔ 도전 10단계 클리어! +6000원');
+    expect(challengeClearText(10, 6000, null)).toBe('⚔ 도전 10단계 클리어! +6,000원');
     expect(challengeFailText(2, 'time', 5)).toBe('⚔ 도전 2단계 실패 — 시간 초과 · 5분 뒤 다시');
     expect(upgradeFailText('gold', 30)).toBe('30원이 더 필요해요');
     expect(upgradeFailText('locked', 0)).toBe('등급 강화 3종을 모두 최대로 올리면 열려요');
     expect(gambleResultText('×2', 200, 100)).toBe('×2 → +200원 (+100)');
     expect(gambleResultText('×0.5', 50, 100)).toBe('×0.5 → +50원 (−50)');
     expect(gambleResultText('×0', 0, 100)).toBe('×0 … 꽝! (−100원)');
+  });
+
+  it('돈은 세 자리마다 쉼표 (배너·결과도 HUD·시트와 같게 — M5 검토 반영)', () => {
+    expect(missionDoneText(['a', 'b'], 1300)).toBe('📋 미션 2개 달성! (+1,300원)');
+    expect(missionDoneText(['보유금 10,000원 달성'], 1000)).toBe('📋 미션 달성! 보유금 10,000원 달성 (+1,000원)');
+    expect(hiddenMissionText('고블린 왕국', 1000)).toBe('🎉 히든 미션 발견! 「고블린 왕국」 +1,000원');
+    expect(gambleResultText('×5', 50000, 10000)).toBe('×5 → +50,000원 (+40,000)');
+    expect(gambleResultText('×0', 0, 10000)).toBe('×0 … 꽝! (−10,000원)');
+    expect(gambleResultText('×0.5', 5000, 10000)).toBe('×0.5 → +5,000원 (−5,000)');
+    expect(gambleJackpotText('×5', 50000)).toBe('🎰 ×5 대박! +50,000원');
+    expect(missionClaimText(1300, 2)).toBe('📋 미션 2개 보상 +1,300원');
+    expect(upgradeFailText('gold', 9000)).toBe('9,000원이 더 필요해요');
+    expect(needGoldForSummon(1000)).toBe('1,000원이 필요해요');
+  });
+});
+
+describe('M5 검토 반영: 안내 문구는 JSON 값에서, 보상 표시는 실제로 받는 돈', () => {
+  it('능력치 한도 안내 = game.json combat (공속 ×5·초당 15회 · 관통 90% · 치명 100%), 값을 바꾸면 따라 바뀐다', () => {
+    const m = arena();
+    expect(upgradeSheetModel(m.ctx, 0).statNote).toBe('모든 타워 · 한도: 공속 ×5(초당 15회) · 관통 90% · 치명 100%');
+    expect(statCapNote({ apsMaxMul: 4, apsMaxMilli: 12_500, penMaxBp: 8000, critChanceMaxBp: 7550 })).toBe(
+      '모든 타워 · 한도: 공속 ×4(초당 12.5회) · 관통 80% · 치명 75.5%',
+    );
+  });
+
+  it('도전 안내 = game.json challenge (30초 · 5분), 값을 바꾸면 따라 바뀐다', () => {
+    const m = arena();
+    expect(challengeSheetModel(m.ctx, m.tick, new Map()).note).toBe('단계마다 30초 · 끝나면 그 단계만 5분 쉬어요 · 실패해도 벌칙 없음');
+    expect(challengeNote({ challengeTimeTicks: 900, challengeCooldownTicks: 1800 })).toBe('단계마다 45초 · 끝나면 그 단계만 90초 쉬어요 · 실패해도 벌칙 없음');
+  });
+
+  it('카드 \'황금 손\'(+25%)이 있으면 미션 줄 보상·[모두 받기] 합·도전 보상이 실제로 받는 돈', () => {
+    const m = arena();
+    m.state.goldPctBp = 2500;
+    const n22 = m.rules.missions.findIndex((x) => x.id === 'n22');
+    const n23 = m.rules.missions.findIndex((x) => x.id === 'n23');
+    m.state.missionStatus[n22] = MISSION_DONE;
+    m.state.missionStatus[n23] = MISSION_DONE;
+    const s = missionSheetModel(m.ctx, m.world, new Set());
+    expect(s.normal.find((r) => r.id === 'n22')?.reward).toBe('+375원'); // 300 × 1.25
+    expect(s.claimableTotal).toBe(375 + 1250); // 1000 × 1.25
+    expect(challengeSheetModel(m.ctx, m.tick, new Map()).rows[0]?.reward).toBe('+25원'); // 20 × 1.25
+    // 실제 받기와 같다
+    const g0 = m.state.gold;
+    command(m, { type: 'claimAllMissions', player: 0 });
+    expect(m.state.gold - g0).toBe(s.claimableTotal);
+  });
+
+  it('발견한 히든 미션은 조건 설명(desc)을 같이 보인다, 이름과 같은 일반 미션은 설명 없음', () => {
+    const m = arena();
+    const s = missionSheetModel(m.ctx, m.world, new Set(['h07']));
+    expect(s.hidden.find((r) => r.id === 'h07')).toMatchObject({ name: '고블린 왕국', desc: '고블린 계열 타워 10개 동시 보유' });
+    expect(s.hidden.find((r) => r.id === 'h02')).toMatchObject({ name: '???', desc: '' });
+    expect(s.normal.find((r) => r.id === 'n01')?.desc).toBe('');
+    expect(s.normal.find((r) => r.id === 'n14')?.desc).toBe('1분 동안 아무 조작도 하지 않기 (일시정지 시간 제외)');
   });
 });

@@ -309,7 +309,8 @@ export function createStatusSystem(ctx: MatchContext): System {
     const tick = world.tick;
     const pulse = tick % rules.dotIntervalTicks === 0;
     for (const e of world.entities.list()) {
-      if (!isMob(e) || !hasAnyStatus(e)) continue;
+      // 같은 반복 안에서 지워진 몹 (쌍둥이 박쥐가 함께 죽음 — M5 검토 반영)은 건너뛴다
+      if (!isMob(e) || !hasAnyStatus(e) || !world.entities.has(e.id)) continue;
       for (const d of e.dots) if (d.until > tick) e.dotAcc += d.dps;
       // 빙결이 풀렸으면 빙결 약화도 지운다 (해시를 작게, 다음 빙결이 새 값을 건다)
       if (e.freezeVulnBp > 0 && !isFrozen(e, tick)) e.freezeVulnBp = 0;
