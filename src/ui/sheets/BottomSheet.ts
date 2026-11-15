@@ -6,6 +6,7 @@
  * - 시트 아래 끝은 하단 메뉴 위 (sheet 층의 --sheet-bottom, Game 장면이 하단 메뉴 높이를 재서 넣는다) → 메뉴 탭은 보인다.
  *   같은 메뉴를 다시 누르면 닫고, 다른 메뉴를 누르면 그 시트로 바뀐다.
  * - 탭(있으면) 줄과 내용(스크롤) 영역을 만들어 주고, 내용은 각 시트(도전·강화·미션)가 채운다.
+ * - Escape 키(나중에 안드로이드 뒤로 가기)로도 닫는다.
  * 바텀 시트는 하나만: 타워 정보 패널·고르기 창과 겹치지 않게 Game 장면이 서로 닫는다.
  */
 import { h } from '../dom';
@@ -161,6 +162,11 @@ export function createBottomSheet<T extends string>(opts: BottomSheetOptions<T>)
     target.addEventListener('pointerup', onUp);
     target.addEventListener('pointercancel', onUp);
   }
+  // Escape(안드로이드 뒤로 가기 자리)로 닫기 — 타워 정보 패널과 같게 (M5 검토 반영)
+  const onKey = (ev: KeyboardEvent): void => {
+    if (ev.key === 'Escape') opts.onClose();
+  };
+  window.addEventListener('keydown', onKey);
 
   return {
     el,
@@ -181,6 +187,9 @@ export function createBottomSheet<T extends string>(opts: BottomSheetOptions<T>)
     setTabLabel(id, label) {
       const b = tabButtons.get(id);
       if (b && b.textContent !== label) b.textContent = label;
+    },
+    destroy() {
+      window.removeEventListener('keydown', onKey);
     },
   };
 }

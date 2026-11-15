@@ -9,13 +9,12 @@ import { mkdirSync } from 'node:fs';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 
-// 시트를 여러 번 열고 버튼을 수십 번 누르는 흐름이라 헤드리스 Chromium(초당 10프레임 남짓)에서 30초에 빠듯하다
-test.describe.configure({ timeout: 90_000 });
-
 interface MobLite {
   id: number;
   mob: string;
   hp: number;
+  maxHp: number;
+  boss: boolean;
   challenge: number;
 }
 
@@ -179,6 +178,12 @@ test('바텀 시트: 하단 메뉴 → 55%, 손잡이를 끌어 85%, 게임은 �
   await page.waitForTimeout(300);
   box = (await sheet.boundingBox())!;
   expect(Math.abs(box.y - (st.top + st.height * 0.15))).toBeLessThan(3);
+  // 85%로 펼친 동안 알림은 시트 아래쪽 (머리줄·탭·✕를 덮지 않게 — M5 검토 반영)
+  await inScene(page, (s) => (s as unknown as { ctx: { ui: { toast(t: string): void } } }).ctx.ui.toast('알림 자리 확인'), null);
+  const fullToast = (await page.locator('.toast', { hasText: '알림 자리 확인' }).boundingBox())!;
+  const head = (await sheet.locator('.bs-head').boundingBox())!;
+  expect(fullToast.y).toBeGreaterThan(head.y + head.height + 20);
+  expect(fullToast.y + fullToast.height).toBeLessThanOrEqual(menu.y + 1);
   // 아래로 끌면 85% → 55% → 닫기
   const grip2 = (await page.getByTestId('sheet-grip').boundingBox())!;
   await page.mouse.move(grip2.x + grip2.width / 2, grip2.y + grip2.height / 2);
@@ -197,6 +202,19 @@ test('바텀 시트: 하단 메뉴 → 55%, 손잡이를 끌어 85%, 게임은 �
   await page.getByTestId('menu-mission').click();
   await page.getByTestId('sheet-close').click();
   await expect(page.getByTestId('sheet-mission')).toHaveCount(0);
+  // Escape(뒤로 가기 자리)로도 닫힌다 (M5 검토 반영)
+  await page.getByTestId('menu-mission').click();
+  await expect(page.getByTestId('sheet-mission')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('sheet-mission')).toHaveCount(0);
+  expect(await inScene(page, (s) => s.sheetOpen, null)).toBeNull();
+  // 55%로 다시 열면 알림은 다시 HUD 아래
+  await page.getByTestId('menu-mission').click();
+  await inScene(page, (s) => (s as unknown as { ctx: { ui: { toast(t: string): void } } }).ctx.ui.toast('반쪽 알림'), null);
+  const halfToast = (await page.locator('.toast', { hasText: '반쪽 알림' }).boundingBox())!;
+  const halfSheet = (await page.getByTestId('sheet-mission').boundingBox())!;
+  expect(halfToast.y + halfToast.height).toBeLessThan(halfSheet.y);
+  await page.getByTestId('sheet-close').click();
   // 맵 터치로 닫기: 시트 위쪽 맵 칸을 눌러도 소환되지 않고 시트만 닫힌다
   await page.getByTestId('menu-challenge').click();
   await expect(sheet).toBeVisible();
@@ -285,6 +303,21 @@ test('도전 처치: 보상 +20원·2단계 열림·✅, 10단계 보스와 겹�
   const boss = (await page.getByTestId('hud-boss').boundingBox())!;
   const chal = (await page.getByTestId('hud-challenge').boundingBox())!;
   expect(chal.y).toBeGreaterThanOrEqual(boss.y + boss.height - 0.5);
+  // 판 보스 막대에는 판 보스 체력만 (도전 보스 체력이 섞이면 거의 꽉 찬 채로 줄지 않았다 — M5 검토 반영)
+  await inScene(
+    page,
+    (s) => {
+      for (const m of s.match.mobs()) if (m.boss && !m.challenge) m.hp = Math.floor(m.maxHp / 4);
+      return null;
+    },
+    null,
+  );
+  await expect
+    .poll(async () => {
+      const fill = (await page.getByTestId('hud-boss-hp').boundingBox())!;
+      return Math.round((fill.width / boss.width) * 100);
+    })
+    .toBeLessThanOrEqual(27);
   expect(errors).toEqual([]);
 });
 
@@ -352,7 +385,9 @@ test('도박: debug 판은 잠긴 테이블도 "디버그", 10원 도박 → 슬
   await page.getByTestId('menu-upgrade').click();
   await page.getByTestId('sheet-tab-gamble').click();
   await expect(page.getByTestId('gamble-table-1000')).toContainText('디버그');
-  await expect(page.getByTestId('gamble-odds')).toHaveText('×0 40% · ×0.5 20% · ×1 15% · ×2 15% · ×3 7% · ×5 3% — 기대값 91%');
+  // 기대값은 잭팟 게이지까지 넣은 실제 값 (M5 검토 반영), '기대값 91%'는 한 줄로 붙어 있다
+  await expect(page.getByTestId('gamble-odds')).toHaveText('×0 40% · ×0.5 20% · ×1 21% · ×2 11% · ×3 6% · ×5 2% — 기대값 91% (잭팟 포함)');
+  expect(await page.getByTestId('gamble-ev').evaluate((el) => el.getClientRects().length)).toBe(1);
   await page.getByTestId('gamble-table-10').click();
   await expect(page.getByTestId('gamble-reel')).toHaveClass(/is-spin/);
   await expect.poll(() => inScene(page, (s) => s.match.state.gambles, null)).toBe(1);
@@ -372,7 +407,7 @@ test('도박: debug 판은 잠긴 테이블도 "디버그", 10원 도박 → 슬
     null,
   );
   await expect(page.getByTestId('gamble-gauge')).toHaveText('다음 ×3 이상!');
-  await expect(page.getByTestId('gamble-odds')).toContainText('×3 70% · ×5 30%');
+  await expect(page.getByTestId('gamble-odds')).toHaveText('×3 75% · ×5 25% — 이번 기대값 350%');
   expect(errors).toEqual([]);
 });
 
@@ -428,18 +463,37 @@ test('미션: 달성하면 한 줄 배너·배지 "n 받기" → [받기]로 보
   await page.getByTestId('sheet-tab-hidden').click();
   await expect(page.getByTestId('mission-row-h08').locator('.ms-name-text')).toHaveText('???');
   await expect(page.getByTestId('mission-summary')).toHaveText('발견 0/11');
-  // 소환 0회로 5단계 → 히든 '소환 거부' 달성 (금색 배너) → 공개 + 영구 기록
+  // 소환 0회로 5단계 → 히든 '소환 거부' 달성 (금색 배너) → 공개. debug 판이라 영구 기록은 하지 않는다 (M5 검토 반영)
   await page.getByTestId('sheet-close').click();
   await skipTo(page, 4);
   // 마지막 건너뛰기는 화면 프레임 안에서 (빨리 감기로 지나간 달성은 알리지 않는다)
   await inScene(page, (s) => s.match.world.enqueue({ type: 'debugSkipStage' }).ok, null);
   await expect.poll(() => inScene(page, (s) => s.match.state.stage, null)).toBe(5);
-  await expect(page.locator('[data-testid="banner-gold"]', { hasText: '히든 미션 발견! 「소환 거부」' })).toBeVisible();
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { hidden?: string[] });
-  expect(saved.hidden).toContain('h08');
+  await expect(page.locator('[data-testid="banner-gold"]', { hasText: '히든 미션 발견! 「소환 거부」 +2,000원' })).toBeVisible();
+  const debugSaved = await page.evaluate(() => JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { hidden?: string[] });
+  expect(debugSaved.hidden ?? []).not.toContain('h08');
   await page.getByTestId('menu-mission').click();
   await page.getByTestId('sheet-tab-hidden').click();
   await expect(page.getByTestId('mission-row-h08').locator('.ms-name-text')).toHaveText('소환 거부');
+  // 발견한 히든은 조건 설명도 보인다
+  await expect(page.getByTestId('mission-row-h08').locator('.ms-desc')).toHaveText('5단계까지 소환 0회');
+  // debug가 아닌 판: 5단계 직전까지 빨리 감고 마지막 몇 틱은 화면 프레임 안에서 → 달성 + 영구 기록
+  await start(page, '?seed=42');
+  await inScene(
+    page,
+    (s) => {
+      const st = s.match.state as unknown as { stage: number; nextStageTick: number };
+      while (st.stage < 4 || st.nextStageTick - s.match.tick > 10) {
+        if (s.debugFastForward(1) === 0) break; // 패배하면 멈춤
+      }
+      return st.stage;
+    },
+    null,
+  );
+  await expect.poll(() => inScene(page, (s) => s.match.state.stage, null)).toBe(5);
+  await expect(page.locator('[data-testid="banner-gold"]', { hasText: '히든 미션 발견! 「소환 거부」' })).toBeVisible();
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { hidden?: string[] });
+  expect(saved.hidden).toContain('h08');
   // 다음 판: 아직 달성 전이어도 영구 기록된 히든은 이름이 보인다
   await start(page);
   await page.getByTestId('menu-mission').click();
@@ -468,10 +522,25 @@ test('[⬆ 승급 가능 n]: 누를 때마다 다음 묶음의 패널을 열고 
   await expect(page.getByTestId('tower-panel')).toBeVisible();
   await expect(page.getByTestId('tp-name')).toHaveText('궁수');
   expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
+  // 아래에 붙은 패널이 [⬆ 승급 가능 n]을 덮어도 패널 안 [다음 묶음 ▶]으로 이어서 넘긴다 (M5 검토 반영)
+  const next = page.locator('[data-action="merge-next"]');
+  await expect(next).toHaveText('다음 묶음 ▶ 1/2');
+  await next.click();
+  await expect(page.getByTestId('tp-name')).toHaveText('광부');
+  await expect(next).toHaveText('다음 묶음 ▶ 2/2');
+  expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
+  await next.click();
+  await expect(page.getByTestId('tp-name')).toHaveText('궁수');
+  // 패널을 닫고 버튼을 눌러도 다음 묶음
   await page.locator('[data-action="panel-close"]').click();
   await btn.click();
   await expect(page.getByTestId('tp-name')).toHaveText('광부');
   expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
+  // 타워를 직접 눌러 연 패널에는 [다음 묶음 ▶]이 없다
+  await page.locator('[data-action="panel-close"]').click();
+  await tapTile(page, 3, 2);
+  await expect(page.getByTestId('tp-name')).toHaveText('궁수');
+  await expect(next).toBeHidden();
   // 1.5초 뒤 강조 끝
   await expect.poll(() => inScene(page, (s) => s.mergeHighlightCount, null), { timeout: 4000 }).toBe(0);
   expect(errors).toEqual([]);

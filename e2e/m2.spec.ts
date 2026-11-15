@@ -233,7 +233,6 @@ async function labels(page: Page): Promise<{ labels: string[]; coins: number }> 
 }
 
 test('자동 공격: 몹을 잡으면 피해 숫자·+10원·동전이 뜨고 돈이 늘어 더 소환한다 (M2 스크린샷)', async ({ page }) => {
-  test.setTimeout(60_000);
   const errors = collectErrors(page);
   await start(page, '?seed=42');
   for (const [x, y] of RING.slice(0, 10)) await tapTile(page, x, y);
@@ -364,7 +363,6 @@ test('검토 반영: ?debug=1 HUD [💰+] 버튼으로 돈 추가 (일반 판에
 });
 
 test('검토 반영: 한꺼번에 뜬 피해 숫자가 겹치지 않는다 (타워 20개가 한 몹을 동시에 때림)', async ({ page }) => {
-  test.setTimeout(60_000);
   const errors = collectErrors(page);
   await start(page, '?debug=1&seed=7');
   await page.evaluate(() => {

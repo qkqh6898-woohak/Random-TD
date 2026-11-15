@@ -83,6 +83,8 @@ export { killMob } from './Kill';
  * @param source 공격한 타워 엔티티 id
  */
 export function applyHit(ctx: MatchContext, world: World, mob: Mob, hit: RawHit, at: { x: number; y: number }, source: number): boolean {
+  // 같은 틱 후보 목록에 남아 있지만 이미 지워진 몹 — 쌍둥이 박쥐가 함께 죽은 경우 (M5 검토 반영): 피해·사건 없이 '없음'(true)
+  if (!world.entities.has(mob.id)) return true;
   const d = damageAgainst(hit, mob, damageCaps(ctx.rules));
   const src = world.entities.get(source);
   const tower = src && isTower(src) ? src : null;

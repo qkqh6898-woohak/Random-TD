@@ -43,14 +43,14 @@ import { towerAt, type Tower } from '../../sim/entities/Tower';
 import { canMergeGrade, mergeOutcomes } from '../../sim/Deck';
 import { createMatch, type Match } from '../../sim/match';
 import type { MatchMode } from '../../sim/state';
-import { NO_MODS, effectiveStats } from '../../sim/stats';
+import { NO_MODS, effectiveStats, towerRange } from '../../sim/stats';
 import { mergeableGroups, sameKindTowers } from '../../sim/systems/Merge';
 import { isPaused, moveCheck } from '../../sim/systems/Move';
 import { auraCovers, auraRadiusOf, auraSpecOf, computeAuras, towerBonus } from '../../sim/systems/Aura';
 import { towerLevel } from '../../sim/abilities';
 import { METEOR_FX } from '../../sim/abilities/archmage';
 import { summonCheck, summonCost, towerCount } from '../../sim/systems/Summon';
-import { hireCheck } from '../../sim/systems/Economy';
+import { goldWithBonus, hireCheck } from '../../sim/systems/Economy';
 import { formationById } from '../../sim/systems/Formation';
 import { currentOffer } from '../../sim/systems/Cards';
 import { upgradeCheck, upgradeCost, upgradeLevel } from '../../sim/systems/Upgrade';
@@ -171,8 +171,6 @@ const DROP_HOLD_MS = 400;
 const LOCAL_PLAYER = 0;
 /** [⬆ 승급 가능 n] 강조 고리 시간 (ms) */
 const MERGE_HIGHLIGHT_MS = 1500;
-/** 도박 대박 연출 기준 배율 (bp, UI.md 10장 '도박 ×5 이상') */
-const GAMBLE_BIG_MUL_BP = 50000;
 
 /** 타워를 누르고 있는 중 (탭 또는 길게 눌러 끌기). */
 interface PressState {
@@ -288,6 +286,8 @@ export class GameScene extends Phaser.Scene {
   private upgradeQueuedTick = -1;
   /** [⬆ 승급 가능 n]을 누른 횟수 (누를 때마다 다음 묶음) · 강조 고리 */
   private mergeCycle = 0;
+  /** 정보 패널을 [⬆ 승급 가능 n]으로 열었는가 (패널 안 [다음 묶음 ▶]을 보인다) */
+  private panelFromMergeCycle = false;
   private mergeHighlight: { tiles: { tx: number; ty: number }[]; startMs: number } | null = null;
   /** 도전 보스 그림 (몹 id → 이미지 주소) · 단계 → 특수 능력 글자 */
   private challengePics = new Map<string, string | null>();
@@ -820,6 +820,7 @@ export class GameScene extends Phaser.Scene {
     const t = this.match.world.entities.get(id);
     if (!t || t.kind !== 'tower') return;
     this.selectedId = id;
+    this.panelFromMergeCycle = false;
     // 바텀 시트는 하나만: 펼친 고르기 창은 알약으로 접는다 (창 뒤에 패널이 열려 ✕가 가려지던 것, 검토 반영). 메뉴 시트는 닫는다
     if (this.choice && !this.choice.collapsed) this.choice.collapse();
     this.closeSheet();
@@ -828,6 +829,7 @@ export class GameScene extends Phaser.Scene {
         onMerge: () => this.sendMerge('merge'),
         onMergeAll: () => this.sendMerge('mergeAll'),
         onClose: () => this.closePanel(),
+        onNextMergeable: () => this.selectNextMergeable(),
       });
       this.ctx.ui.show('panel', this.panel);
     }
@@ -845,16 +847,26 @@ export class GameScene extends Phaser.Scene {
     const g = groups[this.mergeCycle % groups.length] as (typeof groups)[number];
     this.mergeCycle++;
     this.selectTower(g.first.id);
+    this.panelFromMergeCycle = true;
+    this.refreshPanel();
     this.mergeHighlight = {
       tiles: sameKindTowers(this.match.world, g.tower, LOCAL_PLAYER).map((t) => ({ tx: t.tx, ty: t.ty })),
       startMs: this.time.now,
     };
   }
 
+  /** [⬆ 승급 가능 n]으로 연 패널: 고른 타워 묶음이 승급 가능 묶음 몇 번째인지 (묶음 2개 이상일 때만). */
+  private mergeCyclePosition(t: Tower): { index: number; total: number } | null {
+    const groups = mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
+    if (groups.length < 2) return null;
+    return { index: groups.findIndex((g) => g.tower === t.tower), total: groups.length };
+  }
+
   private closePanel(): void {
     if (this.panel) this.ctx.ui.clear('panel');
     this.panel = null;
     this.panelPlaceKey = '';
+    this.panelFromMergeCycle = false;
     this.ctx.ui.setToastSingle(false);
     if (!this.press?.dragging) this.selectedId = null;
   }
@@ -924,6 +936,7 @@ export class GameScene extends Phaser.Scene {
       paused: isPaused({ pauseUntil: t.pauseUntil, held: false }, this.match.tick),
       stunned: this.match.tick < t.stunUntil,
       penMaxBp: rules.penMaxBp,
+      mergeCycle: this.panelFromMergeCycle ? this.mergeCyclePosition(t) : null,
     });
     const changed = this.panel.update(model, this.portraitOf(t.tower));
     // 패널이 고른 타워 그림을 가리지 않게: 실제 패널 높이와 그림 위치를 재서 쪽·접기 단계를 정한다 (바뀔 때만)
@@ -971,14 +984,15 @@ export class GameScene extends Phaser.Scene {
             ? {
                 tx: t.tx,
                 ty: t.ty,
-                range: stats.range,
+                // 사거리 강화가 붙은 실제 사거리 (sim 대상 고르기와 같은 값, M5 검토 반영)
+                range: towerRange(this.match.state, t.owner, stats.range),
                 detectRange: stats.detect === 'aura' ? stats.detectRange : 0,
                 auraRadius: aura ? auraRadiusOf(rules, aura.area) : 0,
               }
             : null,
         buffed,
         sameKind: t && !p ? sameKindTowers(this.match.world, t.tower, t.owner).map((x) => ({ tx: x.tx, ty: x.ty })) : [],
-        drop: p && p.drop && stats ? { ...p.drop, range: stats.range } : null,
+        drop: p && p.drop && stats && t ? { ...p.drop, range: towerRange(this.match.state, t.owner, stats.range) } : null,
         highlight: this.highlightView(),
       },
       timeMs,
@@ -1396,14 +1410,17 @@ export class GameScene extends Phaser.Scene {
           this.noteFx('missionDone');
           const m = this.match.rules.missions[Number(ev.i)];
           if (!m) break;
-          // 히든 미션은 판 밖에 영구 기록 (다음 판부터 미션 시트에 이름이 보인다)
-          if (m.hidden) this.ctx.account.recordHidden(m.id);
+          // 히든 미션은 판 밖에 영구 기록 (다음 판부터 미션 시트에 이름이 보인다).
+          // 개발용 치트를 쓸 수 있는 판(?debug=1)은 계정에 남기지 않는다 (CLAUDE.md 4장 '테스트·확인용', M5 검토 반영)
+          if (m.hidden && !this.match.state.debug && !this.match.state.debugUsed) this.ctx.account.recordHidden(m.id);
           // 빨리 감기로 프레임 밖에서 달성한 것은 알리지 않는다 (메뉴 배지·시트에는 남는다)
           if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
-          if (m.hidden) this.ctx.ui.banner(hiddenMissionText(m.name, m.reward), null, 2800, 'gold');
+          // 보상 글자는 받을 때 실제로 들어오는 돈 (카드 '황금 손' 반영 — M5 검토 반영)
+          const reward = goldWithBonus(this.match.state, m.reward);
+          if (m.hidden) this.ctx.ui.banner(hiddenMissionText(m.name, reward), null, 2800, 'gold');
           else {
             done.names.push(m.name);
-            done.total += m.reward;
+            done.total += reward;
           }
           break;
         }
@@ -1686,12 +1703,15 @@ export class GameScene extends Phaser.Scene {
     this.sheetKind = null;
     this.ctx.ui.clear('sheet');
     this.hud?.setMenuActive(null);
+    this.ctx.ui.setToastLow(false);
   }
 
   /** 열린 시트 글자 갱신 (매 프레임, 바뀐 것만 DOM에 쓴다) + 도박 슬롯 연출. */
   private refreshSheet(nowMs: number): void {
     const slotView = this.advanceSlot(nowMs);
     const view = this.sheet;
+    // 시트를 85%로 펼친 동안 알림은 시트 아래쪽으로 (머리줄·탭을 덮지 않게, M5 검토 반영)
+    this.ctx.ui.setToastLow(view !== null && view.size === 'full');
     if (!view) return;
     const ctx = this.match.ctx;
     if (this.sheetKind === 'challenge') (view as ChallengeSheetView).update(challengeSheetModel(ctx, this.match.tick, this.challengeAbilities));
@@ -1710,7 +1730,7 @@ export class GameScene extends Phaser.Scene {
     if (frame.justRevealed && r) {
       s.revealedMs = nowMs;
       if (r.win > 0) this.hud.gainGold(r.win);
-      if (r.mulBp >= GAMBLE_BIG_MUL_BP) {
+      if (r.mulBp >= this.match.rules.gambleBigMulBp) {
         this.ctx.ui.banner(gambleJackpotText(r.mul, r.win), null, 2200, 'gold');
         this.cameras.main.shake(260, 0.006);
         this.noteFx('gambleJackpot');

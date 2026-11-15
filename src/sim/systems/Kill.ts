@@ -61,9 +61,13 @@ function bossPartDown(ctx: MatchContext, world: World, x: number, y: number): vo
   offerCards(ctx, world, num);
 }
 
-/** 몹 처치: 제거 + 보상 + 사건 + 깨짐 + 보스 처치 + 처치 특색 (타워 ID 순). */
+/**
+ * 몹 처치: 제거 + 보상 + 사건 + 깨짐 + 보스 처치 + 처치 특색 (타워 ID 순).
+ * 이미 지운 몹이면 아무것도 하지 않는다 (M5 검토 반영: 쌍둥이 박쥐 하나가 죽으며 다른 하나를 지운 뒤, 같은 반복의
+ * 지속 피해·광역 피해가 체력을 공유해 이미 0인 다른 하나를 다시 처치하면 처치 수·'kill' 사건·상인 돈이 두 번 나갔다).
+ */
 export function killMob(ctx: MatchContext, world: World, mob: Mob, x: number, y: number): void {
-  world.entities.remove(mob.id);
+  if (!world.entities.remove(mob.id)) return;
   const reward = mob.reward > 0 ? earnGold(ctx.state, mob.reward) : 0;
   ctx.state.kills += 1;
   world.emit('kill', { id: mob.id, mob: mob.mob, reward, x, y, ...(mob.boss ? { boss: true } : {}), ...(mob.challenge ? { challenge: mob.challenge } : {}) });

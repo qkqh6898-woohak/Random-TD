@@ -151,6 +151,14 @@ export class UiRoot {
   }
 
   /**
+   * 알림을 바텀 시트 아래쪽(하단 메뉴 바로 위)으로 (true) / HUD 띠 아래로 (false). 시트를 85%로 펼치면 시트 머리줄·탭이
+   * HUD 아래 알림 자리까지 올라와 알림이 탭 줄을 덮었다 → 펼친 동안만 아래로 내린다 (M5 검토 반영). 가장 최근 하나만 보인다.
+   */
+  setToastLow(on: boolean): void {
+    if (this.layers.toast.classList.contains('is-low') !== on) this.layers.toast.classList.toggle('is-low', on);
+  }
+
+  /**
    * 아래쪽 HUD 높이 (무대 아래에서 잰 CSS px, M5): menu = 하단 메뉴 높이(바텀 시트 아래 끝 --sheet-bottom),
    * dock = 아래 띠 + 하단 메뉴 높이(고르기 창 아래 끝 --dock-h). 루트에 CSS 변수로 둬 sheet·modal 층이 같이 읽는다. null이면 지운다.
    */

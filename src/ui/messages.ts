@@ -1,15 +1,28 @@
 /**
  * 토스트·알림 문구 (UI.md 8장). 화면 글자는 여기 한 곳에 모은다.
+ * 돈은 HUD·시트처럼 세 자리마다 쉼표 (M5 검토 반영: 배너·결과 글자만 '+50000원'이었다).
  */
+
+/** 세 자리마다 쉼표 (기기 로케일과 상관없이 같게). */
+export function withCommas(n: number): string {
+  const sign = n < 0 ? '-' : '';
+  const digits = String(Math.abs(Math.trunc(n)));
+  let out = '';
+  for (let i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 === 0) out += ',';
+    out += digits[i];
+  }
+  return sign + out;
+}
 
 /** 돈 부족 (소환): "100원이 필요해요" — 비용은 데이터(game.json summon.cost)에서 */
 export function needGoldForSummon(cost: number): string {
-  return `${cost}원이 필요해요`;
+  return `${withCommas(cost)}원이 필요해요`;
 }
 
 /** 돈 부족 (기타): "{n}원이 더 필요해요" */
 export function needMoreGold(n: number): string {
-  return `${n}원이 더 필요해요`;
+  return `${withCommas(n)}원이 더 필요해요`;
 }
 
 /** 배치 칸이 가득 참 */
@@ -85,7 +98,7 @@ export function bossArrivalText(stageLabel: string, tag: string, name: string): 
 
 /** 보스 처치 */
 export function bossKillText(name: string, reward: number): string {
-  return `👑 ${name} 처치! +${reward}원`;
+  return `👑 ${name} 처치! +${withCommas(reward)}원`;
 }
 
 /** 보스를 잡은 뒤 남은 보스 단계 (휴식) */
@@ -138,7 +151,7 @@ export function challengeStartText(lv: number, name: string, seconds: number): s
 
 /** 도전 처치 배너 (처음 잡으면 다음 단계 해금도) */
 export function challengeClearText(lv: number, reward: number, unlocked: number | null): string {
-  return unlocked !== null ? `⚔ 도전 ${lv}단계 클리어! +${reward}원 · ${unlocked}단계 열림` : `⚔ 도전 ${lv}단계 클리어! +${reward}원`;
+  return unlocked !== null ? `⚔ 도전 ${lv}단계 클리어! +${withCommas(reward)}원 · ${unlocked}단계 열림` : `⚔ 도전 ${lv}단계 클리어! +${withCommas(reward)}원`;
 }
 
 /** 도전 실패 (시간 초과 / 캠페인 출구) — 패배·목숨 감소 없음 */
@@ -177,28 +190,28 @@ export function gambleFailText(reason: string, short: number, unlockLevel: numbe
 
 /** 도박 결과 한 줄 (릴 아래): '×2 → +200원' / '×0 … 0원' */
 export function gambleResultText(mul: string, win: number, cost: number): string {
-  if (win <= 0) return `${mul} … 꽝! (−${cost}원)`;
+  if (win <= 0) return `${mul} … 꽝! (−${withCommas(cost)}원)`;
   const net = win - cost;
-  return `${mul} → +${win}원 (${net >= 0 ? '+' : '−'}${Math.abs(net)})`;
+  return `${mul} → +${withCommas(win)}원 (${net >= 0 ? '+' : '−'}${withCommas(Math.abs(net))})`;
 }
 
 /** 도박 대박 배너 (×5 이상) */
 export function gambleJackpotText(mul: string, win: number): string {
-  return `🎰 ${mul} 대박! +${win}원`;
+  return `🎰 ${mul} 대박! +${withCommas(win)}원`;
 }
 
 /** 미션 달성 알림 (한 줄 배너): 하나면 이름, 같은 프레임에 여럿이면 개수 + 보상 합 */
 export function missionDoneText(names: readonly string[], total: number): string {
-  if (names.length === 1) return `📋 미션 달성! ${names[0]} (+${total}원)`;
-  return `📋 미션 ${names.length}개 달성! (+${total}원)`;
+  if (names.length === 1) return `📋 미션 달성! ${names[0]} (+${withCommas(total)}원)`;
+  return `📋 미션 ${names.length}개 달성! (+${withCommas(total)}원)`;
 }
 
 /** 히든 미션 발견 배너 (한 줄 — 알림 자리에 들어가게) */
 export function hiddenMissionText(name: string, reward: number): string {
-  return `🎉 히든 미션 발견! 「${name}」 +${reward}원`;
+  return `🎉 히든 미션 발견! 「${name}」 +${withCommas(reward)}원`;
 }
 
 /** 미션 보상 받음 */
 export function missionClaimText(total: number, count: number): string {
-  return count > 1 ? `📋 미션 ${count}개 보상 +${total}원` : `📋 미션 보상 +${total}원`;
+  return count > 1 ? `📋 미션 ${count}개 보상 +${withCommas(total)}원` : `📋 미션 보상 +${withCommas(total)}원`;
 }

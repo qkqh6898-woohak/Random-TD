@@ -28,14 +28,19 @@ export function spendGold(state: Pick<MatchState, 'gold'>, cost: number): boolea
   return true;
 }
 
+/** amount원을 받으면 실제로 들어오는 돈 (카드 '황금 손' goldPctBp 곱하고 내림) — earnGold와 화면 표시(미션·도전 보상)가 같이 쓴다. */
+export function goldWithBonus(state: Partial<Pick<MatchState, 'goldPctBp'>>, amount: number): number {
+  const bonus = state.goldPctBp ?? 0;
+  return bonus > 0 ? mulBp(amount, BP_ONE + bonus) : amount;
+}
+
 /**
  * 돈 받기 (처치 보상 등). 카드 '황금 손' 보너스(goldPctBp)를 곱하고(내림) 번 돈 합계(goldEarned)에도 더한다.
  * 실제로 받은 돈을 돌려준다.
  */
 export function earnGold(state: Pick<MatchState, 'gold' | 'goldEarned'> & Partial<Pick<MatchState, 'goldPctBp'>>, amount: number): number {
   if (!Number.isSafeInteger(amount) || amount < 0) throw new Error(`받는 돈은 0 이상 정수 (받은 값: ${amount})`);
-  const bonus = state.goldPctBp ?? 0;
-  const got = bonus > 0 ? mulBp(amount, BP_ONE + bonus) : amount;
+  const got = goldWithBonus(state, amount);
   state.gold += got;
   state.goldEarned += got;
   return got;

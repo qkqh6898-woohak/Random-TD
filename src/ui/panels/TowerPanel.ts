@@ -20,6 +20,8 @@ export interface TowerPanelOptions {
   onMerge: () => void;
   onMergeAll: () => void;
   onClose: () => void;
+  /** [다음 묶음 ▶] — [⬆ 승급 가능 n]으로 연 패널에서 다음 승급 가능 묶음으로 (M5-7, 검토 반영) */
+  onNextMergeable?: () => void;
 }
 
 export type PanelSide = 'bottom' | 'top';
@@ -121,6 +123,12 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
     text: '⬆⬆ 모두 승급',
     on: { click: () => opts.onMergeAll() },
   });
+  const nextBtn = h('button', {
+    class: 'btn tp-merge-next',
+    attrs: { type: 'button', 'data-action': 'merge-next', hidden: '' },
+    text: '다음 묶음 ▶',
+    on: { click: () => opts.onNextMergeable?.() },
+  });
   const note = h('div', { class: 'tp-note', attrs: { 'data-testid': 'tp-note' } });
   const outcomes = h('div', { class: 'tp-outcomes', attrs: { 'data-testid': 'tp-outcomes' } });
 
@@ -148,6 +156,7 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       target,
     ),
     h('div', { class: 'tp-actions' }, mergeBtn, mergeAllBtn),
+    nextBtn,
     note,
     outcomes,
   );
@@ -191,6 +200,8 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       mergeAllBtn.textContent = m.mergeAllTimes > 1 ? `⬆⬆ 모두 승급 ×${m.mergeAllTimes}` : '⬆⬆ 모두 승급';
       note.textContent = m.note;
       note.hidden = m.note === '';
+      nextBtn.textContent = m.mergeNext;
+      nextBtn.hidden = m.mergeNext === '';
       outcomes.textContent = m.outcomes ? `승급하면: ${m.outcomes}` : '';
       outcomes.hidden = m.outcomes === '';
       return true;

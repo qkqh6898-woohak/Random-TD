@@ -23,13 +23,14 @@ interface RowEls {
   root: HTMLElement;
   btn: HTMLButtonElement;
   done: HTMLElement;
+  reward: HTMLElement;
   last: Partial<ChallengeRowModel>;
 }
 
 export function createChallengeSheet(opts: ChallengeSheetOptions, first: ChallengeSheetModel): ChallengeSheetView {
   const sheet = createBottomSheet<never>({ kind: 'challenge', title: '⚔ 도전', onClose: opts.onClose });
   const active = h('div', { class: 'ch-active', attrs: { 'data-testid': 'challenge-active', role: 'timer', 'aria-live': 'off' } });
-  const note = h('div', { class: 'bs-note', text: '단계마다 30초 · 끝나면 그 단계만 5분 쉬어요 · 실패해도 벌칙 없음' });
+  const note = h('div', { class: 'bs-note', attrs: { 'data-testid': 'challenge-note' }, text: first.note });
   const list = h('div', { class: 'ch-list' });
   sheet.body.append(active, note, list);
   const rows = new Map<number, RowEls>();
@@ -45,6 +46,7 @@ export function createChallengeSheet(opts: ChallengeSheetOptions, first: Challen
       on: { click: () => opts.onStart(r.lv) },
     });
     const done = h('span', { class: 'ch-done', text: '✅', attrs: { 'aria-label': '잡음', hidden: '' } });
+    const reward = h('span', { class: 'ch-reward', text: r.reward });
     const root = h(
       'div',
       { class: 'ch-row', attrs: { 'data-lv': String(r.lv), 'data-testid': `challenge-row-${r.lv}` } },
@@ -53,13 +55,13 @@ export function createChallengeSheet(opts: ChallengeSheetOptions, first: Challen
         'div',
         { class: 'ch-main' },
         h('div', { class: 'ch-name' }, h('span', { text: r.name }), done),
-        h('div', { class: 'ch-stats' }, h('span', { class: 'ch-hp', text: r.hp }), h('span', { class: 'ch-reward', text: r.reward })),
+        h('div', { class: 'ch-stats' }, h('span', { class: 'ch-hp', text: r.hp }), reward),
         r.ability ? h('div', { class: 'ch-ability', text: r.ability }) : null,
       ),
       btn,
     );
     list.append(root);
-    rows.set(r.lv, { root, btn, done, last: {} });
+    rows.set(r.lv, { root, btn, done, reward, last: {} });
   }
   let lastActive: string | null = null;
   const view: ChallengeSheetView = {
@@ -86,6 +88,8 @@ export function createChallengeSheet(opts: ChallengeSheetOptions, first: Challen
           e.btn.disabled = r.state !== 'ready';
         }
         if (e.last.cleared !== r.cleared) e.done.hidden = !r.cleared;
+        // 보상은 카드 '황금 손'을 고르면 바뀐다
+        if (e.last.reward !== undefined && e.last.reward !== r.reward) e.reward.textContent = r.reward;
         e.last = r;
       }
     },

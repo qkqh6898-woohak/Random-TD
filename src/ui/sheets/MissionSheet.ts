@@ -25,6 +25,7 @@ export interface MissionSheetView extends BottomSheetView<MissionTab> {
 interface RowEls {
   root: HTMLElement;
   name: HTMLElement;
+  desc: HTMLElement;
   cat: HTMLElement;
   fill: HTMLElement;
   prog: HTMLElement;
@@ -70,6 +71,8 @@ export function createMissionSheet(opts: MissionSheetOptions, first: MissionShee
   const rows = new Map<number, RowEls>();
   const build = (r: MissionRowModel): RowEls => {
     const name = h('span', { class: 'ms-name-text' });
+    // 조건 설명 (발견한 히든 등 이름만으로 할 일을 알 수 없을 때, M5 검토 반영)
+    const desc = h('div', { class: 'ms-desc', attrs: { hidden: '' } });
     const cat = h('span', { class: 'ms-cat' });
     const fill = h('span', { class: 'ms-fill' });
     const prog = h('span', { class: 'ms-prog' });
@@ -83,10 +86,10 @@ export function createMissionSheet(opts: MissionSheetOptions, first: MissionShee
     const root = h(
       'div',
       { class: `ms-row${r.hidden ? ' is-hidden' : ''}`, attrs: { 'data-testid': `mission-row-${r.id}`, 'data-id': r.id } },
-      h('div', { class: 'ms-main' }, h('div', { class: 'ms-name' }, cat, name), h('div', { class: 'ms-bar' }, fill, prog)),
+      h('div', { class: 'ms-main' }, h('div', { class: 'ms-name' }, cat, name), desc, h('div', { class: 'ms-bar' }, fill, prog)),
       h('div', { class: 'ms-side' }, reward, btn),
     );
-    return { root, name, cat, fill, prog, reward, btn, last: {} };
+    return { root, name, desc, cat, fill, prog, reward, btn, last: {} };
   };
   const orderKey: Record<MissionTab, string> = { normal: '', hidden: '' };
   let lastSummary = '';
@@ -110,6 +113,10 @@ export function createMissionSheet(opts: MissionSheetOptions, first: MissionShee
             rows.set(r.i, e);
           }
           if (e.last.name !== r.name) e.name.textContent = r.name;
+          if (e.last.desc !== r.desc) {
+            e.desc.textContent = r.desc;
+            e.desc.hidden = r.desc === '';
+          }
           if (e.last.cat !== r.cat) e.cat.textContent = r.cat;
           if (e.last.reward !== r.reward) e.reward.textContent = r.reward;
           if (e.last.progressText !== r.progressText) e.prog.textContent = r.progressText;

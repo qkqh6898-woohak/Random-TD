@@ -142,6 +142,11 @@ export interface TowerPanelInput {
   penMaxBp: number;
   /** 타워 레벨 (계정 성장 M9, 지금은 1). 생략하면 1 */
   level?: number;
+  /**
+   * [⬆ 승급 가능 n]으로 연 패널의 승급 가능 묶음 위치 (M5 검토 반영: 패널이 아래 띠의 그 버튼을 덮어 다음 묶음으로 넘길 수 없었다
+   * → 패널 안에 [다음 묶음 ▶]). 묶음이 2개 이상일 때만, 아니면 생략/null. index는 0부터 (지금 묶음이 목록에 없으면 -1)
+   */
+  mergeCycle?: { index: number; total: number } | null;
 }
 
 export interface TowerPanelModel {
@@ -171,6 +176,8 @@ export interface TowerPanelModel {
   paused: boolean;
   /** 쉬는 이유 글자 ('이동 중' · '💫 기절', 쉬지 않으면 '') */
   pausedText: string;
+  /** [다음 묶음 ▶ 1/3] 버튼 글자 ('' = 숨김) */
+  mergeNext: string;
 }
 
 /** 종족 이름에서 괄호 설명을 뺀다 (부제가 좁은 화면에서 잘리지 않게): '카라쉬 부족 (오크·고블린)' → '카라쉬 부족'. */
@@ -188,6 +195,12 @@ function abilityLine(data: Pick<TowerData, 'special' | 'ability'>): { abilityLab
   const text = data.ability && data.ability.trim() !== '' && data.ability !== '—' ? data.ability : '';
   if (data.special > 0) return { abilityLabel: '특색', ability: text || '—' };
   return text ? { abilityLabel: '능력', ability: text } : { abilityLabel: '특색', ability: '—' };
+}
+
+/** [다음 묶음 ▶] 글자: 묶음 2개 이상일 때 '다음 묶음 ▶ 1/3' (지금 묶음이 목록에 없으면 '다음 묶음 ▶'), 아니면 ''. */
+export function mergeNextText(cycle: { index: number; total: number } | null): string {
+  if (!cycle || cycle.total < 2) return '';
+  return cycle.index >= 0 ? `다음 묶음 ▶ ${cycle.index + 1}/${cycle.total}` : '다음 묶음 ▶';
 }
 
 export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
@@ -224,7 +237,10 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
         apsCell,
       ],
       [
-        { label: '사거리', value: data.range >= 50 ? '맵 전체' : fmtNum(data.range), buffed: false },
+        // 사거리 강화(M5-3)가 붙은 값과 기본값 (M5 검토 반영: 기본값만 보였다). 단위 → 칸, 소수 둘째 자리까지
+        data.range >= 50
+          ? { label: '사거리', value: '맵 전체', buffed: false }
+          : cell('사거리', eff.range, stats.range, (v) => fmtScaled2(v, 1000)),
         { label: '범위', value: shapeText(data.shape, data.shapeValue), buffed: false },
       ],
       [
@@ -245,5 +261,6 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
     target: TARGET_NAMES[data.target],
     paused: input.paused || input.stunned === true,
     pausedText: input.stunned ? '💫 기절' : input.paused ? '이동 중' : '',
+    mergeNext: mergeNextText(input.mergeCycle ?? null),
   };
 }

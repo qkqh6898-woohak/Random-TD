@@ -422,7 +422,6 @@ async function panelVsTower(page: Page, tx: number, ty: number) {
 }
 
 test('정보 패널은 어느 줄의 타워를 골라도 그 타워 그림을 가리지 않는다 (맵 가운데 줄은 접어서, 검토 반영)', async ({ page }) => {
-  test.setTimeout(60_000); // 11줄을 하나씩 (헤드리스 Chromium은 초당 10프레임 남짓이라 30초에 빠듯하다)
   const errors = collectErrors(page);
   await start(page);
   const rows = await inScene(page, (s) => {
