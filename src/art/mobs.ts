@@ -41,6 +41,17 @@ export const MOB_LOOKS: Readonly<Record<string, MobLook>> = {
   ancientgolem: { shape: 'rock', body: 0x5e5a66, accent: 0x5ff0ff, crown: true },
   wraithlord: { shape: 'ghost', body: 0x4b3f6b, accent: 0x9f8fd0, crown: true },
   chaosdragon: { shape: 'dragon', body: 0x8c1f2a, accent: 0x2a0d12, crown: true },
+  // M5 도전 보스 10종 (ENEMIES.md 7장 '외형'): 같은 모양 문법, 왕관 없음 (판의 대장과 구별)
+  goldslime: { shape: 'blob', body: 0xf5c542, accent: 0xfff1a8 },
+  thiefgoblin: { shape: 'goblin', body: 0x6b7d3a, accent: 0xc9a35b },
+  stoneturtle: { shape: 'shell', body: 0x7d7a70, accent: 0xc9c2ad },
+  twinbats: { shape: 'bat', body: 0x5a4a8a, accent: 0xb09cf0 },
+  irongolem: { shape: 'rock', body: 0x8c97a6, accent: 0xe6edf5 },
+  shadowfang: { shape: 'wolf', body: 0x1f1d2b, accent: 0x7a6fb0 },
+  frostgiant: { shape: 'rock', body: 0x9fd4ef, accent: 0xffffff },
+  flamelord: { shape: 'ghost', body: 0xff7a2f, accent: 0xffd36b },
+  wraithknight: { shape: 'ghost', body: 0x3c3456, accent: 0x8f80c4 },
+  ancientdragon: { shape: 'dragon', body: 0xd9a521, accent: 0x6b4a08 },
 };
 
 export const DEFAULT_LOOK: MobLook = { shape: 'blob', body: 0x9aa0a6, accent: 0xdddddd };

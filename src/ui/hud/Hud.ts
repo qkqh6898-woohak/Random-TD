@@ -16,6 +16,9 @@
  *   M4 검토 반영: 접은 고르기 창의 [🃏 카드 고르기] 알약은 타워 수 옆 자리(choiceSlot)에 들어간다 — 맵 위에 떠 있으면
  *   배치 칸 3개를 덮어 소환 탭을 가로챘다. 알약이 보이는 동안 소환 안내는 숨긴다(CSS).
  * 돈이 들어오면 (동전이 도착하면) 돈 글자가 반짝이고 '+n원'이 떠오른다 (UI.md 4.2).
+ * M5: 아래 띠 아래에 하단 메뉴 (UI.md 4.1): [⚔ 도전 · 1 가능] [⬆ 강화 · Lv 5] [📋 미션 · 2 받기] — 누르면 바텀 시트 (onMenu),
+ *   열린 시트의 메뉴는 강조. 보스 막대 자리는 도전 보스 막대와 같이 쓴다: 하나만 있으면 그것이 자리를 다 쓰고,
+ *   보스와 도전이 겹치면 반씩 두 줄 (UI.md 9장 '체력바 2줄') — 자리 높이는 그대로라 맵이 움직이지 않는다.
  *
  * 값 계산은 hudModel.ts(순수 함수, 단위 테스트)에서 하고, 여기서는 바뀐 글자만 DOM에 쓴다.
  * HUD는 sim을 읽기만 한다. 배속은 화면 설정(TickClock), 돈 추가·단계 건너뛰기(debug)는 명령으로 보낸다.
@@ -24,6 +27,7 @@
 import { h } from '../dom';
 import type { UiView } from '../root';
 import { livesDropped, withCommas, type HudModel } from './hudModel';
+import type { SheetKind } from '../sheets/sheetModels';
 
 /** 하트 깨짐 연출 길이 (ms) — styles.css `heart-break`와 같게 */
 export const HEART_BREAK_MS = 600;
@@ -42,6 +46,8 @@ export interface HudOptions {
   onMergeReady?: () => void;
   /** 아래 띠 '👷 300원': 일꾼 고용 (M4) */
   onHire?: () => void;
+  /** 하단 메뉴 (M5): 도전·강화·미션 바텀 시트 열기/닫기 */
+  onMenu?: (kind: SheetKind) => void;
 }
 
 export interface HudView extends UiView {
@@ -53,6 +59,12 @@ export interface HudView extends UiView {
   readonly bottomBand: HTMLElement;
   /** 아래 띠 위쪽 끝 = 무대 위쪽에서 잰 CSS px */
   bottomTop(): number;
+  /** 하단 메뉴 (M5) */
+  readonly menuBar: HTMLElement;
+  /** 하단 메뉴 위쪽 끝 = 무대 위쪽에서 잰 CSS px (바텀 시트 아래 끝) */
+  menuTop(): number;
+  /** 열린 시트의 메뉴 강조 (없으면 null) */
+  setMenuActive(kind: SheetKind | null): void;
   /** 아래 띠 안 고르기 창 알약 자리 (ChoicePanel이 알약을 여기에 넣는다, M4 검토 반영) */
   readonly choiceSlot: HTMLElement;
   /** 돈 글자 가운데 (무대 기준 CSS px) — 동전이 날아갈 곳 */
@@ -127,6 +139,12 @@ export function createHud(opts: HudOptions): HudView {
   const workersEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-workers', 'aria-label': '일꾼 수', ...off }, text: '0/0' });
   const workersItem = h('span', { class: 'hud-item hud-workers' }, h('span', { class: 'hud-label', text: '👷', attrs: { 'aria-hidden': 'true' } }), workersEl);
   const bannerEl = h('div', { class: 'hud-banner', attrs: { 'data-testid': 'hud-boss', hidden: '' } }, bannerFill, bannerText, bannerTime);
+  // 도전 보스 막대 (M5): 보스 막대와 같은 자리
+  const chalFill = h('div', { class: 'hud-banner-fill', attrs: { 'data-testid': 'hud-challenge-hp', 'aria-hidden': 'true' } });
+  const chalText = h('span', { class: 'hud-banner-text', attrs: { 'data-testid': 'hud-challenge-name' }, text: ' ' });
+  const chalTime = h('span', { class: 'hud-banner-time', attrs: { 'data-testid': 'hud-challenge-time', role: 'timer', 'aria-live': 'off' }, text: '' });
+  const chalEl = h('div', { class: 'hud-banner hud-banner-challenge has-hp', attrs: { 'data-testid': 'hud-challenge', hidden: '' } }, chalFill, chalText, chalTime);
+  const bannerSlot = h('div', { class: 'hud-banner-slot', attrs: { 'data-testid': 'hud-banner-slot' } }, bannerEl, chalEl);
   // 화면 가장자리 붉은 테두리 (몹 120 이상, 무한)
   const edgeEl = h('div', { class: 'hud-edge', attrs: { 'aria-hidden': 'true', 'data-testid': 'hud-edge' } });
   // 돈 '+n원' (돈 글자 옆에서 떠오름)
@@ -191,9 +209,34 @@ export function createHud(opts: HudOptions): HudView {
         speedBtn,
       ),
     ),
-    bannerEl,
+    bannerSlot,
   );
-  const el = h('div', { class: 'hud-root', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band, bottomBand);
+  // 하단 메뉴 (M5, UI.md 4.1): 메뉴 이름 + 배지 두 줄
+  const menuBtns = new Map<SheetKind, { btn: HTMLButtonElement; badge: HTMLElement }>();
+  const menuItem = (kind: SheetKind, icon: string, label: string): HTMLButtonElement => {
+    const badge = h('span', { class: 'hud-menu-badge', attrs: { 'data-testid': `menu-badge-${kind}`, ...off } });
+    const btn = h(
+      'button',
+      {
+        class: `btn hud-menu-btn is-${kind}`,
+        attrs: { type: 'button', 'data-testid': `menu-${kind}`, 'data-action': `menu-${kind}`, 'aria-label': label },
+        on: { click: () => opts.onMenu?.(kind) },
+      },
+      h('span', { class: 'hud-menu-label' }, h('span', { class: 'hud-menu-icon', text: icon, attrs: { 'aria-hidden': 'true' } }), label),
+      badge,
+    );
+    menuBtns.set(kind, { btn, badge });
+    return btn;
+  };
+  const menuBar = h(
+    'div',
+    { class: 'hud-menu', attrs: { role: 'toolbar', 'aria-label': '하단 메뉴' } },
+    menuItem('challenge', '⚔', '도전'),
+    menuItem('upgrade', '⬆', '강화'),
+    menuItem('mission', '📋', '미션'),
+  );
+  const dock = h('div', { class: 'hud-dock' }, bottomBand, menuBar);
+  const el = h('div', { class: 'hud-root', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band, dock);
 
   let last: Partial<HudModel> = {};
   let breakTimer: ReturnType<typeof setTimeout> | undefined;
@@ -225,6 +268,17 @@ export function createHud(opts: HudOptions): HudView {
       return bottomBand.getBoundingClientRect().top - el.getBoundingClientRect().top;
     },
     choiceSlot,
+    menuBar,
+    menuTop() {
+      return menuBar.getBoundingClientRect().top - el.getBoundingClientRect().top;
+    },
+    setMenuActive(kind) {
+      for (const [k, { btn }] of menuBtns) {
+        const on = k === kind;
+        btn.classList.toggle('is-on', on);
+        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      }
+    },
     goldAnchor() {
       const r = goldEl.getBoundingClientRect();
       const root = el.getBoundingClientRect();
@@ -293,6 +347,30 @@ export function createHud(opts: HudOptions): HudView {
         hireBtn.setAttribute('aria-label', m.workersFull ? '일꾼 최대' : `일꾼 고용 ${m.hireLabel.replace('👷 ', '')}`);
       }
       if (last.hireReady !== m.hireReady) hireBtn.classList.toggle('is-off', !m.hireReady);
+      // 도전 보스 막대 (M5): 보스와 겹치면 자리를 반씩
+      if (last.challengeBanner !== m.challengeBanner) {
+        if (m.challengeBanner) {
+          chalText.textContent = m.challengeBanner;
+          chalEl.hidden = false;
+        } else chalEl.hidden = true;
+      }
+      if (last.challengeHp !== m.challengeHp) chalFill.style.width = m.challengeHp < 0 ? '0%' : `${m.challengeHp / 10}%`;
+      setText(chalTime, 'challengeTime', m.challengeTime);
+      if (last.challengeTimeWarn !== m.challengeTimeWarn) chalTime.classList.toggle('is-warn', m.challengeTimeWarn);
+      const split = m.bossBanner !== null && m.challengeBanner !== null;
+      if (bannerSlot.classList.contains('is-split') !== split) bannerSlot.classList.toggle('is-split', split);
+      // 하단 메뉴 배지
+      const badges: [SheetKind, string, boolean][] = [
+        ['challenge', m.menuChallenge, m.menuChallengeAlert],
+        ['upgrade', m.menuUpgrade, false],
+        ['mission', m.menuMission, m.menuMissionAlert],
+      ];
+      for (const [k, text, alert] of badges) {
+        const b = menuBtns.get(k);
+        if (!b) continue;
+        if (b.badge.textContent !== text) b.badge.textContent = text;
+        b.btn.classList.toggle('is-alert', alert);
+      }
       last = { ...m };
       if (dropped) breakHeart();
     },

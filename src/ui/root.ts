@@ -5,6 +5,7 @@
  *  - screen: 전체 화면 (타이틀, 결과 …) — 한 번에 하나
  *  - hud: 게임 중 상단·하단 HUD
  *  - panel: 게임 중 타워 정보 패널 (HUD 위, 일시정지·패배 화면 아래)
+ *  - sheet: 하단 메뉴 바텀 시트 (도전·강화·미션, M5-1). 패널과 같은 높이 — 바텀 시트는 하나만 열리게 Game 장면이 서로 닫는다
  *  - modal: 게임 중 고르기 창 (보스 카드·승급의 축복, M4-7). 패널 위, 일시정지·패배 화면 아래 — 게임 시간은 흐른다
  *  - toast: 짧은 알림 (단계 시작 등). 화면 읽기 프로그램이 읽어 주는 곳(aria-live)은 이 층뿐이다.
  *    HUD의 틱·시간처럼 초당 수십 번 바뀌는 값을 live 영역에 두면 계속 읽어 대므로 루트에는 aria-live를 달지 않는다.
@@ -17,7 +18,7 @@ export interface UiView {
   destroy?(): void;
 }
 
-export type LayerName = 'screen' | 'hud' | 'panel' | 'modal' | 'toast';
+export type LayerName = 'screen' | 'hud' | 'panel' | 'sheet' | 'modal' | 'toast';
 
 /** 배너 줄 글자를 줄일 수 있는 하한 (원래 크기의 비율) */
 const BANNER_MIN_FONT_RATIO = 0.6;
@@ -51,10 +52,11 @@ export class UiRoot {
       screen: h('div', { class: 'layer layer-screen' }),
       hud: h('div', { class: 'layer layer-hud' }),
       panel: h('div', { class: 'layer layer-panel' }),
+      sheet: h('div', { class: 'layer layer-sheet' }),
       modal: h('div', { class: 'layer layer-modal' }),
       toast: h('div', { class: 'layer layer-toast', attrs: { role: 'status', 'aria-live': 'polite' } }),
     };
-    el.append(this.layers.hud, this.layers.panel, this.layers.modal, this.layers.screen, this.layers.toast);
+    el.append(this.layers.hud, this.layers.panel, this.layers.sheet, this.layers.modal, this.layers.screen, this.layers.toast);
   }
 
   /** 층에 화면 하나를 띄운다 (그 층의 이전 화면은 닫힘). */
@@ -102,7 +104,7 @@ export class UiRoot {
    * 줄마다 줄바꿈하지 않고, 배너 폭(92cqw)을 넘는 줄은 글자 크기를 줄여 한 줄에 맞춘다 (fitBannerLines) — 412px에서 편대 예고
    * 제목이 이름 중간에서 끊겨 배너가 3줄(72px)이 되어 맵 0줄을 반 넘게 덮던 것 (검토 반영).
    */
-  banner(title: string, sub: string | null, ms = 3200, tone: 'warn' | 'shadow' | 'boss' | 'gold' = 'warn'): HTMLElement {
+  banner(title: string, sub: string | null, ms = 3200, tone: 'warn' | 'shadow' | 'boss' | 'gold' | 'mission' | 'challenge' = 'warn'): HTMLElement {
     const layer = this.layers.toast;
     const key = sub ? `${title}\n${sub}` : title;
     for (const child of [...layer.children]) if ((child as HTMLElement).dataset.key === key) child.remove();
@@ -146,6 +148,19 @@ export class UiRoot {
    */
   setToastSingle(on: boolean): void {
     this.layers.toast.classList.toggle('is-single', on);
+  }
+
+  /**
+   * 아래쪽 HUD 높이 (무대 아래에서 잰 CSS px, M5): menu = 하단 메뉴 높이(바텀 시트 아래 끝 --sheet-bottom),
+   * dock = 아래 띠 + 하단 메뉴 높이(고르기 창 아래 끝 --dock-h). 루트에 CSS 변수로 둬 sheet·modal 층이 같이 읽는다. null이면 지운다.
+   */
+  setDockMetrics(menu: number | null, dock: number | null): void {
+    const set = (name: string, v: number | null): void => {
+      if (v === null || !Number.isFinite(v)) this.el.style.removeProperty(name);
+      else this.el.style.setProperty(name, `${Math.max(0, Math.round(v))}px`);
+    };
+    set('--sheet-bottom', menu);
+    set('--dock-h', dock);
   }
 
   clearAll(): void {

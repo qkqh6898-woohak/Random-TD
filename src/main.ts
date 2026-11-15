@@ -8,6 +8,8 @@
 import type Phaser from 'phaser';
 import './ui/styles.css';
 import { loadGameData } from './data/load';
+import { createAccountStore } from './meta/account';
+import { defaultStorage } from './save/storage';
 import { describeFatal, installFatalHandlers, type FatalPhase } from './ui/fatal';
 import { UiRoot } from './ui/root';
 import { readUrlOptions, type GameContext } from './view/context';
@@ -35,12 +37,14 @@ function boot(): void {
   try {
     const data = loadGameData();
     const url = readUrlOptions(location.search);
+    const account = createAccountStore(defaultStorage());
     const ctx: GameContext = {
       data,
       ui,
       debug: url.debug,
       seed: url.seed,
-      accountLevel: 1,
+      accountLevel: account.level(),
+      account,
       version: __APP_VERSION__,
     };
     game = createGame(must('game'), ctx);

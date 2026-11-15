@@ -123,3 +123,82 @@ export const EVADE_LABEL = '빗나감';
 
 /** 행운의 소환 카드로 레어 */
 export const LUCKY_SUMMON = '🃏 행운의 소환 — 레어!';
+
+// ---- M5 ----
+
+/** 도전 보스 막대 이름표 (HUD): '⚔ 도전 3단계 「돌거북」' */
+export function challengeNameplate(lv: number, name: string): string {
+  return `⚔ 도전 ${lv}단계 「${name}」`;
+}
+
+/** 도전 시작 알림 */
+export function challengeStartText(lv: number, name: string, seconds: number): string {
+  return `⚔ 도전 ${lv}단계 「${name}」 — ${seconds}초!`;
+}
+
+/** 도전 처치 배너 (처음 잡으면 다음 단계 해금도) */
+export function challengeClearText(lv: number, reward: number, unlocked: number | null): string {
+  return unlocked !== null ? `⚔ 도전 ${lv}단계 클리어! +${reward}원 · ${unlocked}단계 열림` : `⚔ 도전 ${lv}단계 클리어! +${reward}원`;
+}
+
+/** 도전 실패 (시간 초과 / 캠페인 출구) — 패배·목숨 감소 없음 */
+export function challengeFailText(lv: number, reason: string, cooldownMin: number): string {
+  const why = reason === 'escape' ? '빠져나갔어요' : '시간 초과';
+  return `⚔ 도전 ${lv}단계 실패 — ${why} · ${cooldownMin}분 뒤 다시`;
+}
+
+/** 도전 쿨타임 끝 (UI.md 8장) */
+export function challengeReadyText(lv: number): string {
+  return `도전 ${lv}단계 준비 완료`;
+}
+
+/** 도전 시작 실패 → 글자 (보여줄 것이 없으면 null) */
+export function challengeStartFailText(reason: string): string | null {
+  if (reason === 'busy') return '도전은 한 번에 하나만 할 수 있어요';
+  if (reason === 'locked') return '앞 단계를 먼저 잡아야 열려요';
+  if (reason === 'cooldown') return '아직 쉬는 중이에요';
+  return null;
+}
+
+/** 강화 실패 → 글자 (돈 부족은 모자란 만큼) */
+export function upgradeFailText(reason: string, short: number): string | null {
+  if (reason === 'gold') return needMoreGold(Math.max(1, short));
+  if (reason === 'max') return '최대 레벨이에요';
+  if (reason === 'locked') return '등급 강화 3종을 모두 최대로 올리면 열려요';
+  return null;
+}
+
+/** 도박 실패 → 글자 */
+export function gambleFailText(reason: string, short: number, unlockLevel: number): string | null {
+  if (reason === 'gold') return needMoreGold(Math.max(1, short));
+  if (reason === 'locked') return `계정 Lv${unlockLevel}에 열려요`;
+  return null;
+}
+
+/** 도박 결과 한 줄 (릴 아래): '×2 → +200원' / '×0 … 0원' */
+export function gambleResultText(mul: string, win: number, cost: number): string {
+  if (win <= 0) return `${mul} … 꽝! (−${cost}원)`;
+  const net = win - cost;
+  return `${mul} → +${win}원 (${net >= 0 ? '+' : '−'}${Math.abs(net)})`;
+}
+
+/** 도박 대박 배너 (×5 이상) */
+export function gambleJackpotText(mul: string, win: number): string {
+  return `🎰 ${mul} 대박! +${win}원`;
+}
+
+/** 미션 달성 알림 (한 줄 배너): 하나면 이름, 같은 프레임에 여럿이면 개수 + 보상 합 */
+export function missionDoneText(names: readonly string[], total: number): string {
+  if (names.length === 1) return `📋 미션 달성! ${names[0]} (+${total}원)`;
+  return `📋 미션 ${names.length}개 달성! (+${total}원)`;
+}
+
+/** 히든 미션 발견 배너 */
+export function hiddenMissionText(name: string): string {
+  return `🎉 히든 미션 발견! 「${name}」`;
+}
+
+/** 미션 보상 받음 */
+export function missionClaimText(total: number, count: number): string {
+  return count > 1 ? `📋 미션 ${count}개 보상 +${total}원` : `📋 미션 보상 +${total}원`;
+}

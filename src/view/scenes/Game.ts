@@ -22,6 +22,12 @@
  * - M4: 일꾼 고용 버튼(아래 띠)·👷 수(2줄)·일꾼 수입 반짝, 보스 막대(이름표·체력·남은 초)·보스 이름표 배너·보스 처치 배너,
  *   편대 예고 배너(10초 전, 힌트 한 줄)·투명 몹 경고 배너, 보스 카드 3장 고르기 창·승급의 축복 고르기 창(modal 층, 시간은 흐름),
  *   드러난 투명 몹 보라 외곽선·정예 금색 외곽선·보스 크기·날기·피해 감소 고리·보호막 줄, 기절한 타워 잿빛, 회복 초록 숫자·'빗나감'.
+ * - M5: 하단 메뉴 [⚔ 도전] [⬆ 강화] [📋 미션] → 바텀 시트(sheet 층, 55% / 끌어서 85%, 게임은 계속 진행, 맵을 누르면 닫힘).
+ *   도전 [시작] → startChallenge, 강화 [비용] → upgrade (길게 누르면 연속), 도박 테이블 → gamble (슬롯 1초 연출 뒤 결과),
+ *   미션 [받기]·[모두 받기] → claimMission·claimAllMissions. 메뉴 배지 '1 가능'·'Lv 5'·'2 받기', 도전 보스 막대(보스 막대 자리),
+ *   [⬆ 승급 가능 n]을 누를 때마다 다음 묶음을 골라 패널을 열고 그 타워들에 금색 고리를 퍼뜨린다(1.5초).
+ *   바텀 시트는 하나만: 시트를 열면 정보 패널을 닫고 고르기 창을 접는다, 타워 패널·고르기 창을 펼치면 시트를 닫는다.
+ *   히든 미션을 달성하면 계정 저장소에 영구 기록한다 (다음 판부터 이름이 보임).
  * - 무한 모드: 순환의 정원 / 캠페인(debug): 테마 1 사거리 미로.
  * - ⏸ 또는 앱이 백그라운드로 가면 일시정지 메뉴(UI.md 4.6). 열려 있는 동안 TickClock 배속 0 = 게임 시간 정지.
  * - 패배하면 시간을 멈추고 패배 화면 ([다시 하기] / [타이틀로]).
@@ -31,7 +37,7 @@
 import Phaser from 'phaser';
 import { GRADE_COLORS, hexToInt } from '../../art/palette';
 import type { Grade } from '../../data/load';
-import { TickClock } from '../../sim/World';
+import { TICK_HZ, TickClock } from '../../sim/World';
 import type { Projectile } from '../../sim/entities/Projectile';
 import { towerAt, type Tower } from '../../sim/entities/Tower';
 import { canMergeGrade, mergeOutcomes } from '../../sim/Deck';
@@ -47,6 +53,28 @@ import { summonCheck, summonCost, towerCount } from '../../sim/systems/Summon';
 import { hireCheck } from '../../sim/systems/Economy';
 import { formationById } from '../../sim/systems/Formation';
 import { currentOffer } from '../../sim/systems/Cards';
+import { upgradeCheck, upgradeCost, upgradeLevel } from '../../sim/systems/Upgrade';
+import { gambleCheck } from '../../sim/systems/Gamble';
+import { challengeCheck } from '../../sim/systems/Challenge';
+import { claimCheck, missionsClaimable } from '../../sim/systems/Mission';
+import { ensureMobTexture } from '../../art/mobs';
+import { createChallengeSheet, type ChallengeSheetView } from '../../ui/sheets/ChallengeSheet';
+import { createUpgradeSheet, type UpgradeSheetView } from '../../ui/sheets/UpgradeSheet';
+import { createMissionSheet, type MissionSheetView } from '../../ui/sheets/MissionSheet';
+import {
+  challengeHudInput,
+  challengeSheetModel,
+  gambleSheetModel,
+  menuBadges,
+  missionSheetModel,
+  missionTabLabels,
+  mulText,
+  upgradeSheetModel,
+  type MissionTab,
+  type SheetKind,
+  type UpgradeTab,
+} from '../../ui/sheets/sheetModels';
+import { SLOT_SPIN_MS, slotFrame, type SlotState } from '../../ui/sheets/slot';
 import {
   BOARD_FULL,
   EVADE_LABEL,
@@ -65,6 +93,18 @@ import {
   invisibleTip,
   mergeFailText,
   mergeReadyToast,
+  challengeClearText,
+  challengeFailText,
+  challengeReadyText,
+  challengeStartFailText,
+  challengeStartText,
+  gambleFailText,
+  gambleJackpotText,
+  gambleResultText,
+  hiddenMissionText,
+  missionClaimText,
+  missionDoneText,
+  upgradeFailText,
 } from '../../ui/messages';
 import { createChoicePanel, type ChoicePanelView } from '../../ui/panels/ChoicePanel';
 import { cardChoiceModel, mergeChoiceModel } from '../../ui/panels/choiceModel';
@@ -128,6 +168,10 @@ const MERGE_READY_TOASTS_PER_MATCH = 3;
 const DROP_HOLD_MS = 400;
 /** 로컬 플레이어 (2인 판은 M13) */
 const LOCAL_PLAYER = 0;
+/** [⬆ 승급 가능 n] 강조 고리 시간 (ms) */
+const MERGE_HIGHLIGHT_MS = 1500;
+/** 도박 대박 연출 기준 배율 (bp, UI.md 10장 '도박 ×5 이상') */
+const GAMBLE_BIG_MUL_BP = 50000;
 
 /** 타워를 누르고 있는 중 (탭 또는 길게 눌러 끌기). */
 interface PressState {
@@ -230,6 +274,23 @@ export class GameScene extends Phaser.Scene {
   private choice: ChoicePanelView | null = null;
   /** 군단 id → 이름 (보스 이름표) */
   private legionNames: Record<string, string> = {};
+  // ---- M5 ----
+  /** 열린 바텀 시트 (하나만) */
+  private sheet: ChallengeSheetView | UpgradeSheetView | MissionSheetView | null = null;
+  private sheetKind: SheetKind | null = null;
+  /** 시트마다 마지막으로 고른 탭 (다시 열면 그 탭) */
+  private upgradeTab: UpgradeTab = 'grade';
+  private missionTab: MissionTab = 'normal';
+  /** 도박 슬롯 연출 (화면 전용) */
+  private slot: SlotState | null = null;
+  /** 마지막 강화 명령을 넣은 틱 (그 명령이 실행되기 전에는 다음을 넣지 않는다 — 길게 누르기가 돈보다 많이 넣지 않게) */
+  private upgradeQueuedTick = -1;
+  /** [⬆ 승급 가능 n]을 누른 횟수 (누를 때마다 다음 묶음) · 강조 고리 */
+  private mergeCycle = 0;
+  private mergeHighlight: { tiles: { tx: number; ty: number }[]; startMs: number } | null = null;
+  /** 도전 보스 그림 (몹 id → 이미지 주소) · 단계 → 특수 능력 글자 */
+  private challengePics = new Map<string, string | null>();
+  private challengeAbilities = new Map<number, string>();
 
   constructor(private readonly ctx: GameContext) {
     super({ key: SCENE_GAME });
@@ -244,6 +305,7 @@ export class GameScene extends Phaser.Scene {
       theme: this.sceneData.theme,
       maxPlayers: config.maxPlayers,
       debug: this.ctx.debug,
+      accountLevels: [this.ctx.accountLevel],
     });
     this.clock = new TickClock({ speed: 1, maxFrameMs: config.maxFrameMs });
     this.speeds = availableSpeeds(config.speeds, this.ctx.accountLevel, this.ctx.debug);
@@ -268,6 +330,13 @@ export class GameScene extends Phaser.Scene {
     this.panelPlaceKey = '';
     this.choice = null;
     this.legionNames = legionNameMap(this.ctx.data.enemies.hierarchy);
+    this.sheet = null;
+    this.sheetKind = null;
+    this.slot = null;
+    this.upgradeQueuedTick = -1;
+    this.mergeCycle = 0;
+    this.mergeHighlight = null;
+    this.challengeAbilities = new Map(this.ctx.data.enemies.challenges.map((c) => [c.level, c.ability]));
     this.towerNames = new Map(this.ctx.data.towers.towers.map((t) => [t.id, t.name]));
 
     // HUD를 먼저 띄워 높이를 잰 뒤 그 아래에 맵을 놓는다
@@ -280,8 +349,9 @@ export class GameScene extends Phaser.Scene {
       onPause: () => this.pause(),
       onSkipStage: this.ctx.debug ? () => this.match.world.enqueue({ type: 'debugSkipStage' }) : undefined,
       onAddGold: this.ctx.debug ? () => this.match.world.enqueue({ type: 'debugAddGold', amount: config.debug.addGold }) : undefined,
-      onMergeReady: () => this.selectFirstMergeable(),
+      onMergeReady: () => this.selectNextMergeable(),
       onHire: () => this.hire(),
+      onMenu: (kind) => this.toggleSheet(kind),
     });
     this.ctx.ui.clear('screen');
     this.ctx.ui.show('hud', this.hud);
@@ -296,6 +366,7 @@ export class GameScene extends Phaser.Scene {
       });
       this.resizeObserver.observe(this.hud.band);
       this.resizeObserver.observe(this.hud.bottomBand);
+      this.resizeObserver.observe(this.hud.menuBar);
       this.resizeObserver.observe(this.ctx.ui.el);
     }
 
@@ -318,6 +389,8 @@ export class GameScene extends Phaser.Scene {
       this.input.off(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onPointerUp, this);
       this.closePanel();
       this.closeChoice();
+      this.closeSheet();
+      this.ctx.ui.setDockMetrics(null, null);
       this.press = null;
       this.pendingDrop = null;
       this.destroyLayers();
@@ -366,6 +439,7 @@ export class GameScene extends Phaser.Scene {
     this.floatingText.update(time);
     this.fx.update(time, () => this.goldAnchorPx());
     this.refreshHud();
+    this.refreshSheet(this.time.now);
   }
 
   /** 틱 n번 실행. 마지막 틱 직전의 진행도를 기억해 보간에 쓴다. 패배하면 그 자리에서 멈춘다. */
@@ -536,6 +610,11 @@ export class GameScene extends Phaser.Scene {
     this.ctx.ui.setToastTop(bottom > 0 ? bottom + gap : null);
     this.panelTopCss = bottom + gap + this.ctx.ui.measureToastHeight() + gap / 2;
     this.panelPlaceKey = '';
+    // 바텀 시트 아래 끝 = 하단 메뉴 위, 고르기 창 아래 끝 = 아래 띠 위 (M5)
+    const H = this.ctx.ui.el.clientHeight;
+    const menuTop = this.hud.menuTop();
+    const dockTop = this.hud.bottomTop();
+    this.ctx.ui.setDockMetrics(H > 0 && menuTop > 0 ? H - menuTop : null, H > 0 && dockTop > 0 ? H - dockTop : null);
   }
 
   /** HUD 돈 글자 위치 (기준 px) — 동전이 날아갈 곳. */
@@ -578,6 +657,11 @@ export class GameScene extends Phaser.Scene {
       this.cancelPress(now);
     }
     if (inputLocked(this.inputLockUntil, now)) return;
+    // 바텀 시트가 열려 있으면 맵 터치는 시트만 닫는다 (UI.md 4.5 '맵 위를 터치하면 닫힘')
+    if (this.sheet) {
+      this.closeSheet();
+      return;
+    }
     // 아래 칸 타워의 머리(위 칸으로 삐져나온 부분)를 누르면 그 타워 칸 (위 칸 소환 아님)
     const world = this.match.world;
     const { tx, ty } = tapTile(this.layout, pointer.worldX, pointer.worldY, (x, y) => towerAt(world, x, y) !== undefined);
@@ -735,8 +819,9 @@ export class GameScene extends Phaser.Scene {
     const t = this.match.world.entities.get(id);
     if (!t || t.kind !== 'tower') return;
     this.selectedId = id;
-    // 바텀 시트는 하나만: 펼친 고르기 창은 알약으로 접는다 (창 뒤에 패널이 열려 ✕가 가려지던 것, 검토 반영)
+    // 바텀 시트는 하나만: 펼친 고르기 창은 알약으로 접는다 (창 뒤에 패널이 열려 ✕가 가려지던 것, 검토 반영). 메뉴 시트는 닫는다
     if (this.choice && !this.choice.collapsed) this.choice.collapse();
+    this.closeSheet();
     if (!this.panel) {
       this.panel = createTowerPanel({
         onMerge: () => this.sendMerge('merge'),
@@ -748,11 +833,21 @@ export class GameScene extends Phaser.Scene {
     this.refreshPanel();
   }
 
-  /** 아래 띠 '⬆ 승급 가능 n': 가장 먼저 소환된 승급 가능 타워를 고른다. */
-  private selectFirstMergeable(): void {
+  /**
+   * 아래 띠 '⬆ 승급 가능 n' (M5-7): 누를 때마다 다음 승급 가능 묶음(가장 먼저 소환된 것부터)을 골라 정보 패널을 열고,
+   * 그 묶음 타워마다 금색 고리를 1.5초 퍼뜨려 강조한다 (UI.md 4.1 '누르면 해당 타워 강조').
+   */
+  private selectNextMergeable(): void {
     if (this.paused || this.gameOver) return;
-    const g = mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER)[0];
-    if (g) this.selectTower(g.first.id);
+    const groups = mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
+    if (groups.length === 0) return;
+    const g = groups[this.mergeCycle % groups.length] as (typeof groups)[number];
+    this.mergeCycle++;
+    this.selectTower(g.first.id);
+    this.mergeHighlight = {
+      tiles: sameKindTowers(this.match.world, g.tower, LOCAL_PLAYER).map((t) => ({ tx: t.tx, ty: t.ty })),
+      startMs: this.time.now,
+    };
   }
 
   private closePanel(): void {
@@ -883,6 +978,7 @@ export class GameScene extends Phaser.Scene {
         buffed,
         sameKind: t && !p ? sameKindTowers(this.match.world, t.tower, t.owner).map((x) => ({ tx: x.tx, ty: x.ty })) : [],
         drop: p && p.drop && stats ? { ...p.drop, range: stats.range } : null,
+        highlight: this.highlightView(),
       },
       timeMs,
     );
@@ -908,6 +1004,8 @@ export class GameScene extends Phaser.Scene {
     const legions = (enemies.hierarchy as { legions?: Record<string, { color?: string }> }).legions ?? {};
     const sizes = new Map<string, string>(enemies.mobs.map((m) => [m.id, m.size]));
     for (const b of enemies.bosses) sizes.set(b.id, '보스');
+    // 도전 보스 (M5-2): 대형 (쌍둥이 박쥐는 두 마리라 중형)
+    for (const c of enemies.challenges) sizes.set(c.id, (c.twin ?? 1) > 1 ? '중형' : '대형');
     const eliteScale = enemies.eliteChance.scale;
     this.mobLayer = new MobLayer(
       this,
@@ -946,6 +1044,18 @@ export class GameScene extends Phaser.Scene {
     this.updateToastTop();
   }
 
+  /** 승급 가능 강조 고리 (끝났으면 null). */
+  private highlightView(): { tiles: { tx: number; ty: number }[]; t: number } | null {
+    const h = this.mergeHighlight;
+    if (!h) return null;
+    const t = (this.time.now - h.startMs) / MERGE_HIGHLIGHT_MS;
+    if (t >= 1 || t < 0) {
+      this.mergeHighlight = null;
+      return null;
+    }
+    return { tiles: h.tiles, t };
+  }
+
   private handleEvents(time: number): void {
     // 한 프레임에 단계가 여러 번 바뀌면(빨리 감기·높은 배속) 마지막 단계 알림 하나만
     let lastStage: { stage: number; boss: boolean } | null = null;
@@ -962,6 +1072,10 @@ export class GameScene extends Phaser.Scene {
     let meteors = 0;
     /** 이번 프레임에 운석을 떨어뜨린 '타워:틱' (그 틱의 그 타워 피해 자리마다 불덩이) */
     const meteorKeys = new Set<string>();
+    /** 이번 프레임에 받은 미션 보상 (모두 받기는 알림 하나로) */
+    const claimed = { total: 0, count: 0 };
+    /** 이번 프레임에 달성한 일반 미션 (알림 하나로) */
+    const done = { names: [] as string[], total: 0 };
     for (const ev of this.match.world.drainEvents()) {
       const recent = eventFxVisible('bulk', ev.tick, now, frameStart);
       switch (ev.type) {
@@ -1207,7 +1321,102 @@ export class GameScene extends Phaser.Scene {
           this.noteFx('evade');
           break;
         }
+        // ---- M5 ----
+        case 'upgrade':
+          if (ev.player === LOCAL_PLAYER) this.noteFx('upgrade');
+          break;
+        case 'upgradeFail': {
+          if (ev.player !== LOCAL_PLAYER || !eventFxVisible('action', ev.tick, now, frameStart)) break;
+          this.toastUpgradeFail(String(ev.reason), Number(ev.k));
+          break;
+        }
+        case 'gamble':
+          if (ev.player !== LOCAL_PLAYER) break;
+          this.noteFx('gamble');
+          {
+            const result = { mul: mulText(Number(ev.mul)), mulBp: Number(ev.mul), win: Number(ev.win), jackpot: ev.jackpot === true, cost: Number(ev.cost) };
+            // 슬롯을 돌리는 중이면 결과를 넣고, 아니면(빨리 감기 등) 바로 보여 준다
+            if (this.slot && !this.slot.result) this.slot.result = result;
+            else this.slot = { startMs: this.time.now - SLOT_SPIN_MS, result, revealedMs: null };
+          }
+          break;
+        case 'gambleFail': {
+          if (ev.player !== LOCAL_PLAYER) break;
+          if (this.slot && !this.slot.result) this.slot = null;
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
+          const t = this.match.rules.gambleTables[Number(ev.t)];
+          const text = gambleFailText(String(ev.reason), (t?.cost ?? 0) - this.match.state.gold, t?.unlockLevel ?? 0);
+          if (text) this.ctx.ui.toast(text);
+          break;
+        }
+        case 'challengeStart': {
+          this.noteFx('challengeStart');
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
+          const c = this.match.rules.challenges[Number(ev.lv) - 1];
+          if (c) this.ctx.ui.banner(challengeStartText(c.level, c.name, Math.round(this.match.rules.challengeTimeTicks / TICK_HZ)), null, 2200, 'challenge');
+          break;
+        }
+        case 'challengeStartFail': {
+          if (ev.player !== LOCAL_PLAYER || !eventFxVisible('action', ev.tick, now, frameStart)) break;
+          const text = challengeStartFailText(String(ev.reason));
+          if (text) this.ctx.ui.toast(text);
+          break;
+        }
+        case 'challengeClear': {
+          this.noteFx('challengeClear');
+          if (!eventFxVisible('rare', ev.tick, now, frameStart)) break;
+          const reward = Number(ev.reward);
+          const lv = Number(ev.lv);
+          const opened = ev.first === true && Number(ev.open) > lv ? Number(ev.open) : null;
+          this.ctx.ui.banner(challengeClearText(lv, reward, opened), null, 2400, 'gold');
+          if (reward > 0) this.fx.coin(Number(ev.x), Number(ev.y), time, () => this.hud.gainGold(reward));
+          break;
+        }
+        case 'challengeFail':
+          this.noteFx('challengeFail');
+          if (eventFxVisible('rare', ev.tick, now, frameStart)) {
+            this.ctx.ui.banner(challengeFailText(Number(ev.lv), String(ev.reason), Math.round(this.match.rules.challengeCooldownTicks / (TICK_HZ * 60))), null, 2400, 'challenge');
+          }
+          break;
+        case 'challengeReady':
+          if (eventFxVisible('rare', ev.tick, now, frameStart)) this.ctx.ui.toast(challengeReadyText(Number(ev.lv)));
+          this.noteFx('challengeReady');
+          break;
+        case 'challengeFreeze':
+          if (eventFxVisible('action', ev.tick, now, frameStart)) this.cameras.main.shake(140, 0.003);
+          this.noteFx('challengeFreeze');
+          break;
+        case 'challengeTeleport':
+        case 'challengeGuard':
+        case 'challengeInvisible':
+          this.noteFx(ev.type);
+          break;
+        case 'missionDone': {
+          this.noteFx('missionDone');
+          const m = this.match.rules.missions[Number(ev.i)];
+          if (!m) break;
+          // 히든 미션은 판 밖에 영구 기록 (다음 판부터 미션 시트에 이름이 보인다)
+          if (m.hidden) this.ctx.account.recordHidden(m.id);
+          if (!eventFxVisible('rare', ev.tick, now, frameStart)) break;
+          if (m.hidden) this.ctx.ui.banner(hiddenMissionText(m.name), `+${m.reward}원 — 📋 미션에서 받기`, 2800, 'gold');
+          else {
+            done.names.push(m.name);
+            done.total += m.reward;
+          }
+          break;
+        }
+        case 'missionClaim':
+          claimed.total += Number(ev.reward);
+          claimed.count++;
+          break;
       }
+    }
+    // 같은 프레임에 달성한 일반 미션은 한 줄 배너 하나로 (알림이 쌓여 맵 위쪽 줄을 가리지 않게)
+    if (done.names.length > 0) this.ctx.ui.banner(missionDoneText(done.names, done.total), null, 2200, 'mission');
+    if (claimed.count > 0) {
+      this.hud.gainGold(claimed.total);
+      this.ctx.ui.toast(missionClaimText(claimed.total, claimed.count));
+      this.noteFx('missionClaim');
     }
     if (lastStage && !(lastStage.boss && bossArrived)) {
       const { mode, theme } = this.match.state;
@@ -1245,6 +1454,7 @@ export class GameScene extends Phaser.Scene {
     this.cancelPress(this.time.now);
     this.closePanel();
     this.closeChoice();
+    this.closeSheet();
     // 알림 층은 패배 화면보다 위라, 남아 있는 배너·알림이 '패배' 제목을 가렸다 (검토 반영)
     this.ctx.ui.clearToasts();
     if (this.paused) this.paused = false;
@@ -1326,8 +1536,16 @@ export class GameScene extends Phaser.Scene {
     // 바텀 시트는 하나만: 고르기 창을 열 때 타워 정보 패널을 닫는다 (승급의 축복을 패널 [승급]으로 쓰면 두 시트가 겹치고
     // 창 아래로 패널의 승급 버튼이 눌리던 것, 검토 반영). 알약으로 다시 펼칠 때도 닫는다
     this.closePanel();
-    this.choice = createChoicePanel(model, onPick, { pillHost: this.hud.choiceSlot, onExpand: () => this.closePanel() });
+    this.choice = createChoicePanel(model, onPick, {
+      pillHost: this.hud.choiceSlot,
+      onExpand: () => {
+        this.closePanel();
+        this.closeSheet();
+      },
+    });
     this.ctx.ui.show('modal', this.choice);
+    // 메뉴 시트를 쓰는 중이면 (길게 눌러 강화 등) 창은 알약으로 접어 둔다 — 시트를 닫으면 아래 띠에 알약이 보인다
+    if (this.sheet) this.choice.collapse();
   }
 
   /** 로컬 플레이어 덱의 감지 타워 이름 (투명 몹 경고 둘째 줄). */
@@ -1393,9 +1611,201 @@ export class GameScene extends Phaser.Scene {
           workerMax: this.match.rules.workerMax,
           workerCost: this.match.rules.workerCost,
           boss: bossHudInput(this.match.rules, this.legionNames, this.match.state, this.match.mobs(), this.match.tick),
+          challenge: challengeHudInput(this.match.ctx, this.match.mobs(), this.match.tick),
+          menu: menuBadges(this.match.ctx, this.match.tick, LOCAL_PLAYER),
         },
         this.ctx.data.game.hud,
       ),
     );
+  }
+
+  // ---------------------------------------------------------------- M5 바텀 시트
+
+  /** 하단 메뉴: 같은 메뉴면 닫고, 다른 메뉴면 그 시트로 바꾼다. */
+  private toggleSheet(kind: SheetKind): void {
+    if (this.paused || this.gameOver) return;
+    if (this.sheetKind === kind) this.closeSheet();
+    else this.openSheet(kind);
+  }
+
+  private openSheet(kind: SheetKind): void {
+    this.closeSheet();
+    // 바텀 시트는 하나만: 정보 패널은 닫고 펼친 고르기 창은 알약으로
+    this.closePanel();
+    if (this.choice && !this.choice.collapsed) this.choice.collapse();
+    const ctx = this.match.ctx;
+    const close = (): void => this.closeSheet();
+    let view: ChallengeSheetView | UpgradeSheetView | MissionSheetView;
+    if (kind === 'challenge') {
+      view = createChallengeSheet(
+        { onStart: (lv) => this.startChallenge(lv), onClose: close, portrait: (id) => this.challengePortrait(id) },
+        challengeSheetModel(ctx, this.match.tick, this.challengeAbilities),
+      );
+    } else if (kind === 'upgrade') {
+      view = createUpgradeSheet(
+        {
+          onUpgrade: (k) => this.buyUpgrade(k),
+          onGamble: (t) => this.playGamble(t),
+          onClose: close,
+          onTab: (t) => {
+            this.upgradeTab = t;
+          },
+          tab: this.upgradeTab,
+          gradeOf: (k) => this.match.rules.upgrades[k]?.grades[0] ?? null,
+        },
+        upgradeSheetModel(ctx, LOCAL_PLAYER),
+        gambleSheetModel(ctx, this.match.world, LOCAL_PLAYER),
+      );
+    } else {
+      view = createMissionSheet(
+        {
+          onClaim: (i) => this.claimMission(i),
+          onClaimAll: () => this.claimAllMissions(),
+          onClose: close,
+          onTab: (t) => {
+            this.missionTab = t;
+          },
+          tab: this.missionTab,
+          tabLabels: missionTabLabels(this.match.rules),
+        },
+        missionSheetModel(ctx, this.match.world, this.ctx.account.hiddenFound()),
+      );
+    }
+    this.sheet = view;
+    this.sheetKind = kind;
+    this.ctx.ui.show('sheet', view);
+    this.hud.setMenuActive(kind);
+    this.refreshSheet(this.time.now);
+  }
+
+  private closeSheet(): void {
+    if (!this.sheet) return;
+    this.sheet = null;
+    this.sheetKind = null;
+    this.ctx.ui.clear('sheet');
+    this.hud?.setMenuActive(null);
+  }
+
+  /** 열린 시트 글자 갱신 (매 프레임, 바뀐 것만 DOM에 쓴다) + 도박 슬롯 연출. */
+  private refreshSheet(nowMs: number): void {
+    const slotView = this.advanceSlot(nowMs);
+    const view = this.sheet;
+    if (!view) return;
+    const ctx = this.match.ctx;
+    if (this.sheetKind === 'challenge') (view as ChallengeSheetView).update(challengeSheetModel(ctx, this.match.tick, this.challengeAbilities));
+    else if (this.sheetKind === 'upgrade') {
+      (view as UpgradeSheetView).update(upgradeSheetModel(ctx, LOCAL_PLAYER), gambleSheetModel(ctx, this.match.world, LOCAL_PLAYER), slotView);
+    } else if (this.sheetKind === 'mission') (view as MissionSheetView).update(missionSheetModel(ctx, this.match.world, this.ctx.account.hiddenFound()));
+  }
+
+  /** 도박 슬롯: 1초 돌고 결과에서 멈춤. 처음 멈춘 프레임에 '+n원'·대박 연출. */
+  private advanceSlot(nowMs: number): (ReturnType<typeof slotFrame> & { result: string }) | null {
+    const s = this.slot;
+    if (!s) return null;
+    const symbols = this.match.rules.gambleOutcomes.map((o) => mulText(o.mulBp));
+    const frame = slotFrame(s, nowMs, symbols);
+    const r = s.result;
+    if (frame.justRevealed && r) {
+      s.revealedMs = nowMs;
+      if (r.win > 0) this.hud.gainGold(r.win);
+      if (r.mulBp >= GAMBLE_BIG_MUL_BP) {
+        this.ctx.ui.banner(gambleJackpotText(r.mul, r.win), null, 2200, 'gold');
+        this.cameras.main.shake(260, 0.006);
+        this.noteFx('gambleJackpot');
+      }
+    }
+    return { ...frame, result: r ? gambleResultText(r.mul, r.win, r.cost) : '' };
+  }
+
+  /** 강화 버튼 (길게 누르면 연속): 미리 검사해 안 되면 알림 후 멈춤, 되면 명령. 앞 명령이 아직 실행 전이면 이번은 건너뛴다. */
+  private buyUpgrade(k: number): boolean {
+    if (this.paused || this.gameOver) return false;
+    if (this.upgradeQueuedTick === this.match.tick) return true;
+    const fail = upgradeCheck(this.match.ctx, LOCAL_PLAYER, k);
+    if (fail) {
+      this.toastUpgradeFail(fail, k);
+      return false;
+    }
+    if (!this.match.world.enqueue({ type: 'upgrade', k }).ok) return false;
+    this.upgradeQueuedTick = this.match.tick;
+    return true;
+  }
+
+  private toastUpgradeFail(reason: string, k: number): void {
+    const u = this.match.rules.upgrades[k];
+    const cost = u ? (upgradeCost(this.match.rules, u, upgradeLevel(this.match.state, LOCAL_PLAYER, k)) ?? 0) : 0;
+    const text = upgradeFailText(reason, cost - this.match.state.gold);
+    if (text) this.ctx.ui.toast(text);
+  }
+
+  /** 도박 테이블: 슬롯이 도는 동안은 받지 않는다. 안 되면 알림, 되면 명령 + 슬롯 시작. */
+  private playGamble(t: number): void {
+    if (this.paused || this.gameOver) return;
+    if (this.slot && (!this.slot.result || this.time.now - this.slot.startMs < SLOT_SPIN_MS)) return;
+    const fail = gambleCheck(this.match.ctx, LOCAL_PLAYER, t);
+    if (fail) {
+      const tb = this.match.rules.gambleTables[t];
+      const text = gambleFailText(fail, (tb?.cost ?? 0) - this.match.state.gold, tb?.unlockLevel ?? 0);
+      if (text) this.ctx.ui.toast(text);
+      return;
+    }
+    if (!this.match.world.enqueue({ type: 'gamble', t }).ok) return;
+    this.slot = { startMs: this.time.now, result: null, revealedMs: null };
+  }
+
+  /** 도전 [시작]: 미리 검사해 안 되면 알림, 되면 명령. 시작하면 시트를 닫아 맵을 보여 준다. */
+  private startChallenge(lv: number): void {
+    if (this.paused || this.gameOver) return;
+    const fail = challengeCheck(this.match.ctx, lv, this.match.tick);
+    if (fail) {
+      const text = challengeStartFailText(fail);
+      if (text) this.ctx.ui.toast(text);
+      return;
+    }
+    if (this.match.world.enqueue({ type: 'startChallenge', lv }).ok) this.closeSheet();
+  }
+
+  private claimMission(i: number): void {
+    if (this.paused || this.gameOver) return;
+    if (claimCheck(this.match.ctx, i) !== null) return;
+    this.match.world.enqueue({ type: 'claimMission', i });
+  }
+
+  private claimAllMissions(): void {
+    if (this.paused || this.gameOver) return;
+    if (missionsClaimable(this.match.state) === 0) return;
+    this.match.world.enqueue({ type: 'claimAllMissions' });
+  }
+
+  /** 도전 보스 그림 (몹 텍스처 → 이미지 주소, 종류마다 한 번). */
+  private challengePortrait(mobId: string): string | null {
+    if (!this.challengePics.has(mobId)) {
+      let url: string | null = null;
+      try {
+        const c = this.ctx.data.enemies.challenges.find((x) => x.id === mobId);
+        const legions = (this.ctx.data.enemies.hierarchy as { legions?: Record<string, { color?: string }> }).legions ?? {};
+        const key = ensureMobTexture(this, mobId, hexToInt(legions[c?.legion ?? '']?.color ?? '#9B4DFF'));
+        const b64 = this.textures.getBase64(key);
+        url = typeof b64 === 'string' && b64.startsWith('data:') ? b64 : null;
+      } catch {
+        url = null;
+      }
+      this.challengePics.set(mobId, url);
+    }
+    return this.challengePics.get(mobId) ?? null;
+  }
+
+  /** E2E: 열린 바텀 시트 종류 (없으면 null)와 크기 */
+  get sheetOpen(): SheetKind | null {
+    return this.sheetKind;
+  }
+
+  get sheetSize(): string | null {
+    return this.sheet ? this.sheet.size : null;
+  }
+
+  /** E2E: 승급 가능 강조 고리가 그려지는 칸 수 (없으면 0) */
+  get mergeHighlightCount(): number {
+    return this.mergeHighlight ? this.mergeHighlight.tiles.length : 0;
   }
 }

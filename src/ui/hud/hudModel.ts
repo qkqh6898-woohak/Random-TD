@@ -5,9 +5,10 @@
  * M3: 아래 띠에 '⬆ 승급 가능 n' 버튼 (UI.md 4.1, 승급할 수 있는 묶음 수. 0이면 숨김).
  * M4: 2줄에 '👷 3/10' (최대면 금색), 아래 띠에 [👷 300원] 일꾼 고용 버튼 (최대면 '👷 최대'), 보스 막대 = 이름표 + 체력 채움 + 남은 초
  *   (UI.md 4.1 '[보스: 박쥐 여왕 ▓▓▓▓░░ 38초]', 10초 이하 빨강). 보스를 잡은 보스 단계는 '보스 처치! 남은 시간은 휴식'.
- *   하단 메뉴는 M5.
+ * M5: 도전 보스 막대 (UI.md 4.1 '보스·도전 보스가 있을 때만', 9장 '보스 단계와 도전이 겹치면 체력바 2줄' — 같은 자리를 반씩 나눈다),
+ *   하단 메뉴 배지 '⚔ 도전 1 가능' · '⬆ 강화 Lv 5' · '📋 미션 2 받기' (UI.md 4.1, sheets/sheetModels.menuBadges).
  */
-import { BOSS_CLEARED, bossNameplate, bossTag } from '../messages';
+import { BOSS_CLEARED, bossNameplate, bossTag, challengeNameplate } from '../messages';
 import type { HudConfig } from '../../data/load';
 import type { Mob } from '../../sim/entities/Mob';
 import type { Deck, MatchRules } from '../../sim/rules';
@@ -35,6 +36,10 @@ export interface HudInput {
   workerCost?: number;
   /** 살아 있는 보스 (이름·이름표 앞부분·조각 체력 합·처음 체력, 남은 제한 틱). 없으면 null */
   boss?: { name: string; tag: string; hp: number; maxHp: number; ticksLeft: number } | null;
+  /** 진행 중인 도전 보스 (단계·이름·체력·처음 체력·남은 제한 틱, M5-2). 없으면 null */
+  challenge?: { lv: number; name: string; hp: number; maxHp: number; ticksLeft: number } | null;
+  /** 하단 메뉴 배지 (M5-7). 생략하면 빈 배지 */
+  menu?: { challenge: string; challengeAlert: boolean; upgrade: string; mission: string; missionAlert: boolean };
 }
 
 export interface HudModel {
@@ -79,6 +84,20 @@ export interface HudModel {
   summonAffordable: boolean;
   /** '⬆ 승급 가능 n' 글자 (승급할 묶음이 없으면 빈 글자 → 버튼 숨김) */
   mergeReady: string;
+  /** 도전 보스 막대 글자 '⚔ 도전 3단계 「돌거북」' (도전 중이 아니면 null) */
+  challengeBanner: string | null;
+  /** 도전 보스 체력 채움 (천분율, 막대가 없으면 −1) */
+  challengeHp: number;
+  /** 도전 남은 시간 '18초' */
+  challengeTime: string;
+  /** 도전 남은 10초 이하 (빨간 깜빡) */
+  challengeTimeWarn: boolean;
+  /** 하단 메뉴 배지 */
+  menuChallenge: string;
+  menuChallengeAlert: boolean;
+  menuUpgrade: string;
+  menuMission: string;
+  menuMissionAlert: boolean;
 }
 
 /** 남은 틱 → m:ss (올림: 0.1초 남아도 0:01). */
@@ -148,7 +167,24 @@ export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
     workersFull,
     hireLabel: workersFull ? '👷 최대' : `👷 ${withCommas(workerCost)}원`,
     hireReady: !workersFull && state.gold >= workerCost,
+    ...challengeBar(input.challenge ?? null, cfg),
+    menuChallenge: input.menu?.challenge ?? '',
+    menuChallengeAlert: input.menu?.challengeAlert ?? false,
+    menuUpgrade: input.menu?.upgrade ?? '',
+    menuMission: input.menu?.mission ?? '',
+    menuMissionAlert: input.menu?.missionAlert ?? false,
   };
+}
+
+/** 도전 보스 막대 (M5-2): 이름표 + 체력 천분율 + 남은 초. 도전 중이 아니면 없음. */
+export function challengeBar(
+  c: HudInput['challenge'],
+  cfg: Pick<HudConfig, 'timerWarnSeconds'>,
+): Pick<HudModel, 'challengeBanner' | 'challengeHp' | 'challengeTime' | 'challengeTimeWarn'> {
+  if (!c) return { challengeBanner: null, challengeHp: -1, challengeTime: '', challengeTimeWarn: false };
+  const sec = c.ticksLeft <= 0 ? 0 : Math.ceil(c.ticksLeft / TICK_HZ);
+  const permille = c.maxHp > 0 ? Math.max(0, Math.min(1000, Math.ceil((c.hp * 1000) / c.maxHp))) : 0;
+  return { challengeBanner: challengeNameplate(c.lv, c.name), challengeHp: permille, challengeTime: `${sec}초`, challengeTimeWarn: sec <= cfg.timerWarnSeconds };
 }
 
 /**

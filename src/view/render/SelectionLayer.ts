@@ -7,6 +7,7 @@
  *   전체 오라(학자·전쟁 군주)는 자기 칸 발밑에만 옅은 빛. 고르면 위의 진한 표시로 바뀐다.
  * - 길게 눌러 끄는 동안: 놓을 칸을 색으로 미리 보여준다 (빈 칸 이동 = 초록, 교환 = 파랑, 못 놓음 = 빨강)
  *   + 그 칸에 놓았을 때의 사거리 원.
+ * - [⬆ 승급 가능 n]을 누르면 (M5-7): 그 묶음 타워마다 금색 고리가 퍼지며 1.5초 동안 강조된다 (highlight, t = 0~1 진행도).
  * 화면 전용 (sim을 바꾸지 않는다). 몇 개 안 되는 도형이라 매 프레임 다시 그린다.
  */
 import Phaser from 'phaser';
@@ -37,6 +38,8 @@ export interface SelectionView {
   sameKind: readonly { tx: number; ty: number }[];
   /** 끄는 중 놓을 칸 미리 보기 (없으면 null) */
   drop: { tx: number; ty: number; preview: DropPreview; range: number } | null;
+  /** 승급 가능 묶음 강조 (M5-7): 칸들과 진행도 t (0 → 1, 끝나면 null) */
+  highlight?: { tiles: readonly { tx: number; ty: number }[]; t: number } | null;
 }
 
 export class SelectionLayer {
@@ -88,6 +91,19 @@ export class SelectionLayer {
     for (const t of view.sameKind) {
       const c = tileCenterPx(L, t.tx, t.ty);
       g.lineStyle(line * 1.4, SAME_KIND_COLOR, pulse).strokeEllipse(c.x, c.y + L.tile * FOOT_OFFSET_TILES, L.tile * 0.86, L.tile * 0.4);
+    }
+    const hl = view.highlight;
+    if (hl && hl.t >= 0 && hl.t < 1) {
+      // 고리 두 개가 칸 크기에서 1.6배까지 퍼지며 옅어진다 (타워 위 층에 그려 눈에 띄게)
+      for (const t of hl.tiles) {
+        const c = tileCenterPx(L, t.tx, t.ty);
+        for (const lag of [0, 0.35]) {
+          const p = (hl.t * 2 + lag) % 1;
+          const r = L.tile * (0.45 + 0.55 * p);
+          o.lineStyle(line * 2, SAME_KIND_COLOR, (1 - p) * (1 - hl.t * 0.5)).strokeCircle(c.x, c.y, r);
+        }
+        o.fillStyle(SAME_KIND_COLOR, 0.18 * (1 - hl.t)).fillCircle(c.x, c.y, L.tile * 0.5);
+      }
     }
     if (view.drop && view.drop.preview !== 'none') {
       const c = tileCenterPx(L, view.drop.tx, view.drop.ty);
