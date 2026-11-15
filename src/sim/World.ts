@@ -94,6 +94,12 @@ export type System = (world: World) => void;
 /** 명령 처리기. */
 export type CommandHandler = (world: World, command: Command) => void;
 
+/**
+ * 사건 구독자 (M5-6 미션 추적기): emit하는 순간 같은 틱 안에서 바로 불린다 (등록 순서대로).
+ * sim 안의 규칙(미션)만 등록한다 — 상태를 바꿔도 같은 입력이면 같은 순서로 불리므로 결정적이다. 화면은 drainEvents로 읽는다.
+ */
+export type EventListener = (world: World, event: SimEvent) => void;
+
 export interface WorldOptions {
   /** 판 시드 (32비트 정수) */
   seed: number;
@@ -150,6 +156,9 @@ export class World {
   private readonly handlers: Record<Command['type'], CommandHandler>;
   private events: SimEvent[] = [];
   private readonly maxEvents: number;
+  private readonly listeners = new Map<string, EventListener[]>();
+  /** 명령을 실행하기 전에 불리는 훅 (방치 미션의 '마지막 조작 틱' 등) */
+  private beforeCommand: ((world: World, command: Command) => void) | null = null;
 
   constructor(options: WorldOptions) {
     if (!Number.isSafeInteger(options.seed)) throw new Error(`시드는 정수여야 한다 (받은 값: ${options.seed})`);
@@ -187,6 +196,18 @@ export class World {
     this.handlers[type] = handler;
   }
 
+  /** 사건 구독 (sim 규칙용). 같은 종류에 여러 구독자를 붙일 수 있다 (등록 순서대로 불림). */
+  on(type: string, listener: EventListener): void {
+    const list = this.listeners.get(type);
+    if (list) list.push(listener);
+    else this.listeners.set(type, [listener]);
+  }
+
+  /** 명령마다 처리기보다 먼저 불릴 훅 (하나). */
+  setBeforeCommand(hook: ((world: World, command: Command) => void) | null): void {
+    this.beforeCommand = hook;
+  }
+
   /** 이름으로 난수 흐름 가져오기. 없는 이름이면 에러 (오타 방지). */
   rng(name: string): Rng {
     const r = this.streams.get(name);
@@ -214,6 +235,7 @@ export class World {
   step(): void {
     const commands = this.queue.take(this.tick);
     for (const cmd of commands) {
+      this.beforeCommand?.(this, cmd);
       this.handlers[cmd.type](this, cmd);
       this.executed.push(cmd);
     }
@@ -228,9 +250,12 @@ export class World {
 
   /** 사건 알림 (시스템에서 호출). */
   emit(type: string, data: Record<string, string | number | boolean> = {}): void {
-    this.events.push({ ...data, tick: this.tick, type });
+    const ev: SimEvent = { ...data, tick: this.tick, type };
+    this.events.push(ev);
     // 한도의 2배가 되면 최근 한도만큼만 남긴다 (매번 자르지 않아서 평균 O(1))
     if (this.events.length >= this.maxEvents * 2) this.events = this.events.slice(-this.maxEvents);
+    const list = this.listeners.get(type);
+    if (list) for (const fn of list) fn(this, ev);
   }
 
   /** 쌓인 사건을 모두 가져가고 비운다 (화면용). */

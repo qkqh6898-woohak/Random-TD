@@ -4,7 +4,17 @@
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
-import { CURVES_PATH, checkGrowth, computeCurves, formatCurves, readGrowth, type GrowthSpec } from '../../tools/precompute-curves.mjs';
+import {
+  CURVES_PATH,
+  checkGrowth,
+  computeAll,
+  computeCurves,
+  computeTranscendCost,
+  decimalFraction,
+  formatCurves,
+  readGrowth,
+  type GrowthSpec,
+} from '../../tools/precompute-curves.mjs';
 import { loadGameData } from '../../src/data/load';
 import { buildMatchRules, killReward, stageArmor, stageHp } from '../../src/sim/rules';
 
@@ -116,9 +126,24 @@ describe('stageHp 범위', () => {
 });
 
 describe('tools/precompute-curves.mjs', () => {
-  it('저장된 curves.json 이 지금 enemies.json growth 로 다시 만든 결과와 글자까지 같다 (도구를 안 돌리고 수치만 바꾸면 실패)', () => {
-    const { curves: fresh } = computeCurves(readGrowth());
-    expect(readFileSync(CURVES_PATH, 'utf8')).toBe(formatCurves(fresh));
+  it('저장된 curves.json 이 지금 enemies.json growth·game.json 초월 공식으로 다시 만든 결과와 글자까지 같다 (도구를 안 돌리고 수치만 바꾸면 실패)', () => {
+    expect(readFileSync(CURVES_PATH, 'utf8')).toBe(formatCurves(computeAll()));
+  });
+
+  it('초월 강화 비용 표 (GDD 7.1: 50,000 × 1.15^Lv 내림) — 부동소수 오차 없이 정확한 분수 계산', () => {
+    expect(decimalFraction(1.15)).toEqual([115n, 100n]);
+    const t = computeTranscendCost({ costBase: 50000, costGrowth: 1.15 });
+    expect(t.slice(0, 5)).toEqual([50000, 57500, 66125, 76043, 87450]);
+    // 50000 × 1.15^10 = 202,277.88… → 202,277
+    expect(t[10]).toBe(202277);
+    // 모두 안전한 정수, 단조 증가, 다음 값은 안전한 정수를 넘는다
+    t.forEach((v, i) => {
+      expect(Number.isSafeInteger(v)).toBe(true);
+      if (i > 0) expect(v).toBeGreaterThan(t[i - 1] as number);
+    });
+    expect((t[t.length - 1] as number) * 1.15).toBeGreaterThan(Number.MAX_SAFE_INTEGER);
+    expect(() => computeTranscendCost({ costBase: 0, costGrowth: 1.15 })).toThrow(/costBase/);
+    expect(() => computeTranscendCost({ costBase: 10, costGrowth: 1 })).toThrow(/costGrowth/);
   });
 
   it('--check 는 최신이면 종료 코드 0', () => {

@@ -19,7 +19,23 @@
  *    전투 규칙 수치는 game.json combat, 승급 개수는 game.json merge (MatchRules).
  */
 import { DECK_GRADES, deckIssues, type DeckData } from '../data/deck';
-import type { BossData, CardEffectType, CurvesFile, DamageType, Detect, GameData, Grade, MobData, Shape, TargetRule, ThemeData, TowerData } from '../data/load';
+import type {
+  BossData,
+  CardEffectType,
+  ChallengeData,
+  CurvesFile,
+  DamageType,
+  Detect,
+  GameData,
+  Grade,
+  MissionData,
+  MobData,
+  Shape,
+  TargetRule,
+  ThemeData,
+  TowerData,
+  UpgradeStat,
+} from '../data/load';
 import { BP_ONE, bp, idiv, mulBp, tiles } from './Fixed';
 import { TICK_HZ, secondsToTicks } from './World';
 
@@ -209,6 +225,59 @@ export interface StatusRules {
   readonly dotIntervalTicks: number;
 }
 
+/**
+ * 판 내 강화 하나 (GDD 7.1, M5-3) — 정수 단위. 명령 upgrade {k}의 k = rules.upgrades의 순서 (등급 강화 → 능력치 강화 → 초월).
+ * - grade: grades 등급 타워의 공격력 +perLevelBp/Lv (Aura.towerBonus가 타워 등급으로 더한다).
+ * - stat: 모든 타워 stat +perLevelBp/Lv (PlayerMods에 더한다).
+ * - transcend: 모든 타워 공격력 +perLevelBp/Lv (PlayerMods.atkPctBp). 등급 강화가 모두 최대일 때 열림. 비용 = 표.
+ */
+export interface UpgradeRule {
+  readonly k: number;
+  readonly id: string;
+  readonly name: string;
+  readonly icon: string;
+  readonly kind: 'grade' | 'stat' | 'transcend';
+  readonly grades: readonly Grade[];
+  /** 능력치 강화가 올리는 값 (grade·transcend는 null) */
+  readonly stat: UpgradeStat | null;
+  readonly perLevelBp: number;
+  /** 최대 레벨 (초월 = 비용 표 길이) */
+  readonly max: number;
+  /** 비용 Lv → Lv+1 = costBase + costPer × Lv (초월은 transcendCost 표) */
+  readonly costBase: number;
+  readonly costPer: number;
+}
+
+/** 도박 배율 하나 (bp 정수). */
+export interface GambleOutcome {
+  /** 배율 (bp, ×0.5 = 5000) */
+  readonly mulBp: number;
+  /** 기본 확률 (bp) */
+  readonly chanceBp: number;
+}
+
+/** 도전 보스 하나 (GDD 6장·ENEMIES.md 7장, M5-2) — 정수 단위. 체력·방어·마저는 단계와 관계없이 고정. */
+export interface ChallengeStats {
+  readonly level: number;
+  readonly id: string;
+  readonly name: string;
+  readonly hp: number;
+  readonly reward: number;
+  readonly armor: number;
+  readonly magicRes: number;
+  readonly speed: number;
+  readonly invisible: boolean;
+  readonly legion: string;
+  /** 체력을 함께 쓰는 마리 수 (1 = 혼자) */
+  readonly twin: number;
+  readonly immuneSlow: boolean;
+  readonly immuneBurn: boolean;
+  readonly teleport: { readonly everyTicks: number; readonly units: number } | null;
+  readonly freezeTowers: { readonly everyTicks: number; readonly radius: number; readonly ticks: number } | null;
+  readonly regen: { readonly everyTicks: number; readonly pctBp: number } | null;
+  readonly invulnerable: { readonly atBp: number; readonly ticks: number; readonly speedBp: number } | null;
+}
+
 /** 덱 (등급별 타워 id). */
 export type Deck = Readonly<Record<(typeof DECK_GRADES)[number], readonly string[]>>;
 
@@ -311,6 +380,34 @@ export interface MatchRules {
   readonly cardRareBp: number;
   /** 카드 '소환 할인'의 최소 소환 비용 (원, 카드가 없으면 기본 비용) */
   readonly summonCostMin: number;
+  // ---- M5 ----
+  /** 판 내 강화 (명령 upgrade {k}의 k 순서: 등급 강화 → 능력치 강화 → 초월) */
+  readonly upgrades: readonly UpgradeRule[];
+  /** 등급 → 그 등급을 올리는 등급 강화의 k */
+  readonly gradeUpgradeOf: ReadonlyMap<Grade, number>;
+  /** 초월 강화의 k */
+  readonly transcendK: number;
+  /** 초월 강화 비용 표 (curves.json transcendCost, Lv → Lv+1) */
+  readonly transcendCost: readonly number[];
+  /** 도박 테이블 (비용·해금 계정 레벨) */
+  readonly gambleTables: readonly { readonly cost: number; readonly unlockLevel: number }[];
+  /** 도박 배율표 (bp) */
+  readonly gambleOutcomes: readonly GambleOutcome[];
+  /** 잭팟 게이지 칸 수·확정 최소 배율 (bp) */
+  readonly jackpotGauge: number;
+  readonly jackpotMinMulBp: number;
+  /** 도박꾼 특색이 줄인 ×0 확률을 더할 배율의 배율표 번호, ×0의 번호 */
+  readonly gambleShiftIndex: number;
+  readonly gambleZeroIndex: number;
+  /** 화면에 보여줄 최근 결과 수 */
+  readonly gambleRecent: number;
+  /** 도전: 단계별 쿨타임·제한 시간 (틱) */
+  readonly challengeCooldownTicks: number;
+  readonly challengeTimeTicks: number;
+  /** 도전 보스 (단계 1부터 차례로) */
+  readonly challenges: readonly ChallengeStats[];
+  /** 판 안 미션 (missions.json 순서 = 미션 번호) */
+  readonly missions: readonly MissionData[];
 }
 
 /** 정수여야 하는 데이터 값 확인 (스키마가 num만 보장하는 필드). */
@@ -522,6 +619,7 @@ export function buildMatchRules(data: GameData): MatchRules {
     atkPerLevelBp: bp(game.towerLevel.atkPerLevel),
     towerOrder: Object.freeze(data.towers.towers.map((t) => t.id)),
     ...buildM4Rules(data, mobOrder),
+    ...buildM5Rules(data),
   });
   // 한 단계의 등장이 다음 단계 시작 전에 끝나야 한다 (GDD 2.2: 50초 등장 + 10초 휴식)
   if ((rules.slotsPerStage - 1) * rules.spawnIntervalTicks >= rules.stageTicks) {
@@ -630,6 +728,149 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
     cardOfferSize: cardsFile.offerSize,
     cardRareBp: bp(cardsFile.rareChance),
     summonCostMin: cards.find((c) => c.type === 'summonDiscount')?.limit ?? game.summon.cost,
+  };
+}
+
+/** 배율·확률(소수) → bp 정수. 0.0001 단위가 아니면 에러 (데이터 검사가 먼저 잡는다). */
+function exactBp(name: string, v: number): number {
+  const r = Math.round(v * BP_ONE);
+  if (Math.abs(r - v * BP_ONE) > 1e-6) throw new Error(`${name}: 0.0001 단위여야 하는데 ${v}`);
+  return r;
+}
+
+export function buildChallengeStats(c: ChallengeData): ChallengeStats {
+  return Object.freeze({
+    level: c.level,
+    id: c.id,
+    name: c.name,
+    hp: int(`${c.id}.hp`, c.hp),
+    reward: int(`${c.id}.reward`, c.reward),
+    armor: int(`${c.id}.armor`, c.armor),
+    magicRes: int(`${c.id}.magicRes`, c.magicRes),
+    speed: tiles(c.speed),
+    invisible: c.invisible,
+    legion: c.legion,
+    twin: c.twin ?? 1,
+    immuneSlow: c.immune?.includes('slow') === true,
+    immuneBurn: c.immune?.includes('burn') === true,
+    teleport: c.teleport ? Object.freeze({ everyTicks: secondsToTicksExact(c.teleport.everySeconds), units: tiles(c.teleport.tiles) }) : null,
+    freezeTowers: c.freezeTowers
+      ? Object.freeze({
+          everyTicks: secondsToTicksExact(c.freezeTowers.everySeconds),
+          radius: tiles(c.freezeTowers.radius),
+          ticks: secondsToTicksExact(c.freezeTowers.seconds),
+        })
+      : null,
+    regen: c.regen ? Object.freeze({ everyTicks: secondsToTicksExact(c.regen.everySeconds), pctBp: bp(c.regen.pct) }) : null,
+    invulnerable: c.invulnerable
+      ? Object.freeze({
+          atBp: bp(c.invulnerable.at),
+          ticks: secondsToTicksExact(c.invulnerable.seconds),
+          speedBp: bp(c.invulnerable.speedMul) - BP_ONE,
+        })
+      : null,
+  });
+}
+
+/** M5 규칙 (강화·도박·도전·미션). */
+function buildM5Rules(data: GameData): Pick<
+  MatchRules,
+  | 'upgrades'
+  | 'gradeUpgradeOf'
+  | 'transcendK'
+  | 'transcendCost'
+  | 'gambleTables'
+  | 'gambleOutcomes'
+  | 'jackpotGauge'
+  | 'jackpotMinMulBp'
+  | 'gambleShiftIndex'
+  | 'gambleZeroIndex'
+  | 'gambleRecent'
+  | 'challengeCooldownTicks'
+  | 'challengeTimeTicks'
+  | 'challenges'
+  | 'missions'
+> {
+  const { game, curves, enemies, missions } = data;
+  const up = game.upgrade;
+  const upgrades: UpgradeRule[] = [];
+  const gradeUpgradeOf = new Map<Grade, number>();
+  for (const g of up.grade) {
+    const k = upgrades.length;
+    for (const gr of g.grades) gradeUpgradeOf.set(gr, k);
+    upgrades.push(
+      Object.freeze({
+        k,
+        id: g.id,
+        name: g.name,
+        icon: '⬆',
+        kind: 'grade',
+        grades: Object.freeze([...g.grades]),
+        stat: null,
+        perLevelBp: exactBp(`game.json upgrade ${g.id}.atkPerLevel`, g.atkPerLevel),
+        max: g.max,
+        costBase: g.cost[0],
+        costPer: g.cost[1],
+      } satisfies UpgradeRule),
+    );
+  }
+  for (const u of up.stat) {
+    upgrades.push(
+      Object.freeze({
+        k: upgrades.length,
+        id: u.id,
+        name: u.name,
+        icon: u.icon,
+        kind: 'stat',
+        grades: Object.freeze([]),
+        stat: u.stat,
+        perLevelBp: exactBp(`game.json upgrade ${u.id}.perLevel`, u.perLevel),
+        max: u.max,
+        costBase: u.cost[0],
+        costPer: u.cost[1],
+      } satisfies UpgradeRule),
+    );
+  }
+  const tr = up.transcend;
+  const transcendK = upgrades.length;
+  upgrades.push(
+    Object.freeze({
+      k: transcendK,
+      id: tr.id,
+      name: tr.name,
+      icon: '🌟',
+      kind: 'transcend',
+      grades: Object.freeze([]),
+      stat: null,
+      perLevelBp: exactBp(`game.json upgrade ${tr.id}.atkPerLevel`, tr.atkPerLevel),
+      max: curves.transcendCost.length,
+      costBase: tr.costBase,
+      costPer: 0,
+    } satisfies UpgradeRule),
+  );
+  const gb = game.gamble;
+  const outcomes = gb.outcomes.map((o, i) =>
+    Object.freeze({ mulBp: exactBp(`game.json gamble.outcomes[${i}].mul`, o.mul), chanceBp: exactBp(`game.json gamble.outcomes[${i}].chance`, o.chance) }),
+  );
+  const shift = outcomes.findIndex((o) => o.mulBp === exactBp('game.json gamble.zeroShiftTo', gb.zeroShiftTo));
+  const zero = outcomes.findIndex((o) => o.mulBp === 0);
+  if (shift < 0 || zero < 0) throw new Error('game.json gamble: ×0 또는 zeroShiftTo 배율이 배율표에 없다');
+  return {
+    upgrades: Object.freeze(upgrades),
+    gradeUpgradeOf,
+    transcendK,
+    transcendCost: Object.freeze([...curves.transcendCost]),
+    gambleTables: Object.freeze(gb.tables.map((t) => Object.freeze({ cost: t.cost, unlockLevel: t.unlockLevel }))),
+    gambleOutcomes: Object.freeze(outcomes),
+    jackpotGauge: gb.jackpot.gauge,
+    jackpotMinMulBp: exactBp('game.json gamble.jackpot.minMul', gb.jackpot.minMul),
+    gambleShiftIndex: shift,
+    gambleZeroIndex: zero,
+    gambleRecent: gb.recent,
+    challengeCooldownTicks: secondsToTicksExact(game.challenge.cooldownSeconds),
+    challengeTimeTicks: secondsToTicksExact(game.challenge.timeLimitSeconds),
+    challenges: Object.freeze(enemies.challenges.map(buildChallengeStats)),
+    missions: Object.freeze(missions.missions.map((m) => Object.freeze({ ...m, cond: Object.freeze({ ...m.cond }) }))),
   };
 }
 

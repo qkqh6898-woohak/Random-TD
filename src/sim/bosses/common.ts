@@ -14,7 +14,7 @@ export function hpAtOrBelow(mob: Pick<Mob, 'hp' | 'maxHp'>, thresholdBp: number)
 }
 
 /**
- * 반경 radius(단위) 안의 **다른** 몹 체력을 각자 최대 체력 × pctBp만큼 회복 (최소 1, 최대 체력을 넘지 않음). ID 순.
+ * 반경 radius(단위) 안의 **다른** 몹(도전 보스 제외) 체력을 각자 최대 체력 × pctBp만큼 회복 (최소 1, 최대 체력을 넘지 않음). ID 순.
  * 'heal' 사건 { target, amount, x, y, src } (화면: 초록 숫자). 회복한 몹 수를 돌려준다.
  */
 export function healAround(ctx: MatchContext, world: World, healer: Mob, radius: number, pctBp: number): number {
@@ -23,7 +23,8 @@ export function healAround(ctx: MatchContext, world: World, healer: Mob, radius:
   const r2 = radius * radius;
   let n = 0;
   for (const e of world.entities.list()) {
-    if (!isMob(e) || e.id === healer.id || e.hp >= e.maxHp) continue;
+    // 도전 보스(M5-2)는 군단 하수인이 아니라 회복받지 않는다 (쌍둥이 체력 공유가 어긋나지 않게)
+    if (!isMob(e) || e.id === healer.id || e.hp >= e.maxHp || e.challenge) continue;
     const p = positionAt(path, e.progress);
     if (dist2(c.x, c.y, p.x, p.y) > r2) continue;
     let amount = mulBp(e.maxHp, pctBp);

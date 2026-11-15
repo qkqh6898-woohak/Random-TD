@@ -96,7 +96,18 @@ export interface Mob extends Entity {
   small: boolean;
   /** 보스 분열 조각 (킹 슬라임: 다시 분열하지 않음) */
   part: boolean;
+  // ---- M5 도전 보스 ----
+  /** 도전 보스 단계 (0 = 도전 보스 아님). 몹 수 한도에 넣지 않고, 출구에 닿으면 목숨 감소 없이 도전 실패 */
+  challenge: number;
+  /** 체력을 함께 쓰는 무리 (쌍둥이 박쥐): 무리 첫 엔티티 id (0 = 혼자). 한 마리가 맞으면 무리 모두 같은 체력이 된다 */
+  link: number;
+  /** 면역 비트: IMMUNE_SLOW 둔화 · IMMUNE_BURN 화상 */
+  immune: number;
 }
+
+/** 면역 비트 (Mob.immune) */
+export const IMMUNE_SLOW = 1;
+export const IMMUNE_BURN = 2;
 
 /** 새 몹의 M4 특성 필드 (모두 없음). spawnMob·테스트가 쓴다. */
 export function emptyMobTraits(): Pick<
@@ -115,6 +126,9 @@ export function emptyMobTraits(): Pick<
   | 'guardUntil'
   | 'small'
   | 'part'
+  | 'challenge'
+  | 'link'
+  | 'immune'
 > {
   return {
     revealedUntil: 0,
@@ -131,6 +145,9 @@ export function emptyMobTraits(): Pick<
     guardUntil: 0,
     small: false,
     part: false,
+    challenge: 0,
+    link: 0,
+    immune: 0,
   };
 }
 
@@ -187,9 +204,9 @@ export function isRevealedAt(mob: Pick<Mob, 'invisible' | 'revealedUntil'>, tick
   return !mob.invisible || tick < mob.revealedUntil;
 }
 
-/** 맵 위 몹 수 (떼는 마리마다 1). */
+/** 맵 위 몹 수 (떼는 마리마다 1). 도전 보스는 몹 수 한도에 넣지 않으므로 세지 않는다 (GDD 6장). */
 export function countMobs(world: World): number {
   let n = 0;
-  for (const e of world.entities.list()) if (e.kind === MOB_KIND) n++;
+  for (const e of world.entities.list()) if (e.kind === MOB_KIND && !(e as Mob).challenge) n++;
   return n;
 }

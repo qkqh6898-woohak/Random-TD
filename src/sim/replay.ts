@@ -1,5 +1,5 @@
 /**
- * 리플레이 (DEV_PLAN M3-12, MULTIPLAYER.md 6장): 시드 + 판 시작 입력(모드·테마·인원·덱·타워 레벨·debug) + 실행된 명령 기록 → 판 전체 재생.
+ * 리플레이 (DEV_PLAN M3-12, MULTIPLAYER.md 6장): 시드 + 판 시작 입력(모드·테마·인원·덱·타워 레벨·계정 레벨·debug) + 실행된 명령 기록 → 판 전체 재생.
  *
  * - 결정성 자동 검사: 저장한 리플레이를 다시 돌려 끝 해시(World.hash)가 같으면 sim이 같은 결과를 낸다.
  *   주기 해시(checkpoints, 기본 200틱마다)도 저장해 어긋나면 **처음 어긋난 틱**을 알려 준다 (버그 재현 도구).
@@ -37,6 +37,8 @@ export interface ReplayFile {
   decks: Deck[];
   /** 플레이어별 타워 레벨 (없는 타워 = 1) */
   levels: Record<string, number>[];
+  /** 플레이어별 계정 레벨 (도박 테이블 해금, M5-5). 없으면 모두 1 (M5 전에 만든 리플레이) */
+  accountLevels?: number[];
   /** 데이터 지문 (fnv1a32, 키 정렬 JSON) — 다르면 수치가 바뀐 것 */
   dataHash: number;
   /** 끝 틱: 0틱부터 이 틱 수만큼 돌린다 */
@@ -67,8 +69,8 @@ export function dataFingerprint(data: GameData): number {
 }
 
 /** 판 → 그 판을 다시 만드는 입력. */
-export function matchInputs(match: Match): Pick<ReplayFile, 'seed' | 'mode' | 'theme' | 'players' | 'debug' | 'decks' | 'levels'> {
-  const { state, decks, levels } = match.ctx;
+export function matchInputs(match: Match): Pick<ReplayFile, 'seed' | 'mode' | 'theme' | 'players' | 'debug' | 'decks' | 'levels' | 'accountLevels'> {
+  const { state, decks, levels, accountLevels } = match.ctx;
   return {
     seed: match.world.seed,
     mode: state.mode,
@@ -77,11 +79,12 @@ export function matchInputs(match: Match): Pick<ReplayFile, 'seed' | 'mode' | 't
     debug: state.debug,
     decks: decks.map((d) => ({ normal: [...d.normal], rare: [...d.rare], unique: [...d.unique], hero: [...d.hero], legend: [...d.legend] })),
     levels: levels.map((l) => ({ ...l })),
+    accountLevels: [...accountLevels],
   };
 }
 
 /** 리플레이 입력 → createMatch 옵션. */
-export function replayMatchOptions(file: Pick<ReplayFile, 'seed' | 'mode' | 'theme' | 'players' | 'debug' | 'decks' | 'levels'>): MatchOptions {
+export function replayMatchOptions(file: Pick<ReplayFile, 'seed' | 'mode' | 'theme' | 'players' | 'debug' | 'decks' | 'levels' | 'accountLevels'>): MatchOptions {
   return {
     seed: file.seed,
     mode: file.mode,
@@ -90,6 +93,7 @@ export function replayMatchOptions(file: Pick<ReplayFile, 'seed' | 'mode' | 'the
     debug: file.debug,
     decks: file.decks,
     levels: file.levels,
+    ...(file.accountLevels ? { accountLevels: file.accountLevels } : {}),
   };
 }
 
@@ -109,6 +113,10 @@ export function validateReplay(file: unknown): string | null {
   if (f.mode !== 'infinite' && f.mode !== 'campaign') return `mode가 이상함: ${String(f.mode)}`;
   if (!Array.isArray(f.decks) || f.decks.length !== f.players) return 'decks가 플레이어 수만큼 없음';
   if (!Array.isArray(f.levels) || f.levels.length !== f.players) return 'levels가 플레이어 수만큼 없음';
+  if (f.accountLevels !== undefined) {
+    if (!Array.isArray(f.accountLevels) || f.accountLevels.length !== f.players) return 'accountLevels가 플레이어 수만큼 없음';
+    if (!f.accountLevels.every((v) => Number.isSafeInteger(v) && v >= 1)) return 'accountLevels에 1 이상 정수가 아닌 값';
+  }
   if (!Array.isArray(f.commands)) return 'commands가 배열이 아님';
   if (!Array.isArray(f.checkpoints)) return 'checkpoints가 배열이 아님';
   let prev: { tick: number; player: number; seq: number } | null = null;

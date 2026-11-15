@@ -12,6 +12,7 @@ import { leaderRuleFor, pickTarget, targetCandidates } from '../systems/Targetin
 import { restartTimer, timerReady } from './common';
 import { POSITIVE, RATIO } from './params';
 import { defineAbility } from './types';
+import { towerRange } from '../stats';
 
 export interface MudshamanParams {
   slowBp: number;
@@ -44,7 +45,8 @@ export default defineAbility<MudshamanParams>({
     if (!timerReady(tower, world.tick, p.puddleCdTicks)) return;
     const stats = ctx.rules.towers.get(tower.tower);
     if (!stats) return;
-    const leader = pickTarget(targetCandidates(world, ctx.map.path), tower.x, tower.y, stats.range, 'first', leaderRuleFor(ctx.state.mode));
+    const range = towerRange(ctx.state, tower.owner, stats.range);
+    const leader = pickTarget(targetCandidates(world, ctx.map.path), tower.x, tower.y, range, 'first', leaderRuleFor(ctx.state.mode));
     if (!leader) return;
     const puddle = world.entities.add({
       kind: PUDDLE_KIND,

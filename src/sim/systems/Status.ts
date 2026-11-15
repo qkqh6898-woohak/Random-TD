@@ -30,12 +30,13 @@
 import type { System, World } from '../World';
 import { TICK_HZ } from '../World';
 import { BP_ONE, mulBp } from '../Fixed';
-import { isMob, isRevealedAt, type Mob, type StatusEntry } from '../entities/Mob';
+import { IMMUNE_BURN, IMMUNE_SLOW, isMob, isRevealedAt, type Mob, type StatusEntry } from '../entities/Mob';
 import type { StatusRules } from '../rules';
 import type { MatchContext } from '../state';
 import { absorbShield, damageAgainst, damageCaps, splitAtk } from './Damage';
 import { killMob } from './Kill';
 import { positionAt } from '../map';
+import { shareChallengeHp } from './Challenge';
 
 /** 행동 불가 종류 */
 export type HardCc = 'stun' | 'stop' | 'freeze';
@@ -165,6 +166,8 @@ export function untilFor(tick: number, durTicks: number): number {
 /** 둔화 걸기 (출처 src, 세기 bp, 지속 틱). 세기·보스·저항 조정은 refreshStatus가 한다. 걸렸으면 true. */
 export function applySlow(rules: StatusRules, mob: Mob, tick: number, src: string, bpValue: number, durTicks: number): boolean {
   if (bpValue <= 0 || durTicks <= 0) return false;
+  // 둔화 면역 (도전 보스 강철 골렘, M5-2)
+  if ((mob.immune & IMMUNE_SLOW) !== 0) return false;
   upsert(mob.slows, src, bpValue, untilFor(tick, durTicks));
   refreshStatus(rules, mob, tick);
   return true;
@@ -221,6 +224,8 @@ export function applyHardCc(rules: StatusRules, mob: Mob, tick: number, kind: Ha
  */
 export function applyDot(mob: Mob, tick: number, src: string, kind: string, dps: number, durTicks: number, maxStacks: number): boolean {
   if (dps <= 0 || durTicks <= 0 || maxStacks <= 0) return false;
+  // 화상 면역 (도전 보스 화염 정령왕, M5-2). 테스트용 최소 몹 객체에는 immune이 없을 수 있다
+  if (kind === 'burn' && ((mob.immune ?? 0) & IMMUNE_BURN) !== 0) return false;
   const until = untilFor(tick, durTicks);
   let count = 0;
   let oldest = -1;
@@ -285,6 +290,7 @@ export function dealDotDamage(ctx: MatchContext, world: World, mob: Mob, dmgC: n
   if (dmg <= 0) return false;
   const absorbed = mob.shield > 0 ? absorbShield(mob, dmg) : 0;
   mob.hp -= dmg - absorbed;
+  if (mob.link) shareChallengeHp(ctx, world, mob);
   const at = positionAt(ctx.map.path, mob.progress);
   const kill = mob.hp <= 0;
   world.emit('hit', { target: mob.id, source: 0, damage: dmg, p: 0, m: 0, t: d.t, crit: false, x: at.x, y: at.y, kill, dot: true });

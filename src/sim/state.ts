@@ -45,6 +45,21 @@ export function newPlayerPerks(): PlayerPerks {
   return { rareSummons: 0, mergeChoices: 0, twinUntil: 0, godMulBp: 10000 };
 }
 
+/** 플레이어별 도박 상태 (M5-5): 잭팟 게이지 칸 수, 최근 결과 배율(bp, 오래된 것부터 최대 rules.gambleRecent개). */
+export interface GambleState {
+  gauge: number;
+  recent: number[];
+}
+
+export function newGambleState(): GambleState {
+  return { gauge: 0, recent: [] };
+}
+
+/** 미션 상태 (M5-6): 0 진행 중 · 1 달성(받을 수 있음) · 2 받음 */
+export const MISSION_OPEN = 0;
+export const MISSION_DONE = 1;
+export const MISSION_CLAIMED = 2;
+
 export interface MatchState {
   mode: MatchMode;
   /** 캠페인 테마 번호 (무한 모드 0) */
@@ -131,6 +146,38 @@ export interface MatchState {
   perks: PlayerPerks[];
   /** 승급의 축복: 아직 고르지 않은 '결과 2개 중 선택' */
   mergePicks: MergePick[];
+  // ---- M5 ----
+  /** 플레이어별 판 내 강화 레벨 (rules.upgrades 순서: 등급 강화 → 능력치 강화 → 초월) */
+  upgrades: number[][];
+  /** 지금까지 강화한 횟수 (레벨 하나 = 1, 모든 플레이어) */
+  upgradesBought: number;
+  /** 지금까지 도박한 횟수 (모든 플레이어) */
+  gambles: number;
+  /** 플레이어별 도박 상태 (잭팟 게이지·최근 결과) */
+  gamble: GambleState[];
+  /** 진행 중인 도전 단계 (0 = 없음)와 시작한 플레이어·시작 틱·제한 틱(이 틱에 살아 있으면 실패) */
+  challengeLevel: number;
+  challengePlayer: number;
+  challengeStart: number;
+  challengeUntil: number;
+  /** 진행 중인 도전 보스 엔티티 id (쌍둥이 박쥐는 2개 — 체력을 함께 쓴다)와 처음 체력 */
+  challengeMobs: number[];
+  challengeMaxHp: number;
+  /** 해금된 가장 높은 도전 단계 (1부터, n 첫 처치 → n+1) */
+  challengeOpen: number;
+  /** 단계별 다시 도전할 수 있는 틱 (번호 = 단계 − 1, 0 = 지금 가능) */
+  challengeReady: number[];
+  /** 도전 처치 횟수·가장 높은 처치 단계 */
+  challengeClears: number;
+  challengeBest: number;
+  /** 미션별 상태 (rules.missions 순서): 0 진행 중 · 1 달성 · 2 받음 */
+  missionStatus: number[];
+  /** 미션별 사건 카운터 (연속 도박 등, 사건으로 세는 미션만) */
+  missionCount: number[];
+  /** 플레이어 명령이 마지막으로 실행된 틱 (방치 미션, noop 제외) */
+  lastActTick: number;
+  /** 위기(몹 100마리 이상·목숨 5 이하)로 시작한 단계 (0 = 아님) — 그 단계를 넘기면 '위기에서 버티기' */
+  dangerStage: number;
 }
 
 /** 시스템이 함께 쓰는 문맥. */
@@ -148,4 +195,9 @@ export interface MatchContext {
   readonly levels: readonly Readonly<Record<string, number>>[];
   /** compile한 특색 수치 캐시 (주인:타워 id → 값). 데이터 + 레벨에서 정해지는 값이라 해시 밖 */
   readonly cache: Map<string, unknown>;
+  /**
+   * 플레이어별 계정 레벨 (M5-5 도박 테이블 해금: 1000원 Lv7·10000원 Lv20). 판 시작 때 정해진 입력 (해시 밖, 리플레이에 기록).
+   * 메타(src/meta/account.ts)에서 읽고 기본 1. debug 판은 잠긴 테이블도 쓸 수 있다 (debugUsed 표시).
+   */
+  readonly accountLevels: readonly number[];
 }

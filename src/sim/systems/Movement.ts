@@ -9,7 +9,7 @@
  *   가장 강한 것 하나·최대 70%·보스 절반·상태이상 저항이 이미 반영된 값). 상태 이상 시스템이 이동 바로 앞에서 값을 정리한다.
  * - M4: 속도 = 기본 × (1 + 가속) × (1 − 둔화) × (1 − 카드 '끈끈이', 보스 제외). 가속 = 그림자 늑대 +30%·고대 골렘 분노 +100%
  *   (MobTraits·보스 패턴이 Mob.speedBonusBp에 넣는다). 곱할 때마다 내림.
- * - 캠페인에서 보스가 출구에 닿으면 즉시 패배 ('bossLeak', GDD 2.1).
+ * - 캠페인에서 보스가 출구에 닿으면 즉시 패배 ('bossLeak', GDD 2.1). 도전 보스(M5-2)는 목숨 감소 없이 도전 실패.
  */
 import type { System, World } from '../World';
 import { TICK_HZ } from '../World';
@@ -18,6 +18,7 @@ import type { MatchContext } from '../state';
 import { BP_ONE, mulBp } from '../Fixed';
 import { isDisabled } from './Status';
 import { declareDefeat } from './Defeat';
+import { challengeEscaped } from './Challenge';
 
 /**
  * 이번 틱 실제 속도 (단위/초): 행동 불가면 0, 아니면 기본 × (1 + 가속) × (1 − 둔화) × (1 − 카드 감속) — 곱할 때마다 내림.
@@ -48,6 +49,11 @@ export function advanceMob(mob: Mob, tick = 0, cardSlowBp = 0): void {
 /** 출구 도달 처리: 몹 제거 + 목숨 감소 + 사건. 보스면 즉시 패배. */
 export function leakMob(ctx: MatchContext, world: World, mob: Mob): void {
   const { state } = ctx;
+  // 도전 보스 (M5-2): 목숨 감소 없이 도전 실패
+  if (mob.challenge) {
+    challengeEscaped(ctx, world, mob);
+    return;
+  }
   world.entities.remove(mob.id);
   state.leaked += 1;
   state.lives = state.lives > mob.lifeDamage ? state.lives - mob.lifeDamage : 0;
@@ -68,6 +74,8 @@ export function createMovementSystem(ctx: MatchContext): System {
     }
     for (const mob of reached) {
       if (ctx.state.phase !== 'playing') break;
+      // 쌍둥이 도전 보스는 한 마리가 닿으면 무리가 같이 사라진다 (이미 지워졌으면 건너뜀)
+      if (!world.entities.has(mob.id)) continue;
       leakMob(ctx, world, mob);
     }
   };

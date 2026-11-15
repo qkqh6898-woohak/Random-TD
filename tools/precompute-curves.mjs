@@ -15,8 +15,11 @@
  *         → 곱하는 부분은 bp 정수(armorMulBp[s] = 10000 + 200s), 더하는 부분은 armorFlat[s].
  *         sim: mulBp(기본값, armorMulBp[s]) + armorFlat[s] (곱한 뒤 내림)
  *
- * 출력: { version, source, maxStage, hp[0..maxStage], armorMulBp[0..maxStage], armorFlat[0..maxStage] }
+ * 출력: { version, source, maxStage, hp[0..maxStage], armorMulBp[0..maxStage], armorFlat[0..maxStage], transcendCost[0..] }
  *   - 0단계(준비)에는 몹이 없으므로 hp[0] = 0.
+ *   - transcendCost[Lv] (M5-3): 초월 강화 Lv → Lv+1 비용 = ⌊costBase × costGrowth^Lv⌋ (src/data/game.json upgrade.transcend).
+ *     costGrowth(1.15)를 십진 분수(115/100)로 바꿔 BigInt로 정확히 계산한다(부동소수 오차로 57,499가 되지 않게).
+ *     비용이 안전한 정수(2^53 − 1)를 넘기 직전까지만 싣고, 표 끝 = 초월 최대 레벨.
  *
  * 사용법:  node tools/precompute-curves.mjs           (curves.json 다시 쓰기)
  *          node tools/precompute-curves.mjs --check   (저장된 표가 지금 enemies.json 과 맞는지만 확인, 다르면 종료 코드 1)
@@ -28,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const ENEMIES_PATH = resolve(ROOT, 'src/data/enemies.json');
 export const CURVES_PATH = resolve(ROOT, 'src/data/curves.json');
+export const GAME_PATH = resolve(ROOT, 'src/data/game.json');
 const BP_ONE = 10000;
 
 /** growth 값 검사. 문제가 있으면 메시지 배열. */
@@ -86,7 +90,7 @@ export function computeCurves(growth) {
   return {
     curves: {
       version: 1,
-      source: 'tools/precompute-curves.mjs ← src/data/enemies.json growth. 직접 고치지 말고 도구를 다시 돌린다',
+      source: 'tools/precompute-curves.mjs ← src/data/enemies.json growth + game.json upgrade.transcend. 직접 고치지 말고 도구를 다시 돌린다',
       maxStage,
       hp,
       armorMulBp,
@@ -94,6 +98,39 @@ export function computeCurves(growth) {
     },
     exactHp: exact,
   };
+}
+
+/** 십진수 → 분수 [분자, 분모] (BigInt). 1.15 → [115n, 100n]. */
+export function decimalFraction(x) {
+  if (!(typeof x === 'number' && Number.isFinite(x) && x > 0)) throw new Error(`양수가 아니다: ${x}`);
+  const text = String(x);
+  if (/e/i.test(text)) throw new Error(`지수 표기는 받지 않는다: ${text}`);
+  const [int, frac = ''] = text.split('.');
+  let den = 1n;
+  for (let i = 0; i < frac.length; i++) den *= 10n;
+  return [BigInt(int + frac), den];
+}
+
+/**
+ * 초월 강화 비용 표 (M5-3): transcendCost[Lv] = ⌊costBase × costGrowth^Lv⌋. 안전한 정수를 넘기 전까지.
+ * @param spec game.json upgrade.transcend { costBase, costGrowth }
+ */
+export function computeTranscendCost(spec) {
+  if (!spec || !Number.isSafeInteger(spec.costBase) || spec.costBase < 1) throw new Error('upgrade.transcend.costBase는 1 이상 정수');
+  if (!(spec.costGrowth > 1)) throw new Error('upgrade.transcend.costGrowth는 1보다 커야 한다');
+  const [num, den] = decimalFraction(spec.costGrowth);
+  const out = [];
+  let n = BigInt(spec.costBase);
+  let d = 1n;
+  const max = BigInt(Number.MAX_SAFE_INTEGER);
+  for (let lv = 0; lv < 1000; lv++) {
+    const cost = n / d;
+    if (cost > max) break;
+    out.push(Number(cost));
+    n *= num;
+    d *= den;
+  }
+  return out;
 }
 
 /** 표를 저장 형식(JSON 문자열)으로. 배열은 한 줄에 10개씩 끊어 사람이 읽기 쉽게. */
@@ -110,7 +147,8 @@ export function formatCurves(curves) {
     `  "maxStage": ${curves.maxStage},`,
     `  "hp": ${arr(curves.hp)},`,
     `  "armorMulBp": ${arr(curves.armorMulBp)},`,
-    `  "armorFlat": ${arr(curves.armorFlat)}`,
+    `  "armorFlat": ${arr(curves.armorFlat)},`,
+    `  "transcendCost": ${arr(curves.transcendCost ?? [])}`,
     '}',
     '',
   ].join('\n');
@@ -120,8 +158,19 @@ export function readGrowth(path = ENEMIES_PATH) {
   return JSON.parse(readFileSync(path, 'utf8')).growth;
 }
 
-function main(argv) {
+/** game.json upgrade.transcend (초월 강화 비용 공식). */
+export function readTranscend(path = GAME_PATH) {
+  return JSON.parse(readFileSync(path, 'utf8')).upgrade?.transcend;
+}
+
+/** 저장할 전체 표: 몹 성장 곡선 + 초월 강화 비용. */
+export function computeAll() {
   const { curves } = computeCurves(readGrowth());
+  return { ...curves, transcendCost: computeTranscendCost(readTranscend()) };
+}
+
+function main(argv) {
+  const curves = computeAll();
   const text = formatCurves(curves);
   if (argv.includes('--check')) {
     let saved = '';
@@ -131,10 +180,10 @@ function main(argv) {
       saved = '';
     }
     if (saved !== text) {
-      console.error('❌ src/data/curves.json 이 enemies.json growth 와 다르다 → node tools/precompute-curves.mjs 로 다시 만든다');
+      console.error('❌ src/data/curves.json 이 enemies.json growth·game.json upgrade.transcend 와 다르다 → node tools/precompute-curves.mjs 로 다시 만든다');
       return 1;
     }
-    console.log(`✅ 곡선 표 최신: 단계 0~${curves.maxStage}, HP(1)=${curves.hp[1]}, HP(50)=${curves.hp[50]}, HP(${curves.maxStage})=${curves.hp[curves.maxStage]}`);
+    console.log(`✅ 곡선 표 최신: 단계 0~${curves.maxStage}, HP(1)=${curves.hp[1]}, HP(50)=${curves.hp[50]}, HP(${curves.maxStage})=${curves.hp[curves.maxStage]}, 초월 비용 Lv0~${curves.transcendCost.length - 1}`);
     return 0;
   }
   writeFileSync(CURVES_PATH, text);

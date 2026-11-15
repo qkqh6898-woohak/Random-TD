@@ -8,6 +8,7 @@
  * - `curves.json`은 `tools/precompute-curves.mjs`가 enemies.json growth로 만든 표다 (sim은 거듭제곱을 못 쓴다).
  * - `decks.json`은 덱 규칙(등급별 5종)과 기본 덱이다. 덱의 타워 id·등급은 towers.json과 교차 검사한다.
  * - `cards.json`은 보스 효과 카드 12장(GDD.md 3.1, M4-7)이다.
+ * - `missions.json`은 판 안 미션 41개(GDD.md 8장, M5-6)다. 조건 종류마다 필요한 값·타워 id는 crossCheck에서 확인한다.
  * - 수치 해석(소수 → 정수 단위 변환)은 각 시스템이 로드할 때 `src/sim/Fixed.ts`로 한다.
  */
 
@@ -18,6 +19,7 @@ import gameJson from './game.json';
 import curvesJson from './curves.json';
 import decksJson from './decks.json';
 import cardsJson from './cards.json';
+import missionsJson from './missions.json';
 import { TICK_HZ } from '../sim/World';
 import { s, validate, type Issue, type Schema } from './schema';
 import { DECK_GRADES, deckIssues, type DeckData } from './deck';
@@ -201,7 +203,23 @@ export interface ChallengeData {
   invisible: boolean;
   ability: string;
   legion: string;
+  /** 체력을 함께 쓰는 마리 수 (쌍둥이 박쥐 2, M5-2) */
+  twin?: number;
+  /** 면역 (slow 둔화 · burn 화상) */
+  immune?: ChallengeImmune[];
+  /** everySeconds초마다 경로를 tiles칸 앞으로 순간이동 */
+  teleport?: { everySeconds: number; tiles: number };
+  /** everySeconds초마다 반경 radius칸 안 타워를 seconds초 동결 (공격 불가) */
+  freezeTowers?: { everySeconds: number; radius: number; seconds: number };
+  /** everySeconds초마다 최대 체력 pct 회복 */
+  regen?: { everySeconds: number; pct: number };
+  /** 체력 at 이하에서 한 번 seconds초 무적 + 이동속도 ×speedMul */
+  invulnerable?: { at: number; seconds: number; speedMul: number };
 }
+
+/** 도전 보스 면역 종류 */
+export const CHALLENGE_IMMUNES = ['slow', 'burn'] as const;
+export type ChallengeImmune = (typeof CHALLENGE_IMMUNES)[number];
 
 export interface CompositionEntry {
   stages: [number, number];
@@ -462,6 +480,62 @@ export interface FormationConfig {
   campaignMin: number;
 }
 
+/** 등급 강화 하나 (GDD.md 7.1, M5-3): 대상 등급들의 타워 공격력 +atkPerLevel/Lv, 비용 cost[0] + cost[1] × Lv. */
+export interface GradeUpgradeConfig {
+  id: string;
+  name: string;
+  grades: Grade[];
+  atkPerLevel: number;
+  max: number;
+  cost: [number, number];
+}
+
+/** 능력치 강화가 올리는 값 */
+export const UPGRADE_STATS = ['apsPct', 'armorPen', 'magicPen', 'critChance', 'critMul', 'rangePct'] as const;
+export type UpgradeStat = (typeof UPGRADE_STATS)[number];
+
+/** 능력치 강화 하나 (모든 타워). */
+export interface StatUpgradeConfig {
+  id: string;
+  name: string;
+  icon: string;
+  stat: UpgradeStat;
+  perLevel: number;
+  max: number;
+  cost: [number, number];
+}
+
+/** 초월 강화 (등급 강화 3종이 모두 최대일 때). 비용 표는 curves.json transcendCost. */
+export interface TranscendConfig {
+  id: string;
+  name: string;
+  atkPerLevel: number;
+  costBase: number;
+  costGrowth: number;
+}
+
+export interface UpgradeConfig {
+  grade: GradeUpgradeConfig[];
+  stat: StatUpgradeConfig[];
+  transcend: TranscendConfig;
+}
+
+/** 도박 (GDD.md 7.2, M5-5). */
+export interface GambleConfig {
+  tables: { cost: number; unlockLevel: number }[];
+  outcomes: { mul: number; chance: number }[];
+  jackpot: { gauge: number; minMul: number };
+  /** 도박꾼 특색이 줄인 ×0 확률을 더할 배율 (outcomes의 mul 값) */
+  zeroShiftTo: number;
+  recent: number;
+}
+
+/** 도전 (GDD.md 6장, M5-2). */
+export interface ChallengeConfig {
+  cooldownSeconds: number;
+  timeLimitSeconds: number;
+}
+
 export interface GameConfig {
   version: number;
   speeds: SpeedOption[];
@@ -480,6 +554,9 @@ export interface GameConfig {
   boss: BossConfig;
   detection: DetectionConfig;
   formation: FormationConfig;
+  upgrade: UpgradeConfig;
+  gamble: GambleConfig;
+  challenge: ChallengeConfig;
 }
 
 /** 보스 효과 카드 효과 종류 (cards.json effect.type) */
@@ -539,6 +616,56 @@ export interface CurvesFile {
   armorMulBp: number[];
   /** 방어력·마법 저항 추가값. max(0, s − 100) */
   armorFlat: number[];
+  /** 초월 강화 Lv → Lv+1 비용 (game.json upgrade.transcend, M5-3). 표 끝 = 최대 레벨 */
+  transcendCost: number[];
+}
+
+/** 판 안 미션 조건 종류 (missions.json cond.type, M5-6) */
+export const MISSION_TYPES = ['distinct', 'same', 'towers', 'own', 'stat', 'upgradeLevel', 'idle', 'danger', 'gamble', 'reach', 'edge', 'family'] as const;
+export type MissionType = (typeof MISSION_TYPES)[number];
+/** stat 조건이 읽는 판 상태 */
+export const MISSION_STATS = ['summons', 'merges', 'upgrades', 'gambles', 'workers', 'gold', 'kills', 'bossesKilled', 'challengeBest', 'challengeClears', 'stage'] as const;
+export type MissionStat = (typeof MISSION_STATS)[number];
+
+/** 미션 조건 (종류마다 쓰는 값만, missions.json notes). */
+export interface MissionCond {
+  type: MissionType;
+  n?: number;
+  grade?: Grade;
+  key?: string;
+  seconds?: number;
+  mobs?: number;
+  lives?: number;
+  table?: number;
+  minMul?: number;
+  maxMul?: number;
+  maxGold?: number;
+  stage?: number;
+  onlyGrade?: Grade;
+  minWorkers?: number;
+  maxTowers?: number;
+  maxSummons?: number;
+  maxUpgrades?: number;
+  belowLimit?: number;
+  towers?: string[];
+}
+
+export interface MissionData {
+  id: string;
+  no: number;
+  hidden: boolean;
+  cat: string;
+  name: string;
+  desc: string;
+  reward: number;
+  cond: MissionCond;
+}
+
+/** missions.json: 판 안 미션 (GDD.md 8장). */
+export interface MissionsFile {
+  version: number;
+  notes?: string;
+  missions: MissionData[];
 }
 
 export interface GameData {
@@ -550,6 +677,7 @@ export interface GameData {
   curves: CurvesFile;
   decks: DecksFile;
   cards: CardsFile;
+  missions: MissionsFile;
 }
 
 // ---------------------------------------------------------------------------
@@ -709,6 +837,12 @@ const challengeSchema = s.obj({
   invisible: s.bool(),
   ability: s.str(),
   legion: s.str({ nonEmpty: true }),
+  twin: s.opt(s.int({ min: 2, max: 8 })),
+  immune: s.opt(s.arr(s.str({ enum: CHALLENGE_IMMUNES }), { minLength: 1 })),
+  teleport: s.opt(s.obj({ everySeconds: tickSeconds(0.05, 60), tiles: s.num({ min: 0.001, max: 100 }) })),
+  freezeTowers: s.opt(s.obj({ everySeconds: tickSeconds(0.05, 60), radius: s.num({ min: 0.001, max: 50 }), seconds: tickSeconds(0.05, 60) })),
+  regen: s.opt(s.obj({ everySeconds: tickSeconds(0.05, 60), pct: s.num({ min: 0, max: 1 }) })),
+  invulnerable: s.opt(s.obj({ at: s.num({ min: 0, max: 1 }), seconds: tickSeconds(0.05, 60), speedMul: s.num({ min: 1, max: 10 }) })),
 });
 
 export const enemiesSchema: Schema = s.obj({
@@ -1053,6 +1187,49 @@ export const gameSchema: Schema = s.obj({
     campaignShift: s.int({ min: 0 }),
     campaignMin: s.int({ min: 1 }),
   }),
+  upgrade: s.obj({
+    grade: s.arr(
+      s.obj({
+        id: s.str({ nonEmpty: true }),
+        name: s.str({ nonEmpty: true }),
+        grades: s.arr(s.str({ enum: GRADES }), { minLength: 1 }),
+        atkPerLevel: s.num({ min: 0, max: 10 }),
+        max: s.int({ min: 1, max: 1000 }),
+        cost: s.tuple(s.int({ min: 0 }), s.int({ min: 0 })),
+      }),
+      { minLength: 1, uniqueBy: 'id' },
+    ),
+    stat: s.arr(
+      s.obj({
+        id: s.str({ nonEmpty: true }),
+        name: s.str({ nonEmpty: true }),
+        icon: s.str({ nonEmpty: true }),
+        stat: s.str({ enum: UPGRADE_STATS }),
+        perLevel: s.num({ min: 0, max: 10 }),
+        max: s.int({ min: 1, max: 1000 }),
+        cost: s.tuple(s.int({ min: 0 }), s.int({ min: 0 })),
+      }),
+      { minLength: 1, uniqueBy: 'id' },
+    ),
+    transcend: s.obj({
+      id: s.str({ nonEmpty: true }),
+      name: s.str({ nonEmpty: true }),
+      atkPerLevel: s.num({ min: 0, max: 10 }),
+      costBase: s.int({ min: 1 }),
+      costGrowth: s.num({ min: 1, max: 10 }),
+    }),
+  }),
+  gamble: s.obj({
+    tables: s.arr(s.obj({ cost: s.int({ min: 1 }), unlockLevel: s.int({ min: 1 }) }), { minLength: 1, maxLength: 10 }),
+    outcomes: s.arr(s.obj({ mul: s.num({ min: 0, max: 1000 }), chance: s.num({ min: 0, max: 1 }) }), { minLength: 1, maxLength: 20 }),
+    jackpot: s.obj({ gauge: s.int({ min: 1, max: 100 }), minMul: s.num({ min: 0 }) }),
+    zeroShiftTo: s.num({ min: 0 }),
+    recent: s.int({ min: 0, max: 20 }),
+  }),
+  challenge: s.obj({
+    cooldownSeconds: tickSeconds(0, 3600),
+    timeLimitSeconds: tickSeconds(1, 600),
+  }),
 });
 
 /** cards.json (GDD.md 3.1): 카드 효과 종류마다 쓰는 수치가 있는지는 crossCheck에서. */
@@ -1089,6 +1266,7 @@ export const curvesSchema: Schema = s.withCheck<CurvesFile>(
     hp: intArray,
     armorMulBp: intArray,
     armorFlat: intArray,
+    transcendCost: s.arr(s.int({ min: 1, max: Number.MAX_SAFE_INTEGER }), { minLength: 1 }),
   }),
   (v, path, issues) => {
     const p = path ? `${path}.` : '';
@@ -1118,6 +1296,45 @@ export const decksSchema: Schema = s.obj({
   notes: s.opt(s.str()),
   perGrade: s.int({ min: 1, max: 10 }),
   base: s.obj(Object.fromEntries(DECK_GRADES.map((g) => [g, deckIds]))),
+});
+
+/** missions.json (GDD.md 8장): 조건 종류마다 필요한 값은 crossCheck에서. */
+export const missionsSchema: Schema = s.obj({
+  version: s.int({ min: 1 }),
+  notes: s.opt(s.str()),
+  missions: s.arr(
+    s.obj({
+      id: s.str({ nonEmpty: true }),
+      no: s.int({ min: 1 }),
+      hidden: s.bool(),
+      cat: s.str({ nonEmpty: true }),
+      name: s.str({ nonEmpty: true }),
+      desc: s.str({ nonEmpty: true }),
+      reward: s.int({ min: 0 }),
+      cond: s.obj({
+        type: s.str({ enum: MISSION_TYPES }),
+        n: s.opt(s.int({ min: 1 })),
+        grade: s.opt(s.str({ enum: GRADES })),
+        key: s.opt(s.str({ nonEmpty: true })),
+        seconds: s.opt(tickSeconds(0.05, 36000)),
+        mobs: s.opt(s.int({ min: 0 })),
+        lives: s.opt(s.int({ min: 0 })),
+        table: s.opt(s.int({ min: 1 })),
+        minMul: s.opt(s.num({ min: 0 })),
+        maxMul: s.opt(s.num({ min: 0 })),
+        maxGold: s.opt(s.int({ min: 0 })),
+        stage: s.opt(s.int({ min: 1 })),
+        onlyGrade: s.opt(s.str({ enum: GRADES })),
+        minWorkers: s.opt(s.int({ min: 0 })),
+        maxTowers: s.opt(s.int({ min: 0 })),
+        maxSummons: s.opt(s.int({ min: 0 })),
+        maxUpgrades: s.opt(s.int({ min: 0 })),
+        belowLimit: s.opt(s.int({ min: 0 })),
+        towers: s.opt(s.arr(s.str({ nonEmpty: true }), { minLength: 1 })),
+      }),
+    }),
+    { minLength: 1, uniqueBy: 'id' },
+  ),
 });
 
 /** 값 하나를 스키마로 검사하고 통과하면 T로 돌려준다. 실패하면 DataError. */
@@ -1244,6 +1461,7 @@ export function crossCheck(data: GameData): Issue[] {
     issues.push({ file: 'game.json', path: 'summon.godChance', message: '신 타워가 없는데 확률이 0보다 크다' });
   }
   crossCheckM4(data, issues);
+  crossCheckM5(data, issues);
   return issues;
 }
 
@@ -1327,6 +1545,103 @@ function crossCheckM4(data: GameData, issues: Issue[]): void {
   });
 }
 
+/** 미션 조건 종류마다 반드시 있어야 하는 값 (missions.json notes). */
+const MISSION_NEEDS: Record<MissionType, readonly (keyof MissionCond)[]> = {
+  distinct: ['grade', 'n'],
+  same: ['n'],
+  towers: ['n'],
+  own: ['grade'],
+  stat: ['key', 'n'],
+  upgradeLevel: ['key', 'n'],
+  idle: ['seconds'],
+  danger: ['mobs', 'lives'],
+  gamble: ['n'],
+  reach: ['stage'],
+  edge: ['belowLimit', 'lives'],
+  family: ['towers', 'n'],
+};
+
+/** M5 데이터 교차 검사: 강화(등급 빠짐·겹침, 초월 비용 표), 도박(확률 합·배율), 도전 보스, 미션 조건. */
+function crossCheckM5(data: GameData, issues: Issue[]): void {
+  const { game, enemies, missions, towers } = data;
+  // 등급 강화: 모든 등급이 정확히 한 강화에 들어간다
+  const covered = new Map<string, number>();
+  game.upgrade.grade.forEach((g, i) => {
+    g.grades.forEach((gr, j) => {
+      const prev = covered.get(gr);
+      if (prev !== undefined) {
+        issues.push({ file: 'game.json', path: `upgrade.grade[${i}].grades[${j}]`, message: `${gr} 등급이 upgrade.grade[${prev}]에도 있다` });
+      } else covered.set(gr, i);
+    });
+  });
+  for (const gr of GRADES) {
+    if (!covered.has(gr)) issues.push({ file: 'game.json', path: 'upgrade.grade', message: `${gr} 등급을 올리는 등급 강화가 없다` });
+  }
+  const ids = new Set<string>();
+  for (const [path, id] of [
+    ...game.upgrade.grade.map((g, i) => [`upgrade.grade[${i}].id`, g.id] as const),
+    ...game.upgrade.stat.map((g, i) => [`upgrade.stat[${i}].id`, g.id] as const),
+    ['upgrade.transcend.id', game.upgrade.transcend.id] as const,
+  ]) {
+    if (ids.has(id)) issues.push({ file: 'game.json', path, message: `강화 id 중복: ${id}` });
+    ids.add(id);
+  }
+  const statSeen = new Set<string>();
+  game.upgrade.stat.forEach((u, i) => {
+    if (statSeen.has(u.stat)) issues.push({ file: 'game.json', path: `upgrade.stat[${i}].stat`, message: `같은 능력치(${u.stat})를 올리는 강화가 둘이다` });
+    statSeen.add(u.stat);
+  });
+  if (data.curves.transcendCost[0] !== game.upgrade.transcend.costBase) {
+    issues.push({ file: 'curves.json', path: 'transcendCost[0]', message: `game.json upgrade.transcend.costBase(${game.upgrade.transcend.costBase})와 다르다 → node tools/precompute-curves.mjs` });
+  }
+  // 도박: 확률 합 = 1, 배율 중복 없음, 잭팟·×0 이동 대상 배율이 표에 있음, 테이블 비용 오름차순
+  const outs = game.gamble.outcomes;
+  const sumBp = outs.reduce((a, o) => a + Math.round(o.chance * 10000), 0);
+  if (sumBp !== 10000) issues.push({ file: 'game.json', path: 'gamble.outcomes', message: `확률 합이 1이어야 하는데 ${sumBp / 10000}` });
+  const muls = outs.map((o) => o.mul);
+  muls.forEach((m, i) => {
+    if (muls.indexOf(m) !== i) issues.push({ file: 'game.json', path: `gamble.outcomes[${i}].mul`, message: `배율 중복: ${m}` });
+    if (Math.abs(m * 10000 - Math.round(m * 10000)) > 1e-9) issues.push({ file: 'game.json', path: `gamble.outcomes[${i}].mul`, message: `0.0001 단위여야 하는데 ${m}` });
+  });
+  if (!muls.includes(0)) issues.push({ file: 'game.json', path: 'gamble.outcomes', message: '×0 배율이 없다 (잭팟 게이지가 차지 않는다)' });
+  if (!muls.includes(game.gamble.zeroShiftTo)) issues.push({ file: 'game.json', path: 'gamble.zeroShiftTo', message: `배율표에 없는 배율: ${game.gamble.zeroShiftTo}` });
+  if (!outs.some((o) => o.mul >= game.gamble.jackpot.minMul && o.chance > 0)) {
+    issues.push({ file: 'game.json', path: 'gamble.jackpot.minMul', message: `×${game.gamble.jackpot.minMul} 이상 배율(확률 > 0)이 없다` });
+  }
+  game.gamble.tables.forEach((t, i) => {
+    const prev = game.gamble.tables[i - 1];
+    if (prev && t.cost <= prev.cost) issues.push({ file: 'game.json', path: `gamble.tables[${i}].cost`, message: '테이블 비용은 오름차순이어야 한다' });
+  });
+  // 도전 보스: 단계 = 1부터 차례로, 체력 = 2700 × 2.2^(n-1) 은 표 그대로(문서 표와 같은 값)이므로 여기서는 순서만
+  enemies.challenges.forEach((c, i) => {
+    if (c.level !== i + 1) issues.push({ file: 'enemies.json', path: `challenges[${i}].level`, message: `단계는 1부터 차례로 (${i + 1}이어야 하는데 ${c.level})` });
+    if (c.twin !== undefined && c.twin > 1 && c.hp < c.twin) issues.push({ file: 'enemies.json', path: `challenges[${i}].hp`, message: '체력이 마리 수보다 작다' });
+  });
+  // 미션
+  const towerIds = new Set(towers.towers.map((t) => t.id));
+  const upgradeIds = new Set([...game.upgrade.grade.map((g) => g.id), ...game.upgrade.stat.map((g) => g.id)]);
+  const tableCosts = new Set(game.gamble.tables.map((t) => t.cost));
+  missions.missions.forEach((m, i) => {
+    const c = m.cond;
+    const base = `missions[${i}].cond`;
+    for (const key of MISSION_NEEDS[c.type]) {
+      if (c[key] === undefined) issues.push({ file: 'missions.json', path: `${base}.${key}`, message: `${c.type} 조건에 필요한 값이 없다` });
+    }
+    if (c.type === 'stat' && c.key !== undefined && !(MISSION_STATS as readonly string[]).includes(c.key)) {
+      issues.push({ file: 'missions.json', path: `${base}.key`, message: `모르는 판 상태: ${c.key}` });
+    }
+    if (c.type === 'upgradeLevel' && c.key !== undefined && !upgradeIds.has(c.key)) {
+      issues.push({ file: 'missions.json', path: `${base}.key`, message: `game.json upgrade에 없는 강화: ${c.key}` });
+    }
+    if (c.table !== undefined && !tableCosts.has(c.table)) {
+      issues.push({ file: 'missions.json', path: `${base}.table`, message: `game.json gamble에 없는 테이블: ${c.table}` });
+    }
+    c.towers?.forEach((id, j) => {
+      if (!towerIds.has(id)) issues.push({ file: 'missions.json', path: `${base}.towers[${j}]`, message: `없는 타워: ${id}` });
+    });
+  });
+}
+
 /** 원본 JSON 묶음 (테스트에서 일부를 바꿔 넣을 수 있게 분리). */
 export interface RawGameData {
   towers: unknown;
@@ -1336,6 +1651,7 @@ export interface RawGameData {
   curves: unknown;
   decks: unknown;
   cards: unknown;
+  missions: unknown;
   /** 키 = 파일 이름(확장자 없이) */
   maps: Record<string, unknown>;
 }
@@ -1349,7 +1665,7 @@ export function bundledRawData(): RawGameData {
     const name = path.replace(/^.*\//, '').replace(/\.json$/, '');
     maps[name] = mod;
   }
-  return { towers: towersJson, enemies: enemiesJson, campaign: campaignJson, game: gameJson, curves: curvesJson, decks: decksJson, cards: cardsJson, maps };
+  return { towers: towersJson, enemies: enemiesJson, campaign: campaignJson, game: gameJson, curves: curvesJson, decks: decksJson, cards: cardsJson, missions: missionsJson, maps };
 }
 
 /** 원본 JSON 묶음 → 검사 → GameData. 문제가 있으면 DataError (모든 파일의 문제를 모아서). */
@@ -1373,6 +1689,7 @@ export function buildGameData(raw: RawGameData): GameData {
   const curves = attempt<CurvesFile>('curves.json', raw.curves, curvesSchema);
   const decks = attempt<DecksFile>('decks.json', raw.decks, decksSchema);
   const cards = attempt<CardsFile>('cards.json', raw.cards, cardsSchema);
+  const missions = attempt<MissionsFile>('missions.json', raw.missions, missionsSchema);
   const maps: Record<string, MapData> = {};
   for (const [name, value] of Object.entries(raw.maps)) {
     const m = attempt<MapData>(`maps/${name}.json`, value, mapSchema);
@@ -1385,7 +1702,7 @@ export function buildGameData(raw: RawGameData): GameData {
       errors.flatMap((e) => e.issues.map((i) => ({ ...i, file: i.file ?? e.file }))),
     );
   }
-  const data: GameData = { towers: towers!, enemies: enemies!, campaign: campaign!, game: game!, curves: curves!, decks: decks!, cards: cards!, maps };
+  const data: GameData = { towers: towers!, enemies: enemies!, campaign: campaign!, game: game!, curves: curves!, decks: decks!, cards: cards!, missions: missions!, maps };
   const cross = crossCheck(data);
   if (cross.length > 0) throw new DataError('교차 참조', cross);
   return data;

@@ -13,6 +13,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 T = json.load(open(ROOT / "src/data/towers.json", encoding="utf-8"))
 E = json.load(open(ROOT / "src/data/enemies.json", encoding="utf-8"))
 C = json.load(open(ROOT / "src/data/campaign.json", encoding="utf-8"))
+MS = json.load(open(ROOT / "src/data/missions.json", encoding="utf-8"))["missions"]
 towers = T["towers"]; BASE = T["baseDps"]
 GRADES = ["normal", "rare", "unique", "hero", "legend", "god", "hidden"]
 GK = {"normal": "노말", "rare": "레어", "unique": "유니크", "hero": "히어로", "legend": "레전드", "god": "신", "hidden": "히든"}
@@ -103,6 +104,20 @@ for k, v in H["legions"].items():
         if c not in capids: errors.append(f"{v['name']} 대장 {c} 정의 없음")
 for t in C["themes"]:
     if len(t.get("bossSchedule", {})) != 5: errors.append(f"테마 {t['theme']} 보스 배치 누락")
+# 판 안 미션 (GDD 8장): 일반 30 + 히든 11, 일반 보상 합계 17,000원 (GDD 3장 경제 표)
+normal_m = [m for m in MS if not m["hidden"]]; hidden_m = [m for m in MS if m["hidden"]]
+if len(normal_m) != 30: errors.append(f"일반 미션 {len(normal_m)}개 (30개여야 함)")
+if len(hidden_m) != 11: errors.append(f"히든 미션 {len(hidden_m)}개 (11개여야 함)")
+if sum(m["reward"] for m in normal_m) != 17000: errors.append(f"일반 미션 보상 합계 {sum(m['reward'] for m in normal_m)} (GDD 3장 17,000원)")
+if len({m["id"] for m in MS}) != len(MS): errors.append("미션 id 중복")
+for m in MS:
+    for tid in m["cond"].get("towers", []):
+        if tid not in byid: errors.append(f"미션 {m['id']} 타워 {tid} 없음")
+# 도전 보스 (GDD 6장): 체력 = 2700 × 2.2^(n-1) (표의 반올림 범위 ±1%), 단계 순서
+for i, c in enumerate(E["challenges"]):
+    want = 2700 * 2.2 ** i
+    if c["level"] != i + 1: errors.append(f"도전 보스 {c['name']} 단계 {c['level']} (차례로 {i+1})")
+    if abs(c["hp"] - want) > want * 0.01: errors.append(f"도전 보스 {c['name']} 체력 {c['hp']} (공식 {want:.0f})")
 
 # ---------- 표 생성 ----------
 def fmt(x):
@@ -299,7 +314,7 @@ SECTIONS = {
 if errors:
     print("❌ 데이터 규칙 위반:"); [print("  -", e) for e in errors]
 else:
-    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 감지 타워(노말~레전드) {len(detect)}종")
+    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 미션 {len(MS)}개, 감지 타워(노말~레전드) {len(detect)}종")
 if "--check" in sys.argv or errors:
     sys.exit(1 if errors else 0)
 for doc, secs in SECTIONS.items():

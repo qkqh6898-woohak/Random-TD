@@ -9,7 +9,8 @@
  *   같은 종류 둘이 서로를 감싸면 서로에게는 준다 (대장장이 A 옆 대장장이 B = 둘 다 +10%, 자기 자신에게만 안 줌).
  * - 위치로 매 틱 다시 계산한다 → 이동·교환하면 바로 반영 (DEV_PLAN 3.1 '이동 후 재계산'). 끄는 중인 타워는 원래 칸에서 준다.
  * - 주는 쪽과 받는 쪽은 같은 주인끼리만 (2인 판에서 남의 타워를 버프하지 않는다 — 협동 모드 규칙은 M13에서 다시 정한다).
- * 타워 한 개의 최종 보정(TowerBonus) = 오라 + 타워 레벨 공격력(레벨당 +4%) + 자기 특색(광전사 공속·암살자 보스 배율) → stats.effectiveStats.
+ * 타워 한 개의 최종 보정(TowerBonus) = 오라 + 타워 레벨 공격력(레벨당 +4%) + 등급 강화(M5-3, 등급군 공격력%) + 자기 특색(광전사 공속·암살자 보스 배율)
+ * → stats.effectiveStats.
  */
 import type { World } from '../World';
 import { BP_ONE, mulBp } from '../Fixed';
@@ -19,6 +20,7 @@ import type { MatchContext } from '../state';
 import type { TowerBonus } from '../stats';
 import { abilityOf, abilityParams, towerLevel } from '../abilities';
 import type { AuraArea, AuraSpec } from '../abilities/types';
+import { gradeUpgradeBp } from './Upgrade';
 
 /** 오라 하나가 받는 타워에게 닿는가. */
 export function auraCovers(
@@ -90,13 +92,16 @@ export function computeAuras(ctx: MatchContext, world: World, sources: readonly 
 }
 
 /**
- * 타워 하나의 최종 보정: 받는 오라 + 타워 레벨 공격력((레벨 − 1) × 4%) + 자기 특색 (광전사 연속 공격 공속%, 암살자 보스 배율 ×).
+ * 타워 하나의 최종 보정: 받는 오라 + 타워 레벨 공격력((레벨 − 1) × 4%) + 등급 강화 공격력% + 자기 특색 (광전사 연속 공격 공속%, 암살자 보스 배율 ×).
  * @param auras computeAuras 결과 (한 틱에 한 번 계산해 모든 타워가 같이 쓴다)
  */
 export function towerBonus(ctx: MatchContext, tower: Tower, auras: AuraMap): TowerBonus {
   const a = auras.get(tower.id);
   const level = towerLevel(ctx, tower.owner, tower.tower);
-  let atk = (a?.atkPctBp ?? 0) + (level - 1) * ctx.rules.atkPerLevelBp;
+  // 등급 강화 (M5-3): 그 타워 등급군의 공격력% — 지금 타워와 앞으로 나올 타워 모두 (등급은 데이터, 강화 레벨은 주인 것)
+  const grade = ctx.rules.towers.get(tower.tower)?.grade;
+  const gradeUp = grade ? gradeUpgradeBp(ctx, tower.owner, grade) : 0;
+  let atk = (a?.atkPctBp ?? 0) + (level - 1) * ctx.rules.atkPerLevelBp + gradeUp;
   let aps = a?.apsPctBp ?? 0;
   let boss = BP_ONE;
   const def = abilityOf(tower.tower);

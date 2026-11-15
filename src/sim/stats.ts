@@ -7,6 +7,9 @@
  * - 치명타 확률: 타워 + 강화 + 특성, 최대 100%. 치명타 배율: 타워 배율(기본 ×2, 저격수 ×3) + '치명타 피해' 강화.
  * - 방어·마법 관통: 타워 + 강화 + 상점 (+ 몹의 표식은 맞을 때 더한다), 각각 최대 90%.
  * - 보스 피해 배율: ×(1 + 보스 피해% 합) — 특성 '거인 사냥꾼'. 그림자 암살자 ×2 → ×3.5는 특색(M3-9)이 여기에 곱한다.
+ * - 사거리: 기본 × (1 + 사거리% 합) 내림 (M5 능력치 강화 '사거리' 최대 +20%).
+ * - M5 판 내 강화: 능력치 강화(공속·관통·치명·사거리)와 초월(공격력%)은 PlayerMods에, 등급 강화(등급군 공격력%)는 타워 등급마다
+ *   다르므로 TowerBonus.atkPctBp에 더한다 (Aura.towerBonus).
  * PlayerMods는 판 상태(MatchState.mods)라 해시에 들어간다. 판 내 강화(M5)·카드(M4)·상점(M8)·특성이 값을 더한다. 지금은 모두 0.
  * 타워마다 다른 보정(TowerBonus: 오라 M3-7, 타워 레벨 공격력, 특색의 자기 보정 — 광전사 공속·암살자 보스 배율)은
  * 네 번째 인자로 더한다 (Aura.towerBonus가 만든다). 종족 시너지(M7)도 여기에 더하면 된다.
@@ -33,6 +36,8 @@ export interface PlayerMods {
   critMulBp: number;
   /** 보스 피해% 합 (bp) */
   bossDmgPctBp: number;
+  /** 사거리% 합 (bp, M5 능력치 강화 '사거리') */
+  rangePctBp: number;
 }
 
 export function newPlayerMods(): PlayerMods {
@@ -46,6 +51,7 @@ export function newPlayerMods(): PlayerMods {
     critChanceBp: 0,
     critMulBp: 0,
     bossDmgPctBp: 0,
+    rangePctBp: 0,
   };
 }
 
@@ -84,6 +90,8 @@ export interface EffectiveStats {
   critMulBp: number;
   /** 보스 피해 배율 (bp, ×1 = 10000) */
   bossMulBp: number;
+  /** 사거리 (단위, 사거리% 강화 반영 — 대상 고르기·날기 막힘·관통 길이) */
+  range: number;
 }
 
 /**
@@ -124,5 +132,16 @@ export function effectiveStats(
     critBp: crit < 0 ? 0 : crit > rules.critChanceMaxBp ? rules.critChanceMaxBp : crit,
     critMulBp: stats.critMulBp + mods.critMulBp,
     bossMulBp: mulBp(BP_ONE + mods.bossDmgPctBp, bonus.bossMulBp),
+    range: scaledRange(stats.range, mods),
   };
+}
+
+/** 사거리 × (1 + 사거리% 합) 내림 (M5-3 능력치 강화 '사거리'). 특색(상인·진흙 주술사)의 '사거리 안'도 이것을 쓴다. */
+export function scaledRange(range: number, mods: Pick<PlayerMods, 'rangePctBp'>): number {
+  return mods.rangePctBp > 0 ? mulBp(range, BP_ONE + mods.rangePctBp) : range;
+}
+
+/** 타워 주인의 판 내 보정을 반영한 사거리 (단위). */
+export function towerRange(state: { readonly mods: readonly PlayerMods[] }, owner: number, baseRange: number): number {
+  return scaledRange(baseRange, state.mods[owner] ?? NO_MODS);
 }

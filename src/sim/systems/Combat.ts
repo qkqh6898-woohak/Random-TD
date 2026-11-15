@@ -53,6 +53,7 @@ import { isPaused } from './Move';
 import { aoeTargets, chainTargets, globalTargets, meleeAoeTargets, pierceTargets } from './Shapes';
 import { applyDot } from './Status';
 import { killMob } from './Kill';
+import { shareChallengeHp } from './Challenge';
 import { candidatesFor, leaderRuleFor, pickTarget, targetCandidates, type LeaderRule, type TargetCandidate } from './Targeting';
 
 export {
@@ -90,6 +91,8 @@ export function applyHit(ctx: MatchContext, world: World, mob: Mob, hit: RawHit,
   // 보호막(방패병)이 먼저 받는다 — 광역이면 보호막에 ×2
   const absorbed = mob.shield > 0 ? absorbShield(mob, dmg, hit.area === true ? shieldAreaMul(ctx, mob) : undefined) : 0;
   mob.hp -= dmg - absorbed;
+  // 쌍둥이 박쥐 (도전 4단계, M5-2): 무리 모두 같은 체력
+  if (mob.link) shareChallengeHp(ctx, world, mob);
   const kill = mob.hp <= 0;
   // p·m·t = 종류별 피해 (× ATK_SCALE, 화면이 숫자 색을 고를 때 쓴다), damage = 실제 정수 피해, crit = 치명타 (숫자 크게),
   // fx = 화면 연출 표시 (운석 등, 있을 때만), shield = 보호막이 막은 양 (있을 때만)
@@ -227,8 +230,9 @@ function attackOnce(
   leaderRule: LeaderRule,
 ): boolean {
   const shape: Shape = stats.shape;
-  const primary =
-    shape === 'global' ? (globalTargets(cands)[0] ?? null) : pickTarget(cands, tower.x, tower.y, stats.range, stats.target, leaderRule);
+  // 사거리는 강화 '사거리%'가 반영된 값 (M5-3)
+  const range = eff.range;
+  const primary = shape === 'global' ? (globalTargets(cands)[0] ?? null) : pickTarget(cands, tower.x, tower.y, range, stats.target, leaderRule);
   if (!primary) return false;
   const crit = rollCrit(world.rng(STREAM_COMBAT), eff.critBp);
   let hit = rollHit(stats, eff, crit);
@@ -256,18 +260,19 @@ function attackOnce(
     case 'multi': {
       // 서로 다른 대상 n마리: 우선순위대로 하나씩 고른다
       const chosen = new Set<number>([primary.id]);
-      fireProjectile(ctx, world, tower, primary, hit, stats);
+      const shot = { shape: stats.shape, radius: stats.radius, count: stats.count, range };
+      fireProjectile(ctx, world, tower, primary, hit, shot);
       while (chosen.size < stats.count) {
-        const next = pickTarget(cands, tower.x, tower.y, stats.range, stats.target, leaderRule, chosen);
+        const next = pickTarget(cands, tower.x, tower.y, range, stats.target, leaderRule, chosen);
         if (!next) break;
         chosen.add(next.id);
-        fireProjectile(ctx, world, tower, next, hit, stats);
+        fireProjectile(ctx, world, tower, next, hit, shot);
       }
       break;
     }
     default:
       // 단일·광역·관통·연쇄: 대상에게 투사체 하나, 도착할 때 형태대로
-      fireProjectile(ctx, world, tower, primary, hit, stats);
+      fireProjectile(ctx, world, tower, primary, hit, { shape: stats.shape, radius: stats.radius, count: stats.count, range });
   }
   return true;
 }
@@ -343,7 +348,7 @@ export function createCombatSystem(ctx: MatchContext): System {
       const tower = e;
       const eff = effectiveStats(ctx.rules, stats, ctx.state.mods[tower.owner] ?? NO_MODS, towerBonus(ctx, tower, auras));
       const paused = isPaused(tower, world.tick);
-      const cands = candidatesFor(all, visible, stats.detect === 'self', stats.range, anyFly);
+      const cands = candidatesFor(all, visible, stats.detect === 'self', eff.range, anyFly);
       const { acc } = chargeAttacks(tower.atkAcc, eff.apsMilli, () =>
         paused ? false : attackOnce(ctx, world, tower, stats, eff, cands, leaderRule),
       );

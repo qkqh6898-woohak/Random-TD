@@ -437,3 +437,84 @@ describe('M4 데이터: 몹 특성·보스·편대·카드', () => {
     expect(() => createMatch(data, { seed: 1, mode: 'infinite' })).toThrow(/enemies\.json bosses\.chaosdragon\.params\.stunSeconds/);
   });
 });
+
+describe('M5 데이터: 강화·도박·도전·미션', () => {
+  const missionsOf = (raw: RawGameData): Json[] => (raw.missions as Json).missions as Json[];
+  const gameOf5 = (raw: RawGameData): Json => raw.game as Json;
+  const challengesOf = (raw: RawGameData): Json[] => (raw.enemies as Json).challenges as Json[];
+
+  it('missions.json도 함께 읽는다 (일반 30 + 히든 11, 일반 보상 합계 17,000원)', () => {
+    const data = loadGameData();
+    expect(data.missions.missions).toHaveLength(41);
+    const normal = data.missions.missions.filter((m) => !m.hidden);
+    expect(normal).toHaveLength(30);
+    expect(normal.reduce((a, m) => a + m.reward, 0)).toBe(17000);
+    expect(data.curves.transcendCost[0]).toBe(data.game.upgrade.transcend.costBase);
+  });
+
+  it('강화: 빠진 등급·겹친 등급·같은 능력치 둘·초월 비용 표가 다르면 잡는다', () => {
+    const raw = rawCopy();
+    const up = gameOf5(raw).upgrade as Json;
+    const grade = up.grade as Json[];
+    (grade[0] as Json).grades = ['normal']; // rare 빠짐
+    (grade[1] as Json).grades = ['unique', 'hero', 'legend']; // legend 겹침
+    ((up.stat as Json[])[1] as Json).stat = 'apsPct'; // 공속 둘
+    (up.transcend as Json).costBase = 40000;
+    const issues = issuesOf(() => buildGameData(raw));
+    expect(issues.some((i) => i.path === 'upgrade.grade' && i.message.includes('rare'))).toBe(true);
+    expect(issues.some((i) => i.path === 'upgrade.grade[2].grades[0]' || i.path === 'upgrade.grade[1].grades[2]')).toBe(true);
+    expect(issues.some((i) => i.path === 'upgrade.stat[1].stat')).toBe(true);
+    expect(issues.some((i) => i.file === 'curves.json' && i.path === 'transcendCost[0]')).toBe(true);
+  });
+
+  it('도박: 확률 합 1, 없는 이동 배율, 잭팟 배율, 테이블 오름차순', () => {
+    const raw = rawCopy();
+    const g = gameOf5(raw).gamble as Json;
+    ((g.outcomes as Json[])[0] as Json).chance = 0.5;
+    g.zeroShiftTo = 7;
+    (g.jackpot as Json).minMul = 50;
+    ((g.tables as Json[])[1] as Json).cost = 5;
+    const issues = issuesOf(() => buildGameData(raw));
+    expect(issues.some((i) => i.path === 'gamble.outcomes' && i.message.includes('확률 합'))).toBe(true);
+    expect(issues.some((i) => i.path === 'gamble.zeroShiftTo')).toBe(true);
+    expect(issues.some((i) => i.path === 'gamble.jackpot.minMul')).toBe(true);
+    expect(issues.some((i) => i.path === 'gamble.tables[1].cost')).toBe(true);
+  });
+
+  it('도전 보스: 특수 능력 필드 타입과 면역 종류, 단계 순서', () => {
+    const raw = rawCopy();
+    const ch = challengesOf(raw);
+    (ch[4] as Json).immune = ['fear'];
+    (ch[5] as Json).teleport = { everySeconds: 0.01, tiles: 2 };
+    const issues = issuesOf(() => buildGameData(raw));
+    expect(issues.some((i) => i.path === 'challenges[4].immune[0]')).toBe(true);
+    expect(issues.some((i) => i.path === 'challenges[5].teleport.everySeconds')).toBe(true);
+    const raw2 = rawCopy();
+    (challengesOf(raw2)[2] as Json).level = 9;
+    expect(issuesOf(() => buildGameData(raw2)).some((i) => i.path === 'challenges[2].level')).toBe(true);
+  });
+
+  it('미션: 조건 종류마다 필요한 값, 모르는 판 상태·강화·테이블·타워', () => {
+    const raw = rawCopy();
+    const ms = missionsOf(raw);
+    delete ((ms[0] as Json).cond as Json).grade;
+    ((ms[8] as Json).cond as Json).key = 'dances';
+    ((ms[16] as Json).cond as Json).key = 'turbo';
+    ((ms[18] as Json).cond as Json).table = 777;
+    (((ms[36] as Json).cond as Json).towers as string[])[0] = 'nobody';
+    ((ms[3] as Json).cond as Json).type = 'magic';
+    const issues = issuesOf(() => buildGameData(raw));
+    expect(issues.some((i) => i.file === 'missions.json' && i.path === 'missions[3].cond.type')).toBe(true);
+    const raw2 = rawCopy();
+    const ms2 = missionsOf(raw2);
+    delete ((ms2[0] as Json).cond as Json).grade;
+    ((ms2[8] as Json).cond as Json).key = 'dances';
+    ((ms2[16] as Json).cond as Json).key = 'turbo';
+    ((ms2[18] as Json).cond as Json).table = 777;
+    (((ms2[36] as Json).cond as Json).towers as string[])[0] = 'nobody';
+    const issues2 = issuesOf(() => buildGameData(raw2));
+    for (const path of ['missions[0].cond.grade', 'missions[8].cond.key', 'missions[16].cond.key', 'missions[18].cond.table', 'missions[36].cond.towers[0]']) {
+      expect(issues2.some((i) => i.file === 'missions.json' && i.path === path)).toBe(true);
+    }
+  });
+});

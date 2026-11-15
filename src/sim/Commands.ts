@@ -46,7 +46,17 @@ export type CommandPayload =
   /** 승급의 축복 (M4-7): 결과 타워 id를 다른 결과로 바꿀지 (pick 1 = 바꿈, 0 = 그대로) */
   | { type: 'pickMerge'; id: number; pick: number }
   /** 개발용 치트 (?debug=1, M4): cards.json 순서 c번째 카드 효과를 바로 적용 (카드 UI·효과 확인용). debug 판에서만 */
-  | { type: 'debugCard'; c: number };
+  | { type: 'debugCard'; c: number }
+  /** 판 내 강화 (M5-3, GDD 7.1): rules.upgrades의 k번째 (등급 강화 → 능력치 강화 → 초월)를 한 레벨. 길게 누르면 화면이 여러 번 보낸다 */
+  | { type: 'upgrade'; k: number }
+  /** 도박 (M5-5, GDD 7.2): game.json gamble.tables의 t번째 테이블 (0 = 10원 …) */
+  | { type: 'gamble'; t: number }
+  /** 도전 시작 (M5-2, GDD 6장): lv단계 (1부터) */
+  | { type: 'startChallenge'; lv: number }
+  /** 미션 보상 받기 (M5-6, GDD 8장): missions.json 순서 i번째 (0부터) */
+  | { type: 'claimMission'; i: number }
+  /** 미션 보상 모두 받기 (M5-6) */
+  | { type: 'claimAllMissions' };
 
 export type CommandType = CommandPayload['type'];
 
@@ -64,6 +74,11 @@ export const COMMAND_TYPES: readonly CommandType[] = [
   'pickCard',
   'pickMerge',
   'debugCard',
+  'upgrade',
+  'gamble',
+  'startChallenge',
+  'claimMission',
+  'claimAllMissions',
 ];
 
 /** 칸 좌표 상한 (맵은 이보다 훨씬 작다. 네트워크로 받은 터무니없는 값을 거른다) */
@@ -86,10 +101,20 @@ export const PAYLOAD_FIELDS: { readonly [K in CommandType]: readonly string[] } 
   pickCard: ['i'],
   pickMerge: ['id', 'pick'],
   debugCard: ['c'],
+  upgrade: ['k'],
+  gamble: ['t'],
+  startChallenge: ['lv'],
+  claimMission: ['i'],
+  claimAllMissions: [],
 };
 
 /** 카드 번호 상한 (한 번에 보여주는 카드는 6장 이하) */
 export const MAX_CARD_INDEX = 9;
+/** 강화·도박 테이블·도전 단계·미션 번호 상한 (데이터보다 넉넉히, 네트워크로 받은 터무니없는 값을 거른다) */
+export const MAX_UPGRADE_INDEX = 63;
+export const MAX_GAMBLE_TABLE = 9;
+export const MAX_CHALLENGE_LEVEL = 99;
+export const MAX_MISSION_INDEX = 255;
 
 /** 모든 명령에 공통인 필드. */
 const ENVELOPE_FIELDS: readonly string[] = ['type', 'tick', 'player', 'seq'];
@@ -140,6 +165,19 @@ export function validatePayload(cmd: unknown): string | null {
     case 'noop':
     case 'debugSkipStage':
     case 'hireWorker':
+    case 'claimAllMissions':
+      return null;
+    case 'upgrade':
+      if (!isNonNegInt(c.k) || c.k > MAX_UPGRADE_INDEX) return `k가 0~${MAX_UPGRADE_INDEX} 정수가 아님: ${String(c.k)} (upgrade 명령)`;
+      return null;
+    case 'gamble':
+      if (!isNonNegInt(c.t) || c.t > MAX_GAMBLE_TABLE) return `t가 0~${MAX_GAMBLE_TABLE} 정수가 아님: ${String(c.t)} (gamble 명령)`;
+      return null;
+    case 'startChallenge':
+      if (!isNonNegInt(c.lv) || c.lv < 1 || c.lv > MAX_CHALLENGE_LEVEL) return `lv가 1~${MAX_CHALLENGE_LEVEL} 정수가 아님: ${String(c.lv)} (startChallenge 명령)`;
+      return null;
+    case 'claimMission':
+      if (!isNonNegInt(c.i) || c.i > MAX_MISSION_INDEX) return `i가 0~${MAX_MISSION_INDEX} 정수가 아님: ${String(c.i)} (claimMission 명령)`;
       return null;
     case 'pickCard': {
       const v = c.i;

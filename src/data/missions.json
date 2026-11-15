@@ -1,0 +1,583 @@
+{
+ "version": 1,
+ "notes": "판 안 미션 (GDD.md 8장, M5-6): 일반 30개 + 히든 11개. 판마다 초기화, 달성하면 [받기] → reward원 (카드 '황금 손' 보너스를 받는다). 히든은 화면에 '???'로 보이고 달성하면 공개 + 영구 기록. cond.type: distinct = grade 등급의 서로 다른 타워 n종 동시 보유 / same = 같은 타워 n개 동시 보유(grade가 있으면 그 등급만) / towers = 타워 n개 동시 보유 / own = grade 등급 타워를 가짐 / stat = 판 상태 key(summons 소환·merges 승급·upgrades 강화 횟수·gambles 도박 횟수·workers 일꾼 수·gold 보유금·kills 처치·bossesKilled 보스 처치·challengeBest 가장 높은 도전 클리어 단계·challengeClears 도전 클리어 횟수·stage 단계)가 n 이상 / upgradeLevel = 등급·능력치 강화 key의 레벨 n 이상 / idle = seconds초 동안 플레이어 명령 없음(일시정지 중에는 틱이 멈춰 세지 않음, 판 시작부터 셈) / danger = 몹 mobs마리 이상(캠페인: 목숨 lives 이하)으로 시작한 단계를 패배 없이 넘김 / gamble = 조건에 맞는 도박 결과가 n번 연속(table = 테이블 비용, minMul·maxMul = 배율 범위, maxGold = 도박 직전 보유금 상한, 조건에 안 맞는 도박이 끼면 0부터) / reach = stage단계 시작 때 조건(onlyGrade = 타워가 1개 이상이고 모두 그 등급, minWorkers·maxTowers·maxSummons·maxUpgrades) / edge = 무한: 몹 수 = 한도 − belowLimit, 캠페인: 목숨 = lives / family = towers에 든 타워 n개 동시 보유.",
+ "missions": [
+  {
+   "id": "n01",
+   "no": 1,
+   "hidden": false,
+   "cat": "수집",
+   "name": "서로 다른 노말 타워 5종 동시 보유",
+   "desc": "서로 다른 노말 타워 5종 동시 보유",
+   "reward": 100,
+   "cond": {
+    "type": "distinct",
+    "grade": "normal",
+    "n": 5
+   }
+  },
+  {
+   "id": "n02",
+   "no": 2,
+   "hidden": false,
+   "cat": "수집",
+   "name": "서로 다른 레어 타워 5종 동시 보유",
+   "desc": "서로 다른 레어 타워 5종 동시 보유",
+   "reward": 300,
+   "cond": {
+    "type": "distinct",
+    "grade": "rare",
+    "n": 5
+   }
+  },
+  {
+   "id": "n03",
+   "no": 3,
+   "hidden": false,
+   "cat": "수집",
+   "name": "서로 다른 유니크 타워 5종 동시 보유",
+   "desc": "서로 다른 유니크 타워 5종 동시 보유",
+   "reward": 800,
+   "cond": {
+    "type": "distinct",
+    "grade": "unique",
+    "n": 5
+   }
+  },
+  {
+   "id": "n04",
+   "no": 4,
+   "hidden": false,
+   "cat": "수집",
+   "name": "서로 다른 히어로 타워 3종 동시 보유",
+   "desc": "서로 다른 히어로 타워 3종 동시 보유",
+   "reward": 1500,
+   "cond": {
+    "type": "distinct",
+    "grade": "hero",
+    "n": 3
+   }
+  },
+  {
+   "id": "n05",
+   "no": 5,
+   "hidden": false,
+   "cat": "수집",
+   "name": "같은 타워 5개 동시 보유",
+   "desc": "같은 타워 5개 동시 보유",
+   "reward": 200,
+   "cond": {
+    "type": "same",
+    "n": 5
+   }
+  },
+  {
+   "id": "n06",
+   "no": 6,
+   "hidden": false,
+   "cat": "수집",
+   "name": "같은 레어 타워 5개 동시 보유",
+   "desc": "같은 레어 타워 5개 동시 보유",
+   "reward": 500,
+   "cond": {
+    "type": "same",
+    "grade": "rare",
+    "n": 5
+   }
+  },
+  {
+   "id": "n07",
+   "no": 7,
+   "hidden": false,
+   "cat": "수집",
+   "name": "타워 20개 동시 보유",
+   "desc": "타워 20개 동시 보유",
+   "reward": 300,
+   "cond": {
+    "type": "towers",
+    "n": 20
+   }
+  },
+  {
+   "id": "n08",
+   "no": 8,
+   "hidden": false,
+   "cat": "수집",
+   "name": "레전드 타워 첫 획득",
+   "desc": "레전드 타워 첫 획득",
+   "reward": 2000,
+   "cond": {
+    "type": "own",
+    "grade": "legend"
+   }
+  },
+  {
+   "id": "n09",
+   "no": 9,
+   "hidden": false,
+   "cat": "소환",
+   "name": "소환 10회",
+   "desc": "소환 10회",
+   "reward": 100,
+   "cond": {
+    "type": "stat",
+    "key": "summons",
+    "n": 10
+   }
+  },
+  {
+   "id": "n10",
+   "no": 10,
+   "hidden": false,
+   "cat": "소환",
+   "name": "소환 50회",
+   "desc": "소환 50회",
+   "reward": 400,
+   "cond": {
+    "type": "stat",
+    "key": "summons",
+    "n": 50
+   }
+  },
+  {
+   "id": "n11",
+   "no": 11,
+   "hidden": false,
+   "cat": "소환",
+   "name": "소환 100회",
+   "desc": "소환 100회",
+   "reward": 1000,
+   "cond": {
+    "type": "stat",
+    "key": "summons",
+    "n": 100
+   }
+  },
+  {
+   "id": "n12",
+   "no": 12,
+   "hidden": false,
+   "cat": "승급",
+   "name": "승급 10회",
+   "desc": "승급 10회",
+   "reward": 300,
+   "cond": {
+    "type": "stat",
+    "key": "merges",
+    "n": 10
+   }
+  },
+  {
+   "id": "n13",
+   "no": 13,
+   "hidden": false,
+   "cat": "승급",
+   "name": "승급 30회",
+   "desc": "승급 30회",
+   "reward": 800,
+   "cond": {
+    "type": "stat",
+    "key": "merges",
+    "n": 30
+   }
+  },
+  {
+   "id": "n14",
+   "no": 14,
+   "hidden": false,
+   "cat": "방치",
+   "name": "아무것도 안 하고 1분 방치",
+   "desc": "1분 동안 아무 조작도 하지 않기 (일시정지 시간 제외)",
+   "reward": 300,
+   "cond": {
+    "type": "idle",
+    "seconds": 60
+   }
+  },
+  {
+   "id": "n15",
+   "no": 15,
+   "hidden": false,
+   "cat": "강화",
+   "name": "강화 5회",
+   "desc": "강화 5회",
+   "reward": 200,
+   "cond": {
+    "type": "stat",
+    "key": "upgrades",
+    "n": 5
+   }
+  },
+  {
+   "id": "n16",
+   "no": 16,
+   "hidden": false,
+   "cat": "강화",
+   "name": "강화 20회",
+   "desc": "강화 20회",
+   "reward": 600,
+   "cond": {
+    "type": "stat",
+    "key": "upgrades",
+    "n": 20
+   }
+  },
+  {
+   "id": "n17",
+   "no": 17,
+   "hidden": false,
+   "cat": "강화",
+   "name": "일반 강화 Lv 10 달성",
+   "desc": "일반 강화 Lv 10 달성",
+   "reward": 800,
+   "cond": {
+    "type": "upgradeLevel",
+    "key": "normal",
+    "n": 10
+   }
+  },
+  {
+   "id": "n18",
+   "no": 18,
+   "hidden": false,
+   "cat": "도박",
+   "name": "도박 10회",
+   "desc": "도박 10회",
+   "reward": 100,
+   "cond": {
+    "type": "stat",
+    "key": "gambles",
+    "n": 10
+   }
+  },
+  {
+   "id": "n19",
+   "no": 19,
+   "hidden": false,
+   "cat": "도박",
+   "name": "1000원 도박에서 본전 이상",
+   "desc": "1000원 도박에서 본전 이상",
+   "reward": 300,
+   "cond": {
+    "type": "gamble",
+    "table": 1000,
+    "minMul": 1,
+    "n": 1
+   }
+  },
+  {
+   "id": "n20",
+   "no": 20,
+   "hidden": false,
+   "cat": "경제",
+   "name": "일꾼 5명 고용",
+   "desc": "일꾼 5명 고용",
+   "reward": 300,
+   "cond": {
+    "type": "stat",
+    "key": "workers",
+    "n": 5
+   }
+  },
+  {
+   "id": "n21",
+   "no": 21,
+   "hidden": false,
+   "cat": "경제",
+   "name": "일꾼 10명 고용",
+   "desc": "일꾼 10명 고용",
+   "reward": 800,
+   "cond": {
+    "type": "stat",
+    "key": "workers",
+    "n": 10
+   }
+  },
+  {
+   "id": "n22",
+   "no": 22,
+   "hidden": false,
+   "cat": "경제",
+   "name": "보유금 3,000원 달성",
+   "desc": "보유금 3,000원 달성",
+   "reward": 300,
+   "cond": {
+    "type": "stat",
+    "key": "gold",
+    "n": 3000
+   }
+  },
+  {
+   "id": "n23",
+   "no": 23,
+   "hidden": false,
+   "cat": "경제",
+   "name": "보유금 10,000원 달성",
+   "desc": "보유금 10,000원 달성",
+   "reward": 1000,
+   "cond": {
+    "type": "stat",
+    "key": "gold",
+    "n": 10000
+   }
+  },
+  {
+   "id": "n24",
+   "no": 24,
+   "hidden": false,
+   "cat": "전투",
+   "name": "몹 500마리 처치",
+   "desc": "몹 500마리 처치",
+   "reward": 300,
+   "cond": {
+    "type": "stat",
+    "key": "kills",
+    "n": 500
+   }
+  },
+  {
+   "id": "n25",
+   "no": 25,
+   "hidden": false,
+   "cat": "전투",
+   "name": "몹 2,000마리 처치",
+   "desc": "몹 2,000마리 처치",
+   "reward": 1000,
+   "cond": {
+    "type": "stat",
+    "key": "kills",
+    "n": 2000
+   }
+  },
+  {
+   "id": "n26",
+   "no": 26,
+   "hidden": false,
+   "cat": "전투",
+   "name": "보스 첫 처치",
+   "desc": "보스 첫 처치",
+   "reward": 300,
+   "cond": {
+    "type": "stat",
+    "key": "bossesKilled",
+    "n": 1
+   }
+  },
+  {
+   "id": "n27",
+   "no": 27,
+   "hidden": false,
+   "cat": "도전",
+   "name": "도전 3단계 클리어",
+   "desc": "도전 3단계 클리어",
+   "reward": 400,
+   "cond": {
+    "type": "stat",
+    "key": "challengeBest",
+    "n": 3
+   }
+  },
+  {
+   "id": "n28",
+   "no": 28,
+   "hidden": false,
+   "cat": "도전",
+   "name": "도전 누적 5회 클리어",
+   "desc": "도전 누적 5회 클리어",
+   "reward": 500,
+   "cond": {
+    "type": "stat",
+    "key": "challengeClears",
+    "n": 5
+   }
+  },
+  {
+   "id": "n29",
+   "no": 29,
+   "hidden": false,
+   "cat": "생존",
+   "name": "20단계 도달",
+   "desc": "20단계 도달",
+   "reward": 1000,
+   "cond": {
+    "type": "stat",
+    "key": "stage",
+    "n": 20
+   }
+  },
+  {
+   "id": "n30",
+   "no": 30,
+   "hidden": false,
+   "cat": "생존",
+   "name": "위기에서 1개 단계 버티기",
+   "desc": "몹 100마리 이상(캠페인: 목숨 5 이하)인 상태로 시작한 단계를 끝까지 버티기",
+   "reward": 500,
+   "cond": {
+    "type": "danger",
+    "mobs": 100,
+    "lives": 5
+   }
+  },
+  {
+   "id": "h01",
+   "no": 1,
+   "hidden": true,
+   "cat": "히든",
+   "name": "진정한 방치",
+   "desc": "3분 동안 화면 터치 없이 생존",
+   "reward": 1500,
+   "cond": {
+    "type": "idle",
+    "seconds": 180
+   }
+  },
+  {
+   "id": "h02",
+   "no": 2,
+   "hidden": true,
+   "cat": "히든",
+   "name": "도박 중독",
+   "desc": "도박 연속 5번 0원 (위로금)",
+   "reward": 1000,
+   "cond": {
+    "type": "gamble",
+    "maxMul": 0,
+    "n": 5
+   }
+  },
+  {
+   "id": "h03",
+   "no": 3,
+   "hidden": true,
+   "cat": "히든",
+   "name": "인생 역전",
+   "desc": "보유금 10원 이하에서 10원 도박 ×5 당첨",
+   "reward": 500,
+   "cond": {
+    "type": "gamble",
+    "table": 10,
+    "minMul": 5,
+    "maxGold": 10,
+    "n": 1
+   }
+  },
+  {
+   "id": "h04",
+   "no": 4,
+   "hidden": true,
+   "cat": "히든",
+   "name": "노말 원툴",
+   "desc": "노말 타워만으로 10단계 도달",
+   "reward": 1000,
+   "cond": {
+    "type": "reach",
+    "stage": 10,
+    "onlyGrade": "normal"
+   }
+  },
+  {
+   "id": "h05",
+   "no": 5,
+   "hidden": true,
+   "cat": "히든",
+   "name": "일꾼 공화국",
+   "desc": "일꾼 10명 + 타워 5개 이하로 10단계 도달",
+   "reward": 1500,
+   "cond": {
+    "type": "reach",
+    "stage": 10,
+    "minWorkers": 10,
+    "maxTowers": 5
+   }
+  },
+  {
+   "id": "h06",
+   "no": 6,
+   "hidden": true,
+   "cat": "히든",
+   "name": "아슬아슬",
+   "desc": "몹 정확히 149마리 (캠페인: 목숨 정확히 1)",
+   "reward": 777,
+   "cond": {
+    "type": "edge",
+    "belowLimit": 1,
+    "lives": 1
+   }
+  },
+  {
+   "id": "h07",
+   "no": 7,
+   "hidden": true,
+   "cat": "히든",
+   "name": "고블린 왕국",
+   "desc": "고블린 계열 타워 10개 동시 보유",
+   "reward": 1000,
+   "cond": {
+    "type": "family",
+    "towers": [
+     "goblin",
+     "goblinchief",
+     "goblinking"
+    ],
+    "n": 10
+   }
+  },
+  {
+   "id": "h08",
+   "no": 8,
+   "hidden": true,
+   "cat": "히든",
+   "name": "소환 거부",
+   "desc": "5단계까지 소환 0회",
+   "reward": 2000,
+   "cond": {
+    "type": "reach",
+    "stage": 5,
+    "maxSummons": 0
+   }
+  },
+  {
+   "id": "h09",
+   "no": 9,
+   "hidden": true,
+   "cat": "히든",
+   "name": "운명의 장난",
+   "desc": "신 타워 획득",
+   "reward": 10000,
+   "cond": {
+    "type": "own",
+    "grade": "god"
+   }
+  },
+  {
+   "id": "h10",
+   "no": 10,
+   "hidden": true,
+   "cat": "히든",
+   "name": "도박왕",
+   "desc": "1000원 도박 ×5 2연속",
+   "reward": 3000,
+   "cond": {
+    "type": "gamble",
+    "table": 1000,
+    "minMul": 5,
+    "n": 2
+   }
+  },
+  {
+   "id": "h11",
+   "no": 11,
+   "hidden": true,
+   "cat": "히든",
+   "name": "짠돌이",
+   "desc": "강화 0회로 30단계 도달",
+   "reward": 3000,
+   "cond": {
+    "type": "reach",
+    "stage": 30,
+    "maxUpgrades": 0
+   }
+  }
+ ]
+}

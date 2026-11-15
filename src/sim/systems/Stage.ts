@@ -40,7 +40,7 @@ export function skipStage(ctx: MatchContext, world?: World): void {
   state.debugUsed = true;
   // 보스 단계를 건너뛰면 보스(조각)를 보상 없이 지운다 → 제한 시간 패배가 나지 않는다
   if (world && state.bossId !== '') {
-    for (const e of [...world.entities.list()]) if (isMob(e) && e.boss) world.entities.remove(e.id);
+    for (const e of [...world.entities.list()]) if (isMob(e) && e.boss && !e.challenge) world.entities.remove(e.id);
     world.emit('bossSkip', { boss: state.bossId });
     state.bossId = '';
     state.bossDeadline = 0;

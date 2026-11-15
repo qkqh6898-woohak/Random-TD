@@ -1,5 +1,5 @@
 {
- "version": 3,
+ "version": 4,
  "formulas": {
   "hp": "1~20: 120*1.151^(s-1); 21~50: HP(20)*1.08^(s-20); 51~100: HP(50)*1.06^(s-50); 101~: HP(100)*1.05^(s-100)",
   "armor": "기본 방어력 * (1 + 0.02*s) + max(0, s-100)  (마법 저항도 동일)",
@@ -640,7 +640,7 @@
    "reward": 50,
    "armor": 10,
    "magicRes": 10,
-   "speed": 1.2,
+   "speed": 1.8,
    "invisible": false,
    "ability": "이동속도 1.8",
    "legion": "gale"
@@ -671,7 +671,8 @@
    "speed": 1.2,
    "invisible": false,
    "ability": "두 마리가 체력 공유",
-   "legion": "gale"
+   "legion": "gale",
+   "twin": 2
   },
   {
    "level": 5,
@@ -685,7 +686,10 @@
    "speed": 1.2,
    "invisible": false,
    "ability": "둔화 면역",
-   "legion": "earth"
+   "legion": "earth",
+   "immune": [
+    "slow"
+   ]
   },
   {
    "level": 6,
@@ -699,7 +703,11 @@
    "speed": 1.2,
    "invisible": false,
    "ability": "5초마다 2칸 앞으로 순간이동",
-   "legion": "shadow"
+   "legion": "shadow",
+   "teleport": {
+    "everySeconds": 5,
+    "tiles": 2
+   }
   },
   {
    "level": 7,
@@ -713,7 +721,12 @@
    "speed": 1.2,
    "invisible": false,
    "ability": "8초마다 주변 타워 2초 동결(공격 불가)",
-   "legion": "earth"
+   "legion": "earth",
+   "freezeTowers": {
+    "everySeconds": 8,
+    "radius": 2,
+    "seconds": 2
+   }
   },
   {
    "level": 8,
@@ -727,7 +740,14 @@
    "speed": 1.2,
    "invisible": false,
    "ability": "화상 면역, 초당 체력 1% 회복",
-   "legion": "earth"
+   "legion": "earth",
+   "immune": [
+    "burn"
+   ],
+   "regen": {
+    "everySeconds": 1,
+    "pct": 0.01
+   }
   },
   {
    "level": 9,
@@ -755,7 +775,12 @@
    "speed": 1.2,
    "invisible": false,
    "ability": "체력 50%에서 5초 무적 + 이동속도 2배",
-   "legion": "lord"
+   "legion": "lord",
+   "invulnerable": {
+    "at": 0.5,
+    "seconds": 5,
+    "speedMul": 2
+   }
   }
  ],
  "eliteChance": {
@@ -1124,6 +1149,7 @@
  },
  "traitsNote": "몹 특성 수치 (ENEMIES.md 6장, M4-3). evade = 단일 공격(단일·근접·관통의 첫 대상·다중) 회피 확률. splitInto = 죽으면 그 자리에 id 몹 count마리 (체력 = 부모 최대 체력 × hpOfParent, speed가 있으면 그 속도, reward가 있으면 그 보상(원), small = 작게 그림). heal = everySeconds초마다 반경 radius칸 안 다른 몹 체력 pct 회복 (기절·정지·빙결 중에는 기다렸다가). shield = 최대 체력 × pct 보호막이 먼저 깎이고, 광역(광역·근접 광역·연쇄·전체) 피해는 areaMul배로 받는다. haste = 체력이 최대의 belowHp 이하이면 이동속도 +speed. swarm = 1칸에 붙어서 나오는 수.",
  "bossNote": "보스 패턴 수치 (ENEMIES.md 4장, M4-5). 주기(초)는 보스가 나온 뒤부터 세고, 보스가 기절·정지·빙결 중이면 풀릴 때까지 기다린다. kingslime: 체력이 splitAt 이하가 되면 splitParts조각으로 분열 (조각마다 남은 체력 × splitHp, 최대 체력 = 원래 × splitHp), 조각은 다시 분열하지 않고 모두 잡아야 처치. batqueen: summonEvery초마다 자기 자리에 summonMob summonCount마리, flyEvery초마다 flySeconds초 날아올라 사거리 flyBlockRange칸 이하 타워의 공격을 받지 않음. ancientgolem: 체력이 enrageAt 이하가 되면 이동속도 +enrageSpeed(1 = 2배), 방어력 enrageArmor. wraithlord: 늘 투명, healEvery초마다 반경 healRadius칸 안 다른 몹 체력 healPct 회복 + summonEvery초마다 summonMob summonCount마리 (summonInvisible = 투명). chaosdragon: stunEvery초마다 무작위 타워 stunTowers개 stunSeconds초 기절(공격·주기 능력 정지), 체력이 guardAt 각 값 이하가 될 때 guardSeconds초 동안 받는 피해 −guardCut.",
+ "challengeNote": "도전 보스 특수 능력 구조화 (M5-2, ENEMIES.md 7장): speed = 이동속도(도둑 고블린 1.8), twin = 체력을 함께 쓰는 마리 수(쌍둥이 박쥐 2 — 둘 중 누구를 쳐도 같은 체력이 깎이고 함께 죽는다), immune = 면역(slow 둔화·burn 화상), teleport = everySeconds초마다 경로를 tiles칸 앞으로 순간이동, freezeTowers = everySeconds초마다 반경 radius칸 안 타워를 seconds초 동결(공격·주기 능력 불가, 반경은 문서에 없어 2칸으로 정함), regen = everySeconds초마다 최대 체력 pct 회복, invulnerable = 체력 at 이하가 된 다음 틱에 한 번 seconds초 무적(모든 피해 0) + 이동속도 ×speedMul(그 뒤로 계속). 주기 능력·회복은 기절·정지·빙결 중에는 미뤘다가 풀리면 바로(보스 규칙과 같음). 도전 보스는 '보스'로 취급(보스 피해 배율·보스 상태 이상 규칙), 체력·방어·마저는 단계와 관계없이 고정.",
  "bossCycle": {
   "note": "무한 모드 보스 순환 (ENEMIES.md 4.1, M4-5a). every의 배수 단계 = 대장 순환 captains (commanderEvery의 배수는 빼고 셈), commanderEvery의 배수 = 4천왕 commanders 순환 (lordEvery의 배수는 빼고 셈), lordEvery의 배수 = 군주. 아직 데이터(bosses)가 없는 보스(그락스·4천왕·군주, M6)는 같은 자리의 기본 보스(bosses[].stage 순환)로 대신한다.",
   "every": 10,
