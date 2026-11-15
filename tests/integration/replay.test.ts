@@ -15,7 +15,25 @@ const DIR = join(__dirname, '..', 'replays');
 const rules = buildMatchRules(data);
 const t = (id: string): number => rules.towerOrder.indexOf(id);
 
-/** 저장하는 리플레이 3개의 정의 (판 입력 + 봇 옵션). */
+/** 순환의 정원 안쪽 블록 가장자리 20칸 (경로와 맞닿은 칸)에 레전드를 돌려 가며 놓는다 (debug). */
+function innerRing(kinds: string[]): [number, number, number][] {
+  const out: [number, number, number][] = [];
+  let k = 0;
+  for (let y = 2; y <= 8; y++) {
+    for (let x = 2; x <= 6; x++) if (x === 2 || x === 6 || y === 2 || y === 8) out.push([x, y, t(kinds[k++ % kinds.length] as string)]);
+  }
+  return out;
+}
+
+/** 감지 타워가 없는 덱 (저격수 → 번개 마법사, 그림자 암살자 → 폭풍 군주): r3-invisible */
+const NO_DETECT_DECK = {
+  ...data.decks.base,
+  unique: ['icemage', 'gambler', 'blacksmith', 'lightning', 'berserker'],
+  legend: ['dragoncaller', 'warlord', 'archmage', 'stormlord', 'fortuna'],
+};
+const allLv = (deck: Record<string, string[]>, lv: number): Record<string, number> => Object.fromEntries(Object.values(deck).flat().map((id) => [id, lv]));
+
+/** 저장하는 리플레이의 정의 (판 입력 + 봇 옵션). */
 const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions }[] = [
   {
     name: 'r1-basic',
@@ -55,7 +73,7 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
   },
   {
     name: 'r3-campaign',
-    note: '캠페인 테마 1(사거리 미로), 기본 덱 타워 레벨 5, 12단계 — 소환·승급·이동, 목숨이 줄어드는 판',
+    note: '캠페인 테마 1(사거리 미로), 기본 덱 타워 레벨 5 — 소환·승급·이동, 목숨이 줄어들다 10단계 박쥐 여왕이 부른 박쥐가 새어 목숨 0 (M4부터)',
     match: {
       seed: 3,
       mode: 'campaign',
@@ -63,6 +81,33 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       levels: [Object.fromEntries(Object.values(data.decks.base).flat().map((id) => [id, 5]))],
     },
     bot: { endTick: 1200 + 12 * 1200, moveEvery: 1500 },
+  },
+  {
+    name: 'r3-invisible',
+    note: '무한 모드 debug, 감지 타워가 없는 덱(Lv15) + 안쪽 블록 레전드 20개, 일꾼·보스 카드 고르기 — 10·20·30 보스는 잡고 40단계 망령 군주(항상 투명)에서 제한 시간 패배 (DEV_PLAN 3.2 r3-invisible)',
+    match: { seed: 3, mode: 'infinite', debug: true, decks: [NO_DETECT_DECK], levels: [allLv(NO_DETECT_DECK, 15)] },
+    bot: { endTick: 1200 + 45 * 1200, pickCard: 0, workers: 0, debugTowers: innerRing(['fortuna', 'archmage', 'dragoncaller', 'stormlord', 'fortuna']) },
+  },
+  {
+    name: 'r6-breakthrough',
+    note: '무한 모드 debug, 44단계까지 건너뛴 뒤 45단계 돌파 편대(보석 골렘 깨짐·고블린 떼) ~ 49단계: 진흙 주술사 + 화염 마법사 + 정찰병(감지 오라) + 레전드 (DEV_PLAN 3.2 r6-breakthrough)',
+    match: { seed: 6, mode: 'infinite', debug: true, levels: [allLv(data.decks.base, 15)] },
+    bot: {
+      // 틱 0~43에 44단계까지 건너뜀 → 45단계 = 틱 1243, 50단계(보스) = 틱 7243 → 그 직전까지
+      endTick: 43 + 6 * 1200,
+      skipStages: 44,
+      pickCard: 1,
+      workers: 3,
+      debugTowers: [
+        [0, 2, t('mudshaman')],
+        [8, 2, t('mudshaman')],
+        [0, 8, t('flamemage')],
+        [8, 8, t('flamemage')],
+        [4, 4, t('scout')],
+        [4, 6, t('scout')],
+        ...innerRing(['dragoncaller', 'archmage', 'warlord', 'fortuna']),
+      ],
+    },
   },
 ];
 
@@ -81,8 +126,8 @@ const files = readdirSync(DIR)
   .sort();
 
 describe('저장한 리플레이 (tests/replays)', () => {
-  it('3개 이상 있다', () => {
-    expect(files.length).toBeGreaterThanOrEqual(3);
+  it('5개 이상 있다', () => {
+    expect(files.length).toBeGreaterThanOrEqual(5);
   });
 
   for (const f of files) {
@@ -126,6 +171,56 @@ describe('저장한 리플레이 (tests/replays)', () => {
     expect(file.commands.some((c) => c.type === 'move')).toBe(true);
     expect(file.commands.some((c) => c.type === 'hold')).toBe(true);
     expect(file.commands.some((c) => c.type === 'mergeAll')).toBe(true);
+  });
+});
+
+describe('M4 리플레이', () => {
+  it('r3-invisible: 감지 없이 10·20·30 보스는 잡고 40단계 망령 군주에서 제한 시간 패배 (패배 단계 = 40)', () => {
+    const file = JSON.parse(readFileSync(join(DIR, 'r3-invisible.json'), 'utf8')) as ReplayFile;
+    const kills: string[] = [];
+    let warned = 0;
+    const r = playReplay(data, file, {
+      onStep: (m) => {
+        for (const e of m.world.drainEvents()) {
+          if (e.type === 'bossKill') kills.push(String(e.boss));
+          if (e.type === 'invisibleWarn') warned++;
+        }
+      },
+    });
+    expect(r.mismatch).toBeNull();
+    expect(r.match.state).toMatchObject({ phase: 'defeat', defeatReason: 'bossTime', stage: 40, bossId: 'wraithlord' });
+    expect(kills).toEqual(['batqueen', 'kingslime', 'ancientgolem']);
+    expect(warned).toBe(1);
+    expect(r.match.state.cardsPicked).toHaveLength(3);
+    // 판 위에 감지 타워가 한 번도 없었다
+    expect(r.match.towers().every((tw) => rules.towers.get(tw.tower)?.detect === 'none')).toBe(true);
+    const lord = r.match.mobs().find((x) => x.boss);
+    expect(lord?.hp).toBe(lord?.maxHp);
+  });
+
+  it('r6-breakthrough: 45단계 돌파 편대 (보석 골렘 5·고블린 36·박쥐 3) + 보석 골렘이 깨지고 정찰병이 투명 몹을 드러낸다', () => {
+    const file = JSON.parse(readFileSync(join(DIR, 'r6-breakthrough.json'), 'utf8')) as ReplayFile;
+    const seen = new Map<string, number>();
+    let formation = '';
+    let maxMobs = 0;
+    const spawned45 = new Map<string, number>();
+    const r = playReplay(data, file, {
+      onStep: (m) => {
+        maxMobs = Math.max(maxMobs, m.mobCount());
+        for (const e of m.world.drainEvents()) {
+          seen.set(e.type, (seen.get(e.type) ?? 0) + 1);
+          if (e.type === 'formationPreview') formation = String(e.id);
+          if (e.type === 'spawn' && m.state.stage === 45) spawned45.set(String(e.mob), (spawned45.get(String(e.mob)) ?? 0) + Number(e.count));
+        }
+      },
+    });
+    expect(r.mismatch).toBeNull();
+    expect(formation).toBe('breakthrough');
+    for (const type of ['formationPreview', 'formationStart', 'split', 'heal', 'evade']) expect(seen.get(type) ?? 0, type).toBeGreaterThan(0);
+    expect(r.match.defeated).toBe(false);
+    expect(r.match.state.stage).toBe(49);
+    expect(Object.fromEntries(spawned45)).toEqual({ gemgolem: 5, goblin: 36, bat: 3 });
+    expect(maxMobs).toBeGreaterThan(10);
   });
 });
 

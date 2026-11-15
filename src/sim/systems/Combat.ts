@@ -24,6 +24,9 @@
  *  3. 합 + 쏜 타워의 피해 나머지(Tower.remDmg, 0~99)를 100으로 나눈 몫이 실제 피해, 나머지는 타워에 다시 넣는다
  *     → 소수 공격력(6.5 → 6, 7, 6, 7 …)도, 방어로 깎인 소수 피해(4 vs 방어 1 → 평균 3.96)도 평균이 정확하다.
  *     쏜 타워가 이미 없으면(승급으로 사라짐) 나머지 없이 자른다.
+ *  - M4: 드러나지 않은 투명 몹은 감지(자신) 타워만 대상·형태 후보로 쓴다 (Targeting.candidatesFor). 날아오른 박쥐 여왕은
+ *    사거리 2칸 이하 타워가 못 친다 (날아가던 투사체도 헛발). 유령은 단일 공격(단일·근접·관통의 첫 대상·다중)을 30% 회피
+ *    ('evade' 사건, 전투 난수 — 회피가 있는 몹에게만 굴린다). 방패병 보호막이 피해를 먼저 받고, 광역(광역·근접 광역·연쇄·전체)은 ×2.
  *  - M3b: 맞고 살아남은 몹에게 공격한 타워 종류의 지속 피해(towers.json dot: 화상·독·출혈)와 특색 onHit(둔화·빙결·표식·약화·즉사)를
  *    건다 (Status, abilities). 공격 1회마다 특색 onAttack(광부 돈·도박꾼 주사위·광전사 스택). 타워의 지금 능력치에는 오라·레벨·
  *    자기 특색 보정(Aura.towerBonus)이 들어간다 — 오라는 틱마다 한 번 계산해 모든 타워가 같이 쓴다.
@@ -45,15 +48,16 @@ import type { MatchContext } from '../state';
 import { NO_MODS, effectiveStats, type EffectiveStats } from '../stats';
 import { abilityOf, abilityParams, envOf } from '../abilities';
 import { auraSources, computeAuras, towerBonus } from './Aura';
-import { chainFalloffBp, damageAgainst, damageCaps, rollCrit, rollHit, scaleHit, splitAtk, type RawHit } from './Damage';
+import { absorbShield, chainFalloffBp, damageAgainst, damageCaps, rollChanceBp, rollCrit, rollHit, scaleHit, splitAtk, type RawHit } from './Damage';
 import { isPaused } from './Move';
 import { aoeTargets, chainTargets, globalTargets, meleeAoeTargets, pierceTargets } from './Shapes';
 import { applyDot } from './Status';
 import { killMob } from './Kill';
-import { leaderRuleFor, pickTarget, targetCandidates, type LeaderRule, type TargetCandidate } from './Targeting';
+import { candidatesFor, leaderRuleFor, pickTarget, targetCandidates, type LeaderRule, type TargetCandidate } from './Targeting';
 
 export {
   NO_CAPS,
+  absorbShield,
   chainFalloffBp,
   damageAgainst,
   damageCaps,
@@ -83,11 +87,26 @@ export function applyHit(ctx: MatchContext, world: World, mob: Mob, hit: RawHit,
   const tower = src && isTower(src) ? src : null;
   const { dmg, rem } = splitAtk(d.total, tower ? tower.remDmg : 0);
   if (tower) tower.remDmg = rem;
-  mob.hp -= dmg;
+  // 보호막(방패병)이 먼저 받는다 — 광역이면 보호막에 ×2
+  const absorbed = mob.shield > 0 ? absorbShield(mob, dmg, hit.area === true ? shieldAreaMul(ctx, mob) : undefined) : 0;
+  mob.hp -= dmg - absorbed;
   const kill = mob.hp <= 0;
   // p·m·t = 종류별 피해 (× ATK_SCALE, 화면이 숫자 색을 고를 때 쓴다), damage = 실제 정수 피해, crit = 치명타 (숫자 크게),
-  // fx = 화면 연출 표시 (운석 등, 있을 때만)
-  world.emit('hit', { target: mob.id, source, damage: dmg, p: d.p, m: d.m, t: d.t, crit: hit.crit === true, x: at.x, y: at.y, kill, ...(hit.fx ? { fx: hit.fx } : {}) });
+  // fx = 화면 연출 표시 (운석 등, 있을 때만), shield = 보호막이 막은 양 (있을 때만)
+  world.emit('hit', {
+    target: mob.id,
+    source,
+    damage: dmg,
+    p: d.p,
+    m: d.m,
+    t: d.t,
+    crit: hit.crit === true,
+    x: at.x,
+    y: at.y,
+    kill,
+    ...(hit.fx ? { fx: hit.fx } : {}),
+    ...(absorbed > 0 ? { shield: absorbed } : {}),
+  });
   if (kill) {
     killMob(ctx, world, mob, at.x, at.y);
     return true;
@@ -111,13 +130,28 @@ export function applyOnHit(ctx: MatchContext, world: World, mob: Mob, hit: RawHi
   if (def?.onHit) def.onHit(envOf(ctx, world), mob, abilityParams(ctx, hit.owner ?? 0, def), hit, at);
 }
 
-/** 후보 하나에 피해 (후보의 체력·생존을 같이 고친다). */
-function hitCandidate(ctx: MatchContext, world: World, cand: TargetCandidate, hit: RawHit, source: number): void {
+/** 방패병 보호막의 광역 피해 배율 (bp, 데이터). */
+function shieldAreaMul(ctx: MatchContext, mob: Mob): number | undefined {
+  return ctx.rules.mobs.get(mob.mob)?.shield?.areaMulBp;
+}
+
+/**
+ * 후보 하나에 피해 (후보의 체력·생존을 같이 고친다).
+ * @param evadable 단일 공격(단일·근접·관통의 첫 대상·다중)이면 true → 회피가 있는 몹(유령 30%)은 전투 난수로 피할 수 있다
+ */
+function hitCandidate(ctx: MatchContext, world: World, cand: TargetCandidate, hit: RawHit, source: number, evadable = false): void {
   if (!cand.alive) return;
   const mob = world.entities.get(cand.id) as Mob | undefined;
   if (!mob) {
     cand.alive = false;
     return;
+  }
+  if (evadable) {
+    const evadeBp = ctx.rules.mobs.get(mob.mob)?.evadeBp ?? 0;
+    if (evadeBp > 0 && rollChanceBp(world.rng(STREAM_COMBAT), evadeBp)) {
+      world.emit('evade', { target: mob.id, source, x: cand.x, y: cand.y });
+      return;
+    }
   }
   if (applyHit(ctx, world, mob, hit, cand, source)) cand.alive = false;
   else {
@@ -206,15 +240,19 @@ function attackOnce(
   world.emit('attack', { tower: tower.id, target: primary.id, x: primary.x, y: primary.y, instant: stats.instant, shape });
   switch (shape) {
     case 'melee':
-      hitCandidate(ctx, world, primary, hit, tower.id);
+      hitCandidate(ctx, world, primary, hit, tower.id, true);
       break;
-    case 'melee_aoe':
-      for (const c of meleeAoeTargets(cands, tower.x, tower.y, stats.radius, primary)) hitCandidate(ctx, world, c, hit, tower.id);
+    case 'melee_aoe': {
+      const area = { ...hit, area: true };
+      for (const c of meleeAoeTargets(cands, tower.x, tower.y, stats.radius, primary)) hitCandidate(ctx, world, c, area, tower.id);
       world.emit('blast', { x: tower.x, y: tower.y, r: stats.radius, tower: tower.id });
       break;
-    case 'global':
-      for (const c of globalTargets(cands)) hitCandidate(ctx, world, c, hit, tower.id);
+    }
+    case 'global': {
+      const area = { ...hit, area: true };
+      for (const c of globalTargets(cands)) hitCandidate(ctx, world, c, area, tower.id);
       break;
+    }
     case 'multi': {
       // 서로 다른 대상 n마리: 우선순위대로 하나씩 고른다
       const chosen = new Set<number>([primary.id]);
@@ -238,40 +276,60 @@ function attackOnce(
 function landProjectile(ctx: MatchContext, world: World, p: Projectile, target: TargetCandidate, cands: readonly TargetCandidate[]): void {
   const hit = projectileHit(p);
   switch (p.shape) {
-    case 'aoe':
+    case 'aoe': {
       world.emit('blast', { x: target.x, y: target.y, r: p.radius, tower: p.source });
-      for (const c of aoeTargets(cands, target.x, target.y, p.radius)) hitCandidate(ctx, world, c, hit, p.source);
+      const area = { ...hit, area: true };
+      for (const c of aoeTargets(cands, target.x, target.y, p.radius)) hitCandidate(ctx, world, c, area, p.source);
       break;
+    }
     case 'pierce': {
       const reach = isqrt(dist2(p.ox, p.oy, target.x, target.y));
       const length = reach > p.range ? reach : p.range;
       const line = pierceTargets(cands, p.ox, p.oy, target.x, target.y, length, ctx.rules.pierceHalfWidth, p.count);
-      for (const c of line) hitCandidate(ctx, world, c, hit, p.source);
+      // 관통의 첫 대상만 회피할 수 있다 (ENEMIES.md 6장)
+      line.forEach((c, k) => hitCandidate(ctx, world, c, hit, p.source, k === 0));
       break;
     }
     case 'chain': {
       const hops = chainTargets(cands, target, p.count, ctx.rules.chainRange);
+      const area = { ...hit, area: true };
       hops.forEach((c, k) => {
         if (k > 0) {
           const prev = hops[k - 1] as TargetCandidate;
           world.emit('chain', { x1: prev.x, y1: prev.y, x2: c.x, y2: c.y, tower: p.source });
         }
-        hitCandidate(ctx, world, c, k === 0 ? hit : scaleHit(hit, chainFalloffBp(ctx.rules.chainKeepBp, k)), p.source);
+        hitCandidate(ctx, world, c, k === 0 ? area : scaleHit(area, chainFalloffBp(ctx.rules.chainKeepBp, k)), p.source);
       });
       break;
     }
     default:
-      hitCandidate(ctx, world, target, hit, p.source);
+      // 단일·다중: 단일 공격 → 회피 가능
+      hitCandidate(ctx, world, target, hit, p.source, true);
   }
+}
+
+/** 이 투사체(쏜 타워 종류·사거리)가 후보 c를 아직 칠 수 있는가: 드러나지 않았으면 감지(자신)만, 날아올랐으면 사거리가 막는 값보다 클 때만. */
+function projectileCanHit(ctx: MatchContext, p: Projectile, c: TargetCandidate): boolean {
+  if (c.hidden && ctx.rules.towers.get(p.tower)?.detect !== 'self') return false;
+  if (c.fly !== undefined && c.fly > 0 && p.range <= c.fly) return false;
+  return true;
 }
 
 export function createCombatSystem(ctx: MatchContext): System {
   return (world) => {
     if (ctx.state.phase !== 'playing') return;
-    const cands = targetCandidates(world, ctx.map.path);
+    // 모든 몹 (드러나지 않은 투명 몹 포함) → 드러난 몹 목록. 거를 것이 없으면 같은 배열
+    const all = targetCandidates(world, ctx.map.path, true);
+    let anyHidden = false;
+    let anyFly = false;
+    for (const c of all) {
+      if (c.hidden) anyHidden = true;
+      if (c.fly) anyFly = true;
+    }
+    const visible = anyHidden ? all.filter((c) => !c.hidden) : all;
     const leaderRule = leaderRuleFor(ctx.state.mode);
     const byId = new Map<number, TargetCandidate>();
-    for (const c of cands) byId.set(c.id, c);
+    for (const c of all) byId.set(c.id, c);
 
     // 오라는 틱마다 한 번 (위치로 계산 → 이동·교환이 바로 반영)
     const sources = auraSources(ctx, world);
@@ -285,6 +343,7 @@ export function createCombatSystem(ctx: MatchContext): System {
       const tower = e;
       const eff = effectiveStats(ctx.rules, stats, ctx.state.mods[tower.owner] ?? NO_MODS, towerBonus(ctx, tower, auras));
       const paused = isPaused(tower, world.tick);
+      const cands = candidatesFor(all, visible, stats.detect === 'self', stats.range, anyFly);
       const { acc } = chargeAttacks(tower.atkAcc, eff.apsMilli, () =>
         paused ? false : attackOnce(ctx, world, tower, stats, eff, cands, leaderRule),
       );
@@ -295,7 +354,7 @@ export function createCombatSystem(ctx: MatchContext): System {
     for (const e of world.entities.list()) {
       if (!isProjectile(e)) continue;
       const target = byId.get(e.target);
-      if (!target || !target.alive) {
+      if (!target || !target.alive || !projectileCanHit(ctx, e, target)) {
         world.entities.remove(e.id);
         world.emit('miss', { id: e.id, x: e.x, y: e.y });
         continue;
@@ -305,7 +364,8 @@ export function createCombatSystem(ctx: MatchContext): System {
       e.y = next.y;
       if (!next.arrived) continue;
       world.entities.remove(e.id);
-      landProjectile(ctx, world, e, target, cands);
+      const selfDetect = ctx.rules.towers.get(e.tower)?.detect === 'self';
+      landProjectile(ctx, world, e, target, candidatesFor(all, visible, selfDetect, e.range, anyFly));
     }
   };
 }

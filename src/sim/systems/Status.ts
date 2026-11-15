@@ -21,16 +21,19 @@
  * - 걸린 틱 T부터 효과가 시작되고(같은 틱의 다음 공격부터 약화·표식이 적용) 이동에는 다음 틱부터: 지속 d틱 = 이동 T+1 ~ T+d틱 (until = T + 1 + d).
  * - 지속 피해: 틱마다 걸린 중첩의 초당 피해를 누적하고, dotIntervalTicks(0.5초)마다 고정 피해로 넣는다 (약화가 곱해짐, 방어 무시, 치명타 없음).
  *   몹마다 나머지를 이어 가서 소수 피해도 평균이 정확하다. 지속 피해로 죽어도 처치 보상은 같다.
- * - 드러나지 않은 투명 몹에게는 상태 이상이 걸리지 않는다 (GDD 5.7, 대상 후보에 없음). 드러남은 M4.
+ * - 드러나지 않은 투명 몹에게는 상태 이상이 걸리지 않는다 (GDD 5.7, 대상 후보에 없음). 이미 걸린 지속 피해도 드러나지 않은 동안은
+ *   들어가지 않는다 (M4-4 '모든 피해 무효': 그 간격의 누적분은 버리고, 중첩의 남은 시간은 그대로 흐른다). 둔화·기절처럼 드러나 있을 때
+ *   걸린 상태는 남은 시간 동안 그대로.
+ * - 지속 피해도 방패병 보호막이 먼저 받는다 (광역이 아니라 1배, M4-3).
  * 수치(최대 70%·보스 절반·30%·면역 1초·빙결 +10%·간격)는 game.json status (rules.status).
  */
 import type { System, World } from '../World';
 import { TICK_HZ } from '../World';
 import { BP_ONE, mulBp } from '../Fixed';
-import { isMob, type Mob, type StatusEntry } from '../entities/Mob';
+import { isMob, isRevealedAt, type Mob, type StatusEntry } from '../entities/Mob';
 import type { StatusRules } from '../rules';
 import type { MatchContext } from '../state';
-import { damageAgainst, damageCaps, splitAtk } from './Damage';
+import { absorbShield, damageAgainst, damageCaps, splitAtk } from './Damage';
 import { killMob } from './Kill';
 import { positionAt } from '../map';
 
@@ -280,7 +283,8 @@ export function dealDotDamage(ctx: MatchContext, world: World, mob: Mob, dmgC: n
   const { dmg, rem } = splitAtk(d.total, mob.dotRem);
   mob.dotRem = rem;
   if (dmg <= 0) return false;
-  mob.hp -= dmg;
+  const absorbed = mob.shield > 0 ? absorbShield(mob, dmg) : 0;
+  mob.hp -= dmg - absorbed;
   const at = positionAt(ctx.map.path, mob.progress);
   const kill = mob.hp <= 0;
   world.emit('hit', { target: mob.id, source: 0, damage: dmg, p: 0, m: 0, t: d.t, crit: false, x: at.x, y: at.y, kill, dot: true });
@@ -314,6 +318,8 @@ export function createStatusSystem(ctx: MatchContext): System {
       const dmgC = Math.floor(e.dotAcc / TICK_HZ);
       e.dotAcc -= dmgC * TICK_HZ;
       if (e.dots.length === 0) e.dotAcc = 0; // 다 풀렸으면 1 미만 찌꺼기는 버린다
+      // 드러나지 않은 투명 몹: 지속 피해 무효 (이번 간격 몫은 버린다, M4-4)
+      if (!isRevealedAt(e, tick)) continue;
       dealDotDamage(ctx, world, e, dmgC);
     }
   };

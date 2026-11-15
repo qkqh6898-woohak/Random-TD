@@ -5,7 +5,8 @@
  * - 명령은 `tick`에 실행된다. 같은 틱 안에서는 (플레이어 번호, 명령 번호 seq) 순서 (MULTIPLAYER.md 4.1).
  * - seq는 플레이어마다 따로 매긴다. 비워 두면 큐가 다음 번호를 붙인다.
  *
- * 마일스톤마다 명령 종류가 늘어난다 (M2 소환, M3 승급·모두 승급·이동·들어 올리기·개발용 타워 놓기, M5 강화·도박·도전 …).
+ * 마일스톤마다 명령 종류가 늘어난다 (M2 소환, M3 승급·모두 승급·이동·들어 올리기·개발용 타워 놓기, M4 일꾼·카드·승급의 축복,
+ * M5 강화·도박·도전 …).
  * 새 명령은 `CommandPayload` 합집합에 추가하고 `COMMAND_TYPES`·`PAYLOAD_FIELDS`·`validatePayload`, World의 처리기를 함께 갱신한다.
  * - 큐에 들어가는 명령은 허용한 필드만 골라 새로 만든 **얼린(frozen) 객체**다. 호출자가 넘긴 객체나 돌려받은 객체를
  *   고쳐도 예약·실행·기록(executed)이 바뀌지 않는다. 모르는 필드는 거절한다 (네트워크로 받은 명령이 아무 내용이나 싣지 못하게).
@@ -37,11 +38,30 @@ export type CommandPayload =
    * 개발용 치트 (?debug=1, M3b): 빈 배치 칸 (x, y)에 towers.json 순서 t번째 타워를 돈 없이 바로 놓는다 (특색 확인·E2E·리플레이용).
    * debug 판에서만 듣고, 쓰면 판 상태에 표시된다.
    */
-  | { type: 'debugTower'; x: number; y: number; t: number };
+  | { type: 'debugTower'; x: number; y: number; t: number }
+  /** 일꾼 고용 (M4-1, GDD 3장): 300원에 일꾼 1명 (최대 10명). 실행 때 다시 검사한다 */
+  | { type: 'hireWorker' }
+  /** 보스 카드 고르기 (M4-7, GDD 3.1): 가장 먼저 받은 카드 묶음에서 i번째 (0부터) */
+  | { type: 'pickCard'; i: number }
+  /** 승급의 축복 (M4-7): 결과 타워 id를 다른 결과로 바꿀지 (pick 1 = 바꿈, 0 = 그대로) */
+  | { type: 'pickMerge'; id: number; pick: number };
 
 export type CommandType = CommandPayload['type'];
 
-export const COMMAND_TYPES: readonly CommandType[] = ['noop', 'debugSkipStage', 'summon', 'debugAddGold', 'merge', 'mergeAll', 'move', 'hold', 'debugTower'];
+export const COMMAND_TYPES: readonly CommandType[] = [
+  'noop',
+  'debugSkipStage',
+  'summon',
+  'debugAddGold',
+  'merge',
+  'mergeAll',
+  'move',
+  'hold',
+  'debugTower',
+  'hireWorker',
+  'pickCard',
+  'pickMerge',
+];
 
 /** 칸 좌표 상한 (맵은 이보다 훨씬 작다. 네트워크로 받은 터무니없는 값을 거른다) */
 export const MAX_TILE_COORD = 255;
@@ -59,7 +79,13 @@ export const PAYLOAD_FIELDS: { readonly [K in CommandType]: readonly string[] } 
   move: ['fx', 'fy', 'tx', 'ty'],
   hold: ['x', 'y', 'on'],
   debugTower: ['x', 'y', 't'],
+  hireWorker: [],
+  pickCard: ['i'],
+  pickMerge: ['id', 'pick'],
 };
+
+/** 카드 번호 상한 (한 번에 보여주는 카드는 6장 이하) */
+export const MAX_CARD_INDEX = 9;
 
 /** 모든 명령에 공통인 필드. */
 const ENVELOPE_FIELDS: readonly string[] = ['type', 'tick', 'player', 'seq'];
@@ -109,6 +135,16 @@ export function validatePayload(cmd: unknown): string | null {
   switch (type as CommandType) {
     case 'noop':
     case 'debugSkipStage':
+    case 'hireWorker':
+      return null;
+    case 'pickCard': {
+      const v = c.i;
+      if (!isNonNegInt(v) || v > MAX_CARD_INDEX) return `i가 0~${MAX_CARD_INDEX} 정수가 아님: ${String(v)} (pickCard 명령)`;
+      return null;
+    }
+    case 'pickMerge':
+      if (!isNonNegInt(c.id) || c.id < 1) return `id가 1 이상 정수가 아님: ${String(c.id)} (pickMerge 명령)`;
+      if (c.pick !== 0 && c.pick !== 1) return `pick이 0 또는 1이 아님: ${String(c.pick)} (pickMerge 명령)`;
       return null;
     case 'summon':
     case 'merge':

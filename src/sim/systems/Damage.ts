@@ -47,6 +47,11 @@ export interface RawHit {
    * (같은 틱에 착탄한 같은 타워의 일반 투사체 피해와 구별 — 검토 반영). 규칙에는 쓰지 않는다.
    */
   fx?: string;
+  /**
+   * 광역 피해인가 (광역·근접 광역·연쇄·전체, M4-3): 방패병 보호막이 광역 피해를 2배로 받는다 (ENEMIES.md 6장).
+   * Combat이 형태대로 붙인다. 단일·근접·관통·다중·지속 피해·능력 피해는 아님.
+   */
+  area?: boolean;
 }
 
 /** 몹에게 들어가는 피해 (× ATK_SCALE 정수): 종류별 + 합. */
@@ -68,8 +73,8 @@ export interface DamageCaps {
 /** 한도 없음 (단위 테스트용 기본값). 판에서는 rules의 한도를 넘긴다. */
 export const NO_CAPS: DamageCaps = Object.freeze({ penMaxBp: BP_ONE, vulnMaxBp: Number.MAX_SAFE_INTEGER });
 
-/** 피해 공식이 읽는 몹 값. 보스·약화·표식은 생략하면 아님·0. */
-export type DamageTarget = Pick<Mob, 'armor' | 'magicRes'> & Partial<Pick<Mob, 'boss' | 'vulnBp' | 'markBp'>>;
+/** 피해 공식이 읽는 몹 값. 보스·약화·표식·피해 감소는 생략하면 아님·0. */
+export type DamageTarget = Pick<Mob, 'armor' | 'magicRes'> & Partial<Pick<Mob, 'boss' | 'vulnBp' | 'markBp' | 'dmgCutBp'>>;
 
 /** 방어 감소율 계산에 쓰는 '100' (A ÷ (A + 100))을 bp 단위로 */
 const RESIST_BASE_BP = 100 * BP_ONE;
@@ -160,10 +165,14 @@ export function damageAgainst(hit: RawHit, mob: DamageTarget, caps: DamageCaps =
   const vulnRaw = mob.vulnBp ?? 0;
   const vuln = vulnRaw < 0 ? 0 : vulnRaw > caps.vulnMaxBp ? caps.vulnMaxBp : vulnRaw;
   const boss = mob.boss === true ? (hit.bossMulBp ?? BP_ONE) : BP_ONE;
+  // 받는 피해 감소 (혼돈의 용 66%·33% −50%, M4-5): 모든 종류에 곱한다
+  const cutRaw = mob.dmgCutBp ?? 0;
+  const keep = cutRaw <= 0 ? BP_ONE : cutRaw >= BP_ONE ? 0 : BP_ONE - cutRaw;
   const amp = (x: number): number => {
     if (x <= 0) return 0;
     let v = vuln > 0 ? mulBp(x, BP_ONE + vuln) : x;
     if (boss !== BP_ONE) v = mulBp(v, boss);
+    if (keep !== BP_ONE) v = mulBp(v, keep);
     return v;
   };
   const mark = mob.markBp ?? 0;
@@ -171,6 +180,33 @@ export function damageAgainst(hit: RawHit, mob: DamageTarget, caps: DamageCaps =
   const m = reduceDamage(amp(hit.m), mob.magicRes, capPen((hit.magicPenBp ?? 0) + mark, caps.penMaxBp), hit.flatMagicPen ?? 0);
   const t = amp(hit.t);
   return { p, m, t, total: p + m + t };
+}
+
+/** value × 10000 ÷ bpValue 내림 (bpValue > 0). 큰 값도 2^53을 넘지 않게 몫·나머지로. */
+export function divBp(value: number, bpValue: number): number {
+  const q = Math.floor(value / bpValue);
+  const r = value - q * bpValue;
+  return q * BP_ONE + Math.floor((r * BP_ONE) / bpValue);
+}
+
+/**
+ * 보호막 (방패병, M4-3): 정수 피해 dmg 중 보호막이 막은 양을 돌려주고 보호막을 깎는다 (체력에는 dmg − 막은 양).
+ * 광역 피해는 보호막에 areaMulBp배(×2)로 들어간다 → 보호막 100에 광역 30 = 보호막 −60, 광역 80 = 보호막 0 + 체력 −30.
+ * 보호막이 없으면 0.
+ */
+export function absorbShield(mob: Pick<Mob, 'shield'>, dmg: number, areaMulBp = BP_ONE): number {
+  if (mob.shield <= 0 || dmg <= 0) return 0;
+  const mul = areaMulBp > 0 ? areaMulBp : BP_ONE;
+  const toShield = mul === BP_ONE ? dmg : mulBp(dmg, mul);
+  if (toShield <= mob.shield) {
+    mob.shield -= toShield;
+    return dmg;
+  }
+  // 넘친 만큼(보호막 단위)을 피해 단위로 되돌려 체력으로
+  const over = toShield - mob.shield;
+  mob.shield = 0;
+  const back = mul === BP_ONE ? over : divBp(over, mul);
+  return dmg - back < 0 ? 0 : dmg - back;
 }
 
 /** 판 규칙의 피해 한도. */

@@ -13,14 +13,18 @@
  * - 실패하면 상태·난수를 바꾸지 않고 `mergeFail` 사건 { player, x, y, reason }.
  * - 성공하면 승급마다 `merge` 사건 { player, id(새 타워), from(터치한 타워), fromTower, tower, grade, god, double(2등급 상승), x, y, removed("x,y;x,y") }.
  * - 행운의 여신(M3-9)이 판 위에 있으면 2등급 상승 판정 (Deck.rollMerge ②). 확률은 승급하기 전 판 위 타워로 정한다.
+ * - 카드 (M4-7): '신의 눈길' = 신 확률 ×3. '승급의 축복' = 남은 횟수만큼 승급마다 결과 2개 중 선택 — 결과 타워는 바로 놓이고
+ *   같은 등급의 다른 타워 하나(alt, 같은 흐름에서 결과를 뺀 덱 등급 중 균등)를 고를 수 있는 선택(state.mergePicks)이 생긴다
+ *   ('mergeChoice' 사건). `pickMerge {id, pick}` 명령: pick 1 = 그 자리 타워를 alt로 바꿈(새 판 내 스택), 0 = 그대로. 신 결과면 선택이 없다
+ *   (축복도 쓰지 않음). 결과 타워가 다시 승급 재료로 사라지면 그 선택도 사라진다.
  * 승급 개수(3)는 game.json merge.count.
  */
 import type { World } from '../World';
 import { streamSummon } from '../World';
-import { isTower, type Tower } from '../entities/Tower';
-import { canMergeGrade, rollMerge } from '../Deck';
+import { ATTACK_COST, isTower, type Tower } from '../entities/Tower';
+import { canMergeGrade, isDeckGrade, rollMerge } from '../Deck';
 import type { MatchContext } from '../state';
-import { placeTower } from './Summon';
+import { godChanceFor, placeTower } from './Summon';
 import { ownerBonus } from '../abilities';
 
 /** 승급 실패 이유: 판이 끝남 / 그 칸에 타워가 없음 / 남의 타워 / 승급할 수 없는 등급(레전드·신·히든) / 같은 종류가 모자람 */
@@ -99,11 +103,27 @@ function mergeOnce(ctx: MatchContext, world: World, player: number, anchor: Towe
   const consumed = pickConsumed(group, anchor, ctx.rules.mergeCount - 1);
   const deck = ctx.decks[player] ?? ctx.rules.baseDeck;
   const doubleBp = ownerBonus(ctx, world, player, (def, p) => def.mergeDoubleBp?.(p));
-  const roll = rollMerge(world.rng(streamSummon(player)), ctx.rules, deck, stats.grade, doubleBp);
+  const rng = world.rng(streamSummon(player));
+  const roll = rollMerge(rng, ctx.rules, deck, stats.grade, doubleBp, godChanceFor(ctx, player));
   world.entities.remove(anchor.id);
   for (const t of consumed) world.entities.remove(t.id);
+  // 재료로 사라진 타워에 걸려 있던 '결과 2개 중 선택'은 지운다
+  const gone = new Set<number>([anchor.id, ...consumed.map((t) => t.id)]);
+  if (ctx.state.mergePicks.length > 0) ctx.state.mergePicks = ctx.state.mergePicks.filter((m) => !gone.has(m.id));
   const result = placeTower(world, roll.tower, player, anchor.tx, anchor.ty);
   ctx.state.merges += 1;
+  // 카드 '승급의 축복': 같은 등급의 다른 결과 하나를 고를 수 있게
+  const perks = ctx.state.perks[player];
+  const resultGrade = ctx.rules.towers.get(roll.tower)?.grade;
+  if (perks && perks.mergeChoices > 0 && !roll.god && resultGrade && isDeckGrade(resultGrade)) {
+    const pool = deck[resultGrade].filter((id) => id !== roll.tower);
+    if (pool.length > 0) {
+      const alt = rng.pick(pool);
+      perks.mergeChoices -= 1;
+      ctx.state.mergePicks.push({ player, id: result.id, alt });
+      world.emit('mergeChoice', { player, id: result.id, tower: roll.tower, alt, x: anchor.tx, y: anchor.ty });
+    }
+  }
   const grade = ctx.rules.towers.get(roll.tower)?.grade ?? '';
   world.emit('merge', {
     player,
@@ -152,4 +172,36 @@ export function mergeAll(ctx: MatchContext, world: World, player: number, x: num
     out.push(mergeOnce(ctx, world, player, group[0] as Tower, group));
   }
   return out;
+}
+
+/** 승급의 축복 고르기 실패 이유: 판이 끝남 / 그 선택이 없음 / 타워가 없음 */
+export type MergePickFail = 'phase' | 'none' | 'gone';
+
+/**
+ * pickMerge 명령 (카드 '승급의 축복'): 결과 타워 id의 선택을 정한다. pick 1 = alt로 바꿈 (같은 엔티티·같은 칸, 판 내 스택·타이머 새로),
+ * pick 0 = 처음 결과 그대로. 성공하면 true ('mergePicked' 사건), 실패하면 false ('mergePickFail').
+ */
+export function pickMerge(ctx: MatchContext, world: World, player: number, id: number, pick: number): boolean {
+  const { state } = ctx;
+  const fail = (reason: MergePickFail): false => {
+    world.emit('mergePickFail', { player, id, reason });
+    return false;
+  };
+  if (state.phase !== 'playing') return fail('phase');
+  const i = state.mergePicks.findIndex((m) => m.player === player && m.id === id);
+  if (i < 0) return fail('none');
+  const choice = state.mergePicks[i] as (typeof state.mergePicks)[number];
+  state.mergePicks.splice(i, 1);
+  const e = world.entities.get(id);
+  if (!e || !isTower(e) || e.owner !== player) return fail('gone');
+  if (pick === 1) {
+    e.tower = choice.alt;
+    e.atkAcc = ATTACK_COST;
+    e.remDmg = 0;
+    e.abilityAt = -1;
+    e.stacks = 0;
+    e.stackTarget = 0;
+  }
+  world.emit('mergePicked', { player, id, tower: e.tower, x: e.tx, y: e.ty, changed: pick === 1 });
+  return true;
 }

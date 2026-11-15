@@ -188,3 +188,25 @@ describe('명령 객체 보호', () => {
     expect(r.ok && Object.keys(r.command).sort()).toEqual(['player', 'seq', 'tick', 'type']);
   });
 });
+
+describe('M4 명령: 일꾼·카드·승급의 축복', () => {
+  it('hireWorker는 내용 필드가 없다 (모르는 필드는 거절)', () => {
+    expect(validatePayload({ type: 'hireWorker' })).toBeNull();
+    expect(validatePayload({ type: 'hireWorker', n: 2 })).toContain('모르는 필드');
+  });
+
+  it('pickCard i는 0~9 정수', () => {
+    expect(validatePayload({ type: 'pickCard', i: 0 })).toBeNull();
+    expect(validatePayload({ type: 'pickCard', i: 2 })).toBeNull();
+    expect(validatePayload({ type: 'pickCard', i: -1 })).toContain('i');
+    expect(validatePayload({ type: 'pickCard', i: 10 })).toContain('i');
+    expect(validatePayload({ type: 'pickCard', i: 1.5 })).toContain('i');
+    expect(validatePayload({ type: 'pickCard' })).toContain('i');
+  });
+
+  it('pickMerge id는 1 이상 정수, pick은 0 또는 1', () => {
+    expect(validatePayload({ type: 'pickMerge', id: 5, pick: 1 })).toBeNull();
+    expect(validatePayload({ type: 'pickMerge', id: 0, pick: 1 })).toContain('id');
+    expect(validatePayload({ type: 'pickMerge', id: 5, pick: 2 })).toContain('pick');
+  });
+});

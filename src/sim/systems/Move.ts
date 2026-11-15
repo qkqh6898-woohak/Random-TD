@@ -79,6 +79,6 @@ export function holdTower(ctx: MatchContext, world: World, player: number, x: nu
 }
 
 /** 지금 공격을 쉬는 중인가 (끄는 중, 또는 이동·교환 직후). */
-export function isPaused(tower: Pick<Tower, 'pauseUntil' | 'held'>, tick: number): boolean {
-  return tower.held || tick < tower.pauseUntil;
+export function isPaused(tower: Pick<Tower, 'pauseUntil' | 'held'> & Partial<Pick<Tower, 'stunUntil'>>, tick: number): boolean {
+  return tower.held || tick < tower.pauseUntil || tick < (tower.stunUntil ?? 0);
 }

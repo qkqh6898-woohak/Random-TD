@@ -12,6 +12,7 @@ import {
   type RawGameData,
 } from '../../src/data/load';
 import { s, validate, type Issue } from '../../src/data/schema';
+import { createMatch } from '../../src/sim/match';
 
 /** 원본 JSON을 깊은 복사해서 일부만 망가뜨리기 위한 도우미. */
 function rawCopy(): RawGameData {
@@ -369,5 +370,70 @@ describe('M2 데이터: 덱·소환·전투', () => {
     const raw2 = rawCopy();
     delete (gameOf(raw2) as Json).summon;
     expect(() => buildGameData(raw2)).toThrow(/summon/);
+  });
+});
+
+describe('M4 데이터: 몹 특성·보스·편대·카드', () => {
+  const enemiesOf = (raw: RawGameData): Json => raw.enemies as Json;
+  const gameOf = (raw: RawGameData): Json => raw.game as Json;
+  const cardsOf = (raw: RawGameData): Json[] => (raw.cards as Json).cards as Json[];
+
+  it('cards.json도 함께 읽는다 (12장, 3장 묶음)', () => {
+    const data = loadGameData();
+    expect(data.cards.cards).toHaveLength(12);
+    expect(data.cards.offerSize).toBe(3);
+  });
+
+  it('깨짐·보스 소환 몹은 있는 몹이어야 한다', () => {
+    const raw = rawCopy();
+    const mobs = enemiesOf(raw).mobs as Json[];
+    (mobs.find((m) => m.id === 'gemgolem')!.splitInto as Json).id = 'pebble';
+    const bosses = enemiesOf(raw).bosses as Json[];
+    (bosses.find((b) => b.id === 'batqueen')!.params as Json).summonMob = 'dragon';
+    const issues = issuesOf(() => buildGameData(raw));
+    expect(issues.some((i) => /mobs\[\d+\]\.splitInto\.id/.test(i.path) && i.message.includes('pebble'))).toBe(true);
+    expect(issues.some((i) => /bosses\[\d+\]\.params\.summonMob/.test(i.path))).toBe(true);
+  });
+
+  it('보스 순환에 모르는 id, 보스 제한 시간이 단계보다 길면 잡는다', () => {
+    const raw = rawCopy();
+    (enemiesOf(raw).bossCycle as Json).captains = ['batqueen', 'nobody'];
+    (gameOf(raw).boss as Json).timeLimitSeconds = 61;
+    const issues = issuesOf(() => buildGameData(raw));
+    expect(issues.some((i) => i.path === 'bossCycle.captains[1]')).toBe(true);
+    expect(issues.some((i) => i.path === 'boss.timeLimitSeconds')).toBe(true);
+  });
+
+  it('편대 예고 글자(banner·hint)는 필수', () => {
+    const raw = rawCopy();
+    delete ((enemiesOf(raw).formations as Json[])[0] as Json).hint;
+    expect(issuesOf(() => buildGameData(raw)).some((i) => i.path === 'formations[0].hint')).toBe(true);
+  });
+
+  it('카드: 효과 종류마다 필요한 수치 (없는 값·정수 아님·소환 최소 비용)', () => {
+    const raw = rawCopy();
+    const cards = cardsOf(raw);
+    delete (cards[1]!.effect as Json).value; // 긴급 자금
+    (cards[2]!.effect as Json).value = 2.5; // 행운의 소환 횟수
+    delete (cards[5]!.effect as Json).min; // 소환 할인
+    (cards[0]!.effect as Json).type = 'nuke';
+    const issues = issuesOf(() => buildGameData(raw));
+    expect(issues.some((i) => i.file === 'cards.json' && i.path === 'cards[0].effect.type')).toBe(true);
+    const raw2 = rawCopy();
+    const cards2 = cardsOf(raw2);
+    delete (cards2[1]!.effect as Json).value;
+    (cards2[2]!.effect as Json).value = 2.5;
+    delete (cards2[5]!.effect as Json).min;
+    const issues2 = issuesOf(() => buildGameData(raw2));
+    expect(issues2.some((i) => i.path === 'cards[1].effect.value')).toBe(true);
+    expect(issues2.some((i) => i.path === 'cards[2].effect.value' && i.message.includes('정수'))).toBe(true);
+    expect(issues2.some((i) => i.path === 'cards[5].effect.min')).toBe(true);
+  });
+
+  it('보스 패턴 수치가 잘못되면 판을 만들 때 경로가 든 에러', () => {
+    const raw = rawCopy();
+    ((enemiesOf(raw).bosses as Json[]).find((b) => b.id === 'chaosdragon')!.params as Json).stunSeconds = 0;
+    const data = buildGameData(raw);
+    expect(() => createMatch(data, { seed: 1, mode: 'infinite' })).toThrow(/enemies\.json bosses\.chaosdragon\.params\.stunSeconds/);
   });
 });

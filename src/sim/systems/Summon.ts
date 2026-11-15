@@ -9,10 +9,14 @@
  *   난수는 **플레이어별 소환 흐름**(`p{n}.summon`)만 쓴다 → 한 사람의 소환이 다른 사람·몹 등장 순서에 영향을 주지 않는다.
  *   신 판정은 확률과 상관없이 매번 난수 1개를 쓴다 (난수 사용 횟수가 데이터 확률에 따라 달라지지 않게).
  * - 신 타워는 지금 일반 타워처럼 공격만 한다 (전용 능력·강림 연출은 뒤 마일스톤).
+ * - 카드 (M4-7): 소환 비용 = 100 − '소환 할인' 합 (최소 50원) · '신의 눈길' = 신 확률 ×3 · '행운의 소환' = 남은 횟수만큼 ②에서 무조건 레어
+ *   (난수는 같은 순서: 신 1개 → 레어 고르기 1개) · '쌍둥이 소환' = 시간 안에 소환하면 같은 타워를 가장 가까운 빈 배치 칸에 하나 더
+ *   (빈 칸이 있을 때만, 돈은 한 번, 소환 횟수도 한 번).
  */
 import type { Rng } from '../Rng';
 import type { World } from '../World';
 import { streamSummon } from '../World';
+import { BP_ONE, mulBp } from '../Fixed';
 import { ATTACK_COST, TOWER_KIND, isTower, type Tower } from '../entities/Tower';
 import { isBuildable, tileCenter } from '../map';
 import type { Deck, MatchRules } from '../rules';
@@ -46,8 +50,23 @@ export function summonCheck(ctx: MatchContext, world: World, x: number, y: numbe
     if (e.tx === x && e.ty === y) occupied = true;
   }
   if (occupied) return count >= ctx.map.buildable.length ? 'full' : 'occupied';
-  if (!canAfford(ctx.state, ctx.rules.summonCost)) return 'gold';
+  if (!canAfford(ctx.state, summonCost(ctx))) return 'gold';
   return null;
+}
+
+/** 지금 소환 비용 (원): 기본 100 − 카드 '소환 할인' 합, 카드의 최소 비용(50) 아래로는 내려가지 않는다 (기본이 더 싸면 기본). */
+export function summonCost(ctx: Pick<MatchContext, 'rules' | 'state'>): number {
+  const base = ctx.rules.summonCost;
+  if (ctx.state.summonDiscount <= 0) return base;
+  const min = ctx.rules.summonCostMin < base ? ctx.rules.summonCostMin : base;
+  const v = base - ctx.state.summonDiscount;
+  return v < min ? min : v;
+}
+
+/** 그 플레이어의 신 타워 확률 (bp): 기본 × 카드 '신의 눈길' 배율. */
+export function godChanceFor(ctx: Pick<MatchContext, 'rules' | 'state'>, player: number): number {
+  const mul = ctx.state.perks[player]?.godMulBp ?? BP_ONE;
+  return mul === BP_ONE ? ctx.rules.godChanceBp : mulBp(ctx.rules.godChanceBp, mul);
 }
 
 /** 소환 판정 결과. */
@@ -61,12 +80,14 @@ export interface SummonRoll {
 /**
  * 소환할 타워 고르기 (판정 순서는 파일 머리말). 덱 노말이 비어 있으면 에러.
  * @param rareBp 레어 직행 확률 (bp, 행운의 여신 등 — 0이면 ②에서 난수를 쓰지 않음)
+ * @param opts.forceRare 카드 '행운의 소환': ②에서 확률 판정 없이 레어 / opts.godChanceBp 신 확률 (기본 데이터 값)
  */
-export function rollSummon(rng: Rng, rules: MatchRules, deck: Deck, rareBp = 0): SummonRoll {
+export function rollSummon(rng: Rng, rules: MatchRules, deck: Deck, rareBp = 0, opts: { forceRare?: boolean; godChanceBp?: number } = {}): SummonRoll {
   // ① 신 타워: 매번 난수 1개 (확률이 0이어도 같은 수를 쓴다)
-  const god = rng.chanceBp(rules.godChanceBp);
+  const god = rng.chanceBp(opts.godChanceBp ?? rules.godChanceBp);
   if (god && rules.godTowers.length > 0) return { tower: rng.pick(rules.godTowers), god: true, rare: false };
-  // ② 레어 직행: 덱 레어 5종 균등
+  // ② 레어 직행: 덱 레어 5종 균등 (카드 '행운의 소환'이면 확률 판정 없이)
+  if (opts.forceRare && deck.rare.length > 0) return { tower: rng.pick(deck.rare), god: false, rare: true };
   if (rareBp > 0 && deck.rare.length > 0 && rollChanceBp(rng, rareBp)) return { tower: rng.pick(deck.rare), god: false, rare: true };
   // ③ 덱 노말 5종 균등
   return { tower: rng.pick(deck.normal), god: false, rare: false };
@@ -97,7 +118,25 @@ export function placeTower(world: World, towerId: string, owner: number, tx: num
     abilityAt: -1,
     stacks: 0,
     stackTarget: 0,
+    stunUntil: 0,
   } satisfies Omit<Tower, 'id'>) as Tower;
+}
+
+/** (x, y)에서 가장 가까운 빈 배치 칸 (제곱 거리, 같으면 배치 칸 순서 = 위에서 아래·왼쪽에서 오른쪽). 없으면 null. */
+export function nearestFreeTile(ctx: MatchContext, world: World, x: number, y: number): readonly [number, number] | null {
+  const taken = new Set<string>();
+  for (const e of world.entities.list()) if (isTower(e)) taken.add(`${e.tx},${e.ty}`);
+  let best: readonly [number, number] | null = null;
+  let bestD = 0;
+  for (const t of ctx.map.buildable) {
+    if (taken.has(`${t[0]},${t[1]}`)) continue;
+    const d = (t[0] - x) * (t[0] - x) + (t[1] - y) * (t[1] - y);
+    if (best === null || d < bestD) {
+      best = t;
+      bestD = d;
+    }
+  }
+  return best;
 }
 
 /** summon 명령 실행. 성공하면 놓인 타워, 실패하면 null (summonFail 사건). */
@@ -108,11 +147,25 @@ export function summon(ctx: MatchContext, world: World, player: number, x: numbe
     return null;
   }
   const deck = ctx.decks[player] ?? ctx.rules.baseDeck;
-  spendGold(ctx.state, ctx.rules.summonCost);
-  const roll = rollSummon(world.rng(streamSummon(player)), ctx.rules, deck, summonRareChance(ctx, world, player));
+  spendGold(ctx.state, summonCost(ctx));
+  const perks = ctx.state.perks[player];
+  const forceRare = (perks?.rareSummons ?? 0) > 0;
+  const roll = rollSummon(world.rng(streamSummon(player)), ctx.rules, deck, summonRareChance(ctx, world, player), {
+    forceRare,
+    godChanceBp: godChanceFor(ctx, player),
+  });
+  if (forceRare && perks && roll.rare) perks.rareSummons -= 1;
   const tower = placeTower(world, roll.tower, player, x, y);
   ctx.state.summons += 1;
   const stats = ctx.rules.towers.get(roll.tower);
-  world.emit('summon', { id: tower.id, tower: roll.tower, grade: stats?.grade ?? '', god: roll.god, rare: roll.rare, player, x, y });
+  world.emit('summon', { id: tower.id, tower: roll.tower, grade: stats?.grade ?? '', god: roll.god, rare: roll.rare && !forceRare, lucky: forceRare && roll.rare, player, x, y });
+  // 카드 '쌍둥이 소환': 같은 타워를 가장 가까운 빈 칸에 하나 더
+  if (perks && world.tick < perks.twinUntil) {
+    const free = nearestFreeTile(ctx, world, x, y);
+    if (free) {
+      const twin = placeTower(world, roll.tower, player, free[0], free[1]);
+      world.emit('summon', { id: twin.id, tower: roll.tower, grade: stats?.grade ?? '', god: roll.god, rare: false, twin: true, player, x: free[0], y: free[1] });
+    }
+  }
   return tower;
 }

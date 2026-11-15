@@ -55,7 +55,8 @@ export function createSoldierSystem(ctx: MatchContext): System {
       cands ??= targetCandidates(world, path);
       for (const c of cands) {
         if (e.hitsLeft <= 0) break;
-        if (!c.alive || e.hitIds.includes(c.id) || dist2(at.x, at.y, c.x, c.y) > r2) continue;
+        // 날아오른 박쥐 여왕은 땅 위 병사가 닿지 못한다 (사거리 2칸 이하 공격과 같이, M4-5)
+        if (!c.alive || (c.fly ?? 0) > 0 || e.hitIds.includes(c.id) || dist2(at.x, at.y, c.x, c.y) > r2) continue;
         const mob = world.entities.get(c.id) as Mob | undefined;
         if (!mob) {
           c.alive = false;

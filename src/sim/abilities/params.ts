@@ -36,11 +36,16 @@ export function lerpLevel(a: number, b: number, level: number, max: number): num
 
 /** 한 타워의 params를 레벨에 맞춰 정수로 읽는다. */
 export class ParamReader {
+  /**
+   * @param prefix 에러 경로 앞부분 (기본 `towers.json {id}.params`). 보스 패턴(M4-5)은 `enemies.json bosses.{id}.params`로 쓰고
+   *   레벨 1·최대 1로 만든다 (보간 없음).
+   */
   constructor(
     readonly towerId: string,
     private readonly raw: Readonly<Record<string, unknown>>,
     readonly level: number,
     readonly maxLevel: number,
+    private readonly prefix = `towers.json ${towerId}.params`,
   ) {
     if (!Number.isSafeInteger(level) || level < 1 || level > maxLevel) {
       throw new Error(`${towerId}: 타워 레벨은 1~${maxLevel} 정수 (받은 값: ${level})`);
@@ -48,7 +53,7 @@ export class ParamReader {
   }
 
   private where(key: string): string {
-    return `towers.json ${this.towerId}.params.${key}`;
+    return `${this.prefix}.${key}`;
   }
 
   /** 정수 단위로 바꾼 끝값이 범위 안인지 (밖이면 경로가 든 에러). */
@@ -113,6 +118,23 @@ export class ParamReader {
   /** 배율 → bp (×2 = 20000). bp와 같지만 뜻을 드러내려고 따로 둔다. */
   mul(key: string, range?: Range): number {
     return this.read(key, (x) => Math.round(x * BP_ONE), range);
+  }
+
+  /** 비율 목록 → bp 목록 (혼돈의 용 guardAt [0.66, 0.33] — 레벨 보간이 아니라 값 여러 개). 비어 있으면 에러. */
+  bpList(key: string, range?: Range): number[] {
+    const v = this.raw[key];
+    if (!Array.isArray(v) || v.length === 0 || !v.every((x) => typeof x === 'number' && Number.isFinite(x))) {
+      throw new Error(`${this.where(key)}: 숫자 목록이 필요하다 (받은 값: ${JSON.stringify(v)})`);
+    }
+    return v.map((x) => this.inRange(key, bp(x as number), range, v));
+  }
+
+  /** 참/거짓 (없으면 기본값). */
+  bool(key: string, fallback = false): boolean {
+    const v = this.raw[key];
+    if (v === undefined) return fallback;
+    if (typeof v !== 'boolean') throw new Error(`${this.where(key)}: true 또는 false여야 한다 (받은 값: ${JSON.stringify(v)})`);
+    return v;
   }
 
   /** 문자열 (오라 범위 'around8' 등). */

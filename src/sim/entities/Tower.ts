@@ -61,6 +61,8 @@ export interface Tower extends Entity {
   stacks: number;
   /** 스택을 쌓는 대상 몹 id (광전사, 0 = 없음) */
   stackTarget: number;
+  /** 기절 (M4-5 혼돈의 용): tick < stunUntil 동안 공격·주기 능력을 쓰지 않는다 (타이머는 1회분까지만 모음) */
+  stunUntil: number;
 }
 
 export function isTower(e: Entity): e is Tower {

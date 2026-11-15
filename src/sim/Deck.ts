@@ -60,13 +60,14 @@ export interface MergeRoll {
  * 확률이 0이거나 해당 없으면 난수를 쓰지 않음) → ③ 덱의 다음 등급 5종 균등.
  * 승급할 수 없는 등급이거나 덱의 다음 등급이 비어 있으면 에러 (명령 실행 전에 검사한다).
  * @param doubleBp 2등급 상승 확률 (bp)
+ * @param godChanceBp 신 확률 (bp, 기본 데이터 값 — 카드 '신의 눈길'이면 ×3)
  */
-export function rollMerge(rng: Rng, rules: MatchRules, deck: Deck, grade: Grade, doubleBp = 0): MergeRoll {
+export function rollMerge(rng: Rng, rules: MatchRules, deck: Deck, grade: Grade, doubleBp = 0, godChanceBp = rules.godChanceBp): MergeRoll {
   const g = nextGrade(grade);
   if (!g) throw new Error(`승급할 수 없는 등급: ${grade}`);
   const pool = deck[g];
   if (pool.length === 0) throw new Error(`덱의 ${g} 등급이 비어 있다`);
-  const god = rng.chanceBp(rules.godChanceBp);
+  const god = rng.chanceBp(godChanceBp);
   if (god && rules.godTowers.length > 0) return { tower: rng.pick(rules.godTowers), god: true, double: false };
   const g2 = nextGrade(g);
   if (doubleBp > 0 && g2 && deck[g2].length > 0 && rollChanceBp(rng, doubleBp)) return { tower: rng.pick(deck[g2]), god: false, double: true };

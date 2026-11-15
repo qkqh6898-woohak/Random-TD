@@ -37,7 +37,7 @@ export function giveGold(env: AbilityEnv, tower: Pick<Tower, 'id' | 'tower' | 'x
 /** 능력이 건드릴 수 있는 몹 (드러난 몹, ID 순). */
 export function revealedMobs(world: World): Mob[] {
   const out: Mob[] = [];
-  for (const e of world.entities.list()) if (isMob(e) && isRevealed(e)) out.push(e);
+  for (const e of world.entities.list()) if (isMob(e) && isRevealed(e, world.tick)) out.push(e);
   return out;
 }
 

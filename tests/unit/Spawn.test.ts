@@ -105,15 +105,21 @@ describe('등장 시간 (DEV_PLAN M1-4 완료 조건)', () => {
     expect(match.mobCount()).toBe(20);
   });
 
-  it('보스 단계(10단계)에는 일반 몹이 나오지 않는다', () => {
+  it('보스 단계(10단계)에는 일반 몹이 나오지 않는다 (보스 1마리 + 패턴 소환 몹만)', () => {
     const match = infinite(12);
     jumpToStage(match, 10);
     expect(match.state.stage).toBe(10);
     expect(match.state.bossStage).toBe(true);
-    const before = match.state.spawned;
+    expect(listMobs(match.world).map((m) => m.mob)).toEqual(['batqueen']);
+    match.world.drainEvents();
     match.stepN(1100);
-    expect(match.state.spawned).toBe(before);
+    const events = match.world.drainEvents();
+    expect(events.filter((e) => e.type === 'spawn')).toHaveLength(0);
     expect(match.state.stage).toBe(10);
+    // 보스 말고는 박쥐 여왕이 부른 박쥐뿐
+    const others = listMobs(match.world).filter((m) => !m.boss);
+    expect(others.length).toBeGreaterThan(0);
+    expect(others.every((m) => m.mob === 'bat')).toBe(true);
   });
 
   it('앞 단계 몹이 남아 있어도 다음 단계 몹은 예정대로 나온다', () => {
@@ -197,11 +203,11 @@ describe('암흑 고블린 떼 (1칸 = 3마리)', () => {
     expect(ev).toMatchObject({ mob: 'goblin', count: 3 });
   });
 
-  it('45단계 한 단계: 20칸 = 고블린 3칸 × 3 + 17 = 26마리', () => {
+  it('46단계 한 단계: 20칸 = 고블린 3칸 × 3 + 17 = 26마리 (45단계는 편대 단계라 46단계로)', () => {
     const match = infinite(5);
-    jumpToStage(match, 45);
+    jumpToStage(match, 46);
     match.stepN(1000);
-    expect(match.state.stage).toBe(45);
+    expect(match.state.stage).toBe(46);
     expect(match.mobCount()).toBe(26);
     expect(listMobs(match.world).filter((m) => m.mob === 'goblin')).toHaveLength(9);
   });

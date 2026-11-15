@@ -31,7 +31,7 @@ export interface Mob extends Entity {
   swarmIndex: number;
   invisible: boolean;
   legion: string;
-  /** 보스·도전 보스인가 (보스 피해 배율·보스 우선 대상, M4에서 보스가 나온다) */
+  /** 보스·도전 보스인가 (보스 피해 배율·보스 우선 대상·보스 상태 이상 규칙, M4-5) */
   boss: boolean;
   /**
    * 받는 피해 증가 합 (bp, 약화·빙결 등, GDD 5.4·5.5). 피해 계산 때 game.json combat.vulnMax(+100%)로 자른다.
@@ -67,6 +67,71 @@ export interface Mob extends Entity {
   freezeVulnBp: number;
   /** 몹별 재사용 대기 (얼음 마법사 '같은 몹은 3초에 1번' 등). 출처마다 하나 */
   cds: StatusEntry[];
+  // ---- M4 몹 특성·보스·투명 ----
+  /**
+   * 드러남 (M4-4): 투명 몹은 tick < revealedUntil 동안 '드러남' → 모든 타워가 공격할 수 있다.
+   * 감지 오라 안에 있는 틱마다 Detection이 '지금 + 1 + 유지 시간(0.5초)'으로 늘린다 → 오라를 벗어나면 0.5초 뒤 다시 투명.
+   */
+  revealedUntil: number;
+  /** 정예 몹 (51단계부터, 체력 ×5·보상 ×10·크기 1.3배) */
+  elite: boolean;
+  /** 보호막 (방패병): 남은 양과 처음 양. 피해가 먼저 보호막을 깎고, 광역 피해는 보호막에 2배 */
+  shield: number;
+  maxShield: number;
+  /** 이동속도 증가 (bp): 그림자 늑대 가속 +30%·고대 골렘 분노 +100%. 이동 = 속도 × (1 + 이 값) × (1 − 둔화) */
+  speedBonusBp: number;
+  /** 주기 특성 다음 틱 (치유사 치유·보스 패턴 A). -1 = 없음 */
+  traitAt: number;
+  /** 보스 패턴 B 다음 틱 (박쥐 여왕 날기). -1 = 없음 */
+  traitAt2: number;
+  /** 한 번만 일어나는 일 (비트): 킹 슬라임 분열·고대 골렘 분노·혼돈의 용 66%·33% */
+  phaseFlags: number;
+  /** 날아오름 (박쥐 여왕): tick < flyUntil 동안 사거리가 flyBlock(단위) 이하인 타워의 공격을 받지 않는다 */
+  flyUntil: number;
+  flyBlock: number;
+  /** 받는 피해 감소 (bp, 혼돈의 용 −50%) — 보스 시스템이 guardUntil이 지나면 0으로 */
+  dmgCutBp: number;
+  guardUntil: number;
+  /** 작게 그림 (분열 슬라임 조각 — 화면용) */
+  small: boolean;
+  /** 보스 분열 조각 (킹 슬라임: 다시 분열하지 않음) */
+  part: boolean;
+}
+
+/** 새 몹의 M4 특성 필드 (모두 없음). spawnMob·테스트가 쓴다. */
+export function emptyMobTraits(): Pick<
+  Mob,
+  | 'revealedUntil'
+  | 'elite'
+  | 'shield'
+  | 'maxShield'
+  | 'speedBonusBp'
+  | 'traitAt'
+  | 'traitAt2'
+  | 'phaseFlags'
+  | 'flyUntil'
+  | 'flyBlock'
+  | 'dmgCutBp'
+  | 'guardUntil'
+  | 'small'
+  | 'part'
+> {
+  return {
+    revealedUntil: 0,
+    elite: false,
+    shield: 0,
+    maxShield: 0,
+    speedBonusBp: 0,
+    traitAt: -1,
+    traitAt2: -1,
+    phaseFlags: 0,
+    flyUntil: 0,
+    flyBlock: 0,
+    dmgCutBp: 0,
+    guardUntil: 0,
+    small: false,
+    part: false,
+  };
 }
 
 /** 출처가 있는 상태 이상 하나: 출처(src), 세기(bp), 풀리는 틱(until, tick < until 이면 걸려 있음). */
@@ -115,6 +180,11 @@ export function listMobs(world: World): Mob[] {
   const out: Mob[] = [];
   for (const e of world.entities.list()) if (isMob(e)) out.push(e);
   return out;
+}
+
+/** 지금 드러나 있는가 (투명이 아니거나 드러남 시간 안) — GDD 5.7. */
+export function isRevealedAt(mob: Pick<Mob, 'invisible' | 'revealedUntil'>, tick: number): boolean {
+  return !mob.invisible || tick < mob.revealedUntil;
 }
 
 /** 맵 위 몹 수 (떼는 마리마다 1). */

@@ -1,6 +1,6 @@
 /**
  * 특색 능력 시스템 (DEV_PLAN M3-8·M3-9): 틱마다 (이동 다음, 소환 병사·전투 앞)
- *  1. 타워 (ID 순): 능력 모듈의 tick 훅 — 주기 능력 (진흙 웅덩이·시간 정지·연금 돈·운석·병사 소환).
+ *  1. 타워 (ID 순): 능력 모듈의 tick 훅 — 주기 능력 (진흙 웅덩이·시간 정지·연금 돈·운석·병사 소환). 기절한 타워(M4-5)는 쉰다.
  *  2. 진흙 웅덩이 (ID 순): 시간이 다 되면 지우고, 아니면 안에 있는(드러난) 몹에게 둔화를 1틱씩 다시 건다
  *     → 웅덩이 안에 있는 동안만 둔화, 나오면 다음 틱에 풀린다. 같은 틱에 새로 생긴 웅덩이도 바로 적용.
  * 공격 때(onAttack)·맞을 때(onHit)·처치될 때(onAnyKill) 훅은 Combat·Kill이 부른다.
@@ -22,6 +22,8 @@ export function createAbilitySystem(ctx: MatchContext): System {
     const env = envOf(ctx, world);
     for (const { tower, def } of towersWithAbility(world)) {
       if (!def.tick || !world.entities.has(tower.id)) continue;
+      // 혼돈의 용에게 기절한 타워는 주기 능력도 쉰다 (풀리면 바로, M4-5)
+      if (world.tick < tower.stunUntil) continue;
       def.tick(env, tower, abilityParams(ctx, tower.owner, def));
     }
     const tick = world.tick;
@@ -35,7 +37,7 @@ export function createAbilitySystem(ctx: MatchContext): System {
       if (mobs === null) {
         mobs = [];
         for (const m of world.entities.list()) {
-          if (!isMob(m) || !isRevealed(m)) continue;
+          if (!isMob(m) || !isRevealed(m, tick)) continue;
           const p = positionAt(ctx.map.path, m.progress);
           mobs.push({ id: m.id, x: p.x, y: p.y });
         }

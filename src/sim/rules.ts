@@ -19,7 +19,7 @@
  *    전투 규칙 수치는 game.json combat, 승급 개수는 game.json merge (MatchRules).
  */
 import { DECK_GRADES, deckIssues, type DeckData } from '../data/deck';
-import type { CurvesFile, DamageType, Detect, GameData, Grade, MobData, Shape, TargetRule, ThemeData, TowerData } from '../data/load';
+import type { BossData, CardEffectType, CurvesFile, DamageType, Detect, GameData, Grade, MobData, Shape, TargetRule, ThemeData, TowerData } from '../data/load';
 import { BP_ONE, bp, idiv, mulBp, tiles } from './Fixed';
 import { TICK_HZ, secondsToTicks } from './World';
 
@@ -42,6 +42,68 @@ export interface MobStats {
   readonly invisible: boolean;
   readonly spawnOnly: boolean;
   readonly special: boolean;
+  /** 단일 공격 회피 확률 (bp, 유령 30% = 3000. 없으면 0) — M4-3 */
+  readonly evadeBp: number;
+  /** 치유 (치유사): 주기(틱)·반경(단위)·회복 비율(bp). 없으면 null */
+  readonly heal: { readonly intervalTicks: number; readonly radius: number; readonly pctBp: number } | null;
+  /** 보호막 (방패병): 최대 체력 비율(bp)·광역 피해 배율(bp, ×2 = 20000). 없으면 null */
+  readonly shield: { readonly pctBp: number; readonly areaMulBp: number } | null;
+  /** 가속 (그림자 늑대): 체력 이 비율(bp) 이하에서 이동속도 +speedBp. 없으면 null */
+  readonly haste: { readonly belowBp: number; readonly speedBp: number } | null;
+  /** 죽으면 깨져서 나오는 몹 (분열 슬라임·보석 골렘). 없으면 null */
+  readonly split: SplitStats | null;
+}
+
+/** 깨짐 (M4-3): 몹 id·마리 수·체력(부모 최대 체력 × bp)·속도(단위/초, null = 그 몹 속도)·보상(원, null = 그 몹 보상). */
+export interface SplitStats {
+  readonly id: string;
+  readonly count: number;
+  readonly hpBp: number;
+  readonly speed: number | null;
+  readonly reward: number | null;
+  readonly small: boolean;
+}
+
+/** 기본 보스 하나의 스탯 (단계 성장 전, 정수) — ENEMIES.md 4장. 패턴 수치(params)는 보스 모듈(src/sim/bosses)이 compile한다. */
+export interface BossStats {
+  readonly id: string;
+  readonly name: string;
+  /** 데이터 '기본 단계' (표 표시용 + 무한 순환에 아직 없는 보스를 대신할 때) */
+  readonly stage: number;
+  readonly legion: string;
+  readonly rank: string;
+  readonly hpMulBp: number;
+  readonly armor: number;
+  readonly magicRes: number;
+  readonly speed: number;
+  readonly ccResistBp: number;
+  readonly invisible: boolean;
+  readonly params: Readonly<Record<string, unknown>>;
+}
+
+/** 조합 편대 (ENEMIES.md 3.4, M4-3b): 구성(몹 순서 = enemies.json mobs 순서)·무한 모드 등장 단계·예고 글자. */
+export interface FormationStats {
+  readonly id: string;
+  readonly name: string;
+  readonly from: number;
+  readonly mix: readonly (readonly [string, number])[];
+  readonly banner: string;
+  readonly hint: string;
+}
+
+/** 보스 효과 카드 (GDD 3.1, M4-7) — 수치는 정수 단위로 바꾼 값. */
+export interface CardStats {
+  readonly id: string;
+  readonly name: string;
+  readonly rare: boolean;
+  readonly desc: string;
+  readonly type: CardEffectType;
+  /** 효과 값: 비율은 bp, 원·횟수·배율은 정수 */
+  readonly value: number;
+  /** 소환 할인 최소 비용 (원) / 이동속도 감소 합 최대 (bp) */
+  readonly limit: number;
+  /** 쌍둥이 소환 지속 (틱) */
+  readonly ticks: number;
 }
 
 /** 등장 구성표 한 줄: stages [from, to]에서 몹별 칸 수 (몹 순서 = enemies.json mobs 순서). */
@@ -211,6 +273,44 @@ export interface MatchRules {
   readonly atkPerLevelBp: number;
   /** towers.json 순서의 타워 id (개발용 debugTower 명령이 번호로 고른다) */
   readonly towerOrder: readonly string[];
+  // ---- M4 ----
+  /** 기본 보스 (enemies.json bosses, id → 스탯)와 데이터 순서 */
+  readonly bosses: ReadonlyMap<string, BossStats>;
+  readonly bossOrder: readonly string[];
+  /** 보스 이름 → id (캠페인 bossSchedule은 이름으로 적혀 있다) */
+  readonly bossByName: ReadonlyMap<string, string>;
+  /** 무한 모드 보스 순환 (enemies.json bossCycle) */
+  readonly bossCycle: Readonly<{ every: number; captains: readonly string[]; commanderEvery: number; commanders: readonly string[]; lordEvery: number; lord: string }>;
+  /** 캠페인 테마별 보스 배치 (테마 → 단계 → 보스 이름) */
+  readonly bossSchedules: ReadonlyMap<number, Readonly<Record<string, string>>>;
+  /** 보스 처치 보상 (원)·제한 시간 (틱) */
+  readonly bossReward: number;
+  readonly bossTimeTicks: number;
+  /** 일꾼: 고용 비용·최대 수·수입 간격(틱)·1명당 수입 */
+  readonly workerCost: number;
+  readonly workerMax: number;
+  readonly workerIntervalTicks: number;
+  readonly workerIncome: number;
+  /** 감지 오라를 벗어난 투명 몹이 드러난 채로 남는 틱 */
+  readonly revealHoldTicks: number;
+  /** 조합 편대와 규칙 */
+  readonly formations: readonly FormationStats[];
+  readonly formationPreviewTicks: number;
+  readonly formationEvery: number;
+  readonly formationCampaignShift: number;
+  readonly formationCampaignMin: number;
+  /** 정예 몹 (51단계부터 1.5%, 체력 ×5, 보상 ×10) */
+  readonly eliteFromStage: number;
+  readonly eliteChanceBp: number;
+  readonly eliteHpMulBp: number;
+  readonly eliteRewardMulBp: number;
+  /** 보스 카드 */
+  readonly cards: readonly CardStats[];
+  readonly cardById: ReadonlyMap<string, CardStats>;
+  readonly cardOfferSize: number;
+  readonly cardRareBp: number;
+  /** 카드 '소환 할인'의 최소 소환 비용 (원, 카드가 없으면 기본 비용) */
+  readonly summonCostMin: number;
 }
 
 /** 정수여야 하는 데이터 값 확인 (스키마가 num만 보장하는 필드). */
@@ -243,6 +343,39 @@ export function buildMobStats(m: MobData): MobStats {
     invisible: m.invisible === true,
     spawnOnly: m.spawnOnly === true,
     special: m.special,
+    evadeBp: bp(m.evade ?? 0),
+    heal: m.heal
+      ? Object.freeze({ intervalTicks: secondsToTicksExact(m.heal.everySeconds), radius: tiles(m.heal.radius), pctBp: bp(m.heal.pct) })
+      : null,
+    shield: m.shield ? Object.freeze({ pctBp: bp(m.shield.pct), areaMulBp: bp(m.shield.areaMul) }) : null,
+    haste: m.haste ? Object.freeze({ belowBp: bp(m.haste.belowHp), speedBp: bp(m.haste.speed) }) : null,
+    split: m.splitInto
+      ? Object.freeze({
+          id: m.splitInto.id,
+          count: m.splitInto.count,
+          hpBp: bp(m.splitInto.hpOfParent),
+          speed: m.splitInto.speed === undefined ? null : tiles(m.splitInto.speed),
+          reward: m.splitInto.reward ?? null,
+          small: m.splitInto.small === true,
+        })
+      : null,
+  });
+}
+
+export function buildBossStats(b: BossData): BossStats {
+  return Object.freeze({
+    id: b.id,
+    name: b.name,
+    stage: b.stage,
+    legion: b.legion,
+    rank: b.rank,
+    hpMulBp: bp(b.hpMul),
+    armor: int(`${b.id}.armor`, b.armor),
+    magicRes: int(`${b.id}.magicRes`, b.magicRes),
+    speed: tiles(b.speed),
+    ccResistBp: bp(b.ccResist),
+    invisible: b.invisible,
+    params: Object.freeze({ ...b.params }),
   });
 }
 
@@ -388,6 +521,7 @@ export function buildMatchRules(data: GameData): MatchRules {
     towerLevelMax: int('game.json towerLevel.max', game.towerLevel.max),
     atkPerLevelBp: bp(game.towerLevel.atkPerLevel),
     towerOrder: Object.freeze(data.towers.towers.map((t) => t.id)),
+    ...buildM4Rules(data, mobOrder),
   });
   // 한 단계의 등장이 다음 단계 시작 전에 끝나야 한다 (GDD 2.2: 50초 등장 + 10초 휴식)
   if ((rules.slotsPerStage - 1) * rules.spawnIntervalTicks >= rules.stageTicks) {
@@ -397,6 +531,106 @@ export function buildMatchRules(data: GameData): MatchRules {
   }
   rulesCache.set(data, rules);
   return rules;
+}
+
+/** M4 규칙 (보스·일꾼·감지·편대·정예·카드). */
+function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
+  MatchRules,
+  | 'bosses'
+  | 'bossOrder'
+  | 'bossByName'
+  | 'bossCycle'
+  | 'bossSchedules'
+  | 'bossReward'
+  | 'bossTimeTicks'
+  | 'workerCost'
+  | 'workerMax'
+  | 'workerIntervalTicks'
+  | 'workerIncome'
+  | 'revealHoldTicks'
+  | 'formations'
+  | 'formationPreviewTicks'
+  | 'formationEvery'
+  | 'formationCampaignShift'
+  | 'formationCampaignMin'
+  | 'eliteFromStage'
+  | 'eliteChanceBp'
+  | 'eliteHpMulBp'
+  | 'eliteRewardMulBp'
+  | 'cards'
+  | 'cardById'
+  | 'cardOfferSize'
+  | 'cardRareBp'
+  | 'summonCostMin'
+> {
+  const { enemies, game, cards: cardsFile, campaign } = data;
+  const bosses = new Map<string, BossStats>();
+  const bossByName = new Map<string, string>();
+  for (const b of enemies.bosses) {
+    bosses.set(b.id, buildBossStats(b));
+    bossByName.set(b.name, b.id);
+  }
+  const cyc = enemies.bossCycle;
+  const cards = cardsFile.cards.map((c) => {
+    const e = c.effect;
+    const ratio = e.type === 'atkPct' || e.type === 'quake' || e.type === 'mobSlow' || e.type === 'goldPct';
+    return Object.freeze({
+      id: c.id,
+      name: c.name,
+      rare: c.grade === 'rare',
+      desc: c.desc,
+      type: e.type,
+      value: ratio ? bp(e.value ?? 0) : int(`cards.json ${c.id}.effect.value`, e.value ?? 0),
+      limit: e.type === 'mobSlow' ? bp(e.max ?? 0) : int(`cards.json ${c.id}.effect.min`, e.min ?? 0),
+      ticks: e.seconds === undefined ? 0 : secondsToTicksExact(e.seconds),
+    } satisfies CardStats);
+  });
+  return {
+    bosses,
+    bossOrder: Object.freeze(enemies.bosses.map((b) => b.id)),
+    bossByName,
+    bossCycle: Object.freeze({
+      every: cyc.every,
+      captains: Object.freeze([...cyc.captains]),
+      commanderEvery: cyc.commanderEvery,
+      commanders: Object.freeze([...cyc.commanders]),
+      lordEvery: cyc.lordEvery,
+      lord: cyc.lord,
+    }),
+    bossSchedules: new Map(campaign.themes.map((t) => [t.theme, Object.freeze({ ...t.bossSchedule })])),
+    bossReward: game.boss.reward,
+    bossTimeTicks: secondsToTicksExact(game.boss.timeLimitSeconds),
+    workerCost: game.worker.cost,
+    workerMax: game.worker.max,
+    workerIntervalTicks: secondsToTicksExact(game.worker.intervalSeconds),
+    workerIncome: game.worker.income,
+    revealHoldTicks: secondsToTicksExact(game.detection.revealHoldSeconds),
+    formations: Object.freeze(
+      enemies.formations.map((f) =>
+        Object.freeze({
+          id: f.id,
+          name: f.name,
+          from: f.from,
+          mix: Object.freeze(mobOrder.filter((id) => (f.mix[id] ?? 0) > 0).map((id) => Object.freeze([id, f.mix[id] as number] as const))),
+          banner: f.banner,
+          hint: f.hint,
+        }),
+      ),
+    ),
+    formationPreviewTicks: secondsToTicksExact(game.formation.previewSeconds),
+    formationEvery: game.formation.every,
+    formationCampaignShift: game.formation.campaignShift,
+    formationCampaignMin: game.formation.campaignMin,
+    eliteFromStage: enemies.eliteChance.fromStage,
+    eliteChanceBp: bp(enemies.eliteChance.chance),
+    eliteHpMulBp: bp(enemies.eliteChance.hpMul),
+    eliteRewardMulBp: bp(enemies.eliteChance.rewardMul),
+    cards: Object.freeze(cards),
+    cardById: new Map(cards.map((c) => [c.id, c])),
+    cardOfferSize: cardsFile.offerSize,
+    cardRareBp: bp(cardsFile.rareChance),
+    summonCostMin: cards.find((c) => c.type === 'summonDiscount')?.limit ?? game.summon.cost,
+  };
 }
 
 /** 캠페인 테마 보정 (bp·정수). */

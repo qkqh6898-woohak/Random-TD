@@ -7,6 +7,7 @@
  * - 맵은 `src/data/maps/*.json`을 모두 자동으로 읽는다 (M6에서 테마 맵 추가 시 코드 수정 불필요).
  * - `curves.json`은 `tools/precompute-curves.mjs`가 enemies.json growth로 만든 표다 (sim은 거듭제곱을 못 쓴다).
  * - `decks.json`은 덱 규칙(등급별 5종)과 기본 덱이다. 덱의 타워 id·등급은 towers.json과 교차 검사한다.
+ * - `cards.json`은 보스 효과 카드 12장(GDD.md 3.1, M4-7)이다.
  * - 수치 해석(소수 → 정수 단위 변환)은 각 시스템이 로드할 때 `src/sim/Fixed.ts`로 한다.
  */
 
@@ -16,6 +17,7 @@ import campaignJson from './campaign.json';
 import gameJson from './game.json';
 import curvesJson from './curves.json';
 import decksJson from './decks.json';
+import cardsJson from './cards.json';
 import { TICK_HZ } from '../sim/World';
 import { s, validate, type Issue, type Schema } from './schema';
 import { DECK_GRADES, deckIssues, type DeckData } from './deck';
@@ -139,11 +141,33 @@ export interface MobData {
   special: boolean;
   legion: string;
   spawnOnly?: boolean;
-  splitInto?: unknown;
+  splitInto?: SplitData;
   /** 떼: 1칸에 이만큼 붙어서 등장 (암흑 고블린 떼 3). 없으면 1 */
   swarm?: number;
   /** 투명 (ENEMIES.md 5장). 등장 순서에서 무리 뒤쪽에 놓인다 */
   invisible?: boolean;
+  /** 단일 공격 회피 확률 (유령 0.3, M4-3) */
+  evade?: number;
+  /** 치유 (치유사 M4-3): everySeconds초마다 반경 radius칸 안 다른 몹 체력 pct 회복 */
+  heal?: { everySeconds: number; radius: number; pct: number };
+  /** 보호막 (방패병 M4-3): 최대 체력 × pct, 광역 피해는 areaMul배로 받음 */
+  shield?: { pct: number; areaMul: number };
+  /** 가속 (그림자 늑대 M4-3): 체력 belowHp 이하에서 이동속도 +speed */
+  haste?: { belowHp: number; speed: number };
+}
+
+/** 죽으면 깨져서 나오는 몹 (분열 슬라임·보석 골렘, M4-3). */
+export interface SplitData {
+  id: string;
+  count: number;
+  /** 조각 체력 = 부모 최대 체력 × hpOfParent */
+  hpOfParent: number;
+  /** 조각 이동속도 (칸/초, 없으면 그 몹의 속도) */
+  speed?: number;
+  /** 조각 처치 보상 (원, 없으면 그 몹의 보상) */
+  reward?: number;
+  /** 작게 그림 (화면용) */
+  small?: boolean;
 }
 
 export interface BossData {
@@ -160,6 +184,8 @@ export interface BossData {
   pattern: string;
   legion: string;
   rank: string;
+  /** 패턴 수치 (M4-5, 보스마다 다름 — enemies.json bossNote). 보스 모듈(src/sim/bosses)이 정수로 바꾸고 검사한다 */
+  params: Record<string, unknown>;
 }
 
 export interface ChallengeData {
@@ -189,6 +215,21 @@ export interface FormationData {
   from: number;
   why: string;
   counter: string;
+  /** 예고 배너의 구성 요약 ("보석 골렘 + 암흑 고블린 떼") */
+  banner: string;
+  /** 예고 배너 아래 대응 힌트 한 줄 */
+  hint: string;
+}
+
+/** 무한 모드 보스 순환 (ENEMIES.md 4.1, M4-5a). */
+export interface BossCycleData {
+  note?: string;
+  every: number;
+  captains: string[];
+  commanderEvery: number;
+  commanders: string[];
+  lordEvery: number;
+  lord: string;
 }
 
 /** 단계별 성장 수치 (ENEMIES.md 2장). curves.json의 원본. */
@@ -216,11 +257,14 @@ export interface EnemiesFile {
   spawnOrder: SpawnOrderData;
   bosses: BossData[];
   challenges: ChallengeData[];
-  eliteChance: { fromStage: number; chance: number; hpMul: number; rewardMul: number };
+  eliteChance: { fromStage: number; chance: number; hpMul: number; rewardMul: number; scale: number };
   formations: FormationData[];
   formationRule: Record<string, string>;
   hierarchy: Record<string, unknown>;
   infiniteBosses: Record<string, string>;
+  bossCycle: BossCycleData;
+  traitsNote?: string;
+  bossNote?: string;
 }
 
 export interface ThemeData {
@@ -380,6 +424,44 @@ export interface DebugConfig {
   addGold: number;
 }
 
+/** 일꾼 (GDD.md 3장, M4-1). */
+export interface WorkerConfig {
+  /** 고용 비용 (원) */
+  cost: number;
+  /** 최대 수 (카드 '무료 일꾼'은 이 수를 넘길 수 있다) */
+  max: number;
+  /** 수입 간격 (초, 1틱 단위) — 판 시작부터 이 간격마다 */
+  intervalSeconds: number;
+  /** 1명당 한 번 수입 (원) */
+  income: number;
+}
+
+/** 기본 보스 (ENEMIES.md 4장, M4-5·M4-6). */
+export interface BossConfig {
+  /** 처치 보상 (원) */
+  reward: number;
+  /** 제한 시간 (초) — 단계 길이 이하 */
+  timeLimitSeconds: number;
+}
+
+/** 투명·감지 (GDD.md 5.7, M4-4). */
+export interface DetectionConfig {
+  /** 감지 오라를 벗어나도 드러난 채로 남는 시간 (초, 1틱 단위) */
+  revealHoldSeconds: number;
+}
+
+/** 조합 편대 (ENEMIES.md 3.4, M4-3b). */
+export interface FormationConfig {
+  /** 예고 배너: 다음 단계 시작 몇 초 전 */
+  previewSeconds: number;
+  /** 편대 단계 주기 (5의 배수) */
+  every: number;
+  /** 캠페인 테마 t 등장 단계 = from − campaignShift × (t − 1) */
+  campaignShift: number;
+  /** 캠페인 등장 단계 최소 */
+  campaignMin: number;
+}
+
 export interface GameConfig {
   version: number;
   speeds: SpeedOption[];
@@ -394,6 +476,56 @@ export interface GameConfig {
   status: StatusConfig;
   aura: AuraConfig;
   towerLevel: TowerLevelConfig;
+  worker: WorkerConfig;
+  boss: BossConfig;
+  detection: DetectionConfig;
+  formation: FormationConfig;
+}
+
+/** 보스 효과 카드 효과 종류 (cards.json effect.type) */
+export const CARD_EFFECTS = [
+  'atkPct',
+  'goldPerBoss',
+  'rareSummons',
+  'workerMul',
+  'quake',
+  'summonDiscount',
+  'mobSlow',
+  'freeWorkers',
+  'mergeChoice',
+  'twinSummon',
+  'godMul',
+  'goldPct',
+] as const;
+export type CardEffectType = (typeof CARD_EFFECTS)[number];
+
+/** 카드 효과: 종류 + 수치 (종류마다 value·min·max·seconds 중 쓰는 것). */
+export interface CardEffect {
+  type: CardEffectType;
+  value?: number;
+  min?: number;
+  max?: number;
+  seconds?: number;
+}
+
+export interface CardData {
+  id: string;
+  name: string;
+  /** common 일반 · rare 희귀 */
+  grade: 'common' | 'rare';
+  desc: string;
+  effect: CardEffect;
+}
+
+/** cards.json: 보스 효과 카드 (GDD.md 3.1, M4-7). */
+export interface CardsFile {
+  version: number;
+  notes?: string;
+  /** 한 번에 보여주는 카드 수 (3) */
+  offerSize: number;
+  /** 카드 1장마다 희귀 카드일 확률 (0.15) */
+  rareChance: number;
+  cards: CardData[];
 }
 
 /** 미리 계산한 성장 곡선 표 (tools/precompute-curves.mjs). 인덱스 = 단계 (0 ~ maxStage). */
@@ -417,6 +549,7 @@ export interface GameData {
   game: GameConfig;
   curves: CurvesFile;
   decks: DecksFile;
+  cards: CardsFile;
 }
 
 // ---------------------------------------------------------------------------
@@ -503,9 +636,22 @@ const mobSchema = s.obj({
   special: s.bool(),
   legion: s.str({ nonEmpty: true }),
   spawnOnly: s.opt(s.bool()),
-  splitInto: s.opt(s.any()),
+  splitInto: s.opt(
+    s.obj({
+      id: s.str({ nonEmpty: true }),
+      count: s.int({ min: 1, max: 10 }),
+      hpOfParent: s.num({ min: 0.0001, max: 10 }),
+      speed: s.opt(s.num({ min: 0 })),
+      reward: s.opt(s.int({ min: 0 })),
+      small: s.opt(s.bool()),
+    }),
+  ),
   swarm: s.opt(s.int({ min: 1, max: 10 })),
   invisible: s.opt(s.bool()),
+  evade: s.opt(s.num({ min: 0, max: 1 })),
+  heal: s.opt(s.obj({ everySeconds: tickSeconds(0.05, 600), radius: s.num({ min: 0 }), pct: s.num({ min: 0, max: 1 }) })),
+  shield: s.opt(s.obj({ pct: s.num({ min: 0, max: 10 }), areaMul: s.num({ min: 1, max: 10 }) })),
+  haste: s.opt(s.obj({ belowHp: s.num({ min: 0, max: 1 }), speed: s.num({ min: 0, max: 10 }) })),
 });
 
 const slotRange = s.withCheck<[number, number]>(s.tuple(s.int({ min: 1 }), s.int({ min: 1 })), (v, path, issues) => {
@@ -547,6 +693,7 @@ const bossSchema = s.obj({
   pattern: s.str(),
   legion: s.str({ nonEmpty: true }),
   rank: s.str({ nonEmpty: true }),
+  params: s.rec(s.any()),
 });
 
 const challengeSchema = s.obj({
@@ -582,6 +729,7 @@ export const enemiesSchema: Schema = s.obj({
     chance: s.num({ min: 0, max: 1 }),
     hpMul: s.num({ min: 0 }),
     rewardMul: s.num({ min: 0 }),
+    scale: s.num({ min: 0.1, max: 5 }),
   }),
   formations: s.arr(
     s.obj({
@@ -591,12 +739,25 @@ export const enemiesSchema: Schema = s.obj({
       from: s.int({ min: 1 }),
       why: s.str(),
       counter: s.str(),
+      banner: s.str({ nonEmpty: true }),
+      hint: s.str({ nonEmpty: true }),
     }),
     { uniqueBy: 'id' },
   ),
   formationRule: s.rec(s.str()),
   hierarchy: s.rec(s.any()),
   infiniteBosses: s.rec(s.str()),
+  bossCycle: s.obj({
+    note: s.opt(s.str()),
+    every: s.int({ min: 1 }),
+    captains: s.arr(s.str({ nonEmpty: true }), { minLength: 1 }),
+    commanderEvery: s.int({ min: 1 }),
+    commanders: s.arr(s.str({ nonEmpty: true }), { minLength: 1 }),
+    lordEvery: s.int({ min: 1 }),
+    lord: s.str({ nonEmpty: true }),
+  }),
+  traitsNote: s.opt(s.str()),
+  bossNote: s.opt(s.str()),
 });
 
 export const campaignSchema: Schema = s.obj({
@@ -873,6 +1034,49 @@ export const gameSchema: Schema = s.obj({
     max: s.int({ min: 2, max: 100 }),
     atkPerLevel: s.num({ min: 0, max: 1 }),
   }),
+  worker: s.obj({
+    cost: s.int({ min: 0 }),
+    max: s.int({ min: 0, max: 1000 }),
+    intervalSeconds: tickSeconds(0.05, 600),
+    income: s.int({ min: 0 }),
+  }),
+  boss: s.obj({
+    reward: s.int({ min: 0 }),
+    timeLimitSeconds: tickSeconds(1, 3600),
+  }),
+  detection: s.obj({
+    revealHoldSeconds: tickSeconds(0, 60),
+  }),
+  formation: s.obj({
+    previewSeconds: tickSeconds(0, 600),
+    every: s.int({ min: 1 }),
+    campaignShift: s.int({ min: 0 }),
+    campaignMin: s.int({ min: 1 }),
+  }),
+});
+
+/** cards.json (GDD.md 3.1): 카드 효과 종류마다 쓰는 수치가 있는지는 crossCheck에서. */
+export const cardsSchema: Schema = s.obj({
+  version: s.int({ min: 1 }),
+  notes: s.opt(s.str()),
+  offerSize: s.int({ min: 1, max: 6 }),
+  rareChance: s.num({ min: 0, max: 1 }),
+  cards: s.arr(
+    s.obj({
+      id: s.str({ nonEmpty: true }),
+      name: s.str({ nonEmpty: true }),
+      grade: s.str({ enum: ['common', 'rare'] }),
+      desc: s.str({ nonEmpty: true }),
+      effect: s.obj({
+        type: s.str({ enum: CARD_EFFECTS }),
+        value: s.opt(s.num({ min: 0 })),
+        min: s.opt(s.num({ min: 0 })),
+        max: s.opt(s.num({ min: 0 })),
+        seconds: s.opt(tickSeconds(0.05, 3600)),
+      }),
+    }),
+    { minLength: 1, uniqueBy: 'id' },
+  ),
 });
 
 const intArray = s.arr(s.int({ min: 0, max: Number.MAX_SAFE_INTEGER }), { minLength: 2 });
@@ -1039,7 +1243,88 @@ export function crossCheck(data: GameData): Issue[] {
   if (!towers.towers.some((t) => t.grade === 'god') && data.game.summon.godChance > 0) {
     issues.push({ file: 'game.json', path: 'summon.godChance', message: '신 타워가 없는데 확률이 0보다 크다' });
   }
+  crossCheckM4(data, issues);
   return issues;
+}
+
+/** M4 데이터 교차 검사: 깨지는 몹·보스 소환 몹·보스 순환·보스 제한 시간·카드 수치. */
+function crossCheckM4(data: GameData, issues: Issue[]): void {
+  const { enemies, game, cards } = data;
+  const mobIds = new Set(enemies.mobs.map((m) => m.id));
+  enemies.mobs.forEach((m, i) => {
+    if (m.splitInto && !mobIds.has(m.splitInto.id)) {
+      issues.push({ file: 'enemies.json', path: `mobs[${i}].splitInto.id`, message: `없는 몹: ${m.splitInto.id}` });
+    }
+  });
+  enemies.bosses.forEach((b, i) => {
+    const sm = b.params.summonMob;
+    if (sm !== undefined && (typeof sm !== 'string' || !mobIds.has(sm))) {
+      issues.push({ file: 'enemies.json', path: `bosses[${i}].params.summonMob`, message: `없는 몹: ${String(sm)}` });
+    }
+    if (b.stage % game.match.bossEvery !== 0) {
+      issues.push({ file: 'enemies.json', path: `bosses[${i}].stage`, message: `보스 단계(${b.stage})가 보스 주기(${game.match.bossEvery})의 배수가 아니다` });
+    }
+  });
+  // 보스 순환에 적힌 id는 기본 보스(bosses) 또는 군단 체계(hierarchy: 대장·4천왕·군주)에 있어야 한다
+  const known = new Set<string>(enemies.bosses.map((b) => b.id));
+  const h = enemies.hierarchy as { lord?: { id?: string }; captains?: { id?: string }[]; legions?: Record<string, { commander?: { id?: string } }> };
+  if (h.lord?.id) known.add(h.lord.id);
+  for (const c of h.captains ?? []) if (c.id) known.add(c.id);
+  for (const l of Object.values(h.legions ?? {})) if (l.commander?.id) known.add(l.commander.id);
+  const cyc = enemies.bossCycle;
+  const cycIds: [string, string][] = [
+    ...cyc.captains.map((id, i) => [`bossCycle.captains[${i}]`, id] as [string, string]),
+    ...cyc.commanders.map((id, i) => [`bossCycle.commanders[${i}]`, id] as [string, string]),
+    ['bossCycle.lord', cyc.lord],
+  ];
+  for (const [path, id] of cycIds) if (!known.has(id)) issues.push({ file: 'enemies.json', path, message: `보스 데이터·군단 체계에 없는 id: ${id}` });
+  if (cyc.every !== game.match.bossEvery) {
+    issues.push({ file: 'enemies.json', path: 'bossCycle.every', message: `보스 주기(game.json match.bossEvery = ${game.match.bossEvery})와 다르다` });
+  }
+  for (const [key, v] of [['commanderEvery', cyc.commanderEvery], ['lordEvery', cyc.lordEvery]] as const) {
+    if (v % cyc.every !== 0) issues.push({ file: 'enemies.json', path: `bossCycle.${key}`, message: `${v}가 every(${cyc.every})의 배수가 아니다` });
+  }
+  if (game.boss.timeLimitSeconds > game.match.stageSeconds) {
+    issues.push({ file: 'game.json', path: 'boss.timeLimitSeconds', message: `단계 길이(${game.match.stageSeconds}초)보다 길다` });
+  }
+  if (game.formation.previewSeconds >= game.match.stageSeconds) {
+    issues.push({ file: 'game.json', path: 'formation.previewSeconds', message: `단계 길이(${game.match.stageSeconds}초)보다 짧아야 한다` });
+  }
+  // 카드: 효과 종류마다 필요한 수치
+  if (cards.cards.length < cards.offerSize) {
+    issues.push({ file: 'cards.json', path: 'cards', message: `카드 ${cards.cards.length}장 < 한 번에 보여주는 수 ${cards.offerSize}` });
+  }
+  const need: Record<CardEffectType, { key: 'value' | 'seconds'; int?: boolean; ratio?: boolean }[]> = {
+    atkPct: [{ key: 'value', ratio: false }],
+    goldPerBoss: [{ key: 'value', int: true }],
+    rareSummons: [{ key: 'value', int: true }],
+    workerMul: [{ key: 'value', int: true }],
+    quake: [{ key: 'value', ratio: true }],
+    summonDiscount: [{ key: 'value', int: true }],
+    mobSlow: [{ key: 'value', ratio: true }],
+    freeWorkers: [{ key: 'value', int: true }],
+    mergeChoice: [{ key: 'value', int: true }],
+    twinSummon: [{ key: 'seconds' }],
+    godMul: [{ key: 'value', int: true }],
+    goldPct: [{ key: 'value' }],
+  };
+  cards.cards.forEach((c, i) => {
+    const e = c.effect;
+    for (const r of need[e.type]) {
+      const v = e[r.key];
+      const path = `cards[${i}].effect.${r.key}`;
+      if (v === undefined) issues.push({ file: 'cards.json', path, message: `${e.type} 효과에 필요한 값이 없다` });
+      else if (r.int && !Number.isInteger(v)) issues.push({ file: 'cards.json', path, message: `정수여야 하는데 ${v}` });
+      else if (r.ratio && v > 1) issues.push({ file: 'cards.json', path, message: `0~1이어야 하는데 ${v}` });
+    }
+    if (e.type === 'summonDiscount' && (e.min === undefined || !Number.isInteger(e.min) || e.min < 1)) {
+      issues.push({ file: 'cards.json', path: `cards[${i}].effect.min`, message: '소환 비용 최소(1 이상 정수)가 필요하다' });
+    }
+    if (e.type === 'mobSlow' && (e.max === undefined || e.max > 1)) {
+      issues.push({ file: 'cards.json', path: `cards[${i}].effect.max`, message: '이동속도 감소 합 최대(0~1)가 필요하다' });
+    }
+    if (e.type === 'godMul' && (e.value ?? 0) < 1) issues.push({ file: 'cards.json', path: `cards[${i}].effect.value`, message: '신 확률 배율은 1 이상' });
+  });
 }
 
 /** 원본 JSON 묶음 (테스트에서 일부를 바꿔 넣을 수 있게 분리). */
@@ -1050,6 +1335,7 @@ export interface RawGameData {
   game: unknown;
   curves: unknown;
   decks: unknown;
+  cards: unknown;
   /** 키 = 파일 이름(확장자 없이) */
   maps: Record<string, unknown>;
 }
@@ -1063,7 +1349,7 @@ export function bundledRawData(): RawGameData {
     const name = path.replace(/^.*\//, '').replace(/\.json$/, '');
     maps[name] = mod;
   }
-  return { towers: towersJson, enemies: enemiesJson, campaign: campaignJson, game: gameJson, curves: curvesJson, decks: decksJson, maps };
+  return { towers: towersJson, enemies: enemiesJson, campaign: campaignJson, game: gameJson, curves: curvesJson, decks: decksJson, cards: cardsJson, maps };
 }
 
 /** 원본 JSON 묶음 → 검사 → GameData. 문제가 있으면 DataError (모든 파일의 문제를 모아서). */
@@ -1086,6 +1372,7 @@ export function buildGameData(raw: RawGameData): GameData {
   const game = attempt<GameConfig>('game.json', raw.game, gameSchema);
   const curves = attempt<CurvesFile>('curves.json', raw.curves, curvesSchema);
   const decks = attempt<DecksFile>('decks.json', raw.decks, decksSchema);
+  const cards = attempt<CardsFile>('cards.json', raw.cards, cardsSchema);
   const maps: Record<string, MapData> = {};
   for (const [name, value] of Object.entries(raw.maps)) {
     const m = attempt<MapData>(`maps/${name}.json`, value, mapSchema);
@@ -1098,7 +1385,7 @@ export function buildGameData(raw: RawGameData): GameData {
       errors.flatMap((e) => e.issues.map((i) => ({ ...i, file: i.file ?? e.file }))),
     );
   }
-  const data: GameData = { towers: towers!, enemies: enemies!, campaign: campaign!, game: game!, curves: curves!, decks: decks!, maps };
+  const data: GameData = { towers: towers!, enemies: enemies!, campaign: campaign!, game: game!, curves: curves!, decks: decks!, cards: cards!, maps };
   const cross = crossCheck(data);
   if (cross.length > 0) throw new DataError('교차 참조', cross);
   return data;

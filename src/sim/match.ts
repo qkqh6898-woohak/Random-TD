@@ -4,11 +4,12 @@
  * - 무한 모드: game.json match.infiniteMapId(순환의 정원), 몹 한도 = 맵 mobLimit(150).
  * - 캠페인 테마 t: campaign.json themes[t].mapId(테마 1 = 사거리 미로), 목숨 = 맵 lives(20), 마지막 단계 = stagesPerTheme(50),
  *   체력·방어 보정 = 테마 hpMul·armorOffset (BALANCE.md 5.4).
- * - 시스템 순서 (틱마다): 단계 → 등장 → 상태 이상(지속 피해·풀림) → 이동(출구 도달) → 특색 능력(주기 능력·진흙 웅덩이)
- *   → 소환 병사 → 전투(공격·투사체·처치) → 패배.
- *   전투가 패배 판정보다 먼저라서 같은 틱의 처치가 몹 수에 먼저 반영된다 (UI.md 9장).
+ * - 시스템 순서 (틱마다): 단계(보스 제한 시간·편대 예고) → 등장(보스·편대·정예) → 상태 이상(지속 피해·풀림) → 몹 특성(치유·가속·보스 패턴)
+ *   → 이동(출구 도달) → 감지(투명 몹 드러내기) → 특색 능력(주기 능력·진흙 웅덩이) → 소환 병사 → 전투(공격·투사체·처치·깨짐·보스 처치)
+ *   → 경제(일꾼 수입) → 패배.
+ *   전투가 패배 판정보다 먼저라서 같은 틱의 처치가 몹 수에 먼저 반영된다 (UI.md 9장). 감지는 이동 다음이라 이번 틱 위치로 드러낸다.
  * - 명령: summon(소환), merge·mergeAll(승급·모두 승급), move(이동·교환), hold(끄는 동안 공격 정지),
- *   debugSkipStage·debugAddGold·debugTower(개발용, debug 판에서만).
+ *   hireWorker(일꾼), pickCard(보스 카드), pickMerge(승급의 축복), debugSkipStage·debugAddGold·debugTower(개발용, debug 판에서만).
  * - 덱: 플레이어별 (생략하면 decks.json 기본 덱). 판 시작 때 등급별로 복사·동결하고 검사한다 (판 도중 바깥에서 못 바꿈).
  * - 타워 레벨: 플레이어별 (타워 id → 1~15, 생략하면 모두 1). 판 시작 때 복사·동결 (특색 수치 보간·레벨당 공격력, M3-8).
  * 화면은 match.state·mobs()·towers()를 읽기만 하고, 바꾸려면 명령을 world.enqueue() 한다.
@@ -26,14 +27,19 @@ import { createAbilitySystem } from './systems/Abilities';
 import { createSoldierSystem } from './systems/Soldiers';
 import { createStatusSystem } from './systems/Status';
 import { NO_THEME, buildMatchRules, checkDeck, freezeDeck, themeMods, type Deck, type MatchRules, type ThemeMods } from './rules';
-import type { MatchContext, MatchMode, MatchState } from './state';
+import { newPlayerPerks, type MatchContext, type MatchMode, type MatchState } from './state';
 import { newPlayerMods } from './stats';
 import { createCombatSystem } from './systems/Combat';
 import { createDefeatSystem } from './systems/Defeat';
 import { createMovementSystem } from './systems/Movement';
 import { createSpawnSystem } from './systems/Spawn';
 import { createStageSystem, skipStage, ticksToNextStage } from './systems/Stage';
-import { merge, mergeAll } from './systems/Merge';
+import { merge, mergeAll, pickMerge } from './systems/Merge';
+import { createMobTraitSystem } from './systems/MobTraits';
+import { createDetectionSystem } from './systems/Detection';
+import { createEconomySystem, hireWorker } from './systems/Economy';
+import { pickCard } from './systems/Cards';
+import { checkAllBossParams } from './bosses';
 import { holdTower, moveTower } from './systems/Move';
 import { placeTower, summon } from './systems/Summon';
 
@@ -181,9 +187,29 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     spawnStage: 0,
     debug: opts.debug === true,
     debugUsed: false,
+    workers: 0,
+    workerMul: 1,
+    bossId: '',
+    bossNum: 0,
+    bossMaxHp: 0,
+    bossDeadline: 0,
+    bossesKilled: 0,
+    formationStage: 0,
+    formation: '',
+    invisibleWarned: false,
+    cardOffers: [],
+    cardsPicked: [],
+    summonDiscount: 0,
+    mobSlowBp: 0,
+    goldPctBp: 0,
+    perks: [],
+    mergePicks: [],
   };
   const players = opts.players ?? 1;
-  for (let p = 0; p < players; p++) state.mods.push(newPlayerMods());
+  for (let p = 0; p < players; p++) {
+    state.mods.push(newPlayerMods());
+    state.perks.push(newPlayerPerks());
+  }
   const decks: Deck[] = [];
   for (let p = 0; p < players; p++) {
     // 등급별로 복사해 얼린다 → 판 도중 호출자가 원본 덱을 고쳐도 소환·승급이 바뀌지 않는다 (리플레이 = 시드 + 시작 때 덱)
@@ -208,6 +234,7 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
   const ctx: MatchContext = { rules, map, theme, state, decks: Object.freeze(decks), levels: Object.freeze(levels), cache: new Map() };
   // 특색 수치가 잘못되면 판을 만들 때 바로 드러나게 (덱에 있는 타워만이 아니라 모든 능력 모듈)
   checkAllAbilityParams(ctx);
+  checkAllBossParams(ctx);
   const world = new World({
     seed: opts.seed,
     players,
@@ -217,14 +244,26 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
       createStageSystem(ctx),
       createSpawnSystem(ctx),
       createStatusSystem(ctx),
+      createMobTraitSystem(ctx),
       createMovementSystem(ctx),
+      createDetectionSystem(ctx),
       createAbilitySystem(ctx),
       createSoldierSystem(ctx),
       createCombatSystem(ctx),
+      createEconomySystem(ctx),
       createDefeatSystem(ctx),
     ],
   });
-  world.setCommandHandler('debugSkipStage', () => skipStage(ctx));
+  world.setCommandHandler('debugSkipStage', (w) => skipStage(ctx, w));
+  world.setCommandHandler('hireWorker', (w, cmd) => {
+    if (cmd.type === 'hireWorker') hireWorker(ctx, w, cmd.player);
+  });
+  world.setCommandHandler('pickCard', (w, cmd) => {
+    if (cmd.type === 'pickCard') pickCard(ctx, w, cmd.player, cmd.i);
+  });
+  world.setCommandHandler('pickMerge', (w, cmd) => {
+    if (cmd.type === 'pickMerge') pickMerge(ctx, w, cmd.player, cmd.id, cmd.pick);
+  });
   world.setCommandHandler('summon', (w, cmd) => {
     if (cmd.type === 'summon') summon(ctx, w, cmd.player, cmd.x, cmd.y);
   });

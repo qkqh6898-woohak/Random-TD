@@ -4,12 +4,14 @@
  *   빈 칸은 경로에 가까운 칸부터 (체비쇼프 거리 → 위에서 아래 → 왼쪽에서 오른쪽).
  * - moveEvery틱마다: 가장 나중에 놓인 타워를 들어 올렸다가(hold on/off) 빈 칸으로 옮기거나 다른 타워와 교환.
  * - 처음에 debugTowers를 debug 명령으로 놓는다 (debug 판만).
+ * - M4: workers까지는 돈이 되면 일꾼을 먼저 고용, pickCard가 있으면 보스 카드를 그 번호로 고른다 (1초마다 한 가지 행동).
  */
 import type { Match } from '../../src/sim/match';
 import { towerAt } from '../../src/sim/entities/Tower';
 import { pathTiles } from '../../src/sim/map';
 import { mergeableGroups } from '../../src/sim/systems/Merge';
 import { summonCheck } from '../../src/sim/systems/Summon';
+import { hireCheck } from '../../src/sim/systems/Economy';
 
 export interface BotOptions {
   /** 이 틱까지 (패배하면 그 전에 멈춤) */
@@ -20,6 +22,12 @@ export interface BotOptions {
   moveEvery?: number;
   /** 처음에 놓을 타워 [x, y, towers.json 순서 번호] (debug 판) */
   debugTowers?: [number, number, number][];
+  /** 일꾼을 이 수까지 먼저 고용 (돈이 되면 소환보다 먼저, M4-1). 0 = 안 함 */
+  workers?: number;
+  /** 보스 카드를 받으면 고를 카드 번호 (생략하면 고르지 않음) */
+  pickCard?: number;
+  /** 처음에 debug 단계 건너뛰기를 이만큼 (1틱에 하나씩, debug 판) */
+  skipStages?: number;
 }
 
 /** 경로에 가까운 배치 칸부터. */
@@ -37,13 +45,18 @@ export function runBot(match: Match, opts: BotOptions): void {
   const tiles = preferredTiles(match);
   const w = match.world;
   for (const [x, y, t] of opts.debugTowers ?? []) w.enqueue({ type: 'debugTower', x, y, t });
+  for (let i = 0; i < (opts.skipStages ?? 0); i++) w.enqueue({ type: 'debugSkipStage', tick: match.tick + i });
   let flip = 0;
   while (match.tick < opts.endTick && !match.defeated) {
     const t = match.tick;
     if (t % 20 === 0) {
       const groups = mergeableGroups(match.ctx, w, 0);
       const g = groups[0];
-      if (g) {
+      if (opts.pickCard !== undefined && match.state.cardOffers.some((o) => o.player === 0)) {
+        w.enqueue({ type: 'pickCard', i: opts.pickCard });
+      } else if (opts.workers && match.state.workers < opts.workers && hireCheck(match.ctx) === null) {
+        w.enqueue({ type: 'hireWorker' });
+      } else if (g) {
         w.enqueue({ type: opts.allMerge ? 'mergeAll' : 'merge', x: g.first.tx, y: g.first.ty });
       } else {
         const free = tiles.find(([x, y]) => summonCheck(match.ctx, w, x, y) === null);

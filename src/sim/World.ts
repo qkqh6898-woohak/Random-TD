@@ -125,8 +125,12 @@ export const DEFAULT_MAX_EVENTS = 10_000;
 export const STREAM_WORLD = 'world';
 /** 전투 판정(치명타 등, M3-4). 세계(몹 등장) 흐름과 나눠서 타워 배치가 몹 등장 순서를 바꾸지 않게 한다 */
 export const STREAM_COMBAT = 'combat';
+/** 보스 패턴 판정 (혼돈의 용 타워 고르기 등, M4-5). 타워 배치에 따라 쓰는 수가 달라지므로 세계 흐름과 나눈다 */
+export const STREAM_BOSS = 'boss';
 export const streamSummon = (player: number): string => `p${player}.summon`;
 export const streamGamble = (player: number): string => `p${player}.gamble`;
+/** 보스 카드 제시 (M4-7): 플레이어별 */
+export const streamCards = (player: number): string => `p${player}.cards`;
 
 export class World {
   readonly seed: number;
@@ -163,9 +167,11 @@ export class World {
     // 흐름은 처음에 모두 만든다 → 해시에 항상 같은 목록이 들어간다.
     this.streams.set(STREAM_WORLD, this.rngRoot.fork(STREAM_WORLD));
     this.streams.set(STREAM_COMBAT, this.rngRoot.fork(STREAM_COMBAT));
+    this.streams.set(STREAM_BOSS, this.rngRoot.fork(STREAM_BOSS));
     for (let p = 0; p < players; p++) {
       this.streams.set(streamSummon(p), this.rngRoot.fork(streamSummon(p)));
       this.streams.set(streamGamble(p), this.rngRoot.fork(streamGamble(p)));
+      this.streams.set(streamCards(p), this.rngRoot.fork(streamCards(p)));
     }
     this.systems = [...(options.systems ?? [])];
     this.state = options.state ?? {};
