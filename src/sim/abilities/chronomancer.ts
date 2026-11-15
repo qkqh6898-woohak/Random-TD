@@ -6,6 +6,7 @@
  */
 import { applyHardCc } from '../systems/Status';
 import { restartTimer, revealedMobs, timerReady } from './common';
+import { POSITIVE } from './params';
 import { defineAbility } from './types';
 
 export interface ChronomancerParams {
@@ -15,7 +16,7 @@ export interface ChronomancerParams {
 
 export default defineAbility<ChronomancerParams>({
   id: 'chronomancer',
-  compile: (r) => ({ stopTicks: r.ticks('freeze'), cdTicks: r.ticks('cd') }),
+  compile: (r) => ({ stopTicks: r.ticks('freeze', POSITIVE), cdTicks: r.ticks('cd', POSITIVE) }),
   tick(env, tower, p) {
     const { ctx, world } = env;
     if (!timerReady(tower, world.tick, p.cdTicks)) return;

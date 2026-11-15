@@ -5,6 +5,7 @@
  */
 import { dist2 } from '../Fixed';
 import { giveGold } from './common';
+import { NON_NEG } from './params';
 import { defineAbility } from './types';
 
 export interface MerchantParams {
@@ -14,7 +15,7 @@ export interface MerchantParams {
 
 export default defineAbility<MerchantParams>({
   id: 'merchant',
-  compile: (r) => ({ killGold: r.int('killGold') }),
+  compile: (r) => ({ killGold: r.int('killGold', NON_NEG) }),
   onAnyKill(env, tower, p, _mob, at) {
     const range = env.ctx.rules.towers.get(tower.tower)?.range ?? 0;
     if (dist2(tower.x, tower.y, at.x, at.y) <= range * range) giveGold(env, tower, p.killGold);

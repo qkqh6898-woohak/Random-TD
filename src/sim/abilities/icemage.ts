@@ -5,6 +5,7 @@
  * 각성(빙결 중 받는 피해 +20%)은 M9.
  */
 import { applyHardCc, cdReady, setCd } from '../systems/Status';
+import { NON_NEG, POSITIVE } from './params';
 import { defineAbility } from './types';
 
 export interface IcemageParams {
@@ -15,7 +16,7 @@ export interface IcemageParams {
 
 export default defineAbility<IcemageParams>({
   id: 'icemage',
-  compile: (r) => ({ freezeTicks: r.ticks('freeze'), cdTicks: r.ticks('perMobCd') }),
+  compile: (r) => ({ freezeTicks: r.ticks('freeze', POSITIVE), cdTicks: r.ticks('perMobCd', NON_NEG) }),
   onHit(env, mob, p) {
     const tick = env.world.tick;
     if (!cdReady(mob, 'icemage', tick)) return;

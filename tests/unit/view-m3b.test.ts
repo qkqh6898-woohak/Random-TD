@@ -1,9 +1,13 @@
 /**
- * M3b 화면 순수 계산: 몹 상태 이상 표시(색·아이콘·멈춘 걸음), 진흙 웅덩이 투명도·크기.
+ * M3b 화면 순수 계산: 몹 상태 이상 표시(색·아이콘·멈춘 걸음), 진흙 웅덩이 투명도·크기, 평소 오라 빛 자리.
  */
 import { describe, expect, it } from 'vitest';
 import { emptyMobStatus } from '../../src/sim/entities/Mob';
-import { puddleLook } from '../../src/view/render/abilityModel';
+import { passiveAuraGlows, puddleLook } from '../../src/view/render/abilityModel';
+import { buildMatchRules } from '../../src/sim/rules';
+import { auraRadiusOf, auraSpecOf } from '../../src/sim/systems/Aura';
+import { placeTower } from '../../src/sim/systems/Summon';
+import { data, infinite } from '../helpers/match';
 import { MAX_STATUS_ICONS, NO_STATUS, STATUS_TINTS, mobStatusView } from '../../src/view/render/statusModel';
 
 const base = { ...emptyMobStatus(), markBp: 0 };
@@ -60,5 +64,29 @@ describe('진흙 웅덩이 그림 (puddleLook)', () => {
     expect(puddleLook(p, 110)).toEqual({ alpha: 0.85, scale: 1 });
     expect(puddleLook(p, 155).alpha).toBeCloseTo(0.425);
     expect(puddleLook(p, 160).alpha).toBe(0);
+  });
+});
+
+describe('평소 오라 빛 (passiveAuraGlows, ART.md 2.4 — 검토 반영)', () => {
+  it('내 오라 타워만: 대장장이 = 3×3(칸 거리 1), 학자 = 전체(0 → 자기 칸), 고른 타워·남의 타워·오라 없는 타워는 빼고', () => {
+    const m = infinite(1, { players: 2 });
+    const rules = buildMatchRules(data);
+    const smith = placeTower(m.world, 'blacksmith', 0, 2, 2);
+    const scholar = placeTower(m.world, 'scholar', 0, 4, 4);
+    placeTower(m.world, 'archer', 0, 5, 5);
+    placeTower(m.world, 'blacksmith', 1, 6, 6); // 남의 것
+    const glows = (selected: number | null) =>
+      passiveAuraGlows(
+        m.towers(),
+        0,
+        selected,
+        (t) => auraSpecOf(m.ctx, t)?.area ?? null,
+        (area) => auraRadiusOf(rules, area),
+      );
+    expect(glows(null)).toEqual([
+      { tx: smith.tx, ty: smith.ty, radius: 1 },
+      { tx: scholar.tx, ty: scholar.ty, radius: 0 },
+    ]);
+    expect(glows(smith.id)).toEqual([{ tx: scholar.tx, ty: scholar.ty, radius: 0 }]); // 고른 타워는 진한 표시로
   });
 });

@@ -369,6 +369,18 @@ describe('레전드', () => {
     expect([a.hp, boss.hp, tiny.hp, thief.hp]).toEqual([9200, 9800, 4, 10_000]);
   });
 
+  it('대마법사: 운석 피해의 hit 사건에만 fx = meteor (자기 투사체 피해에는 없음 — 화면이 운석 자리만 고르게, 검토 반영)', () => {
+    const m = arena();
+    tank(m, 3000, 100_000_000); // 사거리 안: 투사체도 맞는다
+    const tower = placeTower(m.world, 'archmage', 0, 4, 2);
+    m.stepN(260);
+    const hits = eventsOf(m, 'hit').filter((e) => e.source === tower.id);
+    const meteorHits = hits.filter((e) => e.fx === 'meteor');
+    expect(meteorHits).toHaveLength(1);
+    expect(hits.length).toBeGreaterThan(meteorHits.length); // 일반 공격 피해는 fx 없음
+    for (const e of hits.filter((h) => h.fx !== 'meteor')) expect(e.fx).toBeUndefined();
+  });
+
   it('★ 그림자 암살자: 보스 피해 ×2, 체력 5% 이하 일반 몹 즉사 (보스는 아님), 감지 오라 r3', () => {
     const m = arena();
     const boss = tank(m, 3000, 100_000);

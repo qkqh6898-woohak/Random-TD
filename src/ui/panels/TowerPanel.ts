@@ -3,7 +3,9 @@
  *
  * - 자리 (검토 반영): 패널의 실제 높이와 고른 타워 그림(머리 ~ 받침대)의 화면 위치를 재서 **겹치지 않는 쪽**에 붙인다
  *   (아래 우선, 안 되면 위). 맵 가운데 줄처럼 어느 쪽도 안 되면 덜 중요한 줄부터 접는다:
- *   1단계 = 승급 결과 미리 보기·안내, 2단계 = 감지·특색까지. 그래도 겹치면 가장 덜 겹치는 쪽.
+ *   1단계 = 승급 결과 미리 보기·안내, 2단계 = 감지·보유/대상 줄, 3단계 = 관통·치명 줄, 4단계 = 특색 두 줄까지(…),
+ *   5단계 = 특색 한 줄, 6단계 = 특색까지. 그래도 겹치면 가장 덜 겹치는 쪽.
+ *   (검토 반영: 특색 설명은 이 패널에서만 보이므로 가장 늦게 접는다 — 예전엔 2단계에서 숨겨 가운데 줄 타워는 볼 수 없었다)
  *
  * - 글자·버튼 상태는 towerPanelModel.ts(순수 함수)가 만들고, 여기서는 바뀐 부분만 DOM에 쓴다.
  * - [⬆ 승급] [⬆⬆ 모두 승급]은 sim 명령(merge/mergeAll)을 보내는 콜백만 부른다 (패널은 sim을 바꾸지 않는다).
@@ -21,9 +23,12 @@ export interface TowerPanelOptions {
 }
 
 export type PanelSide = 'bottom' | 'top';
-/** 접기 단계: 0 = 모두, 1 = 승급 결과·안내 숨김, 2 = 감지·특색도 숨김 */
-export type PanelDensity = 0 | 1 | 2;
-export const PANEL_DENSITIES: readonly PanelDensity[] = [0, 1, 2];
+/**
+ * 접기 단계: 0 = 모두, 1 = 승급 결과·안내 숨김, 2 = 감지·보유/대상 숨김, 3 = 관통·치명 줄 숨김,
+ * 4 = 특색 두 줄까지, 5 = 특색 한 줄, 6 = 특색도 숨김 (styles.css)
+ */
+export type PanelDensity = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export const PANEL_DENSITIES: readonly PanelDensity[] = [0, 1, 2, 3, 4, 5, 6];
 
 export interface PanelPlacement {
   side: PanelSide;
@@ -45,7 +50,7 @@ function overlapOf(a: Span, b: Span): number {
 /**
  * 패널을 붙일 쪽과 접기 단계 (순수 함수). 접기 단계가 낮은(정보가 많은) 것부터, 같은 단계에서는 아래 → 위 순으로
  * 타워 그림과 겹치지 않는 첫 자리. 모두 겹치면 가장 많이 접은 단계에서 덜 겹치는 쪽 (같으면 아래).
- * @param heights 접기 단계별 패널 높이 (CSS px)
+ * @param heights 접기 단계별 패널 높이 (CSS px). 주어진 단계까지만 본다 (길이 3이면 0~2단계)
  * @param figure 고른 타워 그림의 세로 구간
  * @param topY 위에 붙일 때 패널 위쪽 끝
  * @param bottomY 아래에 붙일 때 패널 아래쪽 끝
@@ -53,8 +58,8 @@ function overlapOf(a: Span, b: Span): number {
 export function choosePanelPlacement(heights: readonly number[], figure: Span, topY: number, bottomY: number): PanelPlacement {
   const spanOf = (side: PanelSide, h: number): Span => (side === 'bottom' ? { top: bottomY - h, bottom: bottomY } : { top: topY, bottom: topY + h });
   let last: PanelPlacement = { side: 'bottom', density: 0, overlap: Infinity };
-  for (const density of PANEL_DENSITIES) {
-    const h = heights[density] ?? heights[heights.length - 1] ?? 0;
+  for (const density of PANEL_DENSITIES.slice(0, Math.max(1, heights.length))) {
+    const h = heights[density] ?? 0;
     const bottom = overlapOf(spanOf('bottom', h), figure);
     const top = overlapOf(spanOf('top', h), figure);
     if (bottom === 0) return { side: 'bottom', density, overlap: 0 };
@@ -172,7 +177,8 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       name.textContent = m.name;
       level.textContent = m.level;
       subtitle.textContent = m.subtitle;
-      statsEl.replaceChildren(...m.stats.map((row) => h('div', { class: 'tp-row' }, ...row.map(statSpan))));
+      // 셋째 줄(방관·마관·치명)은 접기 3단계에서 숨긴다 (tp-row-pen)
+      statsEl.replaceChildren(...m.stats.map((row, i) => h('div', { class: i === 2 ? 'tp-row tp-row-pen' : 'tp-row' }, ...row.map(statSpan))));
       detect.replaceChildren(h('span', { class: 'tp-label', text: '👁 감지' }), h('b', { text: m.detect }));
       ability.replaceChildren(h('span', { class: 'tp-label', text: m.abilityLabel }), h('span', { text: m.ability }));
       owned.textContent = m.owned;

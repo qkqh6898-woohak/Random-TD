@@ -3,6 +3,7 @@
  * 약화 = 서로 다른 출처는 합산, 최대 +100% (game.json combat.vulnMax), 같은 출처('dragoncaller')는 갱신. 각성(용 2마리)은 M9.
  */
 import { applyVuln } from '../systems/Status';
+import { NON_NEG, POSITIVE } from './params';
 import { defineAbility } from './types';
 
 export interface DragoncallerParams {
@@ -12,7 +13,7 @@ export interface DragoncallerParams {
 
 export default defineAbility<DragoncallerParams>({
   id: 'dragoncaller',
-  compile: (r) => ({ vulnBp: r.bp('vuln'), vulnTicks: r.ticks('vulnDur') }),
+  compile: (r) => ({ vulnBp: r.bp('vuln', NON_NEG), vulnTicks: r.ticks('vulnDur', POSITIVE) }),
   onHit(env, mob, p) {
     applyVuln(env.ctx.rules.status, mob, env.world.tick, 'dragoncaller', p.vulnBp, p.vulnTicks);
   },

@@ -16,7 +16,8 @@
  * - 상태이상 저항(ccResist, 보스가 아닌 몹): 둔화 세기와 기절·정지·빙결 지속시간을 그 비율만큼 줄인다 (골렘 20% → 둔화 50%는 40%).
  *   보스는 ccResist 대신 위 표의 보스 규칙(둔화 절반·지속 30%)을 쓴다 — 보스 데이터의 상태이상 저항 70%와 '지속 30%'는 같은 뜻이라 겹쳐 곱하지 않는다.
  * - 같은 출처(타워 종류 등)에서 다시 걸면 갱신(더 늦게 풀리는 쪽). 출처가 다르면 따로 들고 있다가 규칙대로 합친다
- *   (둔화 30% + 둔화 45% → 45%만, 45%가 먼저 풀리면 30%가 남는다).
+ *   (둔화 30% + 둔화 45% → 45%만, 45%가 먼저 풀리면 30%가 남는다). 같은 출처라도 세기가 다르면(2인 판, 레벨이 다른 같은 타워)
+ *   약한 쪽이 센 쪽을 덮어쓰지 않는다 (upsert).
  * - 걸린 틱 T부터 효과가 시작되고(같은 틱의 다음 공격부터 약화·표식이 적용) 이동에는 다음 틱부터: 지속 d틱 = 이동 T+1 ~ T+d틱 (until = T + 1 + d).
  * - 지속 피해: 틱마다 걸린 중첩의 초당 피해를 누적하고, dotIntervalTicks(0.5초)마다 고정 피해로 넣는다 (약화가 곱해짐, 방어 무시, 치명타 없음).
  *   몹마다 나머지를 이어 가서 소수 피해도 평균이 정확하다. 지속 피해로 죽어도 처치 보상은 같다.
@@ -88,20 +89,53 @@ function prune<T extends { until: number }>(list: T[], tick: number): T[] {
   return list;
 }
 
-/** 목록에서 출처 src의 항목을 bp·until로 갱신하거나 새로 넣는다 (until은 더 늦은 쪽). */
+/**
+ * 목록에 출처 src의 효과 (세기 bp, 풀리는 틱 until)를 넣는다. 같은 출처끼리는 '더 세고 더 오래가는 쪽'만 남긴다:
+ * - 새 효과가 같은 출처의 기존 효과보다 세기·시각 모두 같거나 크면 → 기존 것을 지우고 새 것 (1인 판: 늘 같은 세기라 '시각 갱신')
+ * - 기존 효과 하나가 세기·시각 모두 같거나 크면 → 새 효과는 버린다 (짧은 기절이 긴 기절을 줄이지 않는 것과 같음)
+ * - 둘 다 아니면(더 세지만 먼저 풀림 / 더 약하지만 오래감) → 같은 출처로 따로 든다. 2인 판에서 레벨이 다른 같은 타워가
+ *   같은 몹을 칠 때 약한 쪽이 센 쪽을 덮어쓰지 않게 (검토 반영, GDD 5.5 '둔화: 가장 강한 것만').
+ * 같은 출처가 여러 개 남아도 둔화·표식은 가장 강한 것, 약화는 출처마다 가장 강한 것만 더한다 (refreshStatus).
+ */
 function upsert(list: StatusEntry[], src: string, bpValue: number, until: number): void {
-  for (const e of list) {
-    if (e.src !== src) continue;
-    e.bp = bpValue;
-    if (until > e.until) e.until = until;
-    return;
+  // ① 같은 출처의 기존 효과가 새 효과를 덮으면 버린다
+  for (const e of list) if (e.src === src && e.bp >= bpValue && e.until >= until) return;
+  // ② 새 효과가 덮는 같은 출처 효과: 첫째 자리를 새 값으로 바꾸고 나머지는 지운다 (없으면 끝에 넣는다)
+  let replaced = false;
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i] as StatusEntry;
+    if (e.src !== src || bpValue < e.bp || until < e.until) continue;
+    if (!replaced) {
+      e.bp = bpValue;
+      e.until = until;
+      replaced = true;
+    } else {
+      list.splice(i, 1);
+      i--;
+    }
   }
-  list.push({ src, bp: bpValue, until });
+  if (!replaced) list.push({ src, bp: bpValue, until });
+}
+
+/** 약화 합: 출처마다 가장 강한 것 하나씩 (같은 출처는 합산하지 않는다). */
+function vulnSum(list: readonly StatusEntry[]): number {
+  let sum = 0;
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i] as StatusEntry;
+    let best = true;
+    for (let j = 0; j < list.length && best; j++) {
+      if (j === i) continue;
+      const o = list[j] as StatusEntry;
+      if (o.src === e.src && (o.bp > e.bp || (o.bp === e.bp && j < i))) best = false;
+    }
+    if (best) sum += e.bp;
+  }
+  return sum;
 }
 
 /**
  * 걸린 목록 → 몹의 지금 값 (slowBp·vulnBp·markBp)을 다시 계산하고 풀린 것을 지운다.
- * 둔화 = 가장 강한 것 (규칙대로 조정), 약화 = 합 + 빙결 중이면 빙결 약화, 표식 = 가장 강한 것.
+ * 둔화 = 가장 강한 것 (규칙대로 조정), 약화 = 출처마다 가장 강한 것의 합 + 빙결 중이면 빙결 약화, 표식 = 가장 강한 것.
  */
 export function refreshStatus(rules: StatusRules, mob: Mob, tick: number): void {
   mob.slows = prune(mob.slows, tick);
@@ -112,8 +146,7 @@ export function refreshStatus(rules: StatusRules, mob: Mob, tick: number): void 
   let slow = 0;
   for (const e of mob.slows) if (e.bp > slow) slow = e.bp;
   mob.slowBp = slowStrength(rules, mob, slow);
-  let vuln = 0;
-  for (const e of mob.vulns) vuln += e.bp;
+  let vuln = vulnSum(mob.vulns);
   if (isFrozen(mob, tick)) vuln += mob.freezeVulnBp;
   mob.vulnBp = vuln;
   let mark = 0;
@@ -271,7 +304,13 @@ export function createStatusSystem(ctx: MatchContext): System {
       // 빙결이 풀렸으면 빙결 약화도 지운다 (해시를 작게, 다음 빙결이 새 값을 건다)
       if (e.freezeVulnBp > 0 && !isFrozen(e, tick)) e.freezeVulnBp = 0;
       refreshStatus(rules, e, tick);
-      if (!pulse || e.dotAcc < TICK_HZ) continue;
+      if (!pulse) continue;
+      if (e.dotAcc < TICK_HZ) {
+        // 지속 피해가 다 풀렸는데 1 미만 찌꺼기만 남았으면 버린다 (검토 반영: 남겨 두면 hasAnyStatus가 계속 참이라
+        // 그 몹이 판 끝까지 매 틱 상태 이상 처리를 타고 찌꺼기가 해시에 남았다)
+        if (e.dots.length === 0) e.dotAcc = 0;
+        continue;
+      }
       const dmgC = Math.floor(e.dotAcc / TICK_HZ);
       e.dotAcc -= dmgC * TICK_HZ;
       if (e.dots.length === 0) e.dotAcc = 0; // 다 풀렸으면 1 미만 찌꺼기는 버린다

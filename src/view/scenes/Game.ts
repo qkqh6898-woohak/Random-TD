@@ -39,6 +39,7 @@ import { mergeableGroups, sameKindTowers } from '../../sim/systems/Merge';
 import { isPaused, moveCheck } from '../../sim/systems/Move';
 import { auraCovers, auraRadiusOf, auraSpecOf, computeAuras, towerBonus } from '../../sim/systems/Aura';
 import { towerLevel } from '../../sim/abilities';
+import { METEOR_FX } from '../../sim/abilities/archmage';
 import { summonCheck, towerCount } from '../../sim/systems/Summon';
 import { BOARD_FULL, EXECUTE_LABEL, FORTUNA_DOUBLE, FORTUNA_RARE, godDescends, mergeFailText, mergeReadyToast } from '../../ui/messages';
 import { createTowerPanel, type TowerPanelView } from '../../ui/panels/TowerPanel';
@@ -83,6 +84,7 @@ import { TowerLayer } from '../render/TowerSprite';
 import { DAMAGE_COLORS, damageColor, eventFxVisible } from '../render/fxModel';
 import { FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../render/towerGeom';
 import { PuddleLayer, SoldierLayer } from '../render/AbilitySprites';
+import { passiveAuraGlows, type AuraGlow } from '../render/abilityModel';
 import { mobStatusView } from '../render/statusModel';
 /** HUD 띠 아래 끝과 알림 사이 간격 (무대 너비 비율, 2cqw) */
 const TOAST_GAP_OF_WIDTH = 0.02;
@@ -150,6 +152,8 @@ export class GameScene extends Phaser.Scene {
   private prevSoldiers = new Map<number, number>();
   /** 고른 오라 타워의 효과 범위 표시 (E2E 확인용, 오라 타워가 아니면 null) */
   private auraView: { area: string; radius: number; buffed: number } | null = null;
+  /** 평소 옅게 빛나는 오라 타워 자리 (E2E 확인용으로도 읽는다) */
+  private auraGlows: AuraGlow[] = [];
   /** 특색 연출 수 (E2E 확인용): 종류 → 횟수 */
   private abilityFx = new Map<string, number>();
   private floatingText!: FloatingTextLayer;
@@ -400,6 +404,11 @@ export class GameScene extends Phaser.Scene {
   /** 고른 오라 타워의 효과 범위 표시: 범위 종류·칸 거리·효과를 받는 타워 수 (E2E). */
   get selectedAura(): { area: string; radius: number; buffed: number } | null {
     return this.auraView;
+  }
+
+  /** 평소 옅게 빛나는 오라 타워 자리 (고른 타워 제외, E2E). */
+  get passiveAuras(): readonly AuraGlow[] {
+    return this.auraGlows;
   }
 
   /** 지금까지 만든 특색 연출 수 (종류별, E2E). */
@@ -808,8 +817,17 @@ export class GameScene extends Phaser.Scene {
     const buffed =
       t && aura ? this.match.towers().filter((x) => x.owner === t.owner && auraCovers(rules, aura.area, t, x)).map((x) => ({ tx: x.tx, ty: x.ty })) : [];
     this.auraView = aura ? { area: aura.area, radius: auraRadiusOf(rules, aura.area), buffed: buffed.length } : null;
+    // 평소 오라 빛 (고른 타워 말고 내 오라 타워 모두, ART.md 2.4)
+    this.auraGlows = passiveAuraGlows(
+      this.match.towers(),
+      LOCAL_PLAYER,
+      t && !p ? t.id : null,
+      (x) => auraSpecOf(this.match.ctx, x)?.area ?? null,
+      (area) => auraRadiusOf(rules, area),
+    );
     this.selectionLayer.draw(
       {
+        auras: this.auraGlows,
         selected:
           t && stats && !p
             ? {
@@ -977,7 +995,8 @@ export class GameScene extends Phaser.Scene {
           break;
         case 'hit': {
           if (!recent) break;
-          if (meteors < MAX_METEOR_FX && meteorKeys.has(`${ev.source}:${ev.tick}`)) {
+          // 운석 피해에만 불덩이 (같은 틱에 착탄한 그 대마법사의 일반 투사체 피해에는 붙이지 않는다 — fx 표시로 고름)
+          if (ev.fx === METEOR_FX && meteors < MAX_METEOR_FX && meteorKeys.has(`${ev.source}:${ev.tick}`)) {
             meteors++;
             this.fx.meteor(Number(ev.x), Number(ev.y));
           }

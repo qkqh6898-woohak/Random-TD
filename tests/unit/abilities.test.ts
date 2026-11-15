@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { DECK_GRADES } from '../../src/data/deck';
 import { abilityIds, abilityOf, abilityParams, checkAllAbilityParams, gambleZeroReduction } from '../../src/sim/abilities';
-import { lerpLevel, ParamReader } from '../../src/sim/abilities/params';
+import { lerpLevel, NON_NEG, ParamReader, POSITIVE, RATIO } from '../../src/sim/abilities/params';
 import { createMatch } from '../../src/sim/match';
 import { buildMatchRules } from '../../src/sim/rules';
 import { NO_MODS, effectiveStats } from '../../src/sim/stats';
@@ -62,6 +62,36 @@ describe('레벨 보간 lerp(params[0], params[1], (lv − 1) / 14)', () => {
     expect(() => r.bp('nothing')).toThrow('towers.json miner.params.nothing');
     expect(() => new ParamReader('miner', {}, 16, 15)).toThrow('1~15');
     expect(() => new ParamReader('x', { t: 0.07 }, 1, 15).ticks('t')).toThrow('1틱');
+  });
+
+  it('범위 검사 (검토 반영): 끝값 둘을 정수 단위로 바꾼 뒤 검사 — 0·음수 주기, 100% 넘는 확률은 경로가 든 에러', () => {
+    const r = new ParamReader('x', { cd: [0, 0], neg: -1, half: [0.5, 1.5], ok: [5, 3], chance: 0.2, r: 0.0001 }, 1, 15);
+    expect(() => r.ticks('cd', POSITIVE)).toThrow('towers.json x.params.cd: 정수 단위 값이 1 이상');
+    expect(() => r.ticks('neg', POSITIVE)).toThrow('towers.json x.params.neg');
+    expect(() => r.bp('half', RATIO)).toThrow('0~10000'); // Lv15 끝값 150%가 범위 밖
+    expect(() => r.units('r', POSITIVE)).toThrow('towers.json x.params.r'); // 0.0001칸 → 0단위
+    expect(() => r.bp('neg', NON_NEG)).toThrow('0 이상');
+    expect(r.ticks('ok', POSITIVE)).toBe(100);
+    expect(r.bp('chance', RATIO)).toBe(2000);
+    expect(r.ticks('cd')).toBe(0); // 범위를 주지 않으면 검사하지 않는다
+  });
+
+  it('잘못된 범위의 특색 수치는 판을 만들 때 에러 (소환사 주기 0 → 매 틱 소환, 대마법사 주기 −1 → 매 틱 운석이던 것)', () => {
+    const bad = (id: string, key: string, v: unknown) => {
+      const d = structuredClone(data);
+      (d.towers.towers.find((t) => t.id === id)!.params as Record<string, unknown>)[key] = v;
+      return () => createMatch(d, { seed: 1, mode: 'infinite' });
+    };
+    expect(bad('summoner', 'summonCd', [0, 0])).toThrow('towers.json summoner.params.summonCd');
+    expect(bad('archmage', 'cd', -1)).toThrow('towers.json archmage.params.cd');
+    expect(bad('summoner', 'soldierHits', 0)).toThrow('towers.json summoner.params.soldierHits');
+    expect(bad('summoner', 'soldierSpeed', 0)).toThrow('towers.json summoner.params.soldierSpeed');
+    expect(bad('mudshaman', 'puddleRadius', 0)).toThrow('towers.json mudshaman.params.puddleRadius');
+    expect(bad('miner', 'goldChance', [0.01, 1.2])).toThrow('towers.json miner.params.goldChance');
+    expect(bad('gambler', 'dice', 0)).toThrow('towers.json gambler.params.dice');
+    expect(bad('gambler', 'gambleZero', 0.03)).toThrow('towers.json gambler.params.gambleZero');
+    expect(bad('chronomancer', 'cd', 0)).toThrow('towers.json chronomancer.params.cd');
+    expect(bad('alchemist', 'gold', -5)).toThrow('towers.json alchemist.params.gold');
   });
 });
 

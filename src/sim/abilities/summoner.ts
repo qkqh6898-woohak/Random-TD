@@ -9,6 +9,7 @@ import { mulBp } from '../Fixed';
 import { SOLDIER_KIND, type Soldier } from '../entities/Soldier';
 import { nearestProgress } from '../map';
 import { restartTimer, revealedMobs, timerReady, towerEff } from './common';
+import { NON_NEG, POSITIVE } from './params';
 import { defineAbility } from './types';
 
 export interface SummonerParams {
@@ -26,12 +27,12 @@ export interface SummonerParams {
 export default defineAbility<SummonerParams>({
   id: 'summoner',
   compile: (r) => ({
-    cdTicks: r.ticks('summonCd'),
-    atkMulBp: r.mul('soldierAtk'),
-    hits: r.int('soldierHits'),
-    lifeTicks: r.ticks('soldierLife'),
-    speed: r.units('soldierSpeed'),
-    reach: r.units('soldierReach'),
+    cdTicks: r.ticks('summonCd', POSITIVE),
+    atkMulBp: r.mul('soldierAtk', NON_NEG),
+    hits: r.int('soldierHits', POSITIVE),
+    lifeTicks: r.ticks('soldierLife', POSITIVE),
+    speed: r.units('soldierSpeed', POSITIVE),
+    reach: r.units('soldierReach', POSITIVE),
   }),
   tick(env, tower, p) {
     const { ctx, world } = env;

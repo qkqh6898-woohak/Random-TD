@@ -64,6 +64,17 @@ export function fmtNum(v: number): string {
   return Number.isInteger(r) ? String(r) : r.toFixed(1);
 }
 
+/**
+ * 정수 값(scale 배) → 소수 둘째 자리까지, 뒤의 0은 뺀다 (345/1000 → "0.35", 11500/10000 → "1.15", 800/1000 → "0.8").
+ * 공속·공속 배율용 (검토 반영: 소수 하나로 반올림하면 저격수 0.3 × 1.15 = 0.345가 기본값과 같은 "0.3", 배율 ×1.15가 "×1.2"로 보였다).
+ * 정수에서 바로 반올림해 부동소수 오차가 없다.
+ */
+export function fmtScaled2(value: number, scale: number): string {
+  const hundredths = Math.round((value * 100) / scale);
+  if (hundredths % 100 === 0) return String(hundredths / 100);
+  return (hundredths / 100).toFixed(2).replace(/0$/, '');
+}
+
 /** bp → "40%" (0이면 —). */
 export function fmtPct(bpValue: number): string {
   if (bpValue <= 0) return '—';
@@ -179,13 +190,12 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
   const { data, stats, eff } = input;
   const atk = (c: number, mul: number): number => (c * mul) / 10_000 / ATK_SCALE;
   const dash = (v: number): string => (v > 0 ? fmtNum(v) : '—');
-  const apsNow = eff.apsMilli / APS_SCALE;
-  const apsBase = stats.apsMilli / APS_SCALE;
+  // 공속·배율은 소수 둘째 자리까지 (버프로 오른 값이 기본값과 같게 보이지 않게)
   const apsCell: StatCell = {
     label: '공속',
-    value: `${fmtNum(apsNow)} (×${fmtNum(eff.apsMulBp / 10_000)})`,
+    value: `${fmtScaled2(eff.apsMilli, APS_SCALE)} (×${fmtScaled2(eff.apsMulBp, 10_000)})`,
     buffed: eff.apsMilli > stats.apsMilli,
-    ...(eff.apsMilli !== stats.apsMilli ? { base: fmtNum(apsBase) } : {}),
+    ...(eff.apsMilli !== stats.apsMilli ? { base: fmtScaled2(stats.apsMilli, APS_SCALE) } : {}),
   };
   const tags = data.special > 0 && data.tags.length > 0 ? ` · ${data.tags[0]}` : '';
   const mergeAllTimes = input.owned >= input.mergeCount ? Math.floor(input.owned / input.mergeCount) : 0;

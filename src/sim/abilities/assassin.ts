@@ -7,6 +7,7 @@
  */
 import { mulBp } from '../Fixed';
 import { killMob } from '../systems/Kill';
+import { NON_NEG, RATIO } from './params';
 import { defineAbility } from './types';
 
 export interface AssassinParams {
@@ -18,7 +19,7 @@ export interface AssassinParams {
 
 export default defineAbility<AssassinParams>({
   id: 'assassin',
-  compile: (r) => ({ bossMulBp: r.mul('bossMul'), executeBp: r.bp('execute') }),
+  compile: (r) => ({ bossMulBp: r.mul('bossMul', NON_NEG), executeBp: r.bp('execute', RATIO) }),
   bossMulBp: (p) => p.bossMulBp,
   onHit(env, mob, p, _hit, at) {
     if (mob.boss || mob.hp <= 0) return;

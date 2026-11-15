@@ -5,6 +5,7 @@
  */
 import { applyMark } from '../systems/Status';
 import { giveGold, restartTimer, timerReady } from './common';
+import { NON_NEG, POSITIVE, RATIO } from './params';
 import { defineAbility } from './types';
 
 export interface AlchemistParams {
@@ -16,7 +17,12 @@ export interface AlchemistParams {
 
 export default defineAbility<AlchemistParams>({
   id: 'alchemist',
-  compile: (r) => ({ gold: r.int('gold'), cdTicks: r.ticks('cd'), shredBp: r.bp('shred'), shredTicks: r.ticks('shredDur') }),
+  compile: (r) => ({
+    gold: r.int('gold', NON_NEG),
+    cdTicks: r.ticks('cd', POSITIVE),
+    shredBp: r.bp('shred', RATIO),
+    shredTicks: r.ticks('shredDur', POSITIVE),
+  }),
   tick(env, tower, p) {
     if (!timerReady(tower, env.world.tick, p.cdTicks)) return;
     giveGold(env, tower, p.gold);

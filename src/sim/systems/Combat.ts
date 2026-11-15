@@ -85,8 +85,9 @@ export function applyHit(ctx: MatchContext, world: World, mob: Mob, hit: RawHit,
   if (tower) tower.remDmg = rem;
   mob.hp -= dmg;
   const kill = mob.hp <= 0;
-  // p·m·t = 종류별 피해 (× ATK_SCALE, 화면이 숫자 색을 고를 때 쓴다), damage = 실제 정수 피해, crit = 치명타 (숫자 크게)
-  world.emit('hit', { target: mob.id, source, damage: dmg, p: d.p, m: d.m, t: d.t, crit: hit.crit === true, x: at.x, y: at.y, kill });
+  // p·m·t = 종류별 피해 (× ATK_SCALE, 화면이 숫자 색을 고를 때 쓴다), damage = 실제 정수 피해, crit = 치명타 (숫자 크게),
+  // fx = 화면 연출 표시 (운석 등, 있을 때만)
+  world.emit('hit', { target: mob.id, source, damage: dmg, p: d.p, m: d.m, t: d.t, crit: hit.crit === true, x: at.x, y: at.y, kill, ...(hit.fx ? { fx: hit.fx } : {}) });
   if (kill) {
     killMob(ctx, world, mob, at.x, at.y);
     return true;

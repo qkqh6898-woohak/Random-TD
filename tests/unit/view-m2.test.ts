@@ -13,6 +13,7 @@ import { BOTTOM_UI_PX, HUD_TOP_PX, MIN_MAP_AREA_PX, computeMapLayout, mapAreaBel
 import {
   DAMAGE_COLORS,
   FX_RECENT_TICKS,
+  bigTextSlot,
   boxesOverlap,
   coinPath,
   damageColor,
@@ -265,6 +266,25 @@ describe('검토 반영: 피해 숫자 겹침 방지', () => {
     for (let i = 0; i < others.length; i++) for (let j = i + 1; j < others.length; j++) expect(boxesOverlap(others[i]!, others[j]!)).toBe(false);
     // 옆으로 충분히 떨어져 있으면 원래 자리
     expect(stackSlot(box(200, 200), others, 4)).toBe(0);
+  });
+
+  it('큰 글자(즉사!·돈)는 빈 칸이 없으면 다른 큰 글자를 피한 가장 낮은 칸 + 그 자리를 가리는 작은 피해 숫자를 지운다 (검토 반영)', () => {
+    // 같은 자리에 작은 숫자 0·2칸, 큰 글자(+10원) 1·3칸 → 큰 글자가 없는 가장 낮은 칸 = 0칸, 0칸의 작은 숫자만 지움
+    const at = (k: number) => box(100, 200 - k * 30);
+    const others = [
+      { box: at(0), big: false },
+      { box: at(1), big: true },
+      { box: at(2), big: false },
+      { box: at(3), big: true },
+    ];
+    expect(stackSlot(box(100, 200), others.map((o) => o.box), 4)).toBe(-1);
+    expect(bigTextSlot(box(100, 200), others, 6)).toEqual({ slot: 0, drop: [0] });
+    // 0칸도 큰 글자면 → 큰 글자가 없는 2칸에, 그 칸의 작은 숫자를 지움 (큰 글자끼리는 겹치지 않는다)
+    const busy = [{ box: at(0), big: true }, ...others.slice(1)];
+    expect(bigTextSlot(box(100, 200), busy, 6)).toEqual({ slot: 2, drop: [2] });
+    // 큰 글자로 다 차 있으면 0칸 (작은 숫자만 지운다)
+    const full = [0, 1, 2].map((k) => ({ box: at(k), big: true }));
+    expect(bigTextSlot(box(100, 200), full, 3)).toEqual({ slot: 0, drop: [] });
   });
 
   it('떠오름은 일정 속도: 먼저 뜬 숫자와의 간격이 끝까지 그대로 (따라잡아 겹치지 않음)', () => {

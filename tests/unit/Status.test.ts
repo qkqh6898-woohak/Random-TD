@@ -84,6 +84,38 @@ describe('둔화 — 가장 강한 것만, 최대 70%, 보스 절반', () => {
     expect(mob.slows).toEqual([{ src: 'mud', bp: 2500, until: 151 }]);
   });
 
+  it('같은 출처라도 약한 값이 센 값을 덮어쓰지 않는다 (검토 반영: 2인 판, 레벨이 다른 같은 타워)', () => {
+    const m = arena();
+    const mob = mobAt(m, 'slime', 3000);
+    applySlow(S, mob, 100, 'mudshaman', 4000, 40); // until 141
+    applySlow(S, mob, 101, 'mudshaman', 2500, 40); // until 142 — 약하지만 오래감 → 따로 든다
+    expect(mob.slowBp).toBe(4000);
+    applySlow(S, mob, 102, 'mudshaman', 2500, 30); // 같은 2500이 이미 더 오래감 → 버림
+    expect(mob.slows).toEqual([
+      { src: 'mudshaman', bp: 4000, until: 141 },
+      { src: 'mudshaman', bp: 2500, until: 142 },
+    ]);
+    refreshStatus(S, mob, 141); // 센 쪽이 먼저 풀리면 약한 쪽이 남는다
+    expect(mob.slowBp).toBe(2500);
+    applySlow(S, mob, 141, 'mudshaman', 4000, 40); // 세고 오래가면 덮는다
+    expect(mob.slows).toEqual([{ src: 'mudshaman', bp: 4000, until: 182 }]);
+  });
+
+  it('2인 판: P0 진흙 주술사 Lv15(40%)와 P1 진흙 주술사 Lv1(25%)이 같은 몹을 쳐도 40%가 유지된다 (예전: 나중에 맞힌 25%가 덮어씀)', () => {
+    const m = arena(1, { players: 2, levels: [{ mudshaman: 15 }, {}] });
+    const mob = mobAt(m, 'slime', 3000);
+    mob.hp = mob.maxHp = 1_000_000_000;
+    placeTower(m.world, 'mudshaman', 0, 4, 2);
+    placeTower(m.world, 'mudshaman', 1, 4, 0); // ID가 커서 같은 틱에 나중에 친다
+    const seen = new Set<number>();
+    for (let i = 0; i < 150; i++) {
+      m.step();
+      seen.add(mob.slowBp);
+    }
+    expect(seen.has(4000)).toBe(true);
+    expect(seen.has(2500)).toBe(false); // 40%가 걸려 있는 동안 25%로 내려가지 않는다 (웅덩이 50%는 따로)
+  });
+
   it('둔화된 슬라임: 1.5칸/초 × (1 − 50%) → 1초에 750단위, 풀리면 다시 1500', () => {
     const m = arena();
     const mob = mobAt(m, 'slime', 3000, 1500);
@@ -162,6 +194,18 @@ describe('기절·정지·빙결 — 행동 불가', () => {
     mob.ccResistBp = 9000;
     expect(applyHardCc(S, mob, 100, 'stun', 5)).toBe(false);
     expect(mob.ccEnd).toBe(0);
+  });
+
+  it('상태이상 저항은 빙결 지속에도 적용 (ENEMIES.md 1장 — 빙결도 일시 정지): 암흑 골렘 20% → 얼음 마법사 0.5초(10틱)가 8틱, 방패병 30% → 7틱', () => {
+    const m = arena();
+    const golem = mobAt(m, 'golem', 3000);
+    expect(golem.ccResistBp).toBe(2000);
+    applyHardCc(S, golem, 100, 'freeze', 10, S.freezeVulnBp);
+    expect(golem.freezeUntil).toBe(100 + 1 + 8);
+    const shield = mobAt(m, 'slime', 3000);
+    shield.ccResistBp = 3000;
+    applyHardCc(S, shield, 100, 'freeze', 10, S.freezeVulnBp);
+    expect(shield.freezeUntil).toBe(100 + 1 + 7);
   });
 
   it('정지(시간): 이동 정지 + 정지 상태 (회복·능력 정지는 M4 몹 특성이 읽는다)', () => {
@@ -280,6 +324,32 @@ describe('지속 피해 — 화상·독·출혈 (고정 피해, 치명타 없음
     expect(m.state.gold).toBe(gold + mob.reward);
     expect(m.state.kills).toBe(1);
   });
+
+  it('지속 피해가 다 풀린 뒤 1 미만 찌꺼기는 다음 간격에 버린다 (검토 반영: 예전에는 dotAcc 7이 판 끝까지 남아 매 틱 상태 이상 처리를 탔다)', () => {
+    const m = arena();
+    const mob = mobAt(m, 'slime', 3000);
+    mob.hp = mob.maxHp = 1_000_000;
+    applyDot(mob, m.tick, 'x', 'burn', 7, 20, 1); // 초당 0.007 × 1초 — 피해 1이 안 됨
+    m.stepN(200);
+    expect(mob.dots).toEqual([]);
+    expect(mob.dotAcc).toBe(0);
+    expect(mob.hp).toBe(1_000_000);
+  });
+
+  it('지속 피해가 풀린 틱과 간격 사이에 다시 걸리면 찌꺼기를 이어 간다 (간격에만 버림)', () => {
+    const m = arena();
+    const mob = mobAt(m, 'slime', 3000);
+    mob.hp = mob.maxHp = 1_000_000;
+    m.stepN(10 - (m.tick % 10)); // 간격 틱에 맞춘다
+    applyDot(mob, m.tick - 1, 'x', 'burn', 15, 1, 1); // 다음 틱에 15 누적 후 풀림
+    m.step();
+    expect(mob.dotAcc).toBe(15);
+    applyDot(mob, m.tick - 1, 'x', 'burn', 15, 1, 1); // 간격 전에 다시 → 30 ≥ 20
+    m.stepN(10);
+    // 간격 틱: 30 → 고정 피해 1 (× ATK_SCALE 단위, 몹의 피해 나머지로) + 남은 10은 지속 피해가 다 풀렸으니 버림
+    expect(mob.dotRem).toBe(1);
+    expect(mob.dotAcc).toBe(0);
+  });
 });
 
 describe('표식·약화', () => {
@@ -301,6 +371,18 @@ describe('표식·약화', () => {
     expect(mob.vulnBp).toBe(1000);
     applyHardCc(S, mob, 100, 'freeze', 20, 1000);
     expect(mob.vulnBp).toBe(2000);
+  });
+
+  it('약화: 같은 출처가 세기 달리 둘이어도(2인 판) 그 출처는 가장 강한 것 하나만 더한다', () => {
+    const m = arena();
+    const mob = mobAt(m, 'slime', 3000);
+    applyVuln(S, mob, 100, 'dragoncaller', 2500, 50); // until 151
+    applyVuln(S, mob, 101, 'dragoncaller', 1000, 100); // 약하지만 오래감 (until 202)
+    applyVuln(S, mob, 101, 'other', 500, 100);
+    expect(mob.vulns).toHaveLength(3);
+    expect(mob.vulnBp).toBe(2500 + 500);
+    refreshStatus(S, mob, 151);
+    expect(mob.vulnBp).toBe(1000 + 500);
   });
 
   it('약화 합 최대 +100% (판 규칙 vulnMax): +150%여도 ×2', () => {
@@ -341,6 +423,16 @@ describe('원소 5종 — 판 안 실제 타워', () => {
     m.world.drainEvents();
     m.stepN(30);
     expect(eventsOf(m, 'hit').some((e) => e.dot === true && Number(e.t) > 0)).toBe(true);
+  });
+
+  it('🔥 화염이지만 dot이 없는 용 소환사·대마법사는 화상을 걸지 않는다 (원소 = 분류, 효과 = 타워 데이터 — GDD 4.6·TOWERS 0.1 검토 반영)', () => {
+    for (const id of ['dragoncaller', 'archmage']) {
+      expect(data.towers.towers.find((t) => t.id === id)?.element, id).toBe('fire');
+      expect(rules.towers.get(id)?.dot, id).toBeNull();
+      const { mob, tower } = duel(id, 60, 100_000_000);
+      expect(tower.attacks, id).toBeGreaterThan(0);
+      expect(mob.dots, id).toEqual([]);
+    }
   });
 
   it('⚡ 번개 (번개 마법사): 연쇄 3 — 줄 선 몹 3마리가 맞는다 (2번째부터 −20%씩)', () => {

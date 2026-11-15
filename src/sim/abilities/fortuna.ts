@@ -4,6 +4,7 @@
  * - 2등급 상승: 노말 → 유니크, 레어 → 히어로, 유니크 → 레전드 (덱의 그 등급 5종 균등). 히어로 승급은 레전드가 끝이라 해당 없음.
  * 각성(신 타워 확률 ×2)은 M9.
  */
+import { RATIO } from './params';
 import { defineAbility } from './types';
 
 export interface FortunaParams {
@@ -13,7 +14,7 @@ export interface FortunaParams {
 
 export default defineAbility<FortunaParams>({
   id: 'fortuna',
-  compile: (r) => ({ rareBp: r.bp('rareSummon'), doubleBp: r.bp('doubleUp') }),
+  compile: (r) => ({ rareBp: r.bp('rareSummon', RATIO), doubleBp: r.bp('doubleUp', RATIO) }),
   summonRareBp: (p) => p.rareBp,
   mergeDoubleBp: (p) => p.doubleBp,
 });

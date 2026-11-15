@@ -16,6 +16,7 @@ import {
   detectText,
   fmtNum,
   fmtPct,
+  fmtScaled2,
   gradeStars,
   shapeText,
   shortFactionName,
@@ -206,6 +207,26 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
     const flat = m.stats.flat();
     expect(flat.find((c) => c.label === '물리')).toMatchObject({ value: '15', buffed: true, base: '10' });
     expect(flat.find((c) => c.label === '공속')).toMatchObject({ value: '2 (×2)', buffed: true, base: '1' });
+  });
+
+  it('공속·배율은 소수 둘째 자리까지 (검토 반영): 전쟁 군주 +15% → 저격수 0.35 (×1.15) (0.3) — 예전엔 0.3 (×1.2) (0.3)', () => {
+    const stats = rules.towers.get('sniper')!;
+    const eff = effectiveStats(rules, stats, newPlayerMods(), { atkPctBp: 0, apsPctBp: 1500, bossMulBp: 10_000 });
+    expect(eff.apsMilli).toBe(345);
+    const cellOf = (m: ReturnType<typeof buildTowerPanelModel>) => m.stats.flat().find((c) => c.label === '공속');
+    expect(cellOf(buildTowerPanelModel(panelInput('sniper', { eff })))).toMatchObject({ value: '0.35 (×1.15)', buffed: true, base: '0.3' });
+    // 전사 0.6 → 0.69, 버프 없으면 그대로 0.6 (×1)
+    const w = rules.towers.get('warrior')!;
+    const effW = effectiveStats(rules, w, newPlayerMods(), { atkPctBp: 0, apsPctBp: 1500, bossMulBp: 10_000 });
+    expect(cellOf(buildTowerPanelModel(panelInput('warrior', { eff: effW })))).toMatchObject({ value: '0.69 (×1.15)', base: '0.6' });
+    expect(cellOf(buildTowerPanelModel(panelInput('warrior')))).toEqual({ label: '공속', value: '0.6 (×1)', buffed: false });
+    expect([fmtScaled2(345, 1000), fmtScaled2(11_500, 10_000), fmtScaled2(800, 1000), fmtScaled2(2000, 1000), fmtScaled2(1150, 1000)]).toEqual([
+      '0.35',
+      '1.15',
+      '0.8',
+      '2',
+      '1.15',
+    ]);
   });
 
   it('신·고정 피해: 파멸의 신 고정 2400 · 범위 전체 · 사거리 맵 전체', () => {

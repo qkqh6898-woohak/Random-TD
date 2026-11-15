@@ -5,6 +5,7 @@
 import { STREAM_COMBAT } from '../World';
 import { rollChanceBp } from '../systems/Damage';
 import { giveGold } from './common';
+import { NON_NEG, RATIO } from './params';
 import { defineAbility } from './types';
 
 export interface MinerParams {
@@ -16,7 +17,7 @@ export interface MinerParams {
 
 export default defineAbility<MinerParams>({
   id: 'miner',
-  compile: (r) => ({ chanceBp: r.bp('goldChance'), gold: r.int('gold') }),
+  compile: (r) => ({ chanceBp: r.bp('goldChance', RATIO), gold: r.int('gold', NON_NEG) }),
   onAttack(env, tower, p, hit) {
     if (rollChanceBp(env.world.rng(STREAM_COMBAT), p.chanceBp)) giveGold(env, tower, p.gold);
     return hit;

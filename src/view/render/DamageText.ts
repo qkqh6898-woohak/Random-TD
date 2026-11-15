@@ -4,19 +4,23 @@
  * - Phaser Text를 미리 만들어 돌려 쓴다 (매번 만들고 지우면 느림). 동시에 최대 MAX_ACTIVE개, 넘치면 가장 오래된 것을 다시 쓴다.
  * - 0.65초 동안 일정한 속도로 떠오르며 마지막 40%에 사라진다 (fxModel.floatingTextFrame). 매 프레임 시각으로 계산.
  * - 겹침 방지: 새 숫자는 지금 떠 있는 숫자들과 겹치지 않는 가장 낮은 칸에 놓는다 (fxModel.stackSlot, 최대 MAX_STACK칸 위).
- *   빈 칸이 없으면 피해 숫자는 띄우지 않는다 ('7'과 '18'이 겹쳐 '188'처럼 읽히는 것보다 낫다). 돈(+n원)은 늘 띄운다.
+ *   빈 칸이 없으면 피해 숫자는 띄우지 않는다 ('7'과 '18'이 겹쳐 '188'처럼 읽히는 것보다 낫다). 큰 글자(돈 +n원·즉사!·치명타)는
+ *   늘 띄운다: 다른 큰 글자와 겹치지 않는 가장 낮은 칸(최대 BIG_MAX_STACK칸)에 놓고, 그 자리를 가리는 작은 피해 숫자는 지운다
+ *   (fxModel.bigTextSlot, 검토 반영 — 붐비는 자리에서 '즉사!'가 피해 숫자·처치 돈에 묻히던 것).
  * - 깊이는 몹·타워·투사체 위.
  */
 import Phaser from 'phaser';
 import { COLORS } from '../../art/palette';
 import { FONT_FAMILY } from '../config';
-import { DAMAGE_TEXT_MS, floatingTextFrame, stackSlot, type TextBox } from './fxModel';
+import { DAMAGE_TEXT_MS, bigTextSlot, floatingTextFrame, stackSlot, type TextBox } from './fxModel';
 
 export const DAMAGE_TEXT_DEPTH = 6000;
 /** 동시에 떠 있는 숫자 최대 수 */
 export const MAX_ACTIVE = 48;
 /** 겹치지 않게 위로 쌓는 최대 칸 수 */
 export const MAX_STACK = 4;
+/** 큰 글자가 다른 큰 글자를 피해 올라가는 최대 칸 수 */
+export const BIG_MAX_STACK = 6;
 /** 겹침 판정 상자 높이 = 쌓는 간격 (글자 크기 배수): 숫자 높이 + 테두리 + 등장 때 1.15배로 커지는 몫 */
 const BOX_H_OF_FONT = 1.15;
 /** 큰 숫자(돈·치명타) 글자 크기 배수 */
@@ -80,8 +84,8 @@ export class FloatingTextLayer {
    */
   spawn(x: number, y: number, label: string, color: string, timeMs: number, big = false): boolean {
     const size = big ? Math.round(this.fontPx * BIG_SCALE) : this.fontPx;
+    const text = this.take(); // 꽉 찼으면 가장 오래된 것을 빼서 다시 쓴다 → 그 뒤에 남은 것들과 겹침을 본다
     const others = this.active.map((a) => this.boxOf(a, timeMs));
-    const text = this.take();
     text.setText(label).setColor(color).setFontSize(size);
     const box: TextBox = { cx: x, bottom: y, w: text.width, h: size * BOX_H_OF_FONT };
     let slot = stackSlot(box, others, MAX_STACK);
@@ -91,7 +95,21 @@ export class FloatingTextLayer {
         this.free.push(text);
         return false;
       }
-      slot = 0;
+      const plan = bigTextSlot(
+        box,
+        this.active.map((a, i) => ({ box: others[i] as TextBox, big: a.big })),
+        BIG_MAX_STACK,
+      );
+      slot = plan.slot;
+      if (plan.drop.length > 0) {
+        const gone = new Set(plan.drop.map((i) => this.active[i]));
+        for (const a of gone) {
+          if (!a) continue;
+          a.text.setVisible(false);
+          this.free.push(a.text);
+        }
+        this.active = this.active.filter((a) => !gone.has(a));
+      }
     }
     const sy = y - slot * box.h;
     text.setVisible(true).setAlpha(1).setScale(floatingTextFrame(0).scale);

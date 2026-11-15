@@ -1001,15 +1001,27 @@ body {
 
 /*
  * 접기 단계 (패널이 고른 타워를 가리지 않게 Game 장면이 고른다, TowerPanel.place):
- * 1 = 승급 결과·안내 숨김, 2 = 감지·특색도 숨김
+ * 1 = 승급 결과·안내 숨김, 2 = 감지·보유/대상 줄 숨김, 3 = 관통·치명 줄 숨김, 4 = 특색 두 줄까지(…), 5 = 특색 한 줄, 6 = 특색도 숨김.
+ * 검토 반영: 예전 2단계는 특색 줄을 숨겨 맵 가운데 줄(5·6줄) 타워의 특색 설명을 볼 곳이 없었다 → 특색을 가장 늦게 접는다.
  */
-.tower-panel[data-density='1'] .tp-outcomes,
-.tower-panel[data-density='1'] .tp-note,
-.tower-panel[data-density='2'] .tp-outcomes,
-.tower-panel[data-density='2'] .tp-note,
-.tower-panel[data-density='2'] .tp-detect,
-.tower-panel[data-density='2'] .tp-ability {
+.tower-panel:not([data-density='0']) :is(.tp-outcomes, .tp-note),
+.tower-panel:is([data-density='2'], [data-density='3'], [data-density='4'], [data-density='5'], [data-density='6']) :is(.tp-detect, .tp-owned-row),
+.tower-panel:is([data-density='3'], [data-density='4'], [data-density='5'], [data-density='6']) .tp-row-pen,
+.tower-panel[data-density='6'] .tp-ability {
   display: none;
+}
+
+.tower-panel:is([data-density='4'], [data-density='5']) .tp-ability > span:last-child {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.tower-panel[data-density='5'] .tp-ability > span:last-child {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
 }
 
 /* 아래 띠의 '⬆ 승급 가능 n' 버튼 (UI.md 4.1) */

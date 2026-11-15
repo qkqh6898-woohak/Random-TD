@@ -27,7 +27,8 @@ type SceneLike = {
     puddles(): { id: number }[];
     soldiers(): { id: number; progress: number }[];
     rules: { towerOrder: string[] };
-    world: { enqueue(c: unknown): { ok: boolean } };
+    world: { enqueue(c: unknown): { ok: boolean }; entities: { remove(id: number): void } };
+    map: { buildable: [number, number][] };
   };
   mapLayout: { originX: number; originY: number; tile: number };
   renderedPuddleCount: number;
@@ -36,6 +37,7 @@ type SceneLike = {
   tintedMobCount: number;
   selectedTowerId: number | null;
   selectedAura: { area: string; radius: number; buffed: number } | null;
+  passiveAuras: { tx: number; ty: number; radius: number }[];
   floatingLabels: string[];
   abilityFxCount(kind: string): number;
   debugFastForward(n: number): number;
@@ -190,6 +192,61 @@ test('오라: 대장장이를 고르면 3×3 범위와 효과 받는 타워, 옆
   await tapTile(page, 4, 4);
   await expect.poll(() => inScene(page, (s) => s.selectedAura, null)).toEqual({ area: 'around8', radius: 1, buffed: 2 });
   await expect(panel.getByTestId('tp-ability')).toContainText('주변 8칸');
+  expect(errors).toEqual([]);
+});
+
+test('평소 오라 빛: 고르지 않아도 대장장이(3×3)·학자(자기 칸)가 옅게 빛나고, 고르면 진한 범위 표시로 바뀐다 (ART.md 2.4, 검토 반영)', async ({ page }) => {
+  const errors = collectErrors(page);
+  await start(page);
+  await place(page, [
+    [4, 4, 'blacksmith'],
+    [2, 6, 'scholar'],
+    [6, 7, 'archer'],
+  ]);
+  await expect
+    .poll(() => inScene(page, (s) => s.passiveAuras, null))
+    .toEqual([
+      { tx: 4, ty: 4, radius: 1 },
+      { tx: 2, ty: 6, radius: 0 },
+    ]);
+  await tapTile(page, 4, 4);
+  await expect.poll(() => inScene(page, (s) => s.selectedAura, null)).toEqual({ area: 'around8', radius: 1, buffed: 0 });
+  await expect.poll(() => inScene(page, (s) => s.passiveAuras, null)).toEqual([{ tx: 2, ty: 6, radius: 0 }]);
+  expect(errors).toEqual([]);
+});
+
+test('정보 패널: 맵 가운데 줄(5·6줄) 타워를 골라도 특색 줄이 보인다 — 보유·대상·관통 줄을 먼저 접는다 (검토 반영)', async ({ page }) => {
+  test.setTimeout(60_000);
+  const errors = collectErrors(page);
+  await start(page);
+  const cells = await inScene(page, (s) => [5, 6, 7].map((y) => s.match.map.buildable.find(([, yy]) => yy === y)!), null);
+  for (const id of ['scholar', 'archmage']) {
+    for (const [x, y] of cells) {
+      await inScene(
+        page,
+        (s) => {
+          for (const t of s.match.towers()) s.match.world.entities.remove(t.id);
+          return null;
+        },
+        null,
+      );
+      await place(page, [[x, y, id]]);
+      await tapTile(page, x, y);
+      const panel = page.getByTestId('tower-panel');
+      await expect(panel).toBeVisible();
+      await page.waitForTimeout(250); // 등장 애니메이션 뒤 자리·접기 단계가 정해진다
+      const ability = panel.getByTestId('tp-ability');
+      await expect(ability, `${id} ${y}줄 (접기 ${await panel.getAttribute('data-density')})`).toBeVisible();
+      // 이 두 타워의 특색은 한 줄도 잘리지 않는다 (줄임표 없이 전부)
+      const clipped = await ability.evaluate((el) => {
+        const t = el.querySelector('span:last-child') as HTMLElement;
+        return t.scrollHeight > t.clientHeight + 1;
+      });
+      expect(clipped, `${id} ${y}줄`).toBe(false);
+      await page.locator('[data-action="panel-close"]').click();
+      await expect(panel).toHaveCount(0);
+    }
+  }
   expect(errors).toEqual([]);
 });
 

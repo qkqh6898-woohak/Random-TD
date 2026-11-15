@@ -3,6 +3,7 @@
  * 같은 몹을 이어서 칠 때마다 +10%(params.rampPerHit)씩, 최대 +50%(params.rampMax). 대상이 바뀌면 0부터.
  * 스택은 타워 엔티티(Tower.stacks)에 있어 승급하면 초기화된다 (GDD 4.4). 공속은 다음 틱부터 반영. 각성(최대 +80%)은 M9.
  */
+import { NON_NEG } from './params';
 import { defineAbility } from './types';
 
 export interface BerserkerParams {
@@ -17,7 +18,7 @@ export function berserkerMaxStacks(p: BerserkerParams): number {
 
 export default defineAbility<BerserkerParams>({
   id: 'berserker',
-  compile: (r) => ({ perHitBp: r.bp('rampPerHit'), maxBp: r.bp('rampMax') }),
+  compile: (r) => ({ perHitBp: r.bp('rampPerHit', NON_NEG), maxBp: r.bp('rampMax', NON_NEG) }),
   onAttack(_env, tower, p, hit, target) {
     if (tower.stackTarget === target.id) {
       const max = berserkerMaxStacks(p);

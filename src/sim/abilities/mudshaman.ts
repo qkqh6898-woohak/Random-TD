@@ -10,6 +10,7 @@ import { PUDDLE_KIND, type Puddle } from '../entities/Puddle';
 import { applySlow } from '../systems/Status';
 import { leaderRuleFor, pickTarget, targetCandidates } from '../systems/Targeting';
 import { restartTimer, timerReady } from './common';
+import { POSITIVE, RATIO } from './params';
 import { defineAbility } from './types';
 
 export interface MudshamanParams {
@@ -28,12 +29,12 @@ export const PUDDLE_SRC = 'mudshaman.puddle';
 export default defineAbility<MudshamanParams>({
   id: 'mudshaman',
   compile: (r) => ({
-    slowBp: r.bp('slow'),
-    slowTicks: r.ticks('slowDur'),
-    puddleCdTicks: r.ticks('puddleCd'),
-    puddleSlowBp: r.bp('puddleSlow'),
-    puddleTicks: r.ticks('puddleDur'),
-    puddleR: r.units('puddleRadius'),
+    slowBp: r.bp('slow', RATIO),
+    slowTicks: r.ticks('slowDur', POSITIVE),
+    puddleCdTicks: r.ticks('puddleCd', POSITIVE),
+    puddleSlowBp: r.bp('puddleSlow', RATIO),
+    puddleTicks: r.ticks('puddleDur', POSITIVE),
+    puddleR: r.units('puddleRadius', POSITIVE),
   }),
   onHit(env, mob, p) {
     applySlow(env.ctx.rules.status, mob, env.world.tick, 'mudshaman', p.slowBp, p.slowTicks);

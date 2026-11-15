@@ -103,3 +103,23 @@ export function stackSlot(box: TextBox, others: readonly TextBox[], maxSlots: nu
   }
   return -1;
 }
+
+/**
+ * 큰 글자(돈 +n원·즉사!·치명타)를 놓을 칸 — stackSlot으로 빈 칸을 못 찾았을 때 (검토 반영: 예전엔 0칸에 강제로 놓아
+ * 피해 숫자·처치 돈 밑에 '즉사!'가 묻혔다). 다른 **큰 글자**와 겹치지 않는 가장 낮은 칸을 고르고, 그 자리를 가리는
+ * 작은 피해 숫자는 지운다 (drop = others 번호). 큰 글자로 maxSlots 칸이 다 차 있으면 0칸 (작은 숫자만 지움).
+ */
+export function bigTextSlot(box: TextBox, others: readonly { box: TextBox; big: boolean }[], maxSlots: number): { slot: number; drop: number[] } {
+  let slot = stackSlot(
+    box,
+    others.filter((o) => o.big).map((o) => o.box),
+    maxSlots,
+  );
+  if (slot < 0) slot = 0;
+  const cand: TextBox = { ...box, bottom: box.bottom - slot * box.h };
+  const drop: number[] = [];
+  others.forEach((o, i) => {
+    if (!o.big && boxesOverlap(cand, o.box)) drop.push(i);
+  });
+  return { slot, drop };
+}
