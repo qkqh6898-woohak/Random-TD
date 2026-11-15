@@ -193,9 +193,9 @@ export function missionDoneText(names: readonly string[], total: number): string
   return `📋 미션 ${names.length}개 달성! (+${total}원)`;
 }
 
-/** 히든 미션 발견 배너 */
-export function hiddenMissionText(name: string): string {
-  return `🎉 히든 미션 발견! 「${name}」`;
+/** 히든 미션 발견 배너 (한 줄 — 알림 자리에 들어가게) */
+export function hiddenMissionText(name: string, reward: number): string {
+  return `🎉 히든 미션 발견! 「${name}」 +${reward}원`;
 }
 
 /** 미션 보상 받음 */

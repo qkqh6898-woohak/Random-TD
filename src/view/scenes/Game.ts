@@ -1364,7 +1364,7 @@ export class GameScene extends Phaser.Scene {
         }
         case 'challengeClear': {
           this.noteFx('challengeClear');
-          if (!eventFxVisible('rare', ev.tick, now, frameStart)) break;
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
           const reward = Number(ev.reward);
           const lv = Number(ev.lv);
           const opened = ev.first === true && Number(ev.open) > lv ? Number(ev.open) : null;
@@ -1374,12 +1374,12 @@ export class GameScene extends Phaser.Scene {
         }
         case 'challengeFail':
           this.noteFx('challengeFail');
-          if (eventFxVisible('rare', ev.tick, now, frameStart)) {
+          if (eventFxVisible('action', ev.tick, now, frameStart)) {
             this.ctx.ui.banner(challengeFailText(Number(ev.lv), String(ev.reason), Math.round(this.match.rules.challengeCooldownTicks / (TICK_HZ * 60))), null, 2400, 'challenge');
           }
           break;
         case 'challengeReady':
-          if (eventFxVisible('rare', ev.tick, now, frameStart)) this.ctx.ui.toast(challengeReadyText(Number(ev.lv)));
+          if (eventFxVisible('action', ev.tick, now, frameStart)) this.ctx.ui.toast(challengeReadyText(Number(ev.lv)));
           this.noteFx('challengeReady');
           break;
         case 'challengeFreeze':
@@ -1397,8 +1397,9 @@ export class GameScene extends Phaser.Scene {
           if (!m) break;
           // 히든 미션은 판 밖에 영구 기록 (다음 판부터 미션 시트에 이름이 보인다)
           if (m.hidden) this.ctx.account.recordHidden(m.id);
-          if (!eventFxVisible('rare', ev.tick, now, frameStart)) break;
-          if (m.hidden) this.ctx.ui.banner(hiddenMissionText(m.name), `+${m.reward}원 — 📋 미션에서 받기`, 2800, 'gold');
+          // 빨리 감기로 프레임 밖에서 달성한 것은 알리지 않는다 (메뉴 배지·시트에는 남는다)
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
+          if (m.hidden) this.ctx.ui.banner(hiddenMissionText(m.name, m.reward), null, 2800, 'gold');
           else {
             done.names.push(m.name);
             done.total += m.reward;
