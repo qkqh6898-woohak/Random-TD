@@ -63,6 +63,24 @@ describe('몹 걷기 주기', () => {
     expect(mobPose('walk', 100, 0).bob).not.toBeCloseTo(mobPose('walk', 100, 2.4).bob, 3);
   });
 
+  it('벌레(slither)는 튀지 않고 땅에 붙어 가로로 늘었다 줄며 좌우로 흔든다 — 걷기(깡총)와 다르다', () => {
+    const xs: number[] = [];
+    let minBob = 0;
+    let maxAngle = 0;
+    for (let t = 0; t < 900; t += 15) {
+      const p = mobPose('slither', t, 0.3);
+      xs.push(p.sx);
+      minBob = Math.min(minBob, p.bob);
+      maxAngle = Math.max(maxAngle, Math.abs(p.angle));
+      expect(p.sx > 1).toBe(p.sy < 1); // 늘어나면 납작
+    }
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(0.15);
+    expect(minBob).toBeGreaterThan(-0.2); // 걷기는 −1까지 튄다
+    expect(maxAngle).toBeGreaterThan(0.03);
+    expect(mobPose('slither', 100, 0)).not.toEqual(mobPose('walk', 100, 0));
+    expect(Math.abs(leanTarget('slither', 1))).toBeCloseTo(MOB_LEAN_RAD);
+  });
+
   it('박쥐·유령도 주기적이고 값이 유한하다', () => {
     for (const m of ['flap', 'float'] as MobMotion[]) {
       for (const t of [0, 123, 777]) {

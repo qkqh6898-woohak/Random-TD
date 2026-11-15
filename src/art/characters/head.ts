@@ -2,7 +2,7 @@
  * 머리 그리기: 머리카락·귀·얼굴 표정·안경·수염·머리 장식 라이브러리 (Canvas 2D, Phaser 없음).
  * 모든 함수의 좌표: (x, y) = 머리 중심, r = 머리 반지름.
  */
-import { OUTLINE, P, blob, bolt, circle, clover, ellipse, flame, glow, line, mix, paint, poly, rrect, shade, shine, skullIcon, sparkle, star, stroke, type Ctx } from './cv';
+import { OUTLINE, P, blob, bolt, circle, clover, ellipse, flame, glow, paint, poly, rrect, shade, shine, skullIcon, sparkle, star, stroke, type Ctx } from './cv';
 import type { BeardId, EarId, EyewearId, FaceId, HairStyle, HeadDeco, HeadgearId } from './library';
 import type { HumanLook } from './looks';
 
@@ -425,8 +425,18 @@ export function drawBeard(h: HeadCtx, beard: BeardId): void {
       stroke(c, [x + r * 0.15, y + r * 0.9, x + r * 0.1, y + r * 1.4], shade(col, -0.2), 2.5);
       break;
     case 'big':
+    case 'big_braided':
+      if (beard === 'big_braided') {
+        // 크게 땋은 수염 (브론가 철수염): 큰 수염 아래로 굵은 땋은 가닥 둘 + 쇠고리
+        for (const s of [-1, 1]) {
+          for (let i = 0; i < 4; i++) ellipse(c, x + s * r * 0.34, y + r * (1.35 + i * 0.24), r * 0.17, r * 0.15, col, { lw: 3, cel: true, celOffset: 2 });
+          rrect(c, x + s * r * 0.34 - r * 0.15, y + r * 1.62, r * 0.3, r * 0.12, r * 0.05, '#7A808A', { lw: 2.5 });
+          poly(c, [x + s * r * 0.34 - r * 0.12, y + r * 2.25, x + s * r * 0.34, y + r * 2.45, x + s * r * 0.34 + r * 0.12, y + r * 2.25], col, { lw: 2.5 });
+        }
+      }
       blob(c, [x - r * 0.95, y + r * 0.1, x - r * 0.95, y + r * 0.9, x - r * 0.5, y + r * 1.45, x, y + r * 1.55, x + r * 0.5, y + r * 1.45, x + r * 0.95, y + r * 0.9, x + r * 0.95, y + r * 0.1, x + r * 0.35, y + r * 0.6, x - r * 0.35, y + r * 0.6], col, { lw: 4, cel: true, celOffset: 4 });
       stroke(c, [x - r * 0.3, y + r * 0.52, x, y + r * 0.6, x + r * 0.3, y + r * 0.52], shade(col, -0.35), 3.5);
+      if (beard === 'big_braided') for (const s of [-1, 1]) stroke(c, [x + s * r * 0.6, y + r * 0.8, x + s * r * 0.4, y + r * 1.2], shade(col, -0.3), 2.5);
       break;
     case 'mustache':
       for (const s of [-1, 1]) blob(c, [x, y + r * 0.36, x + s * r * 0.4, y + r * 0.32, x + s * r * 0.55, y + r * 0.45, x + s * r * 0.3, y + r * 0.48], col, { lw: 3 });
@@ -813,7 +823,8 @@ export const HEADGEAR_DEFS: Readonly<Record<HeadgearId, HeadgearDef>> = {
     color: '#DDE6F0',
     front: (h, col) => {
       const { c, x, y, r } = h;
-      blob(c, [x - r * 0.15, y - r * 1.0, x - r * 0.05, y - r * 1.6, x + r * 0.5, y - r * 1.7, x + r * 0.9, y - r * 1.35, x + r * 0.25, y - r * 1.0], h.trim === '#9AA0A6' ? '#3D8BFD' : h.trim, { lw: 3.5 });
+      // 투구 깃: 위로 솟지 않고 뒤(왼쪽)로 흘러 등급 별 줄과 겹치지 않는다 (검토 반영)
+      blob(c, [x + r * 0.15, y - r * 1.02, x - r * 0.3, y - r * 1.27, x - r * 0.95, y - r * 1.2, x - r * 1.38, y - r * 0.82, x - r * 0.55, y - r * 0.92], h.trim === '#9AA0A6' ? '#3D8BFD' : h.trim, { lw: 3.5 });
       paint(c, P.rrect(x - r * 1.04, y - r * 1.08, r * 2.08, r * 1.95, r * 0.95), col, { cel: true });
       rrect(c, x - r * 0.7, y + r * 0.02, r * 1.4, r * 0.2, r * 0.08, '#1E1A26', { lw: 3 });
       glow(c, x - r * 0.3, y + r * 0.12, r * 0.15, '#9BE7FF', 0.8);
@@ -1157,10 +1168,10 @@ export function drawHead(h: HeadCtx): void {
   const onForehead = look.eyewear === 'third_eye' || look.eyewear === 'goggles_up';
   if (!onForehead) drawEyewear(h, look.eyewear);
   drawHairFront(h, look.hairStyle, def.cover);
-  if (onForehead) drawEyewear(h, look.eyewear);
+  if (look.eyewear === 'goggles_up') drawEyewear(h, look.eyewear);
   drawBeard(h, look.beard);
   def.front(h, col);
+  // 제3의 눈은 두건·관 테두리보다 위에 (검토 반영: 운명의 예언자 두건 테두리가 눈을 가렸다)
+  if (look.eyewear === 'third_eye') drawEyewear(h, look.eyewear);
   if (look.headDeco && look.headDeco !== 'none') drawHeadDeco(h, look.headDeco, look.head);
-  void mix;
-  void line;
 }

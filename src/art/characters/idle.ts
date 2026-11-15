@@ -135,7 +135,7 @@ function xf(p: Partial<PartXf>): PartXf {
 
 const WINGS = new Set<BackId>(['wings_butterfly', 'wings_note', 'wings_ice', 'wings_star', 'wings_clock', 'wings_clover', 'wings_feather', 'wings_bat', 'wings_storm', 'wings_void', 'wings_blade', 'gold_wings', 'cathedral_halo', 'dragons']);
 const CAPES = new Set<BackId>(['cape', 'cape_emblem', 'cape_cards', 'cape_storm', 'cape_gold', 'cape_stars']);
-const SPINNERS = new Set<BackId>(['floating_blades', 'ring_device', 'meteors', 'clock_halo']);
+const SPINNERS = new Set<BackId>(['floating_blades', 'ring_device', 'meteors', 'clock_halo', 'constellation_wheel', 'fruit_rain']);
 
 /** 등 파츠 기본 움직임: 날개 = 날갯짓, 망토 = 펄럭임, 떠 있는 고리·칼 = 천천히 회전 */
 export function defaultBackMotion(back: BackId | undefined): BackMotion {

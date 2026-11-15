@@ -8,6 +8,7 @@
 import type Phaser from 'phaser';
 import './ui/styles.css';
 import { loadGameData } from './data/load';
+import { allLooks } from './art/characters/looks';
 import { createAccountStore } from './meta/account';
 import { defaultStorage } from './save/storage';
 import { describeFatal, installFatalHandlers, type FatalPhase } from './ui/fatal';
@@ -42,6 +43,8 @@ function boot(): void {
 
   try {
     const data = loadGameData();
+    // 캐릭터 외형 데이터도 시작할 때 검사한다 → 틀리면 첫 그림(타이틀 장면) 안 'run' 오류가 아니라 'boot' 오류 (DataError: 파일 + 필드 경로)
+    allLooks();
     const url = readUrlOptions(location.search);
     const account = createAccountStore(defaultStorage());
     const ctx: GameContext = {
@@ -66,6 +69,7 @@ function boot(): void {
 /** 캐릭터 갤러리 (따로 나눈 묶음 — 게임 시작에는 내려받지 않는다). */
 async function startGallery(): Promise<void> {
   const data = loadGameData();
+  allLooks();
   const legions = (data.enemies.hierarchy as { legions?: Record<string, { color?: string }> }).legions ?? {};
   const { mountGallery, readGalleryOptions } = await import('./ui/gallery/Gallery');
   const o = readGalleryOptions(location.search);

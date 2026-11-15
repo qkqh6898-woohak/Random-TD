@@ -213,12 +213,15 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
     rrect(c, -6, -112, 12, 8, 2, p.trim, { lw: 2.5 });
   },
   spear_banner: (p) => {
+    // 깃발 달린 창 (창병 각성): 창 아래로 크게 늘어진 왕국 깃발 (사자 문장) — 기본 창과 실루엣이 확 다르다
     const { c } = p;
-    shaft(c, 0, 66, 0, -112, '#9B6B3A', 8);
-    flag(c, 2, -110, 46, 34, '#2E5AAC', GOLD);
-    circle(c, 22, -94, 7, GOLD, { lw: 2 });
-    glow(c, 0, -130, 30, '#DDE6F0', 0.6);
-    poly(c, [0, -152, 11, -122, 0, -110, -11, -122], '#E8EEF5', { lw: 4 });
+    shaft(c, 0, 66, 0, -118, '#9B6B3A', 8);
+    flag(c, 2, -114, 70, 58, '#2E5AAC', GOLD);
+    circle(c, 34, -86, 13, GOLD, { lw: 2.5 });
+    poly(c, [28, -92, 34, -98, 40, -92, 38, -82, 30, -82], '#C9862A', { lw: 1.8 });
+    glow(c, 0, -136, 34, '#DDE6F0', 0.6);
+    poly(c, [0, -160, 12, -128, 0, -114, -12, -128], '#E8EEF5', { lw: 4, cel: true, celOffset: 2 });
+    rrect(c, -7, -118, 14, 8, 2, GOLD, { lw: 2.5 });
   },
   boulder: (p) => {
     const { c } = p;
@@ -280,7 +283,8 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
   lute: (p) => {
     const { c } = p;
     const body = p.look.propColor === 'rainbow' ? rainbow(c, -60, 0, 0, 30) : (p.look.propColor ?? '#C9803A');
-    rotated(c, -10, 0, -0.75, () => {
+    // 목이 바깥(오른쪽 위)을 향한다 (검토 반영: 왼쪽 위로 기울이면 목이 얼굴·입을 가로질렀다 — 축제의 왕·음유시인)
+    rotated(c, -12, 4, 0.5, () => {
       line(c, [0, -10, 0, -84], '#6B4226', 9);
       rrect(c, -9, -96, 18, 16, 4, '#5A3A22', { lw: 3 });
       paint(c, P.blob([0, -14, 26, 2, 30, 30, 0, 46, -30, 30, -26, 2]), body, { cel: true, celOffset: 4 });
@@ -306,18 +310,57 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
       stroke(c, [-12, -2, 12, -2], '#5EE0FF', 1.5);
       stroke(c, [0, -14, 0, 10], '#5EE0FF', 1.5);
     });
-    glow(c, 14, -70, 26, '#5EE0FF', 0.6);
-    paint(c, (cc) => {
-      cc.beginPath();
-      cc.ellipse(14, -70, 16, 8, -0.5, 0, Math.PI);
-    }, 'rgba(94,224,255,0.6)', { lw: 2.5 });
-    stroke(c, [14, -70, 24, -84], '#5EE0FF', 2.5);
+    // 위성 홀로그램: 태블릿에서 위로 퍼지는 빛 기둥 + 떠 있는 위성(태양 전지판) — 쌍안경과 실루엣이 다르다
+    paint(c, P.poly([0, -40, 12, -40, 40, -112, -28, -112]), 'rgba(94,224,255,0.28)', { lw: 0 });
+    glow(c, 6, -118, 40, '#5EE0FF', 0.6);
+    rotated(c, 6, -118, -0.25, () => {
+      rrect(c, -9, -9, 18, 18, 3, '#DDE6F0', { lw: 3 });
+      for (const s of [-1, 1]) {
+        rrect(c, s > 0 ? 13 : -41, -8, 28, 16, 2, '#2E5AAC', { lw: 2.5 });
+        stroke(c, [s * 9, 0, s * 13, 0], '#DDE6F0', 2.5);
+        for (let i = 1; i < 3; i++) stroke(c, [s * (13 + i * 9), -8, s * (13 + i * 9), 8], '#5EE0FF', 1.5);
+      }
+      stroke(c, [0, -9, 0, -20], '#DDE6F0', 2.5);
+      circle(c, 0, -22, 3.5, '#FF5A4E', { lw: 1.5 });
+    });
   },
   fireball: (p) => {
     const { c } = p;
     glow(c, 2, -30, 40, '#FF8A2F', 0.75);
     flame(c, 2, -26, 17, '#FF6A1F', '#FFE27A');
     circle(c, 2, -24, 8, '#FFF7C9', { lw: 0 });
+  },
+  lava_cleaver: (p) => {
+    // 용암 무늬 대검 (광역딜 전사 각성): 기본 대검보다 넓고 긴 검은 칼날 + 빛나는 용암 금 + 칼등의 불꽃
+    const { c } = p;
+    rotated(c, 0, -4, 0.12, () => {
+      glow(c, 6, -86, 64, p.look.propGlow ?? '#FF6A1F', 0.7);
+      for (const [x, y, r] of [
+        [-20, -120, 9],
+        [-22, -84, 8],
+        [-20, -48, 7],
+      ] as const)
+        flame(c, x, y, r, '#FF6A1F', '#FFE27A');
+      paint(c, P.poly([-18, -8, -22, -150, 8, -172, 34, -146, 28, -8]), p.col('#3A2626'), { cel: true, celOffset: 4 });
+      stroke(c, [-4, -30, 6, -60, -2, -88, 10, -118, 4, -146], '#FF9A2F', 4);
+      stroke(c, [6, -60, 20, -70], '#FF9A2F', 3);
+      stroke(c, [-2, -88, -12, -100], '#FF9A2F', 3);
+      circle(c, 12, -134, 5, '#FFE27A', { lw: 0 });
+      rrect(c, -28, -10, 60, 11, 4, '#6B4226', { lw: 3.5 });
+      rrect(c, -5, 1, 10, 20, 3, '#5A3A22', { lw: 3 });
+    });
+  },
+  gold_bombs: (p) => {
+    // 황금 폭탄 (드워프 폭탄병 각성): 금빛 큰 폭탄 하나 + 작은 폭탄 둘, 불꽃 튀는 심지
+    const { c } = p;
+    glow(c, 6, -70, 56, '#FFE27A', 0.55);
+    bomb(c, -28, -30, 12, GOLD);
+    bomb(c, 34, -28, 12, GOLD);
+    bomb(c, 4, -70, 22, GOLD);
+    stroke(c, [-8, -82, 18, -56], '#B8862E', 3);
+    stroke(c, [-12, -66, 20, -66], '#B8862E', 3);
+    flame(c, 12, -104, 8, '#FF7A2F', '#FFE27A');
+    sparkle(c, -18, -96, 6, '#FFFFFF');
   },
   cleaver: (p) => {
     const { c } = p;
@@ -331,23 +374,31 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
     });
   },
   machine_gun: (p) => {
+    // 총열 끝(덮개)까지 카드·칸 안에 들어오게 (검토 반영: 예전엔 총열이 보기 상자 밖으로 잘렸다)
     const { c } = p;
     rrect(c, -28, -16, 70, 22, 5, '#3A3F44', { lw: 4, cel: true, celOffset: 2 });
-    rrect(c, 40, -11, 52, 9, 3, '#2A2E33', { lw: 3.5 });
+    rrect(c, 40, -11, 34, 9, 3, '#2A2E33', { lw: 3.5 });
+    rrect(c, 70, -14, 9, 15, 2, '#3A3F44', { lw: 3 });
     rrect(c, -10, 6, 22, 16, 3, '#5E6B33', { lw: 3 });
     poly(c, [-28, -12, -48, -6, -48, 6, -28, 4], '#5A3A22', { lw: 3 });
-    stroke(c, [70, -2, 62, 22], '#2A2E33', 3);
-    stroke(c, [74, -2, 82, 22], '#2A2E33', 3);
+    stroke(c, [56, -2, 48, 22], '#2A2E33', 3);
+    stroke(c, [60, -2, 68, 22], '#2A2E33', 3);
     rrect(c, 6, -24, 20, 9, 2, '#2A2E33', { lw: 2.5 });
   },
   minigun: (p) => {
+    // 쌍열 미니건 (기관총 사수 각성): 위아래 두 묶음 회전 총열 + 방열판 + 탄띠 — 기관총보다 두 배 두껍다
     const { c } = p;
-    glow(c, 50, -8, 34, '#FF9A2F', 0.35);
-    rrect(c, -30, -22, 56, 32, 8, '#4A5058', { lw: 4, cel: true, celOffset: 3 });
-    for (let i = 0; i < 3; i++) rrect(c, 22, -18 + i * 9, 54, 7, 3, '#2A2E33', { lw: 2.5 });
-    rrect(c, 70, -22, 10, 32, 3, '#3A3F44', { lw: 3 });
-    rrect(c, -18, 10, 30, 18, 4, '#5E6B33', { lw: 3 });
-    stroke(c, [-4, 28, -20, 44], '#D9A93A', 4);
+    glow(c, 64, -14, 40, '#FF9A2F', 0.45);
+    rrect(c, -34, -36, 62, 58, 10, '#4A5058', { lw: 4, cel: true, celOffset: 3 });
+    for (const y0 of [-34, -6]) {
+      for (let i = 0; i < 3; i++) rrect(c, 24, y0 + i * 8, 46, 7, 3, '#2A2E33', { lw: 2.5 });
+      rrect(c, 66, y0 - 3, 10, 28, 3, '#3A3F44', { lw: 3 });
+      rrect(c, 40, y0 - 2, 8, 26, 2, '#7A828C', { lw: 2 });
+    }
+    rrect(c, -30, -50, 54, 14, 4, '#7A828C', { lw: 3 });
+    for (let i = 0; i < 4; i++) stroke(c, [-22 + i * 12, -47, -22 + i * 12, -39], '#3A3F44', 2.5);
+    rrect(c, -20, 20, 32, 18, 4, '#5E6B33', { lw: 3 });
+    for (let i = 0; i < 4; i++) rrect(c, -16 - i * 9, 38 + i * 6, 7, 11, 2, '#D9A93A', { lw: 2 });
   },
   bombs: (p) => {
     const col = p.col('#2A2A30');
@@ -417,16 +468,20 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
     }, '#8B5A2B');
   },
   skull_staff: (p) => {
+    // 해골 지팡이 (고블린 족장 각성): 뿔 달린 큰 해골 + 초록 눈빛 + 깃털 (조각 지팡이보다 머리가 크다)
     const { c } = p;
-    staffTop(p, 100, () => {
-      glow(c, 0, -118, 34, '#7ED957', 0.6);
-      skullIcon(c, 0, -120, 17);
-      for (const s of [-1, 1]) circle(c, s * 6, -119, 2.5, '#7ED957', { lw: 0 });
+    staffTop(p, 96, () => {
+      glow(c, 0, -122, 46, '#7ED957', 0.65);
+      for (const s of [-1, 1]) poly(c, [s * 14, -132, s * 34, -150, s * 30, -128, s * 18, -118], '#EDE6D6', { lw: 3 });
+      skullIcon(c, 0, -122, 23);
+      for (const s of [-1, 1]) circle(c, s * 8.5, -121, 3.5, '#7ED957', { lw: 0 });
       for (const [a, col] of [
-        [-0.6, '#E85A3A'],
-        [0.6, '#F5C518'],
+        [-0.5, '#E85A3A'],
+        [0, '#3D8BFD'],
+        [0.5, '#F5C518'],
       ] as const)
-        rotated(c, 0, -134, a, () => blob(c, [-5, 0, 0, -28, 5, 0], col, { lw: 2.5 }));
+        rotated(c, 0, -142, a, () => blob(c, [-6, 0, 0, -34, 6, 0], col, { lw: 2.5 }));
+      gemAt(c, 0, -96, 6, '#FF4D6D');
     }, '#5A3A22');
   },
   crystal_ball: (p) => {
@@ -475,17 +530,8 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
     poly(c, [-40, -8, -58, 2, -56, 12, -38, 6], '#DDE6F0', { lw: 3 });
     rrect(c, -14, -28, 40, 11, 5, '#2A2E33', { lw: 3 });
   },
-  twin_axes: (p) => {
-    const { c } = p;
-    for (const s of [1, -1]) {
-      rotated(c, 0, 0, s * 0.45, () => {
-        shaft(c, 0, 16, 0, -62, '#6B4226', 8);
-        p.glow(0, -60, 30);
-        blob(c, [2, -76, 30, -84, 36, -60, 30, -40, 2, -50], p.col('#B8C2CC'), { lw: 4, cel: true, celOffset: 2 });
-        if (p.look.propGlow) flame(c, 26, -72, 8, '#FF7A2F', '#FFE27A');
-      });
-    }
-  },
+  twin_axes: (p) => axes(p, false),
+  flame_axes: (p) => axes(p, true),
   spark_orb: (p) => {
     const { c } = p;
     glow(c, 0, -32, 40, '#FFF27A', 0.7);
@@ -578,17 +624,34 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
     flame(c, 2, -50, 8, '#7ED957', '#E8FFD0');
   },
   scythe: (p) => {
+    // 낫 (검토 반영): 칼날이 머리를 가로지르면 두건 챙처럼 보였다 → 자루 끝에서 바깥(오른쪽)으로 뻗고 아래로 휘는 큰 초승달 칼날
     const { c } = p;
-    shaft(c, 0, 62, 0, -132, '#3A2A2A', 8);
-    p.glow(-40, -132, 50);
-    paint(c, (cc) => {
-      cc.beginPath();
-      cc.moveTo(4, -136);
-      cc.quadraticCurveTo(-40, -168, -96, -128);
-      cc.quadraticCurveTo(-44, -146, 2, -120);
-      cc.closePath();
-    }, p.col('#C9D3DE'), { lw: 4, cel: true, celOffset: 2 });
-    rrect(c, -6, -138, 12, 14, 3, '#7ED957', { lw: 2.5 });
+    shaft(c, 0, 62, 0, -140, '#3A2A2A', 8);
+    if (p.look.propGlow) {
+      glow(c, 50, -126, 60, p.look.propGlow, 0.7);
+      for (const [x, y, r] of [
+        [30, -150, 9],
+        [62, -146, 8],
+        [90, -128, 7],
+      ] as const)
+        flame(c, x, y, r, p.look.propGlow, '#E8FFD0');
+    }
+    paint(
+      c,
+      (cc) => {
+        cc.beginPath();
+        cc.moveTo(-4, -134);
+        cc.quadraticCurveTo(50, -168, 104, -112);
+        cc.quadraticCurveTo(96, -100, 92, -92);
+        cc.quadraticCurveTo(58, -138, 2, -118);
+        cc.closePath();
+      },
+      p.col('#C9D3DE'),
+      { lw: 4, cel: true, celOffset: 2 },
+    );
+    stroke(c, [12, -138, 56, -150, 96, -114], shade(p.col('#C9D3DE'), 0.45), 2.5, 0.9);
+    rrect(c, -7, -142, 14, 16, 3, '#7ED957', { lw: 2.5 });
+    skullIcon(c, 0, -150, 8);
   },
   binoculars: (p) => {
     const { c } = p;
@@ -603,6 +666,10 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
     p.glow(-40, 30, 50);
     line(c, [-4, -4, -78, 64], p.col('#2A2A30'), 10);
     stroke(c, [-20, 10, -60, 46], p.trim, 3);
+    if (p.look.propGlow) {
+      // 은하 검집 (검성 각성): 검집에 별빛
+      for (let i = 0; i < 4; i++) sparkle(c, -16 - i * 15, 8 + i * 13, 4, i % 2 ? '#FFFFFF' : p.look.propGlow);
+    }
     rrect(c, -9, -12, 18, 7, 3, GOLD, { lw: 3 });
     line(c, [0, -10, 12, -38], '#F3EAD3', 7);
     for (let i = 0; i < 3; i++) stroke(c, [3 + i * 3.5, -16 - i * 7, 8 + i * 3.5, -18 - i * 7], '#2A2A30', 2);
@@ -619,12 +686,16 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
     }
   },
   dragon_staff: (p) => {
+    // 조금 짧게: 용 머리 장식이 등급 별 줄 아래에 머문다 (검토 반영)
     const { c } = p;
-    staffTop(p, 100, () => {
+    staffTop(p, 86, () => {
+      c.save();
+      c.translate(0, 14);
       blob(c, [-6, -100, -14, -124, 0, -140, 22, -136, 30, -124, 14, -118, 6, -104], '#FF8A5B', { cel: true, celOffset: 3 });
       poly(c, [0, -138, -8, -152, 6, -140], '#F3EAD3', { lw: 2.5 });
       circle(c, 12, -128, 3, '#FFE27A', { lw: 0 });
       glow(c, 32, -124, 16, '#FFB13B', 0.8);
+      c.restore();
     }, '#8B5A2B');
   },
   war_banner: (p) => {
@@ -890,7 +961,232 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
       circle(c, 0, 16, 5, '#F1C40F', { lw: 2.5 });
     });
   },
+  // ---- 검토 반영: 각성 전용 소품 (실루엣이 바뀌게) ----
+  gold_pickaxe: (p) => {
+    // 금빛 곡괭이: 양쪽으로 길게 뻗은 큰 머리 + 가운데 보석 (기본 곡괭이보다 머리가 1.5배)
+    const { c } = p;
+    shaft(c, -10, 30, 18, -106, '#6B4226');
+    glow(c, 16, -112, 56, p.look.propGlow ?? '#FFE27A', 0.7);
+    paint(
+      c,
+      (cc) => {
+        cc.beginPath();
+        cc.moveTo(-62, -80);
+        cc.quadraticCurveTo(14, -154, 92, -78);
+        cc.quadraticCurveTo(50, -108, 18, -112);
+        cc.quadraticCurveTo(-16, -110, -62, -80);
+        cc.closePath();
+      },
+      p.col(GOLD),
+      { lw: 4.5, cel: true, celOffset: 3 },
+    );
+    rrect(c, 4, -124, 26, 26, 6, '#8B5A2B', { lw: 3.5 });
+    gemAt(c, 17, -111, 10, '#5EE0FF');
+    sparkle(c, 76, -98, 8, '#FFFFFF');
+    sparkle(c, -44, -96, 7, '#FFFFFF');
+  },
+  skull_drumsticks: (p) => {
+    // 해골 북채: 뼈 막대 끝에 작은 해골, 각성 빛이면 해골 위에 불꽃
+    const { c } = p;
+    p.glow(30, -52, 30);
+    line(c, [-4, 6, 26, -36], '#EDE6D6', 7);
+    for (const [x, y] of [
+      [-2, -2],
+      [24, -38],
+    ] as const)
+      circle(c, x, y, 5, '#EDE6D6', { lw: 2.5 });
+    skullIcon(c, 31, -50, 13);
+    line(c, [-14, 10, -36, -28], '#EDE6D6', 6);
+    skullIcon(c, -39, -40, 12);
+    if (p.look.propGlow) {
+      flame(c, 31, -68, 7, '#FF7A2F', '#FFE27A');
+      flame(c, -39, -57, 6, '#FF7A2F', '#FFE27A');
+    }
+  },
+  silver_bow: (p) => {
+    // 은빛 장궁: 기본 장궁보다 크고 양 끝에 날개 장식 + 빛나는 화살
+    const { c } = p;
+    const gl = p.look.propGlow ?? '#9BE7FF';
+    glow(c, 20, -10, 66, gl, 0.5);
+    bowArc(c, -32, -10, 86, p.col('#E8EEF5'), 9, 1.22);
+    for (const s of [-1, 1]) {
+      const tx = -32 + Math.cos(1.22) * 86;
+      const ty = -10 + s * Math.sin(1.22) * 86;
+      blob(c, [tx, ty, tx + 26, ty + s * 10, tx + 34, ty + s * 26, tx + 14, ty + s * 20, tx + 2, ty + s * 30], '#FFFFFF', { lw: 3, cel: true, celOffset: 2 });
+      stroke(c, [tx + 4, ty + s * 6, tx + 22, ty + s * 18], '#BFD4E6', 2);
+    }
+    line(c, [-8, -10, 82, -10], '#FFFFFF', 4);
+    glow(c, 92, -10, 26, gl, 0.95);
+    poly(c, [80, -19, 104, -10, 80, -1], '#DFFBFF', { lw: 2.5 });
+    sparkle(c, 98, -10, 7, '#FFFFFF');
+  },
+  crystal_daggers: (p) => {
+    // 보라 수정 단검 둘: 깎인 면이 보이는 길쭉한 수정 칼날 (쌍단검보다 1.5배 길다)
+    const { c } = p;
+    const col = p.col('#B36BFF');
+    glow(c, 0, -36, 58, p.look.propGlow ?? '#D9A6FF', 0.6);
+    for (const a of [0.62, -0.55]) {
+      rotated(c, a > 0 ? 4 : -4, -4, a, () => {
+        poly(c, [0, 0, -10, -20, -7, -60, 0, -80, 7, -60, 10, -20], col, { lw: 3.5, cel: true, celOffset: 2 });
+        stroke(c, [0, -6, 0, -70], '#F3E0FF', 2.5, 0.9);
+        stroke(c, [-8, -22, 0, -10, 8, -22], shade(col, -0.35), 2, 0.9);
+        poly(c, [-15, -2, 15, -2, 11, 6, -11, 6], '#3A2A55', { lw: 2.5 });
+        rrect(c, -4, 6, 8, 13, 3, '#3A2A55', { lw: 2.5 });
+      });
+    }
+    sparkle(c, 30, -70, 6, '#FFFFFF');
+    sparkle(c, -36, -62, 5, '#FFFFFF');
+  },
+  swirl_bow: (p) => {
+    // 소용돌이 깃털 활: 양 끝에 큰 깃털 다발 + 손잡이를 감는 바람 고리
+    const { c } = p;
+    p.glow(0, -10, 60);
+    bowArc(c, -30, -10, 76, '#5DBB63', 8, 1.2);
+    for (const s of [-1, 1]) {
+      const tx = -30 + Math.cos(1.2) * 76;
+      const ty = -10 + s * Math.sin(1.2) * 76;
+      for (const [a, len, col] of [
+        [0.2, 40, '#FFFFFF'],
+        [0.65, 36, '#BFE9FF'],
+        [1.1, 30, '#E6F2D9'],
+      ] as const)
+        rotated(c, tx, ty, s * a, () => ellipse(c, len * 0.55, 0, len * 0.55, 7, col, { lw: 2.5 }));
+    }
+    for (let i = 0; i < 2; i++) {
+      c.save();
+      c.translate(-10, -10);
+      c.scale(1, 0.55);
+      paint(
+        c,
+        (cc) => {
+          cc.beginPath();
+          cc.arc(0, 0, 40 + i * 16, 0.4 + i * 1.6, 0.4 + i * 1.6 + Math.PI * 1.3);
+        },
+        null,
+        { lw: 4, stroke: i ? '#FFFFFF' : '#9BE7FF' },
+      );
+      c.restore();
+    }
+    line(c, [-8, -10, 70, -10], '#C9A86A', 3.5);
+    poly(c, [70, -16, 84, -10, 70, -4], '#E6F2D9', { lw: 2.5 });
+  },
+  philosopher_flask: (p) => {
+    // 현자의 돌 플라스크: 둥근 큰 플라스크 안에 붉게 빛나는 돌 + 위에 떠 있는 작은 돌
+    const { c } = p;
+    const liq = p.col('#E0245E');
+    const gl = p.look.propGlow ?? '#FF6B9A';
+    glow(c, 2, -40, 60, gl, 0.6);
+    rrect(c, -8, -92, 16, 30, 4, 'rgba(230,248,255,0.85)', { lw: 4 });
+    circle(c, 2, -38, 30, 'rgba(230,248,255,0.8)', { lw: 4 });
+    paint(
+      c,
+      (cc) => {
+        cc.beginPath();
+        cc.arc(2, -38, 26, 0.15, Math.PI - 0.15);
+        cc.closePath();
+      },
+      liq,
+      { lw: 0, alpha: 0.85 },
+    );
+    glow(c, 2, -36, 24, '#FF3B5C', 0.9);
+    poly(c, [2, -52, 14, -38, 2, -22, -10, -38], '#FF2D55', { lw: 3, cel: true, celOffset: 2 });
+    shine(c, -2, -44, 3, 6, 0.9);
+    rrect(c, -10, -100, 20, 11, 3, '#8B6A3E', { lw: 3 });
+    glow(c, 34, -110, 18, gl, 0.9);
+    poly(c, [34, -122, 42, -110, 34, -98, 26, -110], '#FF2D55', { lw: 2.5 });
+    sparkle(c, -26, -76, 6, '#FFFFFF');
+  },
+  ancient_tome: (p) => {
+    // 빛나는 고대 마도서: 손 위에 떠 있는 큰 책 (금빛 표지·빛나는 노란 책장·푸른 룬) + 둘레를 도는 룬
+    const { c } = p;
+    const gl = p.look.propGlow ?? '#FFE27A';
+    const cx = 18;
+    const cy = -30;
+    glow(c, cx, cy, 72, gl, 0.75);
+    rotated(c, cx, cy, -0.1, () => {
+      rrect(c, -54, -30, 108, 60, 8, p.col('#7A4A2A'), { lw: 4 });
+      for (const sx of [-1, 1]) for (const sy of [-1, 1]) poly(c, [sx * 54, sy * 30, sx * 40, sy * 30, sx * 54, sy * 16], GOLD, { lw: 2 });
+      paint(
+        c,
+        (cc) => {
+          cc.beginPath();
+          cc.moveTo(0, -22);
+          cc.quadraticCurveTo(-24, -32, -48, -24);
+          cc.lineTo(-48, 22);
+          cc.quadraticCurveTo(-24, 14, 0, 24);
+          cc.quadraticCurveTo(24, 14, 48, 22);
+          cc.lineTo(48, -24);
+          cc.quadraticCurveTo(24, -32, 0, -22);
+          cc.closePath();
+        },
+        '#FFF0B0',
+        { lw: 3 },
+      );
+      stroke(c, [0, -22, 0, 24], '#C9A227', 3);
+      for (let i = 0; i < 3; i++) {
+        stroke(c, [-40, -10 + i * 10, -10, -10 + i * 10], '#3D8BFD', 2.5);
+        stroke(c, [10, -10 + i * 10, 40, -10 + i * 10], '#3D8BFD', 2.5);
+      }
+      star(c, -24, -16, 5, '#5EC8FF', { lw: 1.5 });
+    });
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI * 0.95 + (i / 4) * Math.PI * 0.9;
+      const x = cx + Math.cos(a) * 74;
+      const y = cy + Math.sin(a) * 50;
+      rotated(c, x, y, a, () => {
+        rrect(c, -6, -8, 12, 16, 3, '#FFF6D0', { lw: 2.5 });
+        stroke(c, [-2, -4, 2, 0, -2, 4], '#3D8BFD', 2);
+      });
+    }
+  },
+  sky_spear: (p) => {
+    // 천공의 창: 거대한 창보다 크고 빛나는 하늘빛 칼날 + 칼날 둘레 금빛 고리 + 바깥쪽으로 휘날리는 하늘 띠
+    const { c } = p;
+    const gl = p.look.propGlow ?? '#9BE7FF';
+    shaft(c, 0, 72, 0, -170, '#F3EAD3', 9);
+    glow(c, 0, -198, 60, gl, 0.8);
+    for (const [dy, w, col] of [
+      [-176, 74, '#9BE7FF'],
+      [-160, 58, '#FFFFFF'],
+    ] as const)
+      paint(
+        c,
+        (cc) => {
+          cc.beginPath();
+          cc.moveTo(4, dy);
+          cc.quadraticCurveTo(w * 0.5, dy - 16, w, dy + 6);
+          cc.quadraticCurveTo(w * 0.6, dy + 2, w * 0.9, dy + 22);
+          cc.quadraticCurveTo(w * 0.4, dy + 8, 4, dy + 10);
+          cc.closePath();
+        },
+        col,
+        { lw: 3, cel: true, celOffset: 2 },
+      );
+    poly(c, [0, -238, 18, -196, 7, -170, -7, -170, -18, -196], '#E8FBFF', { lw: 4, cel: true, celOffset: 2 });
+    stroke(c, [0, -228, 0, -180], '#9BE7FF', 3);
+    ellipse(c, 0, -192, 26, 8, null, { lw: 4, stroke: GOLD });
+    for (const s of [-1, 1]) poly(c, [s * 7, -174, s * 26, -182, s * 14, -166], GOLD, { lw: 2.5 });
+    rrect(c, -8, -172, 16, 12, 3, GOLD, { lw: 3 });
+    sparkle(c, 0, -238, 8, '#FFFFFF');
+  },
 };
+
+/** 쌍도끼 (불타는 쌍도끼 = 각성: 도끼날을 감싸고 크게 타오르는 불길) */
+function axes(p: PropCtx, flames: boolean): void {
+  const { c } = p;
+  for (const s of [1, -1]) {
+    rotated(c, 0, 0, s * 0.45, () => {
+      shaft(c, 0, 16, 0, -62, '#6B4226', 8);
+      p.glow(0, -60, 30);
+      if (flames) {
+        flame(c, 22, -80, 22, '#FF6A1F', '#FFE27A');
+        flame(c, 36, -58, 13, '#FF7A2F', '#FFE27A');
+      }
+      blob(c, [2, -76, 30, -84, 36, -60, 30, -40, 2, -50], p.col(flames ? '#5A4A4A' : '#B8C2CC'), { lw: 4, cel: true, celOffset: 2 });
+      if (flames) stroke(c, [30, -80, 35, -60, 29, -44], '#FFB13B', 3);
+    });
+  }
+}
 
 function gemAt(c: Ctx, x: number, y: number, s: number, col: string): void {
   poly(c, [x, y - s, x + s * 0.8, y, x, y + s, x - s * 0.8, y], col, { lw: 2.5 });

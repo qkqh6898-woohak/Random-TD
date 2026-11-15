@@ -165,9 +165,15 @@ test('일꾼: [👷 300원] → 👷 1/10·돈 −300, 5초마다 +5원 / 모자
   await hire.click();
   await expect(page.getByTestId('hud-workers')).toHaveText('3/10');
   await expect(hire).toHaveClass(/is-off/);
-  const gold = await inScene(page, (s) => s.match.state.gold, null);
+  // 읽은 뒤 누르기 전에 5초 일꾼 수입이 들어올 수 있다(느린 기계에서 흔들림) → 모자란 금액은 누르기 전·후 돈 사이 값이면 된다
+  const goldBefore = await inScene(page, (s) => s.match.state.gold, null);
   await hire.click();
-  await expect(page.locator('.toast', { hasText: `${300 - gold}원이 더 필요해요` })).toBeVisible();
+  const lack = page.locator('.toast', { hasText: /\d+원이 더 필요해요/ });
+  await expect(lack).toBeVisible();
+  const goldAfter = await inScene(page, (s) => s.match.state.gold, null);
+  const need = Number(/(\d+)원이 더 필요해요/.exec((await lack.first().textContent()) ?? '')?.[1]);
+  expect(need).toBeGreaterThanOrEqual(300 - goldAfter);
+  expect(need).toBeLessThanOrEqual(300 - goldBefore);
   // 돈을 넣고 10명까지 → 👷 최대 (금색), 누르면 "일꾼이 꽉 찼어요 (10/10)"
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: '돈 추가 (디버그)' }).click();
   for (let i = 3; i < 10; i++) {

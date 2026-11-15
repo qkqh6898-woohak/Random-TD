@@ -11,6 +11,8 @@ export interface PropMeta {
   spin?: readonly [number, number];
   /** 소품 그림이 없는 자세 (두 손 모으기 등) → prop 파츠를 만들지 않는다 */
   pose?: 'pray' | 'meditate';
+  /** 키 큰 소품 (끝이 등급 별 줄 높이까지 올라온다) → 별 줄을 소품 반대쪽(왼쪽)으로 비켜 그린다 */
+  tall?: boolean;
 }
 
 const G: PropMeta = { grip: true };
@@ -68,11 +70,9 @@ export const PROP_META: Readonly<Record<PropId, PropMeta>> = {
   katana: G,
   arrows: G,
   dragon_staff: G,
-  war_banner: G,
   spellbook: F,
   twin_blades: G,
   clover: G,
-  giant_spear: G,
   storm_staff: G,
   fan: G,
   prayer: { grip: false, pose: 'pray' },
@@ -92,6 +92,19 @@ export const PROP_META: Readonly<Record<PropId, PropMeta>> = {
   chain_lightning: F,
   meditate: { grip: false, pose: 'meditate' },
   baton: G,
+  gold_pickaxe: G,
+  skull_drumsticks: G,
+  silver_bow: G,
+  crystal_daggers: G,
+  swirl_bow: G,
+  philosopher_flask: G,
+  ancient_tome: F,
+  sky_spear: { grip: true, tall: true },
+  flame_axes: G,
+  lava_cleaver: G,
+  gold_bombs: F,
+  giant_spear: { grip: true, tall: true },
+  war_banner: { grip: true, tall: true },
 };
 
 /** prop 파츠(따로 움직이는 소품 그림)가 있는가 */

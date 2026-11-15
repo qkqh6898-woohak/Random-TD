@@ -2,10 +2,11 @@
  * 녹스 군단 적 32종 그림 (Canvas 2D, 128 단위 정사각형 — 기존 art/mobs.ts와 같은 좌표라 MobSprite 위치 계산이 그대로다).
  *
  * 계급 표현 (ART.md 1.5): 하수인 = 이마의 군단 색 녹스 문양 · 대장 = 은색 뿔 + 군단 깃발 + 은은한 군단 색 오라
- * · 4천왕 = 금색 왕관형 장식 + 강한 오라 + 바닥 문양 · 군주 = 보라 왕관 + 별빛 망토 + 어둠 오라.
+ * · 4천왕 = 금색 왕관형 장식 + 강한 오라 + 바닥 문양 · 군주 = 높은 보라 가시 왕관 + 별빛 + 보라 테 별빛 망토 + 밝은 테의 어둠 오라 + 4천왕보다 큰 이중 바닥 문양.
+ * 금관은 4천왕만 쓴다 (대장 킹 슬라임은 젤리 왕관).
  * 모든 적은 보라 눈(녹투르만 붉은 눈)과 뾰족한 실루엣 → 연합의 고블린·돌 골렘(초록·금빛 눈, 둥근 실루엣)과 한눈에 구별된다.
  */
-import { OUTLINE, P, blob, bolt, circle, ellipse, flame, glow, line, paint, poly, rrect, shade, shine, skullIcon, sparkle, star, stroke, type Ctx } from './cv';
+import { OUTLINE, P, blob, circle, ellipse, flame, glow, line, paint, poly, rrect, shade, shine, skullIcon, sparkle, stroke, type Ctx } from './cv';
 import type { CreatureId, RankId } from './library';
 import type { EnemyLook } from './looks';
 
@@ -45,6 +46,20 @@ function glowEyes(e: EnemyCtx, cx: number, cy: number, gap: number, r: number): 
   }
 }
 
+/** 눈 하나 (모르가스의 여러 눈) */
+function oneEye(e: EnemyCtx, x: number, y: number, r: number): void {
+  const { c } = e;
+  circle(c, x, y, r, '#FFFFFF', { lw: Math.max(1.5, r * 0.25) });
+  glow(c, x, y, r * 1.4, e.eye, 0.35);
+  circle(c, x + r * 0.15, y + r * 0.12, r * 0.6, e.eye, { lw: 0 });
+  circle(c, x + r * 0.35, y - r * 0.2, r * 0.2, '#FFFFFF', { lw: 0 });
+}
+
+/** 슬라임 몸에서 솟은 젤리 (몸 색을 밝게) */
+function mixJelly(body: string): string {
+  return shade(body, 0.35);
+}
+
 function fangs(c: Ctx, cx: number, cy: number, gap: number, s: number): void {
   for (const k of [-1, 1]) poly(c, [cx + k * gap - s * 0.5, cy, cx + k * gap + s * 0.5, cy, cx + k * gap, cy + s * 1.1], '#FFFFFF', { lw: 1.5 });
 }
@@ -76,16 +91,16 @@ export const CREATURE_ANCHORS: Readonly<Record<CreatureId, Anchor>> = {
   skeleton_shield: { hx: 56, hy: 44, hr: 20 },
   smoke_wolf: { hx: 92, hy: 50, hr: 16 },
   goblin_pack: { hx: 64, hy: 64, hr: 16 },
-  gem_golem: { hx: 64, hy: 40, hr: 18 },
+  gem_golem: { hx: 64, hy: 58, hr: 18 },
   mini_golem: { hx: 64, hy: 64, hr: 16 },
   spike_knight: { hx: 62, hy: 42, hr: 20 },
   bat_queen: { hx: 64, hy: 56, hr: 24 },
   sand_worm: { hx: 72, hy: 36, hr: 20 },
   frost_wyrm: { hx: 92, hy: 40, hr: 15 },
-  rune_giant: { hx: 64, hy: 34, hr: 18 },
+  rune_giant: { hx: 64, hy: 30, hr: 16 },
   crystal_worm: { hx: 92, hy: 56, hr: 18 },
   steel_colossus: { hx: 64, hy: 36, hr: 16 },
-  lava_giant: { hx: 64, hy: 38, hr: 18 },
+  lava_giant: { hx: 64, hy: 40, hr: 18 },
   king_slime: { hx: 64, hy: 70, hr: 36 },
   rot_treant: { hx: 64, hy: 46, hr: 22 },
   abyss_jelly: { hx: 64, hy: 44, hr: 30 },
@@ -94,7 +109,7 @@ export const CREATURE_ANCHORS: Readonly<Record<CreatureId, Anchor>> = {
   chaos_dragon: { hx: 64, hy: 50, hr: 18 },
   blade_lady: { hx: 64, hy: 36, hr: 17 },
   rock_heart: { hx: 64, hy: 30, hr: 16 },
-  rot_king: { hx: 64, hy: 50, hr: 30 },
+  rot_king: { hx: 64, hy: 46, hr: 28 },
   shadow_assassin: { hx: 64, hy: 40, hr: 20 },
   dark_lord: { hx: 64, hy: 34, hr: 17 },
 };
@@ -174,11 +189,16 @@ export const CREATURE_DRAW: Readonly<Record<CreatureId, CreatureDraw>> = {
     shine(c, 92, 62, 6, 4, 0.7);
   },
   shadow_thief: (e) => {
+    // 투명 도둑 (검토 반영 — 시트 'hooded shadow goblin thief, semi-transparent'): 반투명 그림자 몸(외곽선은 또렷) + 두건 옆으로 삐죽 나온 고블린 귀
     const { c } = e;
     blob(c, [90, 96, 108, 88, 112, 104, 96, 112], '#4A3A2A', { lw: 3 });
-    poly(c, [28, 112, 36, 66, 64, 22, 92, 66, 100, 112], e.body, { cel: true, celOffset: 5 });
-    poly(c, [64, 22, 74, 6, 78, 24], e.body, { lw: 3 });
-    ellipse(c, 64, 64, 22, 18, '#100C18', { lw: 0 });
+    for (const s2 of [-1, 1]) poly(c, [64 + s2 * 18, 50, 64 + s2 * 44, 36, 64 + s2 * 24, 62], e.accent, { lw: 2.5, alpha: 0.85 });
+    const hood = P.poly([28, 112, 36, 66, 64, 22, 92, 66, 100, 112]);
+    paint(c, hood, e.body, { lw: 0, alpha: 0.62 });
+    paint(c, hood, null, { lw: 4 });
+    paint(c, P.poly([64, 22, 74, 6, 78, 24]), e.body, { lw: 3, alpha: 0.8 });
+    for (let i = 0; i < 3; i++) stroke(c, [40 + i * 16, 112, 44 + i * 16, 96], shade(e.accent, 0.2), 2, 0.6);
+    ellipse(c, 64, 64, 22, 18, '#100C18', { lw: 0, alpha: 0.9 });
     glowEyes(e, 64, 64, 9, 5);
     rrect(c, 40, 92, 48, 6, 2, e.accent, { lw: 2 });
     poly(c, [94, 100, 118, 86, 114, 98], '#C8CCD6', { lw: 2.5 });
@@ -256,14 +276,38 @@ export const CREATURE_DRAW: Readonly<Record<CreatureId, CreatureDraw>> = {
     poly(c, [84, 104, 106, 90, 110, 94, 88, 108], '#C8CCD6', { lw: 2 });
   },
   gem_golem: (e) => {
+    // 보석 골렘 (검토 반영): 암흑 골렘의 각진 판 몸과 다르게 둥근 바위 몸 + 등·어깨에 솟은 수정 무리 + 가슴의 큰 보석
     const { c } = e;
-    for (const s of [-1, 1]) blob(c, [64 + s * 26, 50, 64 + s * 56, 56, 64 + s * 58, 96, 64 + s * 40, 102, 64 + s * 30, 78], shade(e.body, -0.08), { cel: true, celOffset: 4 });
-    spikes(c, [26, 54, UP - 0.8, 14, 102, 54, UP + 0.8, 14], shade(e.body, -0.2));
-    poly(c, [30, 112, 26, 60, 44, 30, 84, 30, 102, 60, 98, 112], e.body, { cel: true, celOffset: 7 });
-    glow(c, 64, 78, 26, e.accent, 0.7);
-    poly(c, [64, 58, 84, 78, 64, 100, 44, 78], e.accent, { lw: 3.5 });
-    poly(c, [64, 58, 74, 78, 64, 100], shade(e.accent, 0.3), { lw: 0 });
-    eyes(e, 64, 44, 10, 5.5);
+    for (const [x, y, h, a] of [
+      [32, 54, 26, -0.75],
+      [44, 40, 32, -0.35],
+      [64, 32, 26, 0],
+      [84, 40, 32, 0.35],
+      [96, 54, 26, 0.75],
+    ] as const) {
+      c.save();
+      c.translate(x, y);
+      c.rotate(a);
+      poly(c, [-7, 4, -7, -h * 0.7, 0, -h, 7, -h * 0.7, 7, 4], shade(e.accent, 0.15), { lw: 2.5 });
+      stroke(c, [0, 0, 0, -h * 0.8], '#FFFFFF', 1.5, 0.7);
+      c.restore();
+    }
+    for (const s2 of [-1, 1]) {
+      circle(c, 64 + s2 * 44, 86, 15, shade(e.body, -0.1), { cel: true, celOffset: 3 });
+      ellipse(c, 64 + s2 * 18, 112, 13, 7, shade(e.body, -0.25), { lw: 3 });
+    }
+    paint(c, P.ellipse(64, 80, 40, 36), e.body, { cel: true, celOffset: 7 });
+    for (const [x, y] of [
+      [40, 70],
+      [90, 96],
+      [86, 64],
+    ] as const)
+      poly(c, [x, y - 6, x + 4, y, x, y + 6, x - 4, y], e.accent, { lw: 1.8 });
+    glow(c, 64, 88, 26, e.accent, 0.75);
+    poly(c, [64, 70, 80, 88, 64, 106, 48, 88], e.accent, { lw: 3.5 });
+    poly(c, [64, 70, 72, 88, 64, 106], shade(e.accent, 0.35), { lw: 0 });
+    shine(c, 58, 82, 3, 6, 0.9);
+    eyes(e, 64, 60, 11, 5.5);
   },
   mini_golem: (e) => {
     const { c } = e;
@@ -337,19 +381,26 @@ export const CREATURE_DRAW: Readonly<Record<CreatureId, CreatureDraw>> = {
     for (let i = 0; i < 3; i++) circle(c, 116 + i * 4, 44 - i * 6, 3, '#E8FAFF', { lw: 0, alpha: 0.8 });
   },
   rune_giant: (e) => {
+    // 고대 골렘 (검토 반영): 키 큰 돌기둥 몸 + 이끼 낀 바위 어깨 + 위쪽에 새긴 얼굴 + 가슴의 큰 룬 하나 (청회색)
     const { c } = e;
-    for (const s of [-1, 1]) blob(c, [64 + s * 28, 44, 64 + s * 60, 48, 64 + s * 62, 96, 64 + s * 44, 104, 64 + s * 32, 72], shade(e.body, -0.08), { cel: true, celOffset: 4 });
-    poly(c, [28, 114, 24, 52, 42, 22, 86, 22, 104, 52, 100, 114], e.body, { cel: true, celOffset: 7 });
-    for (const [x, y] of [
-      [46, 62],
-      [82, 70],
-      [64, 92],
-    ] as const) {
-      glow(c, x, y, 12, e.accent, 0.8);
-      stroke(c, [x - 5, y - 7, x + 4, y, x - 5, y + 7], e.accent, 3);
+    for (const s2 of [-1, 1]) rrect(c, 64 + s2 * 14 - 11, 98, 22, 18, 5, shade(e.body, -0.25), { lw: 3 });
+    for (const s2 of [-1, 1]) {
+      paint(c, P.rrect(64 + s2 * 36 - 10, 48, 20, 54, 7), shade(e.body, -0.1), { cel: true, celOffset: 3 });
+      circle(c, 64 + s2 * 36, 104, 9, shade(e.body, -0.2), { lw: 3 });
     }
-    spikes(c, [30, 40, UP - 0.9, 14, 98, 40, UP + 0.9, 14], shade(e.body, -0.2));
-    eyes(e, 64, 38, 10, 5.5);
+    paint(c, P.rrect(42, 14, 44, 92, 10), e.body, { cel: true, celOffset: 6 });
+    for (let i = 0; i < 3; i++) stroke(c, [44, 40 + i * 22, 84, 38 + i * 22], shade(e.body, -0.28), 2);
+    for (const s2 of [-1, 1]) {
+      circle(c, 64 + s2 * 30, 46, 16, shade(e.body, 0.08), { cel: true, celOffset: 3 });
+      blob(c, [64 + s2 * 18, 40, 64 + s2 * 24, 31, 64 + s2 * 36, 30, 64 + s2 * 44, 38, 64 + s2 * 32, 40], '#6FA35A', { lw: 2 });
+    }
+    rrect(c, 46, 22, 36, 6, 2, shade(e.body, -0.35), { lw: 0 });
+    eyes(e, 64, 34, 9, 5);
+    stroke(c, [54, 46, 64, 49, 74, 46], OUTLINE, 3);
+    glow(c, 64, 76, 22, e.accent, 0.8);
+    circle(c, 64, 76, 13, null, { lw: 3.5, stroke: e.accent });
+    stroke(c, [64, 66, 64, 86], e.accent, 3);
+    stroke(c, [57, 72, 64, 78, 71, 72], e.accent, 3);
   },
   crystal_worm: (e) => {
     const { c } = e;
@@ -382,24 +433,42 @@ export const CREATURE_DRAW: Readonly<Record<CreatureId, CreatureDraw>> = {
     for (let i = 0; i < 4; i++) circle(c, 42 + i * 15, 92, 2, '#3A3F44', { lw: 0 });
   },
   lava_giant: (e) => {
+    // 용암 거인 (검토 반영): 판 몸 대신 흘러내리는 울퉁불퉁한 몸 + 팔·몸 아래로 떨어지는 용암 방울 + 발밑 용암 웅덩이
     const { c } = e;
-    glow(c, 64, 70, 54, e.accent, 0.4);
-    for (const s of [-1, 1]) blob(c, [64 + s * 28, 48, 64 + s * 58, 54, 64 + s * 58, 96, 64 + s * 40, 102, 64 + s * 30, 76], e.body, { cel: true, celOffset: 4 });
-    poly(c, [30, 114, 26, 56, 44, 26, 84, 26, 102, 56, 98, 114], e.body, { cel: true, celOffset: 6 });
+    glow(c, 64, 72, 60, e.accent, 0.45);
+    blob(c, [18, 116, 36, 106, 64, 110, 92, 104, 112, 116, 64, 122], e.accent, { lw: 3 });
+    for (const s2 of [-1, 1])
+      blob(c, [64 + s2 * 26, 44, 64 + s2 * 54, 48, 64 + s2 * 62, 74, 64 + s2 * 56, 94, 64 + s2 * 60, 108, 64 + s2 * 48, 102, 64 + s2 * 42, 84, 64 + s2 * 30, 70], e.body, { cel: true, celOffset: 4 });
+    blob(c, [30, 104, 24, 72, 32, 46, 48, 28, 64, 22, 80, 28, 96, 46, 102, 72, 98, 104, 90, 98, 86, 112, 78, 100, 70, 112, 62, 100, 54, 114, 46, 100, 38, 110], e.body, { cel: true, celOffset: 6 });
     for (const pts of [
-      [40, 50, 52, 66, 44, 84, 56, 104],
-      [86, 46, 76, 64, 88, 82],
-      [64, 74, 70, 90],
+      [40, 52, 50, 66, 42, 82, 52, 98],
+      [88, 50, 78, 64, 88, 80],
+      [62, 70, 68, 86, 62, 100],
     ])
       line(c, pts, e.accent, 4, false);
-    for (let i = -1; i <= 1; i++) flame(c, 64 + i * 14, 24 - (1 - Math.abs(i)) * 4, 7, e.accent, '#FFE27A');
-    eyes(e, 64, 42, 10, 5.5);
+    for (const [x, y, r] of [
+      [118, 104, 4],
+      [10, 106, 4],
+      [86, 116, 3.5],
+      [54, 118, 3],
+    ] as const)
+      ellipse(c, x, y, r, r * 1.5, '#FFB13B', { lw: 1.5 });
+    for (let i = -1; i <= 1; i++) flame(c, 64 + i * 14, 22 - (1 - Math.abs(i)) * 4, 7, e.accent, '#FFE27A');
+    eyes(e, 64, 44, 10, 5.5);
   },
   king_slime: (e) => {
+    // 킹 슬라임 (검토 반영): 금관은 4천왕 계급 표시라 쓰지 않는다 → 몸에서 솟은 젤리 왕관 + 빨간 보석 (대장 은뿔은 계급 장식이 붙인다)
     const { c } = e;
     slimeBody(e, 64, 80, 112, 76, e.body);
-    poly(c, [44, 46, 46, 26, 54, 38, 64, 20, 74, 38, 82, 26, 84, 46], '#F5C518', { lw: 3 });
-    circle(c, 64, 38, 3.5, '#FF4D6D', { lw: 1.5 });
+    blob(c, [40, 52, 40, 32, 50, 42, 56, 20, 64, 36, 72, 20, 78, 42, 88, 32, 88, 52, 64, 48], mixJelly(e.body), { lw: 3, cel: true, celOffset: 2, alpha: 0.92 });
+    for (const [x, y, r] of [
+      [46, 40, 2.6],
+      [74, 30, 2.2],
+      [82, 44, 1.8],
+    ] as const)
+      circle(c, x, y, r, '#FFFFFF', { lw: 0, alpha: 0.85 });
+    poly(c, [64, 34, 70, 42, 64, 50, 58, 42], '#FF4D6D', { lw: 2 });
+    shine(c, 62, 39, 1.5, 3, 0.9);
     eyes(e, 64, 76, 17, 8.5);
     fangs(c, 64, 92, 7, 5);
     paint(c, P.circle(30, 102, 6), shade(e.body, 0.1), { lw: 2 });
@@ -451,7 +520,12 @@ export const CREATURE_DRAW: Readonly<Record<CreatureId, CreatureDraw>> = {
       cc.quadraticCurveTo(72, 10, 96, 28);
       cc.closePath();
     }, '#DDE6F0', { lw: 3 });
-    paint(c, P.blob([30, 114, 28, 64, 40, 34, 60, 22, 80, 34, 92, 64, 92, 114, 80, 102, 70, 116, 60, 102, 48, 116, 40, 102]), e.body, { cel: true, celOffset: 6, alpha: 0.92 });
+    // 망령 군주 (검토 반영 — 시트 'translucent'): 비치는 유령 몸(외곽선은 또렷) + 안쪽 넋 줄기
+    const robe = P.blob([30, 114, 28, 64, 40, 34, 60, 22, 80, 34, 92, 64, 92, 114, 80, 102, 70, 116, 60, 102, 48, 116, 40, 102]);
+    glow(c, 60, 70, 46, e.accent, 0.35);
+    paint(c, robe, e.body, { lw: 0, alpha: 0.6 });
+    paint(c, robe, null, { lw: 4, stroke: shade(e.accent, -0.35) });
+    for (let i = 0; i < 3; i++) stroke(c, [44 + i * 14, 108, 48 + i * 14, 80, 44 + i * 14, 62], e.accent, 2, 0.55);
     ellipse(c, 60, 44, 16, 14, '#100C18', { lw: 0 });
     glowEyes(e, 60, 44, 7, 4);
     for (const s of [-1, 1]) line(c, [60 + s * 24, 64, 60 + s * 34, 78], e.body, 7);
@@ -528,23 +602,33 @@ export const CREATURE_DRAW: Readonly<Record<CreatureId, CreatureDraw>> = {
     glowEyes(e, 64, 32, 7, 3.5);
   },
   rot_king: (e) => {
+    // 역병의 군단장 모르가스 (검토 반영): 썩은 보랏빛 갈색, 반쯤 녹아 흘러내린 몸 + 해골 거품 + 여러 개의 눈 + 떨어지는 점액 웅덩이
     const { c } = e;
-    for (let i = 0; i < 5; i++) circle(c, 28 + i * 18, 110, 7, shade(e.body, -0.15), { lw: 2.5 });
-    slimeBody(e, 64, 76, 112, 80, e.body);
+    blob(c, [10, 116, 28, 104, 64, 108, 100, 102, 118, 116, 64, 124], shade(e.body, -0.25), { lw: 3 });
+    blob(c, [22, 110, 18, 84, 26, 58, 40, 38, 56, 26, 76, 28, 92, 40, 102, 62, 108, 90, 108, 112, 98, 104, 94, 118, 84, 106, 74, 120, 64, 106, 52, 120, 42, 104, 32, 116], e.body, { cel: true, celOffset: 7 });
+    for (const [x, y, rx, ry] of [
+      [30, 72, 5, 13],
+      [100, 80, 5, 15],
+      [56, 98, 4, 10],
+    ] as const) {
+      ellipse(c, x, y, rx, ry, shade(e.body, -0.2), { lw: 2 });
+      circle(c, x, y + ry + 4, rx * 0.8, e.accent, { lw: 1.5 });
+    }
+    skullIcon(c, 40, 92, 8, '#E8E0B0');
+    skullIcon(c, 88, 96, 7, '#E8E0B0');
     for (const [x, y, r] of [
-      [36, 72, 6],
-      [92, 84, 7],
-      [80, 58, 4],
+      [78, 76, 5],
+      [34, 54, 4],
+      [96, 60, 3.5],
+      [62, 84, 3],
     ] as const)
-      circle(c, x, y, r, e.accent, { lw: 2 });
-    for (const pts of [
-      [30, 90, 34, 104],
-      [96, 92, 94, 108],
-    ])
-      line(c, pts, e.body, 6);
-    eyes(e, 64, 58, 14, 7);
-    rrect(c, 52, 72, 24, 9, 3, '#3A1A1A', { lw: 2 });
-    for (let i = 0; i < 3; i++) poly(c, [55 + i * 7, 72, 59 + i * 7, 72, 57 + i * 7, 78], '#E8E0B0', { lw: 0 });
+      circle(c, x, y, r, e.accent, { lw: 1.8, alpha: 0.9 });
+    oneEye(e, 52, 52, 7.5);
+    oneEye(e, 76, 48, 9);
+    oneEye(e, 64, 66, 5);
+    oneEye(e, 88, 58, 4.5);
+    paint(c, P.blob([46, 74, 60, 78, 74, 74, 82, 80, 72, 88, 58, 88]), '#2A1418', { lw: 2.5 });
+    for (let i = 0; i < 3; i++) poly(c, [54 + i * 8, 76, 58 + i * 8, 76, 56 + i * 8, 82], '#E8E0B0', { lw: 0 });
   },
   shadow_assassin: (e) => {
     const { c } = e;
@@ -607,6 +691,26 @@ function goldCrown(c: Ctx, a: Anchor, color: string, gem: string): void {
   circle(c, a.hx, y + 2, 3, gem, { lw: 1.2 });
 }
 
+/** 군주의 왕관: 4천왕 금관과 다른 모양 — 높은 보라 가시 다섯 + 가운데 가시 끝 별빛 (가장 높은 계급) */
+function lordCrown(c: Ctx, a: Anchor): void {
+  const w = Math.max(16, a.hr * 1.05);
+  const y = a.hy - a.hr * 0.95;
+  glow(c, a.hx, y - 2, 16, '#C08BFF', 0.7);
+  const pts = [a.hx - w, y + 8];
+  for (let i = 0; i <= 4; i++) {
+    const x = a.hx - w + (i * w) / 2;
+    const h = i === 2 ? 17 : i % 2 ? 13 : 10;
+    pts.push(x - (i === 0 ? 0 : 3), y, x, y - h, x + (i === 4 ? 0 : 3), y);
+  }
+  pts.push(a.hx + w, y + 8);
+  poly(c, pts, '#8E44FF', { lw: 2.5, cel: true, celOffset: 1.5 });
+  stroke(c, [a.hx - w + 2, y + 5, a.hx + w - 2, y + 5], '#E8C9FF', 2);
+  for (const dx of [-w * 0.5, 0, w * 0.5]) circle(c, a.hx + dx, y + 2, 2.4, '#FFE27A', { lw: 1 });
+  // 가운데 가시 끝의 별빛
+  glow(c, a.hx, y - 17, 6, '#FFFFFF', 0.9);
+  sparkle(c, a.hx, y - 17, 5.5, '#FFFFFF');
+}
+
 function noxSigil(c: Ctx, x: number, y: number, r: number, legion: string): void {
   poly(c, [x, y - r, x + r * 0.75, y, x, y + r, x - r * 0.75, y], legion, { lw: 2 });
   circle(c, x, y, r * 0.3, '#100C18', { lw: 0 });
@@ -630,20 +734,28 @@ export function drawEnemy(c: Ctx, look: EnemyLook, legionColor: string): void {
     paint(c, P.star(0, 0, 44, 6, 0.55), null, { lw: 3, stroke: legionColor });
     c.restore();
   } else if (rank === 'lord') {
-    glow(c, 64, 64, 66, '#2A0D4A', 0.85);
-    paint(c, P.poly([28, 116, 40, 46, 88, 46, 100, 116, 64, 108]), '#1A1240', { cel: true, celOffset: 4 });
-    for (let i = 0; i < 8; i++) sparkle(c, 34 + ((i * 41) % 60), 60 + ((i * 29) % 50), 3, '#FFFFFF');
-    stroke(c, [30, 114, 64, 106, 98, 114], '#9B4DFF', 3);
+    // 군주 (검토 반영: 어두운 배경에서 오라·망토가 사라져 4천왕보다 초라했다):
+    // 밝은 보라 테의 오라 + 4천왕보다 큰 이중 바닥 문양 + 보라 테두리 빛이 도는 별빛 망토
+    glow(c, 64, 66, 64, '#B36BFF', 0.55);
+    glow(c, 64, 66, 52, '#2A0D4A', 0.9);
+    c.save();
+    c.translate(64, 112);
+    c.scale(1, 0.3);
+    circle(c, 0, 0, 60, null, { lw: 6, stroke: '#C08BFF' });
+    circle(c, 0, 0, 50, null, { lw: 3, stroke: '#E8C9FF' });
+    paint(c, P.star(0, 0, 50, 8, 0.6), null, { lw: 3, stroke: '#C08BFF' });
+    c.restore();
+    const cape = P.poly([24, 116, 38, 44, 90, 44, 104, 116, 64, 106]);
+    paint(c, cape, '#1A1240', { cel: true, celOffset: 4, stroke: '#C08BFF' });
+    stroke(c, [26, 112, 38, 48], '#E8C9FF', 2, 0.8);
+    stroke(c, [102, 112, 90, 48], '#E8C9FF', 2, 0.8);
+    for (let i = 0; i < 10; i++) sparkle(c, 32 + ((i * 41) % 64), 56 + ((i * 29) % 54), i % 3 ? 3 : 4.5, i % 2 ? '#FFFFFF' : '#E8C9FF');
+    stroke(c, [26, 114, 64, 104, 102, 114], '#C08BFF', 3);
   }
   CREATURE_DRAW[look.creature](e);
   // 앞쪽 계급 장식
   if (rank === 'minion') noxSigil(c, a.hx, a.hy - a.hr * 0.62, Math.max(5, a.hr * 0.24), legionColor);
   else if (rank === 'captain') silverHorns(c, a);
   else if (rank === 'commander') goldCrown(c, a, '#F5C518', legionColor);
-  else if (rank === 'lord') {
-    goldCrown(c, a, '#9B4DFF', '#FFE27A');
-    glow(c, a.hx, a.hy - a.hr, 16, '#B36BFF', 0.5);
-  }
-  void star;
-  void bolt;
+  else if (rank === 'lord') lordCrown(c, a);
 }

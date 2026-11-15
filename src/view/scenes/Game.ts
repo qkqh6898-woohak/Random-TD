@@ -58,6 +58,7 @@ import { gambleCheck } from '../../sim/systems/Gamble';
 import { challengeCheck } from '../../sim/systems/Challenge';
 import { claimCheck, missionsClaimable } from '../../sim/systems/Mission';
 import { ensureMobTexture } from '../../art/mobs';
+import { enemyCharacterTexture } from '../../art/characters/phaserArt';
 import { createChallengeSheet, type ChallengeSheetView } from '../../ui/sheets/ChallengeSheet';
 import { createUpgradeSheet, type UpgradeSheetView } from '../../ui/sheets/UpgradeSheet';
 import { createMissionSheet, type MissionSheetView } from '../../ui/sheets/MissionSheet';
@@ -1778,14 +1779,18 @@ export class GameScene extends Phaser.Scene {
     this.match.world.enqueue({ type: 'claimAllMissions' });
   }
 
-  /** 도전 보스 그림 (몹 텍스처 → 이미지 주소, 종류마다 한 번). */
+  /**
+   * 도전 보스 그림 (몹 텍스처 → 이미지 주소, 종류마다 한 번). 게임 화면(MobSprite)과 같은 순서: 외형 데이터가 있으면 새 캐릭터 그림
+   * (도전 9단계 '망령 기사' = 그림자 군단 대장과 같은 적), 없으면 예전 그림 — 시트 그림과 싸우는 적이 같아 보이게 (검토 반영).
+   */
   private challengePortrait(mobId: string): string | null {
     if (!this.challengePics.has(mobId)) {
       let url: string | null = null;
       try {
         const c = this.ctx.data.enemies.challenges.find((x) => x.id === mobId);
         const legions = (this.ctx.data.enemies.hierarchy as { legions?: Record<string, { color?: string }> }).legions ?? {};
-        const key = ensureMobTexture(this, mobId, hexToInt(legions[c?.legion ?? '']?.color ?? '#9B4DFF'));
+        const legion = hexToInt(legions[c?.legion ?? '']?.color ?? '#9B4DFF');
+        const key = enemyCharacterTexture(this, mobId, legion)?.key ?? ensureMobTexture(this, mobId, legion);
         const b64 = this.textures.getBase64(key);
         url = typeof b64 === 'string' && b64.startsWith('data:') ? b64 : null;
       } catch {

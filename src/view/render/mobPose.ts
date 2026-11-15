@@ -5,6 +5,7 @@
  * - 걷기(walk): 0.6초에 한 번 통통 튀고(땅에 닿을 때 가로로 눌림, 공중에서 세로로 늘어남) 몸이 살짝 좌우로 흔들린다.
  *   주기는 이동 속도와 상관없이 0.6초 (빠른 몹은 같은 박자에 더 멀리 간다).
  * - 날갯짓(flap, 박쥐)·둥실(float, 유령)은 걷지 않으니 따로 박자를 두되, 이동 방향 기울기는 같이 쓴다.
+ * - 꿈틀(slither, 모래 벌레·수정 포식자): 땅에 붙은 채 가로로 늘었다 줄고(몸이 밀려 나가듯) 좌우로 작게 흔든다 — 튀지 않는다.
  * - 기울기: 진행 방향의 가로 성분(dx) 쪽으로 머리가 기운다 (오른쪽으로 가면 시계 방향). 세로로만 갈 때는 0.
  *   모서리에서 갑자기 뒤집히지 않게 화면 쪽(MobSprite)에서 부드럽게 따라간다 → `approachLean`.
  * 각도 단위는 라디안(Phaser rotation, 양수 = 시계 방향).
@@ -18,6 +19,10 @@ export const MOB_FLAP_PERIOD_MS = 240;
 export const MOB_HOVER_PERIOD_MS = 600;
 /** 유령 둥실 한 주기 (ms) */
 export const MOB_FLOAT_PERIOD_MS = 1200;
+/** 벌레 꿈틀 한 주기 (ms) */
+export const MOB_SLITHER_PERIOD_MS = 900;
+/** 벌레 가로 늘어남 정도 */
+export const MOB_SLITHER_STRETCH = 0.1;
 /** 이동 방향 기울기 (rad, 약 8도) */
 export const MOB_LEAN_RAD = 0.14;
 /** 걷기 좌우 흔들림 (rad, 약 3도) */
@@ -27,7 +32,7 @@ export const MOB_SQUASH = 0.06;
 /** 기울기가 목표 쪽으로 따라가는 시간 상수 (ms) */
 export const MOB_LEAN_EASE_MS = 120;
 
-export type MobMotion = 'walk' | 'flap' | 'float';
+export type MobMotion = 'walk' | 'flap' | 'float' | 'slither';
 
 export interface MobPose {
   /** 위아래 (bobAmp 배수, 음수 = 위) */
@@ -58,13 +63,19 @@ export function mobPose(motion: MobMotion, timeMs: number, phase: number): MobPo
     const flap = (TAU * timeMs) / MOB_FLAP_PERIOD_MS + phase;
     return { bob: -1.4 - Math.sin(hover) * 0.6, sx: 0.82 + 0.18 * Math.abs(Math.cos(flap / 2)), sy: 1, angle: 0 };
   }
+  if (motion === 'slither') {
+    // 늘어날 때 납작해지고(부피 유지 느낌), 반 박자 늦게 좌우로 흔든다. 바닥에서 거의 뜨지 않는다
+    const u = (TAU * timeMs) / MOB_SLITHER_PERIOD_MS + phase;
+    const stretch = Math.sin(u) * MOB_SLITHER_STRETCH;
+    return { bob: -0.12 * Math.max(0, Math.sin(u)), sx: 1 + stretch, sy: 1 - stretch * 0.6, angle: Math.sin(u - 1.2) * MOB_SWAY_RAD * 1.4 };
+  }
   const u = (TAU * timeMs) / MOB_FLOAT_PERIOD_MS + phase;
   return { bob: -1.2 + Math.sin(u) * 0.8, sx: 1, sy: 1, angle: 0 };
 }
 
 /** 이동 방향 기울기 목표 (rad): 가로 성분 쪽으로. 박쥐·유령은 반만. */
 export function leanTarget(motion: MobMotion, dirDx: number): number {
-  const lean = motion === 'walk' ? MOB_LEAN_RAD : MOB_LEAN_RAD / 2;
+  const lean = motion === 'walk' || motion === 'slither' ? MOB_LEAN_RAD : MOB_LEAN_RAD / 2;
   return Math.sign(dirDx) * lean;
 }
 

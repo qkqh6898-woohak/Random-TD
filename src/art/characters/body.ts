@@ -143,7 +143,6 @@ function sleeve(b: BodyCtx, side: -1 | 1, color: string, w = 17): void {
 /** 옷 (다리 + 몸통 + 소매). 팔 끝 손은 따로. */
 function outfit(b: BodyCtx): void {
   const { c, spec, main, second, trim, look } = b;
-  const dark = shade(main, -0.35);
   const boots = '#5A3A22';
   const s = spec;
   switch (look.outfit) {
@@ -328,7 +327,6 @@ function outfit(b: BodyCtx): void {
       break;
     }
   }
-  void dark;
 }
 
 function decorate(b: BodyCtx, deco: OutfitDeco): void {
@@ -483,26 +481,64 @@ function drawFront(b: BodyCtx, item: FrontId): void {
   const col = look.frontColor ?? '#2BB3A3';
   const neckY = s.torsoTop + 2;
   switch (item) {
-    case 'drum':
-    case 'drum_flame': {
+    case 'drum': {
       const dy = (s.torsoTop + s.torsoBot) / 2 + 8;
       const w = s.torsoHW + 6;
       stroke(c, [-s.torsoHW + 4, s.torsoTop + 2, s.torsoHW - 6, dy - 10], '#6B4226', 5);
-      paint(c, P.rrect(-w, dy - 10, w * 2, 36, 8), item === 'drum_flame' ? '#3A1A1A' : '#C0392B', { cel: true });
+      paint(c, P.rrect(-w, dy - 10, w * 2, 36, 8), '#C0392B', { cel: true });
       for (let i = 0; i < 4; i++) stroke(c, [-w + 6 + i * (w * 2 - 12) / 4, dy - 6, -w + 6 + (i + 0.5) * (w * 2 - 12) / 4, dy + 22, -w + 6 + (i + 1) * (w * 2 - 12) / 4, dy - 6], '#F3EAD3', 2.5);
       ellipse(c, 0, dy - 10, w, 9, '#F3E7C9', { lw: 4 });
-      if (item === 'drum_flame') for (let i = -1; i <= 1; i++) flame(c, i * w * 0.6, dy + 16, 6, '#FF7A2F', '#FFE27A');
+      break;
+    }
+    case 'drum_flame': {
+      // 불꽃 문양 큰 북 (각성): 기본 북보다 넓고 높은 전쟁북 + 몸통의 불꽃 무늬 + 가장자리에서 타오르는 불꽃
+      const dy = (s.torsoTop + s.torsoBot) / 2 + 2;
+      const w = s.torsoHW + 22;
+      stroke(c, [-s.torsoHW + 4, s.torsoTop + 2, s.torsoHW - 6, dy - 10], '#6B4226', 5);
+      glow(c, 0, dy + 10, w * 1.4, '#FF7A2F', 0.45);
+      paint(c, P.rrect(-w, dy - 12, w * 2, 52, 10), '#2A1414', { cel: true });
+      for (let i = 0; i < 3; i++) {
+        const x = -w * 0.62 + i * w * 0.62;
+        blob(c, [x, dy - 2, x + 11, dy + 18, x + 8, dy + 34, x - 8, dy + 34, x - 11, dy + 18], '#FF7A2F', { lw: 2.5 });
+        blob(c, [x, dy + 12, x + 5, dy + 24, x, dy + 32, x - 5, dy + 24], '#FFE27A', { lw: 0 });
+      }
+      for (const sx of [-1, 1]) for (const yy of [dy - 4, dy + 32]) circle(c, sx * (w - 6), yy, 3.5, '#C9A227', { lw: 1.5 });
+      ellipse(c, 0, dy - 12, w, 11, '#F3E7C9', { lw: 4 });
+      skullIcon(c, 0, dy - 13, 6);
+      for (const sx of [-1, 1]) flame(c, sx * (w + 2), dy - 14, 9, '#FF7A2F', '#FFE27A');
+      flame(c, 0, dy - 26, 7, '#FF9A2F', '#FFF3A8');
       break;
     }
     case 'scarf':
       blob(c, [-s.torsoHW + 4, neckY - 6, s.torsoHW - 4, neckY - 6, s.torsoHW - 2, neckY + 8, -s.torsoHW + 2, neckY + 8], col, { lw: 4, cel: true, celOffset: 2 });
       blob(c, [s.torsoHW * 0.3, neckY + 4, s.torsoHW * 0.75, neckY + 34, s.torsoHW * 0.45, neckY + 38, s.torsoHW * 0.1, neckY + 8], shade(col, -0.1), { lw: 3.5 });
       break;
-    case 'muffler':
-      blob(c, [-s.torsoHW + 2, neckY - 8, s.torsoHW - 2, neckY - 8, s.torsoHW, neckY + 8, -s.torsoHW, neckY + 8], col, { lw: 4 });
-      blob(c, [-s.torsoHW * 0.4, neckY + 4, -s.torsoHW - 30, neckY + 10, -s.torsoHW - 46, neckY + 30, -s.torsoHW - 20, neckY + 18, -s.torsoHW * 0.2, neckY + 10], col, { lw: 3.5 });
-      glow(c, -s.torsoHW - 30, neckY + 20, 22, '#B36BFF', 0.35);
+    case 'muffler': {
+      // 그림자 머플러 (닌자 각성): 목을 감은 두꺼운 머플러 + 뒤(왼쪽)로 길게 휘날리는 두 갈래 꼬리, 끝에 보라 불꽃
+      const tail = shade(col, -0.18);
+      glow(c, -s.torsoHW - 46, neckY + 14, 46, '#B36BFF', 0.45);
+      blob(c, [-s.torsoHW * 0.3, neckY + 2, -s.torsoHW - 34, neckY - 14, -s.torsoHW - 78, neckY - 6, -s.torsoHW - 96, neckY + 10, -s.torsoHW - 60, neckY + 6, -s.torsoHW * 0.2, neckY + 14], tail, { lw: 3.5, cel: true, celOffset: 2 });
+      blob(c, [-s.torsoHW * 0.3, neckY + 8, -s.torsoHW - 26, neckY + 18, -s.torsoHW - 64, neckY + 40, -s.torsoHW - 84, neckY + 62, -s.torsoHW - 46, neckY + 40, -s.torsoHW * 0.1, neckY + 18], col, { lw: 3.5, cel: true, celOffset: 2 });
+      blob(c, [-s.torsoHW - 2, neckY - 12, s.torsoHW + 2, neckY - 12, s.torsoHW + 4, neckY + 10, -s.torsoHW - 4, neckY + 10], col, { lw: 4, cel: true, celOffset: 2 });
+      stroke(c, [-s.torsoHW + 4, neckY - 2, s.torsoHW - 4, neckY - 2], shade(col, 0.35), 2.5, 0.8);
+      flame(c, -s.torsoHW - 96, neckY + 4, 8, '#B36BFF', '#F0DCFF');
+      flame(c, -s.torsoHW - 84, neckY + 58, 7, '#B36BFF', '#F0DCFF');
       break;
+    }
+    case 'scarf_long': {
+      // 금빛 긴 스카프 (고블린 각성): 목도리 + 뒤로 길게 휘날리는 두 꼬리 (기본 스카프보다 훨씬 크다)
+      const tail = shade(col, -0.15);
+      blob(c, [-s.torsoHW * 0.2, neckY + 2, -s.torsoHW - 30, neckY - 10, -s.torsoHW - 70, neckY - 2, -s.torsoHW - 82, neckY + 16, -s.torsoHW - 46, neckY + 10, -s.torsoHW * 0.1, neckY + 12], tail, { lw: 3.5, cel: true, celOffset: 2 });
+      blob(c, [-s.torsoHW * 0.2, neckY + 8, -s.torsoHW - 20, neckY + 22, -s.torsoHW - 52, neckY + 44, -s.torsoHW - 62, neckY + 64, -s.torsoHW - 30, neckY + 44, 0, neckY + 16], col, { lw: 3.5, cel: true, celOffset: 2 });
+      blob(c, [-s.torsoHW + 2, neckY - 8, s.torsoHW - 2, neckY - 8, s.torsoHW, neckY + 10, -s.torsoHW, neckY + 10], col, { lw: 4, cel: true, celOffset: 2 });
+      for (const [x, y] of [
+        [-s.torsoHW - 78, neckY + 6],
+        [-s.torsoHW - 58, neckY + 58],
+      ] as const)
+        for (let i = -1; i <= 1; i++) stroke(c, [x + i * 4, y, x + i * 6 - 4, y + 10], b.trim === '#9AA0A6' ? '#B23A2E' : shade(col, -0.4), 2);
+      sparkle(c, -s.torsoHW - 40, neckY - 4, 6, '#FFFFFF');
+      break;
+    }
     case 'belt_pouch': {
       const y = s.torsoBot - 26;
       rrect(c, s.hipHW * 0.25, y, 22, 20, 6, '#7A4A2A', { lw: 3.5 });
@@ -518,10 +554,17 @@ function drawFront(b: BodyCtx, item: FrontId): void {
         rrect(c, x - 3, y - 7, 6, 11, 2, '#D9A93A', { lw: 2 });
       }
       break;
-    case 'coin_belt':
-      rrect(c, -s.hipHW - 2, s.torsoBot - 22, s.hipHW * 2 + 4, 12, 4, '#3A2A1A', { lw: 3.5 });
-      for (let i = -2; i <= 2; i++) coin(c, i * s.hipHW * 0.4, s.torsoBot - 16, 6);
+    case 'coin_belt': {
+      // 금화 탄환 벨트 (은행가 각성): 어깨에서 허리로 비스듬히 두른 굵은 띠 + 큰 금화 + 허리띠
+      line(c, [-s.torsoHW + 4, s.torsoTop + 2, s.hipHW - 2, s.torsoBot - 8], '#3A2A1A', 14);
+      for (let i = 0; i < 5; i++) {
+        const t = (i + 0.5) / 5;
+        coin(c, -s.torsoHW + 4 + t * (s.hipHW - 6 + s.torsoHW), s.torsoTop + 2 + t * (s.torsoBot - 10 - s.torsoTop), 8);
+      }
+      rrect(c, -s.hipHW - 4, s.torsoBot - 24, s.hipHW * 2 + 8, 14, 4, '#3A2A1A', { lw: 3.5 });
+      for (let i = -2; i <= 2; i++) coin(c, i * s.hipHW * 0.42, s.torsoBot - 17, 7);
       break;
+    }
     case 'bone_necklace':
       for (let i = -3; i <= 3; i++) {
         const x = i * s.torsoHW * 0.22;
@@ -561,10 +604,16 @@ function drawGround(b: BodyCtx, item: GroundId, layer: 'behind' | 'front'): void
   if (layer === 'front') {
     if (item === 'anvil' || item === 'anvil_flame') {
       const x = 74;
-      if (item === 'anvil_flame') glow(c, x, -26, 36, '#FF7A2F', 0.7);
+      if (item === 'anvil_flame') glow(c, x, -40, 60, '#FF7A2F', 0.75);
       poly(c, [x - 30, -36, x + 26, -36, x + 34, -30, x + 14, -24, x + 10, -10, x + 18, 0, x - 20, 0, x - 12, -10, x - 16, -24, x - 30, -28], item === 'anvil_flame' ? '#4A3A3A' : '#5A5F68', { cel: true, celOffset: 4 });
       shine(c, x - 12, -33, 10, 2, 0.5);
-      if (item === 'anvil_flame') for (let i = -1; i <= 1; i++) flame(c, x + i * 12, -42, 6, '#FF7A2F', '#FFE27A');
+      if (item === 'anvil_flame') {
+        // 불꽃 모루 (각성): 모루 위로 크게 타오르는 불길 + 빛나는 룬 줄
+        stroke(c, [x - 22, -30, x - 6, -30, x + 2, -26, x + 18, -30], '#FFB13B', 3);
+        flame(c, x - 16, -54, 14, '#FF6A1F', '#FFE27A');
+        flame(c, x + 6, -68, 21, '#FF7A2F', '#FFE27A');
+        flame(c, x + 28, -52, 12, '#FF6A1F', '#FFE27A');
+      }
     }
     return;
   }
@@ -623,6 +672,30 @@ function drawGround(b: BodyCtx, item: GroundId, layer: 'behind' | 'front'): void
     case 'cloud':
       blob(c, [-70, -6, -50, -30, -16, -26, 10, -36, 44, -26, 70, -8, 40, 6, -40, 6], '#FFFFFF', { cel: true });
       break;
+    case 'petal_swirl':
+      // 벚꽃 바람 (검성 각성): 발밑을 감아 오르는 바람 고리 + 꽃잎
+      for (let i = 0; i < 2; i++) {
+        c.save();
+        c.translate(0, -10 - i * 30);
+        c.scale(1, 0.32);
+        paint(
+          c,
+          (cc) => {
+            cc.beginPath();
+            cc.arc(0, 0, 84 - i * 12, 0.3 + i * 2, Math.PI * 1.5 + i * 2);
+          },
+          null,
+          { lw: 5, stroke: i ? '#FFD1E3' : '#FFFFFF' },
+        );
+        c.restore();
+      }
+      for (let i = 0; i < 9; i++) {
+        const a = i * 0.9 + 0.4;
+        const x = Math.cos(a) * (70 + (i % 3) * 12);
+        const y = -14 - (i % 4) * 26 + Math.sin(a) * 10;
+        ellipse(c, x, y, 8, 5, i % 2 ? '#FFB7D0' : '#FFD1E3', { lw: 2 }, a);
+      }
+      break;
     default:
       break;
   }
@@ -632,14 +705,26 @@ function crownTop(c: Ctx, x: number, y: number): void {
   poly(c, [x - 26, y + 10, x - 26, y - 10, x - 13, y, x, y - 16, x + 13, y, x + 26, y - 10, x + 26, y + 10], '#F5C518', { lw: 3.5 });
 }
 
-/** 등급 별 줄 (기존 chibi.ts와 같은 높이·간격). 신 = 무지개 별, 히든 = 검은 별 + 금 테두리 */
-export function drawGradeStars(c: Ctx, grade: Grade | undefined): void {
-  if (!grade) return;
-  const n = Math.max(1, GRADE_STARS[grade]);
+/** 등급 별 줄의 별 자리 (그림 단위, 발밑 원점) — 키 큰 소품(창·군기)이면 소품 반대쪽으로 비켜 놓는다 (검토 반영: 창끝이 별을 가렸다) */
+export function gradeStarLayout(look: Pick<HumanLook, 'grade' | 'prop' | 'body'>): { xs: number[]; r: number } {
+  if (!look.grade) return { xs: [], r: 0 };
+  const n = Math.max(1, GRADE_STARS[look.grade]);
   const r = n > 3 ? 12 : 15;
   const gap = n > 3 ? 27 : 34;
-  for (let i = 0; i < n; i++) {
-    const x = (i - (n - 1) / 2) * gap;
+  let shift = 0;
+  if (look.prop && PROP_META[look.prop].tall) {
+    const right = ((n - 1) / 2) * gap + r + 3;
+    shift = Math.min(0, BODY_SPECS[look.body].handR[0] - 26 - right);
+  }
+  return { xs: Array.from({ length: n }, (_, i) => (i - (n - 1) / 2) * gap + shift), r };
+}
+
+/** 등급 별 줄 (기존 chibi.ts와 같은 높이·간격). 신 = 무지개 별, 히든 = 검은 별 + 금 테두리 */
+export function drawGradeStars(c: Ctx, look: Pick<HumanLook, 'grade' | 'prop' | 'body'>): void {
+  const grade = look.grade;
+  if (!grade) return;
+  const { xs, r } = gradeStarLayout(look);
+  for (const x of xs) {
     if (grade === 'god') {
       glow(c, x, STAR_Y, 26, '#FFFFFF', 0.6);
       paint(c, P.star(x, STAR_Y, r + 3), rainbow(c, x - r, STAR_Y - r, x + r, STAR_Y + r), { lw: 3 });
@@ -683,6 +768,5 @@ export function drawBodyPart(c: Ctx, look: HumanLook, opts: { stars?: boolean } 
   if (look.body === 'deity') deityHalo(c, 0, spec.headY, spec.headR);
   drawHead(h);
   if (look.ground) drawGround(b, look.ground, 'front');
-  if (opts.stars !== false) drawGradeStars(c, look.grade);
-  void sparkle;
+  if (opts.stars !== false) drawGradeStars(c, look);
 }

@@ -2,7 +2,7 @@
  * DOM 캔버스용 캐릭터 그리기 (갤러리·대화 UI): 텍스처 저장소를 오프스크린 캔버스로 구현하고,
  * compose() 결과를 2D 컨텍스트에 그대로 그린다 (게임의 CharacterFigure와 같은 배치·움직임).
  */
-import { AURA_TEX_R, ensureAuraTexture, ensureFxTexture, type HumanTexture, type TextureStore } from './cache';
+import { ensureAuraTexture, ensureFxTexture, type HumanTexture, type TextureStore } from './cache';
 import { auraColorOf } from './draw';
 import type { Composition } from './compose';
 import { PARTICLE_BOX } from './fxArt';
@@ -15,6 +15,7 @@ import { PORTRAIT_BOX } from './rig';
 interface Entry {
   canvas: HTMLCanvasElement;
   frames: Map<string, { x: number; y: number; w: number; h: number }>;
+  data?: unknown;
 }
 
 export class DomTextureStore implements TextureStore {
@@ -40,6 +41,30 @@ export class DomTextureStore implements TextureStore {
 
   commit(): void {}
 
+  getData(key: string): unknown {
+    return this.entries.get(key)?.data;
+  }
+
+  setData(key: string, data: unknown): void {
+    const e = this.entries.get(key);
+    if (e) e.data = data;
+  }
+
+  remove(key: string): void {
+    this.entries.delete(key);
+  }
+
+  private scratchCanvas: HTMLCanvasElement | null = null;
+
+  scratch(w: number, h: number): Ctx {
+    const c = (this.scratchCanvas ??= document.createElement('canvas'));
+    c.width = Math.max(1, w);
+    c.height = Math.max(1, h);
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    if (!ctx) throw new Error('임시 2D 캔버스를 만들 수 없다');
+    return ctx;
+  }
+
   get(key: string): Entry | undefined {
     return this.entries.get(key);
   }
@@ -49,8 +74,9 @@ export class DomTextureStore implements TextureStore {
   }
 }
 
-/** compose() 결과를 그린다. ctx는 '그림 단위' 좌표(발밑 원점)로 미리 옮기고 늘여 둔다. */
-export function drawComposition(c: CanvasRenderingContext2D, store: DomTextureStore, tex: HumanTexture, comp: Composition, res: number): void {
+/** compose() 결과를 그린다. ctx는 '그림 단위' 좌표(발밑 원점)로 미리 옮기고 늘여 둔다. 파츠는 구운 해상도(tex.res)의 역수로 늘인다. */
+export function drawComposition(c: CanvasRenderingContext2D, store: DomTextureStore, tex: HumanTexture, comp: Composition): void {
+  const res = tex.res;
   const entry = store.get(tex.key);
   if (!entry) return;
   c.save();
@@ -78,7 +104,6 @@ export function drawComposition(c: CanvasRenderingContext2D, store: DomTextureSt
     c.restore();
   }
   c.restore();
-  void AURA_TEX_R;
 }
 
 /** 등급 받침대 (art/chibi.ts drawPedestal과 같은 모양, 2D 캔버스판). 신 = 무지개, 히든 = 검정 + 금 테. */

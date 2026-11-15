@@ -159,6 +159,19 @@ const colorOrRainbow = (): Schema =>
 const e = (list: readonly string[]): Schema => s.str({ enum: list });
 const opt = s.opt;
 
+/**
+ * 정해진 필드만 허용하는 객체 (검토 반영): 'propColour'·'backcolor' 같은 오타가 조용히 무시되면 기본값으로 그려져
+ * 구별되던 모습이 사라진다 → 모르는 키는 오류.
+ */
+function strictObj<T>(fields: Record<string, Schema>, check?: (v: T, path: string, issues: Issue[]) => void): Schema {
+  return s.withCheck<T>(s.obj(fields), (v, path, issues) => {
+    for (const k of Object.keys(v as Record<string, unknown>)) {
+      if (!(k in fields)) issues.push({ path: `${path}.${k}`, message: '모르는 필드 (오타?)' });
+    }
+    check?.(v, path, issues);
+  });
+}
+
 /** 각성에서 바꿀 수 있는 필드 (사람형 외형 필드) */
 const humanFields: Record<string, Schema> = {
   body: e(BODIES),
@@ -208,8 +221,8 @@ const awakenSchema: Schema = s.withCheck<Record<string, unknown>>(s.rec(s.any())
   if (Object.keys(v).length === 0) issues.push({ path, message: '각성 외형이 비어 있다' });
 });
 
-const humanSchema: Schema = s.withCheck<HumanLook>(
-  s.obj({
+const humanSchema: Schema = strictObj<HumanLook>(
+  {
     id: s.str({ nonEmpty: true }),
     kind: s.str({ enum: ['tower', 'advisor', 'sidekick'] }),
     name: s.str({ nonEmpty: true }),
@@ -217,7 +230,7 @@ const humanSchema: Schema = s.withCheck<HumanLook>(
     grade: opt(s.str({ enum: GRADES })),
     ...humanFields,
     awaken: opt(awakenSchema),
-  }),
+  },
   (v, path, issues) => {
     if (v.kind === 'tower') {
       // 타워는 맵 위에서 움직이므로 등급·소품·대기 동작이 반드시 있어야 한다
@@ -228,7 +241,7 @@ const humanSchema: Schema = s.withCheck<HumanLook>(
   },
 );
 
-const enemySchema: Schema = s.obj({
+const enemySchema: Schema = strictObj({
   id: s.str({ nonEmpty: true }),
   kind: s.str({ enum: ['mob', 'captain', 'commander', 'lord'] }),
   name: s.str({ nonEmpty: true }),

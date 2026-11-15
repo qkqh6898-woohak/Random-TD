@@ -2,7 +2,7 @@
  * 인물 상반신 초상 (조언자 7명·부관 미오·총지휘관, 대화 상자용 — M11b 대화 UI가 쓴다). Canvas 2D.
  * 상자 200×220 단위, 원점 = 왼쪽 위. 표정 3종(보통·화남·웃음, ART.md 1.3).
  */
-import { OUTLINE, P, blob, circle, ellipse, glow, line, paint, poly, rrect, shade, shine, sparkle, star, stroke, type Ctx } from './cv';
+import { OUTLINE, P, blob, circle, ellipse, glow, line, paint, poly, rrect, shade, shine, sparkle, stroke, type Ctx } from './cv';
 import { BACK_DRAW } from './back';
 import { drawHead, type HeadCtx } from './head';
 import type { FaceId } from './library';
@@ -118,9 +118,12 @@ function itemBack(c: Ctx, look: HumanLook): void {
       line(c, [24, 150, 10, 40], '#DDE6F0', 12);
       break;
     case 'butterfly':
+      // 나비 날개: 양갈래 머리 바깥으로 크게 (검토 반영: 머리카락 뒤에 숨어 끝만 보였다)
       for (const s of [-1, 1]) {
-        blob(c, [HX + s * 30, 150, HX + s * 60, 70, HX + s * 96, 66, HX + s * 98, 120, HX + s * 70, 160], s < 0 ? '#FFC2E2' : '#BDE7FF', { cel: true, celOffset: 4, alpha: 0.85 });
-        blob(c, [HX + s * 30, 160, HX + s * 76, 170, HX + s * 80, 206, HX + s * 46, 210], s < 0 ? '#BDE7FF' : '#FFC2E2', { cel: true, celOffset: 3, alpha: 0.85 });
+        blob(c, [HX + s * 44, 140, HX + s * 70, 34, HX + s * 108, 18, HX + s * 116, 92, HX + s * 86, 148], s < 0 ? '#FF9ED2' : '#8FD8FF', { cel: true, celOffset: 4, alpha: 0.9 });
+        blob(c, [HX + s * 44, 158, HX + s * 92, 160, HX + s * 104, 204, HX + s * 60, 214], s < 0 ? '#8FD8FF' : '#FF9ED2', { cel: true, celOffset: 3, alpha: 0.9 });
+        circle(c, HX + s * 92, 66, 10, '#FFFFFF', { lw: 0, alpha: 0.75 });
+        circle(c, HX + s * 80, 184, 7, '#FFFFFF', { lw: 0, alpha: 0.65 });
       }
       for (let i = 0; i < 5; i++) sparkle(c, 20 + i * 40, 30 + ((i * 37) % 60), 5, '#FFFFFF');
       break;
@@ -174,7 +177,6 @@ export function drawPortrait(c: Ctx, look: HumanLook, ex: Expression = 'normal')
   const h: HeadCtx = { c, x: HX, y: HY, r: HR, look: { ...look, face: faceFor(look, ex) }, trim: look.colors[1] ?? '#F5C518' };
   drawHead(h);
   itemFront(c, look);
-  void star;
 }
 
 export { PORTRAIT_BOX };

@@ -83,7 +83,8 @@ export const PET_ANCHORS: Readonly<Record<PetId, { x: number; y: number }>> = {
   drones2: { x: -84, y: -200 },
   spirit: { x: -78, y: -120 },
   spirits2: { x: -76, y: -118 },
-  baby_dragon: { x: -38, y: -112 },
+  // 어깨 바깥 끝 (검토 반영: 예전 자리는 용 소환사 얼굴 절반을 가렸다)
+  baby_dragon: { x: -66, y: -100 },
   mud_spirit: { x: -76, y: 0 },
   goblins: { x: -64, y: 4 },
   skeletons: { x: -66, y: 4 },
@@ -219,4 +220,44 @@ export function trimLayout(ctx: unknown, layout: AtlasLayout, pad = 1): AtlasLay
     return { name: f.name, x: f.x + minX, y: f.y + minY, w, h, originX: (f.originX * f.w - minX) / w, originY: (f.originY * f.h - minY) / h };
   });
   return { width: layout.width, height: layout.height, frames };
+}
+
+/**
+ * 잘라 낸 프레임들을 작은 캔버스에 다시 늘어놓는다 (검토 반영: 잘라 내기만 하면 캔버스는 큰 그대로 메모리에 남는다).
+ * 프레임 크기·원점 비율은 그대로, 자리만 옮긴다. `src`는 각 프레임의 원래(잘라 낸) 캔버스 자리 — 그대로 복사하면 된다.
+ */
+export function packLayout(layout: AtlasLayout, pad = ATLAS_PAD): { layout: AtlasLayout; src: { x: number; y: number }[] } {
+  let x = pad;
+  let height = 0;
+  const frames = layout.frames.map((f) => {
+    const nf: AtlasFrame = { ...f, x, y: pad };
+    x += f.w + pad;
+    height = Math.max(height, f.h);
+    return nf;
+  });
+  return { layout: { width: x, height: height + pad * 2, frames }, src: layout.frames.map((f) => ({ x: f.x, y: f.y })) };
+}
+
+/**
+ * 파츠를 쉬는 자세로 한 장에 합쳤을 때 들어가는 상자 (그림 단위, 발밑 원점): 몸 상자 + 소품·등·동반자 상자를 각자 자리로 옮긴 합집합, 떠 있는 높이만큼 위로.
+ * 정보 패널 초상화가 몸 상자만 쓰면 떠 있는 캐릭터(대마법사 등)·큰 등 장식(먹구름·떠 있는 칼)의 위가 잘렸다 (검토 반영).
+ */
+export function composedBox(rig: Rig, pad = 0): Box {
+  let left = Infinity;
+  let top = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
+  const add = (b: Box, ox: number, oy: number): void => {
+    left = Math.min(left, b.left + ox);
+    top = Math.min(top, b.top + oy);
+    right = Math.max(right, b.left + b.width + ox);
+    bottom = Math.max(bottom, b.top + b.height + oy);
+  };
+  for (const part of rig.parts) {
+    if (part === 'body') add(BOXES.body, 0, -rig.lift);
+    else if (part === 'prop') add(BOXES.prop, rig.hand.x, rig.hand.y - rig.lift);
+    else if (part === 'back' && rig.back) add(BOXES.back, rig.back.x, rig.back.y - rig.lift);
+    else if (part === 'pet' && rig.pet) add(BOXES.pet, rig.pet.x, rig.pet.y - rig.lift);
+  }
+  return { left: left - pad, top: top - pad, width: right - left + pad * 2, height: bottom - top + pad * 2 };
 }

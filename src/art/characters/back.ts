@@ -2,10 +2,12 @@
  * 등 뒤 라이브러리 (35종, Canvas 2D): 날개·망토·후광·등에 멘 무기·뒤의 분신/병사.
  * 원점 = 등 회전 중심 (rig.backPivot: 어깨 사이). 날갯짓은 이 파츠를 가로로 늘였다 줄인다 (idle.ts).
  */
-import { OUTLINE, P, blob, bolt, circle, clover, ellipse, flame, glow, line, note, paint, poly, rainbow, rgba, rotated, rrect, shade, skullIcon, snowflake, sparkle, star, stroke, type Ctx } from './cv';
+import { OUTLINE, P, blob, bolt, circle, clover, ellipse, flame, glow, line, note, paint, poly, rgba, rotated, rrect, shade, shine, snowflake, sparkle, star, stroke, type Ctx } from './cv';
 import type { BackId } from './library';
 import type { HumanLook } from './looks';
 import type { BodySpec } from './rig';
+
+const GOLD_HEX = '#F5C518';
 
 export interface BackCtx {
   c: Ctx;
@@ -54,21 +56,23 @@ function batWing(c: Ctx, s: number, color: string, membrane: string, span = 120)
   stroke(c, [s * 50, -76, s * (span - 62), -24], color, 3);
 }
 
-function haloRing(b: BackCtx, r: number, color: string, w = 7): void {
-  const { c, headY } = b;
-  glow(c, 0, headY, r * 1.6, color, 0.5);
-  c.save();
-  c.strokeStyle = OUTLINE;
-  c.lineWidth = w + 4;
-  c.beginPath();
-  c.ellipse(0, headY - b.spec.headR * 1.45, r, r * 0.3, 0, 0, Math.PI * 2);
-  c.stroke();
-  c.strokeStyle = color;
-  c.lineWidth = w;
-  c.beginPath();
-  c.ellipse(0, headY - b.spec.headR * 1.45, r, r * 0.3, 0, 0, Math.PI * 2);
-  c.stroke();
-  c.restore();
+/** 빨려 드는 소용돌이 (파멸의 날개) */
+function c_spiral(c: Ctx, x: number, y: number): void {
+  glow(c, x, y, 24, '#E8C9FF', 0.6);
+  for (let i = 0; i < 2; i++) {
+    c.save();
+    c.translate(x, y);
+    paint(
+      c,
+      (cc) => {
+        cc.beginPath();
+        cc.arc(0, 0, 8 + i * 8, i * 2, i * 2 + Math.PI * 1.4);
+      },
+      null,
+      { lw: 3, stroke: i ? '#C08BFF' : '#FFFFFF' },
+    );
+    c.restore();
+  }
 }
 
 function silhouette(c: Ctx, x: number, y: number, s: number, color: string, alpha: number): void {
@@ -138,7 +142,12 @@ export const BACK_DRAW: Readonly<Record<BackId, BackDraw>> = {
     capeShape(b, '#1A1240', '#9B4DFF', 1.3);
     for (let i = 0; i < 8; i++) sparkle(b.c, -60 + ((i * 41) % 120), 10 + ((i * 29) % 80), 4, '#FFFFFF');
   },
-  wings_butterfly: (b) => wingPair(b, (s) => butterflyWing(b.c, s, s < 0 ? '#FFC2E2' : '#BDE7FF', s < 0 ? '#BDE7FF' : '#FFC2E2')),
+  wings_butterfly: (b) => {
+    // backColor가 있으면 그 색의 나비 날개 (점성술사 = 밤나비 보라) — 같은 날개를 쓰는 루미엘 요정들이 날개 색으로도 갈린다
+    const bc = b.look.backColor;
+    if (bc) wingPair(b, (s) => butterflyWing(b.c, s, s < 0 ? bc : shade(bc, 0.25), s < 0 ? shade(bc, 0.35) : shade(bc, -0.15)));
+    else wingPair(b, (s) => butterflyWing(b.c, s, s < 0 ? '#FFC2E2' : '#BDE7FF', s < 0 ? '#BDE7FF' : '#FFC2E2'));
+  },
   wings_note: (b) => {
     wingPair(b, (s) => butterflyWing(b.c, s, '#FFE27A', '#9BE7FF', 0.6));
     const cols = ['#FF5E5E', '#FFB547', '#6BE38A', '#5EC8FF', '#9B7BFF'];
@@ -192,9 +201,19 @@ export const BACK_DRAW: Readonly<Record<BackId, BackDraw>> = {
     }),
   wings_void: (b) =>
     wingPair(b, (s) => {
-      glow(b.c, s * 60, -40, 70, '#9B4DFF', 0.45);
-      batWing(b.c, s, '#0E0A16', '#1A1030', 132);
-      for (let i = 0; i < 6; i++) sparkle(b.c, s * (50 + ((i * 23) % 60)), -60 + ((i * 31) % 60), 4, '#FFFFFF');
+      // 별을 삼키는 날개 (파멸의 신 각성): 박쥐 날개보다 크고 위로 솟은 우주빛 막 + 밝은 보라 테 + 빨려 드는 별
+      glow(b.c, s * 70, -50, 86, '#9B4DFF', 0.55);
+      poly(b.c, [s * 6, -8, s * 40, -96, s * 96, -112, s * 146, -72, s * 128, -40, s * 118, -58, s * 100, -10, s * 80, -36, s * 60, 18, s * 30, 8], '#2A1250', { cel: true, celOffset: 5, stroke: '#C08BFF' });
+      line(b.c, [s * 6, -8, s * 40, -96, s * 96, -112, s * 146, -72], '#120A20', 6);
+      for (const [x, y] of [
+        [96, -112],
+        [128, -40],
+        [100, -10],
+        [60, 18],
+      ] as const)
+        stroke(b.c, [s * 40, -96, s * x, y], '#120A20', 3);
+      c_spiral(b.c, s * 84, -52);
+      for (let i = 0; i < 7; i++) sparkle(b.c, s * (46 + ((i * 23) % 80)), -84 + ((i * 31) % 80), 4.5, i % 2 ? '#FFFFFF' : '#E8C9FF');
     }),
   wings_blade: (b) =>
     wingPair(b, (s) => {
@@ -204,24 +223,41 @@ export const BACK_DRAW: Readonly<Record<BackId, BackDraw>> = {
       }
     }),
   greatsword: (b) => {
-    rotated(b.c, -8, -20, -0.6, () => {
+    // 더 눕혀서 칼끝이 등급 별 줄 아래에 머문다 (검토 반영)
+    rotated(b.c, -8, -20, -0.82, () => {
       poly(b.c, [-11, -10, -11, -150, 0, -170, 11, -150, 11, -10], '#B8C2CC', { lw: 4, cel: true, celOffset: 2 });
       rrect(b.c, -24, -12, 48, 10, 4, '#5A3A22', { lw: 3.5 });
       rrect(b.c, -5, -2, 10, 26, 3, '#3A2418', { lw: 3 });
     });
   },
   storm_cloud: (b) => {
-    // 머리 위·양옆으로 넓게 퍼진 먹구름 + 양쪽 번개 (머리카락으로 보이지 않게 머리보다 훨씬 넓고 높게)
-    const y = b.headY - 78;
-    glow(b.c, 0, y + 20, 96, '#8FA8C8', 0.45);
+    // 머리 바로 위의 짙은 먹구름 + 아래로 내리치는 굵은 번개 (검토 반영: 예전엔 1.6칸 너비로 위 칸 타워를 덮고 작은 크기에서 회색 원반처럼 보였다
+    // → 폭 ≤ 1칸, 머리 가까이, 더 어둡게, 번개를 굵고 밝게)
+    const { c } = b;
+    const y = b.headY - 50;
+    glow(c, 0, y + 16, 78, '#5A6E96', 0.5);
     for (const s of [-1, 1]) {
-      bolt(b.c, s * 104, y + 26, 70, '#FFF27A', 4, Math.PI / 2 - s * 0.25);
-      blob(b.c, [s * 150, y + 34, s * 132, y - 6, s * 96, y - 4, s * 84, y + 30, s * 112, y + 46], '#6A7A94', { cel: true, celOffset: 4 });
+      glow(c, s * 70, y + 50, 26, '#FFF27A', 0.7);
+      bolt(c, s * 62, y + 22, 66, '#FFF27A', 6, Math.PI / 2 - s * 0.3);
+      blob(c, [s * 116, y + 22, s * 104, y - 8, s * 74, y - 10, s * 66, y + 22, s * 92, y + 32], '#3E4A62', { cel: true, celOffset: 4 });
     }
-    blob(b.c, [-120, y + 18, -104, y - 22, -56, y - 46, 0, y - 56, 56, y - 46, 104, y - 22, 120, y + 18, 70, y + 34, 0, y + 26, -70, y + 34], '#7C8CA6', { cel: true, celOffset: 7 });
-    for (const x of [-60, 0, 60]) sparkle(b.c, x, y - 10, 6, '#FFF27A', 0.9);
+    blob(c, [-96, y + 16, -84, y - 18, -44, y - 38, 0, y - 44, 44, y - 38, 84, y - 18, 96, y + 16, 56, y + 28, 0, y + 22, -56, y + 28], '#4A5670', { cel: true, celOffset: 6 });
+    bolt(c, 0, y + 18, 34, '#FFFFFF', 4, Math.PI / 2 + 0.2);
+    for (const x of [-44, 44]) sparkle(c, x, y - 10, 6, '#FFF27A', 0.95);
   },
-  halo: (b) => haloRing(b, b.spec.headR * 0.85, '#FFE27A', 8),
+  halo: (b) => {
+    // 성녀 후광: 머리 뒤 금빛 고리 (검토 반영: 머리 위 납작한 고리가 등급 별 줄을 둘러쌌다 → 머리를 감싸는 고리로, 위 끝이 별 줄 아래)
+    const { c, headY, spec } = b;
+    const r = spec.headR * 1.3;
+    const y = headY + 8;
+    glow(c, 0, y, r * 1.45, '#FFF3A8', 0.65);
+    circle(c, 0, y, r, null, { lw: 11, stroke: OUTLINE });
+    circle(c, 0, y, r, null, { lw: 7, stroke: '#FFE27A' });
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+      sparkle(c, Math.cos(a) * r, y + Math.sin(a) * r, 5, '#FFFFFF', 0.95);
+    }
+  },
   light_halo: (b) => {
     glow(b.c, 0, b.headY, b.spec.headR * 2.2, '#FFF3A8', 0.75);
     for (let i = 0; i < 12; i++) {
@@ -230,13 +266,15 @@ export const BACK_DRAW: Readonly<Record<BackId, BackDraw>> = {
     }
   },
   eye_halo: (b) => {
+    // 중심을 조금 내려 위 끝이 등급 별 줄 아래에 머문다 (검토 반영)
     const r = b.spec.headR * 1.45;
-    glow(b.c, 0, b.headY, r * 1.4, '#FFF3A8', 0.7);
-    circle(b.c, 0, b.headY, r, null, { lw: 6, stroke: '#FFE27A' });
+    const y = b.headY + 22;
+    glow(b.c, 0, y, r * 1.4, '#FFF3A8', 0.7);
+    circle(b.c, 0, y, r, null, { lw: 6, stroke: '#FFE27A' });
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * Math.PI * 2;
-      ellipse(b.c, Math.cos(a) * r, b.headY + Math.sin(a) * r, 9, 6, '#FFFFFF', { lw: 2.5 });
-      circle(b.c, Math.cos(a) * r, b.headY + Math.sin(a) * r, 3, '#9B4DFF', { lw: 0 });
+      ellipse(b.c, Math.cos(a) * r, y + Math.sin(a) * r, 9, 6, '#FFFFFF', { lw: 2.5 });
+      circle(b.c, Math.cos(a) * r, y + Math.sin(a) * r, 3, '#9B4DFF', { lw: 0 });
     }
   },
   clock_halo: (b) => {
@@ -269,7 +307,8 @@ export const BACK_DRAW: Readonly<Record<BackId, BackDraw>> = {
     }
   },
   floating_blades: (b) => {
-    for (let i = 0; i < 5; i++) {
+    // 가운데(머리 바로 위) 칼은 빼서 등급 별을 가리지 않는다
+    for (const i of [0, 1, 3, 4]) {
       const a = -Math.PI / 2 + (i - 2) * 0.42;
       const bx = Math.cos(a) * 96;
       const by = b.headY + 30 + Math.sin(a) * 96;
@@ -334,21 +373,126 @@ export const BACK_DRAW: Readonly<Record<BackId, BackDraw>> = {
   },
   cathedral_halo: (b) => {
     wingPair(b, (s) => featherWing(b.c, s, '#FFFDF0', 120, 10));
-    const r = b.spec.headR * 1.5;
-    glow(b.c, 0, b.headY, r * 1.5, '#FFF3A8', 0.7);
-    circle(b.c, 0, b.headY, r, null, { lw: 7, stroke: '#F5C518' });
-    for (let i = 0; i < 6; i++) {
-      const a = Math.PI + (i / 5) * Math.PI;
-      rrect(b.c, Math.cos(a) * r - 4, b.headY + Math.sin(a) * r - 14, 8, 22, 3, '#FFF3A8', { lw: 2 });
+    // 대성당 후광: 머리 뒤 큰 고리 + 고리 안쪽 기둥 (위 끝이 등급 별 줄 아래 — 검토 반영)
+    const r = b.spec.headR * 1.25;
+    const y = b.headY + 6;
+    glow(b.c, 0, y, r * 1.5, '#FFF3A8', 0.7);
+    circle(b.c, 0, y, r, null, { lw: 7, stroke: '#F5C518' });
+    for (let i = 0; i < 7; i++) {
+      const a = Math.PI + (i / 6) * Math.PI;
+      rotated(b.c, Math.cos(a) * r * 0.86, y + Math.sin(a) * r * 0.86, a + Math.PI / 2, () => rrect(b.c, -4, -8, 8, 16, 3, '#FFF3A8', { lw: 2 }));
     }
   },
   gold_wings: (b) => wingPair(b, (s) => featherWing(b.c, s, '#F5C518', 108, 4)),
+  // ---- 검토 반영: 각성 전용 등 장식 (실루엣이 바뀌게) ----
+  crystal_spikes: (b) => {
+    // 돌 골렘 각성: 양 어깨와 등에서 솟은 수정 무리 (하늘색 + 금빛)
+    const { c, spec } = b;
+    glow(c, 0, -30, 110, '#7FE3FF', 0.35);
+    for (const s of [-1, 1]) {
+      for (const [dx, dy, h, w, a, col] of [
+        [spec.torsoHW + 2, 4, 92, 20, 0.55, '#7FE3FF'],
+        [spec.torsoHW + 20, 22, 60, 15, 1.0, '#BFF6FF'],
+        [spec.torsoHW - 22, -10, 74, 16, 0.2, '#F5C518'],
+      ] as const)
+        rotated(c, s * dx, dy, s * a, () => {
+          poly(c, [-w / 2, 0, -w / 2, -h * 0.72, 0, -h, w / 2, -h * 0.72, w / 2, 0], col, { lw: 3.5, cel: true, celOffset: 2 });
+          stroke(c, [0, -4, 0, -h * 0.85], '#FFFFFF', 2, 0.8);
+        });
+    }
+    sparkle(c, -spec.torsoHW - 30, -50, 7, '#FFFFFF');
+    sparkle(c, spec.torsoHW + 34, -40, 6, '#FFFFFF');
+  },
+  lightning_quiver: (b) => {
+    // 폭풍 궁수 각성 '번개 화살 비': 번개가 튀는 화살통 + 머리 양옆 위에서 비스듬히 쏟아지는 번개 화살 셋
+    const { c } = b;
+    for (const [x, y] of [
+      [-96, -96],
+      [-122, -44],
+      [104, -78],
+    ] as const) {
+      // 화살촉 = (x, y), 오른쪽 아래로 떨어지고 뒤(왼쪽 위)로 번개 꼬리
+      rotated(c, x, y, Math.PI / 2 - 0.5, () => {
+        glow(c, 0, 0, 24, '#FFF27A', 0.6);
+        bolt(c, -34, 0, 34, '#FFF27A', 3, Math.PI);
+        line(c, [-34, 0, 0, 0], '#BFD9E0', 4);
+        poly(c, [14, 0, 0, -7, 0, 7], '#FFF7C9', { lw: 2.5 });
+        for (const sy of [-1, 1]) poly(c, [-30, 0, -40, sy * 8, -36, 0], '#BFD9E0', { lw: 1.8 });
+      });
+    }
+    glow(c, 40, -66, 64, '#FFF27A', 0.45);
+    rotated(c, 22, -10, 0.45, () => {
+      for (const dx of [-7, 0, 7]) {
+        line(c, [dx, -40, dx, -66], '#BFD9E0', 3, false);
+        glow(c, dx, -74, 12, '#FFF27A', 0.9);
+        poly(c, [dx, -80, dx + 6, -64, dx - 6, -64], '#FFF7C9', { lw: 2 });
+      }
+      rrect(c, -13, -44, 26, 72, 8, '#2F4A6A', { lw: 4, cel: true, celOffset: 2 });
+      bolt(c, -6, -34, 50, '#FFF27A', 2.5, Math.PI / 2);
+      stroke(c, [-13, -30, 13, -30], b.trim, 3);
+    });
+    bolt(c, 50, -86, 60, '#FFF27A', 3.5, -Math.PI / 2 - 0.5);
+    bolt(c, 60, -80, 48, '#FFFFFF', 2.5, -Math.PI / 2 + 0.4);
+    bolt(c, 30, -92, 40, '#BFE9FF', 2.5, -Math.PI / 2 - 1.1);
+  },
+  constellation_wheel: (b) => {
+    // 운명의 신 각성: 몸 뒤의 커다란 별자리 수레바퀴 (짙은 남색 원판 + 금 테 + 바퀴살 + 별자리 선)
+    const { c } = b;
+    const y = b.headY + 52;
+    const r = 104;
+    glow(c, 0, y, r * 1.25, '#9BE7FF', 0.4);
+    circle(c, 0, y, r, rgba('#1E2A6A', 0.88), { lw: 7, stroke: '#F5C518' });
+    circle(c, 0, y, r * 0.8, null, { lw: 2.5, stroke: '#C9A227' });
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + 0.2;
+      stroke(c, [Math.cos(a) * r * 0.22, y + Math.sin(a) * r * 0.22, Math.cos(a) * r * 0.97, y + Math.sin(a) * r * 0.97], '#C9A227', 3);
+      circle(c, Math.cos(a) * r, y + Math.sin(a) * r, 7, GOLD_HEX, { lw: 2.5 });
+    }
+    const pts = [-62, -40, -30, -66, 8, -54, 40, -70, 66, -30, 50, 10, 20, 40, -24, 56, -60, 24];
+    for (let i = 0; i + 3 < pts.length; i += 2) stroke(c, [pts[i] as number, y + (pts[i + 1] as number), pts[i + 2] as number, y + (pts[i + 3] as number)], '#BFD4FF', 2, 0.85);
+    for (let i = 0; i < pts.length; i += 2) star(c, pts[i] as number, y + (pts[i + 1] as number), i % 4 === 0 ? 7 : 5, i % 4 === 0 ? '#FFFFFF' : '#FFE27A', { lw: 1.5 });
+    circle(c, 0, y, r * 0.2, GOLD_HEX, { lw: 3 });
+  },
+  fruit_rain: (b) => {
+    // 풍요의 신 각성: 머리 위를 둥글게 둘러 떠 있는 황금 과일 (가운데 위쪽은 비워 신의 별을 가리지 않는다)
+    const { c } = b;
+    const cy = b.headY + 10;
+    glow(c, 0, cy - 30, 120, '#FFE27A', 0.35);
+    const angs = [-2.95, -2.6, -2.25, -1.95, -1.19, -0.89, -0.54, -0.19];
+    angs.forEach((a, i) => {
+      const x = Math.cos(a) * 112;
+      const y = cy + Math.sin(a) * 92;
+      if (i % 3 === 1) {
+        for (const [dx, dy] of [
+          [0, 0],
+          [-7, -6],
+          [7, -6],
+          [0, -12],
+        ] as const)
+          circle(c, x + dx, y + dy, 6, '#F5C518', { lw: 2 });
+      } else {
+        circle(c, x, y, 12, '#F5C518', { lw: 3, cel: true, celOffset: 2 });
+        stroke(c, [x, y - 12, x + 3, y - 20], '#6B4226', 2.5);
+        ellipse(c, x + 7, y - 18, 6, 3, '#7ED957', { lw: 1.5 }, -0.4);
+        shine(c, x - 4, y - 4, 3, 2, 0.9);
+      }
+      sparkle(c, x + 14, y + 16, 4, '#FFFFFF');
+    });
+  },
+  ammo_pack: (b) => {
+    // 기관총 사수 각성: 등에 멘 큰 탄약 드럼 + 방열 판 (어깨 위로 보인다) + 총으로 이어지는 탄띠
+    const { c, spec } = b;
+    rrect(c, -spec.torsoHW - 8, -78, spec.torsoHW * 2 + 16, 92, 12, '#4A5058', { lw: 4.5, cel: true, celOffset: 4 });
+    for (let i = 0; i < 4; i++) rrect(c, -spec.torsoHW + 2 + i * ((spec.torsoHW * 2 - 4) / 4), -96, (spec.torsoHW * 2 - 4) / 4 - 4, 22, 3, '#7A828C', { lw: 3 });
+    circle(c, -spec.torsoHW - 4, -30, 26, '#5E6B33', { lw: 4, cel: true, celOffset: 3 });
+    circle(c, -spec.torsoHW - 4, -30, 10, '#2F3338', { lw: 3 });
+    for (let i = 0; i < 5; i++) rrect(c, spec.torsoHW - 4 + i * 9, -40 + i * 10, 7, 12, 2, '#D9A93A', { lw: 2 });
+    glow(c, 0, -100, 30, '#FF9A2F', 0.35);
+  },
 };
 
 /** back 파츠 (원점 = 등 회전 중심) */
 export function drawBackPart(c: Ctx, look: HumanLook, spec: BodySpec, pivotY: number, trim: string): void {
   const back = look.back ?? 'none';
   BACK_DRAW[back]({ c, look, spec, headY: spec.headY - pivotY, footY: spec.footY - pivotY, trim });
-  void rainbow;
-  void skullIcon;
 }

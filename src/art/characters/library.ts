@@ -48,7 +48,7 @@ export type OutfitId = (typeof OUTFITS)[number];
 export const HAIR_STYLES = ['none', 'short', 'long', 'spiky', 'ponytail', 'bun', 'static', 'wild', 'bob', 'mohawk', 'twintail', 'topknot', 'slick', 'flowing', 'tuft', 'flame'] as const;
 export type HairStyle = (typeof HAIR_STYLES)[number];
 
-export const BEARDS = ['none', 'short', 'braided', 'long', 'mustache', 'big'] as const;
+export const BEARDS = ['none', 'short', 'braided', 'long', 'mustache', 'big', 'big_braided'] as const;
 export type BeardId = (typeof BEARDS)[number];
 
 export const EARS = ['human', 'elf', 'darkelf', 'goblin', 'orc', 'fairy', 'none'] as const;
@@ -193,6 +193,18 @@ export const PROPS = [
   'chain_lightning',
   'meditate',
   'baton',
+  // 검토 반영: 각성이 실루엣으로 보이게 (예전엔 색·빛만 바뀌어 76px에서 구별이 안 됐다)
+  'gold_pickaxe',
+  'skull_drumsticks',
+  'silver_bow',
+  'crystal_daggers',
+  'swirl_bow',
+  'philosopher_flask',
+  'ancient_tome',
+  'sky_spear',
+  'flame_axes',
+  'lava_cleaver',
+  'gold_bombs',
 ] as const;
 export type PropId = (typeof PROPS)[number];
 
@@ -201,7 +213,7 @@ export const OFFHANDS = ['none', 'round_shield', 'lion_shield', 'kite_shield', '
 export type OffhandId = (typeof OFFHANDS)[number];
 
 /** 몸 앞 장식 */
-export const FRONTS = ['none', 'drum', 'drum_flame', 'scarf', 'muffler', 'belt_pouch', 'ammo_belt', 'coin_belt', 'bone_necklace', 'emblem', 'card_vest', 'sash', 'tie'] as const;
+export const FRONTS = ['none', 'drum', 'drum_flame', 'scarf', 'muffler', 'belt_pouch', 'ammo_belt', 'coin_belt', 'bone_necklace', 'emblem', 'card_vest', 'sash', 'tie', 'scarf_long'] as const;
 export type FrontId = (typeof FRONTS)[number];
 
 /** 등 뒤 (날개·망토 — 날갯짓·펄럭임 파츠) */
@@ -241,11 +253,16 @@ export const BACKS = [
   'cathedral_halo',
   'eye_halo',
   'gold_wings',
+  'crystal_spikes',
+  'lightning_quiver',
+  'constellation_wheel',
+  'fruit_rain',
+  'ammo_pack',
 ] as const;
 export type BackId = (typeof BACKS)[number];
 
 /** 발밑 (몸 파츠에 고정) */
-export const GROUNDS = ['none', 'anvil', 'anvil_flame', 'coin_pile', 'gold_throne', 'coin_throne', 'magic_circle', 'magic_circle_big', 'wind_swirl', 'cloud'] as const;
+export const GROUNDS = ['none', 'anvil', 'anvil_flame', 'coin_pile', 'gold_throne', 'coin_throne', 'magic_circle', 'magic_circle_big', 'wind_swirl', 'cloud', 'petal_swirl'] as const;
 export type GroundId = (typeof GROUNDS)[number];
 
 /** 동반자 (따로 움직이는 파츠) */

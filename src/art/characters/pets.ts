@@ -2,7 +2,7 @@
  * 동반자 라이브러리 (10종, Canvas 2D). 원점 = 동반자 자리 (rig.PET_ANCHORS — 땅 위 동물은 발밑, 드론·정령은 떠 있는 중심).
  * 동반자는 따로 움직인다 (idle.ts: 깡총·맴돌기·꼬리 흔들기·떠올랐다 내려오기).
  */
-import { OUTLINE, blob, circle, ellipse, flame, glow, line, poly, rrect, shade, shine, skullIcon, sparkle, stroke, type Ctx } from './cv';
+import { OUTLINE, blob, circle, ellipse, flame, glow, line, poly, rrect, shade, skullIcon, sparkle, stroke, type Ctx } from './cv';
 import type { PetId } from './library';
 
 function dog(c: Ctx, x: number, s: number, armored: boolean): void {
@@ -154,5 +154,4 @@ export const PET_DRAW: Readonly<Record<PetId, PetDraw>> = {
 
 export function drawPetPart(c: Ctx, pet: PetId): void {
   PET_DRAW[pet](c);
-  void shine;
 }

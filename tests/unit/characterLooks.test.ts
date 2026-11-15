@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import sheet from '../../docs/art/characterArt.json';
 import looksJson from '../../src/data/characterLooks.json';
 import { DataError, loadGameData } from '../../src/data/load';
+import { NOX_EYE as ENEMY_NOX_EYE, RED_EYE as ENEMY_RED_EYE } from '../../src/art/characters/enemies';
 import { allLooks, enemyLook, groupOf, hasAwaken, isEnemyLook, parseLooks, personLook, resolveLook, towerLook, type EnemyLook, type HumanLook } from '../../src/art/characters/looks';
 
 /** 녹스 군단 보라 눈 (art/characters/enemies.ts NOX_EYE와 같은 값) */
@@ -94,6 +95,15 @@ describe('타워 65종은 한눈에 구별된다', () => {
     // 녹투르만 붉은 눈
     expect(enemies.filter((e) => e.eyes === 'red').map((e) => e.id)).toEqual(['nocturne']);
   });
+
+  it('아군 타워의 눈 색은 적의 녹스 보라·녹투르 붉은 눈과 다르다 (검토 반영: 그림자 암살자가 녹투르와 같은 붉은 눈)', () => {
+    const enemyEyes = new Set([ENEMY_NOX_EYE, ENEMY_RED_EYE].map((c) => c.toUpperCase()));
+    for (const t of towers) {
+      for (const look of t.awaken ? [t, resolveLook(t, true)] : [t]) {
+        if (look.eyeColor) expect(enemyEyes.has(look.eyeColor.toUpperCase()), t.id).toBe(false);
+      }
+    }
+  });
 });
 
 describe('각성 외형 53종', () => {
@@ -113,6 +123,18 @@ describe('각성 외형 53종', () => {
       expect(JSON.stringify(a), t.id).not.toBe(JSON.stringify(t));
       expect(resolveLook(t, false)).toBe(t);
     }
+  });
+
+  it('각성은 실루엣 파츠(머리 장식·등·소품·왼손·몸 앞·동반자·발밑·옷 모양) 하나 이상을 바꾼다 — 소품 색·빛·오라만 바꾸면 76px에서 안 보인다 (검토 반영)', () => {
+    const SILHOUETTE = ['head', 'back', 'prop', 'offhand', 'front', 'pet', 'ground', 'outfit', 'body'] as const;
+    const weak = towers
+      .filter((t) => hasAwaken(t))
+      .filter((t) => {
+        const a = resolveLook(t, true);
+        return SILHOUETTE.every((k) => a[k] === t[k]);
+      })
+      .map((t) => t.id);
+    expect(weak).toEqual([]);
   });
 });
 
@@ -146,6 +168,24 @@ describe('외형 데이터 검사 (DataError)', () => {
       expect(msg).toContain('characters[2].skin');
       expect(msg).toContain('characters[3].prop');
       expect(msg).toContain('characters[4].awaken.grade');
+    }
+  });
+
+  it('모르는 필드(오타)는 오류: propColour·backcolor·적의 colour (조용히 무시되면 기본값으로 그려진다)', () => {
+    const raw = clone();
+    Object.assign(raw.characters[0] as Record<string, unknown>, { propColour: '#FF0000', backcolor: 'not-a-color' });
+    const enemyIdx = raw.characters.findIndex((c) => c.kind === 'mob');
+    (raw.characters[enemyIdx] as Record<string, unknown>).colour = '#FF0000';
+    try {
+      parseLooks(raw);
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(DataError);
+      const msg = String(e);
+      expect(msg).toContain('characters[0].propColour');
+      expect(msg).toContain('characters[0].backcolor');
+      expect(msg).toContain(`characters[${enemyIdx}].colour`);
+      expect(msg).toContain('모르는 필드');
     }
   });
 

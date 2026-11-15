@@ -103,6 +103,56 @@ test('갤러리: 등급 거르기(20·20·25), 각성 토글 53종, 대기 동�
   expect(errors).toEqual([]);
 });
 
+test('각성 53종: 합친 그림(오라·입자 빼고)이 기본 그림과 4% 이상 다르다 — 빛·색만 바뀐 각성은 실패', async ({ page }) => {
+  // 검토 반영: 표창 닌자(머플러가 두건과 같은 색)·창술의 신·학자 등 13종은 각성 필드 값만 바뀌고 76px 카드에서 구별이 안 됐다.
+  // 진짜 브라우저 캔버스로 기본·각성을 같은 자리에 그려 '불투명 픽셀이 생기거나 없어진 곳 + 색이 크게 바뀐 곳'의 비율을 잰다.
+  await openGallery(page, '&play=0');
+  const shares = await page.evaluate(async () => {
+    const load = (p: string): Promise<Record<string, unknown>> => import(/* @vite-ignore */ p) as Promise<Record<string, unknown>>;
+    const draw = (await load('/src/art/characters/draw.ts')) as {
+      prepareHuman(l: unknown, a: boolean): unknown;
+      drawHumanComposed(c: CanvasRenderingContext2D, r: unknown, o: { aura: boolean }): void;
+    };
+    const looks = (await load('/src/art/characters/looks.ts')) as { allLooks(): { id: string; kind: string; awaken?: unknown }[] };
+    const RES = 0.5;
+    const L = -220;
+    const T = -360;
+    const pixels = (look: unknown, awakened: boolean): Uint8ClampedArray => {
+      const c = document.createElement('canvas');
+      c.width = 440 * RES;
+      c.height = 460 * RES;
+      const g = c.getContext('2d')!;
+      g.scale(RES, RES);
+      g.translate(-L, -T);
+      draw.drawHumanComposed(g, draw.prepareHuman(look, awakened), { aura: false });
+      return g.getImageData(0, 0, c.width, c.height).data;
+    };
+    const out: Record<string, number> = {};
+    for (const l of looks.allLooks()) {
+      if (l.kind !== 'tower' || !l.awaken) continue;
+      const a = pixels(l, false);
+      const b = pixels(l, true);
+      let changed = 0;
+      let solid = 0;
+      for (let i = 0; i < a.length; i += 4) {
+        const oa = a[i + 3]! > 160;
+        const ob = b[i + 3]! > 160;
+        if (!oa && !ob) continue;
+        solid++;
+        const rgb = Math.abs(a[i]! - b[i]!) + Math.abs(a[i + 1]! - b[i + 1]!) + Math.abs(a[i + 2]! - b[i + 2]!);
+        if (oa !== ob || rgb > 120) changed++;
+      }
+      out[l.id] = (100 * changed) / Math.max(1, solid);
+    }
+    return out;
+  });
+  expect(Object.keys(shares)).toHaveLength(53);
+  const weak = Object.entries(shares)
+    .filter(([, v]) => v < 4)
+    .map(([k, v]) => `${k} ${v.toFixed(1)}%`);
+  expect(weak).toEqual([]);
+});
+
 test('갤러리 휴대폰 412×915: 세로로 스크롤되고 가로로 넘치지 않는다', async ({ page }) => {
   await openGallery(page);
   const m = await page.getByTestId('gallery').evaluate((el) => ({ sh: el.scrollHeight, ch: el.clientHeight, sw: el.scrollWidth, cw: el.clientWidth }));

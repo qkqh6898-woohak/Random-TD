@@ -21,16 +21,17 @@ import { CREATURE_ANCHORS, CREATURE_DRAW, drawEnemy } from '../../src/art/charac
 import { drawAura, drawParticle } from '../../src/art/characters/fxArt';
 import { HEADGEAR_DEFS } from '../../src/art/characters/head';
 import { IDLE_PRESETS, REST, defaultBackMotion, idleParts, type IdleParts } from '../../src/art/characters/idle';
-import { AURAS, BACKS, CREATURES, FX, HEADGEAR, IDLES, PETS, PROPS } from '../../src/art/characters/library';
+import { AURAS, BACKS, CREATURES, FRONTS, FX, GROUNDS, HEADGEAR, IDLES, OFFHANDS, OUTFITS, PETS, PROPS } from '../../src/art/characters/library';
 import { allLooks, isEnemyLook, towerLook, type EnemyLook, type HumanLook } from '../../src/art/characters/looks';
 import { PET_DRAW } from '../../src/art/characters/pets';
 import { parseExternalEntry, externalArtUrl } from '../../src/art/characters/external';
 import { EXPRESSIONS, drawPortrait } from '../../src/art/characters/portraits';
 import { PROP_META } from '../../src/art/characters/propMeta';
 import { PROP_DRAW } from '../../src/art/characters/props';
-import { BOXES, ENEMY_BOX, PORTRAIT_BOX, atlasLayout, rigFor, trimLayout, type PartName } from '../../src/art/characters/rig';
+import { BOXES, ENEMY_BOX, PORTRAIT_BOX, atlasLayout, composedBox, packLayout, rigFor, trimLayout, type PartName } from '../../src/art/characters/rig';
+import { drawHumanComposed } from '../../src/art/characters/draw';
 import { towerPose } from '../../src/view/render/towerPose';
-import { mockCtx } from '../helpers/mockCanvas';
+import { MockCtx, maskIoU, mockCtx, silhouetteMask } from '../helpers/mockCanvas';
 
 const looks = allLooks();
 const humans = looks.filter((l): l is HumanLook => !isEnemyLook(l));
@@ -39,20 +40,53 @@ const enemies = looks.filter((l): l is EnemyLook => isEnemyLook(l));
 
 /** 가짜 텍스처 저장소: 만든 키와 그린 횟수를 센다 */
 class FakeStore implements TextureStore {
-  readonly made = new Map<string, { w: number; h: number; frames: string[] }>();
+  readonly made = new Map<string, { w: number; h: number; frames: string[]; data?: unknown }>();
   creates = 0;
+  /** 다음 create가 돌려줄 컨텍스트 (그리기 실패 흉내) */
+  nextCtx: CanvasRenderingContext2D | null = null;
   has(key: string): boolean {
     return this.made.has(key);
   }
   create(key: string, w: number, h: number): CanvasRenderingContext2D {
     this.creates++;
     this.made.set(key, { w, h, frames: [] });
-    return mockCtx();
+    const c = this.nextCtx ?? mockCtx();
+    this.nextCtx = null;
+    return c;
   }
   addFrame(key: string, frame: string): void {
     this.made.get(key)?.frames.push(frame);
   }
   commit(): void {}
+  getData(key: string): unknown {
+    return this.made.get(key)?.data;
+  }
+  setData(key: string, data: unknown): void {
+    const m = this.made.get(key);
+    if (m) m.data = data;
+  }
+  remove(key: string): void {
+    this.made.delete(key);
+  }
+}
+
+/** 임시 캔버스가 있는 가짜 저장소: 임시 캔버스에서 칠해진 사각형을 알려 주는 가짜 알파를 돌려준다 (잘라 내기 + 다시 늘어놓기 흐름) */
+class ScratchStore extends FakeStore {
+  copies: { sx: number; sy: number; w: number; h: number; dx: number; dy: number }[] = [];
+  scratch(w: number, h: number): CanvasRenderingContext2D {
+    const c = mockCtx();
+    // 모든 픽셀이 칠해졌다고 답한다 → 잘라 내도 크기 그대로, 다시 늘어놓기만 확인
+    const getImageData = (_x: number, _y: number, ww: number, hh: number) => ({ data: new Uint8ClampedArray(ww * hh * 4).fill(255) });
+    Object.assign(c, { canvas: { width: w, height: h }, getImageData });
+    return c;
+  }
+  override create(key: string, w: number, h: number): CanvasRenderingContext2D {
+    const c = super.create(key, w, h);
+    Object.assign(c, {
+      drawImage: (_img: unknown, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number) => this.copies.push({ sx, sy, w: sw, h: sh, dx, dy }),
+    });
+    return c;
+  }
 }
 
 describe('라이브러리: 목록의 모든 이름에 그리기 함수가 있다', () => {
@@ -232,6 +266,81 @@ describe('텍스처 캐시: 종류·각성·등급별 한 번만 그린다', () 
     expect(trimLayout(mockCtx(), layout)).toBe(layout);
   });
 
+  it('다시 늘어놓기(pack): 잘라 낸 프레임만 작은 캔버스에 — 크기·원점 비율 그대로, 겹침 없음', () => {
+    const full = atlasLayout(['back', 'body', 'prop'], 0.5);
+    const trimmed = { ...full, frames: full.frames.map((f, i) => ({ ...f, x: f.x + 10 + i, y: f.y + 20, w: 40 + i * 7, h: 60 - i * 5 })) };
+    const { layout, src } = packLayout(trimmed);
+    expect(layout.width).toBeLessThan(full.width);
+    expect(layout.height).toBeLessThanOrEqual(full.height);
+    layout.frames.forEach((f, i) => {
+      const t = trimmed.frames[i]!;
+      expect([f.w, f.h, f.originX, f.originY, f.name]).toEqual([t.w, t.h, t.originX, t.originY, t.name]);
+      expect(src[i]).toEqual({ x: t.x, y: t.y });
+      expect(f.x + f.w).toBeLessThanOrEqual(layout.width);
+      expect(f.y + f.h).toBeLessThanOrEqual(layout.height);
+      if (i > 0) expect(f.x).toBeGreaterThanOrEqual(layout.frames[i - 1]!.x + layout.frames[i - 1]!.w + 1);
+    });
+  });
+
+  it('임시 캔버스가 있으면 그린 뒤 프레임만 작은 텍스처로 옮긴다 (원래 자리 → 새 자리 복사)', () => {
+    const store = new ScratchStore();
+    const t = ensureHumanTexture(store, towerLook('dragoncaller') as HumanLook, 'tower', false);
+    const made = store.made.get(t.key)!;
+    expect(made.frames).toEqual(['back', 'body', 'prop', 'pet']);
+    expect([made.w, made.h]).toEqual([t.layout.width, t.layout.height]);
+    expect(store.copies).toHaveLength(4);
+    store.copies.forEach((cp, i) => expect([cp.dx, cp.dy, cp.w, cp.h]).toEqual([t.layout.frames[i]!.x, t.layout.frames[i]!.y, t.layout.frames[i]!.w, t.layout.frames[i]!.h]));
+    expect(t.res).toBe(0.5);
+    // 배치는 텍스처에 붙어 있다 → 두 번째 요청은 그 배치를 그대로
+    expect(ensureHumanTexture(store, towerLook('dragoncaller') as HumanLook, 'tower', false).layout).toBe(t.layout);
+    expect(store.creates).toBe(1);
+  });
+
+  it('그리기가 실패하면 반쯤 만든 텍스처를 지운다 → 다음 요청이 다시 굽는다 (잘라 내기 전 배치로 그리지 않음)', () => {
+    const store = new FakeStore();
+    const miner = towerLook('miner') as HumanLook;
+    const broken = mockCtx();
+    broken.fill = () => {
+      throw new Error('그리기 실패');
+    };
+    store.nextCtx = broken;
+    expect(() => ensureHumanTexture(store, miner, 'tower', false)).toThrow('그리기 실패');
+    expect(store.has(humanKey('tower', 'miner', false))).toBe(false);
+    const t = ensureHumanTexture(store, miner, 'tower', false);
+    expect(store.made.get(t.key)?.frames).toEqual(['body', 'prop']);
+    expect(store.creates).toBe(2);
+    // 같은 키가 배치 정보 없이 있으면(다른 곳에서 만든 텍스처) 지우고 다시 굽는다
+    store.made.set(humanKey('tower', 'archer', false), { w: 1, h: 1, frames: [] });
+    const a = ensureHumanTexture(store, towerLook('archer') as HumanLook, 'tower', false);
+    expect(store.made.get(a.key)?.frames).toEqual(['back', 'body', 'prop']);
+  });
+
+  it('합친 그림(정보 패널 초상화): 모든 파츠 상자 + 떠 있는 높이가 캔버스 안 — 키 큰 캐릭터도 위·옆이 잘리지 않는다', () => {
+    for (const look of towers) {
+      for (const awakened of look.awaken ? [false, true] : [false]) {
+        const r = prepareHuman(look, awakened);
+        const box = composedBox(r.rig, 12);
+        const c = mockCtx();
+        drawHumanComposed(c, r, { aura: false });
+        const id = `${look.id}${awakened ? ' 각성' : ''}`;
+        expect(c.bounds.minY, `${id} 위`).toBeGreaterThan(box.top);
+        expect(c.bounds.minX, `${id} 왼쪽`).toBeGreaterThan(box.left);
+        expect(c.bounds.maxX, `${id} 오른쪽`).toBeLessThan(box.left + box.width);
+        expect(c.bounds.maxY, `${id} 아래`).toBeLessThan(box.top + box.height);
+      }
+    }
+    // 예전 몸 상자만으로는 잘리던 캐릭터: 몸 상자 위(−268)보다 높이 그려진다
+    for (const id of ['archmage', 'timelord', 'stormlord', 'infiniteblade']) {
+      const c = mockCtx();
+      drawHumanComposed(c, prepareHuman(towerLook(id) as HumanLook, false), { aura: false });
+      expect(c.bounds.minY, id).toBeLessThan(BOXES.body.top);
+    }
+    const store = new FakeStore();
+    const p = ensureComposedTexture(store, towerLook('archmage') as HumanLook, 'tower', false);
+    expect(p.key).toBe(`${humanKey('tower', 'archmage', false, 1)}-full`);
+    expect(store.getData(p.key)).toEqual(p);
+  });
+
   it('아틀라스 배치: 프레임이 겹치지 않고 캔버스 안에 있다', () => {
     for (const t of towers) {
       const rig = rigFor(t);
@@ -360,5 +469,94 @@ describe('바깥 그림 연결 지점 (힉스필드 그림이 생기면 그림 �
     expect(externalArtUrl('tower', 'miner', false)).toBe('assets/characters/miner.webp');
     expect(externalArtUrl('tower', 'miner', true)).toBe('assets/characters/miner_awaken.webp');
     expect(externalArtUrl('person', 'lena', false)).toBe('assets/characters/person_lena.webp');
+  });
+});
+
+/** 파츠 하나를 기록용 가짜 캔버스에 그려 지문을 낸다 */
+function partPrint(look: HumanLook, awakened: boolean, part: PartName): string {
+  const r = prepareHuman(look, awakened);
+  if (!r.rig.parts.includes(part)) return '-';
+  const c = new MockCtx();
+  drawHumanPart(c as unknown as CanvasRenderingContext2D, r, part);
+  return c.fingerprint();
+}
+
+describe('그림이 데이터 값을 실제로 반영한다 (검토 반영: 조합 겹침 검사는 JSON만 봐서 그리기 함수가 필드를 무시해도 통과했다)', () => {
+  it('타워 65명 × (기본·각성) 합친 그림 지문이 모두 다르다', () => {
+    const seen = new Map<string, string>();
+    for (const t of towers) {
+      for (const awakened of t.awaken ? [false, true] : [false]) {
+        const id = `${t.id}${awakened ? '*' : ''}`;
+        const c = new MockCtx();
+        drawHumanComposed(c as unknown as CanvasRenderingContext2D, prepareHuman(t, awakened), { aura: false });
+        const fp = c.fingerprint();
+        expect(seen.get(fp), `${id} = ${seen.get(fp)}`).toBeUndefined();
+        seen.set(fp, id);
+      }
+    }
+    expect(seen.size).toBe(65 + 53);
+  });
+
+  it('머리 장식·옷 모양·옷 색·머리카락 값 하나만 바꿔도 몸 파츠 지문이 바뀐다 (타워 65명 모두)', () => {
+    for (const t of towers) {
+      const base = partPrint(t, false, 'body');
+      const variants: [string, Partial<HumanLook>][] = [
+        ['head', { head: t.head === 'crown' ? 'cap' : 'crown' }],
+        ['outfit', { outfit: t.outfit === 'robe' ? 'tunic' : 'robe' }],
+        ['colors', { colors: ['#123456', '#654321'] }],
+      ];
+      // 머리카락: 머리를 다 덮는 장식(두건·투구)이면 긴 머리만 보인다
+      const hidden = HEADGEAR_DEFS[t.head].cover === 'full' && t.hairStyle !== 'long' && t.hairStyle !== 'flowing';
+      if (!hidden) variants.push(['hair', { hair: '#00FF66', hairStyle: t.hairStyle === 'none' ? 'short' : t.hairStyle }]);
+      for (const [name, v] of variants) expect(partPrint({ ...t, ...v } as HumanLook, false, 'body'), `${t.id} ${name}`).not.toBe(base);
+    }
+  });
+
+  it('라이브러리의 머리 장식·옷·몸 앞·발밑·왼손·등·소품·동반자는 종류마다 다른 그림을 그린다 (이름만 있고 그림이 같은 항목 없음)', () => {
+    const miner = towerLook('miner') as HumanLook;
+    const lists: [string, readonly string[], PartName, (v: string) => Partial<HumanLook>][] = [
+      ['head', HEADGEAR, 'body', (v) => ({ head: v as HumanLook['head'], headColor: undefined })],
+      ['outfit', OUTFITS, 'body', (v) => ({ outfit: v as HumanLook['outfit'] })],
+      ['front', FRONTS, 'body', (v) => ({ front: v as HumanLook['front'] })],
+      ['ground', GROUNDS, 'body', (v) => ({ ground: v as HumanLook['ground'] })],
+      ['offhand', OFFHANDS, 'body', (v) => ({ offhand: v as HumanLook['offhand'] })],
+      ['back', BACKS.filter((b) => b !== 'none'), 'back', (v) => ({ back: v as HumanLook['back'] })],
+      ['prop', PROPS.filter((p) => PROP_META[p].pose === undefined && p !== 'none'), 'prop', (v) => ({ prop: v as HumanLook['prop'] })],
+      ['pet', PETS.filter((p) => p !== 'none'), 'pet', (v) => ({ pet: v as HumanLook['pet'] })],
+    ];
+    for (const [name, list, part, make] of lists) {
+      const seen = new Map<string, string>();
+      for (const v of list) {
+        const fp = partPrint({ ...miner, ...make(v) } as HumanLook, false, part);
+        expect(seen.get(fp), `${name}: ${v} = ${seen.get(fp)}`).toBeUndefined();
+        seen.set(fp, v);
+      }
+    }
+  });
+
+  it('적 32종의 몸 실루엣(칠한 면적)이 서로 충분히 다르다 — 검토에서 지적한 골렘 넷·킹 슬라임↔모르가스는 크게 다르다', () => {
+    const masks = new Map<string, Uint8Array>();
+    for (const e of enemies) {
+      const c = new MockCtx();
+      CREATURE_DRAW[e.creature]({ c: c as unknown as CanvasRenderingContext2D, body: e.colors[0] ?? '#888888', accent: e.colors[1] ?? '#CCCCCC', legion: '#888888', eye: '#B36BFF' });
+      masks.set(e.id, silhouetteMask(c.log, ENEMY_BOX));
+    }
+    const iou = (a: string, b: string): number => maskIoU(masks.get(a)!, masks.get(b)!);
+    for (let i = 0; i < enemies.length; i++)
+      for (let j = i + 1; j < enemies.length; j++) {
+        const a = enemies[i]!.id;
+        const b = enemies[j]!.id;
+        expect(iou(a, b), `${a}↔${b}`).toBeLessThan(0.89);
+      }
+    for (const [a, b] of [
+      ['golem', 'ancientgolem'],
+      ['golem', 'gemgolem'],
+      ['gemgolem', 'ancientgolem'],
+      ['gemgolem', 'lavagiant'],
+      ['ancientgolem', 'lavagiant'],
+      ['golem', 'lavagiant'],
+      ['kingslime', 'morgath'],
+    ] as const)
+      expect(iou(a, b), `${a}↔${b}`).toBeLessThan(0.8);
   });
 });

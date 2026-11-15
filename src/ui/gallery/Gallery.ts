@@ -16,7 +16,7 @@ import { fxOf } from '../../art/characters/draw';
 import { IDLE_PRESETS, idleParts } from '../../art/characters/idle';
 import { allLooks, hasAwaken, isEnemyLook, type EnemyLook, type HumanLook } from '../../art/characters/looks';
 import { EXPRESSIONS, type Expression } from '../../art/characters/portraits';
-import { BOXES, ENEMY_BOX, PORTRAIT_BOX } from '../../art/characters/rig';
+import { ENEMY_BOX, PORTRAIT_BOX } from '../../art/characters/rig';
 import { GRADE_COLORS } from '../../art/palette';
 import type { Grade } from '../../data/load';
 import { mobPose, type MobMotion } from '../../view/render/mobPose';
@@ -256,7 +256,7 @@ export class Gallery {
         ctx.rotate(pose.angle);
         ctx.scale(pose.sx, pose.sy);
       }
-      drawComposition(ctx, this.store, tex, comp, res);
+      drawComposition(ctx, this.store, tex, comp);
       ctx.restore();
     };
     const el = h(
@@ -276,7 +276,7 @@ export class Gallery {
     const legion = this.opts.legionColor(look.legion);
     const tex = ensureEnemyTexture(this.store, look, legion, res);
     const img = this.store.get(tex.key);
-    const motion: MobMotion = look.motion === 'flap' ? 'flap' : look.motion === 'float' ? 'float' : 'walk';
+    const motion: MobMotion = look.motion;
     const phase = Math.random() * Math.PI * 2;
     const ctx = canvas.getContext('2d');
     const draw = (t: number): void => {
@@ -345,6 +345,5 @@ export function mountGallery(parent: HTMLElement, opts: GalleryOptions): Gallery
   const g = new Gallery(opts);
   parent.append(g.el);
   (window as unknown as { __gallery?: Gallery }).__gallery = g;
-  void BOXES;
   return g;
 }
