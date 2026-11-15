@@ -14,6 +14,8 @@
  * - M4 (statusModel.mobLookView): 드러난 투명 몹 = 보라 외곽선 + 덜 투명, 정예 = 금색 외곽선 + 1.3배, 보스 = 1.3칸 + 왕관 + 늘 보이는 굵은
  *   체력 바, 날아오른 박쥐 여왕 = 0.35칸 떠오르고 그림자 작게, 혼돈의 용 피해 감소 = 하늘색 보호막 고리, 방패병 보호막 = 체력 바 위 하늘색 줄,
  *   분열 조각 = 작게.
+ * - 캐릭터 다양화 (art/characters/enemies.ts): 외형 데이터가 있는 적 32종은 새 그림(군단 색 강조·보라 눈·녹스 문양·계급 장식)으로,
+ *   없는 적(도전 보스 등)은 예전 art/mobs.ts 그림으로 그린다. 같은 128단위 좌표라 크기·위치 계산은 그대로다.
  */
 import Phaser from 'phaser';
 import { EYE_ICON_H, EYE_ICON_W, MOB_TEX_SIZE, SIZE_SCALE, MOB_LOOKS, ensureEyeIconTexture, ensureMobTexture } from '../../art/mobs';
@@ -22,6 +24,7 @@ import { directionAt, positionAt, type SimPath } from '../../sim/map';
 import { unitsToPx, type MapLayout } from '../layout';
 import { approachLean, leanTarget, mobPose, type MobMotion } from './mobPose';
 import { ensureStatusTextures, statusIconKey } from '../../art/status';
+import { enemyCharacterTexture } from '../../art/characters/phaserArt';
 import { MAX_STATUS_ICONS, NO_LOOK, NO_STATUS, type MobLookView, type MobStatusView, type StatusIcon } from './statusModel';
 
 /** 피격 깜빡 (ms) — ART.md 2.1 */
@@ -97,16 +100,21 @@ export class MobSprite {
   private look: MobLookView = NO_LOOK;
   /** 드러난 투명 몹 외곽선이 보이는가 (E2E) */
   revealedOutline = false;
+  /** 새 캐릭터 그림(art/characters)으로 그렸는가 (E2E) */
+  readonly newArt: boolean;
 
   constructor(scene: Phaser.Scene, mob: Mob, size: string, layout: MapLayout, art: MobArt, scaleMul = 1) {
     this.id = mob.id;
     this.scene = scene;
     this.boss = mob.boss;
-    const key = ensureMobTexture(scene, mob.mob, art.legionColor(mob.legion));
+    const legion = art.legionColor(mob.legion);
+    const newArt = enemyCharacterTexture(scene, mob.mob, legion);
+    const key = newArt ? newArt.key : ensureMobTexture(scene, mob.mob, legion);
     this.scaleMul = scaleMul;
     const diameter = layout.tile * (SIZE_SCALE[size] ?? 0.7) * scaleMul;
     this.diameter = diameter;
-    this.baseScale = diameter / MOB_TEX_SIZE;
+    this.baseScale = diameter / (newArt ? newArt.size : MOB_TEX_SIZE);
+    this.newArt = newArt !== null;
     this.shadow = scene.add.ellipse(0, diameter * 0.36, diameter * 0.78, diameter * 0.26, 0x000000, 0.22);
     this.outline = scene.add.image(0, 0, key).setScale(this.baseScale * 1.16).setOrigin(0.5, 0.62).setTintFill(OUTLINE_REVEALED).setVisible(false);
     this.body = scene.add.image(0, 0, key).setScale(this.baseScale).setOrigin(0.5, 0.62);
@@ -137,7 +145,7 @@ export class MobSprite {
     // 황금비 위상: ID가 이웃해도 흔들림이 겹치지 않게
     this.phase = (mob.id * 2.399963) % (Math.PI * 2);
     const shape = MOB_LOOKS[mob.mob]?.shape;
-    this.motion = shape === 'bat' ? 'flap' : shape === 'ghost' ? 'float' : 'walk';
+    this.motion = newArt ? newArt.motion : shape === 'bat' ? 'flap' : shape === 'ghost' ? 'float' : 'walk';
     this.swarmOffset = mob.swarmIndex === 0 ? 0 : (mob.swarmIndex % 2 === 1 ? -1 : 1) * Math.ceil(mob.swarmIndex / 2) * SWARM_SPREAD * layout.tile;
     this.baseTint = this.invisible ? 0xd8c8ff : null;
     if (this.baseTint !== null) this.body.setTint(this.baseTint);
@@ -450,6 +458,13 @@ export class MobLayer {
   /** 그 몹 그림의 크기 배율 (E2E가 statusModel.mobScaleMul과 비교). 그림이 없으면 null */
   scaleMulOf(id: number): number | null {
     return this.sprites.get(id)?.scaleMul ?? null;
+  }
+
+  /** 새 캐릭터 그림으로 그린 몹 수 (E2E) */
+  get newArtCount(): number {
+    let n = 0;
+    for (const s of this.sprites.values()) if (s.newArt) n++;
+    return n;
   }
 
   /** 머리 위 👁를 단 몹 그림 수 (E2E가 sim 투명 몹 수와 비교) */

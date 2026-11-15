@@ -1,10 +1,14 @@
 /**
  * Boot 장면: 타이틀 배경과 대기 동작하는 타워들을 그리고, 그 위에 DOM 타이틀 화면을 띄운다.
  * [시작] → Game 장면 (무한 모드, 순환의 정원). ?debug=1 이면 [캠페인 1] → 테마 1 사거리 미로.
+ * 타이틀 타워는 캐릭터 다양화 그림(art/characters, 캐릭터별 대기 동작)으로 그린다. 외형 데이터가 없으면 예전 chibi 그림.
+ * 바깥 그림 매니페스트(public/assets/characters/manifest.json)도 여기서 읽어 둔다 (없거나 비면 절차 그림 그대로).
  */
 import Phaser from 'phaser';
 import { GRADE_COLORS } from '../../art/palette';
 import { createChibi, type ChibiProp } from '../../art/chibi';
+import { TitleCharacter } from '../../art/characters/title';
+import { loadExternalCharacterArt } from '../../art/characters/phaserArt';
 import { createTitleScreen } from '../../ui/screens/TitleScreen';
 import { GAME_HEIGHT, GAME_WIDTH, SCENE_BOOT, SCENE_GAME } from '../config';
 import { drawTitleBackdrop } from '../render/TitleBackdrop';
@@ -29,8 +33,14 @@ const TITLE_TOWERS: TitleTower[] = [
 ];
 
 export class BootScene extends Phaser.Scene {
+  private titleChars: TitleCharacter[] = [];
+
   constructor(private readonly ctx: GameContext) {
     super({ key: SCENE_BOOT });
+  }
+
+  override update(time: number): void {
+    for (const c of this.titleChars) c.update(time);
   }
 
   create(): void {
@@ -39,9 +49,15 @@ export class BootScene extends Phaser.Scene {
     drawTitleBackdrop(this, { kingdomColor: kingdom });
 
     const towers = new Map(data.towers.towers.map((t) => [t.id, t]));
+    this.titleChars = [];
     TITLE_TOWERS.forEach((tt, i) => {
       const t = towers.get(tt.towerId) ?? data.towers.towers[i];
       if (!t) return;
+      const titled = TitleCharacter.create(this, t.id, tt.x, tt.y, tt.scale, [0.13, 0.57, 0.81][i] ?? 0.3);
+      if (titled) {
+        this.titleChars.push(titled);
+        return;
+      }
       const factionColor = data.towers.factions[t.faction]?.color ?? '#888888';
       createChibi(this, tt.x, tt.y, {
         bodyColor: factionColor,
@@ -65,7 +81,12 @@ export class BootScene extends Phaser.Scene {
         onCampaign: this.ctx.debug ? () => this.startGame('campaign') : undefined,
       }),
     );
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.ctx.ui.clear('screen'));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.ctx.ui.clear('screen');
+      this.titleChars = [];
+    });
+    // 바깥 그림 (있으면 다음에 만드는 캐릭터부터 그림 우선). 실패해도 게임에는 영향 없음
+    void loadExternalCharacterArt(this).catch(() => 0);
     this.game.events.emit('rtd:title-ready');
   }
 

@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "note": "바깥 그림(힉스필드 등) 목록. 항목 'miner' → assets/characters/miner.webp, 'miner_awaken' → miner_awaken.webp, 'enemy:slime' → enemy_slime.webp, 'person:lena' → person_lena.webp. 여기 적힌 캐릭터는 절차 그림 대신 이 그림을 쓴다 (src/art/characters/phaserArt.ts).",
+  "characters": []
+}

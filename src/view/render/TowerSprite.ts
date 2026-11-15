@@ -9,6 +9,9 @@
  * - 소환 직후 0.4초 등장 동작.
  * - 깊이 = 발밑 화면 y (몹과 같은 기준) → 아래쪽이 위에 그려진다.
  * - M3-10: 이동·교환으로 칸이 바뀌면 0.14초 동안 새 칸으로 미끄러진다. 길게 눌러 끄는 동안은 손가락 위로 들려 따라온다.
+ * - 캐릭터 다양화 (art/characters): 외형 데이터(characterLooks.json)가 있는 타워는 파츠 그림(등·몸·소품·동반자 + 오라·입자)으로 그리고,
+ *   캐릭터별 대기 동작 프리셋(캐기·두드리기·저글링·날갯짓…)으로 파츠가 따로 움직인다. 데이터가 없는 타워만 예전 한 장 그림.
+ *   각성 외형은 TowerArt.awakened(타워 종류)가 true일 때 (M8 타워 성장 Lv15가 연결할 자리).
  */
 import Phaser from 'phaser';
 import {
@@ -22,6 +25,11 @@ import {
   ensureTowerTexture,
   type TowerLookInput,
 } from '../../art/towers';
+import { compose } from '../../art/characters/compose';
+import { fxOf } from '../../art/characters/draw';
+import { IDLE_PRESETS, idleParts, type IdlePreset } from '../../art/characters/idle';
+import { towerLook } from '../../art/characters/looks';
+import { CharacterFigure, towerCharacterTexture, towerPortraitKey } from '../../art/characters/phaserArt';
 import type { Tower } from '../../sim/entities/Tower';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { MOB_DEPTH_BASE } from './MobSprite';
@@ -38,6 +46,8 @@ export interface TowerArt {
   factionColor(faction: string): string | undefined;
   /** 공격 간격 (ms) — 공격 동작 길이 계산용 */
   attackIntervalMs(towerId: string): number;
+  /** 각성 외형으로 그리나 (타워 성장 Lv15, M8). 없으면 기본 외형 */
+  awakened?(towerId: string): boolean;
 }
 
 export class TowerSprite {
@@ -45,7 +55,11 @@ export class TowerSprite {
   /** 그림을 만든 타워 종류 (towers.json id). sim에서 같은 엔티티의 종류가 바뀌면(승급의 축복 [바꾸기]) TowerLayer가 다시 만든다 */
   readonly towerType: string;
   private readonly root: Phaser.GameObjects.Container;
-  private readonly figure: Phaser.GameObjects.Image;
+  /** 캐릭터 (파츠 그림이면 컨테이너, 예전 한 장 그림이면 Image) — 변환(흔들림·크기·기울기)을 받는 쪽 */
+  private readonly figure: Phaser.GameObjects.Container | Phaser.GameObjects.Image;
+  /** 파츠 그림 (외형 데이터가 없는 타워는 null) */
+  private readonly character: CharacterFigure | null;
+  private readonly preset: IdlePreset | null;
   private readonly scale: number;
   private readonly tile: number;
   private readonly seed: number;
@@ -71,8 +85,6 @@ export class TowerSprite {
     this.id = tower.id;
     this.towerType = tower.tower;
     const look = art.look(tower.tower);
-    const color = art.factionColor(look.faction) ?? SPECIAL_FACTION_COLORS[look.faction] ?? '#888888';
-    const figKey = ensureTowerTexture(scene, look, color);
     const pedKey = ensurePedestalTexture(scene, look.grade);
     this.tile = layout.tile;
     this.layout = layout;
@@ -84,7 +96,19 @@ export class TowerSprite {
     this.baseY = c.y + layout.tile * FOOT_OFFSET_TILES;
     const pedestal = scene.add.image(0, 0, pedKey).setOrigin(0.5, PEDESTAL_ORIGIN_Y);
     pedestal.setScale((layout.tile * PEDESTAL_WIDTH_TILES) / PEDESTAL_TEX_W);
-    this.figure = scene.add.image(0, 0, figKey).setOrigin(FIGURE_ORIGIN_X, FIGURE_ORIGIN_Y).setScale(this.scale);
+    const charLook = towerLook(tower.tower);
+    if (charLook) {
+      const tex = towerCharacterTexture(scene, charLook, art.awakened?.(tower.tower) ?? false);
+      this.character = new CharacterFigure(scene, tex);
+      this.preset = IDLE_PRESETS[tex.render.look.idle ?? 'hop'];
+      this.figure = scene.add.container(0, 0, [this.character.container]).setScale(this.scale);
+    } else {
+      const color = art.factionColor(look.faction) ?? SPECIAL_FACTION_COLORS[look.faction] ?? '#888888';
+      const figKey = ensureTowerTexture(scene, look, color);
+      this.character = null;
+      this.preset = null;
+      this.figure = scene.add.image(0, 0, figKey).setOrigin(FIGURE_ORIGIN_X, FIGURE_ORIGIN_Y).setScale(this.scale);
+    }
     this.root = scene.add.container(this.baseX, this.baseY, [pedestal, this.figure]);
     this.root.setDepth(MOB_DEPTH_BASE + this.baseY);
     this.seed = Math.random();
@@ -131,8 +155,11 @@ export class TowerSprite {
   setStunned(on: boolean): void {
     if (on === this.stunned) return;
     this.stunned = on;
-    if (on) this.figure.setTint(0x8c8c9e);
-    else this.figure.clearTint();
+    if (this.character) this.character.setTint(on ? 0x8c8c9e : null);
+    else if (this.figure instanceof Phaser.GameObjects.Image) {
+      if (on) this.figure.setTint(0x8c8c9e);
+      else this.figure.clearTint();
+    }
   }
 
   /** 기절 중인가 (E2E) */
@@ -159,12 +186,46 @@ export class TowerSprite {
     this.root.setPosition(rx, ry);
     this.root.setDepth(this.dragAt ? DRAG_DEPTH : MOB_DEPTH_BASE + ry);
     this.root.setAlpha(this.dragAt ? 0.88 : 1);
-    const pose = towerPose({ timeMs, seed: this.seed, attackAtMs: this.attackAtMs, attackMs: this.attackMs, appearAtMs: this.appearAtMs });
+    const preset = this.preset;
+    const pose = towerPose({
+      timeMs,
+      seed: this.seed,
+      attackAtMs: this.attackAtMs,
+      attackMs: this.attackMs,
+      appearAtMs: this.appearAtMs,
+      gesture: preset?.gesture,
+      gestureMs: preset?.gestureMs,
+    });
     const s = this.scale;
-    this.figure.setPosition(this.lungeDx * pose.lunge * this.tile, pose.bob * this.tile + this.lungeDy * pose.lunge * this.tile);
+    this.figure.setPosition(this.lungeDx * pose.lunge * this.tile + pose.dx * this.tile, pose.bob * this.tile + this.lungeDy * pose.lunge * this.tile);
     this.figure.setScale(s * pose.sx * this.facing, s * pose.sy);
     // 기절: 좌우로 작게 떨린다
     this.figure.setRotation(this.stunned ? Math.sin(timeMs * 0.03) * 0.06 : pose.angle);
+    if (this.character && preset) {
+      // 파츠 대기 동작: 기절 중에는 멈춘다
+      const r = this.character.tex.render;
+      const look = r.look;
+      const idle = idleParts({
+        preset,
+        gesture: pose.gesture,
+        attack: pose.attackK,
+        timeMs,
+        seed: this.seed,
+        body: look.body,
+        prop: look.prop,
+        back: look.back,
+        pet: look.pet,
+        fx: fxOf(look),
+        grade: look.grade,
+        play: !this.stunned,
+      });
+      this.character.apply(compose(r, idle, timeMs, this.seed));
+    }
+  }
+
+  /** 파츠 그림 텍스처 키 (외형 데이터가 없으면 null) — E2E가 새 그림인지 확인 */
+  get characterKey(): string | null {
+    return this.character?.textureKey ?? null;
   }
 
   /** 끄는 중(손가락 위에 들려 있음)인가. */
@@ -282,8 +343,10 @@ export class TowerLayer {
     return this.sprites.get(id)?.towerType ?? null;
   }
 
-  /** 그 타워 종류의 캐릭터 텍스처 키 (없으면 굽는다) — 정보 패널 초상화용. */
+  /** 그 타워 종류의 캐릭터 텍스처 키 (없으면 굽는다) — 정보 패널 초상화용. 파츠 그림이면 한 장에 합친 텍스처. */
   textureKey(towerId: string): string {
+    const charLook = towerLook(towerId);
+    if (charLook) return towerPortraitKey(this.scene, charLook, this.art.awakened?.(towerId) ?? false);
     const look = this.art.look(towerId);
     const color = this.art.factionColor(look.faction) ?? SPECIAL_FACTION_COLORS[look.faction] ?? '#888888';
     return ensureTowerTexture(this.scene, look, color);
@@ -296,6 +359,21 @@ export class TowerLayer {
 
   figureTransform(id: number): { y: number; scaleY: number; angle: number } | null {
     return this.sprites.get(id)?.figureTransform ?? null;
+  }
+
+  /** 그 타워 그림의 파츠 텍스처 키 (E2E: 새 캐릭터 그림인지). 예전 한 장 그림이면 null */
+  characterKeyOf(id: number): string | null {
+    return this.sprites.get(id)?.characterKey ?? null;
+  }
+
+  /** 그려진 타워들의 파츠 텍스처 키 목록 (E2E) */
+  get characterKeys(): string[] {
+    const out: string[] = [];
+    for (const s of this.sprites.values()) {
+      const k = s.characterKey;
+      if (k) out.push(k);
+    }
+    return out;
   }
 
   destroy(): void {

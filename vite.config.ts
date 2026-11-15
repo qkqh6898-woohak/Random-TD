@@ -21,6 +21,7 @@ export default defineConfig({
     target: 'es2022',
     outDir: 'dist',
     // Phaser 자체가 약 1.2MB(압축 전)라 기본 경고 한도(500kB)를 넘는다. 번들 크기는 PROGRESS.md에 기록한다.
-    chunkSizeWarningLimit: 1600,
+    // 캐릭터 다양화(절차 생성 캐릭터 라이브러리 + characterLooks.json)로 약 +100kB → 1900.
+    chunkSizeWarningLimit: 1900,
   },
 });
