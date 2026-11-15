@@ -49,9 +49,12 @@ export function fxOf(look: HumanLook): FxId {
   return look.grade === 'legend' || look.grade === 'god' || look.grade === 'hidden' ? 'stars' : 'none';
 }
 
-/** 오라 반지름 (그림 단위) — 레전드 이상은 크게 */
+/**
+ * 오라 반지름 (그림 단위) — 레전드 이상은 크게.
+ * 반투명 큰 사각형이 겹치면 휴대폰 GPU 채우기 부담이 커서 몸을 살짝 감싸는 크기로 둔다 (71칸 가득 차도 화면 겹침이 작게).
+ */
 export function auraRadius(look: HumanLook): number {
-  return look.grade === 'legend' || look.grade === 'god' || look.grade === 'hidden' ? 150 : 120;
+  return look.grade === 'legend' || look.grade === 'god' || look.grade === 'hidden' ? 112 : 92;
 }
 
 export function auraColorOf(look: HumanLook, aura: AuraId): string {

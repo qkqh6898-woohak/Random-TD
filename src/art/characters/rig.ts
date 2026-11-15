@@ -173,3 +173,50 @@ export function atlasLayout(parts: readonly PartName[], res: number): AtlasLayou
   }
   return { width: x, height: height + ATLAS_PAD * 2, frames };
 }
+
+/** 알파 값을 읽을 수 있는 그리기 대상 (브라우저 2D 컨텍스트) */
+export interface AlphaReader {
+  getImageData(x: number, y: number, w: number, h: number): { data: ArrayLike<number> };
+}
+
+/**
+ * 프레임을 실제로 칠해진 픽셀만큼 잘라 낸다 (회전 중심 비율은 그대로 같은 점을 가리키게 다시 계산).
+ * 파츠 상자는 날개·큰 소품을 위해 넉넉해서 대부분 투명하다 → 잘라 두면 화면에 그리는 넓이(GPU 채우기)가 크게 준다.
+ * 알파를 못 읽는 대상(테스트용 가짜)이면 그대로 돌려준다.
+ */
+export function trimLayout(ctx: unknown, layout: AtlasLayout, pad = 1): AtlasLayout {
+  const reader = ctx as Partial<AlphaReader>;
+  if (typeof reader.getImageData !== 'function') return layout;
+  const frames = layout.frames.map((f) => {
+    let data: ArrayLike<number>;
+    try {
+      data = (reader as AlphaReader).getImageData(f.x, f.y, f.w, f.h).data;
+    } catch {
+      return f;
+    }
+    let minX = f.w;
+    let minY = f.h;
+    let maxX = -1;
+    let maxY = -1;
+    for (let y = 0; y < f.h; y++) {
+      const row = y * f.w * 4;
+      for (let x = 0; x < f.w; x++) {
+        if ((data[row + x * 4 + 3] ?? 0) > 2) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < 0) return { ...f, w: 1, h: 1, originX: f.originX * f.w, originY: f.originY * f.h };
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(f.w - 1, maxX + pad);
+    maxY = Math.min(f.h - 1, maxY + pad);
+    const w = maxX - minX + 1;
+    const h = maxY - minY + 1;
+    return { name: f.name, x: f.x + minX, y: f.y + minY, w, h, originX: (f.originX * f.w - minX) / w, originY: (f.originY * f.h - minY) / h };
+  });
+  return { width: layout.width, height: layout.height, frames };
+}

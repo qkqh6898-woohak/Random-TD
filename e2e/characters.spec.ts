@@ -212,7 +212,11 @@ test('게임 화면: 타워·몹이 새 캐릭터 그림(파츠 텍스처)으로
   await expect.poll(() => inScene(page, (s) => s.mobLayer.newArtCount, null)).toBeGreaterThan(3);
   const m = await inScene(page, (s) => ({ newArt: s.mobLayer.newArtCount, all: s.mobLayer.count }), null);
   expect(m.newArt).toBe(m.all);
-  await page.waitForTimeout(400);
+  if (SAVE_DOCS) {
+    // 단계 건너뛰기로 쌓인 보스 등장 배너·알림이 걷힌 뒤 찍는다
+    await expect(page.locator('.toast')).toHaveCount(0, { timeout: 15_000 });
+    await page.waitForTimeout(300);
+  }
   await shot(page, 'characters-ingame');
   expect(errors).toEqual([]);
 });

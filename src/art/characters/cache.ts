@@ -13,7 +13,7 @@ import { drawAura, drawParticle, PARTICLE_BOX } from './fxArt';
 import type { AuraId, FxId } from './library';
 import type { EnemyLook, HumanLook, LookGroup } from './looks';
 import { drawPortrait, type Expression } from './portraits';
-import { BOXES, ENEMY_BOX, PORTRAIT_BOX, atlasLayout, type AtlasLayout } from './rig';
+import { BOXES, ENEMY_BOX, PORTRAIT_BOX, atlasLayout, trimLayout, type AtlasLayout } from './rig';
 
 export interface TextureStore {
   has(key: string): boolean;
@@ -35,6 +35,9 @@ export const RES_FX = 1;
 export const AURA_TEX_R = 64;
 
 export const bakeStats = { count: 0 };
+
+/** 잘라 낸 파츠 배치 (키마다 — 두 번째 요청부터는 그리지 않으므로 기억해 둔다) */
+const trimmed = new Map<string, AtlasLayout>();
 
 export function humanKey(group: LookGroup, id: string, awakened: boolean, res = RES_GAME): string {
   return `char-${group}-${id}-${awakened ? 'a' : 'n'}${res === RES_GAME ? '' : `@${res}`}`;
@@ -62,15 +65,17 @@ export interface HumanTexture {
 export function ensureHumanTexture(store: TextureStore, base: HumanLook, group: LookGroup, awakened: boolean, res = RES_GAME): HumanTexture {
   const render = prepareHuman(base, awakened);
   const key = humanKey(group, base.id, render.awakened, res);
-  const layout = atlasLayout(render.rig.parts, res);
+  const full = atlasLayout(render.rig.parts, res);
   if (!store.has(key)) {
-    const ctx = store.create(key, layout.width, layout.height);
+    const ctx = store.create(key, full.width, full.height);
     renderHumanAtlas(ctx, render, res);
+    const layout = trimLayout(ctx, full);
+    trimmed.set(key, layout);
     for (const f of layout.frames) store.addFrame(key, f.name, f.x, f.y, f.w, f.h);
     store.commit(key);
     bakeStats.count++;
   }
-  return { key, render, layout };
+  return { key, render, layout: trimmed.get(key) ?? full };
 }
 
 /** 한 장에 합친 그림 (정보 패널 초상화용). 원점 비율을 함께 돌려준다. */

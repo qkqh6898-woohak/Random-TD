@@ -28,7 +28,7 @@ import { parseExternalEntry, externalArtUrl } from '../../src/art/characters/ext
 import { EXPRESSIONS, drawPortrait } from '../../src/art/characters/portraits';
 import { PROP_META } from '../../src/art/characters/propMeta';
 import { PROP_DRAW } from '../../src/art/characters/props';
-import { BOXES, ENEMY_BOX, PORTRAIT_BOX, atlasLayout, rigFor, type PartName } from '../../src/art/characters/rig';
+import { BOXES, ENEMY_BOX, PORTRAIT_BOX, atlasLayout, rigFor, trimLayout, type PartName } from '../../src/art/characters/rig';
 import { towerPose } from '../../src/view/render/towerPose';
 import { mockCtx } from '../helpers/mockCanvas';
 
@@ -203,6 +203,33 @@ describe('텍스처 캐시: 종류·각성·등급별 한 번만 그린다', () 
     ensureComposedTexture(store, miner, 'tower', false);
     ensureComposedTexture(store, miner, 'tower', false);
     expect(store.creates).toBe(13 + 2 + 1);
+  });
+
+  it('파츠 프레임 잘라 내기: 칠해진 픽셀만 남기고 회전 중심은 같은 점을 가리킨다', () => {
+    const layout = atlasLayout(['body', 'prop'], 0.1);
+    const W = layout.width;
+    const H = layout.height;
+    const alpha = new Uint8ClampedArray(W * H * 4);
+    // body 프레임 안 (10~14, 5~9) 사각형만 칠함
+    const body = layout.frames[0]!;
+    for (let y = 5; y <= 9; y++) for (let x = 10; x <= 14; x++) alpha[((body.y + y) * W + body.x + x) * 4 + 3] = 255;
+    const reader = {
+      getImageData: (x: number, y: number, w: number, h: number) => {
+        const out = new Uint8ClampedArray(w * h * 4);
+        for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) out[(yy * w + xx) * 4 + 3] = alpha[((y + yy) * W + x + xx) * 4 + 3]!;
+        return { data: out };
+      },
+    };
+    const t = trimLayout(reader, layout);
+    const b = t.frames[0]!;
+    expect([b.x - body.x, b.y - body.y, b.w, b.h]).toEqual([9, 4, 7, 7]);
+    // 회전 중심의 캔버스 좌표가 그대로
+    expect(b.x + b.originX * b.w).toBeCloseTo(body.x + body.originX * body.w, 6);
+    expect(b.y + b.originY * b.h).toBeCloseTo(body.y + body.originY * body.h, 6);
+    // 빈 프레임은 1×1
+    expect([t.frames[1]!.w, t.frames[1]!.h]).toEqual([1, 1]);
+    // 알파를 못 읽으면 그대로
+    expect(trimLayout(mockCtx(), layout)).toBe(layout);
   });
 
   it('아틀라스 배치: 프레임이 겹치지 않고 캔버스 안에 있다', () => {
