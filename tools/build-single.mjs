@@ -166,13 +166,16 @@ async function main() {
     base: './',
     logLevel: 'warn',
     define: { 'import.meta.env.VITE_TEST_BUILD': JSON.stringify('1') },
-    build: { outDir, emptyOutDir: true, modulePreload: false, cssCodeSplit: false },
+    build: { outDir, emptyOutDir: true, modulePreload: false, cssCodeSplit: false, rollupOptions: { output: { inlineDynamicImports: true } } },
   });
   const files = readTree(outDir);
+  // SINGLE_SKIP=assets/backgrounds,assets/cutins → 그 폴더 파일은 한 파일에 넣지 않는다 (아직 쓰지 않는 그림으로 파일이 커지지 않게)
+  const skip = (process.env.SINGLE_SKIP ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+  for (const k of Object.keys(files)) if (skip.some((p) => k.startsWith(p.endsWith('/') ? p : `${p}/`))) delete files[k];
   const html = toText(files['index.html']);
   delete files['index.html'];
   const single = inlineSingleHtml(html, files);
-  const target = join(ROOT, RELEASE_FILE);
+  const target = join(ROOT, process.env.SINGLE_OUT || RELEASE_FILE);
   rmSync(target, { force: true });
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, single);

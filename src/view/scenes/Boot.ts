@@ -8,7 +8,7 @@ import Phaser from 'phaser';
 import { GRADE_COLORS } from '../../art/palette';
 import { createChibi, type ChibiProp } from '../../art/chibi';
 import { TitleCharacter } from '../../art/characters/title';
-import { loadExternalCharacterArt } from '../../art/characters/phaserArt';
+import { queueExternalCharacterArt } from '../../art/characters/phaserArt';
 import { createTitleScreen } from '../../ui/screens/TitleScreen';
 import { GAME_HEIGHT, GAME_WIDTH, SCENE_BOOT, SCENE_GAME } from '../config';
 import { drawTitleBackdrop } from '../render/TitleBackdrop';
@@ -41,6 +41,16 @@ export class BootScene extends Phaser.Scene {
 
   override update(time: number): void {
     for (const c of this.titleChars) c.update(time);
+  }
+
+  /** 바깥 그림(힉스필드)을 타이틀 전에 다 받아 둔다. 없거나 실패하면 절차 그림 그대로 */
+  preload(): void {
+    queueExternalCharacterArt(this);
+    const label = this.add
+      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '', { fontFamily: '-apple-system, "Noto Sans KR", "Malgun Gothic", sans-serif', fontSize: '44px', color: '#f7f3e9' })
+      .setOrigin(0.5);
+    this.load.on(Phaser.Loader.Events.PROGRESS, (p: number) => label.setText(`그림 불러오는 중 ${Math.round(p * 100)}%`));
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => label.destroy());
   }
 
   create(): void {
@@ -85,8 +95,6 @@ export class BootScene extends Phaser.Scene {
       this.ctx.ui.clear('screen');
       this.titleChars = [];
     });
-    // 바깥 그림 (있으면 다음에 만드는 캐릭터부터 그림 우선). 실패해도 게임에는 영향 없음
-    void loadExternalCharacterArt(this).catch(() => 0);
     this.game.events.emit('rtd:title-ready');
   }
 

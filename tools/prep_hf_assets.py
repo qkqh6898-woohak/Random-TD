@@ -24,6 +24,8 @@ def cover(im, W, H):
     l, t = (im.width - W) // 2, (im.height - H) // 2
     return im.crop((l, t, l + W, t + H))
 
+# characterArt.json 종류: tower / 적(mob·captain·commander·lord) / 인물(advisor·sidekick)
+ENEMY_KINDS = {'enemy', 'mob', 'captain', 'commander', 'lord'}
 entries, total = [], 0
 def save(im, rel, q):
     global total
@@ -39,7 +41,7 @@ for c in art:
         if not os.path.exists(p): print('MISSING', src); continue
         im = fit_max(crop_alpha(Image.open(p).convert('RGBA')), 256)
         if kind == 'tower': name, entry = cid + ('_awaken' if aw else ''), cid + ('_awaken' if aw else '')
-        elif kind == 'enemy': name, entry = f'enemy_{cid}', f'enemy:{cid}'
+        elif kind in ENEMY_KINDS: name, entry = f'enemy_{cid}', f'enemy:{cid}'
         else: name, entry = f'person_{cid}', f'person:{cid}'
         save(im, f'characters/{name}.webp', 82); entries.append(entry)
 

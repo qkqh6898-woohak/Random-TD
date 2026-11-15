@@ -14,6 +14,7 @@ import { fxCount } from './idle';
 import { enemyLook, type HumanLook } from './looks';
 import type { MobMotion } from '../../view/render/mobPose';
 import { EXTERNAL_ART_MANIFEST, externalArtKey, externalArtUrl, parseExternalEntry, type ExternalArtManifest } from './external';
+import { assetUrl, currentAssetTable, embeddedAssetJson } from '../../assets';
 
 export { EXTERNAL_ART_DIR, EXTERNAL_ART_MANIFEST, externalArtKey, externalArtUrl, parseExternalEntry, type ExternalArtManifest } from './external';
 
@@ -83,34 +84,57 @@ export function textureStore(scene: Phaser.Scene): PhaserTextureStore {
 // 바깥 그림 연결 지점 (힉스필드 등으로 그린 그림이 생기면 그림 우선)
 // ---------------------------------------------------------------------------
 
+/** 매니페스트 → 바깥 그림 항목 (순수: 잘못된 항목·형식은 건너뜀) */
+export function externalEntries(manifest: unknown): NonNullable<ReturnType<typeof parseExternalEntry>>[] {
+  const list = (manifest as Partial<ExternalArtManifest> | null | undefined)?.characters;
+  if (!Array.isArray(list)) return [];
+  return list.map((e) => (typeof e === 'string' ? parseExternalEntry(e) : null)).filter((e): e is NonNullable<typeof e> => e !== null);
+}
+
+/** Phaser 캐시의 매니페스트 키 */
+const EXTERNAL_MANIFEST_KEY = 'ext-char-manifest';
+
 /**
- * 매니페스트를 읽어 바깥 그림을 불러 온다 (실패해도 게임에는 영향 없음 → 절차 그림).
- * 불러 온 뒤 새로 만드는 캐릭터부터 바깥 그림을 쓴다.
+ * 바깥 그림(힉스필드)을 Phaser 로더에 올린다 — Boot.preload에서 불러 타이틀이 뜨기 전에 다 받아 둔다 (그 뒤 만드는 캐릭터는 모두 그림 우선).
+ * - 한 파일 빌드(window.__RTD_ASSETS__): 표에 든 매니페스트 객체와 data URI를 바로 쓴다 (file://에서는 fetch가 안 됨).
+ * - 개발 서버·일반 빌드: manifest.json을 먼저 받고, 받자마자 같은 로딩 안에서 그림들을 이어서 올린다.
+ * 파일 하나가 실패해도 그 캐릭터만 절차 그림 (Phaser 로더는 실패한 파일을 건너뛰고 끝낸다). 이미 있는 텍스처는 다시 받지 않는다.
  */
-export async function loadExternalCharacterArt(scene: Phaser.Scene, fetchFn: typeof fetch = fetch): Promise<number> {
-  let manifest: ExternalArtManifest;
-  try {
-    const res = await fetchFn(EXTERNAL_ART_MANIFEST, { cache: 'no-cache' });
-    if (!res.ok) return 0;
-    manifest = (await res.json()) as ExternalArtManifest;
-  } catch {
-    return 0;
+export function queueExternalCharacterArt(scene: Phaser.Scene): void {
+  const queue = (manifest: unknown): void => {
+    for (const e of externalEntries(manifest)) {
+      const key = externalArtKey(e.group, e.id, e.awakened);
+      if (!scene.textures.exists(key)) scene.load.image(key, assetUrl(externalArtUrl(e.group, e.id, e.awakened)));
+    }
+  };
+  const embedded = embeddedAssetJson(EXTERNAL_ART_MANIFEST, currentAssetTable());
+  if (embedded !== undefined) {
+    queue(embedded);
+    return;
   }
-  const entries = (manifest.characters ?? []).map(parseExternalEntry).filter((e): e is NonNullable<typeof e> => e !== null);
-  if (entries.length === 0) return 0;
-  for (const e of entries) scene.load.image(externalArtKey(e.group, e.id, e.awakened), externalArtUrl(e.group, e.id, e.awakened));
-  await new Promise<void>((resolve) => {
-    scene.load.once(Phaser.Loader.Events.COMPLETE, () => resolve());
-    scene.load.start();
-  });
-  return entries.length;
+  if (scene.cache.json.exists(EXTERNAL_MANIFEST_KEY)) {
+    queue(scene.cache.json.get(EXTERNAL_MANIFEST_KEY));
+    return;
+  }
+  scene.load.once(`filecomplete-json-${EXTERNAL_MANIFEST_KEY}`, (_key: string, _type: string, data: unknown) => queue(data));
+  scene.load.json(EXTERNAL_MANIFEST_KEY, assetUrl(EXTERNAL_ART_MANIFEST));
 }
 
 /** 기절 중 오라·입자 알파 (잿빛 몸 뒤에서 은은하게만) */
 const TINT_GLOW_ALPHA = 0.35;
 
 /** 바깥 그림의 높이 (그림 단위): 절차 그림의 발밑~별 높이와 비슷하게 */
-export const EXTERNAL_FIGURE_UNITS = 270;
+export const EXTERNAL_FIGURE_UNITS = 230;
+/** 바깥 그림의 최대 너비 (그림 단위): 개·탈것·날개처럼 옆으로 넓은 그림이 옆 칸을 덮지 않게 */
+export const EXTERNAL_FIGURE_MAX_W = 200;
+
+/** 바깥 적 그림 크기 배수 (몹 지름 대비) */
+export const EXTERNAL_ENEMY_SCALE = 1.5;
+
+/** 바깥 그림 배율 (순수): 높이를 맞추되 너비가 넘치면 너비에 맞춘다 */
+export function externalFigureScale(w: number, h: number, units = EXTERNAL_FIGURE_UNITS, maxW = EXTERNAL_FIGURE_MAX_W): number {
+  return Math.min(units / Math.max(1, h), maxW / Math.max(1, w));
+}
 
 // ---------------------------------------------------------------------------
 // 캐릭터 그림 (파츠 Image 묶음)
@@ -129,6 +153,8 @@ export class CharacterFigure {
   private readonly fxImgs: Phaser.GameObjects.Image[] = [];
   private readonly res: number;
   private tinted = false;
+  /** 바깥 그림 기본 배율 */
+  private extScale = 1;
   /** 기절 중 오라·입자 알파 배수 */
   private dim = 1;
 
@@ -152,8 +178,8 @@ export class CharacterFigure {
     if (this.external) {
       // 바깥 그림: 몸 상자 높이에 맞춰 한 장 (발밑 = 그림 아래 가운데)
       const img = scene.add.image(0, 0, extKey).setOrigin(0.5, 1);
-      const h = img.height || 1;
-      img.setScale(EXTERNAL_FIGURE_UNITS / h);
+      this.extScale = externalFigureScale(img.width, img.height);
+      img.setScale(this.extScale);
       this.partImgs.set('body', img);
       this.container.add(img);
     } else {
@@ -196,7 +222,8 @@ export class CharacterFigure {
         const img = this.partImgs.get(op.part);
         if (!img) continue;
         if (this.external) {
-          img.setPosition(op.x, op.y + 6).setAlpha(op.alpha);
+          // 숨쉬기·대기 몸동작: 몸 파츠의 늘이기·기울기를 그림 한 장에 (발밑 기준)
+          img.setPosition(op.x, op.y + 6).setRotation(op.rot * 0.5).setScale(this.extScale * op.sx, this.extScale * op.sy).setAlpha(op.alpha);
           continue;
         }
         img.setPosition(op.x, op.y).setRotation(op.rot).setScale(op.sx / this.res, op.sy / this.res).setAlpha(op.alpha);
@@ -257,8 +284,10 @@ export function enemyCharacterTexture(scene: Phaser.Scene, mobId: string, legion
   // 데이터 움직임 그대로 (walk·flap·float·slither — mobPose가 모두 그린다)
   const motion: MobMotion = look.motion;
   if (scene.textures.exists(ext)) {
-    const img = scene.textures.get(ext).getSourceImage() as { width: number };
-    return { key: ext, size: img.width || 128, motion };
+    // 바깥 그림은 캐릭터 경계로 잘려 정사각형이 아니다 → 긴 변을 크기로 (몹 지름에 맞춤)
+    const img = scene.textures.get(ext).getSourceImage() as { width: number; height: number };
+    // 몸 전체 그림은 둥근 절차 몹보다 같은 지름에서 작아 보인다 → EXTERNAL_ENEMY_SCALE배로
+    return { key: ext, size: (Math.max(img.width, img.height) || 128) / EXTERNAL_ENEMY_SCALE, motion };
   }
   const t = ensureEnemyTexture(textureStore(scene), look, intToHex(legionColor));
   return { key: t.key, size: t.size, motion };
