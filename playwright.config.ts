@@ -6,8 +6,12 @@ const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 30_000,
-  expect: { timeout: 10_000 },
+  // 한 테스트 제한 90초 (expect 15초): 헤드리스 Chromium은 1080×1920 캔버스를 소프트웨어로 그려 초당 6~10프레임이고, 같은 컴퓨터에서
+  // 다른 작업(다른 Playwright·Vitest)이 돌면 페이지가 몇 초씩 멈추기도 한다. 끌기·연속 클릭처럼 단계가 많은 테스트는 조용할 때도
+  // 21~28초라 30초 제한에서는 CPU가 바쁠 때 시간 초과로 실패했다 (m3a 길게 눌러 끌기, m4 일꾼 10명 — 바쁠 때 약 58초).
+  // 더 긴 흐름(스크린샷 테스트)은 test.slow()로 3배.
+  timeout: 90_000,
+  expect: { timeout: 15_000 },
   fullyParallel: false,
   workers: 1,
   retries: 0,

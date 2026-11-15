@@ -25,6 +25,7 @@ type SceneLike = {
     state: {
       stage: number;
       gold: number;
+      goldEarned: number;
       workers: number;
       phase: string;
       defeatReason: string;
@@ -150,24 +151,56 @@ test('일꾼: [👷 300원] → 👷 1/10·돈 −300, 5초마다 +5원 / 모자
   const errors = collectErrors(page);
   await start(page);
   const hire = page.getByTestId('hud-hire');
+  const workers = page.getByTestId('hud-workers');
   await expect(hire).toHaveText('👷 300원');
-  await expect(page.getByTestId('hud-workers')).toHaveText('0/10');
+  await expect(workers).toHaveText('0/10');
+  // 게임은 실시간으로 흐르고 일꾼 수입은 100틱(5초)마다 들어온다 → 돈을 읽는 시점과 수입 틱이 겹쳐도 맞게 확인한다
+  // (돈을 두 번 나눠 읽으면 그 사이에 수입이 끼어 테스트가 흔들렸다).
   await hire.click();
-  await expect(page.getByTestId('hud-workers')).toHaveText('1/10');
-  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(700);
-  // 다음 100틱 배수까지 → +5원
-  const g0 = await inScene(page, (s) => s.match.state.gold, null);
-  await inScene(page, (s) => s.debugFastForward(100 - (s.match.tick % 100) + 1), null);
-  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(g0 + 5);
-  // 두 명 더 → 돈 205원 → 고용 버튼은 흐리고, 누르면 모자란 만큼 알림
+  await expect(workers).toHaveText('1/10');
+  // 돈 −300: 지금 돈 = 시작 1,000 − 300 + 그동안 번 돈(수입 틱이 이미 지났을 수 있음 — 타워가 없어 처치 보상은 없다). 한 번에 읽는다.
+  const paid = await inScene(page, (s) => ({ gold: s.match.state.gold, earned: s.match.state.goldEarned }), null);
+  expect(paid.gold).toBe(1000 - 300 + paid.earned);
+  // 다음 100틱 배수까지 → +5원 (읽기와 빨리 감기를 한 동기 구간에서 — 사이에 프레임이 끼지 않는다)
+  const income = await inScene(
+    page,
+    (s) => {
+      const g0 = s.match.state.gold;
+      s.debugFastForward(100 - (s.match.tick % 100) + 1);
+      return s.match.state.gold - g0;
+    },
+    null,
+  );
+  expect(income).toBe(5);
+  // 두 명 더 → 돈 300원 미만 → 고용 버튼은 흐리고, 누르면 모자란 만큼 알림
   await hire.click();
-  await expect(page.getByTestId('hud-workers')).toHaveText('2/10');
+  await expect(workers).toHaveText('2/10');
   await hire.click();
-  await expect(page.getByTestId('hud-workers')).toHaveText('3/10');
+  await expect(workers).toHaveText('3/10');
   await expect(hire).toHaveClass(/is-off/);
+  // 돈을 읽고 누르는 사이에 수입 틱이 끼면 알림 금액이 달라진다 → 장면 갱신(틱)을 멈춘 채 읽고 누른다.
+  // 고용 버튼은 누르는 순간의 돈으로 미리 검사해 바로 알림을 띄운다 (틱이 돌지 않아도 됨).
+  // pause()·resume()은 ScenePlugin을 돌려주므로 중괄호로 감싸 아무것도 돌려주지 않는다 — Phaser 객체 그래프를 직렬화하느라
+  // 한 번에 약 10초씩 페이지가 멈췄다 (테스트가 느려 시간 초과로 실패한 주원인).
+  await inScene(
+    page,
+    (s) => {
+      s.scene.pause();
+    },
+    null,
+  );
   const gold = await inScene(page, (s) => s.match.state.gold, null);
+  expect(gold).toBeLessThan(300);
   await hire.click();
   await expect(page.locator('.toast', { hasText: `${300 - gold}원이 더 필요해요` })).toBeVisible();
+  expect(await inScene(page, (s) => ({ gold: s.match.state.gold, workers: s.match.state.workers }), null)).toEqual({ gold, workers: 3 });
+  await inScene(
+    page,
+    (s) => {
+      s.scene.resume();
+    },
+    null,
+  );
   // 돈을 넣고 10명까지 → 👷 최대 (금색), 누르면 "일꾼이 꽉 찼어요 (10/10)"
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: '돈 추가 (디버그)' }).click();
   for (let i = 3; i < 10; i++) {
@@ -182,7 +215,6 @@ test('일꾼: [👷 300원] → 👷 1/10·돈 −300, 5초마다 +5원 / 모자
 });
 
 test('보스: 10단계 박쥐 여왕 — 보스 막대(이름표·체력·남은 초) + 큰 보스 그림, 잡으면 +200원 + 카드 3장 고르기 창 → 고르면 효과', async ({ page }) => {
-  test.setTimeout(60_000);
   const errors = collectErrors(page);
   await start(page);
   expect(await skipTo(page, 10)).toBe(10);
@@ -249,7 +281,6 @@ test('보스 제한 시간: 10단계 보스를 60초 안에 못 잡으면 패배
 });
 
 test('투명 몹: 감지 없이 처음 나오면 경고 배너, 정찰병 감지 오라 안에서는 보라 외곽선 (화면 외곽선 수 = sim 드러난 투명 몹 수)', async ({ page }) => {
-  test.setTimeout(60_000);
   const errors = collectErrors(page);
   await start(page);
   await skipTo(page, 35);
@@ -280,7 +311,6 @@ test('투명 몹: 감지 없이 처음 나오면 경고 배너, 정찰병 감지
 });
 
 test('편대 예고: 45단계 10초 전 "⚠ 다음 단계: 돌파 편대 — 보석 골렘 + 암흑 고블린 떼!" 배너 + 대응 힌트', async ({ page }) => {
-  test.setTimeout(60_000);
   const errors = collectErrors(page);
   await start(page);
   await skipTo(page, 44);
@@ -368,7 +398,6 @@ test('승급의 축복을 정보 패널 [⬆ 승급]으로: 고르기 창이 뜨
 });
 
 test('킹 슬라임(20단계) 분열: 조각 두 개가 같은 크기로 그려진다 (원래 보스 몸만 크게 남던 것, 검토 반영)', async ({ page }) => {
-  test.setTimeout(90_000);
   const errors = collectErrors(page);
   await start(page);
   expect(await skipTo(page, 20)).toBe(20);
@@ -402,7 +431,6 @@ test('킹 슬라임(20단계) 분열: 조각 두 개가 같은 크기로 그려�
 });
 
 test('혼돈의 용(60단계): 15초마다 타워 3개 기절 → 기절한 타워만 잿빛 (화면 = sim)', async ({ page }) => {
-  test.setTimeout(60_000);
   const errors = collectErrors(page);
   await start(page);
   await place(page, [
@@ -425,7 +453,7 @@ test('혼돈의 용(60단계): 15초마다 타워 3개 기절 → 기절한 타�
 });
 
 test('M4 스크린샷: 40단계 망령 군주 — 줄어드는 보스 막대 + 정찰병이 드러낸 보라 외곽선 + 투명 유령 + 일꾼 3명', async ({ page }) => {
-  test.setTimeout(120_000);
+  test.slow(); // 긴 흐름 + 스크린샷 → 기본 제한의 3배
   const errors = collectErrors(page);
   await start(page, '?debug=1&seed=7');
   await page.getByRole('button', { name: '돈 추가 (디버그)' }).click();
@@ -482,6 +510,12 @@ test('M4 스크린샷: 40단계 망령 군주 — 줄어드는 보스 막대 + �
   expect(await inScene(page, (s) => s.revealedOutlineCount, null)).toBeGreaterThan(0);
   await expect(page.getByTestId('hud-boss-name')).toHaveText('그림자 군단 · 대장 「망령 군주」');
   await shot(page, 'M4-boss', 'M4');
-  await inScene(page, (s) => s.scene.resume(), null);
+  await inScene(
+    page,
+    (s) => {
+      s.scene.resume(); // 돌려주는 값(ScenePlugin)을 버린다 — 직렬화하면 페이지가 10초쯤 멈춘다
+    },
+    null,
+  );
   expect(errors).toEqual([]);
 });

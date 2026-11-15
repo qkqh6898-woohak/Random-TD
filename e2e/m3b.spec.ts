@@ -114,7 +114,6 @@ async function shot(page: Page, name: string, docsName?: string): Promise<void> 
 }
 
 test('상태 이상 표시: 얼음·진흙·화염 타워가 맞힌 몹에 색·머리 위 아이콘이 생기고, 멈추면 화면 색 = sim 상태', async ({ page }) => {
-  test.setTimeout(60_000);
   const errors = collectErrors(page);
   await start(page);
   await place(page, [
@@ -146,7 +145,6 @@ test('상태 이상 표시: 얼음·진흙·화염 타워가 맞힌 몹에 색·
 });
 
 test('진흙 웅덩이·소환 병사: 화면 수 = sim 수, 병사는 경로를 거슬러 걷는다 (진행도 감소)', async ({ page }) => {
-  test.setTimeout(60_000);
   const errors = collectErrors(page);
   await start(page);
   await place(page, [
@@ -216,7 +214,6 @@ test('평소 오라 빛: 고르지 않아도 대장장이(3×3)·학자(자기 �
 });
 
 test('정보 패널: 맵 가운데 줄(5·6줄) 타워를 골라도 특색 줄이 보인다 — 보유·대상·관통 줄을 먼저 접는다 (검토 반영)', async ({ page }) => {
-  test.setTimeout(60_000);
   const errors = collectErrors(page);
   await start(page);
   const cells = await inScene(page, (s) => [5, 6, 7].map((y) => s.match.map.buildable.find(([, yy]) => yy === y)!), null);
@@ -251,7 +248,6 @@ test('정보 패널: 맵 가운데 줄(5·6줄) 타워를 골라도 특색 줄�
 });
 
 test('특색 연출: 연금술사 10초 +20원, 운석·시간 정지·주사위 연출이 뜬다', async ({ page }) => {
-  test.setTimeout(60_000);
   const errors = collectErrors(page);
   await start(page);
   await place(page, [
@@ -273,7 +269,7 @@ test('특색 연출: 연금술사 10초 +20원, 운석·시간 정지·주사위
 });
 
 test('M3b 스크린샷: 상태 이상 아이콘·진흙 웅덩이·소환 병사·대장장이 오라 범위', async ({ page }) => {
-  test.setTimeout(120_000);
+  test.slow(); // 긴 흐름 + 스크린샷 → 기본 제한의 3배
   const errors = collectErrors(page);
   await start(page, '?debug=1&seed=7');
   // 화력이 약한 조합 → 몹이 오래 살아 상태 이상이 여러 마리에 보인다
@@ -326,6 +322,12 @@ test('M3b 스크린샷: 상태 이상 아이콘·진흙 웅덩이·소환 병사
   );
   await page.waitForTimeout(100);
   await shot(page, 'M3b-abilities', 'M3b');
-  await inScene(page, (s) => (s as unknown as { scene: { resume(): void } }).scene.resume(), null);
+  await inScene(
+    page,
+    (s) => {
+      (s as unknown as { scene: { resume(): void } }).scene.resume(); // 돌려주는 값(ScenePlugin)을 버린다 — 직렬화하면 페이지가 10초쯤 멈춘다
+    },
+    null,
+  );
   expect(errors).toEqual([]);
 });

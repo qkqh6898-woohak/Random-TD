@@ -9,9 +9,6 @@ import { mkdirSync } from 'node:fs';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 
-// 시트를 여러 번 열고 버튼을 수십 번 누르는 흐름이라 헤드리스 Chromium(초당 10프레임 남짓)에서 30초에 빠듯하다
-test.describe.configure({ timeout: 90_000 });
-
 interface MobLite {
   id: number;
   mob: string;
