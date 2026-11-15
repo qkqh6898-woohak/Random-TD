@@ -10,7 +10,8 @@
 import { BOSS_CLEARED, bossNameplate, bossTag } from '../messages';
 import type { HudConfig } from '../../data/load';
 import type { Mob } from '../../sim/entities/Mob';
-import type { MatchRules } from '../../sim/rules';
+import type { Deck, MatchRules } from '../../sim/rules';
+import { DECK_GRADES } from '../../data/deck';
 import type { MatchState } from '../../sim/state';
 import { TICK_HZ } from '../../sim/World';
 
@@ -21,8 +22,6 @@ export interface HudInput {
   mobCount: number;
   tick: number;
   speed: number;
-  /** 캠페인 테마 보스 배치표 (단계 → 보스 이름). 무한 모드는 없음 */
-  bossNames?: Readonly<Record<string, string>>;
   /** 판 위 타워 수 (생략하면 0) */
   towerCount?: number;
   /** 배치 칸 수 (생략하면 0) */
@@ -153,8 +152,35 @@ export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
 }
 
 /**
+ * 덱에 든 감지 타워 이름 (투명 몹 경고 둘째 줄, 검토 반영): 덱 등급 순(노말 → 레전드)·덱 안 순서, towers.json detect가 'none'이 아닌 것.
+ */
+export function deckDetectNames(deck: Deck, towers: readonly { id: string; name: string; detect?: string }[]): string[] {
+  const byId = new Map(towers.map((t) => [t.id, t]));
+  const out: string[] = [];
+  for (const g of DECK_GRADES) {
+    for (const id of deck[g] ?? []) {
+      const t = byId.get(id);
+      if (t && t.detect !== undefined && t.detect !== 'none') out.push(t.name);
+    }
+  }
+  return out;
+}
+
+/**
+ * 군단 id → 이름 (보스 이름표 앞부분): enemies.json hierarchy.legions[].name + 군주 직속(hierarchy.lord.guardName, id 'lord').
+ * 이름이 없으면 id 그대로. 코드에 군단 이름을 박지 않는다 (검토 반영).
+ */
+export function legionNameMap(hierarchy: Readonly<Record<string, unknown>>): Record<string, string> {
+  const h = hierarchy as { lord?: { guardName?: string }; legions?: Record<string, { name?: string }> };
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(h.legions ?? {})) out[k] = v.name ?? k;
+  out.lord = h.lord?.guardName ?? 'lord';
+  return out;
+}
+
+/**
  * 살아 있는 보스의 HUD 입력 (보스 막대): 이름·이름표 앞부분('질풍 군단 · 대장')·조각 체력 합·처음 체력·남은 제한 틱.
- * 보스가 없으면 null. 군단 이름은 enemies.json hierarchy (lord = '군주 직속').
+ * 보스가 없으면 null. 군단 이름은 legionNameMap (enemies.json hierarchy).
  */
 export function bossHudInput(
   rules: Pick<MatchRules, 'bosses'>,
@@ -201,7 +227,8 @@ export function mergeReadyText(groups: number): string {
  * 아래 띠: 타워 수와 소환 안내 (UI.md 4.3 '빈 배치 칸 터치 = 즉시 소환').
  * M4: 같은 줄에 [👷 300원] 고용 버튼이 생겨 안내는 늘 짧게 '소환 · 100원' (M2의 '빈 칸을 눌러 소환 · 100원'은 412px에서 잘린다).
  * @param short 아래 띠에 [⬆ 승급 가능 n]이 보일 때: 안내를 비운다 — 고용·승급 버튼과 같은 줄이라 '소환 · 100원'도 잘린다
- *   (승급 버튼 자체가 할 일을 알려 준다)
+ *   (승급 버튼 자체가 할 일을 알려 준다). 칸이 가득 찼을 때도 같다: '빈 칸이 없어요'는 승급 버튼이 없을 때만
+ *   (검토 반영 — 가득 찬 판 후반에 '빈 칸…'으로 잘렸다. 가득 찬 것은 옆의 '71/71'이 보여 준다)
  */
 export function summonInfo(
   gold: number,
@@ -213,7 +240,7 @@ export function summonInfo(
   const full = buildableCount > 0 && towerCount >= buildableCount;
   return {
     towers: `${towerCount}/${buildableCount}`,
-    summonHint: full ? '빈 칸이 없어요' : short ? '' : `소환 · ${withCommas(cost)}원`,
+    summonHint: short ? '' : full ? '빈 칸이 없어요' : `소환 · ${withCommas(cost)}원`,
     summonAffordable: !full && gold >= cost,
   };
 }

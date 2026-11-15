@@ -94,7 +94,7 @@ for f, info in T["factions"].items():
 for a, b, _ in T["rivals"]:
     if a not in T["factions"] or b not in T["factions"]: errors.append(f"앙숙 쌍 {a}-{b} 오류")
 if len(C["themes"]) != 10: errors.append("캠페인 테마 수가 10이 아님")
-H = E["hierarchy"]; LEG = {k: v["name"] for k, v in H["legions"].items()} | {"lord": "군주 직속"}
+H = E["hierarchy"]; LEG = {k: v["name"] for k, v in H["legions"].items()} | {"lord": H["lord"]["guardName"]}
 for m in E["mobs"]:
     if not m.get("legion"): errors.append(f"몹 {m['name']} 소속 군단 없음")
 capids = {c["id"] for c in H["captains"]}
@@ -239,7 +239,7 @@ def hierarchy_table():
     rows = ["| 군단 | 특징 | 군단장 (4천왕) | 대장 | 하수인 |", "|------|------|------|------|------|"]
     for k, v in H["legions"].items():
         rows.append(f"| **{v['name']}** | {v['theme']} | {v['commander']['name']} | {', '.join(cap[c] for c in v['captains'])} | {', '.join(names[m] for m in v['minions'])} |")
-    rows.append(f"| **군주 직속** | 군주의 친위 | — | {', '.join(cap[c] for c in H['lord']['guard'])} | — |")
+    rows.append(f"| **{H['lord']['guardName']}** | 군주의 친위 | — | {', '.join(cap[c] for c in H['lord']['guard'])} | — |")
     return "\n".join(rows)
 
 def commander_table():

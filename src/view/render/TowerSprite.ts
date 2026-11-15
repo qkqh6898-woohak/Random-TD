@@ -42,6 +42,8 @@ export interface TowerArt {
 
 export class TowerSprite {
   readonly id: number;
+  /** 그림을 만든 타워 종류 (towers.json id). sim에서 같은 엔티티의 종류가 바뀌면(승급의 축복 [바꾸기]) TowerLayer가 다시 만든다 */
+  readonly towerType: string;
   private readonly root: Phaser.GameObjects.Container;
   private readonly figure: Phaser.GameObjects.Image;
   private readonly scale: number;
@@ -67,6 +69,7 @@ export class TowerSprite {
 
   constructor(scene: Phaser.Scene, tower: Tower, layout: MapLayout, art: TowerArt) {
     this.id = tower.id;
+    this.towerType = tower.tower;
     const look = art.look(tower.tower);
     const color = art.factionColor(look.faction) ?? SPECIAL_FACTION_COLORS[look.faction] ?? '#888888';
     const figKey = ensureTowerTexture(scene, look, color);
@@ -169,6 +172,11 @@ export class TowerSprite {
     return this.dragAt !== null;
   }
 
+  /** 끄는 중이면 손가락 위치 (그림을 다시 만들 때 이어 받기) */
+  get dragPos(): { x: number; y: number } | null {
+    return this.dragAt;
+  }
+
   /** 지금 그려진 발밑 위치 (화면 px) — E2E·끌기 확인용. */
   get footPx(): { x: number; y: number } {
     return { x: this.root.x, y: this.root.y };
@@ -212,7 +220,16 @@ export class TowerLayer {
     for (const t of towers) {
       seen.add(t.id);
       let sprite = this.sprites.get(t.id);
-      if (!sprite) {
+      if (sprite && sprite.towerType !== t.tower) {
+        // 같은 엔티티의 타워 종류가 바뀜 (승급의 축복 [바꾸기] — sim pickMerge는 id·칸을 그대로 두고 종류만 바꾼다):
+        // 새 그림(텍스처·공격 동작 간격)으로 다시 만들고 등장 동작. 예전엔 위치만 따라가 옛 그림이 남았다 (검토 반영)
+        const drag = sprite.dragPos;
+        sprite.destroy();
+        sprite = new TowerSprite(this.scene, t, this.layout, this.art);
+        this.sprites.set(t.id, sprite);
+        if (drag) sprite.setDrag(drag, timeMs);
+        sprite.appear(timeMs);
+      } else if (!sprite) {
         sprite = new TowerSprite(this.scene, t, this.layout, this.art);
         this.sprites.set(t.id, sprite);
         if (this.pendingAppear.delete(t.id)) sprite.appear(timeMs);
@@ -258,6 +275,11 @@ export class TowerLayer {
     let n = 0;
     for (const s of this.sprites.values()) if (s.dragging) n++;
     return n;
+  }
+
+  /** 그 타워 엔티티의 지금 그림이 어떤 타워 종류인가 (E2E가 sim 타워 종류와 비교). 그림이 없으면 null */
+  towerTypeOf(id: number): string | null {
+    return this.sprites.get(id)?.towerType ?? null;
   }
 
   /** 그 타워 종류의 캐릭터 텍스처 키 (없으면 굽는다) — 정보 패널 초상화용. */

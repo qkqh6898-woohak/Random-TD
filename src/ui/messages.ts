@@ -75,6 +75,14 @@ export function bossNameplate(tag: string, name: string): string {
   return `${tag} 「${name}」`;
 }
 
+/**
+ * 보스 등장 배너 (한 줄): '👑 10단계 · 질풍 군단 · 대장 「박쥐 여왕」'. 같은 프레임의 'N단계 보스 단계!' 알림을 대신한다
+ * (검토 반영: 이름표 배너와 단계 알림이 같이 떠 두 번째 알림이 맵 0~1줄 = 보스가 나오는 시작점을 가렸다).
+ */
+export function bossArrivalText(stageLabel: string, tag: string, name: string): string {
+  return `👑 ${stageLabel} · ${bossNameplate(tag, name)}`;
+}
+
 /** 보스 처치 */
 export function bossKillText(name: string, reward: number): string {
   return `👑 ${name} 처치! +${reward}원`;
@@ -85,6 +93,14 @@ export const BOSS_CLEARED = '👑 보스 처치! 남은 시간은 휴식';
 
 /** 투명 몹 첫 등장 + 감지 없음 (ENEMIES.md 5장, UI.md 8장) */
 export const INVISIBLE_WARN = '투명 몹 출현! 감지 타워가 필요해요 👁';
+
+/**
+ * 투명 몹 경고 둘째 줄: 내 덱에 있는 감지 타워 이름 (towers.json detect가 none이 아닌 것, 덱 등급 순).
+ * 덱에 하나도 없으면 일반 문구. 예전엔 '정찰병·저격수·그림자 암살자'를 코드에 박아 기본 덱에 없는 정찰병까지 추천했다 (검토 반영).
+ */
+export function invisibleTip(detectNames: readonly string[]): string {
+  return detectNames.length > 0 ? `💡 덱의 감지 타워: ${detectNames.join('·')}` : '💡 덱에 감지 타워를 넣어 보세요';
+}
 
 /** 편대 예고 배너 (UI.md 8장): '⚠ 다음 단계: 돌파 편대 — 보석 골렘 + 암흑 고블린 떼!' */
 export function formationBanner(name: string, banner: string): string {

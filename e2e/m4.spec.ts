@@ -12,6 +12,7 @@ interface MobLite {
   id: number;
   mob: string;
   boss: boolean;
+  part: boolean;
   hp: number;
   maxHp: number;
   invisible: boolean;
@@ -43,6 +44,11 @@ type SceneLike = {
   revealedOutlineCount: number;
   stunnedTowerCount: number;
   choiceKind: string | null;
+  choiceCollapsed: boolean | null;
+  panelOpen: boolean;
+  layout: { tile: number; originX: number; originY: number };
+  drawnTowerType(id: number): string | null;
+  drawnMobScale(id: number): number | null;
   debugFastForward(n: number): number;
   scene: { pause(): void; resume(): void };
 };
@@ -98,6 +104,19 @@ async function skipTo(page: Page, stage: number): Promise<number> {
     },
     stage,
   );
+}
+
+/** 칸 (tx, ty) 가운데의 화면 좌표 (게임 1080 기준 → 무대 CSS px + 캔버스 위치). */
+async function tileCenter(page: Page, tx: number, ty: number): Promise<{ x: number; y: number }> {
+  const L = await inScene(page, (s) => s.layout, null);
+  const box = (await page.locator('canvas').boundingBox())!;
+  const k = box.width / 1080;
+  return { x: box.x + (L.originX + (tx + 0.5) * L.tile) * k, y: box.y + (L.originY + (ty + 0.5) * L.tile) * k };
+}
+
+async function tapTile(page: Page, tx: number, ty: number): Promise<void> {
+  const p = await tileCenter(page, tx, ty);
+  await page.touchscreen.tap(p.x, p.y);
 }
 
 async function ff(page: Page, ticks: number): Promise<void> {
@@ -170,8 +189,11 @@ test('보스: 10단계 박쥐 여왕 — 보스 막대(이름표·체력·남은
   await expect(page.getByTestId('hud-boss-name')).toHaveText('질풍 군단 · 대장 「박쥐 여왕」');
   await expect(page.getByTestId('hud-boss-time')).toHaveText(/^\d+초$/);
   expect(await page.getByTestId('hud-boss-hp').evaluate((el) => (el as HTMLElement).style.width)).toBe('100%');
-  await expect(page.locator('.toast', { hasText: '박쥐 여왕' }).first()).toBeVisible();
+  // 보스 등장 = 한 줄 배너 하나 ('N단계 보스 단계!' 알림을 따로 띄우지 않는다 — 맵 0~1줄을 가리던 것, 검토 반영)
+  await expect(page.getByTestId('banner-boss')).toHaveText('👑 10단계 · 질풍 군단 · 대장 「박쥐 여왕」');
+  await expect(page.locator('.toast', { hasText: '보스 단계!' })).toHaveCount(0);
   await page.getByRole('button', { name: '일시정지' }).click();
+  await expect(page.locator('.layer-toast > *')).toHaveCount(0); // 일시정지 메뉴 위에도 알림이 남지 않는다 (검토 반영)
   await page.waitForTimeout(100);
   const drawn = await inScene(page, (s) => ({ sim: s.match.mobs().length, drawn: s.renderedMobCount }), null);
   expect(drawn.drawn).toBe(drawn.sim);
@@ -193,6 +215,17 @@ test('보스: 10단계 박쥐 여왕 — 보스 막대(이름표·체력·남은
   await expect(panel).toBeHidden();
   await expect(page.getByTestId('choice-reopen')).toBeVisible();
   expect(await inScene(page, (s) => s.match.state.cardOffers.length, null)).toBe(1);
+  // 알약은 아래 띠 안 (맵 칸을 덮어 소환 탭을 가로채지 않는다 — 검토 반영: 예전엔 (6~8, 10) 칸 위)
+  const pill = (await page.getByTestId('choice-reopen').boundingBox())!;
+  const band = (await page.locator('.hud-bottom').boundingBox())!;
+  expect(pill.y).toBeGreaterThanOrEqual(band.y);
+  expect(pill.y + pill.height).toBeLessThanOrEqual(band.y + band.height + 0.5);
+  for (const tx of [6, 7, 8]) {
+    const c = await tileCenter(page, tx, 10);
+    expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.tagName, [c.x, c.y])).toBe('CANVAS');
+  }
+  await expect(page.getByTestId('hud-hint')).toBeHidden(); // 알약이 있는 동안 소환 안내는 숨김 (아래 띠가 넘치지 않게)
+  expect(await page.locator('.hud-bottom').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
   await page.getByTestId('choice-reopen').click();
   await expect(panel).toBeVisible();
   await page.getByTestId('choice-0').click();
@@ -209,6 +242,9 @@ test('보스 제한 시간: 10단계 보스를 60초 안에 못 잡으면 패배
   await ff(page, 1250);
   await expect(page.getByText('10단계 보스를 제한 시간 안에 잡지 못했어요')).toBeVisible();
   expect(await inScene(page, (s) => [s.match.state.phase, s.match.state.defeatReason, s.match.state.stage], null)).toEqual(['defeat', 'bossTime', 10]);
+  // 패배 화면 위에 알림·배너가 남지 않는다 (알림 층이 화면 층보다 위라 '패배' 제목을 가리던 것, 검토 반영)
+  await expect(page.locator('.layer-toast > *')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /패배/ })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -219,6 +255,9 @@ test('투명 몹: 감지 없이 처음 나오면 경고 배너, 정찰병 감지
   await skipTo(page, 35);
   await ff(page, 900); // 투명 도둑은 무리 뒤쪽 (15번째 칸 이후)
   await expect(page.getByTestId('banner-shadow')).toContainText('투명 몹 출현! 감지 타워가 필요해요');
+  // 둘째 줄은 내 덱(기본 덱)의 감지 타워만 — 기본 덱에 없는 정찰병은 추천하지 않는다 (검토 반영)
+  await expect(page.getByTestId('banner-shadow')).toContainText('💡 덱의 감지 타워: 저격수·그림자 암살자');
+  await expect(page.getByTestId('banner-shadow')).not.toContainText('정찰병');
   await shot(page, 'M4-invisible-warn');
   expect(await inScene(page, (s) => s.match.mobs().filter((m) => m.invisible).length, null)).toBeGreaterThan(0);
   // 정찰병 2개 (위·아래 경로)
@@ -249,6 +288,18 @@ test('편대 예고: 45단계 10초 전 "⚠ 다음 단계: 돌파 편대 — �
   const banner = page.getByTestId('banner-warn');
   await expect(banner).toContainText('⚠ 다음 단계: 돌파 편대 — 보석 골렘 + 암흑 고블린 떼!');
   await expect(banner).toContainText('진흙 둔화 + 광역 추천');
+  // 제목은 한 줄 (넘치면 글자를 줄여 맞춘다) → 배너는 제목 + 힌트 두 줄 (예전엔 412px에서 제목이 이름 중간에서 꺾여 3줄, 검토 반영)
+  const lines = await banner.evaluate((el) =>
+    Array.from(el.children).map((c) => {
+      const line = c as HTMLElement;
+      const lh = parseFloat(getComputedStyle(line).fontSize) * 1.2;
+      return { rows: Math.round(line.getBoundingClientRect().height / lh), fits: line.scrollWidth <= el.clientWidth };
+    }),
+  );
+  expect(lines).toEqual([
+    { rows: 1, fits: true },
+    { rows: 1, fits: true },
+  ]);
   await shot(page, 'M4-formation-banner');
   expect(errors).toEqual([]);
 });
@@ -273,6 +324,80 @@ test('승급의 축복 카드: 승급하면 "결과 2개 중 선택" 창 → [�
   await expect(panel).toBeHidden();
   const t = await inScene(page, (s, id) => s.match.towers().find((x) => x.id === id)?.tower, pick.id);
   expect(t).toBe(pick.alt);
+  // 맵 그림도 새 타워로 (예전엔 sim·패널만 바뀌고 맵에는 원래 결과 그림이 남았다 — 검토 반영)
+  await expect.poll(() => inScene(page, (s, id) => s.drawnTowerType(id), pick.id)).toBe(pick.alt);
+  expect(errors).toEqual([]);
+});
+
+test('승급의 축복을 정보 패널 [⬆ 승급]으로: 고르기 창이 뜨면 패널은 닫힌다 / 창이 펼쳐진 동안 타워를 누르면 창은 알약으로 접히고 패널만 (바텀 시트 하나)', async ({ page }) => {
+  const errors = collectErrors(page);
+  await start(page);
+  const idx = await inScene(page, (s) => s.match.rules.cards.findIndex((c) => c.id === 'mergeBless'), null);
+  await inScene(page, (s, c) => s.match.world.enqueue({ type: 'debugCard', c }), idx);
+  await place(page, [
+    [0, 0, 'goblin'],
+    [1, 0, 'goblin'],
+    [2, 0, 'goblin'],
+    [6, 0, 'archer'],
+  ]);
+  await tapTile(page, 0, 0);
+  await expect(page.getByTestId('tower-panel')).toBeVisible();
+  await page.locator('.tp-merge').click();
+  const choice = page.getByTestId('choice-merge');
+  await expect(choice).toBeVisible();
+  // 패널은 닫힘 → 창 아래로 패널의 승급 버튼이 눌리지 않는다
+  await expect(page.locator('.layer-panel > *')).toHaveCount(0);
+  expect(await inScene(page, (s) => s.panelOpen, null)).toBe(false);
+  await shot(page, 'M4-merge-pick-panel');
+  // 창이 펼쳐진 동안 위쪽 타워 탭 → 창은 알약으로, 패널만 보인다
+  await tapTile(page, 6, 0);
+  await expect(page.getByTestId('tower-panel')).toBeVisible();
+  await expect(choice).toBeHidden();
+  expect(await inScene(page, (s) => s.choiceCollapsed, null)).toBe(true);
+  // 패널을 닫고 알약을 누르면 창이 다시 펼쳐진다 (선택은 그대로)
+  await page.getByRole('button', { name: '닫기' }).click();
+  await expect(page.getByTestId('tower-panel')).toBeHidden();
+  await page.getByTestId('choice-reopen').click();
+  await expect(choice).toBeVisible();
+  expect(await inScene(page, (s) => s.panelOpen, null)).toBe(false);
+  const pick = await inScene(page, (s) => s.match.state.mergePicks[0]!, null);
+  await page.getByTestId('choice-1').click();
+  await expect(choice).toBeHidden();
+  await expect.poll(() => inScene(page, (s, id) => s.drawnTowerType(id), pick.id)).toBe(pick.alt);
+  expect(errors).toEqual([]);
+});
+
+test('킹 슬라임(20단계) 분열: 조각 두 개가 같은 크기로 그려진다 (원래 보스 몸만 크게 남던 것, 검토 반영)', async ({ page }) => {
+  test.setTimeout(90_000);
+  const errors = collectErrors(page);
+  await start(page);
+  expect(await skipTo(page, 20)).toBe(20);
+  expect(await inScene(page, (s) => s.match.state.bossId, null)).toBe('kingslime');
+  await place(page, innerRing(['archmage', 'dragoncaller', 'warlord', 'fortuna']));
+  // 분열(보스 조각 2)이 보일 때까지 조금씩 빨리 감기
+  const split = await inScene(
+    page,
+    (s) => {
+      for (let i = 0; i < 4000; i++) {
+        s.debugFastForward(1);
+        const parts = s.match.mobs().filter((m) => m.boss);
+        if (parts.length === 2) return true;
+        if (s.match.state.bossId === '') return false;
+      }
+      return false;
+    },
+    null,
+  );
+  expect(split).toBe(true);
+  await page.getByRole('button', { name: '일시정지' }).click();
+  await page.waitForTimeout(150);
+  const scales = await inScene(page, (s) => s.match.mobs().filter((m) => m.boss).map((m) => ({ part: m.part, drawn: s.drawnMobScale(m.id) })), null);
+  expect(scales).toHaveLength(2);
+  expect(scales.every((x) => x.part)).toBe(true);
+  expect(scales[0]!.drawn).not.toBeNull();
+  expect(scales[0]!.drawn).toBe(scales[1]!.drawn);
+  expect(scales[0]!.drawn).toBeCloseTo(0.8, 5);
+  await shot(page, 'M4-kingslime-split');
   expect(errors).toEqual([]);
 });
 

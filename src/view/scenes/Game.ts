@@ -55,13 +55,14 @@ import {
   FORTUNA_RARE,
   INVISIBLE_WARN,
   LUCKY_SUMMON,
+  bossArrivalText,
   bossKillText,
-  bossNameplate,
   bossTag,
   cardPickedText,
   formationBanner,
   godDescends,
   hireFailText,
+  invisibleTip,
   mergeFailText,
   mergeReadyToast,
 } from '../../ui/messages';
@@ -70,7 +71,7 @@ import { cardChoiceModel, mergeChoiceModel } from '../../ui/panels/choiceModel';
 import { createTowerPanel, type TowerPanelView } from '../../ui/panels/TowerPanel';
 import { buildTowerPanelModel } from '../../ui/panels/towerPanelModel';
 import { createHud, type HudView } from '../../ui/hud/Hud';
-import { bossHudInput, buildHudModel, defeatText, stageToastText } from '../../ui/hud/hudModel';
+import { bossHudInput, buildHudModel, deckDetectNames, defeatText, formatStage, legionNameMap, stageToastText } from '../../ui/hud/hudModel';
 import { availableSpeeds, nextSpeed } from '../../ui/hud/speed';
 import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
 import { createPauseMenu } from '../../ui/screens/PauseMenu';
@@ -204,7 +205,6 @@ export class GameScene extends Phaser.Scene {
   /** 만든 승급 연출 수 (E2E 확인용) */
   private mergeFxCount = 0;
   private sceneData: Required<GameSceneData> = { seed: 0, mode: 'infinite', theme: 1 };
-  private bossNames: Readonly<Record<string, string>> | undefined;
   private selectionLayer!: SelectionLayer;
   /** 고른 타워 (정보 패널) 엔티티 id */
   private selectedId: number | null = null;
@@ -236,7 +236,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(data: GameSceneData): void {
-    const { game: config, campaign } = this.ctx.data;
+    const { game: config } = this.ctx.data;
     this.sceneData = { seed: data?.seed ?? 0, mode: data?.mode ?? 'infinite', theme: data?.theme ?? 1 };
     this.match = createMatch(this.ctx.data, {
       seed: this.sceneData.seed,
@@ -267,11 +267,8 @@ export class GameScene extends Phaser.Scene {
     this.mergeReadyCount = 0;
     this.panelPlaceKey = '';
     this.choice = null;
-    const legionsData = (this.ctx.data.enemies.hierarchy as { legions?: Record<string, { name?: string }> }).legions ?? {};
-    this.legionNames = { lord: '군주 직속', ...Object.fromEntries(Object.entries(legionsData).map(([k, v]) => [k, v.name ?? k])) };
+    this.legionNames = legionNameMap(this.ctx.data.enemies.hierarchy);
     this.towerNames = new Map(this.ctx.data.towers.towers.map((t) => [t.id, t.name]));
-    this.bossNames =
-      this.sceneData.mode === 'campaign' ? campaign.themes.find((t) => t.theme === this.sceneData.theme)?.bossSchedule : undefined;
 
     // HUD를 먼저 띄워 높이를 잰 뒤 그 아래에 맵을 놓는다
     this.hud = createHud({
@@ -738,6 +735,8 @@ export class GameScene extends Phaser.Scene {
     const t = this.match.world.entities.get(id);
     if (!t || t.kind !== 'tower') return;
     this.selectedId = id;
+    // 바텀 시트는 하나만: 펼친 고르기 창은 알약으로 접는다 (창 뒤에 패널이 열려 ✕가 가려지던 것, 검토 반영)
+    if (this.choice && !this.choice.collapsed) this.choice.collapse();
     if (!this.panel) {
       this.panel = createTowerPanel({
         onMerge: () => this.sendMerge('merge'),
@@ -950,6 +949,8 @@ export class GameScene extends Phaser.Scene {
   private handleEvents(time: number): void {
     // 한 프레임에 단계가 여러 번 바뀌면(빨리 감기·높은 배속) 마지막 단계 알림 하나만
     let lastStage: { stage: number; boss: boolean } | null = null;
+    /** 이번 프레임에 보스 등장 배너를 띄웠다 → 'N단계 보스 단계!' 알림은 생략 (배너가 단계까지 보여 준다) */
+    let bossArrived = false;
     let defeated = false;
     const now = this.match.tick;
     const frameStart = this.frameStartTick;
@@ -1136,7 +1137,12 @@ export class GameScene extends Phaser.Scene {
         case 'bossSpawn': {
           if (!eventFxVisible('rare', ev.tick, now, frameStart)) break;
           const b = this.match.rules.bosses.get(String(ev.boss));
-          if (b) this.ctx.ui.banner(bossNameplate(bossTag(this.legionNames[b.legion] ?? b.legion, b.rank), b.name), null, 2600, 'boss');
+          if (b) {
+            const { mode, theme } = this.match.state;
+            const label = formatStage({ mode, theme, stage: Number(ev.stage ?? this.match.state.stage) });
+            this.ctx.ui.banner(bossArrivalText(label, bossTag(this.legionNames[b.legion] ?? b.legion, b.rank), b.name), null, 2600, 'boss');
+            bossArrived = true;
+          }
           this.cameras.main.shake(220, 0.004);
           this.noteFx('bossSpawn');
           break;
@@ -1173,7 +1179,7 @@ export class GameScene extends Phaser.Scene {
           break;
         }
         case 'invisibleWarn':
-          if (eventFxVisible('rare', ev.tick, now, frameStart)) this.ctx.ui.banner(INVISIBLE_WARN, '정찰병·저격수·그림자 암살자가 투명 몹을 찾아요', 3600, 'shadow');
+          if (eventFxVisible('rare', ev.tick, now, frameStart)) this.ctx.ui.banner(INVISIBLE_WARN, invisibleTip(this.detectNames()), 3600, 'shadow');
           this.noteFx('invisibleWarn');
           break;
         case 'cardPick': {
@@ -1203,7 +1209,7 @@ export class GameScene extends Phaser.Scene {
         }
       }
     }
-    if (lastStage) {
+    if (lastStage && !(lastStage.boss && bossArrived)) {
       const { mode, theme } = this.match.state;
       this.ctx.ui.toast(stageToastText({ mode, theme, stage: lastStage.stage, bossStage: lastStage.boss }));
     }
@@ -1239,6 +1245,8 @@ export class GameScene extends Phaser.Scene {
     this.cancelPress(this.time.now);
     this.closePanel();
     this.closeChoice();
+    // 알림 층은 패배 화면보다 위라, 남아 있는 배너·알림이 '패배' 제목을 가렸다 (검토 반영)
+    this.ctx.ui.clearToasts();
     if (this.paused) this.paused = false;
     this.clock.speed = 0;
     const text = defeatText(this.match.state);
@@ -1260,6 +1268,7 @@ export class GameScene extends Phaser.Scene {
     this.cancelPress(this.time.now);
     this.resumeSpeed = this.clock.speed;
     this.clock.speed = 0;
+    this.ctx.ui.clearToasts();
     this.ctx.ui.show(
       'screen',
       createPauseMenu({
@@ -1314,8 +1323,17 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.choice?.key === model.key) return;
     this.closeChoice();
-    this.choice = createChoicePanel(model, onPick);
+    // 바텀 시트는 하나만: 고르기 창을 열 때 타워 정보 패널을 닫는다 (승급의 축복을 패널 [승급]으로 쓰면 두 시트가 겹치고
+    // 창 아래로 패널의 승급 버튼이 눌리던 것, 검토 반영). 알약으로 다시 펼칠 때도 닫는다
+    this.closePanel();
+    this.choice = createChoicePanel(model, onPick, { pillHost: this.hud.choiceSlot, onExpand: () => this.closePanel() });
     this.ctx.ui.show('modal', this.choice);
+  }
+
+  /** 로컬 플레이어 덱의 감지 타워 이름 (투명 몹 경고 둘째 줄). */
+  private detectNames(): string[] {
+    const deck = this.match.ctx.decks[LOCAL_PLAYER] ?? this.match.rules.baseDeck;
+    return deckDetectNames(deck, this.ctx.data.towers.towers);
   }
 
   private closeChoice(): void {
@@ -1338,6 +1356,25 @@ export class GameScene extends Phaser.Scene {
     return this.towerLayer.stunnedCount;
   }
 
+  /** E2E: 고르기 창이 알약으로 접혀 있는가 (창이 없으면 null) · 타워 정보 패널이 열려 있는가 */
+  get choiceCollapsed(): boolean | null {
+    return this.choice ? this.choice.collapsed : null;
+  }
+
+  get panelOpen(): boolean {
+    return this.panel !== null;
+  }
+
+  /** E2E: 그 타워 엔티티를 지금 어떤 타워 종류 그림으로 그리고 있나 (sim 타워 종류와 비교) */
+  drawnTowerType(id: number): string | null {
+    return this.towerLayer.towerTypeOf(id);
+  }
+
+  /** E2E: 그 몹 그림의 크기 배율 (statusModel.mobScaleMul과 비교) */
+  drawnMobScale(id: number): number | null {
+    return this.mobLayer.scaleMulOf(id);
+  }
+
   private refreshHud(): void {
     // 일시정지 중에도 배속 칩은 계속하면 돌아갈 배속을 보여준다
     const speed = this.paused ? this.resumeSpeed : this.gameOver ? 1 : this.clock.speed;
@@ -1349,7 +1386,6 @@ export class GameScene extends Phaser.Scene {
           mobCount: this.match.mobCount(),
           tick: this.match.tick,
           speed,
-          bossNames: this.bossNames,
           towerCount: towerCount(this.match.world),
           buildableCount: this.match.map.buildable.length,
           summonCost: summonCost(this.match.ctx),

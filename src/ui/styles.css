@@ -1115,11 +1115,12 @@ body {
   text-align: center;
 }
 
+/* 줄마다 한 줄: 넘치면 UiRoot.fitBannerLines가 그 줄 글자를 줄인다 (M4 검토 반영 — 제목이 두 줄로 꺾여 배너가 3줄이 되던 것) */
 .toast-banner .toast-title {
   font-size: 4cqw;
   font-weight: 900;
   line-height: 1.2;
-  word-break: keep-all;
+  white-space: nowrap;
 }
 
 /* 한 줄 배너(보스 이름표·처치)는 일반 알림과 같은 높이 → HUD와 맵 사이 알림 자리 안에 들어간다 */
@@ -1132,7 +1133,7 @@ body {
   font-size: 3.3cqw;
   font-weight: 700;
   opacity: 0.92;
-  word-break: keep-all;
+  white-space: nowrap;
 }
 
 .toast-banner.is-warn {
@@ -1233,11 +1234,22 @@ body {
   color: var(--text-dim);
 }
 
-/* 접었을 때: 아래 띠 위 오른쪽에 작은 알약 하나 */
+/*
+ * 접었을 때: 작은 알약 하나. HUD 아래 띠의 타워 수 옆 자리(.hud-choice-slot)에 들어간다 — 맵 위에 떠 있으면 배치 칸을 덮어
+ * 소환 탭을 가로챘다 (M4 검토 반영). 알약이 보이는 동안 소환 안내는 숨기고, [⬆ 승급 가능 n]도 보이면 그림 글자만.
+ */
+.hud-choice-slot {
+  display: contents;
+}
+
 .cp-pill {
-  position: absolute;
-  right: 3cqw;
-  bottom: max(15cqw, 60px);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1cqw;
+  white-space: nowrap;
+  font-size: 3.4cqw;
   pointer-events: auto;
   color: #3b2416;
   background: linear-gradient(180deg, #ffd85a 0%, var(--gold) 60%, var(--gold-deep) 100%);
@@ -1253,6 +1265,21 @@ body {
 
 .cp-pill[hidden] {
   display: none;
+}
+
+.hud-bottom:has(.cp-pill:not([hidden])) .hud-hint {
+  display: none;
+}
+
+.hud-bottom:has(.hud-merge-ready:not([hidden])) .cp-pill-text {
+  display: none;
+}
+
+/* 아래 띠가 없을 때(창 안에 둔 알약): 창 오른쪽 아래 */
+.choice-root > .cp-pill {
+  position: absolute;
+  right: 3cqw;
+  bottom: max(15cqw, 60px);
 }
 
 .choice-panel.is-merge .cp-title {

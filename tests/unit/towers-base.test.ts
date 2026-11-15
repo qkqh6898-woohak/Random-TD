@@ -381,6 +381,21 @@ describe('레전드', () => {
     for (const e of hits.filter((h) => h.fx !== 'meteor')) expect(e.fx).toBeUndefined();
   });
 
+  it('대마법사: 운석은 전체 피해라 방패병 보호막에 2배로 들어간다 (ENEMIES.md 6장, 검토 반영 — 예전엔 1배)', () => {
+    const m = arena();
+    const s = tank(m, 3000, 1_000_000, 'shield');
+    s.shield = s.maxShield = 300_000;
+    placeTower(m.world, 'archmage', 0, 8, 0); // 사거리 밖: 운석만 맞는다
+    m.stepN(241);
+    const evs = m.world.drainEvents();
+    expect(evs.filter((e) => e.type === 'meteor')).toHaveLength(1);
+    const hit = evs.find((e) => e.type === 'hit' && e.fx === 'meteor')!;
+    expect(Number(hit.damage)).toBe(80_000); // 현재 체력 8%
+    expect(Number(hit.shield)).toBe(80_000); // 피해 단위로는 전부 보호막이 막음
+    expect(300_000 - s.shield).toBe(160_000); // 보호막은 ×2
+    expect(s.hp).toBe(1_000_000);
+  });
+
   it('★ 그림자 암살자: 보스 피해 ×2, 체력 5% 이하 일반 몹 즉사 (보스는 아님), 감지 오라 r3', () => {
     const m = arena();
     const boss = tank(m, 3000, 100_000);

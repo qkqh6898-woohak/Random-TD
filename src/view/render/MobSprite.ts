@@ -51,6 +51,8 @@ export class MobSprite {
   private readonly eyeIcon: Phaser.GameObjects.Image | null;
   private readonly eyeY: number;
   private readonly baseScale: number;
+  /** 만들 때 쓴 크기 배율 (정예·작게·조각) — 바뀌면 MobLayer가 그림을 다시 만든다 (킹 슬라임 분열, 검토 반영) */
+  readonly scaleMul: number;
   private readonly phase: number;
   private readonly bobAmp: number;
   private readonly motion: MobMotion;
@@ -101,6 +103,7 @@ export class MobSprite {
     this.scene = scene;
     this.boss = mob.boss;
     const key = ensureMobTexture(scene, mob.mob, art.legionColor(mob.legion));
+    this.scaleMul = scaleMul;
     const diameter = layout.tile * (SIZE_SCALE[size] ?? 0.7) * scaleMul;
     this.diameter = diameter;
     this.baseScale = diameter / MOB_TEX_SIZE;
@@ -374,8 +377,15 @@ export class MobLayer {
     for (const mob of mobs) {
       seen.add(mob.id);
       let sprite = this.sprites.get(mob.id);
+      const scaleMul = this.scaleOf(mob);
+      // 크기 배율이 바뀌면(킹 슬라임 분열 = 원래 보스 엔티티가 나중에 조각(part)이 됨) 그림을 다시 만든다 —
+      // 만들 때만 계산하면 원래 몸만 크게 남아 같은 조각 둘의 크기가 달랐다 (검토 반영)
+      if (sprite && sprite.scaleMul !== scaleMul) {
+        sprite.destroy();
+        sprite = undefined;
+      }
       if (!sprite) {
-        sprite = new MobSprite(this.scene, mob, this.sizeOf(mob.mob), this.layout, this.art, this.scaleOf(mob));
+        sprite = new MobSprite(this.scene, mob, this.sizeOf(mob.mob), this.layout, this.art, scaleMul);
         this.sprites.set(mob.id, sprite);
       }
       const prev = prevProgress.get(mob.id);
@@ -435,6 +445,11 @@ export class MobLayer {
     let n = 0;
     for (const s of this.sprites.values()) if (s.revealedOutline) n++;
     return n;
+  }
+
+  /** 그 몹 그림의 크기 배율 (E2E가 statusModel.mobScaleMul과 비교). 그림이 없으면 null */
+  scaleMulOf(id: number): number | null {
+    return this.sprites.get(id)?.scaleMul ?? null;
   }
 
   /** 머리 위 👁를 단 몹 그림 수 (E2E가 sim 투명 몹 수와 비교) */

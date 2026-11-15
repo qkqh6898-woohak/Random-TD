@@ -13,6 +13,8 @@
  *
  * 아래 띠 (M2): 🗼 놓인 타워 수/배치 칸 수 · 소환 안내 · [👷 300원](M4 일꾼 고용) · [⬆ 승급 가능 n](M3, 누르면 그 타워의 정보 패널).
  *   맵 아래쪽 끝은 Game 장면이 이 띠의 위쪽 끝을 재서 정한다.
+ *   M4 검토 반영: 접은 고르기 창의 [🃏 카드 고르기] 알약은 타워 수 옆 자리(choiceSlot)에 들어간다 — 맵 위에 떠 있으면
+ *   배치 칸 3개를 덮어 소환 탭을 가로챘다. 알약이 보이는 동안 소환 안내는 숨긴다(CSS).
  * 돈이 들어오면 (동전이 도착하면) 돈 글자가 반짝이고 '+n원'이 떠오른다 (UI.md 4.2).
  *
  * 값 계산은 hudModel.ts(순수 함수, 단위 테스트)에서 하고, 여기서는 바뀐 글자만 DOM에 쓴다.
@@ -51,6 +53,8 @@ export interface HudView extends UiView {
   readonly bottomBand: HTMLElement;
   /** 아래 띠 위쪽 끝 = 무대 위쪽에서 잰 CSS px */
   bottomTop(): number;
+  /** 아래 띠 안 고르기 창 알약 자리 (ChoicePanel이 알약을 여기에 넣는다, M4 검토 반영) */
+  readonly choiceSlot: HTMLElement;
   /** 돈 글자 가운데 (무대 기준 CSS px) — 동전이 날아갈 곳 */
   goldAnchor(): { x: number; y: number };
   /** 돈이 들어옴: 돈 글자 반짝 + '+n원' (짧은 사이에 여러 번이면 합친다) */
@@ -149,10 +153,13 @@ export function createHud(opts: HudOptions): HudView {
     text: '👷',
     on: { click: () => opts.onHire?.() },
   });
+  // 접은 고르기 창의 알약 자리 (display: contents → 알약이 아래 띠의 flex 항목이 된다)
+  const choiceSlot = h('span', { class: 'hud-choice-slot', attrs: { 'data-testid': 'hud-choice-slot' } });
   const bottomBand = h(
     'div',
     { class: 'hud-bottom' },
     h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl),
+    choiceSlot,
     hintEl,
     hireBtn,
     mergeReadyBtn,
@@ -217,6 +224,7 @@ export function createHud(opts: HudOptions): HudView {
     bottomTop() {
       return bottomBand.getBoundingClientRect().top - el.getBoundingClientRect().top;
     },
+    choiceSlot,
     goldAnchor() {
       const r = goldEl.getBoundingClientRect();
       const root = el.getBoundingClientRect();

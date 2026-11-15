@@ -19,6 +19,28 @@ export interface UiView {
 
 export type LayerName = 'screen' | 'hud' | 'panel' | 'modal' | 'toast';
 
+/** 배너 줄 글자를 줄일 수 있는 하한 (원래 크기의 비율) */
+const BANNER_MIN_FONT_RATIO = 0.6;
+
+/**
+ * 배너의 각 줄(줄바꿈 없음)이 배너 안쪽 폭을 넘으면 그 줄 글자 크기를 폭에 맞게 줄인다 (원래의 60%까지).
+ * 레이아웃이 없는 환경(폭 0)에서는 아무것도 하지 않는다.
+ */
+export function fitBannerLines(el: HTMLElement): void {
+  const cs = getComputedStyle(el);
+  const avail = el.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+  if (!(avail > 0)) return;
+  for (const child of Array.from(el.children)) {
+    const line = child as HTMLElement;
+    const w = line.scrollWidth;
+    if (!(w > avail)) continue;
+    const size = parseFloat(getComputedStyle(line).fontSize);
+    if (!(size > 0)) continue;
+    const fitted = Math.floor(((size * avail) / w) * 10) / 10;
+    line.style.fontSize = `${Math.max(size * BANNER_MIN_FONT_RATIO, fitted)}px`;
+  }
+}
+
 export class UiRoot {
   private readonly layers: Record<LayerName, HTMLElement>;
   private readonly mounted: Partial<Record<LayerName, UiView>> = {};
@@ -69,9 +91,16 @@ export class UiRoot {
 
   private static readonly MAX_TOASTS = 3;
 
+  /** 떠 있는 알림·배너를 모두 지운다 (패배·일시정지 화면을 열 때 — 알림 층이 화면 층보다 위라 제목을 가린다, M4 검토 반영). */
+  clearToasts(): void {
+    this.layers.toast.replaceChildren();
+  }
+
   /**
    * 배너 알림 (M4): 두 줄(제목 + 힌트) 큰 알림 — 편대 예고(경고 주황)·투명 몹 경고(보라)·보스 이름표(은색)·보스 처치(금색).
    * 알림 층에 일반 알림과 같이 쌓이고(최대 3개, 같은 글자는 다시 띄움) ms 뒤 사라진다.
+   * 줄마다 줄바꿈하지 않고, 배너 폭(92cqw)을 넘는 줄은 글자 크기를 줄여 한 줄에 맞춘다 (fitBannerLines) — 412px에서 편대 예고
+   * 제목이 이름 중간에서 끊겨 배너가 3줄(72px)이 되어 맵 0줄을 반 넘게 덮던 것 (검토 반영).
    */
   banner(title: string, sub: string | null, ms = 3200, tone: 'warn' | 'shadow' | 'boss' | 'gold' = 'warn'): HTMLElement {
     const layer = this.layers.toast;
@@ -85,6 +114,7 @@ export class UiRoot {
       sub ? h('span', { class: 'toast-sub', text: sub }) : null,
     );
     layer.append(el);
+    fitBannerLines(el);
     setTimeout(() => el.remove(), ms);
     return el;
   }

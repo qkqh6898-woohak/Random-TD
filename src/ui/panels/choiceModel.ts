@@ -41,13 +41,16 @@ const CARD_ICONS: Readonly<Record<string, string>> = {
   goldPct: '🪙',
 };
 
-/** 보스 카드 묶음 → 고르기 창 (카드 순서 그대로, 희귀는 표시). */
-export function cardChoiceModel(rules: Pick<MatchRules, 'cardById'>, offer: CardOffer): ChoiceModel {
+/**
+ * 보스 카드 묶음 → 고르기 창 (카드 순서 그대로, 희귀는 표시).
+ * 부제의 보스 단계 = 묶음의 보스 번호(단계 ÷ 보스 주기) × 보스 주기 (game.json match.bossEvery — 코드에 10을 박지 않는다, 검토 반영).
+ */
+export function cardChoiceModel(rules: Pick<MatchRules, 'cardById' | 'bossEvery'>, offer: CardOffer): ChoiceModel {
   return {
     kind: 'card',
     key: `card:${offer.boss}:${offer.cards.join(',')}`,
     title: CARD_PICK_TITLE,
-    sub: `${offer.boss * 10}단계 보스 보상 · 고르는 동안에도 시간이 흘러요`,
+    sub: `${offer.boss * rules.bossEvery}단계 보스 보상 · 고르는 동안에도 시간이 흘러요`,
     options: offer.cards.map((id) => {
       const c = rules.cardById.get(id);
       return {

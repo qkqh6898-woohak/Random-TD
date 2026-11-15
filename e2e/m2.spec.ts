@@ -177,7 +177,9 @@ test('배치 칸이 가득 차면 타워 칸 탭 → "빈 칸이 없어요 — �
     for (const [x, y] of s.match.map.buildable) s.match.world.enqueue({ type: 'summon', x, y });
   });
   await expect(page.getByTestId('hud-towers')).toHaveText('71/71');
-  await expect(page.getByTestId('hud-hint')).toHaveText('빈 칸이 없어요');
+  // 승급 버튼이 보이면 안내는 비고(잘리지 않게, M4 검토 반영), 없으면 '빈 칸이 없어요' — 어느 쪽이든 글자가 잘리지 않는다
+  await expect(page.getByTestId('hud-merge-ready')).toBeVisible();
+  await expect(page.getByTestId('hud-hint')).toHaveText('');
   await expect.poll(async () => (await view(page)).renderedTowers).toBe(71);
   await tapTile(page, 4, 4);
   await expect(page.locator('.toast', { hasText: '빈 칸이 없어요 — 승급으로 칸을 비워 보세요' })).toBeVisible();

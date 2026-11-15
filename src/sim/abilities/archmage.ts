@@ -3,6 +3,8 @@
  * - 운석 피해 = 현재 체력 × 비율 (내림, 최소 1)을 고정 피해로 (방어·마법 저항 무시, 약화는 곱해짐) — '현재 체력 %'라서
  *   단계가 올라 방어가 높아져도 비율이 그대로 들어가게.
  * - 맵에 드러난 몹이 없으면 기다렸다가 나오면 바로 떨어진다. 'meteor' 사건 + 몹마다 'hit' { fx: 'meteor' }. 각성(주기 8초)은 M9.
+ * - 운석은 드러난 모든 몹에 떨어지는 '전체' 피해라 광역 피해(`area`)다 → 방패병 보호막이 2배로 받는다 (ENEMIES.md 6장,
+ *   전투 형태 '전체'와 같은 처리 — 검토 반영). 회피는 원래부터 불가 (단일 공격이 아님).
  */
 import { mulBp } from '../Fixed';
 import { ATK_SCALE } from '../rules';
@@ -35,7 +37,7 @@ export default defineAbility<ArchmageParams>({
       if (!world.entities.has(m.id)) continue;
       const dmg = Math.max(1, mulBp(m.hp, m.boss ? p.bossPctBp : p.pctBp));
       const at = positionAt(ctx.map.path, m.progress);
-      applyHit(ctx, world, m, { p: 0, m: 0, t: dmg * ATK_SCALE, fx: METEOR_FX }, at, tower.id);
+      applyHit(ctx, world, m, { p: 0, m: 0, t: dmg * ATK_SCALE, fx: METEOR_FX, area: true }, at, tower.id);
     }
   },
 });

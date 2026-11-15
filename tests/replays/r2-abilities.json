@@ -9,7 +9,7 @@
   "debug": true,
   "decks": [{"normal":["miner","goblin","archer","apprentice","warrior"],"rare":["merchant","mudshaman","flamemage","cleaver","duelist"],"unique":["icemage","gambler","blacksmith","sniper","berserker"],"hero":["summoner","scholar","chronomancer","alchemist","swordsaint"],"legend":["dragoncaller","warlord","archmage","assassin","fortuna"]}],
   "levels": [{}],
-  "dataHash": 3335495503,
+  "dataHash": 1233853972,
   "endTick": 19200,
   "commands": [
     {"type":"debugTower","tick":0,"player":0,"seq":0,"x":2,"y":2,"t":30},
