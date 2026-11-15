@@ -1,0 +1,44 @@
+[
+ {
+  "file": "miner",
+  "job_id": "6995fd81-4dcf-4b45-a933-37daab2de079",
+  "status": "completed",
+  "png": "img/miner.png"
+ },
+ {
+  "file": "goblin",
+  "job_id": "262387e8-3c05-446e-9b04-6497be888fb0",
+  "status": "completed",
+  "png": "img/goblin.png"
+ },
+ {
+  "file": "archer",
+  "job_id": "00218655-a90f-457d-9e12-e71609dfb8a0",
+  "status": "completed",
+  "png": "img/archer.png"
+ },
+ {
+  "file": "warrior",
+  "job_id": "ff8a5a0e-3066-4417-a1c0-4fb800d2e37f",
+  "status": "completed",
+  "png": "img/warrior.png"
+ },
+ {
+  "file": "ninja",
+  "job_id": "68d5dd21-b9d8-4423-b769-b92f6a9f17f8",
+  "status": "completed",
+  "png": "img/ninja.png"
+ },
+ {
+  "file": "k9",
+  "job_id": "3786e229-08cd-4450-87f3-d949f578e244",
+  "status": "completed",
+  "png": "img/k9.png"
+ },
+ {
+  "file": "bard",
+  "job_id": "00ce485d-2143-4e10-a2b4-2768caae9f2c",
+  "status": "completed",
+  "png": "img/bard.png"
+ }
+]

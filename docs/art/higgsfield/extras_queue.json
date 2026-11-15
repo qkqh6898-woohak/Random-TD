@@ -1,0 +1,506 @@
+[
+ {
+  "file": "bg_t01_b1",
+  "name": "테마 1 배경 1구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: green border plains with stone castle walls and windmills, wildflowers. Time and mood: bright clear daytime."
+ },
+ {
+  "file": "bg_t01_b2",
+  "name": "테마 1 배경 2구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: green border plains with stone castle walls and windmills, wildflowers. Time and mood: warm sunset glow, long shadows."
+ },
+ {
+  "file": "bg_t01_b3",
+  "name": "테마 1 배경 3구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: green border plains with stone castle walls and windmills, wildflowers. Time and mood: night with two moons and stars, glowing lights."
+ },
+ {
+  "file": "bg_t01_b4",
+  "name": "테마 1 배경 4구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: green border plains with stone castle walls and windmills, wildflowers. Time and mood: stormy war clouds and rain, occasional lightning."
+ },
+ {
+  "file": "bg_t01_b5",
+  "name": "테마 1 배경 5구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: green border plains with stone castle walls and windmills, wildflowers. Time and mood: invasion climax: the sky torn open in purple cracks, violet lightning, falling meteors."
+ },
+ {
+  "file": "bg_t02_b1",
+  "name": "테마 2 배경 1구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: dwarven mining canyon with rocky cliffs, mine carts on rails, glowing forge furnaces. Time and mood: bright clear daytime."
+ },
+ {
+  "file": "bg_t02_b2",
+  "name": "테마 2 배경 2구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: dwarven mining canyon with rocky cliffs, mine carts on rails, glowing forge furnaces. Time and mood: warm sunset glow, long shadows."
+ },
+ {
+  "file": "bg_t02_b3",
+  "name": "테마 2 배경 3구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: dwarven mining canyon with rocky cliffs, mine carts on rails, glowing forge furnaces. Time and mood: night with two moons and stars, glowing lights."
+ },
+ {
+  "file": "bg_t02_b4",
+  "name": "테마 2 배경 4구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: dwarven mining canyon with rocky cliffs, mine carts on rails, glowing forge furnaces. Time and mood: stormy war clouds and rain, occasional lightning."
+ },
+ {
+  "file": "bg_t02_b5",
+  "name": "테마 2 배경 5구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: dwarven mining canyon with rocky cliffs, mine carts on rails, glowing forge furnaces. Time and mood: invasion climax: the sky torn open in purple cracks, violet lightning, falling meteors."
+ },
+ {
+  "file": "bg_t03_b1",
+  "name": "테마 3 배경 1구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: silver elven forest with giant ancient trees, fireflies, glowing mushrooms. Time and mood: bright clear daytime."
+ },
+ {
+  "file": "bg_t03_b2",
+  "name": "테마 3 배경 2구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: silver elven forest with giant ancient trees, fireflies, glowing mushrooms. Time and mood: warm sunset glow, long shadows."
+ },
+ {
+  "file": "bg_t03_b3",
+  "name": "테마 3 배경 3구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: silver elven forest with giant ancient trees, fireflies, glowing mushrooms. Time and mood: night with two moons and stars, glowing lights."
+ },
+ {
+  "file": "bg_t03_b4",
+  "name": "테마 3 배경 4구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: silver elven forest with giant ancient trees, fireflies, glowing mushrooms. Time and mood: stormy war clouds and rain, occasional lightning."
+ },
+ {
+  "file": "bg_t03_b5",
+  "name": "테마 3 배경 5구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: silver elven forest with giant ancient trees, fireflies, glowing mushrooms. Time and mood: invasion climax: the sky torn open in purple cracks, violet lightning, falling meteors."
+ },
+ {
+  "file": "bg_t04_b1",
+  "name": "테마 4 배경 1구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: red desert badlands of an orc tribe with skull totems and canyons. Time and mood: bright clear daytime."
+ },
+ {
+  "file": "bg_t04_b2",
+  "name": "테마 4 배경 2구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: red desert badlands of an orc tribe with skull totems and canyons. Time and mood: warm sunset glow, long shadows."
+ },
+ {
+  "file": "bg_t04_b3",
+  "name": "테마 4 배경 3구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: red desert badlands of an orc tribe with skull totems and canyons. Time and mood: night with two moons and stars, glowing lights."
+ },
+ {
+  "file": "bg_t04_b4",
+  "name": "테마 4 배경 4구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: red desert badlands of an orc tribe with skull totems and canyons. Time and mood: stormy war clouds and rain, occasional lightning."
+ },
+ {
+  "file": "bg_t04_b5",
+  "name": "테마 4 배경 5구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: red desert badlands of an orc tribe with skull totems and canyons. Time and mood: invasion climax: the sky torn open in purple cracks, violet lightning, falling meteors."
+ },
+ {
+  "file": "bg_t05_b1",
+  "name": "테마 5 배경 1구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: fairy mirror lake with lotus flowers, rainbows and small islands. Time and mood: bright clear daytime."
+ },
+ {
+  "file": "bg_t05_b2",
+  "name": "테마 5 배경 2구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: fairy mirror lake with lotus flowers, rainbows and small islands. Time and mood: warm sunset glow, long shadows."
+ },
+ {
+  "file": "bg_t05_b3",
+  "name": "테마 5 배경 3구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: fairy mirror lake with lotus flowers, rainbows and small islands. Time and mood: night with two moons and stars, glowing lights."
+ },
+ {
+  "file": "bg_t05_b4",
+  "name": "테마 5 배경 4구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: fairy mirror lake with lotus flowers, rainbows and small islands. Time and mood: stormy war clouds and rain, occasional lightning."
+ },
+ {
+  "file": "bg_t05_b5",
+  "name": "테마 5 배경 5구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: fairy mirror lake with lotus flowers, rainbows and small islands. Time and mood: invasion climax: the sky torn open in purple cracks, violet lightning, falling meteors."
+ },
+ {
+  "file": "bg_t06_b1",
+  "name": "테마 6 배경 1구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: underground dark-elf city in a cave with violet crystals and lanterns. Time and mood: bright clear daytime."
+ },
+ {
+  "file": "bg_t06_b2",
+  "name": "테마 6 배경 2구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: underground dark-elf city in a cave with violet crystals and lanterns. Time and mood: warm sunset glow, long shadows."
+ },
+ {
+  "file": "bg_t06_b3",
+  "name": "테마 6 배경 3구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: underground dark-elf city in a cave with violet crystals and lanterns. Time and mood: night with two moons and stars, glowing lights."
+ },
+ {
+  "file": "bg_t06_b4",
+  "name": "테마 6 배경 4구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: underground dark-elf city in a cave with violet crystals and lanterns. Time and mood: stormy war clouds and rain, occasional lightning."
+ },
+ {
+  "file": "bg_t06_b5",
+  "name": "테마 6 배경 5구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: underground dark-elf city in a cave with violet crystals and lanterns. Time and mood: invasion climax: the sky torn open in purple cracks, violet lightning, falling meteors."
+ },
+ {
+  "file": "bg_t07_b1",
+  "name": "테마 7 배경 1구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: modern coastal metropolis with skyscrapers, neon signs and roads, partly damaged. Time and mood: bright clear daytime."
+ },
+ {
+  "file": "bg_t07_b2",
+  "name": "테마 7 배경 2구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: modern coastal metropolis with skyscrapers, neon signs and roads, partly damaged. Time and mood: warm sunset glow, long shadows."
+ },
+ {
+  "file": "bg_t07_b3",
+  "name": "테마 7 배경 3구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: modern coastal metropolis with skyscrapers, neon signs and roads, partly damaged. Time and mood: night with two moons and stars, glowing lights."
+ },
+ {
+  "file": "bg_t07_b4",
+  "name": "테마 7 배경 4구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: modern coastal metropolis with skyscrapers, neon signs and roads, partly damaged. Time and mood: stormy war clouds and rain, occasional lightning."
+ },
+ {
+  "file": "bg_t07_b5",
+  "name": "테마 7 배경 5구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: modern coastal metropolis with skyscrapers, neon signs and roads, partly damaged. Time and mood: invasion climax: the sky torn open in purple cracks, violet lightning, falling meteors."
+ },
+ {
+  "file": "bg_t08_b1",
+  "name": "테마 8 배경 1구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: frozen northern tundra with glaciers and aurora. Time and mood: bright clear daytime."
+ },
+ {
+  "file": "bg_t08_b2",
+  "name": "테마 8 배경 2구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: frozen northern tundra with glaciers and aurora. Time and mood: warm sunset glow, long shadows."
+ },
+ {
+  "file": "bg_t08_b3",
+  "name": "테마 8 배경 3구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: frozen northern tundra with glaciers and aurora. Time and mood: night with two moons and stars, glowing lights."
+ },
+ {
+  "file": "bg_t08_b4",
+  "name": "테마 8 배경 4구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: frozen northern tundra with glaciers and aurora. Time and mood: stormy war clouds and rain, occasional lightning."
+ },
+ {
+  "file": "bg_t08_b5",
+  "name": "테마 8 배경 5구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: frozen northern tundra with glaciers and aurora. Time and mood: invasion climax: the sky torn open in purple cracks, violet lightning, falling meteors."
+ },
+ {
+  "file": "bg_t09_b1",
+  "name": "테마 9 배경 1구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: volcano fortress with lava rivers, obsidian walls and ash. Time and mood: bright clear daytime."
+ },
+ {
+  "file": "bg_t09_b2",
+  "name": "테마 9 배경 2구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: volcano fortress with lava rivers, obsidian walls and ash. Time and mood: warm sunset glow, long shadows."
+ },
+ {
+  "file": "bg_t09_b3",
+  "name": "테마 9 배경 3구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: volcano fortress with lava rivers, obsidian walls and ash. Time and mood: night with two moons and stars, glowing lights."
+ },
+ {
+  "file": "bg_t09_b4",
+  "name": "테마 9 배경 4구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: volcano fortress with lava rivers, obsidian walls and ash. Time and mood: stormy war clouds and rain, occasional lightning."
+ },
+ {
+  "file": "bg_t09_b5",
+  "name": "테마 9 배경 5구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: volcano fortress with lava rivers, obsidian walls and ash. Time and mood: invasion climax: the sky torn open in purple cracks, violet lightning, falling meteors."
+ },
+ {
+  "file": "bg_t10_b1",
+  "name": "테마 10 배경 1구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: purple dimensional rift sky with floating rocks and a huge alien mothership. Time and mood: bright clear daytime."
+ },
+ {
+  "file": "bg_t10_b2",
+  "name": "테마 10 배경 2구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: purple dimensional rift sky with floating rocks and a huge alien mothership. Time and mood: warm sunset glow, long shadows."
+ },
+ {
+  "file": "bg_t10_b3",
+  "name": "테마 10 배경 3구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: purple dimensional rift sky with floating rocks and a huge alien mothership. Time and mood: night with two moons and stars, glowing lights."
+ },
+ {
+  "file": "bg_t10_b4",
+  "name": "테마 10 배경 4구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: purple dimensional rift sky with floating rocks and a huge alien mothership. Time and mood: stormy war clouds and rain, occasional lightning."
+ },
+ {
+  "file": "bg_t10_b5",
+  "name": "테마 10 배경 5구간",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 mobile game background illustration for a cute fantasy tower defense game, painterly cartoon style matching chibi characters, soft lighting, high detail at the edges, calmer and simpler in the center because a battle map grid is drawn on top, no characters, no text, no UI. Location: purple dimensional rift sky with floating rocks and a huge alien mothership. Time and mood: invasion climax: the sky torn open in purple cracks, violet lightning, falling meteors."
+ },
+ {
+  "file": "cutin_grax",
+  "name": "선봉장 그락스 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: spiked-armor alien vanguard knight. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent sky-blue. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_batqueen",
+  "name": "박쥐 여왕 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: giant caped bat queen. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent sky-blue. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_sandqueen",
+  "name": "모래 벌레 여왕 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: giant sand worm queen bursting from sand. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent sky-blue. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_frostwyrm",
+  "name": "서리 용 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: ice-winged alien dragon. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent sky-blue. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_ancientgolem",
+  "name": "고대 골렘 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: huge rune-glowing rock giant. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent ochre. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_crystaleater",
+  "name": "수정 포식자 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: giant worm gnawing crystals. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent ochre. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_steelcolossus",
+  "name": "강철 거신 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: giant steel colossus with missile pods. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent ochre. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_lavagiant",
+  "name": "용암 거인 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: giant made of flowing lava. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent ochre. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_kingslime",
+  "name": "킹 슬라임 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: giant crowned slime king. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent lime-green. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_rotent",
+  "name": "부패의 나무정령 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: tree monster covered in purple vines. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent lime-green. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_abyssjelly",
+  "name": "심연의 해파리 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: giant glowing alien jellyfish. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent lime-green. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_wraithlord",
+  "name": "망령 군주 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: scythe-wielding ghost king, translucent. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent violet. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_wraithknight",
+  "name": "망령 기사 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: ghost knight riding a spectral horse. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent violet. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_chaosdragon",
+  "name": "혼돈의 용 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: two-headed crimson dragon, the Dark Lord's mount. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent black-purple. Captain rank, silver horn ornaments and a legion banner."
+ },
+ {
+  "file": "cutin_zephira",
+  "name": "질풍의 군단장 제피라 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: alien lady knight with blade wings, one of the Four Heavenly Kings. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent sky-blue. One of the Four Heavenly Kings, golden crown-like ornaments, imposing."
+ },
+ {
+  "file": "cutin_gordam",
+  "name": "대지의 군단장 고르담 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: steel colossus with a glowing rock heart, one of the Four Heavenly Kings. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent ochre. One of the Four Heavenly Kings, golden crown-like ornaments, imposing."
+ },
+ {
+  "file": "cutin_morgath",
+  "name": "역병의 군단장 모르가스 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: huge king made of rotten slime, one of the Four Heavenly Kings. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent lime-green. One of the Four Heavenly Kings, golden crown-like ornaments, imposing."
+ },
+ {
+  "file": "cutin_nocturne",
+  "name": "그림자의 군단장 녹투르 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: assassin hidden in a shadow cloak with only red eyes visible, one of the Four Heavenly Kings. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent violet. One of the Four Heavenly Kings, golden crown-like ornaments, imposing."
+ },
+ {
+  "file": "cutin_nox",
+  "name": "암흑의 군주 녹스 컷인",
+  "aspect": "3:4",
+  "background": "transparent",
+  "prompt": "Dramatic anime-style upper body illustration for a boss intro cut-in in a cute fantasy mobile game, menacing pose, strong rim light, glowing purple eyes, transparent background, no text. Boss: Dark Lord in black armor that swallows starlight, violet crown, cosmic cape, final boss. Evil alien invader from the Nox Legion with the Nox sigil, legion color accent black-purple. Final boss, overwhelming dark aura, starry cosmic cape."
+ },
+ {
+  "file": "title_keyart_1",
+  "name": "타이틀 그림 1",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 title screen key art for a cute fantasy tower defense mobile game, no text, no logo. An alliance of chibi heroes from seven races stands together on a hill: a dwarf miner, an elf archer, a friendly green goblin, a blue-armored kingdom knight, a dark elf ninja, a modern soldier with a shepherd dog, and a pink fairy bard. Behind them a giant purple alien rift tears the sky open with small monsters pouring out. Epic yet cute, vibrant colors, cartoon cel shading. Bright daytime, heroic mood."
+ },
+ {
+  "file": "title_keyart_2",
+  "name": "타이틀 그림 2",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 title screen key art for a cute fantasy tower defense mobile game, no text, no logo. An alliance of chibi heroes from seven races stands together on a hill: a dwarf miner, an elf archer, a friendly green goblin, a blue-armored kingdom knight, a dark elf ninja, a modern soldier with a shepherd dog, and a pink fairy bard. Behind them a giant purple alien rift tears the sky open with small monsters pouring out. Epic yet cute, vibrant colors, cartoon cel shading. Low camera angle, dramatic sunset."
+ },
+ {
+  "file": "worldmap",
+  "name": "월드맵",
+  "aspect": "9:16",
+  "background": "opaque",
+  "prompt": "Vertical 9:16 illustrated fantasy world map of the continent Atra for a cute mobile game, hand-drawn cartoon style, parchment edges, no text, no labels. Ten regions connected by a winding path from bottom to top: green plains with windmills, dwarven mining canyon, silver elven forest, red orc desert, fairy mirror lake, underground dark-elf crystal city, modern coastal metropolis, frozen north, central volcano fortress, and at the top a purple dimensional rift."
+ }
+]

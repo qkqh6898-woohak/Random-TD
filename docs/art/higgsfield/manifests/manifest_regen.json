@@ -1,0 +1,32 @@
+[
+ {
+  "file": "fate_awaken",
+  "job_id": "31ebcdc8-ca49-4d03-9841-2714ce598313",
+  "status": "completed",
+  "attempt": 1,
+  "qa": "pass",
+  "png": "img/fate_awaken.png",
+  "rejected_original": "img/_rejected/fate_awaken.png",
+  "note": "Same elderly god as fate.png: long white beard and hair, golden eyes, gentle smile, laurel crown. Constellation wheel sits fully inside the frame (0 px at alpha>128 on the left, right and bottom edges). Only the faint glow above the top halo star touches the top edge; the star tip keeps about 7 px of margin."
+ },
+ {
+  "file": "flamemage_awaken",
+  "job_id": "c6673319-e052-4c88-85e0-a7f63b6ae6c9",
+  "status": "completed",
+  "attempt": 1,
+  "qa": "pass",
+  "png": "img/flamemage_awaken.png",
+  "rejected_original": "img/_rejected/flamemage_awaken.png",
+  "note": "Same boy as flamemage.png: short spiky red-orange hair, boyish face, blue wizard hat with the flame crown on it, fireball in the palm, phoenix-pattern robe. Adds a crystal staff as upgraded gear. All edges clear."
+ },
+ {
+  "file": "cutin_batqueen",
+  "job_id": "0bf83ad4-dc8a-4f13-a2bc-9a47b6735718",
+  "status": "completed",
+  "attempt": 1,
+  "qa": "pass",
+  "png": "img/cutin_batqueen.png",
+  "rejected_original": "img/_rejected/cutin_batqueen.png",
+  "note": "Monstrous furry bat beast, not a human: huge pink-lined ears, fangs, glowing purple eyes, silver crown, sky-blue-trimmed cape, legion banner. Nothing suggestive. Transparent background; the body crops at the bottom and sides as expected for an upper-body cut-in. Matches enemy_batqueen.png colors and the painterly style of the other cut-ins."
+ }
+]

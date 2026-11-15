@@ -1,0 +1,230 @@
+[
+ {
+  "file": "spearsgod",
+  "job_id": "5a1dc239-2843-4959-99d8-4e01cd12061d",
+  "status": "completed",
+  "png": "img/spearsgod.png"
+ },
+ {
+  "file": "stormlord",
+  "job_id": "b0f28a48-f49d-44bc-b559-a2032549f7df",
+  "status": "completed",
+  "png": "img/stormlord.png"
+ },
+ {
+  "file": "tycoon",
+  "job_id": "542828e7-8ce8-4014-87f9-3592052a8c6c",
+  "status": "completed",
+  "png": "img/tycoon.png"
+ },
+ {
+  "file": "saint",
+  "job_id": "168babe0-c594-4a7e-bb49-e31d73cc4cb2",
+  "status": "completed",
+  "png": "img/saint.png"
+ },
+ {
+  "file": "dimensionist",
+  "job_id": "6d8f1424-1218-4959-b4bb-0fe99245663f",
+  "status": "completed",
+  "png": "img/dimensionist.png"
+ },
+ {
+  "file": "fate",
+  "job_id": "46bf0657-25ed-42e6-aac2-58401f5a86d9",
+  "status": "completed",
+  "png": "img/fate.png"
+ },
+ {
+  "file": "plenty",
+  "job_id": "9eba84ea-f202-49e8-9b13-21d7ec03e740",
+  "status": "completed",
+  "png": "img/plenty.png"
+ },
+ {
+  "file": "ruin",
+  "job_id": "40a94e19-25c5-4853-b916-c36b376424ba",
+  "status": "completed",
+  "png": "img/ruin.png"
+ },
+ {
+  "file": "elemental",
+  "job_id": "aa4cb6da-885d-4cbb-b0e2-d1e6e76e639e",
+  "status": "completed",
+  "png": "img/elemental.png"
+ },
+ {
+  "file": "goldking",
+  "job_id": "e64cc0b4-532f-46fb-a192-7123ecc9116f",
+  "status": "completed",
+  "png": "img/goldking.png"
+ },
+ {
+  "file": "celestial",
+  "job_id": "2b99b14f-33bf-4354-8c17-dee27b6af7d2",
+  "status": "completed",
+  "png": "img/celestial.png"
+ },
+ {
+  "file": "legion",
+  "job_id": "69356062-23c0-4f33-95ba-0d4159b1fdb1",
+  "status": "completed",
+  "png": "img/legion.png"
+ },
+ {
+  "file": "infiniteblade",
+  "job_id": "e749ea41-7acf-4761-9d52-2708194d830a",
+  "status": "completed",
+  "png": "img/infiniteblade.png"
+ },
+ {
+  "file": "timelord",
+  "job_id": "96755258-e456-46d0-ba4c-4224f326a717",
+  "status": "completed",
+  "png": "img/timelord.png"
+ },
+ {
+  "file": "goblinking",
+  "job_id": "f6de5308-2548-42ac-bdb3-eb9280680bf3",
+  "status": "completed",
+  "png": "img/goblinking.png"
+ },
+ {
+  "file": "deathlord",
+  "job_id": "04fc28b8-6ab5-4c1b-b8a4-855a31385444",
+  "status": "completed",
+  "png": "img/deathlord.png"
+ },
+ {
+  "file": "goldbattery",
+  "job_id": "d7614766-e780-440d-b8b5-4d5194d65b59",
+  "status": "completed",
+  "png": "img/goldbattery.png"
+ },
+ {
+  "file": "fateseer",
+  "job_id": "0e05a849-5541-4b71-9203-85b9d4bf5f7e",
+  "status": "completed",
+  "png": "img/fateseer.png"
+ },
+ {
+  "file": "festival",
+  "job_id": "e8232f38-9d78-4294-9fa2-f8f82984face",
+  "status": "completed",
+  "png": "img/festival.png"
+ },
+ {
+  "file": "stormavatar",
+  "job_id": "8ccefb4f-c071-4dda-92f3-7e1bdf4d295d",
+  "status": "completed",
+  "png": "img/stormavatar.png"
+ },
+ {
+  "file": "enemy_grax",
+  "job_id": "76b09917-7738-4f76-9853-35877fd6d81d",
+  "status": "completed",
+  "png": "img/enemy_grax.png"
+ },
+ {
+  "file": "enemy_batqueen",
+  "job_id": "5cc3a319-61c6-4a5b-b41f-67c7113a0ca8",
+  "status": "completed",
+  "png": "img/enemy_batqueen.png"
+ },
+ {
+  "file": "enemy_sandqueen",
+  "job_id": "b3a64065-f199-408c-a61e-22a17d3ec1be",
+  "status": "completed",
+  "png": "img/enemy_sandqueen.png"
+ },
+ {
+  "file": "enemy_frostwyrm",
+  "job_id": "24242939-ecf1-4cfb-abfc-f0e1b4722f3a",
+  "status": "completed",
+  "png": "img/enemy_frostwyrm.png"
+ },
+ {
+  "file": "enemy_ancientgolem",
+  "job_id": "f364d2da-c144-4f46-b77c-110b87d29a3c",
+  "status": "completed",
+  "png": "img/enemy_ancientgolem.png"
+ },
+ {
+  "file": "enemy_crystaleater",
+  "job_id": "43c68d99-ae62-4c55-8c7c-ce401e1de63e",
+  "status": "completed",
+  "png": "img/enemy_crystaleater.png"
+ },
+ {
+  "file": "enemy_steelcolossus",
+  "job_id": "0bff8930-487d-4a70-b388-8368d28dcd74",
+  "status": "completed",
+  "png": "img/enemy_steelcolossus.png"
+ },
+ {
+  "file": "enemy_lavagiant",
+  "job_id": "077c9fdb-f414-4e04-8a81-b3c2e7c21ffe",
+  "status": "completed",
+  "png": "img/enemy_lavagiant.png"
+ },
+ {
+  "file": "enemy_kingslime",
+  "job_id": "795e4828-e297-496f-b801-aac30ceeeef1",
+  "status": "completed",
+  "png": "img/enemy_kingslime.png"
+ },
+ {
+  "file": "enemy_rotent",
+  "job_id": "5d1f8ab2-7aac-4e8e-a5c7-436cc9f988ce",
+  "status": "completed",
+  "png": "img/enemy_rotent.png"
+ },
+ {
+  "file": "enemy_abyssjelly",
+  "job_id": "805a2fcd-c323-4ded-9d39-ca881d9f40a9",
+  "status": "completed",
+  "png": "img/enemy_abyssjelly.png"
+ },
+ {
+  "file": "enemy_wraithlord",
+  "job_id": "dfc848a8-5934-4b28-b2ce-d75e7c52ef31",
+  "status": "completed",
+  "png": "img/enemy_wraithlord.png"
+ },
+ {
+  "file": "enemy_wraithknight",
+  "job_id": "5453d6c6-8d18-4269-8449-3edab168a5c4",
+  "status": "completed",
+  "png": "img/enemy_wraithknight.png"
+ },
+ {
+  "file": "enemy_chaosdragon",
+  "job_id": "fd1bd3a7-9be9-46bb-bd0d-c43a2f46c959",
+  "status": "completed",
+  "png": "img/enemy_chaosdragon.png"
+ },
+ {
+  "file": "enemy_zephira",
+  "job_id": "e8c0921d-e07a-4f2e-b606-97a6cde39c1c",
+  "status": "completed",
+  "png": "img/enemy_zephira.png"
+ },
+ {
+  "file": "enemy_gordam",
+  "job_id": "21ab9f87-4a39-4863-a193-86556e3f4a29",
+  "status": "completed",
+  "png": "img/enemy_gordam.png"
+ },
+ {
+  "file": "enemy_morgath",
+  "job_id": "c030dbff-4b0a-4b22-b17d-09801b113788",
+  "status": "completed",
+  "png": "img/enemy_morgath.png"
+ },
+ {
+  "file": "enemy_nocturne",
+  "job_id": "79e621fd-7afd-4f2b-b394-8c64e571574d",
+  "status": "completed",
+  "png": "img/enemy_nocturne.png"
+ }
+]

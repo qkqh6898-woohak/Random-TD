@@ -1,0 +1,230 @@
+[
+ {
+  "file": "enemy_nox",
+  "job_id": "2ae46dd6-9071-4cbd-8c8d-e747b48b4627",
+  "status": "completed",
+  "png": "img/enemy_nox.png"
+ },
+ {
+  "file": "enemy_slime",
+  "job_id": "af0880ab-3d70-4a4b-9862-445ccf87a112",
+  "status": "completed",
+  "png": "img/enemy_slime.png"
+ },
+ {
+  "file": "enemy_bat",
+  "job_id": "0d41dc38-1b8f-499e-a6ef-d4f531a12b02",
+  "status": "completed",
+  "png": "img/enemy_bat.png"
+ },
+ {
+  "file": "enemy_golem",
+  "job_id": "12304de8-cee5-4d87-836d-0a9884771a4d",
+  "status": "completed",
+  "png": "img/enemy_golem.png"
+ },
+ {
+  "file": "enemy_turtle",
+  "job_id": "5cf4f82b-e9c0-4694-b2a9-273e316c76fa",
+  "status": "completed",
+  "png": "img/enemy_turtle.png"
+ },
+ {
+  "file": "enemy_ghost",
+  "job_id": "a281e4e1-18c6-42c7-a340-d0f57fa48cb6",
+  "status": "completed",
+  "png": "img/enemy_ghost.png"
+ },
+ {
+  "file": "enemy_splitter",
+  "job_id": "9d7a828f-f624-43d2-86bf-4d573492af1a",
+  "status": "completed",
+  "png": "img/enemy_splitter.png"
+ },
+ {
+  "file": "enemy_thief",
+  "job_id": "0b66b5be-cff0-426c-b7aa-f36313a4a6f8",
+  "status": "completed",
+  "png": "img/enemy_thief.png"
+ },
+ {
+  "file": "enemy_healer",
+  "job_id": "733cc045-143e-42df-b8ad-40b12159bcc0",
+  "status": "completed",
+  "png": "img/enemy_healer.png"
+ },
+ {
+  "file": "enemy_shield",
+  "job_id": "d9a8abaa-73b2-427a-a720-b91bc1dbe211",
+  "status": "completed",
+  "png": "img/enemy_shield.png"
+ },
+ {
+  "file": "enemy_shadowwolf",
+  "job_id": "70f812ca-1e52-468e-8f38-92867ac67128",
+  "status": "completed",
+  "png": "img/enemy_shadowwolf.png"
+ },
+ {
+  "file": "enemy_goblin",
+  "job_id": "88dff552-e2e0-4939-b71d-12848d99c67e",
+  "status": "completed",
+  "png": "img/enemy_goblin.png"
+ },
+ {
+  "file": "enemy_gemgolem",
+  "job_id": "8398db39-0f12-4cb7-bb84-e106986ac122",
+  "status": "completed",
+  "png": "img/enemy_gemgolem.png"
+ },
+ {
+  "file": "enemy_minigolem",
+  "job_id": "9f4d0e8f-21d3-4c7f-a6f1-97a12c168bb4",
+  "status": "completed",
+  "png": "img/enemy_minigolem.png"
+ },
+ {
+  "file": "portrait_lena",
+  "job_id": "d28d057a-cfec-41ac-9b8a-15bacc34e77b",
+  "status": "completed",
+  "png": "img/portrait_lena.png"
+ },
+ {
+  "file": "portrait_cedric",
+  "job_id": "16f69e54-95af-4df0-a899-571caa0728f0",
+  "status": "completed",
+  "png": "img/portrait_cedric.png"
+ },
+ {
+  "file": "portrait_bronga",
+  "job_id": "62300981-110d-4da5-adfa-832cd33af2ef",
+  "status": "completed",
+  "png": "img/portrait_bronga.png"
+ },
+ {
+  "file": "portrait_silien",
+  "job_id": "846263e4-ac5e-470a-a750-62b600652f02",
+  "status": "completed",
+  "png": "img/portrait_silien.png"
+ },
+ {
+  "file": "portrait_morwen",
+  "job_id": "acbae8e1-a850-4b9a-a053-b3425e0b0e0f",
+  "status": "completed",
+  "png": "img/portrait_morwen.png"
+ },
+ {
+  "file": "portrait_urga",
+  "job_id": "719d8312-cee0-44f6-8c39-3edd71ad5cd4",
+  "status": "completed",
+  "png": "img/portrait_urga.png"
+ },
+ {
+  "file": "portrait_pio",
+  "job_id": "98799785-7ef7-4c0d-a5f9-6ac39a8f1779",
+  "status": "completed",
+  "png": "img/portrait_pio.png"
+ },
+ {
+  "file": "portrait_mio",
+  "job_id": "82b4b2b4-a4ee-48b1-8b00-83984ce287ff",
+  "status": "completed",
+  "png": "img/portrait_mio.png"
+ },
+ {
+  "file": "portrait_commander",
+  "job_id": "57d64402-2c53-4647-b511-e5ede689e2fb",
+  "status": "completed",
+  "png": "img/portrait_commander.png"
+ },
+ {
+  "file": "miner_awaken",
+  "job_id": "324ea319-9826-4422-8901-0ad570c953c5",
+  "status": "completed",
+  "png": "img/miner_awaken.png"
+ },
+ {
+  "file": "drummer_awaken",
+  "job_id": "bd696d91-7c7a-4eef-b70b-0c5d648cb5a7",
+  "status": "completed",
+  "png": "img/drummer_awaken.png"
+ },
+ {
+  "file": "goblin_awaken",
+  "job_id": "a3dadb9f-c078-4dfb-9737-a926abdc8ceb",
+  "status": "completed",
+  "png": "img/goblin_awaken.png"
+ },
+ {
+  "file": "archer_awaken",
+  "job_id": "8ff26ce0-e0e2-46ed-a215-c9943eab9675",
+  "status": "completed",
+  "png": "img/archer_awaken.png"
+ },
+ {
+  "file": "apprentice_awaken",
+  "job_id": "66eb0f5a-73f8-4158-a160-90a8630b6bf6",
+  "status": "completed",
+  "png": "img/apprentice_awaken.png"
+ },
+ {
+  "file": "warrior_awaken",
+  "job_id": "e8e8934a-1f75-4655-aba4-5733b0abf18a",
+  "status": "completed",
+  "png": "img/warrior_awaken.png"
+ },
+ {
+  "file": "spearman_awaken",
+  "job_id": "b48a2720-140e-4c33-a7d9-221a22afb9d0",
+  "status": "completed",
+  "png": "img/spearman_awaken.png"
+ },
+ {
+  "file": "stonegolem_awaken",
+  "job_id": "1b397bf4-f607-4fd6-9b89-d839d9bf4635",
+  "status": "completed",
+  "png": "img/stonegolem_awaken.png"
+ },
+ {
+  "file": "ninja_awaken",
+  "job_id": "808ecc7e-35d5-4b00-a188-f2b659186317",
+  "status": "completed",
+  "png": "img/ninja_awaken.png"
+ },
+ {
+  "file": "k9_awaken",
+  "job_id": "728fcafb-9418-4ba9-b958-b23c31643c5a",
+  "status": "completed",
+  "png": "img/k9_awaken.png"
+ },
+ {
+  "file": "merchant_awaken",
+  "job_id": "f2a2ed3b-fb96-4da6-89bd-3d7339d0aa13",
+  "status": "completed",
+  "png": "img/merchant_awaken.png"
+ },
+ {
+  "file": "mudshaman_awaken",
+  "job_id": "c5c7571e-065d-4f02-bb7f-47c354157b48",
+  "status": "completed",
+  "png": "img/mudshaman_awaken.png"
+ },
+ {
+  "file": "bard_awaken",
+  "job_id": "06ba9780-0771-468f-ac40-3ae4aab8b23e",
+  "status": "completed",
+  "png": "img/bard_awaken.png"
+ },
+ {
+  "file": "scout_awaken",
+  "job_id": "604ead3b-275c-4c5c-9df2-6c1691bf347c",
+  "status": "completed",
+  "png": "img/scout_awaken.png"
+ },
+ {
+  "file": "flamemage_awaken",
+  "job_id": "f35cd84e-962c-46ab-8cf0-e33c3178cb70",
+  "status": "completed",
+  "png": "img/flamemage_awaken.png"
+ }
+]
