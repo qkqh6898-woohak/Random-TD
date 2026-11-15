@@ -9,7 +9,11 @@
  *  - 시작 위상(seed)은 타워마다 무작위 → 같은 타워 여러 개가 똑같이 움직이지 않는다.
  * 공격: 0.25초(공격 간격의 60% 이하) 동안 대상 쪽으로 몸을 내밀었다 돌아온다. 공격 직후 0.3초는 고유 동작 대신 숨쉬기만.
  * 등장: 0.4초 동안 작게 시작해 살짝 넘쳤다가 제 크기로 (소환 직후).
+ *
+ * 캐릭터 다양화: 고유 동작 창의 몸 움직임을 캐릭터별 프리셋(art/characters/idle.ts)이 고를 수 있다 (`gesture`·`gestureMs`).
+ * 넘기지 않으면 예전과 똑같이 '작게 뛰며 갸웃'(hopTilt). 결과의 `gesture`(창 진행 0~1, 창 밖 −1)와 `attackK`로 소품·날개 등 파츠가 같은 박자에 움직인다.
  */
+import type { BodyGesture } from '../../art/characters/idle';
 
 /** 숨쉬기 한 주기 (ms) — ART.md 2.2 */
 export const BREATH_PERIOD_MS = 1500;
@@ -41,6 +45,12 @@ export interface TowerPose {
   angle: number;
   /** 공격으로 내민 정도 (칸 배수, 대상 방향 단위 벡터에 곱한다) */
   lunge: number;
+  /** 가로 흔들림 (칸 배수) */
+  dx: number;
+  /** 고유 동작 창 진행 (0~1), 창 밖이면 −1 */
+  gesture: number;
+  /** 공격 진행 (0~1~0, sin 반 주기), 공격 중이 아니면 0 */
+  attackK: number;
 }
 
 /** 0~1 의사 난수 (seed, n) → 같은 입력이면 같은 값. 화면 연출용 (sim 난수 아님). */
@@ -67,6 +77,10 @@ export interface PoseInput {
   attackMs: number;
   /** 등장 시작 시각 (ms), 없으면 null */
   appearAtMs: number | null;
+  /** 고유 동작 창의 몸 움직임 (기본 hopTilt = 작게 뛰며 갸웃) */
+  gesture?: BodyGesture;
+  /** 고유 동작 길이 (ms, 기본 GESTURE_MS) — 주기(3초)의 절반을 넘지 않게 자른다 */
+  gestureMs?: number;
 }
 
 /** 숨쉬기 + 위아래 흔들림만 (1.5초 주기, 시작 위상 = seed). */
@@ -87,24 +101,76 @@ export function towerPose(input: PoseInput): TowerPose {
   let { sy, sx, bob } = base;
   let angle = 0;
   let lunge = 0;
+  let dx = 0;
+  let gesture = -1;
+  let attackK = 0;
 
   const sinceAttack = input.attackAtMs === null ? Infinity : timeMs - input.attackAtMs;
   if (sinceAttack >= 0 && sinceAttack < input.attackMs && input.attackMs > 0) {
     // 공격: 앞으로 내밀었다 돌아옴 (sin 반 주기), 내밀 때 살짝 눌림
     const k = Math.sin((Math.PI * sinceAttack) / input.attackMs);
+    attackK = k;
     lunge = 0.12 * k;
     sx *= 1 + 0.06 * k;
     sy *= 1 - 0.05 * k;
   } else if (!(sinceAttack >= 0 && sinceAttack < ATTACK_CALM_MS)) {
-    // 고유 동작 자리: 주기마다 0~1초 늦게 시작해 0.6초 동안 작게 뛰며 갸웃
+    // 고유 동작 자리: 주기마다 0~1초 늦게 시작해 (기본 0.6초) 동안 프리셋 몸 동작
+    const len = Math.min(input.gestureMs ?? GESTURE_MS, GESTURE_PERIOD_MS - GESTURE_JITTER_MS);
     const t = timeMs + seed * GESTURE_PERIOD_MS;
     const cycle = Math.floor(t / GESTURE_PERIOD_MS);
     const start = hash01(Math.floor(seed * 1e6), cycle) * GESTURE_JITTER_MS;
     const g = t - cycle * GESTURE_PERIOD_MS - start;
-    if (g >= 0 && g < GESTURE_MS) {
-      const k = Math.sin((Math.PI * g) / GESTURE_MS);
-      bob -= 0.06 * k;
-      angle = 0.1 * Math.sin((TAU * g) / GESTURE_MS) * (hash01(cycle, 7) < 0.5 ? -1 : 1);
+    if (g >= 0 && g < len) {
+      const p = g / len;
+      gesture = p;
+      const k = Math.sin(Math.PI * p);
+      const side = hash01(cycle, 7) < 0.5 ? -1 : 1;
+      switch (input.gesture ?? 'hopTilt') {
+        case 'hopTilt':
+          bob -= 0.06 * k;
+          angle = 0.1 * Math.sin(2 * Math.PI * p) * side;
+          break;
+        case 'hop':
+          bob -= 0.09 * k;
+          break;
+        case 'hop2':
+          bob -= 0.07 * Math.abs(Math.sin(2 * Math.PI * p));
+          break;
+        case 'tilt':
+          angle = 0.12 * k * side;
+          break;
+        case 'lean':
+          angle = 0.09 * k;
+          bob += 0.01 * k;
+          break;
+        case 'shake':
+          dx = 0.03 * Math.sin(6 * 2 * Math.PI * p) * k;
+          break;
+        case 'puff':
+          sx *= 1 + 0.06 * k;
+          sy *= 1 + 0.03 * k;
+          break;
+        case 'stretch':
+          sy *= 1 + 0.07 * k;
+          sx *= 1 - 0.03 * k;
+          bob -= 0.02 * k;
+          break;
+        case 'nod':
+          angle = 0.05 * Math.sin(2 * Math.PI * p);
+          bob += 0.012 * k;
+          break;
+        case 'crouch':
+          sy *= 1 - 0.05 * k;
+          sx *= 1 + 0.03 * k;
+          break;
+        case 'stomp':
+          bob -= 0.04 * Math.abs(Math.sin(2 * Math.PI * p));
+          angle = 0.05 * Math.sin(2 * Math.PI * p);
+          break;
+        case 'still':
+        case 'fade':
+          break;
+      }
     }
   }
 
@@ -118,5 +184,5 @@ export function towerPose(input: PoseInput): TowerPose {
       sy *= s;
     }
   }
-  return { bob, sx, sy, angle, lunge };
+  return { bob, sx, sy, angle, lunge, dx, gesture, attackK };
 }
