@@ -34,6 +34,12 @@ function boot(): void {
   };
   installFatalHandlers(window, (e) => showFatal(e, 'run'));
 
+  if (new URLSearchParams(location.search).get('gallery') === '1') {
+    // 캐릭터 갤러리 (?gallery=1): 게임(Phaser)을 만들지 않고 DOM 갤러리만 띄운다 — 기존 게임 흐름과 무관
+    startGallery().catch((e: unknown) => showFatal(e, 'boot'));
+    return;
+  }
+
   try {
     const data = loadGameData();
     const url = readUrlOptions(location.search);
@@ -55,6 +61,15 @@ function boot(): void {
   } catch (e) {
     showFatal(e, 'boot');
   }
+}
+
+/** 캐릭터 갤러리 (따로 나눈 묶음 — 게임 시작에는 내려받지 않는다). */
+async function startGallery(): Promise<void> {
+  const data = loadGameData();
+  const legions = (data.enemies.hierarchy as { legions?: Record<string, { color?: string }> }).legions ?? {};
+  const { mountGallery, readGalleryOptions } = await import('./ui/gallery/Gallery');
+  const o = readGalleryOptions(location.search);
+  mountGallery(document.body, { ...o, legionColor: (legion) => legions[legion]?.color ?? '#9B4DFF' });
 }
 
 boot();

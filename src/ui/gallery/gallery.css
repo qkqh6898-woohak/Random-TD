@@ -1,0 +1,196 @@
+/* 캐릭터 갤러리 (?gallery=1) — 전체 화면 고정, 세로 스크롤. 게임 무대(#stage)와 따로 뜬다. */
+.gallery {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  background: radial-gradient(120% 50% at 50% 0%, #22305c 0%, #0d1220 70%);
+  color: #f7f3e9;
+  font-family: -apple-system, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.gal-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 10px 6px;
+  background: rgba(13, 18, 32, 0.92);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
+}
+
+.gal-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gal-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.gal-count {
+  font-size: 12px;
+  color: #c9c3b4;
+  white-space: nowrap;
+}
+
+.gal-spacer {
+  flex: 1;
+}
+
+.gal-toggle,
+.gal-tab,
+.gal-chip {
+  font: inherit;
+  color: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.gal-toggle {
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.gal-toggle[aria-pressed='true'] {
+  background: #f5b700;
+  border-color: #f5b700;
+  color: #241503;
+}
+
+.gal-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.gal-tab {
+  flex: 1;
+  padding: 6px 0;
+  font-size: 14px;
+  font-weight: 800;
+  border-radius: 10px;
+}
+
+.gal-tab[aria-selected='true'] {
+  background: #3d8bfd;
+  border-color: #3d8bfd;
+}
+
+.gal-filters {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.gal-filters[hidden] {
+  display: none;
+}
+
+.gal-chip {
+  flex: 1;
+  padding: 4px 0;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.gal-chip[aria-pressed='true'] {
+  background: rgba(245, 183, 0, 0.22);
+  border-color: #f5b700;
+}
+
+.gal-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px 3px;
+  padding: 4px 6px 24px;
+}
+
+.gal-grid[data-tab='people'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.gal-group {
+  grid-column: 1 / -1;
+  margin: 4px 2px 0;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  border-left: 4px solid var(--grade, #9b59d0);
+  color: #f7f3e9;
+}
+
+.gal-card {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.gal-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.gal-name {
+  width: 100%;
+  margin-top: -2px;
+  font-size: 11px;
+  line-height: 1.15;
+  font-weight: 700;
+  text-align: center;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  color: #f7f3e9;
+  text-shadow: 0 1px 2px #000;
+  border-top: 2px solid var(--grade, transparent);
+  padding-top: 1px;
+}
+
+.gal-badge {
+  margin-right: 1px;
+}
+
+.gal-person {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 4px 4px 6px;
+  cursor: pointer;
+}
+
+.gal-person-name {
+  font-size: 12px;
+  border-top: none;
+}
+
+.gal-expr {
+  font-size: 10.5px;
+  color: #c9c3b4;
+}
+
+.gal-grid[data-tab='enemies'] {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.gal-grid[data-tab='enemies'] .gal-name {
+  font-size: 10px;
+}

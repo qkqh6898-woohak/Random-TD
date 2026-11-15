@@ -8,6 +8,9 @@ import type { Composition } from './compose';
 import { PARTICLE_BOX } from './fxArt';
 import type { Ctx } from './cv';
 import { P, glow, paint, rainbow, shade, type PathFn } from './cv';
+import type { HumanLook } from './looks';
+import { drawPortrait, type Expression } from './portraits';
+import { PORTRAIT_BOX } from './rig';
 
 interface Entry {
   canvas: HTMLCanvasElement;
@@ -99,4 +102,23 @@ export function drawPedestal2D(c: Ctx, color: string, grade?: string): void {
   }
   paint(c, el(0, 8, 85, 25), shade(color, -0.35), { lw: 0 });
   paint(c, el(0, 0, 85, 23), color, { lw: 4 });
+}
+
+/**
+ * 대화 UI용 인물 초상 캔버스 (M11b가 쓸 자리): 화면 너비(css px)·기기 배율에 맞춰 한 장 그린다.
+ * 예: `box.append(portraitCanvas(personLook('lena')!, 'happy', 120))`
+ */
+export function portraitCanvas(look: HumanLook, ex: Expression, cssWidth: number, dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  const scale = (cssWidth * dpr) / PORTRAIT_BOX.width;
+  canvas.width = Math.round(PORTRAIT_BOX.width * scale);
+  canvas.height = Math.round(PORTRAIT_BOX.height * scale);
+  canvas.style.width = `${cssWidth}px`;
+  canvas.style.height = `${(cssWidth * PORTRAIT_BOX.height) / PORTRAIT_BOX.width}px`;
+  const c = canvas.getContext('2d');
+  if (c) {
+    c.scale(scale, scale);
+    drawPortrait(c, look, ex);
+  }
+  return canvas;
 }
