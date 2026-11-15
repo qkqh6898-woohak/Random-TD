@@ -185,6 +185,7 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       owned.classList.toggle('is-ready', m.ownedReady);
       target.textContent = m.target;
       pausedEl.hidden = !m.paused;
+      if (m.paused && pausedEl.textContent !== m.pausedText) pausedEl.textContent = m.pausedText;
       mergeBtn.disabled = !m.mergeEnabled;
       mergeAllBtn.disabled = !m.mergeAllEnabled;
       mergeAllBtn.textContent = m.mergeAllTimes > 1 ? `⬆⬆ 모두 승급 ×${m.mergeAllTimes}` : '⬆⬆ 모두 승급';

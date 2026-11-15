@@ -827,6 +827,7 @@ export class GameScene extends Phaser.Scene {
       outcomes: mergeOutcomes(deck, stats.grade).map((id) => names.get(id) ?? id),
       // '이동 중' = 놓은 뒤 0.5초 정지만 (끄는 동안에는 패널이 닫혀 있다. 느린 탭으로 다시 열 때 hold 해제 전 한 틱 깜빡이지 않게)
       paused: isPaused({ pauseUntil: t.pauseUntil, held: false }, this.match.tick),
+      stunned: this.match.tick < t.stunUntil,
       penMaxBp: rules.penMaxBp,
     });
     const changed = this.panel.update(model, this.portraitOf(t.tower));
@@ -1143,8 +1144,9 @@ export class GameScene extends Phaser.Scene {
         case 'bossKill': {
           if (!eventFxVisible('rare', ev.tick, now, frameStart)) break;
           const b = this.match.rules.bosses.get(String(ev.boss));
-          this.ctx.ui.banner(bossKillText(b?.name ?? String(ev.boss), Number(ev.reward)), null, 2200, 'gold');
-          this.fx.coin(Number(ev.x), Number(ev.y), time, () => undefined);
+          const reward = Number(ev.reward);
+          this.ctx.ui.banner(bossKillText(b?.name ?? String(ev.boss), reward), null, 2200, 'gold');
+          this.fx.coin(Number(ev.x), Number(ev.y), time, () => this.hud.gainGold(reward));
           this.noteFx('bossKill');
           break;
         }

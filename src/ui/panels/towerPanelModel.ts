@@ -136,6 +136,8 @@ export interface TowerPanelInput {
   outcomes: readonly string[];
   /** 이동 직후 공격 정지 중 */
   paused: boolean;
+  /** 혼돈의 용에게 기절 중 (M4-5) — 생략하면 아님 */
+  stunned?: boolean;
   /** 관통 최대 (bp, game.json combat.penMax) */
   penMaxBp: number;
   /** 타워 레벨 (계정 성장 M9, 지금은 1). 생략하면 1 */
@@ -167,6 +169,8 @@ export interface TowerPanelModel {
   outcomes: string;
   target: string;
   paused: boolean;
+  /** 쉬는 이유 글자 ('이동 중' · '💫 기절', 쉬지 않으면 '') */
+  pausedText: string;
 }
 
 /** 종족 이름에서 괄호 설명을 뺀다 (부제가 좁은 화면에서 잘리지 않게): '카라쉬 부족 (오크·고블린)' → '카라쉬 부족'. */
@@ -239,6 +243,7 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
     note,
     outcomes: input.mergeableGrade ? input.outcomes.join(' · ') : '',
     target: TARGET_NAMES[data.target],
-    paused: input.paused,
+    paused: input.paused || input.stunned === true,
+    pausedText: input.stunned ? '💫 기절' : input.paused ? '이동 중' : '',
   };
 }

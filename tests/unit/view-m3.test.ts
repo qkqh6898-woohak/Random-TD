@@ -319,3 +319,12 @@ describe('아래 띠 승급 버튼·알림 (UI.md 4.1·8장)', () => {
     expect(mergeFailText('noTower', 3)).toBeNull();
   });
 });
+
+describe('정보 패널: 쉬는 이유 (M4 혼돈의 용 기절)', () => {
+  it('이동 직후 = "이동 중", 기절 = "💫 기절" (기절이 먼저), 둘 다 아니면 숨김', () => {
+    expect(buildTowerPanelModel(panelInput('archer', { paused: true }))).toMatchObject({ paused: true, pausedText: '이동 중' });
+    expect(buildTowerPanelModel(panelInput('archer', { paused: true, stunned: true }))).toMatchObject({ paused: true, pausedText: '💫 기절' });
+    expect(buildTowerPanelModel(panelInput('archer', { stunned: true }))).toMatchObject({ paused: true, pausedText: '💫 기절' });
+    expect(buildTowerPanelModel(panelInput('archer'))).toMatchObject({ paused: false, pausedText: '' });
+  });
+});
