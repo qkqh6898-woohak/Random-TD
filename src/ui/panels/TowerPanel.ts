@@ -11,6 +11,8 @@
  * - [⬆ 승급] [⬆⬆ 모두 승급]은 sim 명령(merge/mergeAll)을 보내는 콜백만 부른다 (패널은 sim을 바꾸지 않는다).
  * - ✕·Esc(뒤로가기)로 닫는다. 맵의 빈 곳을 터치해도 닫힌다 (Game 장면).
  * - 캐릭터 그림은 Game 장면이 구운 타워 텍스처를 이미지 주소로 넘겨준다. CSS로 숨쉬기 동작을 반복한다.
+ * - HF-2: 이름 아래 캐릭터 설명 두 문장(lore·role, 각각 2줄까지 작게). 접기 2단계부터 lore, 3단계부터 role을 숨긴다 (특색 줄을 접기 전에 — 특색은 여전히 가장 늦게 접는다).
+ *   [ℹ](또는 초상)을 누르면 캐릭터 카드(onInfo)를 연다.
  */
 import { h } from '../dom';
 import type { UiView } from '../root';
@@ -22,6 +24,8 @@ export interface TowerPanelOptions {
   onClose: () => void;
   /** [다음 묶음 ▶] — [⬆ 승급 가능 n]으로 연 패널에서 다음 승급 가능 묶음으로 (M5-7, 검토 반영) */
   onNextMergeable?: () => void;
+  /** [ℹ] 캐릭터 카드 열기 (HF-2) — 없으면 버튼을 숨긴다 */
+  onInfo?: () => void;
 }
 
 export type PanelSide = 'bottom' | 'top';
@@ -105,6 +109,21 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
     text: '✕',
     on: { click: () => opts.onClose() },
   });
+  const info = opts.onInfo
+    ? h('button', {
+        class: 'btn btn-chip tp-info',
+        attrs: { type: 'button', 'aria-label': '캐릭터 카드', 'data-action': 'panel-info' },
+        text: 'ℹ',
+        on: { click: () => opts.onInfo?.() },
+      })
+    : null;
+  if (opts.onInfo) {
+    portrait.style.cursor = 'pointer';
+    portrait.addEventListener('click', () => opts.onInfo?.());
+  }
+  const lore = h('p', { class: 'tp-lore', attrs: { 'data-testid': 'tp-lore' } });
+  const role = h('p', { class: 'tp-role', attrs: { 'data-testid': 'tp-role' } });
+  const desc = h('div', { class: 'tp-desc', attrs: { 'data-testid': 'tp-desc' } }, lore, role);
   const statsEl = h('div', { class: 'tp-stats', attrs: { 'data-testid': 'tp-stats' } });
   const detect = h('div', { class: 'tp-line tp-detect', attrs: { 'data-testid': 'tp-detect' } });
   const ability = h('div', { class: 'tp-line tp-ability', attrs: { 'data-testid': 'tp-ability' } });
@@ -140,8 +159,10 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       { class: 'tp-head' },
       h('div', { class: 'tp-portrait-wrap' }, portrait),
       h('div', { class: 'tp-title' }, h('div', { class: 'tp-name-row' }, stars, name, level), subtitle),
+      info,
       close,
     ),
+    desc,
     statsEl,
     detect,
     ability,
@@ -186,6 +207,9 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       name.textContent = m.name;
       level.textContent = m.level;
       subtitle.textContent = m.subtitle;
+      lore.textContent = m.lore;
+      role.textContent = m.role;
+      desc.hidden = m.lore === '' && m.role === '';
       // 셋째 줄(방관·마관·치명)은 접기 3단계에서 숨긴다 (tp-row-pen)
       statsEl.replaceChildren(...m.stats.map((row, i) => h('div', { class: i === 2 ? 'tp-row tp-row-pen' : 'tp-row' }, ...row.map(statSpan))));
       detect.replaceChildren(h('span', { class: 'tp-label', text: '👁 감지' }), h('b', { text: m.detect }));

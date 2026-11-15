@@ -28,7 +28,7 @@ import {
 import { compose } from '../../art/characters/compose';
 import { fxOf } from '../../art/characters/draw';
 import { IDLE_PRESETS, idleParts, type IdlePreset } from '../../art/characters/idle';
-import { towerLook } from '../../art/characters/looks';
+import { lookScale, towerLook } from '../../art/characters/looks';
 import { CharacterFigure, towerCharacterTexture, towerPortraitKey } from '../../art/characters/phaserArt';
 import type { Tower } from '../../sim/entities/Tower';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
@@ -61,6 +61,8 @@ export class TowerSprite {
   private readonly character: CharacterFigure | null;
   private readonly preset: IdlePreset | null;
   private readonly scale: number;
+  /** 캐릭터별 크기 배수 (HF-2) */
+  readonly artScale: number;
   private readonly tile: number;
   private readonly seed: number;
   private readonly attackMs: number;
@@ -88,7 +90,11 @@ export class TowerSprite {
     const pedKey = ensurePedestalTexture(scene, look.grade);
     this.tile = layout.tile;
     this.layout = layout;
-    this.scale = (layout.tile * FIGURE_TILES) / FIGURE_TEX_H;
+    const charLook = towerLook(tower.tower);
+    const awakened = art.awakened?.(tower.tower) ?? false;
+    // 캐릭터별 크기 배수 (HF-2, characterLooks.json scale): 칸에 맞추지 않고 몸집대로 (칸 밖으로 삐져나와도 됨). 탭 판정은 칸 그대로
+    this.artScale = lookScale(charLook, awakened);
+    this.scale = ((layout.tile * FIGURE_TILES) / FIGURE_TEX_H) * this.artScale;
     this.tx = tower.tx;
     this.ty = tower.ty;
     const c = tileCenterPx(layout, tower.tx, tower.ty);
@@ -96,9 +102,8 @@ export class TowerSprite {
     this.baseY = c.y + layout.tile * FOOT_OFFSET_TILES;
     const pedestal = scene.add.image(0, 0, pedKey).setOrigin(0.5, PEDESTAL_ORIGIN_Y);
     pedestal.setScale((layout.tile * PEDESTAL_WIDTH_TILES) / PEDESTAL_TEX_W);
-    const charLook = towerLook(tower.tower);
     if (charLook) {
-      const tex = towerCharacterTexture(scene, charLook, art.awakened?.(tower.tower) ?? false);
+      const tex = towerCharacterTexture(scene, charLook, awakened);
       this.character = new CharacterFigure(scene, tex);
       this.preset = IDLE_PRESETS[tex.render.look.idle ?? 'hop'];
       this.figure = scene.add.container(0, 0, [this.character.container]).setScale(this.scale);
@@ -350,6 +355,11 @@ export class TowerLayer {
     const look = this.art.look(towerId);
     const color = this.art.factionColor(look.faction) ?? SPECIAL_FACTION_COLORS[look.faction] ?? '#888888';
     return ensureTowerTexture(this.scene, look, color);
+  }
+
+  /** 그 타워 그림의 캐릭터별 크기 배수 (E2E, HF-2) */
+  artScaleOf(id: number): number | null {
+    return this.sprites.get(id)?.artScale ?? null;
   }
 
   /** 그 타워의 지금 그려진 발밑 위치 (화면 px). */

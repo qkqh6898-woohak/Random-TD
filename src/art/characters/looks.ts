@@ -113,6 +113,11 @@ export interface HumanLook {
   idle?: IdleId;
   /** 인물 초상 특징 */
   item?: PortraitItem;
+  /**
+   * 화면 크기 배수 (HF-2, 사용자 요청 '캐릭터 크기는 다 다르게, 꼭 칸에 안 맞춰도 돼'): 1 = 보통 사람 크기.
+   * 요정 ~0.8 · 고블린·드워프 ~0.9 · 사람·엘프 ~1.0 · 중갑·오크 ~1.1 · 골렘·정령·신 1.25~1.5 + 등급 덤. 타워는 꼭 적는다 (각성에서 바꿀 수 있음)
+   */
+  scale?: number;
   /** 각성 외형: 바뀌는 필드만 */
   awaken?: Partial<Omit<HumanLook, 'id' | 'kind' | 'name' | 'faction' | 'grade' | 'awaken'>>;
 }
@@ -130,6 +135,8 @@ export interface EnemyLook {
   motion: MotionId;
   /** 눈 색: 기본 녹스 보라, 녹투르만 붉은 눈 */
   eyes?: 'nox' | 'red';
+  /** 화면 크기 배수 (HF-2): 몸집 크기 분류(소형·중형·대형·보스)에 곱한다 — 하수인 0.8~1.1, 대장 1.0~1.2, 4천왕·군주 1.2~1.35. 꼭 적는다 */
+  scale: number;
 }
 
 export type CharacterLook = HumanLook | EnemyLook;
@@ -157,6 +164,10 @@ const colorOrRainbow = (): Schema =>
     if (v !== 'rainbow' && !HEX.test(v)) issues.push({ path, message: `색은 '#RRGGBB' 또는 'rainbow'여야 하는데 ${JSON.stringify(v)}` });
   });
 const e = (list: readonly string[]): Schema => s.str({ enum: list });
+/** 화면 크기 배수 범위 (HF-2): 너무 작으면 안 보이고, 너무 크면 맵 절반을 덮는다 */
+export const LOOK_SCALE_MIN = 0.6;
+export const LOOK_SCALE_MAX = 1.6;
+const scaleField = (): Schema => s.num({ min: LOOK_SCALE_MIN, max: LOOK_SCALE_MAX });
 const opt = s.opt;
 
 /**
@@ -207,6 +218,7 @@ const humanFields: Record<string, Schema> = {
   lift: opt(s.int({ min: 0, max: 60 })),
   idle: opt(e(IDLES)),
   item: opt(e(PORTRAIT_ITEMS)),
+  scale: opt(scaleField()),
 };
 
 const awakenSchema: Schema = s.withCheck<Record<string, unknown>>(s.rec(s.any()), (v, path, issues) => {
@@ -237,6 +249,7 @@ const humanSchema: Schema = strictObj<HumanLook>(
       if (!v.grade) issues.push({ path: `${path}.grade`, message: '타워는 등급이 필요하다' });
       if (!v.prop) issues.push({ path: `${path}.prop`, message: '타워는 주 소품이 필요하다' });
       if (!v.idle) issues.push({ path: `${path}.idle`, message: '타워는 대기 동작이 필요하다' });
+      if (v.scale === undefined) issues.push({ path: `${path}.scale`, message: '타워는 화면 크기(scale)가 필요하다' });
     } else if (!v.item) issues.push({ path: `${path}.item`, message: '인물은 초상 특징(item)이 필요하다' });
   },
 );
@@ -251,6 +264,7 @@ const enemySchema: Schema = strictObj({
   colors: s.arr(color(), { minLength: 2, maxLength: 3 }),
   motion: e(MOTIONS),
   eyes: opt(s.str({ enum: ['nox', 'red'] })),
+  scale: scaleField(),
 });
 
 const characterSchema: Schema = s.withCheck<{ kind: string }>(s.obj({ kind: s.str({ enum: CHARACTER_KINDS }) }), () => {});
@@ -323,6 +337,17 @@ export function findLook(group: LookGroup, id: string): CharacterLook | undefine
 export function resolveLook(look: HumanLook, awakened: boolean): HumanLook {
   if (!awakened || !look.awaken) return look;
   return { ...look, ...look.awaken } as HumanLook;
+}
+
+/**
+ * 화면 크기 배수 (HF-2): 데이터 scale (각성이면 각성 값), 없으면 1. 범위 밖 값은 LOOK_SCALE_MIN~MAX로 자른다.
+ * 타워 그림·적 그림·절차 대체 그림이 모두 이 값을 쓴다.
+ */
+export function lookScale(look: CharacterLook | undefined, awakened = false): number {
+  if (!look) return 1;
+  const v = isEnemyLook(look) ? look.scale : resolveLook(look, awakened).scale;
+  if (v === undefined || !Number.isFinite(v)) return 1;
+  return Math.min(LOOK_SCALE_MAX, Math.max(LOOK_SCALE_MIN, v));
 }
 
 export function hasAwaken(look: CharacterLook): boolean {

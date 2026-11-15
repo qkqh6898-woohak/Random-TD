@@ -28,6 +28,8 @@
  *   [⬆ 승급 가능 n]을 누를 때마다 다음 묶음을 골라 패널을 열고 그 타워들에 금색 고리를 퍼뜨린다(1.5초).
  *   바텀 시트는 하나만: 시트를 열면 정보 패널을 닫고 고르기 창을 접는다, 타워 패널·고르기 창을 펼치면 시트를 닫는다.
  *   히든 미션을 달성하면 계정 저장소에 영구 기록한다 (다음 판부터 이름이 보임).
+ * - HF-2: 전투 배경 그림(테마 × 하늘 밴드, BattleBackground — 없으면 절차 풀밭), 단계 보스 등장 컷인(DOM cutin 층, 연출 끄기면 건너뜀),
+ *   정보 패널 [ℹ] → 캐릭터 카드(DOM card 층), 캐릭터별 화면 크기(looks scale — TowerSprite·MobSprite).
  * - 무한 모드: 순환의 정원 / 캠페인(debug): 테마 1 사거리 미로.
  * - ⏸ 또는 앱이 백그라운드로 가면 일시정지 메뉴(UI.md 4.6). 열려 있는 동안 TickClock 배속 0 = 게임 시간 정지.
  * - 패배하면 시간을 멈추고 패배 화면 ([다시 하기] / [타이틀로]).
@@ -111,7 +113,9 @@ import {
 import { createChoicePanel, type ChoicePanelView } from '../../ui/panels/ChoicePanel';
 import { cardChoiceModel, mergeChoiceModel } from '../../ui/panels/choiceModel';
 import { createTowerPanel, type TowerPanelView } from '../../ui/panels/TowerPanel';
-import { buildTowerPanelModel } from '../../ui/panels/towerPanelModel';
+import { buildTowerPanelModel, type TowerPanelModel } from '../../ui/panels/towerPanelModel';
+import { createCharacterCard } from '../../ui/panels/CharacterCard';
+import { characterCardModel } from '../../ui/panels/characterCardModel';
 import { createHud, type HudView } from '../../ui/hud/Hud';
 import { bossHudInput, buildHudModel, deckDetectNames, defeatText, formatStage, legionNameMap, stageToastText } from '../../ui/hud/hudModel';
 import { availableSpeeds, nextSpeed } from '../../ui/hud/speed';
@@ -152,6 +156,11 @@ import { TowerLayer } from '../render/TowerSprite';
 import { DAMAGE_COLORS, damageColor, eventFxVisible, fxBudget } from '../render/fxModel';
 import { FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../render/towerGeom';
 import { PuddleLayer, SoldierLayer } from '../render/AbilitySprites';
+import { BattleBackground } from '../render/BattleBackground';
+import { BossCutinPlayer, bossCutinId, cutinPath } from '../../ui/cutin/BossCutin';
+import { effectsOff, onEffectsChange } from '../effects';
+import { assetUrl } from '../../assets';
+import { backgroundBand, upcomingBand } from '../artBand';
 import { passiveAuraGlows, type AuraGlow } from '../render/abilityModel';
 import { mobLookView, mobScaleMul, mobStatusView } from '../render/statusModel';
 /** HUD 띠 아래 끝과 알림 사이 간격 (무대 너비 비율, 2cqw) */
@@ -211,6 +220,12 @@ export class GameScene extends Phaser.Scene {
   private layout!: MapLayout;
   private mapArea!: Rect;
   private mapRenderer: MapRenderer | null = null;
+  /** 전투 배경 그림 (HF-2, 테마 × 하늘 밴드). 그림이 없으면 맵 렌더러의 절차 풀밭 */
+  private background: BattleBackground | null = null;
+  /** 보스 컷인 (HF-2, DOM cutin 층) */
+  private cutin: BossCutinPlayer | null = null;
+  /** 컷인 그림 미리 받기 (브라우저 캐시에 올려 둔다) */
+  private cutinPreload: HTMLImageElement[] = [];
   private mobLayer!: MobLayer;
   private towerLayer!: TowerLayer;
   private projectileLayer!: ProjectileLayer;
@@ -251,6 +266,8 @@ export class GameScene extends Phaser.Scene {
   /** 고른 타워 (정보 패널) 엔티티 id */
   private selectedId: number | null = null;
   private panel: TowerPanelView | null = null;
+  /** 마지막으로 그린 정보 패널 글자 (캐릭터 카드가 같은 값을 쓴다, HF-2) */
+  private panelModel: TowerPanelModel | null = null;
   private press: PressState | null = null;
   /** 끌어 놓고 이동 명령을 기다리는 타워 (그 자리에 붙잡아 둔다) */
   private pendingDrop: { id: number; untilMs: number } | null = null;
@@ -359,6 +376,24 @@ export class GameScene extends Phaser.Scene {
     this.refreshHud();
 
     this.mapRenderer = null;
+    this.background = new BattleBackground(this, {
+      crossfadeMs: config.art.crossfadeMs,
+      onCover: (covered) => this.mapRenderer?.setBackdropVisible(!covered),
+    });
+    this.updateBackground();
+    this.cutin = new BossCutinPlayer(this.ctx.ui);
+    // 무한 모드 기본 보스 컷인 그림은 미리 받아 둔다 (처음 나올 때 빈 그림으로 미끄러지지 않게)
+    this.cutinPreload = this.ctx.data.enemies.bosses
+      .map((b) => bossCutinId(b.id, config.art.cutins))
+      .filter((id): id is string => id !== null)
+      .map((id) => {
+        const img = new Image();
+        img.src = assetUrl(cutinPath(id));
+        return img;
+      });
+    const offEffects = onEffectsChange((off) => {
+      if (off) this.cutin?.stop();
+    });
     this.applyLayout(this.measureMapArea());
     this.layoutDirty = false;
     if (typeof ResizeObserver !== 'undefined') {
@@ -396,6 +431,13 @@ export class GameScene extends Phaser.Scene {
       this.pendingDrop = null;
       this.destroyLayers();
       this.mapRenderer = null;
+      this.background?.destroy();
+      this.background = null;
+      offEffects();
+      this.cutin?.stop();
+      this.cutin = null;
+      this.cutinPreload = [];
+      this.ctx.ui.clear('card');
       this.ctx.ui.clear('hud');
       this.ctx.ui.setToastTop(null);
       this.ctx.ui.setToastSingle(false);
@@ -426,6 +468,7 @@ export class GameScene extends Phaser.Scene {
       this.tickMeter.record(n, performance.now() - t0);
     }
     this.handleEvents(time);
+    this.updateBackground();
     this.updatePress(this.time.now);
     // 들려 있어야 할 타워(끄는 중 / 놓고 명령을 기다리는 중) 말고는 내려놓는다 — 끌기를 끝내는 길을 놓쳐도 유령 그림이 남지 않게
     this.towerLayer.releaseDragsExcept(this.press?.dragging ? this.press.id : (this.pendingDrop?.id ?? null), this.time.now);
@@ -449,6 +492,24 @@ export class GameScene extends Phaser.Scene {
     this.fx.update(time, () => this.goldAnchorPx());
     this.refreshHud();
     this.refreshSheet(this.time.now);
+  }
+
+  /** 전투 배경: 지금 단계의 테마·밴드 그림 + 밴드 끝 무렵 다음 그림 미리 받기 (HF-2, game.json art) */
+  private updateBackground(): void {
+    if (!this.background) return;
+    const art = this.ctx.data.game.art;
+    const { mode, stage, theme } = this.match.state;
+    this.background.update(backgroundBand(art, mode, stage, theme), upcomingBand(art, mode, stage, theme));
+  }
+
+  /** 띄운 보스 컷인 수·지금 떠 있는가·미리 받은 컷인 그림 수 (E2E, HF-2) */
+  get cutinStats(): { played: number; showing: boolean; preloaded: number } {
+    return { played: this.cutin?.played ?? 0, showing: this.cutin?.showing ?? false, preloaded: this.cutinPreload.length };
+  }
+
+  /** 지금 보이는 전투 배경 텍스처 키 (E2E, HF-2). 그림이 아직 없으면 null */
+  get backgroundKey(): string | null {
+    return this.background?.currentKey ?? null;
   }
 
   /** 틱 n번 실행. 마지막 틱 직전의 진행도를 기억해 보간에 쓴다. 패배하면 그 자리에서 멈춘다. */
@@ -843,6 +904,7 @@ export class GameScene extends Phaser.Scene {
         onMergeAll: () => this.sendMerge('mergeAll'),
         onClose: () => this.closePanel(),
         onNextMergeable: () => this.selectNextMergeable(),
+        onInfo: () => this.openCharacterCard(),
       });
       this.ctx.ui.show('panel', this.panel);
     }
@@ -878,6 +940,7 @@ export class GameScene extends Phaser.Scene {
   private closePanel(): void {
     if (this.panel) this.ctx.ui.clear('panel');
     this.panel = null;
+    this.panelModel = null;
     this.panelPlaceKey = '';
     this.panelFromMergeCycle = false;
     this.ctx.ui.setToastSingle(false);
@@ -918,6 +981,26 @@ export class GameScene extends Phaser.Scene {
     return this.portraits.get(towerId) ?? null;
   }
 
+  /** 종족 이름 (towers.json factions, 연합·고대신은 따로) */
+  private factionNameOf(faction: string): string {
+    return this.ctx.data.towers.factions[faction]?.name ?? (faction === 'alliance' ? '연합' : faction === 'ancient' ? '고대신' : faction);
+  }
+
+  /**
+   * 캐릭터 카드 (HF-2): 정보 패널의 [ℹ]·초상 → 큰 초상(힉스필드 그림이 있으면 그것)·설명·능력치·특색·각성.
+   * 패널이 마지막으로 그린 글자를 그대로 쓴다 (카드를 연 동안은 고정). ✕·바깥·Esc로 닫는다.
+   */
+  private openCharacterCard(): void {
+    const t = this.selectedTower();
+    const panel = this.panelModel;
+    if (!t || !panel || panel.towerId !== t.tower) return;
+    const data = this.ctx.data.towers.towers.find((x) => x.id === t.tower);
+    if (!data) return;
+    const elementName = data.element ? (this.ctx.data.towers.elements[data.element]?.name ?? null) : null;
+    const model = characterCardModel({ data, panel, factionName: this.factionNameOf(data.faction), elementName, awakened: false });
+    this.ctx.ui.show('card', createCharacterCard({ model, portrait: this.portraitOf(t.tower), onClose: () => this.ctx.ui.clear('card') }));
+  }
+
   /** 정보 패널 글자 갱신 (고른 타워가 사라졌으면 닫는다). */
   private refreshPanel(): void {
     if (!this.panel) return;
@@ -932,8 +1015,7 @@ export class GameScene extends Phaser.Scene {
     if (!data || !stats) return;
     const deck = decks[t.owner] ?? rules.baseDeck;
     const names = this.towerNames;
-    const factions = this.ctx.data.towers.factions;
-    const factionName = factions[data.faction]?.name ?? (data.faction === 'alliance' ? '연합' : data.faction === 'ancient' ? '고대신' : data.faction);
+    const factionName = this.factionNameOf(data.faction);
     const model = buildTowerPanelModel({
       data,
       stats,
@@ -951,6 +1033,7 @@ export class GameScene extends Phaser.Scene {
       penMaxBp: rules.penMaxBp,
       mergeCycle: this.panelFromMergeCycle ? this.mergeCyclePosition(t) : null,
     });
+    this.panelModel = model;
     const changed = this.panel.update(model, this.portraitOf(t.tower));
     // 패널이 고른 타워 그림을 가리지 않게: 실제 패널 높이와 그림 위치를 재서 쪽·접기 단계를 정한다 (바뀔 때만)
     const ui = this.ctx.ui.el;
@@ -959,7 +1042,7 @@ export class GameScene extends Phaser.Scene {
     this.panelPlaceKey = key;
     const L = this.layout;
     const c = tileCenterPx(L, t.tx, t.ty);
-    const span = towerFigureSpanTiles();
+    const span = towerFigureSpanTiles(this.towerLayer.artScaleOf(t.id) ?? 1);
     const w = ui.clientWidth;
     const figure = { top: gameToCssPx(c.y + L.tile * span.top, w), bottom: gameToCssPx(c.y + L.tile * span.bottom, w) };
     const placement = this.panel.place(figure, this.panelTopCss);
@@ -1026,6 +1109,7 @@ export class GameScene extends Phaser.Scene {
       kingdomColor: hexToInt(towers.factions.kingdom?.color ?? '#2E5AAC'),
     });
     if (prevRenderer) prevRenderer.destroy(prevRenderer.textureKey !== renderer.textureKey);
+    renderer.setBackdropVisible(!(this.background?.covered ?? false));
     renderer.draw();
     this.mapRenderer = renderer;
 
@@ -1298,6 +1382,9 @@ export class GameScene extends Phaser.Scene {
             const label = formatStage({ mode, theme, stage: Number(ev.stage ?? this.match.state.stage) });
             this.ctx.ui.banner(bossArrivalText(label, bossTag(this.legionNames[b.legion] ?? b.legion, b.rank), b.name), null, 2600, 'boss');
             bossArrived = true;
+            // 보스 컷인 (HF-2): 그림이 있는 보스만, 연출 끄기면 건너뜀. 실제 시간 art.cutinMs (배속과 무관)
+            const cutId = bossCutinId(b.id, this.ctx.data.game.art.cutins);
+            if (cutId && !effectsOff()) this.cutin?.play({ src: assetUrl(cutinPath(cutId)), name: b.name, ms: this.ctx.data.game.art.cutinMs });
           }
           this.cameras.main.shake(220, 0.004);
           this.noteFx('bossSpawn');

@@ -5,6 +5,8 @@
  * - 배치 칸 = 살짝 솟은 잔디 단상 (아랫단 그림자로 입체감, 체크무늬로 칸 구분), 경로 = 흙길 + 진행 방향 화살표.
  * - 몹 등장 지점 = 녹스 군단의 보라 균열(빙글빙글 도는 소용돌이), 캠페인 출구 = 왕국 성문.
  * - 장식용 무작위(조약돌·풀·꽃)는 맵 id로 시드를 정한 간단한 난수 → 매번 같은 그림 (sim의 Rng와 무관).
+ * - HF-2: 맵 바깥 풀밭(배경)은 따로 구운 그림(BACKDROP_DEPTH)이다 — 힉스필드 전투 배경(BattleBackground)이 뜨면 숨기고, 그림이 없을 때의 대체.
+ *   맵 아래 판(테두리 그림자)은 칸과 같이 구워 배경 그림 위에서도 맵이 또렷하다.
  */
 import Phaser from 'phaser';
 import { COLORS, hexToInt, lerpColor, shade } from '../../art/palette';
@@ -35,6 +37,8 @@ export const MEADOW = {
 } as const;
 
 const OUTLINE = hexToInt(COLORS.outline);
+/** 절차 풀밭 배경 깊이 (전투 배경 그림 BattleBackground보다 아래, 맵 바닥 0보다 아래) */
+export const BACKDROP_DEPTH = -50;
 
 /** 화면용 고정 시드 난수. */
 function lcg(seed: number): () => number {
@@ -71,12 +75,25 @@ export class MapRenderer {
     this.textureKey = `map-${map.id}-${layout.tile}-${layout.originX}-${layout.originY}`;
   }
 
+  /** 절차 풀밭 배경 (맵 바깥). 전투 배경 그림이 뜨면 숨긴다 */
+  private backdrop: Phaser.GameObjects.Image | null = null;
+
   /** 바닥 텍스처를 굽고 장면에 올린다. */
   draw(): void {
+    // 맵 바깥 풀밭은 배치와 무관 → 맵마다 한 장 (전투 배경 그림이 없을 때의 대체)
+    const bgKey = `map-backdrop-${this.map.id}`;
+    if (!this.scene.textures.exists(bgKey)) {
+      const g = this.scene.make.graphics({}, false);
+      this.drawBackdrop(g);
+      g.generateTexture(bgKey, GAME_WIDTH, GAME_HEIGHT);
+      g.destroy();
+    }
+    this.backdrop = this.scene.add.image(0, 0, bgKey).setOrigin(0).setDepth(BACKDROP_DEPTH).setVisible(this.backdropVisible);
+    this.objects.push(this.backdrop);
     const key = this.textureKey;
     if (!this.scene.textures.exists(key)) {
       const g = this.scene.make.graphics({}, false);
-      this.drawBackground(g);
+      this.drawBoardFrame(g);
       this.drawTiles(g);
       g.generateTexture(key, GAME_WIDTH, GAME_HEIGHT);
       g.destroy();
@@ -99,7 +116,15 @@ export class MapRenderer {
     if (removeTexture && this.scene.textures.exists(this.textureKey)) this.scene.textures.remove(this.textureKey);
   }
 
-  private drawBackground(g: Phaser.GameObjects.Graphics): void {
+  private backdropVisible = true;
+
+  /** 절차 풀밭 배경 보이기/숨기기 (전투 배경 그림이 화면을 다 덮으면 숨겨 그리는 비용을 아낀다) */
+  setBackdropVisible(on: boolean): void {
+    this.backdropVisible = on;
+    this.backdrop?.setVisible(on);
+  }
+
+  private drawBackdrop(g: Phaser.GameObjects.Graphics): void {
     const bands = 64;
     const h = GAME_HEIGHT / bands;
     for (let i = 0; i < bands; i++) {
@@ -119,7 +144,10 @@ export class MapRenderer {
       g.fillStyle(flowers[i % flowers.length] as number, 0.75);
       g.fillCircle(rnd() * GAME_WIDTH, rnd() * GAME_HEIGHT, 3 + rnd() * 3);
     }
-    // 맵 아래 판 (테두리 그림자)
+  }
+
+  /** 맵 아래 판 (테두리 그림자) — 배경 그림 위에서도 맵이 또렷하게 */
+  private drawBoardFrame(g: Phaser.GameObjects.Graphics): void {
     const L = this.layout;
     const pad = L.tile * 0.22;
     g.fillStyle(0x000000, 0.22);

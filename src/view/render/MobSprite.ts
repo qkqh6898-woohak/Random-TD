@@ -25,6 +25,7 @@ import { unitsToPx, type MapLayout } from '../layout';
 import { approachLean, leanTarget, mobPose, type MobMotion } from './mobPose';
 import { ensureStatusTextures, statusIconKey } from '../../art/status';
 import { enemyCharacterTexture } from '../../art/characters/phaserArt';
+import { enemyLook, lookScale } from '../../art/characters/looks';
 import { MAX_STATUS_ICONS, NO_LOOK, NO_STATUS, type MobLookView, type MobStatusView, type StatusIcon } from './statusModel';
 
 /** 피격 깜빡 (ms) — ART.md 2.1 */
@@ -34,6 +35,8 @@ export const MOB_DEATH_MS = 300;
 
 /** 떼 안 순번별 옆 간격 (칸) */
 const SWARM_SPREAD = 0.24;
+/** 몹 지름 상한 (칸, HF-2): 캐릭터별 크기 배수를 곱해도 보스 그림이 맵을 너무 덮지 않게 */
+export const MOB_MAX_DIAMETER_TILES = 1.6;
 /** 깊이: 맵 바닥(0)보다 위, HUD(DOM)는 따로 */
 export const MOB_DEPTH_BASE = 1000;
 
@@ -56,6 +59,8 @@ export class MobSprite {
   private readonly baseScale: number;
   /** 만들 때 쓴 크기 배율 (정예·작게·조각) — 바뀌면 MobLayer가 그림을 다시 만든다 (킹 슬라임 분열, 검토 반영) */
   readonly scaleMul: number;
+  /** 캐릭터별 크기 배수 (HF-2, characterLooks.json scale; 외형 데이터가 없으면 1) */
+  readonly artScale: number;
   private readonly phase: number;
   private readonly bobAmp: number;
   private readonly motion: MobMotion;
@@ -111,7 +116,9 @@ export class MobSprite {
     const newArt = enemyCharacterTexture(scene, mob.mob, legion);
     const key = newArt ? newArt.key : ensureMobTexture(scene, mob.mob, legion);
     this.scaleMul = scaleMul;
-    const diameter = layout.tile * (SIZE_SCALE[size] ?? 0.7) * scaleMul;
+    // 캐릭터별 크기 배수 (HF-2, characterLooks.json scale — 새 그림·절차 그림 모두): 몸집 분류 크기 × 배수, 상한 MOB_MAX_DIAMETER_TILES
+    this.artScale = lookScale(enemyLook(mob.mob));
+    const diameter = Math.min(layout.tile * (SIZE_SCALE[size] ?? 0.7) * this.artScale, layout.tile * MOB_MAX_DIAMETER_TILES) * scaleMul;
     this.diameter = diameter;
     this.baseScale = diameter / (newArt ? newArt.size : MOB_TEX_SIZE);
     this.newArt = newArt !== null;
@@ -458,6 +465,11 @@ export class MobLayer {
   /** 그 몹 그림의 크기 배율 (E2E가 statusModel.mobScaleMul과 비교). 그림이 없으면 null */
   scaleMulOf(id: number): number | null {
     return this.sprites.get(id)?.scaleMul ?? null;
+  }
+
+  /** 그 몹 그림의 캐릭터별 크기 배수 (E2E, HF-2). 그림이 없으면 null */
+  artScaleOf(id: number): number | null {
+    return this.sprites.get(id)?.artScale ?? null;
   }
 
   /** 새 캐릭터 그림으로 그린 몹 수 (E2E) */

@@ -80,6 +80,10 @@ export interface DotData {
 export interface TowerData {
   id: string;
   name: string;
+  /** 캐릭터 설명: 어떤 인물인가 (한 문장, 화면 전용 — 정보 패널·캐릭터 카드) */
+  lore: string;
+  /** 캐릭터 설명: 전투에서 하는 일 (한 문장, 화면 전용) */
+  role: string;
   grade: Grade;
   special: number;
   unlock: UnlockKind;
@@ -561,6 +565,31 @@ export interface GameConfig {
   upgrade: UpgradeConfig;
   gamble: GambleConfig;
   challenge: ChallengeConfig;
+  /** 화면 전용 그림 설정 (HF-2): 전투 배경 밴드·보스 컷인. sim은 읽지 않는다 */
+  art: ArtConfig;
+}
+
+/** game.json art (HF-2, 화면 전용) — 뜻은 game.json art.note */
+export interface ArtConfig {
+  note: string;
+  /** 하늘 밴드 하나의 단계 수 (10) */
+  bandStages: number;
+  /** 밴드 수 (5: 낮·노을·밤·전운·침공 절정) */
+  bands: number;
+  /** 무한 모드에서 테마 하나가 이어지는 단계 수 (50) */
+  infiniteThemeStages: number;
+  /** 배경 테마 수 (10) */
+  themes: number;
+  /** 밴드가 끝나기 몇 단계 전부터 다음 배경을 미리 받나 */
+  preloadStages: number;
+  /** 배경이 바뀔 때 서서히 바뀌는 시간 (ms, 실제 시간) */
+  crossfadeMs: number;
+  /** 보스 컷인 전체 길이 (ms, 실제 시간 — 배속과 무관) */
+  cutinMs: number;
+  /** 타이틀 그림 수 (public/assets/title/title_keyart_1~n.webp, 0이면 절차 타이틀만) */
+  titleArts: number;
+  /** 컷인 그림이 있는 보스 id (public/assets/cutins/cutin_<id>.webp) */
+  cutins: string[];
 }
 
 /** 보스 효과 카드 효과 종류 (cards.json effect.type) */
@@ -699,9 +728,20 @@ const color = s.withCheck<string>(s.str({ nonEmpty: true }), (v, path, issues) =
   if (!HEX_COLOR.test(v)) issues.push({ path, message: `색은 #RRGGBB 형식이어야 하는데 ${JSON.stringify(v)}` });
 });
 
+/** 캐릭터 설명 한 문장 (HF-2): 비어 있지 않고, 마침표로 끝나며, 중간에 문장이 끊기지 않고, 정보 패널 두 줄에 들어가는 길이 */
+export const DESC_MAX_CHARS = 80;
+const sentence = s.withCheck<string>(s.str({ nonEmpty: true }), (v, path, issues) => {
+  const t = v.trim();
+  if (!/[.!?]$/.test(t)) issues.push({ path, message: `한 문장(마침표로 끝남)이어야 하는데 ${JSON.stringify(v)}` });
+  else if (/[.!?]\s/.test(t.slice(0, -1))) issues.push({ path, message: `한 문장이어야 하는데 문장이 둘 이상: ${JSON.stringify(v)}` });
+  if (t.length > DESC_MAX_CHARS) issues.push({ path, message: `${DESC_MAX_CHARS}자 이하여야 하는데 ${t.length}자` });
+});
+
 const towerSchema = s.obj({
   id: s.str({ nonEmpty: true }),
   name: s.str({ nonEmpty: true }),
+  lore: sentence,
+  role: sentence,
   grade: s.str({ enum: GRADES }),
   special: s.int({ min: 0 }),
   unlock: s.str({ enum: UNLOCKS }),
@@ -1242,6 +1282,20 @@ export const gameSchema: Schema = s.obj({
     cooldownSeconds: tickSeconds(0, 3600),
     timeLimitSeconds: tickSeconds(1, 600),
   }),
+  art: s.obj({
+    note: s.str(),
+    bandStages: s.int({ min: 1, max: 100 }),
+    bands: s.int({ min: 1, max: 20 }),
+    infiniteThemeStages: s.int({ min: 1, max: 1000 }),
+    themes: s.int({ min: 1, max: 50 }),
+    preloadStages: s.int({ min: 0, max: 20 }),
+    crossfadeMs: s.int({ min: 0, max: 5000 }),
+    cutinMs: s.int({ min: 300, max: 5000 }),
+    titleArts: s.int({ min: 0, max: 20 }),
+    cutins: s.withCheck<string[]>(s.arr(s.str({ nonEmpty: true })), (v, path, issues) => {
+      if (new Set(v).size !== v.length) issues.push({ path, message: '컷인 id가 겹친다' });
+    }),
+  }),
 });
 
 /** cards.json (GDD.md 3.1): 카드 효과 종류마다 쓰는 수치가 있는지는 crossCheck에서. */
@@ -1518,6 +1572,10 @@ function crossCheckM4(data: GameData, issues: Issue[]): void {
   for (const [key, v] of [['commanderEvery', cyc.commanderEvery], ['lordEvery', cyc.lordEvery]] as const) {
     if (v % cyc.every !== 0) issues.push({ file: 'enemies.json', path: `bossCycle.${key}`, message: `${v}가 every(${cyc.every})의 배수가 아니다` });
   }
+  // 보스 컷인 (HF-2): 보스 데이터·군단 체계에 있는 id만
+  game.art.cutins.forEach((id, i) => {
+    if (!known.has(id)) issues.push({ file: 'game.json', path: `art.cutins[${i}]`, message: `보스 데이터·군단 체계에 없는 id: ${id}` });
+  });
   if (game.boss.timeLimitSeconds > game.match.stageSeconds) {
     issues.push({ file: 'game.json', path: 'boss.timeLimitSeconds', message: `단계 길이(${game.match.stageSeconds}초)보다 길다` });
   }

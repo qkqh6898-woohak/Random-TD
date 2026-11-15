@@ -273,5 +273,37 @@
   "challenge": {
     "cooldownSeconds": 300,
     "timeLimitSeconds": 30
+  },
+  "art": {
+    "note": "화면 전용 그림 설정 (HF-2, sim은 읽지 않음). 전투 배경 = public/assets/backgrounds/bg_tTT_bB.webp (테마 1~themes × 하늘 밴드 1~bands: 낮·노을·밤·전운·침공 절정). 캠페인: 테마 = 캠페인 테마, 밴드 = clamp(floor((단계-1)/bandStages)+1, 1, bands). 무한: 테마 = (floor((단계-1)/infiniteThemeStages) mod themes)+1, 밴드 = floor(((단계-1) mod infiniteThemeStages)/bandStages)+1. 밴드가 끝나기 preloadStages단계 전부터 다음 배경을 미리 받고, 바뀔 때 crossfadeMs 동안 서서히 (연출 끄기면 바로). cutins = 보스 컷인 그림이 있는 보스 id (public/assets/cutins/cutin_<id>.webp), cutinMs = 컷인 전체 길이(실제 시간, 배속과 무관). titleArts = 타이틀 그림 수 (public/assets/title/title_keyart_1~n.webp, 켤 때마다 하나를 무작위로).",
+    "bandStages": 10,
+    "bands": 5,
+    "infiniteThemeStages": 50,
+    "themes": 10,
+    "preloadStages": 2,
+    "crossfadeMs": 800,
+    "cutinMs": 1600,
+    "titleArts": 2,
+    "cutins": [
+      "grax",
+      "batqueen",
+      "sandqueen",
+      "frostwyrm",
+      "ancientgolem",
+      "crystaleater",
+      "steelcolossus",
+      "lavagiant",
+      "kingslime",
+      "rotent",
+      "abyssjelly",
+      "wraithlord",
+      "wraithknight",
+      "chaosdragon",
+      "zephira",
+      "gordam",
+      "morgath",
+      "nocturne",
+      "nox"
+    ]
   }
 }

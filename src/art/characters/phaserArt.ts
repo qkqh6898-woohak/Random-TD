@@ -13,10 +13,21 @@ import { auraColorOf, auraOf, fxOf } from './draw';
 import { fxCount } from './idle';
 import { enemyLook, type HumanLook } from './looks';
 import type { MobMotion } from '../../view/render/mobPose';
-import { EXTERNAL_ART_MANIFEST, externalArtKey, externalArtUrl, parseExternalEntry, type ExternalArtManifest } from './external';
+import { EXTERNAL_ART_MANIFEST, EXTERNAL_ENEMY_SCALE, externalArtKey, externalArtUrl, externalFigureScale, parseExternalEntry, type ExternalArtManifest } from './external';
 import { assetUrl, currentAssetTable, embeddedAssetJson } from '../../assets';
 
-export { EXTERNAL_ART_DIR, EXTERNAL_ART_MANIFEST, externalArtKey, externalArtUrl, parseExternalEntry, type ExternalArtManifest } from './external';
+export {
+  EXTERNAL_ART_DIR,
+  EXTERNAL_ART_MANIFEST,
+  EXTERNAL_ENEMY_SCALE,
+  EXTERNAL_FIGURE_MAX_W,
+  EXTERNAL_FIGURE_UNITS,
+  externalArtKey,
+  externalArtUrl,
+  externalFigureScale,
+  parseExternalEntry,
+  type ExternalArtManifest,
+} from './external';
 
 /** Phaser 텍스처 관리자를 TextureStore로 */
 export class PhaserTextureStore implements TextureStore {
@@ -122,19 +133,6 @@ export function queueExternalCharacterArt(scene: Phaser.Scene): void {
 
 /** 기절 중 오라·입자 알파 (잿빛 몸 뒤에서 은은하게만) */
 const TINT_GLOW_ALPHA = 0.35;
-
-/** 바깥 그림의 높이 (그림 단위): 절차 그림의 발밑~별 높이와 비슷하게 */
-export const EXTERNAL_FIGURE_UNITS = 230;
-/** 바깥 그림의 최대 너비 (그림 단위): 개·탈것·날개처럼 옆으로 넓은 그림이 옆 칸을 덮지 않게 */
-export const EXTERNAL_FIGURE_MAX_W = 200;
-
-/** 바깥 적 그림 크기 배수 (몹 지름 대비) */
-export const EXTERNAL_ENEMY_SCALE = 1.5;
-
-/** 바깥 그림 배율 (순수): 높이를 맞추되 너비가 넘치면 너비에 맞춘다 */
-export function externalFigureScale(w: number, h: number, units = EXTERNAL_FIGURE_UNITS, maxW = EXTERNAL_FIGURE_MAX_W): number {
-  return Math.min(units / Math.max(1, h), maxW / Math.max(1, w));
-}
 
 // ---------------------------------------------------------------------------
 // 캐릭터 그림 (파츠 Image 묶음)

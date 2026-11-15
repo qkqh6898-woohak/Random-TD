@@ -26,9 +26,12 @@ export const FIGURE_MOTION_MARGIN_TILES = 0.06;
 /** 위 칸으로 삐져나온 머리 부분의 가로 반폭 (칸 배수): 머리(반지름 62)·별·두건 ≈ 0.28칸 + 여유 */
 export const HEAD_HALF_WIDTH_TILES = 0.34;
 
-/** 타워 그림 전체(머리·별 + 대기 동작 여유 ~ 받침대 아래)의 세로 범위: 칸 중심 기준 칸 배수 — 정보 패널이 가리지 않게. */
-export function towerFigureSpanTiles(): { top: number; bottom: number } {
-  return { top: FIGURE_TOP_TILES - FIGURE_MOTION_MARGIN_TILES, bottom: FIGURE_BOTTOM_TILES };
+/**
+ * 타워 그림 전체(머리·별 + 대기 동작 여유 ~ 받침대 아래)의 세로 범위: 칸 중심 기준 칸 배수 — 정보 패널이 가리지 않게.
+ * @param scale 캐릭터별 크기 배수 (HF-2, looks scale): 발밑에서 위로 그만큼 커진다
+ */
+export function towerFigureSpanTiles(scale = 1): { top: number; bottom: number } {
+  return { top: FOOT_OFFSET_TILES + (FIGURE_TOP_TILES - FOOT_OFFSET_TILES) * scale - FIGURE_MOTION_MARGIN_TILES * scale, bottom: FIGURE_BOTTOM_TILES };
 }
 
 /**

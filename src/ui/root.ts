@@ -4,9 +4,11 @@
  * 층(layer):
  *  - screen: 전체 화면 (타이틀, 결과 …) — 한 번에 하나
  *  - hud: 게임 중 상단·하단 HUD
+ *  - cutin: 보스 컷인 (HF-2). HUD 위·패널 아래, 누르기를 막지 않음 (pointer-events: none)
  *  - panel: 게임 중 타워 정보 패널 (HUD 위, 일시정지·패배 화면 아래)
  *  - sheet: 하단 메뉴 바텀 시트 (도전·강화·미션, M5-1). 패널과 같은 높이 — 바텀 시트는 하나만 열리게 Game 장면이 서로 닫는다
  *  - modal: 게임 중 고르기 창 (보스 카드·승급의 축복, M4-7). 패널 위, 일시정지·패배 화면 아래 — 게임 시간은 흐른다
+ *  - card: 캐릭터 카드 (HF-2, 정보 패널의 [ℹ]). 고르기 창 위, 일시정지·패배 화면 아래
  *  - toast: 짧은 알림 (단계 시작 등). 화면 읽기 프로그램이 읽어 주는 곳(aria-live)은 이 층뿐이다.
  *    HUD의 틱·시간처럼 초당 수십 번 바뀌는 값을 live 영역에 두면 계속 읽어 대므로 루트에는 aria-live를 달지 않는다.
  * UI는 sim 상태를 읽기만 하고, 바꾸려면 명령을 만들어 world.enqueue() 한다 (CLAUDE.md 2장).
@@ -18,7 +20,7 @@ export interface UiView {
   destroy?(): void;
 }
 
-export type LayerName = 'screen' | 'hud' | 'panel' | 'sheet' | 'modal' | 'toast';
+export type LayerName = 'screen' | 'hud' | 'cutin' | 'panel' | 'sheet' | 'modal' | 'card' | 'toast';
 
 /** 배너 줄 글자를 줄일 수 있는 하한 (원래 크기의 비율) */
 const BANNER_MIN_FONT_RATIO = 0.6;
@@ -51,12 +53,23 @@ export class UiRoot {
     this.layers = {
       screen: h('div', { class: 'layer layer-screen' }),
       hud: h('div', { class: 'layer layer-hud' }),
+      cutin: h('div', { class: 'layer layer-cutin', attrs: { 'aria-hidden': 'true' } }),
       panel: h('div', { class: 'layer layer-panel' }),
       sheet: h('div', { class: 'layer layer-sheet' }),
       modal: h('div', { class: 'layer layer-modal' }),
+      card: h('div', { class: 'layer layer-card' }),
       toast: h('div', { class: 'layer layer-toast', attrs: { role: 'status', 'aria-live': 'polite' } }),
     };
-    el.append(this.layers.hud, this.layers.panel, this.layers.sheet, this.layers.modal, this.layers.screen, this.layers.toast);
+    el.append(
+      this.layers.hud,
+      this.layers.cutin,
+      this.layers.panel,
+      this.layers.sheet,
+      this.layers.modal,
+      this.layers.card,
+      this.layers.screen,
+      this.layers.toast,
+    );
   }
 
   /** 층에 화면 하나를 띄운다 (그 층의 이전 화면은 닫힘). */

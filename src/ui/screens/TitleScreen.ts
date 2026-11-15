@@ -14,6 +14,8 @@ export interface TitleScreenOptions {
   onStart: () => void;
   /** 있으면 [캠페인 1] 버튼을 보여준다 (debug) */
   onCampaign?: () => void;
+  /** 뒤에 힉스필드 타이틀 그림이 깔려 있다 (HF-2: 글자 그림자를 진하게) */
+  keyArt?: boolean;
 }
 
 export function createTitleScreen(opts: TitleScreenOptions): UiView {
@@ -50,7 +52,7 @@ export function createTitleScreen(opts: TitleScreenOptions): UiView {
 
   const el = h(
     'div',
-    { class: 'screen title-screen', attrs: { 'data-screen': 'title' } },
+    { class: `screen title-screen${opts.keyArt ? ' has-keyart' : ''}`, attrs: { 'data-screen': 'title', 'data-keyart': opts.keyArt ? '1' : '0' } },
     h(
       'div',
       { class: 'title-logo' },

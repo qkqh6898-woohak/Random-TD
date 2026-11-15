@@ -152,6 +152,9 @@ export interface TowerPanelInput {
 export interface TowerPanelModel {
   towerId: string;
   name: string;
+  /** 캐릭터 설명 (HF-2, towers.json lore·role): 어떤 인물인가 / 전투에서 하는 일 — 이름 아래 작게 */
+  lore: string;
+  role: string;
   grade: Grade;
   stars: string;
   /** 별 색 (등급 색, art/palette) */
@@ -224,6 +227,8 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
   return {
     towerId: data.id,
     name: data.name,
+    lore: data.lore,
+    role: data.role,
     grade: data.grade,
     stars: gradeStars(data.grade),
     gradeColor: data.grade === 'god' || data.grade === 'hidden' ? '#F1C40F' : GRADE_COLORS[data.grade],

@@ -127,6 +127,38 @@ for i, c in enumerate(E["challenges"]):
     if c["level"] != i + 1: errors.append(f"도전 보스 {c['name']} 단계 {c['level']} (차례로 {i+1})")
     if abs(c["hp"] - want) > want * 0.01: errors.append(f"도전 보스 {c['name']} 체력 {c['hp']} (공식 {want:.0f})")
 
+# 캐릭터 설명 (HF-2): 타워마다 lore·role 한 문장 (정보 패널·캐릭터 카드)
+for t in towers:
+    for k in ("lore", "role"):
+        v = (t.get(k) or "").strip()
+        if not v: errors.append(f"{t['name']} {k} 없음 (캐릭터 설명 한 문장)")
+        elif not re.search(r"[.!?]$", v): errors.append(f"{t['name']} {k}: 마침표로 끝나는 한 문장이어야 함 ({v})")
+        elif re.search(r"[.!?]\s", v[:-1]): errors.append(f"{t['name']} {k}: 한 문장이어야 함 ({v})")
+        elif len(v) > 80: errors.append(f"{t['name']} {k}: 80자 이하 ({len(v)}자)")
+# 캐릭터별 화면 크기 (HF-2, characterLooks.json scale 0.6~1.6): 타워(각성 포함)·적 모두
+LK = json.load(open(ROOT / "src/data/characterLooks.json", encoding="utf-8"))["characters"]
+look_t = {c["id"]: c for c in LK if c["kind"] == "tower"}
+look_e = {c["id"]: c for c in LK if c["kind"] in ("mob", "captain", "commander", "lord")}
+def _scale_ok(v): return isinstance(v, (int, float)) and not isinstance(v, bool) and 0.6 <= v <= 1.6
+for t in towers:
+    c = look_t.get(t["id"])
+    if not c: errors.append(f"{t['name']} 외형(characterLooks) 없음"); continue
+    if not _scale_ok(c.get("scale")): errors.append(f"{t['name']} 화면 크기 scale {c.get('scale')} (0.6~1.6)")
+    if "awaken" in c and "scale" in c["awaken"] and not _scale_ok(c["awaken"]["scale"]): errors.append(f"{t['name']} 각성 화면 크기 {c['awaken']['scale']} (0.6~1.6)")
+for i, c in look_e.items():
+    if not _scale_ok(c.get("scale")): errors.append(f"적 {c['name']} 화면 크기 scale {c.get('scale')} (0.6~1.6)")
+# 그림 설정 (HF-2, game.json art): 배경 테마×밴드·컷인·타이틀 그림 파일이 모두 있어야 함
+ART = G.get("art", {})
+_assets = ROOT / "public/assets"
+for th in range(1, ART.get("themes", 0) + 1):
+    for b in range(1, ART.get("bands", 0) + 1):
+        if not (_assets / f"backgrounds/bg_t{th:02d}_b{b}.webp").exists(): errors.append(f"배경 그림 없음: bg_t{th:02d}_b{b}.webp")
+for cid in ART.get("cutins", []):
+    if not (_assets / f"cutins/cutin_{cid}.webp").exists(): errors.append(f"컷인 그림 없음: cutin_{cid}.webp")
+for n in range(1, ART.get("titleArts", 0) + 1):
+    if not (_assets / f"title/title_keyart_{n}.webp").exists(): errors.append(f"타이틀 그림 없음: title_keyart_{n}.webp")
+if ART.get("themes", 0) > len(C["themes"]): errors.append(f"art.themes {ART.get('themes')} > 캠페인 테마 수 {len(C['themes'])}")
+
 # ---------- 표 생성 ----------
 def fmt(x):
     if x == 0: return "—"
@@ -322,7 +354,7 @@ SECTIONS = {
 if errors:
     print("❌ 데이터 규칙 위반:"); [print("  -", e) for e in errors]
 else:
-    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 미션 {len(MS)}개, 감지 타워(노말~레전드) {len(detect)}종, 배속 {_sp} · 개발자 {_dev}")
+    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 미션 {len(MS)}개, 감지 타워(노말~레전드) {len(detect)}종, 배속 {_sp} · 개발자 {_dev}, 캐릭터 설명·크기 {len(towers)}+{len(look_e)}, 배경 {ART.get('themes',0)}×{ART.get('bands',0)} · 컷인 {len(ART.get('cutins',[]))}")
 if "--check" in sys.argv or errors:
     sys.exit(1 if errors else 0)
 for doc, secs in SECTIONS.items():

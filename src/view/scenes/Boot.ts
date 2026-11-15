@@ -3,6 +3,7 @@
  * [시작] → Game 장면 (무한 모드, 순환의 정원). ?debug=1 이면 [캠페인 1] → 테마 1 사거리 미로.
  * 타이틀 타워는 캐릭터 다양화 그림(art/characters, 캐릭터별 대기 동작)으로 그린다. 외형 데이터가 없으면 예전 chibi 그림.
  * 바깥 그림 매니페스트(public/assets/characters/manifest.json)도 여기서 읽어 둔다 (없거나 비면 절차 그림 그대로).
+ * HF-2: 힉스필드 타이틀 그림(키 아트 1~2 중 무작위)도 여기서 받는다. 받았으면 그것을 꽉 차게 깔고 절차 배경·캐릭터는 그리지 않는다.
  */
 import Phaser from 'phaser';
 import { GRADE_COLORS } from '../../art/palette';
@@ -12,6 +13,7 @@ import { queueExternalCharacterArt } from '../../art/characters/phaserArt';
 import { createTitleScreen } from '../../ui/screens/TitleScreen';
 import { GAME_HEIGHT, GAME_WIDTH, SCENE_BOOT, SCENE_GAME } from '../config';
 import { drawTitleBackdrop } from '../render/TitleBackdrop';
+import { drawTitleKeyArt, pickTitleArt, queueTitleArt } from '../render/TitleKeyArt';
 import type { GameContext } from '../context';
 import type { MatchMode } from '../../sim/state';
 import { randomSeed, type GameSceneData } from './Game';
@@ -34,6 +36,8 @@ const TITLE_TOWERS: TitleTower[] = [
 
 export class BootScene extends Phaser.Scene {
   private titleChars: TitleCharacter[] = [];
+  /** 이번에 고른 타이틀 그림 텍스처 키 (없으면 null) */
+  private keyArtKey: string | null = null;
 
   constructor(private readonly ctx: GameContext) {
     super({ key: SCENE_BOOT });
@@ -46,6 +50,11 @@ export class BootScene extends Phaser.Scene {
   /** 바깥 그림(힉스필드)을 타이틀 전에 다 받아 둔다. 없거나 실패하면 절차 그림 그대로 */
   preload(): void {
     queueExternalCharacterArt(this);
+    // 타이틀 그림: 켤 때마다 하나 (화면 전용 무작위). 한 번 고르면 타이틀로 돌아와도 같은 그림
+    if (this.keyArtKey === null) {
+      const n = pickTitleArt(this.ctx.data.game.art.titleArts, Math.random());
+      if (n !== null) this.keyArtKey = queueTitleArt(this, n);
+    }
     const label = this.add
       .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '', { fontFamily: '-apple-system, "Noto Sans KR", "Malgun Gothic", sans-serif', fontSize: '44px', color: '#f7f3e9' })
       .setOrigin(0.5);
@@ -56,11 +65,13 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     const { data } = this.ctx;
     const kingdom = data.towers.factions.kingdom?.color ?? '#2E5AAC';
-    drawTitleBackdrop(this, { kingdomColor: kingdom });
+    // 타이틀 그림이 있으면 그것만 (절차 배경·캐릭터는 숨김), 없으면 예전 절차 타이틀
+    const keyArt = this.keyArtKey !== null && drawTitleKeyArt(this, this.keyArtKey);
+    if (!keyArt) drawTitleBackdrop(this, { kingdomColor: kingdom });
 
     const towers = new Map(data.towers.towers.map((t) => [t.id, t]));
     this.titleChars = [];
-    TITLE_TOWERS.forEach((tt, i) => {
+    if (!keyArt) TITLE_TOWERS.forEach((tt, i) => {
       const t = towers.get(tt.towerId) ?? data.towers.towers[i];
       if (!t) return;
       const titled = TitleCharacter.create(this, t.id, tt.x, tt.y, tt.scale, [0.13, 0.57, 0.81][i] ?? 0.3);
@@ -87,6 +98,7 @@ export class BootScene extends Phaser.Scene {
       'screen',
       createTitleScreen({
         version: `v${this.ctx.version} · M2`,
+        keyArt,
         onStart: () => this.startGame('infinite'),
         onCampaign: this.ctx.debug ? () => this.startGame('campaign') : undefined,
       }),
