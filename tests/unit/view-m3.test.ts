@@ -298,15 +298,15 @@ describe('아래 띠 승급 버튼·알림 (UI.md 4.1·8장)', () => {
     expect(mergeableGroups(m.ctx, m.world, 1)).toEqual([]);
   });
 
-  it('아래 띠 소환 안내: [⬆ 승급 가능 n]이 보이면 짧게 "소환 · 100원" (비용이 잘리지 않게, 검토 반영)', () => {
-    expect(summonInfo(1000, 3, 71, 100, true).summonHint).toBe('소환 · 100원');
-    expect(summonInfo(1000, 3, 71, 100, false).summonHint).toBe('빈 칸을 눌러 소환 · 100원');
+  it('아래 띠 소환 안내: 늘 짧게 "소환 · 100원", [⬆ 승급 가능 n]이 보이면 비운다 (M4 고용 버튼과 같은 줄 — 잘리지 않게)', () => {
+    expect(summonInfo(1000, 3, 71, 100, true).summonHint).toBe('');
+    expect(summonInfo(1000, 3, 71, 100, false).summonHint).toBe('소환 · 100원');
     expect(summonInfo(1000, 71, 71, 100, true).summonHint).toBe('빈 칸이 없어요');
     const m = infinite(3);
     const hud = (mergeReady: number) =>
       buildHudModel({ state: m.state, ticksLeft: 100, mobCount: 0, tick: 0, speed: 1, towerCount: 3, buildableCount: 71, summonCost: 100, mergeReady }, data.game.hud);
-    expect(hud(0).summonHint).toBe('빈 칸을 눌러 소환 · 100원');
-    expect(hud(2).summonHint).toBe('소환 · 100원');
+    expect(hud(0).summonHint).toBe('소환 · 100원');
+    expect(hud(2).summonHint).toBe('');
   });
 
   it('문구: 승급 가능 · 승급 실패', () => {

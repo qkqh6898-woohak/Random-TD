@@ -9,7 +9,7 @@
  *   → 경제(일꾼 수입) → 패배.
  *   전투가 패배 판정보다 먼저라서 같은 틱의 처치가 몹 수에 먼저 반영된다 (UI.md 9장). 감지는 이동 다음이라 이번 틱 위치로 드러낸다.
  * - 명령: summon(소환), merge·mergeAll(승급·모두 승급), move(이동·교환), hold(끄는 동안 공격 정지),
- *   hireWorker(일꾼), pickCard(보스 카드), pickMerge(승급의 축복), debugSkipStage·debugAddGold·debugTower(개발용, debug 판에서만).
+ *   hireWorker(일꾼), pickCard(보스 카드), pickMerge(승급의 축복), debugSkipStage·debugAddGold·debugTower·debugCard(개발용, debug 판에서만).
  * - 덱: 플레이어별 (생략하면 decks.json 기본 덱). 판 시작 때 등급별로 복사·동결하고 검사한다 (판 도중 바깥에서 못 바꿈).
  * - 타워 레벨: 플레이어별 (타워 id → 1~15, 생략하면 모두 1). 판 시작 때 복사·동결 (특색 수치 보간·레벨당 공격력, M3-8).
  * 화면은 match.state·mobs()·towers()를 읽기만 하고, 바꾸려면 명령을 world.enqueue() 한다.
@@ -38,7 +38,7 @@ import { merge, mergeAll, pickMerge } from './systems/Merge';
 import { createMobTraitSystem } from './systems/MobTraits';
 import { createDetectionSystem } from './systems/Detection';
 import { createEconomySystem, hireWorker } from './systems/Economy';
-import { pickCard } from './systems/Cards';
+import { applyCard, pickCard } from './systems/Cards';
 import { checkAllBossParams } from './bosses';
 import { holdTower, moveTower } from './systems/Move';
 import { placeTower, summon } from './systems/Summon';
@@ -283,6 +283,14 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     if (cmd.type !== 'debugAddGold' || !state.debug || state.phase !== 'playing') return;
     state.debugUsed = true;
     state.gold += cmd.amount;
+  });
+  world.setCommandHandler('debugCard', (w, cmd) => {
+    if (cmd.type !== 'debugCard' || !state.debug || state.phase !== 'playing') return;
+    const card = rules.cards[cmd.c];
+    if (!card) return;
+    state.debugUsed = true;
+    applyCard(ctx, w, cmd.player, card, state.bossNum > 0 ? state.bossNum : 1);
+    w.emit('cardPick', { player: cmd.player, card: card.id, boss: 0, debug: true });
   });
   world.setCommandHandler('debugTower', (w, cmd) => {
     if (cmd.type !== 'debugTower' || !state.debug || state.phase !== 'playing') return;

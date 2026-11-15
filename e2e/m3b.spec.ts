@@ -287,8 +287,17 @@ test('M3b 스크린샷: 상태 이상 아이콘·진흙 웅덩이·소환 병사
     [2, 4, 'archer'],
     [4, 2, 'warrior'],
   ]);
-  // 16단계: 몹이 단단해 상태 이상이 오래 보인다
-  await fastForwardTo(page, 1200 + 15 * 1200 + 400);
+  // 15단계까지 건너뛴 뒤(M4: 10단계 보스를 이 약한 조합으로는 못 잡아 제한 시간 패배 → debug 건너뛰기는 보스를 지운다) 400틱:
+  // 몹이 단단해 상태 이상이 오래 보인다
+  await inScene(
+    page,
+    (s, n) => {
+      for (let i = 0; i < n; i++) s.match.world.enqueue({ type: 'debugSkipStage', tick: s.match.tick + i });
+    },
+    15,
+  );
+  await inScene(page, (s) => s.debugFastForward(15 + 400), null);
+  expect(await inScene(page, (s) => s.match.state.stage, null)).toBe(15);
   await expect.poll(() => inScene(page, (s) => s.statusIconCount, null), { timeout: 15_000 }).toBeGreaterThan(1);
   await expect.poll(() => inScene(page, (s) => s.renderedPuddleCount + s.renderedSoldierCount, null), { timeout: 20_000 }).toBeGreaterThan(1);
   await tapTile(page, 3, 4);

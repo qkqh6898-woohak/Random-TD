@@ -219,13 +219,16 @@ test('?debug=1: ⏭ 단계 건너뛰기로 10단계 → 보스 단계 표시(�
   await expect(page.getByTestId('hud-stage')).toHaveText('👑 10단계');
   await expect(page.locator('.hud-stage')).toHaveClass(/is-boss/);
   await expect(page.getByTestId('hud-boss')).toBeVisible();
-  await expect(page.getByTestId('hud-boss')).toContainText('보스 단계');
+  // M4: 보스 막대 = 군단·계급 이름표 「박쥐 여왕」 (무한 순환 첫 대장)
+  await expect(page.getByTestId('hud-boss')).toContainText('박쥐 여왕');
   const v = await simView(page);
   expect(v.boss).toBe(true);
-  // 10단계에는 새 몹이 나오지 않는다 (앞 단계에서 첫 칸씩 나온 몹만 남음)
+  // 10단계에는 일반 몹이 새로 나오지 않는다 (앞 단계 첫 칸 몹 + 보스 1 + 박쥐 여왕이 10초마다 부르는 박쥐 5마리뿐)
   const mobs = v.mobs;
   await fastForward(page, 600);
-  expect((await simView(page)).mobs).toBe(mobs);
+  const after = (await simView(page)).mobs;
+  expect(after - mobs).toBeGreaterThanOrEqual(0);
+  expect((after - mobs) % 5).toBe(0);
   await shot(page, 'M1-boss-stage');
   expect(errors).toEqual([]);
 });

@@ -2,15 +2,16 @@
  * 게임 HUD (DOM, UI.md 4.1·4.2, DEV_PLAN M1-8).
  *
  * 1줄: 단계(보스 단계는 👑) · ⏱ 단계 남은 시간 · 👾 몹 수/한도(무한) 또는 ❤ 목숨(캠페인) · ⏸
- * 2줄: 💰 돈 · [💰+ debug] · [⏭ debug] · 배속
+ * 2줄: 💰 돈 · 👷 일꾼 수/최대 (M4, 최대면 금색) · [💰+ debug] · [⏭ debug] · 배속
  * 그 아래: 보스 막대 자리 (UI.md 4.1 '보스가 있을 때만'). 자리는 늘 비워 두고 보스 단계에만 보인다
  *   → 보스 단계가 와도 HUD 높이가 그대로라 맵이 밀리거나 가려지지 않는다. 맵 위쪽 끝은 Game 장면이 이 높이를 재서 정한다.
+ *   M4: 막대 = 군단·계급 이름표 「보스 이름」 + 체력만큼 채운 띠 + 남은 초 (10초 이하 빨간 깜빡). 보스를 잡으면 '보스 처치!'.
  *
  * 터치: HUD 띠 자체는 터치를 통과시키고(pointer-events: none) 버튼만 받는다 → HUD가 캔버스(맵 칸) 터치를 막지 않는다.
  * 경고 (UI.md 4.2): 남은 10초 이하 노란색 / 몹 120 이상 빨간색 깜빡 + 화면 가장자리 붉은 테두리 /
  *   목숨 5 이하 빨간색(깜빡이지 않음), 목숨이 줄 때마다 하트가 깨지는 연출.
  *
- * 아래 띠 (M2): 🗼 놓인 타워 수/배치 칸 수 · 소환 안내 · [⬆ 승급 가능 n](M3, 누르면 그 타워의 정보 패널).
+ * 아래 띠 (M2): 🗼 놓인 타워 수/배치 칸 수 · 소환 안내 · [👷 300원](M4 일꾼 고용) · [⬆ 승급 가능 n](M3, 누르면 그 타워의 정보 패널).
  *   맵 아래쪽 끝은 Game 장면이 이 띠의 위쪽 끝을 재서 정한다.
  * 돈이 들어오면 (동전이 도착하면) 돈 글자가 반짝이고 '+n원'이 떠오른다 (UI.md 4.2).
  *
@@ -37,6 +38,8 @@ export interface HudOptions {
   onAddGold?: () => void;
   /** 아래 띠 '⬆ 승급 가능 n': 승급할 수 있는 타워를 골라 정보 패널을 연다 (M3) */
   onMergeReady?: () => void;
+  /** 아래 띠 '👷 300원': 일꾼 고용 (M4) */
+  onHire?: () => void;
 }
 
 export interface HudView extends UiView {
@@ -112,7 +115,14 @@ export function createHud(opts: HudOptions): HudView {
       })
     : null;
   // 보스 막대 자리: 숨길 때도 자리는 남긴다 (visibility). 빈 글자면 높이가 줄어드니 공백 하나
-  const bannerEl = h('div', { class: 'hud-banner', attrs: { 'data-testid': 'hud-boss', hidden: '' }, text: ' ' });
+  // 채움(체력) → 이름표 글자 → 남은 초 순서로 겹친다 (막대 전체가 체력 바)
+  const bannerFill = h('div', { class: 'hud-banner-fill', attrs: { 'data-testid': 'hud-boss-hp', 'aria-hidden': 'true' } });
+  const bannerText = h('span', { class: 'hud-banner-text', attrs: { 'data-testid': 'hud-boss-name' }, text: ' ' });
+  const bannerTime = h('span', { class: 'hud-banner-time', attrs: { 'data-testid': 'hud-boss-time', role: 'timer', 'aria-live': 'off' }, text: '' });
+  // 일꾼 (2줄): 👷 3/10
+  const workersEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-workers', 'aria-label': '일꾼 수', ...off }, text: '0/0' });
+  const workersItem = h('span', { class: 'hud-item hud-workers' }, h('span', { class: 'hud-label', text: '👷', attrs: { 'aria-hidden': 'true' } }), workersEl);
+  const bannerEl = h('div', { class: 'hud-banner', attrs: { 'data-testid': 'hud-boss', hidden: '' } }, bannerFill, bannerText, bannerTime);
   // 화면 가장자리 붉은 테두리 (몹 120 이상, 무한)
   const edgeEl = h('div', { class: 'hud-edge', attrs: { 'aria-hidden': 'true', 'data-testid': 'hud-edge' } });
   // 돈 '+n원' (돈 글자 옆에서 떠오름)
@@ -133,11 +143,18 @@ export function createHud(opts: HudOptions): HudView {
     text: '',
     on: { click: () => opts.onMergeReady?.() },
   });
+  const hireBtn = h('button', {
+    class: 'btn btn-chip hud-hire',
+    attrs: { type: 'button', 'data-action': 'hire', 'data-testid': 'hud-hire', 'aria-label': '일꾼 고용' },
+    text: '👷',
+    on: { click: () => opts.onHire?.() },
+  });
   const bottomBand = h(
     'div',
     { class: 'hud-bottom' },
     h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl),
     hintEl,
+    hireBtn,
     mergeReadyBtn,
   );
 
@@ -160,6 +177,7 @@ export function createHud(opts: HudOptions): HudView {
         'div',
         { class: 'hud-row' },
         goldItem,
+        workersItem,
         h('span', { class: 'hud-spacer' }),
         addGoldBtn,
         skipBtn,
@@ -250,10 +268,23 @@ export function createHud(opts: HudOptions): HudView {
       setText(speedBtn, 'speed', m.speed);
       if (last.bossBanner !== m.bossBanner) {
         if (m.bossBanner) {
-          bannerEl.textContent = m.bossBanner;
+          bannerText.textContent = m.bossBanner;
           bannerEl.hidden = false;
         } else bannerEl.hidden = true;
       }
+      if (last.bossHp !== m.bossHp) {
+        bannerFill.style.width = m.bossHp < 0 ? '0%' : `${m.bossHp / 10}%`;
+        bannerEl.classList.toggle('has-hp', m.bossHp >= 0);
+      }
+      setText(bannerTime, 'bossTime', m.bossTime);
+      if (last.bossTimeWarn !== m.bossTimeWarn) bannerTime.classList.toggle('is-warn', m.bossTimeWarn);
+      setText(workersEl, 'workers', m.workers);
+      if (last.workersFull !== m.workersFull) workersItem.classList.toggle('is-full', m.workersFull);
+      if (last.hireLabel !== m.hireLabel) {
+        hireBtn.textContent = m.hireLabel;
+        hireBtn.setAttribute('aria-label', m.workersFull ? '일꾼 최대' : `일꾼 고용 ${m.hireLabel.replace('👷 ', '')}`);
+      }
+      if (last.hireReady !== m.hireReady) hireBtn.classList.toggle('is-off', !m.hireReady);
       last = { ...m };
       if (dropped) breakHeart();
     },

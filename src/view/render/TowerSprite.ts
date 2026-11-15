@@ -62,6 +62,8 @@ export class TowerSprite {
   private appearAtMs: number | null = null;
   private lungeDx = 0;
   private lungeDy = 0;
+  /** 혼돈의 용에게 기절 중 (M4-5): 잿빛 + 떨림 */
+  private stunned = false;
 
   constructor(scene: Phaser.Scene, tower: Tower, layout: MapLayout, art: TowerArt) {
     this.id = tower.id;
@@ -122,6 +124,19 @@ export class TowerSprite {
     this.dragAt = at;
   }
 
+  /** 기절 표시 (바뀔 때만 색을 바꾼다). */
+  setStunned(on: boolean): void {
+    if (on === this.stunned) return;
+    this.stunned = on;
+    if (on) this.figure.setTint(0x8c8c9e);
+    else this.figure.clearTint();
+  }
+
+  /** 기절 중인가 (E2E) */
+  get isStunned(): boolean {
+    return this.stunned;
+  }
+
   update(timeMs: number): void {
     // 위치: 끄는 중 = 손가락 위, 이동 직후 = 미끄러짐(SLIDE_MS), 그 밖 = 칸
     let rx = this.baseX;
@@ -145,7 +160,8 @@ export class TowerSprite {
     const s = this.scale;
     this.figure.setPosition(this.lungeDx * pose.lunge * this.tile, pose.bob * this.tile + this.lungeDy * pose.lunge * this.tile);
     this.figure.setScale(s * pose.sx * this.facing, s * pose.sy);
-    this.figure.setRotation(pose.angle);
+    // 기절: 좌우로 작게 떨린다
+    this.figure.setRotation(this.stunned ? Math.sin(timeMs * 0.03) * 0.06 : pose.angle);
   }
 
   /** 끄는 중(손가락 위에 들려 있음)인가. */
@@ -190,7 +206,8 @@ export class TowerLayer {
     this.sprites.get(id)?.attack(this.layout, targetUx, targetUy, timeMs);
   }
 
-  sync(towers: readonly Tower[], timeMs: number): void {
+  /** @param tick 지금 sim 틱 (기절 표시: tick < stunUntil). 생략하면 기절 표시 없음 */
+  sync(towers: readonly Tower[], timeMs: number, tick?: number): void {
     const seen = new Set<number>();
     for (const t of towers) {
       seen.add(t.id);
@@ -200,6 +217,7 @@ export class TowerLayer {
         this.sprites.set(t.id, sprite);
         if (this.pendingAppear.delete(t.id)) sprite.appear(timeMs);
       } else sprite.follow(t, timeMs);
+      sprite.setStunned(tick !== undefined && tick < (t.stunUntil ?? 0));
       sprite.update(timeMs);
     }
     for (const [id, s] of this.sprites) {
@@ -209,6 +227,13 @@ export class TowerLayer {
       }
     }
     this.pendingAppear.clear();
+  }
+
+  /** 기절 표시 중인 타워 그림 수 (E2E) */
+  get stunnedCount(): number {
+    let n = 0;
+    for (const s of this.sprites.values()) if (s.isStunned) n++;
+    return n;
   }
 
   get count(): number {

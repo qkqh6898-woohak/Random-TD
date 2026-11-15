@@ -224,3 +224,16 @@ describe('카드 효과 12종', () => {
     expect(m.state.gold).toBeGreaterThanOrEqual(g0 - 100 + 12);
   });
 });
+
+describe('개발용 debugCard 명령 (debug 판에서만)', () => {
+  it('debug 판: cards.json 순서 번호의 카드 효과를 바로 적용하고 debugUsed 표시 / 일반 판은 무시', () => {
+    const m = arena(1, { debug: true });
+    command(m, { type: 'debugCard', c: rules.cards.findIndex((c) => c.id === 'atkAll') });
+    expect(m.state.mods[0]?.atkPctBp).toBe(2000);
+    expect(m.state.debugUsed).toBe(true);
+    const n = arena(1);
+    command(n, { type: 'debugCard', c: 0 });
+    expect(n.state.mods[0]?.atkPctBp).toBe(0);
+    expect(n.state.debugUsed).toBe(false);
+  });
+});

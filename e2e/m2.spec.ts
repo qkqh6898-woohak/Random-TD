@@ -120,7 +120,7 @@ test('빈 배치 칸 탭 → 소환: 타워가 보이고 돈 1,000 → 900원, �
   const errors = collectErrors(page);
   await start(page);
   await expect(page.getByTestId('hud-towers')).toHaveText('0/71');
-  await expect(page.getByTestId('hud-hint')).toHaveText('빈 칸을 눌러 소환 · 100원');
+  await expect(page.getByTestId('hud-hint')).toHaveText('소환 · 100원');
   await tapTile(page, 2, 2);
   await expect(page.getByTestId('hud-gold')).toHaveText('900원');
   await expect(page.getByTestId('hud-towers')).toHaveText('1/71');

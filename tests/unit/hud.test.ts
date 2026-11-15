@@ -2,7 +2,7 @@
  * M1-8 HUD 표시값 (값이 sim과 일치) + M1-7 맵 화면 배치 (순수 함수, DOM·Phaser 없음).
  */
 import { describe, expect, it } from 'vitest';
-import { buildHudModel, defeatText, formatGold, formatStage, formatTimer, livesDropped, stageToastText, withCommas, type HudInput } from '../../src/ui/hud/hudModel';
+import { bossHudInput, buildHudModel, defeatText, formatGold, formatStage, formatTimer, livesDropped, stageToastText, withCommas, type HudInput } from '../../src/ui/hud/hudModel';
 import {
   BOTTOM_UI_PX,
   HUD_TOP_PX,
@@ -129,20 +129,46 @@ describe('HUD 값 = sim 값', () => {
     expect(livesDropped(before, buildHudModel(inputOf(camp), cfg))).toBe(true);
   });
 
-  it('보스 단계: 👑 표시 + 배너 (캠페인은 보스 배치표 이름)', () => {
+  it('보스 단계: 👑 표시 + 보스 막대 (군단·계급 이름표 「이름」, 체력 천분율, 남은 초 — 10초 이하 경고)', () => {
     const match = infinite(4);
     jumpToStage(match, 10);
-    const m = buildHudModel(inputOf(match), cfg);
+    const legions = { gale: '질풍 군단', earth: '대지 군단', plague: '역병 군단', shadow: '그림자 군단', lord: '군주 직속' };
+    const rules = match.rules;
+    const withBoss = (): HudInput => ({ ...inputOf(match), boss: bossHudInput(rules, legions, match.state, match.mobs(), match.tick) });
+    const m = buildHudModel(withBoss(), cfg);
     expect(m.boss).toBe(true);
-    expect(m.bossBanner).toContain('보스 단계');
+    expect(m.bossBanner).toBe('질풍 군단 · 대장 「박쥐 여왕」');
+    expect(m.bossHp).toBe(1000);
+    expect(m.bossTime).toBe('60초');
+    const queen = match.mobs().find((x) => x.boss)!;
+    queen.hp = Math.floor(queen.maxHp / 4);
+    match.stepN(1200 - 200);
+    const late = buildHudModel(withBoss(), cfg);
+    expect(late.bossHp).toBe(250);
+    expect(late.bossTime).toBe('10초');
+    expect(late.bossTimeWarn).toBe(true);
+    // 잡은 뒤 남은 보스 단계는 '처치!' (막대 없음)
+    for (const x of match.mobs()) if (x.boss) match.world.entities.remove(x.id);
+    match.state.bossId = '';
+    expect(buildHudModel(withBoss(), cfg)).toMatchObject({ bossBanner: '👑 보스 처치! 남은 시간은 휴식', bossHp: -1, bossTime: '' });
+    // 군주 직속은 계급 이름에 이미 들어 있다
+    const d = infinite(4);
+    jumpToStage(d, 60);
+    expect(buildHudModel({ ...inputOf(d), boss: bossHudInput(rules, legions, d.state, d.mobs(), d.tick) }, cfg).bossBanner).toBe('군주 직속 대장 「혼돈의 용」');
     const camp = campaign(1);
-    jumpToStage(camp, 10);
-    const theme1 = data.campaign.themes[0]!;
-    const cm = buildHudModel({ ...inputOf(camp), bossNames: theme1.bossSchedule }, cfg);
-    expect(cm.stage).toBe('1-10');
-    expect(cm.bossBanner).toContain(theme1.bossSchedule['10']!);
     jumpToStage(camp, 11);
     expect(buildHudModel(inputOf(camp), cfg).bossBanner).toBeNull();
+  });
+
+  it('일꾼: 2줄 "3/10" (최대면 금색) + 고용 버튼 글자·살 수 있는지', () => {
+    const match = infinite(4);
+    const hud = () => buildHudModel({ ...inputOf(match), workerMax: 10, workerCost: 300 }, cfg);
+    expect(hud()).toMatchObject({ workers: '0/10', workersFull: false, hireLabel: '👷 300원', hireReady: true });
+    match.state.gold = 299;
+    expect(hud().hireReady).toBe(false);
+    match.state.workers = 10;
+    match.state.gold = 5000;
+    expect(hud()).toMatchObject({ workers: '10/10', workersFull: true, hireLabel: '👷 최대', hireReady: false });
   });
 
   it('패배 글자·단계 알림 글자', () => {

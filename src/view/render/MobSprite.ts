@@ -11,6 +11,9 @@
  * - M2: 체력이 닳으면 머리 위 체력 바, 맞으면 0.1초 하얀 깜빡, 처치되면 0.3초 동안 납작해지며 사라짐 (ART.md 2.1).
  * - M3b 상태 이상 (statusModel.ts): 몸 색(빙결 하늘·정지 회색·기절 노랑·화상 주황·독 연두·둔화 갈색), 체력 바 위 아이콘 최대 4개,
  *   빙결이면 얼음 덩어리를 덧그림, 행동 불가(빙결·정지·기절) 동안은 걷기 흔들림을 멈춘다.
+ * - M4 (statusModel.mobLookView): 드러난 투명 몹 = 보라 외곽선 + 덜 투명, 정예 = 금색 외곽선 + 1.3배, 보스 = 1.3칸 + 왕관 + 늘 보이는 굵은
+ *   체력 바, 날아오른 박쥐 여왕 = 0.35칸 떠오르고 그림자 작게, 혼돈의 용 피해 감소 = 하늘색 보호막 고리, 방패병 보호막 = 체력 바 위 하늘색 줄,
+ *   분열 조각 = 작게.
  */
 import Phaser from 'phaser';
 import { EYE_ICON_H, EYE_ICON_W, MOB_TEX_SIZE, SIZE_SCALE, MOB_LOOKS, ensureEyeIconTexture, ensureMobTexture } from '../../art/mobs';
@@ -19,7 +22,7 @@ import { directionAt, positionAt, type SimPath } from '../../sim/map';
 import { unitsToPx, type MapLayout } from '../layout';
 import { approachLean, leanTarget, mobPose, type MobMotion } from './mobPose';
 import { ensureStatusTextures, statusIconKey } from '../../art/status';
-import { MAX_STATUS_ICONS, NO_STATUS, type MobStatusView, type StatusIcon } from './statusModel';
+import { MAX_STATUS_ICONS, NO_LOOK, NO_STATUS, type MobLookView, type MobStatusView, type StatusIcon } from './statusModel';
 
 /** 피격 깜빡 (ms) — ART.md 2.1 */
 export const MOB_HIT_FLASH_MS = 100;
@@ -34,6 +37,10 @@ export const MOB_DEPTH_BASE = 1000;
 export interface MobArt {
   legionColor(legion: string): number;
 }
+
+/** 드러난 투명 몹 외곽선 (보라) · 정예 외곽선 (금색) — ART.md 2.4 */
+const OUTLINE_REVEALED = 0xb36bff;
+const OUTLINE_ELITE = 0xffc93c;
 
 export class MobSprite {
   readonly id: number;
@@ -78,15 +85,27 @@ export class MobSprite {
   private pausedAt: number | null = null;
   /** 지금 상태 아이콘 수 (E2E) */
   iconCount = 0;
+  /** M4: 외곽선 (드러난 투명 몹 보라 / 정예 금색) — 몸 뒤에 조금 크게 */
+  private readonly outline: Phaser.GameObjects.Image;
+  private outlineColor: number | null = null;
+  /** M4: 보스·보호막 */
+  private readonly boss: boolean;
+  private readonly shieldBar: Phaser.GameObjects.Rectangle;
+  private guardRing: Phaser.GameObjects.Ellipse | null = null;
+  private look: MobLookView = NO_LOOK;
+  /** 드러난 투명 몹 외곽선이 보이는가 (E2E) */
+  revealedOutline = false;
 
-  constructor(scene: Phaser.Scene, mob: Mob, size: string, layout: MapLayout, art: MobArt) {
+  constructor(scene: Phaser.Scene, mob: Mob, size: string, layout: MapLayout, art: MobArt, scaleMul = 1) {
     this.id = mob.id;
     this.scene = scene;
+    this.boss = mob.boss;
     const key = ensureMobTexture(scene, mob.mob, art.legionColor(mob.legion));
-    const diameter = layout.tile * (SIZE_SCALE[size] ?? 0.7);
+    const diameter = layout.tile * (SIZE_SCALE[size] ?? 0.7) * scaleMul;
     this.diameter = diameter;
     this.baseScale = diameter / MOB_TEX_SIZE;
     this.shadow = scene.add.ellipse(0, diameter * 0.36, diameter * 0.78, diameter * 0.26, 0x000000, 0.22);
+    this.outline = scene.add.image(0, 0, key).setScale(this.baseScale * 1.16).setOrigin(0.5, 0.62).setTintFill(OUTLINE_REVEALED).setVisible(false);
     this.body = scene.add.image(0, 0, key).setScale(this.baseScale).setOrigin(0.5, 0.62);
     this.invisible = mob.invisible;
     this.bobAmp = layout.tile * 0.07;
@@ -96,19 +115,21 @@ export class MobSprite {
     this.eyeIcon = this.invisible
       ? scene.add.image(0, this.eyeY, ensureEyeIconTexture(scene)).setDisplaySize(eyeW, (eyeW * EYE_ICON_H) / EYE_ICON_W).setAlpha(0.95)
       : null;
-    // 체력 바: 머리 위 (투명 몹은 👁 위). 체력이 닳았을 때만 보인다
+    // 체력 바: 머리 위 (투명 몹은 👁 위). 체력이 닳았을 때만 보인다 (보스는 늘, 더 굵게)
     this.hpW = Math.max(diameter * 0.8, layout.tile * 0.5);
-    const hpH = Math.max(4, layout.tile * 0.075);
+    const hpH = Math.max(4, layout.tile * (this.boss ? 0.11 : 0.075));
     const hpY = (this.eyeIcon ? this.eyeY - eyeW * 0.45 : -diameter * 0.62) - hpH * 1.6;
     this.hpBg = scene.add.rectangle(0, hpY, this.hpW + 2, hpH + 2, 0x1a1020, 0.85).setVisible(false);
     this.hpFill = scene.add.rectangle(-this.hpW / 2, hpY, this.hpW, hpH, 0x5ee05e, 1).setOrigin(0, 0.5).setVisible(false);
+    // 보호막 줄 (방패병): 체력 바 바로 위 하늘색
+    this.shieldBar = scene.add.rectangle(-this.hpW / 2, hpY - hpH, this.hpW, Math.max(3, hpH * 0.7), 0x8fd8ff, 1).setOrigin(0, 0.5).setVisible(false);
     this.flashImg = scene.add.image(0, 0, key).setScale(this.baseScale).setOrigin(0.5, 0.62).setTintFill(0xffffff).setAlpha(0.6).setVisible(false);
     // 상태 아이콘 줄: 체력 바 바로 위
     this.iconSize = Math.max(16, layout.tile * 0.32);
     this.iconY = hpY - hpH - this.iconSize * 0.6;
-    const parts: Phaser.GameObjects.GameObject[] = [this.shadow, this.body, this.flashImg];
+    const parts: Phaser.GameObjects.GameObject[] = [this.shadow, this.outline, this.body, this.flashImg];
     if (this.eyeIcon) parts.push(this.eyeIcon);
-    parts.push(this.hpBg, this.hpFill);
+    parts.push(this.hpBg, this.hpFill, this.shieldBar);
     this.root = scene.add.container(0, 0, parts);
     // 황금비 위상: ID가 이웃해도 흔들림이 겹치지 않게
     this.phase = (mob.id * 2.399963) % (Math.PI * 2);
@@ -150,7 +171,7 @@ export class MobSprite {
   }
 
   private setHp(ratio: number): void {
-    const show = ratio < 1;
+    const show = ratio < 1 || this.boss;
     if (this.hpBg.visible !== show) {
       this.hpBg.setVisible(show);
       this.hpFill.setVisible(show);
@@ -222,8 +243,30 @@ export class MobSprite {
     return this.statusTint !== null;
   }
 
-  update(path: SimPath, layout: MapLayout, progress: number, timeMs: number, hpRatio = 1, status: MobStatusView = NO_STATUS): void {
+  /** M4 겉모습: 외곽선(드러남 보라 > 정예 금색)·보호막 고리·보호막 줄. 바뀐 것만. */
+  private applyLook(look: MobLookView): void {
+    this.look = look;
+    const color = look.revealed ? OUTLINE_REVEALED : look.elite ? OUTLINE_ELITE : null;
+    if (color !== this.outlineColor) {
+      this.outlineColor = color;
+      if (color === null) this.outline.setVisible(false);
+      else this.outline.setTintFill(color).setVisible(true);
+    }
+    this.revealedOutline = look.revealed;
+    if (look.guard && !this.guardRing) {
+      const d = this.diameter;
+      this.guardRing = this.scene.add.ellipse(0, -d * 0.14, d * 1.3, d * 1.3, 0x8fd8ff, 0.18).setStrokeStyle(Math.max(3, d * 0.05), 0xbfeaff, 0.95);
+      this.root.add(this.guardRing);
+    }
+    if (this.guardRing && this.guardRing.visible !== look.guard) this.guardRing.setVisible(look.guard);
+    const showShield = look.shield > 0;
+    if (this.shieldBar.visible !== showShield) this.shieldBar.setVisible(showShield);
+    if (showShield) this.shieldBar.width = this.hpW * look.shield;
+  }
+
+  update(path: SimPath, layout: MapLayout, progress: number, timeMs: number, hpRatio = 1, status: MobStatusView = NO_STATUS, look: MobLookView = NO_LOOK): void {
     this.applyStatus(status);
+    this.applyLook(look);
     // 행동 불가 동안은 걷기 자세를 멈춘 시각에 고정한다
     if (status.paused) this.pausedAt ??= timeMs;
     else this.pausedAt = null;
@@ -243,12 +286,25 @@ export class MobSprite {
     this.lastTimeMs = timeMs;
     const pose = mobPose(this.motion, poseTime, this.phase);
     const s = this.baseScale;
-    const bob = pose.bob * this.bobAmp;
+    // 날아오른 박쥐 여왕: 0.35칸 떠오르고 그림자가 작아진다
+    const lift = this.look.flying ? -layout.tile * 0.35 : 0;
+    const bob = pose.bob * this.bobAmp + lift;
     this.body.setPosition(0, bob);
     this.body.setScale(s * pose.sx * this.facing, s * pose.sy);
     this.body.setRotation(this.lean + pose.angle);
-    this.shadow.setScale(1 + bob / (this.bobAmp * 12), 1);
-    if (this.invisible) this.body.setAlpha(0.38 + 0.14 * Math.sin(timeMs * 0.006 + this.phase));
+    if (this.outline.visible) {
+      this.outline.setPosition(0, bob);
+      this.outline.setScale(s * 1.16 * pose.sx * this.facing, s * 1.16 * pose.sy);
+      this.outline.setRotation(this.body.rotation);
+    }
+    this.shadow.setScale(this.look.flying ? 0.6 : 1 + (bob - lift) / (this.bobAmp * 12), this.look.flying ? 0.6 : 1);
+    if (this.guardRing?.visible) this.guardRing.setY(-this.diameter * 0.14 + bob).setAlpha(0.75 + 0.25 * Math.sin(timeMs * 0.008));
+    // 투명 몹: 드러나지 않으면 일렁이는 반투명(38±14%), 드러나면 85% + 보라 외곽선
+    if (this.invisible) {
+      const a = this.look.revealed ? 0.85 : 0.38 + 0.14 * Math.sin(timeMs * 0.006 + this.phase);
+      this.body.setAlpha(a);
+      this.outline.setAlpha(this.look.revealed ? 0.9 : 0);
+    }
     if (this.eyeIcon) this.eyeIcon.setY(this.eyeY + bob);
     if (this.iconCount > 0) for (const img of this.icons) img.setY(this.iconY + bob);
     // 피격 깜빡
@@ -287,6 +343,8 @@ export class MobLayer {
     private readonly path: SimPath,
     private readonly art: MobArt,
     private readonly sizeOf: (mobId: string) => string,
+    /** 몹 그림 크기 배율 (정예·조각, statusModel.mobScaleMul) */
+    private readonly scaleOf: (mob: Mob) => number = () => 1,
   ) {}
 
   /** 처치 사건: 다음 sync에서 사라질 때 납작해지는 연출. */
@@ -304,18 +362,33 @@ export class MobLayer {
    * @param prevProgress 직전 틱의 진행도 (id → 진행도). 없으면 보간 없이 지금 값
    * @param alpha 다음 틱까지 진행 비율 (0~1)
    */
-  sync(mobs: readonly Mob[], prevProgress: ReadonlyMap<number, number>, alpha: number, timeMs: number, statusOf?: (mob: Mob) => MobStatusView): void {
+  sync(
+    mobs: readonly Mob[],
+    prevProgress: ReadonlyMap<number, number>,
+    alpha: number,
+    timeMs: number,
+    statusOf?: (mob: Mob) => MobStatusView,
+    lookOf?: (mob: Mob) => MobLookView,
+  ): void {
     const seen = new Set<number>();
     for (const mob of mobs) {
       seen.add(mob.id);
       let sprite = this.sprites.get(mob.id);
       if (!sprite) {
-        sprite = new MobSprite(this.scene, mob, this.sizeOf(mob.mob), this.layout, this.art);
+        sprite = new MobSprite(this.scene, mob, this.sizeOf(mob.mob), this.layout, this.art, this.scaleOf(mob));
         this.sprites.set(mob.id, sprite);
       }
       const prev = prevProgress.get(mob.id);
       const progress = prev === undefined ? mob.progress : prev + (mob.progress - prev) * alpha;
-      sprite.update(this.path, this.layout, progress, timeMs, mob.maxHp > 0 ? mob.hp / mob.maxHp : 1, statusOf ? statusOf(mob) : NO_STATUS);
+      sprite.update(
+        this.path,
+        this.layout,
+        progress,
+        timeMs,
+        mob.maxHp > 0 ? mob.hp / mob.maxHp : 1,
+        statusOf ? statusOf(mob) : NO_STATUS,
+        lookOf ? lookOf(mob) : NO_LOOK,
+      );
     }
     for (const id of this.seen) {
       if (!seen.has(id)) {
@@ -354,6 +427,13 @@ export class MobLayer {
   get tintedCount(): number {
     let n = 0;
     for (const s of this.sprites.values()) if (s.tinted) n++;
+    return n;
+  }
+
+  /** 보라 외곽선(드러난 투명 몹)이 보이는 몹 그림 수 (E2E) */
+  get revealedOutlineCount(): number {
+    let n = 0;
+    for (const s of this.sprites.values()) if (s.revealedOutline) n++;
     return n;
   }
 

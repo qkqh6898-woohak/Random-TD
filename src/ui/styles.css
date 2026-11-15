@@ -566,6 +566,10 @@ body {
  * 보스 단계 전후로 HUD 높이가 같아 맵이 움직이지 않는다 (줄 높이 = 높이 − 테두리로 세로 가운데).
  */
 .hud-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
   margin: 1.2cqw 2.4cqw 0;
   height: 7.6cqw;
   line-height: 7cqw;
@@ -573,12 +577,72 @@ body {
   border-radius: 2cqw;
   background: linear-gradient(90deg, rgba(163, 29, 26, 0.92), rgba(91, 58, 140, 0.92));
   border: 0.3cqw solid rgba(255, 255, 255, 0.25);
-  text-align: center;
   font-size: 3.6cqw;
   font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
+}
+
+/* M4 보스 체력 막대: 보스가 살아 있으면 어두운 바탕 위에 체력만큼 붉은 띠, 이름표는 은색 */
+.hud-banner.has-hp {
+  background: rgba(20, 14, 30, 0.92);
+  border-color: rgba(214, 220, 232, 0.55);
+}
+
+.hud-banner-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(90deg, rgba(196, 34, 52, 0.95), rgba(229, 89, 52, 0.9));
+  transition: width 120ms linear;
+}
+
+.hud-banner-text {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 0.3cqw 0.6cqw rgba(0, 0, 0, 0.7);
+}
+
+.hud-banner.has-hp .hud-banner-text {
+  color: #e9edf5;
+}
+
+.hud-banner-time {
+  position: relative;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0.3cqw 0.6cqw rgba(0, 0, 0, 0.7);
+}
+
+.hud-banner-time:empty {
+  display: none;
+}
+
+/* 보스 남은 10초: 빨간 깜빡 (ENEMIES.md 8장) */
+.hud-banner-time.is-warn {
+  color: #ff6b6b;
+  animation: hud-blink 0.5s ease-in-out infinite alternate;
+}
+
+/* 일꾼 (2줄): 최대면 금색 (UI.md 4.2) */
+.hud-workers.is-full .hud-value {
+  color: var(--gold);
+}
+
+/* 일꾼 고용 버튼 (아래 띠): 살 수 없으면 흐리게 (눌러도 이유를 알림으로 알려 준다) */
+.hud-hire {
+  flex-shrink: 0;
+  color: #ffd28a;
+}
+
+.hud-hire.is-off {
+  opacity: 0.55;
 }
 
 /* 보스가 없을 때도 자리는 남긴다 → 보스 단계에 맵이 밀리거나 가려지지 않는다 */
@@ -1037,4 +1101,250 @@ body {
 .hud-merge-ready[hidden] {
   display: inline-flex;
   visibility: hidden;
+}
+
+/* ---------- M4 배너 알림 (편대 예고·투명 몹 경고·보스 이름표·보스 처치) ---------- */
+.toast-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6cqw;
+  max-width: 92cqw;
+  padding: 1.8cqw 4.4cqw;
+  border-radius: 3cqw;
+  text-align: center;
+}
+
+.toast-banner .toast-title {
+  font-size: 4cqw;
+  font-weight: 900;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+
+/* 한 줄 배너(보스 이름표·처치)는 일반 알림과 같은 높이 → HUD와 맵 사이 알림 자리 안에 들어간다 */
+.toast-banner:not(:has(.toast-sub)) {
+  padding: 1.6cqw 4.4cqw;
+  white-space: nowrap;
+}
+
+.toast-banner .toast-sub {
+  font-size: 3.3cqw;
+  font-weight: 700;
+  opacity: 0.92;
+  word-break: keep-all;
+}
+
+.toast-banner.is-warn {
+  background: linear-gradient(180deg, rgba(122, 52, 8, 0.94), rgba(70, 28, 6, 0.94));
+  border-color: #ffb347;
+  color: #ffe2b0;
+}
+
+.toast-banner.is-shadow {
+  background: linear-gradient(180deg, rgba(70, 30, 120, 0.94), rgba(36, 16, 66, 0.94));
+  border-color: #c79bff;
+  color: #f0e4ff;
+}
+
+.toast-banner.is-boss {
+  background: linear-gradient(180deg, rgba(64, 70, 86, 0.95), rgba(28, 32, 44, 0.95));
+  border-color: #dfe5ef;
+  color: #f4f7fb;
+}
+
+.toast-banner.is-gold {
+  background: linear-gradient(180deg, rgba(120, 86, 12, 0.95), rgba(66, 44, 4, 0.95));
+  border-color: #ffe08a;
+  color: #fff3c4;
+}
+
+/* ---------- M4 고르기 창 (보스 카드·승급의 축복) ---------- */
+.layer-modal {
+  pointer-events: none;
+}
+
+.choice-panel {
+  position: absolute;
+  left: 3cqw;
+  right: 3cqw;
+  bottom: max(15cqw, 60px);
+  display: flex;
+  flex-direction: column;
+  gap: 1.6cqw;
+  padding: 3cqw 3cqw 3.4cqw;
+  border-radius: 4cqw;
+  background: linear-gradient(180deg, rgba(36, 30, 64, 0.97) 0%, rgba(13, 18, 32, 0.97) 100%);
+  border: 0.5cqw solid rgba(255, 216, 90, 0.7);
+  box-shadow: 0 2cqw 8cqw rgba(0, 0, 0, 0.6);
+  pointer-events: auto;
+  animation: choice-in 220ms ease-out;
+}
+
+.choice-panel.is-merge {
+  border-color: rgba(143, 216, 255, 0.75);
+}
+
+@keyframes choice-in {
+  from {
+    transform: translateY(4cqw);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.choice-root {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.choice-panel[hidden] {
+  display: none;
+}
+
+.cp-head {
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+}
+
+.cp-title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 4.2cqw;
+  font-weight: 900;
+  color: var(--gold);
+  word-break: keep-all;
+}
+
+.cp-later {
+  flex-shrink: 0;
+  min-height: max(9cqw, 36px);
+  padding: 0.8cqw 2.4cqw;
+  font-size: 3cqw;
+  border-radius: 2cqw;
+  background: rgba(255, 255, 255, 0.1);
+  border: 0.3cqw solid rgba(255, 255, 255, 0.3);
+  color: var(--text-dim);
+}
+
+/* 접었을 때: 아래 띠 위 오른쪽에 작은 알약 하나 */
+.cp-pill {
+  position: absolute;
+  right: 3cqw;
+  bottom: max(15cqw, 60px);
+  pointer-events: auto;
+  color: #3b2416;
+  background: linear-gradient(180deg, #ffd85a 0%, var(--gold) 60%, var(--gold-deep) 100%);
+  border-color: #fff3c4;
+  box-shadow: 0 1cqw 3cqw rgba(0, 0, 0, 0.5);
+  animation: choice-in 220ms ease-out;
+}
+
+.cp-pill.is-merge {
+  color: #0e2a3a;
+  background: linear-gradient(180deg, #bfeaff 0%, #8fd8ff 100%);
+}
+
+.cp-pill[hidden] {
+  display: none;
+}
+
+.choice-panel.is-merge .cp-title {
+  color: #8fd8ff;
+}
+
+.cp-sub {
+  text-align: center;
+  font-size: 3cqw;
+  color: var(--text-dim);
+}
+
+.cp-options {
+  display: grid;
+  gap: 2cqw;
+}
+
+.cp-options.cp-n3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.cp-options.cp-n2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.cp-options.cp-n4 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.cp-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1cqw;
+  min-height: max(36cqw, 120px);
+  padding: 2.6cqw 1.6cqw 2cqw;
+  border-radius: 3cqw;
+  background: linear-gradient(180deg, #3a4a78 0%, #263155 100%);
+  border: 0.4cqw solid rgba(255, 255, 255, 0.28);
+  color: var(--text);
+  text-align: center;
+}
+
+.cp-option.is-rare {
+  background: linear-gradient(180deg, #6a3fa8 0%, #3c2370 100%);
+  border-color: #e0b8ff;
+  box-shadow: 0 0 3cqw rgba(200, 140, 255, 0.45);
+}
+
+.cp-option.is-current {
+  border-color: rgba(126, 217, 87, 0.8);
+}
+
+.choice-panel.is-locked .cp-option {
+  opacity: 0.6;
+}
+
+.cp-badge {
+  position: absolute;
+  top: -1.6cqw;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.3cqw 2cqw;
+  border-radius: 2cqw;
+  font-size: 2.6cqw;
+  font-weight: 800;
+  background: #1b2238;
+  border: 0.3cqw solid rgba(255, 255, 255, 0.35);
+  white-space: nowrap;
+}
+
+.cp-option.is-rare .cp-badge {
+  background: #5a2a9a;
+  border-color: #e0b8ff;
+  color: #fff;
+}
+
+.cp-icon {
+  font-size: 7cqw;
+  line-height: 1.1;
+}
+
+.cp-name {
+  font-size: 3.8cqw;
+  font-weight: 900;
+  word-break: keep-all;
+}
+
+.cp-desc {
+  font-size: 2.8cqw;
+  line-height: 1.3;
+  color: #d6dcef;
+  word-break: keep-all;
 }

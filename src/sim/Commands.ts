@@ -44,7 +44,9 @@ export type CommandPayload =
   /** 보스 카드 고르기 (M4-7, GDD 3.1): 가장 먼저 받은 카드 묶음에서 i번째 (0부터) */
   | { type: 'pickCard'; i: number }
   /** 승급의 축복 (M4-7): 결과 타워 id를 다른 결과로 바꿀지 (pick 1 = 바꿈, 0 = 그대로) */
-  | { type: 'pickMerge'; id: number; pick: number };
+  | { type: 'pickMerge'; id: number; pick: number }
+  /** 개발용 치트 (?debug=1, M4): cards.json 순서 c번째 카드 효과를 바로 적용 (카드 UI·효과 확인용). debug 판에서만 */
+  | { type: 'debugCard'; c: number };
 
 export type CommandType = CommandPayload['type'];
 
@@ -61,6 +63,7 @@ export const COMMAND_TYPES: readonly CommandType[] = [
   'hireWorker',
   'pickCard',
   'pickMerge',
+  'debugCard',
 ];
 
 /** 칸 좌표 상한 (맵은 이보다 훨씬 작다. 네트워크로 받은 터무니없는 값을 거른다) */
@@ -82,6 +85,7 @@ export const PAYLOAD_FIELDS: { readonly [K in CommandType]: readonly string[] } 
   hireWorker: [],
   pickCard: ['i'],
   pickMerge: ['id', 'pick'],
+  debugCard: ['c'],
 };
 
 /** 카드 번호 상한 (한 번에 보여주는 카드는 6장 이하) */
@@ -142,6 +146,9 @@ export function validatePayload(cmd: unknown): string | null {
       if (!isNonNegInt(v) || v > MAX_CARD_INDEX) return `i가 0~${MAX_CARD_INDEX} 정수가 아님: ${String(v)} (pickCard 명령)`;
       return null;
     }
+    case 'debugCard':
+      if (!isNonNegInt(c.c) || c.c > 255) return `c가 0~255 정수가 아님: ${String(c.c)} (debugCard 명령)`;
+      return null;
     case 'pickMerge':
       if (!isNonNegInt(c.id) || c.id < 1) return `id가 1 이상 정수가 아님: ${String(c.id)} (pickMerge 명령)`;
       if (c.pick !== 0 && c.pick !== 1) return `pick이 0 또는 1이 아님: ${String(c.pick)} (pickMerge 명령)`;

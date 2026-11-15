@@ -14,6 +14,10 @@ export const DAMAGE_COLORS = {
   gold: '#F5B700',
   /** 그림자 암살자 즉사 글자 (M3b) */
   execute: '#FF5A6E',
+  /** 치유사·망령 군주 회복 숫자 (M4, ENEMIES.md 6장 '회복량 숫자 초록색') */
+  heal: '#7EE08A',
+  /** 유령 회피 '빗나감' (M4) */
+  evade: '#C9C3B4',
 } as const;
 
 /** 연출을 만드는 대량 사건(공격·피해·처치·헛발)의 범위: 지금 틱에서 이만큼 안쪽 */

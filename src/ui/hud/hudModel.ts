@@ -2,9 +2,15 @@
  * HUD 표시값 계산 (순수 함수, DOM 없음 → 단위 테스트로 "값이 sim과 일치"를 확인한다).
  * UI.md 4.1·4.2: 1줄 = 단계·타이머·몹 수(무한)/목숨(캠페인)·⏸, 2줄 = 돈·배속.
  * 아래 띠 (M2): 놓인 타워 수/배치 칸 수 · 소환 안내 (돈이 모자라면 빨간색).
- * M3: 아래 띠에 '⬆ 승급 가능 n' 버튼 (UI.md 4.1, 승급할 수 있는 묶음 수. 0이면 숨김). 일꾼·하단 메뉴는 M4·M5.
+ * M3: 아래 띠에 '⬆ 승급 가능 n' 버튼 (UI.md 4.1, 승급할 수 있는 묶음 수. 0이면 숨김).
+ * M4: 2줄에 '👷 3/10' (최대면 금색), 아래 띠에 [👷 300원] 일꾼 고용 버튼 (최대면 '👷 최대'), 보스 막대 = 이름표 + 체력 채움 + 남은 초
+ *   (UI.md 4.1 '[보스: 박쥐 여왕 ▓▓▓▓░░ 38초]', 10초 이하 빨강). 보스를 잡은 보스 단계는 '보스 처치! 남은 시간은 휴식'.
+ *   하단 메뉴는 M5.
  */
+import { BOSS_CLEARED, bossNameplate, bossTag } from '../messages';
 import type { HudConfig } from '../../data/load';
+import type { Mob } from '../../sim/entities/Mob';
+import type { MatchRules } from '../../sim/rules';
 import type { MatchState } from '../../sim/state';
 import { TICK_HZ } from '../../sim/World';
 
@@ -25,6 +31,11 @@ export interface HudInput {
   summonCost?: number;
   /** 승급할 수 있는 묶음 수 (생략하면 0) */
   mergeReady?: number;
+  /** 일꾼 최대 수·고용 비용 (생략하면 일꾼 표시 없음 = 0/0) */
+  workerMax?: number;
+  workerCost?: number;
+  /** 살아 있는 보스 (이름·이름표 앞부분·조각 체력 합·처음 체력, 남은 제한 틱). 없으면 null */
+  boss?: { name: string; tag: string; hp: number; maxHp: number; ticksLeft: number } | null;
 }
 
 export interface HudModel {
@@ -44,8 +55,22 @@ export interface HudModel {
   edgeWarn: boolean;
   gold: string;
   speed: string;
-  /** 보스 단계 배너 (아니면 null) */
+  /** 보스 막대 글자 (보스 단계가 아니면 null): 살아 있으면 이름표, 잡았으면 '보스 처치!' */
   bossBanner: string | null;
+  /** 보스 체력 채움 (천분율 0~1000, 막대가 없으면 −1) */
+  bossHp: number;
+  /** 보스 남은 시간 '38초' (보스가 없으면 '') */
+  bossTime: string;
+  /** 보스 남은 10초 이하 (빨간 깜빡, ENEMIES.md 8장) */
+  bossTimeWarn: boolean;
+  /** 일꾼 '3/10' */
+  workers: string;
+  /** 일꾼 최대 (금색) */
+  workersFull: boolean;
+  /** 고용 버튼 글자 '👷 300원' / '👷 최대' */
+  hireLabel: string;
+  /** 고용할 수 있는가 (돈 있음 + 최대 아님, 아니면 버튼이 흐림) */
+  hireReady: boolean;
   tick: number;
   /** 놓인 타워 수 / 배치 칸 수 */
   towers: string;
@@ -100,8 +125,10 @@ export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
   const { state } = input;
   const campaign = state.mode === 'campaign';
   const secLeft = input.ticksLeft <= 0 ? 0 : Math.ceil(input.ticksLeft / TICK_HZ);
-  const bossName = input.bossNames?.[String(state.stage)];
   const mobWarn = !campaign && input.mobCount >= cfg.mobWarnCount;
+  const workerMax = input.workerMax ?? 0;
+  const workerCost = input.workerCost ?? 0;
+  const workersFull = workerMax > 0 && state.workers >= workerMax;
   return {
     stage: formatStage(state),
     boss: state.bossStage,
@@ -114,11 +141,55 @@ export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
     edgeWarn: mobWarn,
     gold: formatGold(state.gold),
     speed: `×${input.speed}`,
-    bossBanner: state.bossStage ? `👑 보스 단계${bossName ? ` · ${bossName}` : ''} — 보스 준비 중` : null,
+    ...bossBar(state.bossStage, input.boss ?? null, cfg),
     tick: input.tick,
     ...summonInfo(state.gold, input.towerCount ?? 0, input.buildableCount ?? 0, input.summonCost ?? 0, (input.mergeReady ?? 0) > 0),
     mergeReady: mergeReadyText(input.mergeReady ?? 0),
+    workers: `${state.workers}/${workerMax}`,
+    workersFull,
+    hireLabel: workersFull ? '👷 최대' : `👷 ${withCommas(workerCost)}원`,
+    hireReady: !workersFull && state.gold >= workerCost,
   };
+}
+
+/**
+ * 살아 있는 보스의 HUD 입력 (보스 막대): 이름·이름표 앞부분('질풍 군단 · 대장')·조각 체력 합·처음 체력·남은 제한 틱.
+ * 보스가 없으면 null. 군단 이름은 enemies.json hierarchy (lord = '군주 직속').
+ */
+export function bossHudInput(
+  rules: Pick<MatchRules, 'bosses'>,
+  legionNames: Readonly<Record<string, string>>,
+  state: Pick<MatchState, 'bossId' | 'bossMaxHp' | 'bossDeadline'>,
+  mobs: readonly Pick<Mob, 'boss' | 'hp'>[],
+  tick: number,
+): HudInput['boss'] {
+  if (state.bossId === '') return null;
+  const b = rules.bosses.get(state.bossId);
+  let hp = 0;
+  let alive = false;
+  for (const m of mobs) {
+    if (!m.boss) continue;
+    alive = true;
+    hp += m.hp > 0 ? m.hp : 0;
+  }
+  if (!alive || !b) return null;
+  const legion = legionNames[b.legion] ?? b.legion;
+  return { name: b.name, tag: bossTag(legion, b.rank), hp, maxHp: state.bossMaxHp, ticksLeft: state.bossDeadline - tick };
+}
+
+/** 보스 막대 (UI.md 4.1): 살아 있는 보스 = 이름표 + 체력 천분율 + 남은 초, 보스 단계인데 보스가 없으면 '처치!', 아니면 없음. */
+export function bossBar(
+  bossStage: boolean,
+  boss: HudInput['boss'],
+  cfg: Pick<HudConfig, 'timerWarnSeconds'>,
+): Pick<HudModel, 'bossBanner' | 'bossHp' | 'bossTime' | 'bossTimeWarn'> {
+  if (boss) {
+    const sec = boss.ticksLeft <= 0 ? 0 : Math.ceil(boss.ticksLeft / TICK_HZ);
+    const permille = boss.maxHp > 0 ? Math.max(0, Math.min(1000, Math.ceil((boss.hp * 1000) / boss.maxHp))) : 0;
+    return { bossBanner: bossNameplate(boss.tag, boss.name), bossHp: permille, bossTime: `${sec}초`, bossTimeWarn: sec <= cfg.timerWarnSeconds };
+  }
+  if (bossStage) return { bossBanner: BOSS_CLEARED, bossHp: -1, bossTime: '', bossTimeWarn: false };
+  return { bossBanner: null, bossHp: -1, bossTime: '', bossTimeWarn: false };
 }
 
 /** 아래 띠 승급 버튼 글자 (UI.md 4.1 '[⬆ 승급 가능 2]'). 0이면 빈 글자. */
@@ -128,7 +199,9 @@ export function mergeReadyText(groups: number): string {
 
 /**
  * 아래 띠: 타워 수와 소환 안내 (UI.md 4.3 '빈 배치 칸 터치 = 즉시 소환').
- * @param short 아래 띠에 [⬆ 승급 가능 n]이 보일 때: 짧은 안내 '소환 · 100원' (좁은 화면에서 비용이 잘리지 않게)
+ * M4: 같은 줄에 [👷 300원] 고용 버튼이 생겨 안내는 늘 짧게 '소환 · 100원' (M2의 '빈 칸을 눌러 소환 · 100원'은 412px에서 잘린다).
+ * @param short 아래 띠에 [⬆ 승급 가능 n]이 보일 때: 안내를 비운다 — 고용·승급 버튼과 같은 줄이라 '소환 · 100원'도 잘린다
+ *   (승급 버튼 자체가 할 일을 알려 준다)
  */
 export function summonInfo(
   gold: number,
@@ -140,7 +213,7 @@ export function summonInfo(
   const full = buildableCount > 0 && towerCount >= buildableCount;
   return {
     towers: `${towerCount}/${buildableCount}`,
-    summonHint: full ? '빈 칸이 없어요' : short ? `소환 · ${withCommas(cost)}원` : `빈 칸을 눌러 소환 · ${withCommas(cost)}원`,
+    summonHint: full ? '빈 칸이 없어요' : short ? '' : `소환 · ${withCommas(cost)}원`,
     summonAffordable: !full && gold >= cost,
   };
 }
@@ -162,7 +235,11 @@ export function defeatText(state: Pick<MatchState, 'mode' | 'theme' | 'stage' | 
       ? `${where}에서 몹이 ${state.mobLimit}마리를 넘었어요`
       : state.defeatReason === 'lives'
         ? `${where}에서 목숨을 모두 잃었어요`
-        : `${where}에서 판이 끝났어요`;
+        : state.defeatReason === 'bossTime'
+          ? `${where} 보스를 제한 시간 안에 잡지 못했어요`
+          : state.defeatReason === 'bossLeak'
+            ? `${where} 보스가 성문에 닿았어요`
+            : `${where}에서 판이 끝났어요`;
   const record = state.mode === 'campaign' ? `테마 ${state.theme} · ${state.stage}단계까지` : `${state.stage}단계까지 버텼어요`;
   return { reason, record };
 }

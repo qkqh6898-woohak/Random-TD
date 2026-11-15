@@ -209,9 +209,13 @@ test('모두 승급: 같은 종류 n개 → ⌊n/3⌋번 승급, 아래 띠 [⬆
   await expect(readyBtn).toBeVisible();
   // 한꺼번에 여러 종류가 승급 가능해져도 '승급 가능' 알림은 하나 (쌓여서 맵 위쪽 줄을 가리지 않게, 검토 반영)
   await expect(page.locator('.toast', { hasText: '승급 가능' })).toHaveCount(1);
-  // 버튼이 보여도 아래 띠 소환 안내(비용)가 잘리지 않는다
-  await expect(page.getByTestId('hud-hint')).toHaveText('소환 · 100원');
-  expect(await page.getByTestId('hud-hint').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  // 버튼이 보이면 소환 안내는 비운다 (M4: 고용 버튼까지 같은 줄 — 잘린 글자를 보이지 않게). 아래 띠 버튼은 무대 안
+  await expect(page.getByTestId('hud-hint')).toHaveText('');
+  const stageBox = (await page.locator('#stage').boundingBox())!;
+  for (const id of ['hud-hire', 'hud-merge-ready']) {
+    const b = (await page.getByTestId(id).boundingBox())!;
+    expect(b.x + b.width).toBeLessThanOrEqual(stageBox.x + stageBox.width + 0.5);
+  }
   // 버튼이 나타나도 아래 띠 높이가 그대로라 맵이 다시 배치되지 않는다
   await page.waitForTimeout(200);
   expect(await inScene(page, (s) => ({ ...s.mapLayout }), null)).toEqual(layout0);

@@ -173,7 +173,7 @@ describe('피해 숫자·동전 (GDD 5.4, ART.md 2.4)', () => {
 
 describe('아래 띠·맵 영역', () => {
   it('타워 수/배치 칸 수, 돈이 있으면 소환 안내, 가득 차면 빈 칸 없음', () => {
-    expect(summonInfo(1000, 3, 71, 100)).toEqual({ towers: '3/71', summonHint: '빈 칸을 눌러 소환 · 100원', summonAffordable: true });
+    expect(summonInfo(1000, 3, 71, 100)).toEqual({ towers: '3/71', summonHint: '소환 · 100원', summonAffordable: true });
     expect(summonInfo(99, 3, 71, 100).summonAffordable).toBe(false);
     expect(summonInfo(5000, 71, 71, 100)).toEqual({ towers: '71/71', summonHint: '빈 칸이 없어요', summonAffordable: false });
   });

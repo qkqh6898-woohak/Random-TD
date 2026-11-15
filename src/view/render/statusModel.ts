@@ -74,3 +74,39 @@ export function mobStatusView(mob: StatusFields, tick: number): MobStatusView {
     frozen: on.has('freeze'),
   };
 }
+
+/**
+ * M4 몹 겉모습 (순수 함수): 투명 몹이 드러났는가(보라 외곽선 — ENEMIES.md 5장), 정예(금색 외곽선·1.3배), 날아오름(박쥐 여왕),
+ * 피해 감소 보호막(혼돈의 용), 방패병 보호막 비율(체력 바 위 하늘색 줄, 0~1), 보스·작은 조각 크기 배율.
+ */
+export interface MobLookView {
+  /** 투명 몹이고 지금 드러남 → 보라 외곽선 + 덜 투명하게 */
+  revealed: boolean;
+  elite: boolean;
+  flying: boolean;
+  guard: boolean;
+  /** 보호막 남은 비율 (0이면 줄 없음) */
+  shield: number;
+}
+
+export const NO_LOOK: MobLookView = Object.freeze({ revealed: false, elite: false, flying: false, guard: false, shield: 0 }) as MobLookView;
+
+type LookFields = Pick<Mob, 'invisible' | 'revealedUntil' | 'elite' | 'flyUntil' | 'dmgCutBp' | 'shield' | 'maxShield'>;
+
+export function mobLookView(mob: LookFields, tick: number): MobLookView {
+  const revealed = mob.invisible && tick < mob.revealedUntil;
+  const flying = tick < mob.flyUntil;
+  const guard = mob.dmgCutBp > 0;
+  const shield = mob.maxShield > 0 && mob.shield > 0 ? mob.shield / mob.maxShield : 0;
+  if (!revealed && !mob.elite && !flying && !guard && shield === 0) return NO_LOOK;
+  return { revealed, elite: mob.elite, flying, guard, shield };
+}
+
+/** 몹 그림 크기 배율: 정예 ×eliteScale, 분열 조각(작은 슬라임) ×0.62, 보스 분열 조각 ×0.8. */
+export function mobScaleMul(mob: Pick<Mob, 'elite' | 'small' | 'part'>, eliteScale: number): number {
+  let k = 1;
+  if (mob.elite) k *= eliteScale;
+  if (mob.small) k *= 0.62;
+  if (mob.part) k *= 0.8;
+  return k;
+}

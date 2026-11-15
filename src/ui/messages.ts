@@ -50,3 +50,60 @@ export const FORTUNA_DOUBLE = '🍀 행운의 여신 — 2등급 상승!';
 
 /** 그림자 암살자 즉사 (피해 숫자 자리) */
 export const EXECUTE_LABEL = '즉사!';
+
+// ---- M4 ----
+
+/** 일꾼 최대 (UI.md 8장) */
+export function workerFullText(max: number): string {
+  return `일꾼이 꽉 찼어요 (${max}/${max})`;
+}
+
+/** 일꾼 고용 실패 → 글자 (돈 부족은 모자란 만큼). 보여줄 것이 없으면 null. */
+export function hireFailText(reason: string, cost: number, gold: number, max: number): string | null {
+  if (reason === 'max') return workerFullText(max);
+  if (reason === 'gold') return needMoreGold(Math.max(1, cost - gold));
+  return null;
+}
+
+/** 보스 이름표 앞부분: '질풍 군단 · 대장' (군주 직속은 계급 이름에 이미 들어 있어 '군주 직속 대장'만) */
+export function bossTag(legionName: string, rank: string): string {
+  return rank.startsWith(legionName) ? rank : `${legionName} · ${rank}`;
+}
+
+/** 보스 이름표 (UI.md 8장 '보스 등장'): '질풍 군단 · 대장 「박쥐 여왕」' */
+export function bossNameplate(tag: string, name: string): string {
+  return `${tag} 「${name}」`;
+}
+
+/** 보스 처치 */
+export function bossKillText(name: string, reward: number): string {
+  return `👑 ${name} 처치! +${reward}원`;
+}
+
+/** 보스를 잡은 뒤 남은 보스 단계 (휴식) */
+export const BOSS_CLEARED = '👑 보스 처치! 남은 시간은 휴식';
+
+/** 투명 몹 첫 등장 + 감지 없음 (ENEMIES.md 5장, UI.md 8장) */
+export const INVISIBLE_WARN = '투명 몹 출현! 감지 타워가 필요해요 👁';
+
+/** 편대 예고 배너 (UI.md 8장): '⚠ 다음 단계: 돌파 편대 — 보석 골렘 + 암흑 고블린 떼!' */
+export function formationBanner(name: string, banner: string): string {
+  return `⚠ 다음 단계: ${name} — ${banner}!`;
+}
+
+/** 보스 카드 고르기 창 제목 */
+export const CARD_PICK_TITLE = '👑 보스 처치! 카드 1장을 고르세요';
+
+/** 승급의 축복 고르기 창 제목 */
+export const MERGE_PICK_TITLE = '✨ 승급의 축복 — 결과를 고르세요';
+
+/** 카드를 고름 */
+export function cardPickedText(name: string): string {
+  return `🃏 ${name}!`;
+}
+
+/** 유령 회피 (피해 숫자 자리) */
+export const EVADE_LABEL = '빗나감';
+
+/** 행운의 소환 카드로 레어 */
+export const LUCKY_SUMMON = '🃏 행운의 소환 — 레어!';

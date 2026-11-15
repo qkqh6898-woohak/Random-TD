@@ -9,13 +9,15 @@
 import Phaser from 'phaser';
 import { COLORS, hexToInt, shade } from './palette';
 
-export type MobShape = 'blob' | 'bat' | 'rock' | 'shell' | 'ghost' | 'hood' | 'mushroom' | 'skull' | 'wolf' | 'goblin';
+export type MobShape = 'blob' | 'bat' | 'rock' | 'shell' | 'ghost' | 'hood' | 'mushroom' | 'skull' | 'wolf' | 'goblin' | 'dragon';
 
 export interface MobLook {
   shape: MobShape;
   body: number;
   /** 보조 색 (보석·수정·방패·버섯 몸 등) */
   accent: number;
+  /** 보스 왕관 (M4 기본 대장) */
+  crown?: boolean;
 }
 
 /** 몹 id → 모양·색. 없는 몹은 기본 젤리. */
@@ -33,12 +35,18 @@ export const MOB_LOOKS: Readonly<Record<string, MobLook>> = {
   goblin: { shape: 'goblin', body: 0x5b6b3a, accent: 0x8a9a5a },
   gemgolem: { shape: 'rock', body: 0x5c5470, accent: 0xe04fd0 },
   minigolem: { shape: 'rock', body: 0x7a7290, accent: 0xf08ae0 },
+  // M4 기본 대장 (ENEMIES.md 4장 '외형'): 같은 모양 문법 + 왕관
+  kingslime: { shape: 'blob', body: 0x5cc64a, accent: 0xd8ffb8, crown: true },
+  batqueen: { shape: 'bat', body: 0x6a3d9a, accent: 0xd29bff, crown: true },
+  ancientgolem: { shape: 'rock', body: 0x5e5a66, accent: 0x5ff0ff, crown: true },
+  wraithlord: { shape: 'ghost', body: 0x4b3f6b, accent: 0x9f8fd0, crown: true },
+  chaosdragon: { shape: 'dragon', body: 0x8c1f2a, accent: 0x2a0d12, crown: true },
 };
 
 export const DEFAULT_LOOK: MobLook = { shape: 'blob', body: 0x9aa0a6, accent: 0xdddddd };
 
-/** 크기 등급(enemies.json size) → 칸 대비 지름. */
-export const SIZE_SCALE: Readonly<Record<string, number>> = { 소형: 0.62, 중형: 0.72, 대형: 0.86 };
+/** 크기 등급(enemies.json size) → 칸 대비 지름. 보스(M4)는 '보스'. */
+export const SIZE_SCALE: Readonly<Record<string, number>> = { 소형: 0.62, 중형: 0.72, 대형: 0.86, 보스: 1.3 };
 
 export const MOB_TEX_SIZE = 128;
 const OUTLINE = hexToInt(COLORS.outline);
@@ -261,6 +269,66 @@ function goblin(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): voi
   sigil(g, 64, 36, 6, legion);
 }
 
+/** 머리 둘 달린 용 (혼돈의 용): 날개 + 몸 + 목 두 개 + 머리 두 개 (보라 눈). */
+function dragon(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void {
+  const wing = shade(l.body, -0.35);
+  fillPoly(g, [44, 64, 6, 30, 12, 60, 2, 78, 30, 74, 40, 84], wing);
+  fillPoly(g, [84, 64, 122, 30, 116, 60, 126, 78, 98, 74, 88, 84], wing);
+  g.fillStyle(l.body, 1);
+  g.lineStyle(4, OUTLINE, 1);
+  g.fillEllipse(64, 88, 64, 44);
+  g.strokeEllipse(64, 88, 64, 44);
+  // 배 비늘
+  g.fillStyle(0xe8b04a, 0.85);
+  g.fillEllipse(64, 94, 30, 24);
+  // 목 두 개
+  fillPoly(g, [52, 74, 38, 46, 48, 42, 60, 70], l.body);
+  fillPoly(g, [76, 74, 90, 46, 80, 42, 68, 70], l.body);
+  // 머리 두 개
+  for (const [hx, flip] of [
+    [38, -1],
+    [90, 1],
+  ] as const) {
+    g.fillStyle(l.body, 1);
+    g.lineStyle(4, OUTLINE, 1);
+    g.fillEllipse(hx, 38, 26, 20);
+    g.strokeEllipse(hx, 38, 26, 20);
+    fillPoly(g, [hx - 6, 30, hx - 10 * flip - 6, 18, hx + 2, 28], 0xf0e6d0);
+    g.fillStyle(EYE, 1);
+    g.fillCircle(hx + 4 * flip, 36, 3.5);
+    g.fillStyle(0xffffff, 1);
+    g.fillTriangle(hx + 8 * flip, 44, hx + 12 * flip, 44, hx + 10 * flip, 48);
+  }
+  // 꼬리
+  fillPoly(g, [92, 100, 120, 110, 112, 116, 90, 108], l.body);
+  sigil(g, 64, 80, 6, legion);
+}
+
+/** 보스 왕관 (금색, 텍스처 위쪽 가운데). */
+function crown(g: Phaser.GameObjects.Graphics, y: number): void {
+  fillPoly(g, [44, y + 12, 46, y - 6, 54, y + 4, 64, y - 10, 74, y + 4, 82, y - 6, 84, y + 12], 0xf5c518);
+  g.fillStyle(0xff4d6d, 1);
+  g.fillCircle(64, y + 4, 3.5);
+  g.fillStyle(0x6fe3ff, 1);
+  g.fillCircle(52, y + 7, 2.5);
+  g.fillCircle(76, y + 7, 2.5);
+}
+
+/** 왕관이 놓이는 높이 (모양마다 머리 위). */
+const CROWN_Y: Readonly<Record<MobShape, number>> = {
+  blob: 30,
+  bat: 24,
+  rock: 16,
+  shell: 26,
+  ghost: 12,
+  hood: 10,
+  mushroom: 12,
+  skull: 14,
+  wolf: 14,
+  goblin: 18,
+  dragon: 14,
+};
+
 /** 몹 텍스처를 한 번 그려 굽는다 (이미 있으면 그대로). */
 export function ensureMobTexture(scene: Phaser.Scene, mobId: string, legionColor: number): string {
   const key = mobTextureKey(mobId);
@@ -275,7 +343,7 @@ export function ensureMobTexture(scene: Phaser.Scene, mobId: string, legionColor
       bat(g, look, legionColor);
       break;
     case 'rock':
-      rock(g, look, legionColor, mobId !== 'golem');
+      rock(g, look, legionColor, mobId !== 'golem' && mobId !== 'ancientgolem');
       break;
     case 'shell':
       shell(g, look, legionColor);
@@ -298,7 +366,11 @@ export function ensureMobTexture(scene: Phaser.Scene, mobId: string, legionColor
     case 'goblin':
       goblin(g, look, legionColor);
       break;
+    case 'dragon':
+      dragon(g, look, legionColor);
+      break;
   }
+  if (look.crown) crown(g, CROWN_Y[look.shape]);
   g.generateTexture(key, MOB_TEX_SIZE, MOB_TEX_SIZE);
   g.destroy();
   return key;

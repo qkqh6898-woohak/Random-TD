@@ -19,6 +19,9 @@
  * - 승급 연출: 사라진 2칸에서 빛 구슬이 결과 칸으로 빨려 들어간 뒤 빛 기둥 (레전드·신은 화면 흔들림). 치명타 숫자는 크게 + '!'.
  * - M3b: 몹 상태 이상(색·머리 위 아이콘·얼음·멈춘 걸음), 진흙 웅덩이·소환 병사, 특색 연출(운석·시간 정지 흑백·주사위·
  *   '+n원' 특색 돈·즉사), 행운의 여신 알림, 오라 타워를 고르면 효과 범위(3×3·5×5)와 효과를 받는 타워 표시, 패널에 오라 반영 값.
+ * - M4: 일꾼 고용 버튼(아래 띠)·👷 수(2줄)·일꾼 수입 반짝, 보스 막대(이름표·체력·남은 초)·보스 이름표 배너·보스 처치 배너,
+ *   편대 예고 배너(10초 전, 힌트 한 줄)·투명 몹 경고 배너, 보스 카드 3장 고르기 창·승급의 축복 고르기 창(modal 층, 시간은 흐름),
+ *   드러난 투명 몹 보라 외곽선·정예 금색 외곽선·보스 크기·날기·피해 감소 고리·보호막 줄, 기절한 타워 잿빛, 회복 초록 숫자·'빗나감'.
  * - 무한 모드: 순환의 정원 / 캠페인(debug): 테마 1 사거리 미로.
  * - ⏸ 또는 앱이 백그라운드로 가면 일시정지 메뉴(UI.md 4.6). 열려 있는 동안 TickClock 배속 0 = 게임 시간 정지.
  * - 패배하면 시간을 멈추고 패배 화면 ([다시 하기] / [타이틀로]).
@@ -40,12 +43,34 @@ import { isPaused, moveCheck } from '../../sim/systems/Move';
 import { auraCovers, auraRadiusOf, auraSpecOf, computeAuras, towerBonus } from '../../sim/systems/Aura';
 import { towerLevel } from '../../sim/abilities';
 import { METEOR_FX } from '../../sim/abilities/archmage';
-import { summonCheck, towerCount } from '../../sim/systems/Summon';
-import { BOARD_FULL, EXECUTE_LABEL, FORTUNA_DOUBLE, FORTUNA_RARE, godDescends, mergeFailText, mergeReadyToast } from '../../ui/messages';
+import { summonCheck, summonCost, towerCount } from '../../sim/systems/Summon';
+import { hireCheck } from '../../sim/systems/Economy';
+import { formationById } from '../../sim/systems/Formation';
+import { currentOffer } from '../../sim/systems/Cards';
+import {
+  BOARD_FULL,
+  EVADE_LABEL,
+  EXECUTE_LABEL,
+  FORTUNA_DOUBLE,
+  FORTUNA_RARE,
+  INVISIBLE_WARN,
+  LUCKY_SUMMON,
+  bossKillText,
+  bossNameplate,
+  bossTag,
+  cardPickedText,
+  formationBanner,
+  godDescends,
+  hireFailText,
+  mergeFailText,
+  mergeReadyToast,
+} from '../../ui/messages';
+import { createChoicePanel, type ChoicePanelView } from '../../ui/panels/ChoicePanel';
+import { cardChoiceModel, mergeChoiceModel } from '../../ui/panels/choiceModel';
 import { createTowerPanel, type TowerPanelView } from '../../ui/panels/TowerPanel';
 import { buildTowerPanelModel } from '../../ui/panels/towerPanelModel';
 import { createHud, type HudView } from '../../ui/hud/Hud';
-import { buildHudModel, defeatText, stageToastText } from '../../ui/hud/hudModel';
+import { bossHudInput, buildHudModel, defeatText, stageToastText } from '../../ui/hud/hudModel';
 import { availableSpeeds, nextSpeed } from '../../ui/hud/speed';
 import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
 import { createPauseMenu } from '../../ui/screens/PauseMenu';
@@ -85,7 +110,7 @@ import { DAMAGE_COLORS, damageColor, eventFxVisible } from '../render/fxModel';
 import { FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../render/towerGeom';
 import { PuddleLayer, SoldierLayer } from '../render/AbilitySprites';
 import { passiveAuraGlows, type AuraGlow } from '../render/abilityModel';
-import { mobStatusView } from '../render/statusModel';
+import { mobLookView, mobScaleMul, mobStatusView } from '../render/statusModel';
 /** HUD 띠 아래 끝과 알림 사이 간격 (무대 너비 비율, 2cqw) */
 const TOAST_GAP_OF_WIDTH = 0.02;
 /** 한 프레임에 띄우는 피해 숫자 최대 수 */
@@ -201,6 +226,10 @@ export class GameScene extends Phaser.Scene {
   private panelPlaceKey = '';
   /** 위쪽 정보 패널의 위쪽 끝 = HUD 띠 + 알림 한 줄 자리 아래 (무대 CSS px) */
   private panelTopCss = 0;
+  /** M4 고르기 창 (보스 카드·승급의 축복) */
+  private choice: ChoicePanelView | null = null;
+  /** 군단 id → 이름 (보스 이름표) */
+  private legionNames: Record<string, string> = {};
 
   constructor(private readonly ctx: GameContext) {
     super({ key: SCENE_GAME });
@@ -237,6 +266,9 @@ export class GameScene extends Phaser.Scene {
     this.mergeReadyToasts = 0;
     this.mergeReadyCount = 0;
     this.panelPlaceKey = '';
+    this.choice = null;
+    const legionsData = (this.ctx.data.enemies.hierarchy as { legions?: Record<string, { name?: string }> }).legions ?? {};
+    this.legionNames = { lord: '군주 직속', ...Object.fromEntries(Object.entries(legionsData).map(([k, v]) => [k, v.name ?? k])) };
     this.towerNames = new Map(this.ctx.data.towers.towers.map((t) => [t.id, t.name]));
     this.bossNames =
       this.sceneData.mode === 'campaign' ? campaign.themes.find((t) => t.theme === this.sceneData.theme)?.bossSchedule : undefined;
@@ -252,6 +284,7 @@ export class GameScene extends Phaser.Scene {
       onSkipStage: this.ctx.debug ? () => this.match.world.enqueue({ type: 'debugSkipStage' }) : undefined,
       onAddGold: this.ctx.debug ? () => this.match.world.enqueue({ type: 'debugAddGold', amount: config.debug.addGold }) : undefined,
       onMergeReady: () => this.selectFirstMergeable(),
+      onHire: () => this.hire(),
     });
     this.ctx.ui.clear('screen');
     this.ctx.ui.show('hud', this.hud);
@@ -287,6 +320,7 @@ export class GameScene extends Phaser.Scene {
       this.input.off(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
       this.input.off(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onPointerUp, this);
       this.closePanel();
+      this.closeChoice();
       this.press = null;
       this.pendingDrop = null;
       this.destroyLayers();
@@ -319,9 +353,17 @@ export class GameScene extends Phaser.Scene {
     const alpha = this.gameOver ? 1 : this.clock.alpha;
     const tick = this.match.tick;
     this.puddleLayer.sync(this.match.puddles(), tick, alpha);
-    this.mobLayer.sync(this.match.mobs(), this.prevProgress, alpha, time, (m) => mobStatusView(m, tick));
+    this.mobLayer.sync(
+      this.match.mobs(),
+      this.prevProgress,
+      alpha,
+      time,
+      (m) => mobStatusView(m, tick),
+      (m) => mobLookView(m, tick),
+    );
     this.soldierLayer.sync(this.match.soldiers(), this.prevSoldiers, alpha, time);
-    this.towerLayer.sync(this.match.towers(), time);
+    this.towerLayer.sync(this.match.towers(), time, tick);
+    this.syncChoice();
     this.updateSelection(time);
     this.projectileLayer.sync(this.match.projectiles(), this.prevProjectiles, (p) => this.projectileOrigin(p), alpha);
     this.floatingText.update(time);
@@ -564,7 +606,7 @@ export class GameScene extends Phaser.Scene {
       this.closePanel();
       return;
     }
-    const action = decideTap(summonCheck(this.match.ctx, this.match.world, tx, ty), tx, ty, this.match.rules.summonCost);
+    const action = decideTap(summonCheck(this.match.ctx, this.match.world, tx, ty), tx, ty, summonCost(this.match.ctx));
     if (action.kind === 'summon') {
       if (!tapAllowed(this.lastTapMs, now)) return;
       this.lastTapMs = now;
@@ -864,13 +906,17 @@ export class GameScene extends Phaser.Scene {
     this.mapRenderer = renderer;
 
     const legions = (enemies.hierarchy as { legions?: Record<string, { color?: string }> }).legions ?? {};
-    const sizes = new Map(enemies.mobs.map((m) => [m.id, m.size]));
+    const sizes = new Map<string, string>(enemies.mobs.map((m) => [m.id, m.size]));
+    for (const b of enemies.bosses) sizes.set(b.id, '보스');
+    const eliteScale = enemies.eliteChance.scale;
     this.mobLayer = new MobLayer(
       this,
       this.layout,
       this.match.map.path,
+      // 혼돈의 용(군주 직속)은 군주 보라
       { legionColor: (legion) => hexToInt(legions[legion]?.color ?? '#9B4DFF') },
       (id) => sizes.get(id) ?? '소형',
+      (m) => mobScaleMul(m, eliteScale),
     );
     const rules = this.match.rules;
     const towerData = new Map(towers.towers.map((t) => [t.id, t]));
@@ -906,8 +952,9 @@ export class GameScene extends Phaser.Scene {
     let defeated = false;
     const now = this.match.tick;
     const frameStart = this.frameStartTick;
-    const cost = this.match.rules.summonCost;
+    const cost = summonCost(this.match.ctx);
     let texts = 0;
+    let heals = 0;
     let sparks = 0;
     let areaFx = 0;
     let meteors = 0;
@@ -934,6 +981,8 @@ export class GameScene extends Phaser.Scene {
             this.ctx.ui.toast(FORTUNA_RARE);
             this.noteFx('fortuna');
           }
+          if (ev.lucky === true && ev.player === LOCAL_PLAYER) this.ctx.ui.toast(LUCKY_SUMMON);
+          if (ev.twin === true) this.noteFx('twin');
           break;
         case 'summonFail': {
           if (!eventFxVisible('action', ev.tick, now, frameStart) || ev.player !== 0) break;
@@ -1021,6 +1070,8 @@ export class GameScene extends Phaser.Scene {
           this.mobLayer.markKilled(Number(ev.id));
           if (!recent) break;
           const reward = Number(ev.reward);
+          // 보상 없는 조각(작은 슬라임)·보스 조각은 '+0원'을 띄우지 않는다 (보스 보상은 bossKill 사건)
+          if (!(reward > 0)) break;
           const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
           this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.15, `+${reward}원`, DAMAGE_COLORS.gold, time, true);
           this.fx.coin(Number(ev.x), Number(ev.y), time, () => this.hud.gainGold(reward));
@@ -1066,6 +1117,88 @@ export class GameScene extends Phaser.Scene {
           this.fx.timeStop(Number(ev.x), Number(ev.y));
           this.noteFx('timeStop');
           break;
+        // ---- M4 ----
+        case 'hire':
+          if (ev.player === LOCAL_PLAYER) this.noteFx('hire');
+          break;
+        case 'hireFail': {
+          if (ev.player !== LOCAL_PLAYER || !eventFxVisible('action', ev.tick, now, frameStart)) break;
+          const text = hireFailText(String(ev.reason), this.match.rules.workerCost, this.match.state.gold, this.match.rules.workerMax);
+          if (text) this.ctx.ui.toast(text);
+          break;
+        }
+        case 'workerIncome':
+          // 일꾼 수입은 5초마다 돈 글자 옆에 작게 (UI.md 4.2)
+          if (eventFxVisible('action', ev.tick, now, frameStart)) this.hud.gainGold(Number(ev.amount));
+          this.noteFx('workerIncome');
+          break;
+        case 'bossSpawn': {
+          if (!eventFxVisible('rare', ev.tick, now, frameStart)) break;
+          const b = this.match.rules.bosses.get(String(ev.boss));
+          if (b) this.ctx.ui.banner(bossNameplate(bossTag(this.legionNames[b.legion] ?? b.legion, b.rank), b.name), null, 2600, 'boss');
+          this.cameras.main.shake(220, 0.004);
+          this.noteFx('bossSpawn');
+          break;
+        }
+        case 'bossKill': {
+          if (!eventFxVisible('rare', ev.tick, now, frameStart)) break;
+          const b = this.match.rules.bosses.get(String(ev.boss));
+          this.ctx.ui.banner(bossKillText(b?.name ?? String(ev.boss), Number(ev.reward)), null, 2200, 'gold');
+          this.fx.coin(Number(ev.x), Number(ev.y), time, () => undefined);
+          this.noteFx('bossKill');
+          break;
+        }
+        case 'bossStun':
+          if (eventFxVisible('action', ev.tick, now, frameStart)) this.cameras.main.shake(160, 0.003);
+          this.noteFx('bossStun');
+          break;
+        case 'bossSplit':
+        case 'split':
+          if (recent && ev.type === 'split') this.fx.missPuff(Number(ev.x), Number(ev.y));
+          this.noteFx(ev.type);
+          break;
+        case 'bossFly':
+        case 'bossGuard':
+        case 'bossEnrage':
+        case 'bossSummon':
+          this.noteFx(ev.type);
+          break;
+        case 'formationPreview': {
+          if (!eventFxVisible('rare', ev.tick, now, frameStart)) break;
+          const f = formationById(this.match.rules, String(ev.id));
+          if (f) this.ctx.ui.banner(formationBanner(f.name, f.banner), `💡 ${f.hint}`, 4200, 'warn');
+          this.noteFx('formationPreview');
+          break;
+        }
+        case 'invisibleWarn':
+          if (eventFxVisible('rare', ev.tick, now, frameStart)) this.ctx.ui.banner(INVISIBLE_WARN, '정찰병·저격수·그림자 암살자가 투명 몹을 찾아요', 3600, 'shadow');
+          this.noteFx('invisibleWarn');
+          break;
+        case 'cardPick': {
+          if (ev.player !== LOCAL_PLAYER) break;
+          const c = this.match.rules.cardById.get(String(ev.card));
+          if (c) this.ctx.ui.toast(cardPickedText(c.name));
+          this.noteFx('cardPick');
+          break;
+        }
+        case 'quake':
+          if (eventFxVisible('action', ev.tick, now, frameStart)) this.cameras.main.shake(420, 0.01);
+          break;
+        case 'heal': {
+          if (!recent || heals >= MAX_DAMAGE_TEXTS_PER_FRAME) break;
+          heals++;
+          const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
+          this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.42, `+${ev.amount}`, DAMAGE_COLORS.heal, time);
+          this.noteFx('heal');
+          break;
+        }
+        case 'evade': {
+          if (!recent) break;
+          const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
+          this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.42, EVADE_LABEL, DAMAGE_COLORS.evade, time);
+          this.noteFx('evade');
+          break;
+        }
       }
     }
     if (lastStage) {
@@ -1103,6 +1236,7 @@ export class GameScene extends Phaser.Scene {
     this.gameOver = true;
     this.cancelPress(this.time.now);
     this.closePanel();
+    this.closeChoice();
     if (this.paused) this.paused = false;
     this.clock.speed = 0;
     const text = defeatText(this.match.state);
@@ -1143,6 +1277,65 @@ export class GameScene extends Phaser.Scene {
     this.refreshHud();
   }
 
+  /** 일꾼 고용 버튼: 미리 검사해 안 되면 바로 알림, 되면 명령 (sim이 실행 틱에 다시 검사). */
+  private hire(): void {
+    if (this.paused || this.gameOver) return;
+    const fail = hireCheck(this.match.ctx);
+    if (fail) {
+      const text = hireFailText(fail, this.match.rules.workerCost, this.match.state.gold, this.match.rules.workerMax);
+      if (text) this.ctx.ui.toast(text);
+      return;
+    }
+    this.match.world.enqueue({ type: 'hireWorker' });
+  }
+
+  /**
+   * 고르기 창 맞추기 (매 프레임): 내 보스 카드 묶음이 있으면 카드 창, 없으면 승급의 축복 선택 창, 둘 다 없으면 닫는다.
+   * 같은 선택이면 그대로 둔다 (고른 뒤 명령이 실행될 때까지 잠긴 채).
+   */
+  private syncChoice(): void {
+    if (this.gameOver) return;
+    const offer = currentOffer(this.match.ctx, LOCAL_PLAYER);
+    let model = offer ? cardChoiceModel(this.match.rules, offer) : null;
+    let onPick: ((i: number) => void) | null = offer ? (i) => this.match.world.enqueue({ type: 'pickCard', i }) : null;
+    if (!model) {
+      const pick = this.match.state.mergePicks.find((m) => m.player === LOCAL_PLAYER);
+      const t = pick ? this.match.world.entities.get(pick.id) : undefined;
+      if (pick && t && t.kind === 'tower') {
+        model = mergeChoiceModel(this.match.rules, pick, String(t.tower));
+        onPick = (i) => this.match.world.enqueue({ type: 'pickMerge', id: pick.id, pick: i });
+      }
+    }
+    if (!model || !onPick) {
+      this.closeChoice();
+      return;
+    }
+    if (this.choice?.key === model.key) return;
+    this.closeChoice();
+    this.choice = createChoicePanel(model, onPick);
+    this.ctx.ui.show('modal', this.choice);
+  }
+
+  private closeChoice(): void {
+    if (!this.choice) return;
+    this.choice = null;
+    this.ctx.ui.clear('modal');
+  }
+
+  /** E2E: 지금 고르기 창 종류 ('card' · 'merge' · null) */
+  get choiceKind(): string | null {
+    return this.choice ? this.choice.key.split(':')[0] ?? null : null;
+  }
+
+  /** E2E: 드러난 투명 몹 보라 외곽선 수 · 기절 표시 타워 수 */
+  get revealedOutlineCount(): number {
+    return this.mobLayer.revealedOutlineCount;
+  }
+
+  get stunnedTowerCount(): number {
+    return this.towerLayer.stunnedCount;
+  }
+
   private refreshHud(): void {
     // 일시정지 중에도 배속 칩은 계속하면 돌아갈 배속을 보여준다
     const speed = this.paused ? this.resumeSpeed : this.gameOver ? 1 : this.clock.speed;
@@ -1157,8 +1350,11 @@ export class GameScene extends Phaser.Scene {
           bossNames: this.bossNames,
           towerCount: towerCount(this.match.world),
           buildableCount: this.match.map.buildable.length,
-          summonCost: this.match.rules.summonCost,
+          summonCost: summonCost(this.match.ctx),
           mergeReady: this.mergeReadyCount,
+          workerMax: this.match.rules.workerMax,
+          workerCost: this.match.rules.workerCost,
+          boss: bossHudInput(this.match.rules, this.legionNames, this.match.state, this.match.mobs(), this.match.tick),
         },
         this.ctx.data.game.hud,
       ),
