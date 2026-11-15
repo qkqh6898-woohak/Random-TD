@@ -3,6 +3,7 @@ import type { GameData } from '../data/load';
 import { isDevMode } from '../devMode';
 import type { UiRoot } from '../ui/root';
 import type { AccountStore } from '../meta/account';
+import type { SettingsStore } from '../meta/settings';
 
 export interface GameContext {
   data: GameData;
@@ -18,6 +19,8 @@ export interface GameContext {
   accountLevel: number;
   /** 계정 저장소 (히든 미션 영구 기록, M5-6) */
   account: AccountStore;
+  /** 화면 설정 (T-2: 눌러서 바로 승급·연출 끄기·히든 미션 조건 보기) */
+  settings: SettingsStore;
   version: string;
 }
 

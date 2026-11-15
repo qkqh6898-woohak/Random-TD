@@ -10,6 +10,7 @@
  * 동전은 매 프레임 시각으로 위치를 계산하고(fxModel.coinPath), 나머지는 Phaser 트윈을 쓴다 (화면 전용, sim과 무관).
  */
 import Phaser from 'phaser';
+import { effectsOff } from '../effects';
 import { TEX_COIN, TEX_ORB, TEX_PILLAR, TEX_SPARK, ensureFxTextures } from '../../art/fx';
 import { diceKey, ensureStatusTextures } from '../../art/status';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
@@ -49,6 +50,7 @@ export class FxLayer {
 
   /** 소환 빛 기둥 (등급 색). */
   summonPillar(tx: number, ty: number, color: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2)
     const L = this.layout;
     const c = tileCenterPx(L, tx, ty);
     const img = this.track(this.scene.add.image(c.x, c.y + L.tile * 0.35, TEX_PILLAR))
@@ -75,6 +77,7 @@ export class FxLayer {
    * 도착하면 결과 등급 색의 빛 기둥.
    */
   mergeSuck(from: readonly { tx: number; ty: number }[], to: { tx: number; ty: number }, color: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2)
     const L = this.layout;
     const end = tileCenterPx(L, to.tx, to.ty);
     for (const f of from) {
@@ -100,6 +103,7 @@ export class FxLayer {
 
   /** 광역 폭발 고리 (반경 = 단위). */
   blastRing(ux: number, uy: number, radiusUnits: number, color: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2)
     const L = this.layout;
     const p = unitsToPx(L, ux, uy);
     const r = (radiusUnits / 1000) * L.tile;
@@ -112,6 +116,7 @@ export class FxLayer {
 
   /** 연쇄 번개 한 구간 (단위 좌표). */
   chainBolt(x1: number, y1: number, x2: number, y2: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2)
     const L = this.layout;
     const a = unitsToPx(L, x1, y1);
     const b = unitsToPx(L, x2, y2);
@@ -133,6 +138,7 @@ export class FxLayer {
 
   /** 운석 (대마법사): 오른쪽 위에서 불덩이가 떨어져 그 자리에서 주황 폭발. */
   meteor(ux: number, uy: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2)
     const L = this.layout;
     const p = unitsToPx(L, ux, uy);
     const ball = this.track(this.scene.add.image(p.x + L.tile * 0.9, p.y - L.tile * 3, TEX_ORB))
@@ -155,6 +161,7 @@ export class FxLayer {
 
   /** 진흙 웅덩이가 생김: 갈색 물결 고리. */
   splash(ux: number, uy: number, radiusUnits: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2)
     const L = this.layout;
     const p = unitsToPx(L, ux, uy);
     const r = (radiusUnits / 1000) * L.tile;
@@ -167,6 +174,7 @@ export class FxLayer {
 
   /** 도박꾼 주사위: 타워 머리 위에 나온 눈이 튀어 올랐다 사라진다. */
   dicePop(ux: number, uy: number, value: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2)
     ensureStatusTextures(this.scene);
     const L = this.layout;
     const p = unitsToPx(L, ux, uy);
@@ -189,6 +197,7 @@ export class FxLayer {
 
   /** 시간 정지 (시간술사): 화면 흑백 0.2초 + 타워에서 퍼지는 시계 고리. WebGL이 아니면 회색 막만. */
   timeStop(ux: number, uy: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2)
     const L = this.layout;
     const p = unitsToPx(L, ux, uy);
     const ring = this.track(this.scene.add.circle(p.x, p.y, L.tile * 4, 0xffffff, 0.06))
@@ -233,6 +242,7 @@ export class FxLayer {
 
   /** 헛발: 작은 회색 연기. */
   missPuff(ux: number, uy: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2)
     const L = this.layout;
     const p = unitsToPx(L, ux, uy);
     const img = this.track(this.scene.add.image(p.x, p.y, TEX_ORB))
@@ -245,6 +255,7 @@ export class FxLayer {
 
   /** 맞은 자리 불꽃. */
   hitSpark(ux: number, uy: number, color: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2)
     const L = this.layout;
     const p = unitsToPx(L, ux, uy);
     const img = this.track(this.scene.add.image(p.x, p.y - L.tile * 0.15, TEX_SPARK))
@@ -261,6 +272,11 @@ export class FxLayer {
    * 너무 많으면 날리지 않고 바로 도착 처리한다.
    */
   coin(ux: number, uy: number, timeMs: number, onArrive: () => void): void {
+    // 연출 끄기 (T-2): 동전을 날리지 않고 돈 글자에 바로
+    if (effectsOff()) {
+      onArrive();
+      return;
+    }
     if (this.coins.length >= MAX_COINS) {
       onArrive();
       return;

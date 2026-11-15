@@ -78,8 +78,10 @@ export interface HudModel {
   tick: number;
   /** 놓인 타워 수 / 배치 칸 수 */
   towers: string;
-  /** 소환 안내 글자 */
+  /** 소환 안내 글자 (T-2부터 칸이 가득 찼을 때 '빈 칸이 없어요'만 — 비용은 [🎲 소환] 버튼이 보여 준다) */
   summonHint: string;
+  /** [🎲 소환 100원] 버튼의 비용 글자 '100원' (T-2) */
+  summonCost: string;
   /** 소환할 돈이 있는가 (없으면 안내가 빨간색) */
   summonAffordable: boolean;
   /** '⬆ 승급 가능 n' 글자 (승급할 묶음이 없으면 빈 글자 → 버튼 숨김) */
@@ -257,6 +259,7 @@ export function mergeReadyText(groups: number): string {
  * @param short 아래 띠에 [⬆ 승급 가능 n]이 보일 때: 안내를 비운다 — 고용·승급 버튼과 같은 줄이라 '소환 · 100원'도 잘린다
  *   (승급 버튼 자체가 할 일을 알려 준다). 칸이 가득 찼을 때도 같다: '빈 칸이 없어요'는 승급 버튼이 없을 때만
  *   (검토 반영 — 가득 찬 판 후반에 '빈 칸…'으로 잘렸다. 가득 찬 것은 옆의 '71/71'이 보여 준다)
+ * T-2: 같은 줄에 [🎲 소환 100원] 버튼(누르면 소환, 꾹 누르면 계속)이 생겨 '소환 · 100원' 안내는 뺐다 — 비용은 버튼 글자(summonCost).
  */
 export function summonInfo(
   gold: number,
@@ -264,11 +267,12 @@ export function summonInfo(
   buildableCount: number,
   cost: number,
   short = false,
-): Pick<HudModel, 'towers' | 'summonHint' | 'summonAffordable'> {
+): Pick<HudModel, 'towers' | 'summonHint' | 'summonAffordable' | 'summonCost'> {
   const full = buildableCount > 0 && towerCount >= buildableCount;
   return {
     towers: `${towerCount}/${buildableCount}`,
-    summonHint: short ? '' : full ? '빈 칸이 없어요' : `소환 · ${withCommas(cost)}원`,
+    summonHint: short ? '' : full ? '빈 칸이 없어요' : '',
+    summonCost: `${withCommas(cost)}원`,
     summonAffordable: !full && gold >= cost,
   };
 }

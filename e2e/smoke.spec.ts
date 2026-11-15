@@ -177,8 +177,8 @@ test('?debug=1(개발자 모드)이면 ×16 배속까지 순환하고, ×2에서
   const r2 = await rate();
   expect(r1).toBeGreaterThan(12); // 약 20
   expect(r2).toBeGreaterThan(r1 * 1.5); // 약 40
-  // 개발자 배속 (T-1, game.json devSpeeds): ×3 → ×4 → ×8 → ×16 → ×1
-  for (const label of ['×3', '×4', '×8', '×16', '×1']) {
+  // 개발자 배속 (game.json devSpeeds, T-2 "배속은 2 4 8 16만"): ×4 → ×8 → ×16 → ×1 (×3 없음)
+  for (const label of ['×4', '×8', '×16', '×1']) {
     await speed.click();
     await expect(speed).toHaveText(label);
   }

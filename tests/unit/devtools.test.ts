@@ -43,13 +43,15 @@ describe('개발자 모드 (src/devMode.ts)', () => {
 describe('개발자 배속 (game.json devSpeeds)', () => {
   const game = loadGameData().game;
 
-  it('개발자 모드는 ×1 → ×2 → ×3 → ×4 → ×8 → ×16 → ×1 순환', () => {
+  it('개발자 모드는 ×1 → ×2 → ×4 → ×8 → ×16 → ×1 순환 (T-2 "배속은 2 4 8 16만": ×3 없음)', () => {
     const list = availableSpeeds(game.speeds, 1, true, game.devSpeeds);
-    expect(list).toEqual([1, 2, 3, 4, 8, 16]);
+    expect(list).toEqual([1, 2, 4, 8, 16]);
     let s = 1;
     const seen = [s];
-    for (let i = 0; i < 6; i++) seen.push((s = nextSpeed(s, list)));
-    expect(seen).toEqual([1, 2, 3, 4, 8, 16, 1]);
+    for (let i = 0; i < 5; i++) seen.push((s = nextSpeed(s, list)));
+    expect(seen).toEqual([1, 2, 4, 8, 16, 1]);
+    // 계정 Lv12라도 개발자 모드 순환에는 ×3이 끼지 않는다
+    expect(availableSpeeds(game.speeds, 12, true, game.devSpeeds)).not.toContain(3);
   });
 
   it('일반 모드는 예전 그대로 (계정 Lv1 ×1·×2, Lv12 ×3) — devSpeeds를 넘겨도 쓰지 않는다', () => {
@@ -57,7 +59,7 @@ describe('개발자 배속 (game.json devSpeeds)', () => {
     expect(availableSpeeds(game.speeds, 12, false, game.devSpeeds)).toEqual([1, 2, 3]);
   });
 
-  it('검사: ×1부터 오름차순·최대 ×16·일반 배속 포함', () => {
+  it('검사: ×1부터 오름차순·최대 ×16 (T-2부터 일반 배속 ×3을 포함하지 않아도 된다)', () => {
     const bad = (devSpeeds: unknown): string[] => {
       const raw = structuredClone(bundledRawData());
       (raw.game as Record<string, unknown>).devSpeeds = devSpeeds;
@@ -73,7 +75,7 @@ describe('개발자 배속 (game.json devSpeeds)', () => {
     expect(bad([2, 4])).toContain('devSpeeds[0]');
     expect(bad([1, 4, 3])).toContain('devSpeeds[2]');
     expect(bad([1, 2, 3, 32])).toContain('devSpeeds[3]');
-    expect(bad([1, 3])).toContain('devSpeeds'); // ×2(일반 배속)가 없음
+    expect(bad([1, 2, 4, 8, 16])).toEqual([]);
     expect(bad([])).toContain('devSpeeds');
   });
 });

@@ -67,7 +67,7 @@ for name, lst in (("speeds", _sp), ("devSpeeds", _dev)):
     if not lst or lst[0] != 1: errors.append(f"game.json {name}: ×1부터 시작해야 함 ({lst})")
     if any(b <= a for a, b in zip(lst, lst[1:])): errors.append(f"game.json {name}: 오름차순이어야 함 ({lst})")
     if any(not isinstance(v, int) or v < 1 or v > 16 for v in lst): errors.append(f"game.json {name}: 1~16 정수만 ({lst})")
-if any(v not in _dev for v in _sp): errors.append(f"game.json devSpeeds {_dev}에 일반 배속 {_sp}이 모두 있어야 함")
+# T-2: 사용자 요청 "배속은 2 4 8 16만" → 개발자 순환에 일반 배속 ×3이 없어도 된다 (포함 검사 삭제)
 need_special = {"normal": 2, "rare": 4, "unique": 6, "hero": 8, "legend": 10}
 deck_min = {"normal": 1, "rare": 2, "unique": 3, "hero": 4, "legend": 5}
 for g in need_special:

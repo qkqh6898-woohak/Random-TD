@@ -13,6 +13,8 @@
  *   sim은 명령만 안다 — 정보 패널·시트를 여는 것처럼 상태를 바꾸지 않는 터치는 방치를 깨지 않는다.
  * - danger: 몹 mobs마리 이상(캠페인: 목숨 lives 이하)으로 시작한 단계를 패배 없이 넘기면 (다음 단계 시작 때) 달성.
  * - gamble: 조건(table·minMul·maxMul·maxGold = 도박 직전 보유금 상한)에 맞는 도박이 n번 연속. 안 맞는 도박이 끼면 0부터.
+ *   table을 정한 미션은 그 테이블 도박만 본다 (T-2: 테이블을 동시에 돌려도 다른 테이블 도박이 연속을 끊지 않는다). table이 없으면
+ *   모든 테이블의 도박을 실행 순서대로 본다.
  * - reach: stage단계가 시작되는 순간 조건(onlyGrade = 타워 1개 이상이고 모두 그 등급, minWorkers·maxTowers·maxSummons·maxUpgrades).
  * - edge: 무한 = 몹 수가 정확히 한도 − belowLimit (149), 캠페인 = 목숨이 정확히 lives (1).
  *
@@ -230,6 +232,8 @@ export function installMissionTracker(ctx: MatchContext, world: World): System {
   world.on('summon', markTowers);
   world.on('merge', markTowers);
   world.on('mergePicked', markTowers);
+  world.on('sell', markTowers);
+  world.on('convert', markTowers);
   // 방치: 마지막 플레이어 명령 틱 (noop 제외 — 락스텝 빈 명령은 조작이 아니다)
   world.setBeforeCommand((w: World, cmd: Command) => {
     if (cmd.type !== 'noop') state.lastActTick = w.tick;
@@ -239,6 +243,8 @@ export function installMissionTracker(ctx: MatchContext, world: World): System {
     const g = { t: ev.t as number, mul: ev.mul as number, before: ev.before as number };
     missions.forEach((m, i) => {
       if (m.cond.type !== 'gamble' || state.missionStatus[i] !== MISSION_OPEN) return;
+      // 테이블을 정한 미션은 그 테이블의 도박만 센다 — 다른 테이블을 함께 돌려도 연속이 끊기지 않는다 (T-2 테이블 동시 도박)
+      if (m.cond.table !== undefined && rules.gambleTables[g.t]?.cost !== m.cond.table) return;
       const n = gambleMatches(m.cond, g, rules) ? (state.missionCount[i] ?? 0) + 1 : 0;
       state.missionCount[i] = n;
       if (n >= (m.cond.n ?? 1)) complete(ctx, w, i);

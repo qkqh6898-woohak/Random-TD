@@ -1,6 +1,6 @@
 /**
  * T-1 E2E: 개발자 모드 (?dev=1 · ?debug=1 · 테스트 빌드) — ⏭ 다음 단계로 즉시 이동(누를 때마다·빠른 연타·길게 누르기·×16·보스 단계),
- * 개발자 배속 ×1 → ×2 → ×3 → ×4 → ×8 → ×16 → ×1 (5초 틱 수 측정), 일반 주소에는 둘 다 없음, 한 파일 빌드(file://, 서버 없음).
+ * 개발자 배속 ×1 → ×2 → ×4 → ×8 → ×16 → ×1 (T-2, 5초 틱 수 측정), 일반 주소에는 둘 다 없음, 한 파일 빌드(file://, 서버 없음).
  * sim은 window.__rtd로 읽기만 하고 버튼은 화면에서 누른다.
  */
 import { expect, test, type Page } from '@playwright/test';
@@ -123,7 +123,7 @@ test('?dev=1: ⏭ 누를 때마다 다음 단계가 바로 시작 — HUD·sim, 
 
   // ×16에서도 누를 때마다 하나씩
   const seen = await setSpeed(page, '×16');
-  expect(seen).toEqual(['×2', '×3', '×4', '×8', '×16']);
+  expect(seen).toEqual(['×2', '×4', '×8', '×16']);
   const before = await sim(page, (x) => x.match.state.stage);
   const cmdsBefore = await sim(page, (x) => x.match.world.executed.filter((c) => c.type === 'debugSkipStage').length);
   await skip.click();
@@ -163,15 +163,15 @@ test('?dev=1: ⏭를 길게 누르면 초당 약 4번 계속 넘어간다', asyn
   expect(errors).toEqual([]);
 });
 
-test('?dev=1: 배속 ×1 → ×2 → ×3 → ×4 → ×8 → ×16 → ×1, 5초 틱 수가 배속만큼 (×16 ≈ 1600), ×16 글자가 412·320px에서 넘치지 않음', async ({ page }, info) => {
+test('?dev=1: 배속 ×1 → ×2 → ×4 → ×8 → ×16 → ×1 (T-2: ×3 없음), 5초 틱 수가 배속만큼 (×16 ≈ 1600), ×16 글자가 412·320px에서 넘치지 않음', async ({ page }, info) => {
   const errors = collectErrors(page);
   await startGame(page, '/?dev=1&seed=23');
   const speed = page.getByRole('button', { name: '배속' });
   await expect.poll(() => sim(page, (s) => s.match.tick)).toBeGreaterThan(0);
   const x1 = await ticksIn(page, 5000);
-  await setSpeed(page, '×4');
+  expect(await setSpeed(page, '×4')).toEqual(['×2', '×4']);
   const x4 = await ticksIn(page, 5000);
-  await setSpeed(page, '×16');
+  expect(await setSpeed(page, '×16')).toEqual(['×8', '×16']);
   const x16 = await ticksIn(page, 5000);
   const stats = await sim(page, (s) => s.simStats);
   info.annotations.push({ type: 'ticks-5s', description: `×1 ${x1} · ×4 ${x4} · ×16 ${x16} (버린 틱 ${stats.droppedTicks}, 틱 평균 ${stats.avgTickMs.toFixed(3)}ms)` });
@@ -248,7 +248,7 @@ test.describe('한 파일 빌드 (npm run build:single → release/운빨디펜�
     await expect(skip).toBeVisible();
     await skip.click();
     await expect(page.getByTestId('hud-stage')).toHaveText('1단계', { timeout: 3000 });
-    expect(await setSpeed(page, '×16')).toEqual(['×2', '×3', '×4', '×8', '×16']);
+    expect(await setSpeed(page, '×16')).toEqual(['×2', '×4', '×8', '×16']);
     await shot(page, 'T1-single-file');
     expect(errors).toEqual([]);
   });

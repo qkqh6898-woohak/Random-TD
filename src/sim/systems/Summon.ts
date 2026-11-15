@@ -18,12 +18,13 @@ import type { World } from '../World';
 import { streamSummon } from '../World';
 import { BP_ONE, mulBp } from '../Fixed';
 import { ATTACK_COST, TOWER_KIND, isTower, type Tower } from '../entities/Tower';
-import { isBuildable, tileCenter } from '../map';
+import { isBuildable, tileAt, tileCenter, type SimMap } from '../map';
 import type { Deck, MatchRules } from '../rules';
 import type { MatchContext } from '../state';
 import { canAfford, spendGold } from './Economy';
 import { rollChanceBp } from './Damage';
 import { ownerBonus } from '../abilities';
+import { chanceBonus, chanceValue } from '../chances';
 
 /** 소환 실패 이유: 판이 끝남 / 배치 칸이 아님 / 이미 타워가 있음 / 배치 칸이 가득 참 / 돈 부족 */
 export type SummonFail = 'phase' | 'notBuildable' | 'occupied' | 'full' | 'gold';
@@ -63,10 +64,11 @@ export function summonCost(ctx: Pick<MatchContext, 'rules' | 'state'>): number {
   return v < min ? min : v;
 }
 
-/** 그 플레이어의 신 타워 확률 (bp): 기본 × 카드 '신의 눈길' 배율. */
+/** 그 플레이어의 신 타워 확률 (bp): 기본(개발자 확률 조정 'god'이 있으면 그 값) × 카드 '신의 눈길' 배율. */
 export function godChanceFor(ctx: Pick<MatchContext, 'rules' | 'state'>, player: number): number {
   const mul = ctx.state.perks[player]?.godMulBp ?? BP_ONE;
-  return mul === BP_ONE ? ctx.rules.godChanceBp : mulBp(ctx.rules.godChanceBp, mul);
+  const base = chanceValue(ctx.rules, ctx.state, 'god');
+  return mul === BP_ONE ? base : mulBp(base, mul);
 }
 
 /** 소환 판정 결과. */
@@ -93,9 +95,9 @@ export function rollSummon(rng: Rng, rules: MatchRules, deck: Deck, rareBp = 0, 
   return { tower: rng.pick(deck.normal), god: false, rare: false };
 }
 
-/** 그 플레이어의 레어 직행 확률 (bp): 판 위 특색(행운의 여신)의 합 — 같은 타워는 한 번만. */
+/** 그 플레이어의 레어 직행 확률 (bp): 판 위 특색(행운의 여신)의 합 — 같은 타워는 한 번만. + 개발자 확률 조정 'summonRare'. */
 export function summonRareChance(ctx: MatchContext, world: World, player: number): number {
-  return ownerBonus(ctx, world, player, (def, p) => def.summonRareBp?.(p));
+  return ownerBonus(ctx, world, player, (def, p) => def.summonRareBp?.(p)) + chanceBonus(ctx.state, 'summonRare');
 }
 
 /** 칸에 타워를 놓는다 (검사 없이, 소환·테스트용). */
@@ -134,6 +136,45 @@ export function nearestFreeTile(ctx: MatchContext, world: World, x: number, y: n
     if (best === null || d < bestD) {
       best = t;
       bestD = d;
+    }
+  }
+  return best;
+}
+
+/**
+ * 배치 칸 (x, y) 둘레(체비쇼프 거리 radius 안, 자기 칸 제외)의 경로 칸 수 — 자동 소환 칸 고르기의 점수 (T-2).
+ */
+export function pathTilesAround(map: SimMap, x: number, y: number, radius: number): number {
+  let n = 0;
+  for (let dy = -radius; dy <= radius; dy++) {
+    for (let dx = -radius; dx <= radius; dx++) {
+      if ((dx !== 0 || dy !== 0) && tileAt(map, x + dx, y + dy) === 'path') n++;
+    }
+  }
+  return n;
+}
+
+/**
+ * 자동 소환 칸 (T-2: 꾹 눌러 연속 소환·[🎲 소환] 버튼). 순수 함수 — 화면이 이 칸으로 평소 summon 명령을 보낸다 (리플레이 그대로).
+ * 빈 배치 칸 중 둘레(game.json summon.autoRadius = 2) 경로 칸이 가장 많은 칸, 같으면 y가 작은 칸, 그다음 x가 작은 칸.
+ * @param taken 이미 찬 칸 'x,y' (생략하면 판 위 타워 칸). 화면이 아직 실행되지 않은 소환 칸을 더해 넘길 수 있다
+ * @returns 빈 칸이 없으면 null
+ */
+export function autoSummonTile(
+  ctx: Pick<MatchContext, 'map' | 'rules'>,
+  world: World,
+  taken?: ReadonlySet<string>,
+): readonly [number, number] | null {
+  const used = new Set<string>(taken ?? []);
+  for (const e of world.entities.list()) if (isTower(e)) used.add(`${e.tx},${e.ty}`);
+  let best: readonly [number, number] | null = null;
+  let bestScore = -1;
+  for (const t of ctx.map.buildable) {
+    if (used.has(`${t[0]},${t[1]}`)) continue;
+    const score = pathTilesAround(ctx.map, t[0], t[1], ctx.rules.autoSummonRadius);
+    if (score > bestScore || (score === bestScore && best !== null && (t[1] < best[1] || (t[1] === best[1] && t[0] < best[0])))) {
+      best = t;
+      bestScore = score;
     }
   }
   return best;

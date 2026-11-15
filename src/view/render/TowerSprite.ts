@@ -14,6 +14,7 @@
  *   각성 외형은 TowerArt.awakened(타워 종류)가 true일 때 (M8 타워 성장 Lv15가 연결할 자리).
  */
 import Phaser from 'phaser';
+import { effectsOff } from '../effects';
 import {
   FIGURE_ORIGIN_X,
   FIGURE_ORIGIN_Y,
@@ -49,6 +50,9 @@ export interface TowerArt {
   /** 각성 외형으로 그리나 (타워 성장 Lv15, M8). 없으면 기본 외형 */
   awakened?(towerId: string): boolean;
 }
+
+/** 연출 끄기 (T-2) 때의 고정 자세 */
+const STILL_POSE = Object.freeze({ bob: 0, sx: 1, sy: 1, angle: 0, lunge: 0, dx: 0, gesture: -1, attackK: 0 });
 
 export class TowerSprite {
   readonly id: number;
@@ -119,11 +123,13 @@ export class TowerSprite {
 
   /** 소환 직후 등장 동작. */
   appear(timeMs: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2): 등장 동작 없이
     this.appearAtMs = timeMs;
   }
 
   /** 공격 동작: 대상(단위 좌표) 쪽으로 몸을 내밀고 바라본다. */
   attack(layout: MapLayout, targetUx: number, targetUy: number, timeMs: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2): 공격 몸짓 없이 (투사체는 그대로)
     const t = unitsToPx(layout, targetUx, targetUy);
     const dx = t.x - this.baseX;
     const dy = t.y - (this.baseY - layout.tile * 0.35);
@@ -168,6 +174,9 @@ export class TowerSprite {
   }
 
   update(timeMs: number): void {
+    // 연출 끄기 (T-2): 대기 동작·공격 몸짓·미끄러짐 없이 고정 자세
+    const still = effectsOff();
+    if (still) this.slideFrom = null;
     // 위치: 끄는 중 = 손가락 위, 이동 직후 = 미끄러짐(SLIDE_MS), 그 밖 = 칸
     let rx = this.baseX;
     let ry = this.baseY;
@@ -187,7 +196,9 @@ export class TowerSprite {
     this.root.setDepth(this.dragAt ? DRAG_DEPTH : MOB_DEPTH_BASE + ry);
     this.root.setAlpha(this.dragAt ? 0.88 : 1);
     const preset = this.preset;
-    const pose = towerPose({
+    const pose = still
+      ? STILL_POSE
+      : towerPose({
       timeMs,
       seed: this.seed,
       attackAtMs: this.attackAtMs,
@@ -217,9 +228,9 @@ export class TowerSprite {
         pet: look.pet,
         fx: fxOf(look),
         grade: look.grade,
-        play: !this.stunned,
+        play: !this.stunned && !still,
       });
-      this.character.apply(compose(r, idle, timeMs, this.seed));
+      this.character.apply(compose(r, idle, still ? 0 : timeMs, this.seed));
     }
   }
 

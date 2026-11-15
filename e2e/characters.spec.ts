@@ -243,9 +243,12 @@ test('게임 화면: 타워·몹이 새 캐릭터 그림(파츠 텍스처)으로
   // 다음 프레임에 그림이 생긴다: 모든 타워가 새 파츠 텍스처, 종류마다 한 장
   await expect.poll(() => inScene(page, (s) => s.towerLayer.characterKeys.length, null)).toBe(71);
   const keys = await inScene(page, (s) => s.towerLayer.characterKeys, null);
-  expect(keys.every((k) => k.startsWith('char-tower-'))).toBe(true);
+  // 파츠 텍스처(char-tower-…) 또는 힉스필드 그림(ext-char-tower-…, HF-1 — 불러와졌으면 그것을 쓴다)
+  expect(keys.every((k) => k.startsWith('char-tower-') || k.startsWith('ext-char-tower-'))).toBe(true);
   expect(new Set(keys).size).toBe(INGAME_TOWERS.length);
-  expect(await inScene(page, (s) => ['char-tower-miner-n', 'char-tower-saint-n'].every((k) => s.textures.exists(k)), null)).toBe(true);
+  expect(
+    await inScene(page, (s) => [['char-tower-miner-n', 'ext-char-tower-miner'], ['char-tower-saint-n', 'ext-char-tower-saint']].every((ks) => ks.some((k) => s.textures.exists(k))), null),
+  ).toBe(true);
   // 몹: 몹이 살아 있는 단계로 건너뛰면 새 적 그림
   await inScene(
     page,

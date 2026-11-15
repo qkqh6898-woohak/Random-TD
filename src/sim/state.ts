@@ -178,6 +178,14 @@ export interface MatchState {
   lastActTick: number;
   /** 위기(몹 100마리 이상·목숨 5 이하)로 시작한 단계 (0 = 아님) — 그 단계를 넘기면 '위기에서 버티기' */
   dangerStage: number;
+  // ---- T-2 ----
+  /**
+   * 개발자 도구 '확률 조정'으로 덮어쓴 값 (key → bp, sim/chances.ts). 개발자 판에서 debugSetChance를 쓰기 전에는 필드가 없다
+   * (없는 필드는 해시에 들어가지 않으므로 예전 리플레이 해시가 그대로다). 판마다 새로 시작.
+   */
+  chanceOv?: Record<string, number>;
+  /** 지금까지 판 타워 수 (T-2 sellTower, 모든 플레이어). 처음 판매 전에는 필드가 없다 (리플레이 해시 그대로) */
+  sells?: number;
 }
 
 /** 시스템이 함께 쓰는 문맥. */

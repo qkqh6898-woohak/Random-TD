@@ -65,6 +65,8 @@ export interface TowerBonus {
   apsPctBp: number;
   /** 보스 피해 배율 (bp, ×1 = 10000) — 그림자 암살자 ×2 → ×3.5 */
   bossMulBp: number;
+  /** 치명타 확률 + (bp) — 개발자 확률 조정 'critBonus' (T-2). 없으면 0 */
+  critBp?: number;
 }
 
 export const NO_BONUS: Readonly<TowerBonus> = Object.freeze({ atkPctBp: 0, apsPctBp: 0, bossMulBp: BP_ONE });
@@ -118,7 +120,7 @@ export function effectiveStats(
   const apsPct = mods.apsPctBp + bonus.apsPctBp;
   const apsMilli = cappedAps(rules, stats.apsMilli, apsPct);
   const uncapped = mulBp(stats.apsMilli, BP_ONE + apsPct);
-  const crit = stats.critBp + mods.critChanceBp;
+  const crit = stats.critBp + mods.critChanceBp + (bonus.critBp ?? 0);
   const atkMul = BP_ONE + mods.atkPctBp + bonus.atkPctBp;
   return {
     apsMilli,

@@ -533,18 +533,19 @@ body {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 3cqw;
+  gap: 1.8cqw;
   min-height: max(11cqw, 44px);
   padding: 1.6cqw 3cqw;
   background: linear-gradient(0deg, rgba(13, 18, 32, 0.92) 0%, rgba(13, 18, 32, 0.6) 100%);
   border-top: 0.3cqw solid var(--panel-line);
-  font-size: 3.8cqw;
+  font-size: 3.6cqw;
   font-weight: 700;
   pointer-events: none;
 }
 
 .hud-towers {
-  padding: 0.6cqw 2.2cqw;
+  flex-shrink: 0;
+  padding: 0.6cqw 1.8cqw;
   border-radius: 1.6cqw;
   background: rgba(255, 255, 255, 0.1);
 }
@@ -1092,6 +1093,59 @@ body {
   opacity: 0.55;
 }
 
+/* T-2 버튼 두 줄: [⬆ 승급] [⬆⬆ 모두 승급] / [↔ 이동] [💰 판매 +n원] [🛠 변환] */
+.tp-act-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4cqw;
+}
+
+/* 접기 2단계부터 한 줄로: [⬆ 승급] [⬆⬆ 승급] [↔] [💰 +450원] [🛠] (패널 높이를 버튼 한 줄만큼 아낀다) */
+.tower-panel:is([data-density='2'], [data-density='3'], [data-density='4'], [data-density='5'], [data-density='6']) .tp-act-wrap {
+  flex-direction: row;
+  gap: 1.2cqw;
+}
+
+.tower-panel:is([data-density='2'], [data-density='3'], [data-density='4'], [data-density='5'], [data-density='6']) .tp-act-wrap > .tp-actions {
+  display: contents;
+}
+
+.tower-panel:is([data-density='2'], [data-density='3'], [data-density='4'], [data-density='5'], [data-density='6']) .tp-act-wrap .btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: max(9.5cqw, 40px);
+  padding: 0.8cqw 1cqw;
+  font-size: 3.2cqw;
+  white-space: nowrap;
+}
+
+.tower-panel:is([data-density='2'], [data-density='3'], [data-density='4'], [data-density='5'], [data-density='6']) .tp-word {
+  display: none;
+}
+
+/* 둘째 줄: [↔ 이동] [💰 판매 +n원] [🛠 변환] — 승급 줄보다 낮게 */
+.tp-actions-2 .btn {
+  min-height: max(9.5cqw, 40px);
+  font-size: 3.3cqw;
+  padding: 1cqw 1.4cqw;
+  white-space: nowrap;
+}
+
+.tp-actions-2 .tp-sell {
+  flex: 1.6;
+  color: #ffe27a;
+}
+
+.tp-sell.is-confirm {
+  color: #fff;
+  background: linear-gradient(180deg, #e2574c 0%, #a8231b 100%);
+  border-color: #ffc2bb;
+}
+
+.tp-convert {
+  color: #b9a6ff;
+}
+
 /* [⬆ 승급 가능 n]으로 연 패널: 다음 승급 가능 묶음으로 (패널이 아래 띠의 그 버튼을 덮으므로 패널 안에 둔다) */
 .tp-merge-next {
   width: 100%;
@@ -1155,10 +1209,10 @@ body {
   white-space: nowrap;
 }
 
-/* 숨길 때도 자리는 남긴다: 버튼(44px)이 나타날 때마다 아래 띠 높이가 바뀌면 맵을 다시 배치해 화면이 출렁인다 */
+/* 숨기면 자리도 비운다 (T-2): 아래 띠 높이는 늘 보이는 [👷] 고용 버튼(44px)이 정하므로 출렁이지 않는다.
+ * 예전처럼 자리를 남기면 [🎲 소환]·알약과 함께 412px에서 줄이 넘쳤다. */
 .hud-merge-ready[hidden] {
-  display: inline-flex;
-  visibility: hidden;
+  display: none;
 }
 
 /* ---------- M4 배너 알림 (편대 예고·투명 몹 경고·보스 이름표·보스 처치) ---------- */
@@ -1900,27 +1954,55 @@ body {
   gap: 1.8cqw;
 }
 
-.gb-slot {
+/* T-2: 테이블마다 한 줄 [버튼 · 릴(+자동) · 결과] — 테이블끼리 따로 돈다 */
+.gb-row {
   display: flex;
   align-items: center;
-  gap: 3cqw;
-  padding: 1.6cqw 2.4cqw;
+  gap: 2.2cqw;
+  padding: 0.8cqw 1.6cqw;
   border-radius: 3cqw;
   background: linear-gradient(180deg, #3b1f4f 0%, #24122f 100%);
-  border: 0.4cqw solid rgba(255, 216, 90, 0.55);
+  border: 0.4cqw solid rgba(255, 216, 90, 0.4);
+}
+
+.gb-row.is-auto {
+  border-color: var(--gold);
+  box-shadow: 0 0 2cqw rgba(255, 216, 90, 0.35);
+}
+
+.gb-slot {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.gb-auto {
+  position: absolute;
+  top: -1.6cqw;
+  right: -1.4cqw;
+  padding: 0.2cqw 1cqw;
+  border-radius: 1.2cqw;
+  background: var(--gold);
+  color: #3a1d00;
+  font-size: 2.4cqw;
+  font-weight: 900;
+  pointer-events: none;
+}
+
+.gb-auto[hidden] {
+  display: none;
 }
 
 .gb-reel {
   flex-shrink: 0;
-  width: 20cqw;
-  height: 12cqw;
+  width: 16cqw;
+  height: 10cqw;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 2cqw;
   background: #fff8e1;
   color: #5a2a00;
-  font-size: 6.4cqw;
+  font-size: 5.6cqw;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   box-shadow: inset 0 0.8cqw 1.6cqw rgba(0, 0, 0, 0.35);
@@ -1944,7 +2026,7 @@ body {
 .gb-result {
   flex: 1;
   min-width: 0;
-  font-size: 3.5cqw;
+  font-size: 3.2cqw;
   font-weight: 800;
   word-break: keep-all;
 }
@@ -1996,16 +2078,23 @@ body {
 }
 
 .gb-tables {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.6cqw;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1cqw;
 }
 
 .gb-table {
+  flex-shrink: 0;
   flex-direction: column;
   gap: 0.2cqw;
-  min-height: max(14cqw, 54px);
-  padding: 1cqw;
+  width: 27cqw;
+  min-height: max(11.5cqw, 44px);
+  padding: 0.6cqw;
+  /* 꾹 누르기: 길게 눌러도 글자 고르기·메뉴가 뜨지 않게 */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
   background: linear-gradient(180deg, #6a3fa8 0%, #3c2370 100%);
   border-color: rgba(224, 184, 255, 0.7);
 }
@@ -2216,4 +2305,402 @@ body {
     animation: none;
     transition: none;
   }
+}
+
+/* ---------------------------------------------------------------- T-2 연출 끄기 (개발자 도구)
+ * UI 루트에 .fx-off가 붙으면 꾸밈 애니메이션·전환을 모두 끈다: 배너·알림·바텀 시트·패널이 미끄러지지 않고 바로 나타나고,
+ * 초상화 숨쉬기·깜빡임·릴 흐림도 멈춘다. 정보(글자·막대)는 그대로 보인다. */
+.fx-off *,
+.fx-off *::before,
+.fx-off *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ---------------------------------------------------------------- T-2 아래 띠 [🎲 소환 100원] */
+.hud-summon {
+  flex-shrink: 0;
+  gap: 1cqw;
+  padding: 0.6cqw 2.2cqw;
+  color: #ffe27a;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.hud-summon[hidden] {
+  display: none;
+}
+
+.hud-summon.is-off {
+  color: #ff8a7a;
+  opacity: 0.8;
+}
+
+/* 승급 가능 버튼이나 접은 고르기 창 알약이 보이면 '소환' 글자를 숨겨 줄이 넘치지 않게 ([🎲 100원]) */
+.hud-bottom:has(.hud-merge-ready:not([hidden])) .hud-summon-word,
+.hud-bottom:has(.cp-pill:not([hidden])) .hud-summon-word {
+  display: none;
+}
+
+/* 접은 고르기 창 알약이 있으면 [🎲]만 (보스 카드를 고를 동안 잠깐 — 줄이 넘치지 않게) */
+.hud-bottom:has(.cp-pill:not([hidden])) .hud-summon-cost {
+  display: none;
+}
+
+/* 아래 띠 버튼은 옆 여백을 조금 좁힌다: [🗼 n/96] [🎲 100원] [👷 300원] [⬆ 승급 가능 n]이 412px·360px·320px에서 넘치지 않게 */
+.hud-bottom > .btn-chip,
+.hud-choice-slot > .btn-chip {
+  padding-left: 1.9cqw;
+  padding-right: 1.9cqw;
+  font-size: 3.4cqw;
+}
+
+.hud-bottom > .hud-merge-ready {
+  font-size: 3.3cqw;
+}
+
+/* 안내가 비면 자리도 비우고(간격 하나 아낌) 버튼은 오른쪽으로 */
+.hud-bottom > .hud-hint:empty {
+  display: none;
+}
+
+.hud-bottom > .hud-summon,
+.hud-bottom > .hud-summon[hidden] + .hud-hire {
+  margin-left: auto;
+}
+
+/* 알약 + 승급 가능 버튼까지 있으면(보스 카드를 접어 둔 동안) 간격을 좁히고 승급 버튼은 '⬆ n'만 — 320px에서도 한 줄 */
+.hud-bottom:has(.cp-pill:not([hidden])):has(.hud-merge-ready:not([hidden])) {
+  gap: 1.4cqw;
+}
+
+.hud-bottom:has(.cp-pill:not([hidden])) .hud-mr-word {
+  display: none;
+}
+
+/* 하단 메뉴 넷째 칸 [🛠 개발] (개발자 모드만) */
+.hud-menu-btn.is-dev {
+  color: #b9a6ff;
+}
+
+/* ---------------------------------------------------------------- T-2 일시정지 메뉴 설정 줄 */
+.pause-setting {
+  display: flex;
+  align-items: center;
+  gap: 3cqw;
+  padding: 2cqw 2.4cqw;
+  border-radius: 2.8cqw;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pause-setting-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.pause-setting-name {
+  font-size: 4cqw;
+  font-weight: 800;
+}
+
+.pause-setting-desc {
+  font-size: 2.9cqw;
+  color: var(--text-dim);
+}
+
+.pause-panel .pause-switch {
+  min-height: max(10cqw, 40px);
+  font-size: 3.6cqw;
+}
+
+/* 켜고 끄는 버튼 (일시정지 메뉴·개발자 도구) */
+.dv-switch {
+  flex-shrink: 0;
+  min-width: 17cqw;
+  min-height: max(9.5cqw, 40px);
+  padding: 1cqw 2.4cqw;
+  font-size: 3.4cqw;
+  color: var(--text-dim);
+}
+
+.dv-switch.is-on {
+  color: #3b2416;
+  background: linear-gradient(180deg, #ffd85a 0%, var(--gold) 55%, var(--gold-deep) 100%);
+  border-color: #fff3c4;
+}
+
+/* ---------------------------------------------------------------- T-2 🛠 개발자 도구 시트 */
+.dv-row {
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+  padding: 1.4cqw 2cqw;
+  border-radius: 2.8cqw;
+  background: rgba(255, 255, 255, 0.06);
+  border: 0.3cqw solid rgba(255, 255, 255, 0.1);
+}
+
+.dv-row.is-changed {
+  border-color: rgba(185, 166, 255, 0.8);
+}
+
+.dv-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.dv-name {
+  font-size: 3.6cqw;
+  font-weight: 800;
+  display: flex;
+  gap: 1.4cqw;
+  align-items: baseline;
+}
+
+.dv-note {
+  font-size: 2.7cqw;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.dv-desc {
+  font-size: 2.8cqw;
+  color: var(--text-dim);
+  display: flex;
+  gap: 1.6cqw;
+  align-items: baseline;
+  word-break: keep-all;
+}
+
+.dv-value {
+  font-size: 3.8cqw;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.dv-row.is-changed .dv-value {
+  color: #b9a6ff;
+}
+
+.dv-step {
+  flex-shrink: 0;
+  min-width: 13cqw;
+  min-height: max(9.5cqw, 40px);
+  padding: 0.8cqw 1.2cqw;
+  font-size: 3.4cqw;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.dv-step:disabled,
+.dv-reset:disabled {
+  opacity: 0.45;
+}
+
+.dv-chance-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2cqw;
+}
+
+.dv-reset {
+  flex-shrink: 0;
+  min-height: max(9cqw, 40px);
+  padding: 0.8cqw 3cqw;
+  font-size: 3.4cqw;
+}
+
+.dv-gamble-line {
+  padding: 0.4cqw 2cqw 1cqw;
+  font-size: 3cqw;
+  color: #ffe27a;
+  word-break: keep-all;
+}
+
+.dv-recipe {
+  display: flex;
+  flex-direction: column;
+  gap: 1cqw;
+  padding: 1.4cqw 2cqw;
+  border-radius: 2.8cqw;
+  background: rgba(255, 255, 255, 0.06);
+  border: 0.3cqw solid rgba(255, 255, 255, 0.1);
+}
+
+.dv-recipe.is-ready {
+  border-color: var(--gold);
+}
+
+.dv-recipe-head {
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+}
+
+.dv-recipe-pic {
+  width: 10cqw;
+  height: 10cqw;
+  object-fit: contain;
+  border-radius: 2cqw;
+  background: rgba(241, 196, 15, 0.16);
+}
+
+.dv-recipe-name {
+  font-size: 3.8cqw;
+  font-weight: 900;
+}
+
+.dv-mats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2cqw;
+}
+
+.dv-mat {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1cqw;
+  min-width: 0;
+  padding: 0.6cqw 1cqw;
+  border-radius: 2cqw;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.dv-mat-pic {
+  flex-shrink: 0;
+  width: 7.5cqw;
+  height: 7.5cqw;
+  object-fit: contain;
+}
+
+.dv-pic-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+}
+
+.dv-mat-name {
+  min-width: 0;
+  font-size: 2.8cqw;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dv-mark {
+  position: absolute;
+  top: -1cqw;
+  right: -0.6cqw;
+  font-size: 2.6cqw;
+  font-weight: 900;
+}
+
+.dv-mark:empty {
+  display: none;
+}
+
+.dv-mark.is-on {
+  color: #5ee05e;
+  font-size: 3.4cqw;
+}
+
+.dv-mark.is-deck {
+  padding: 0 0.8cqw;
+  border-radius: 1cqw;
+  background: #4a3a8a;
+  color: #e6d8ff;
+}
+
+/* ---------------------------------------------------------------- T-2 변환 고르기 창 (개발자) */
+.cv-backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4cqw;
+  background: rgba(13, 18, 32, 0.6);
+  pointer-events: auto;
+}
+
+.cv-panel {
+  width: 100%;
+  max-height: 80%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6cqw;
+  padding: 3cqw;
+  background: var(--panel);
+  border: 0.4cqw solid #b9a6ff;
+  border-radius: 4cqw;
+  box-shadow: 0 2.4cqw 6cqw rgba(0, 0, 0, 0.5);
+}
+
+.cv-head {
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+}
+
+.cv-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 4.2cqw;
+  font-weight: 900;
+}
+
+.cv-note {
+  font-size: 2.9cqw;
+  color: var(--text-dim);
+}
+
+.cv-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.6cqw;
+  overflow-y: auto;
+}
+
+.cv-item {
+  flex-direction: column;
+  gap: 0.6cqw;
+  min-width: 0;
+  padding: 1cqw 0.6cqw;
+}
+
+.cv-pic {
+  width: 15cqw;
+  height: 15cqw;
+  object-fit: contain;
+}
+
+.cv-pic-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6cqw;
+  color: var(--text-dim);
+}
+
+.cv-name {
+  max-width: 100%;
+  font-size: 2.8cqw;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 개발자 모드: 하단 메뉴 4칸 (도전·강화·미션·개발) — 개발 칸은 좁게 */
+.hud-menu:has(.is-dev) {
+  grid-template-columns: repeat(3, 1fr) 0.62fr;
 }

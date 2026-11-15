@@ -13,6 +13,11 @@
  *   PROGRESSION.md 9.1 숙련도와 같은 방식). 같은 타워는 한 번만 (abilities.gambleZeroReduction). 숙련도(M10)는 아직 없다.
  * - 난수: 플레이어별 도박 흐름 `p{n}.gamble` — 도박 1번 = 난수 1개 (확률·잭팟 여부와 상관없이 같은 개수).
  * - 당첨금은 카드 '황금 손'(+25%) 보너스를 받지 않고, '번 돈'(goldEarned)에도 넣지 않는다 (도박 기대값이 100%를 넘지 않게).
+ * - 테이블끼리는 따로 돈다 (T-2, 사용자 요청 "10원 도박과 100원 도박을 동시에"): 화면에 전역 잠금이 없고 테이블마다 릴이 따로 돈다.
+ *   명령 하나 = 도박 한 번이 실행 틱에 바로 끝나고(릴은 화면 연출), 같은 틱의 여러 도박은 명령 순서(플레이어 → seq)대로 실행된다.
+ *   잭팟 게이지는 플레이어마다 하나라 모든 테이블이 함께 쓴다 — 실행 순서대로 채우고 비운다 (가득 찬 뒤 처음 실행되는 도박이 ×3 이상).
+ * - 개발자 확률 조정 (T-2, sim/chances.ts): gamble:i로 덮어쓴 배율 확률을 쓰고 ×0이 나머지를 흡수한다. 잭팟 도박에서 ×3 이상
+ *   확률이 모두 0이면 데이터 확률 비율로 정한다 (가중치 합이 0이 되지 않게).
  * - 실패하면 상태·난수를 바꾸지 않고 'gambleFail' { player, t, reason: phase · unknown · locked · gold }.
  *   성공하면 'gamble' { player, t, cost, mul(bp), win, jackpot, gauge, before(도박 직전 보유금) } — 미션(연속 0원·인생 역전·도박왕)이 구독한다.
  */
@@ -24,6 +29,7 @@ import type { GambleOutcome, MatchRules } from '../rules';
 import type { GambleState, MatchContext } from '../state';
 import { gambleZeroReduction } from '../abilities';
 import { canAfford, spendGold } from './Economy';
+import { effectiveGambleOutcomes } from '../chances';
 
 export type GambleFail = 'phase' | 'unknown' | 'locked' | 'gold';
 
@@ -65,9 +71,29 @@ export function gambleWeights(rules: Pick<MatchRules, 'gambleOutcomes' | 'gamble
   return w;
 }
 
-/** 배율 하나 뽑기 (난수 1개). */
-export function rollGamble(rng: Rng, rules: MatchRules, zeroCutBp: number, jackpot: boolean): GambleOutcome {
-  return rules.gambleOutcomes[rng.weightedIndex(gambleWeights(rules, zeroCutBp, jackpot))] as GambleOutcome;
+/** 배율 하나 뽑기 (난수 1개). 잭팟인데 확률 조정으로 ×3 이상 가중치가 모두 0이면 데이터 확률(base)로. */
+export function rollGamble(rng: Rng, rules: GambleRules, zeroCutBp: number, jackpot: boolean, base: GambleRules = rules): GambleOutcome {
+  let w = gambleWeights(rules, zeroCutBp, jackpot);
+  if (jackpot && w.every((x) => x === 0)) w = gambleWeights(base, 0, true);
+  return rules.gambleOutcomes[rng.weightedIndex(w)] as GambleOutcome;
+}
+
+/** 지금 도박 규칙: 개발자 확률 조정(gamble:i)을 반영한 배율표 (덮어쓴 값이 없으면 데이터 규칙 그대로). */
+export function gambleRulesOf<R extends GambleRules & Pick<MatchRules, 'godChanceBp' | 'cardRareBp' | 'eliteChanceBp'>>(
+  ctx: { readonly rules: R; readonly state: Pick<MatchContext['state'], 'chanceOv'> },
+): GambleRules {
+  const outcomes = effectiveGambleOutcomes(ctx.rules, ctx.state);
+  return outcomes === ctx.rules.gambleOutcomes ? ctx.rules : { ...pickGambleRules(ctx.rules), gambleOutcomes: outcomes };
+}
+
+function pickGambleRules(r: GambleRules): GambleRules {
+  return {
+    gambleOutcomes: r.gambleOutcomes,
+    gambleZeroIndex: r.gambleZeroIndex,
+    gambleShiftIndex: r.gambleShiftIndex,
+    jackpotMinMulBp: r.jackpotMinMulBp,
+    jackpotGauge: r.jackpotGauge,
+  };
 }
 
 /** 배율표의 가장 큰 배율 (bp) — 테이블 범위 '0 ~ 50,000원'·화면 대박 연출 문턱. */
@@ -138,7 +164,7 @@ export function gamble(ctx: MatchContext, world: World, player: number, t: numbe
   spendGold(state, table.cost);
   const jackpot = g.gauge >= rules.jackpotGauge;
   const zeroCut = jackpot ? 0 : gambleZeroReduction(ctx, world, player);
-  const out = rollGamble(world.rng(streamGamble(player)), rules, zeroCut, jackpot);
+  const out = rollGamble(world.rng(streamGamble(player)), gambleRulesOf(ctx), zeroCut, jackpot, rules);
   const win = gamblePayout(table.cost, out.mulBp);
   state.gold += win;
   if (jackpot) g.gauge = 0;

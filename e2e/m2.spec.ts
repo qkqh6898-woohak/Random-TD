@@ -5,6 +5,14 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 
+// T-2: 이 파일은 정보 패널 [⬆ 승급] 흐름을 본다 → '눌러서 바로 승급'(기본 켜짐)을 끄고 시작 (켜진 동작은 e2e/t2.spec.ts)
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('rtd.settings')) localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false }));
+  });
+});
+
+
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 
 interface View {
@@ -120,7 +128,9 @@ test('빈 배치 칸 탭 → 소환: 타워가 보이고 돈 1,000 → 900원, �
   const errors = collectErrors(page);
   await start(page);
   await expect(page.getByTestId('hud-towers')).toHaveText('0/71');
-  await expect(page.getByTestId('hud-hint')).toHaveText('소환 · 100원');
+  // T-2: 비용은 [🎲 소환 100원] 버튼이 보여 준다 (안내 글자는 칸이 가득 찼을 때만)
+  await expect(page.getByTestId('hud-summon')).toContainText('100원');
+  await expect(page.getByTestId('hud-hint')).toHaveText('');
   await tapTile(page, 2, 2);
   await expect(page.getByTestId('hud-gold')).toHaveText('900원');
   await expect(page.getByTestId('hud-towers')).toHaveText('1/71');
@@ -153,6 +163,7 @@ test('돈 부족: 10번 소환해 0원 → 11번째 탭은 "100원이 필요해�
   await expect(page.getByTestId('hud-gold')).toHaveText('0원');
   await expect(page.getByTestId('hud-towers')).toHaveText('10/71');
   await expect(page.getByTestId('hud-hint')).toHaveClass(/is-short/);
+  await expect(page.getByTestId('hud-summon')).toHaveClass(/is-off/);
   await tapTile(page, 4, 4);
   await expect(page.locator('.toast', { hasText: '100원이 필요해요' })).toBeVisible();
   const v = await view(page);

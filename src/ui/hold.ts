@@ -30,14 +30,32 @@ export function skipRepeatDelay(n: number): number {
   return n <= 0 ? HOLD_DELAY_MS : SKIP_REPEAT_MS;
 }
 
+/**
+ * 도박 테이블 꾹 누르기 (T-2): 처음은 HOLD_DELAY_MS, 그 뒤 GAMBLE_POLL_MS마다 다시 묻는다 — 앞 릴이 아직 돌면 Game이 'wait'로
+ * 건너뛰므로 실제 간격은 릴 한 판(약 1초, 연출 끄기면 약 0.15초)이다.
+ */
+export const GAMBLE_POLL_MS = 50;
+export function gambleHoldDelay(n: number): number {
+  return n <= 0 ? HOLD_DELAY_MS : GAMBLE_POLL_MS;
+}
+
+/** 자동 소환 간격 (ms, T-2 꾹 눌러 연속 소환·[🎲 소환] 버튼): 초당 약 4번, 연출 끄기면 초당 약 10번 */
+export const AUTO_SUMMON_MS = 250;
+export const AUTO_SUMMON_FAST_MS = 100;
+export function autoSummonInterval(effectsOff: boolean): number {
+  return effectsOff ? AUTO_SUMMON_FAST_MS : AUTO_SUMMON_MS;
+}
+
 export interface HoldOptions {
   /** n번째 연속 발사(0부터) 전 기다릴 시간 (기본 holdRepeatDelay — 강화 버튼처럼 점점 빨라짐) */
   delay?: (n: number) => number;
 }
 
 export interface HoldHandle {
-  /** 연속 중인가 (E2E·테스트) */
+  /** 연속 중인가 (누르고 있는 동안, E2E·테스트) */
   readonly active: boolean;
+  /** 첫 기다림이 지나 되풀이가 시작됐는가 (짧게 누르기는 false — '자동' 표시용) */
+  readonly repeating: boolean;
   stop(): void;
   detach(): void;
 }
@@ -96,6 +114,9 @@ export function attachHoldRepeat(btn: HTMLElement, fire: () => boolean, options:
   return {
     get active() {
       return active;
+    },
+    get repeating() {
+      return active && count > 0;
     },
     stop,
     detach() {

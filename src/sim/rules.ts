@@ -410,6 +410,16 @@ export interface MatchRules {
   readonly challenges: readonly ChallengeStats[];
   /** 판 안 미션 (missions.json 순서 = 미션 번호) */
   readonly missions: readonly MissionData[];
+  // ---- T-2 ----
+  /** 자동 소환 칸 고르기 반경 (체비쇼프 칸) */
+  readonly autoSummonRadius: number;
+  /** 판매: 받는 돈 비율 (bp) */
+  readonly sellRateBp: number;
+  /** 타워 id → 판매 가치 (원, 판매가 = 가치 × sellRateBp 내림) */
+  readonly towerValues: ReadonlyMap<string, number>;
+  /** 개발자 도구 확률 조정: 한 번에 바뀌는 값 (bp)과 이름 목록 (game.json devChances 순서) */
+  readonly devChanceStepBp: number;
+  readonly devChanceKeys: readonly string[];
 }
 
 /** 정수여야 하는 데이터 값 확인 (스키마가 num만 보장하는 필드). */
@@ -622,6 +632,7 @@ export function buildMatchRules(data: GameData): MatchRules {
     towerOrder: Object.freeze(data.towers.towers.map((t) => t.id)),
     ...buildM4Rules(data, mobOrder),
     ...buildM5Rules(data),
+    ...buildT2Rules(data),
   });
   // 한 단계의 등장이 다음 단계 시작 전에 끝나야 한다 (GDD 2.2: 50초 등장 + 10초 휴식)
   if ((rules.slotsPerStage - 1) * rules.spawnIntervalTicks >= rules.stageTicks) {
@@ -875,6 +886,38 @@ function buildM5Rules(data: GameData): Pick<
     challengeTimeTicks: secondsToTicksExact(game.challenge.timeLimitSeconds),
     challenges: Object.freeze(enemies.challenges.map(buildChallengeStats)),
     missions: Object.freeze(missions.missions.map((m) => Object.freeze({ ...m, cond: Object.freeze({ ...m.cond }) }))),
+  };
+}
+
+/**
+ * 타워 판매 가치 (원, T-2): 소환 비용 × 등급 배율 (노말 1·레어 3·유니크 9·히어로 27·레전드 81·신 = game.json sell.gradeMul),
+ * 히든 = 조합 재료 가치의 합. 거듭제곱은 데이터 표(gradeMul)로 — sim에서 계산하지 않는다.
+ */
+export function buildTowerValues(data: Pick<GameData, 'towers' | 'game'>): Map<string, number> {
+  const { game, towers } = data;
+  const out = new Map<string, number>();
+  const byId = new Map(towers.towers.map((t) => [t.id, t]));
+  const base = (id: string): number => {
+    const t = byId.get(id);
+    if (!t || t.grade === 'hidden') return 0;
+    return game.summon.cost * game.sell.gradeMul[t.grade];
+  };
+  for (const t of towers.towers) {
+    if (t.grade !== 'hidden') out.set(t.id, base(t.id));
+    else out.set(t.id, (t.recipe ?? []).reduce((sum, id) => sum + base(id), 0));
+  }
+  return out;
+}
+
+/** T-2 규칙 (자동 소환·판매·개발자 확률 조정). */
+function buildT2Rules(data: GameData): Pick<MatchRules, 'autoSummonRadius' | 'sellRateBp' | 'towerValues' | 'devChanceStepBp' | 'devChanceKeys'> {
+  const { game } = data;
+  return {
+    autoSummonRadius: int('game.json summon.autoRadius', game.summon.autoRadius),
+    sellRateBp: int('game.json sell.rateBp', game.sell.rateBp),
+    towerValues: buildTowerValues(data),
+    devChanceStepBp: int('game.json devChances.stepBp', game.devChances.stepBp),
+    devChanceKeys: Object.freeze(game.devChances.list.map((c) => c.key)),
   };
 }
 

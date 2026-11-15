@@ -12,6 +12,7 @@
  *   [⬆ 승급] [⬆⬆ 모두 승급] — 같은 종류 3개 이상이고 승급할 수 있는 등급일 때만 켜짐
  *   승급 결과 미리 보기: 덱의 다음 등급 5종 이름
  *   대상: 선두 (우선순위 변경은 계정 Lv8, 아직 없음)
+ *   [↔ 이동] [💰 판매 +n원] (T-2) — 판매가 = sim sellPrice, 히어로 이상 확인 중이면 '한 번 더 누르면 판매'
  * 타워 레벨은 판의 레벨(MatchContext.levels, 계정 성장 M9 전까지 모두 1)을 보여준다. 공격력·공속에는 오라·레벨 보정이 들어간다 (M3-7).
  */
 import { GRADE_COLORS } from '../../art/palette';
@@ -147,6 +148,8 @@ export interface TowerPanelInput {
    * → 패널 안에 [다음 묶음 ▶]). 묶음이 2개 이상일 때만, 아니면 생략/null. index는 0부터 (지금 묶음이 목록에 없으면 -1)
    */
   mergeCycle?: { index: number; total: number } | null;
+  /** 판매 (T-2): 판매가(원)와 '한 번 더 누르면 판매' 확인 중인가. 생략하면 0원·확인 아님 */
+  sell?: { price: number; confirming: boolean };
 }
 
 export interface TowerPanelModel {
@@ -178,6 +181,22 @@ export interface TowerPanelModel {
   pausedText: string;
   /** [다음 묶음 ▶ 1/3] 버튼 글자 ('' = 숨김) */
   mergeNext: string;
+  /** 판매 버튼 글자 '💰 판매 +50원' / '한 번 더 누르면 판매' (T-2) */
+  sellLabel: string;
+  sellConfirming: boolean;
+  /** 판매가 글자 '+1,350원' (접힌 패널의 짧은 버튼) */
+  sellPriceText: string;
+}
+
+/** 판매 버튼 글자 (T-2): '💰 판매 +1,350원', 확인 중이면 '한 번 더 누르면 판매'. */
+export function sellLabel(price: number, confirming: boolean): string {
+  if (confirming) return '한 번 더 누르면 판매';
+  return `💰 판매 +${String(price).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}원`;
+}
+
+/** 판매에 두 번 누르기가 필요한 등급인가 (game.json sell.confirmGrades — 히어로·레전드·신·히든). */
+export function sellNeedsConfirm(grade: Grade, confirmGrades: readonly Grade[]): boolean {
+  return confirmGrades.includes(grade);
 }
 
 /** 종족 이름에서 괄호 설명을 뺀다 (부제가 좁은 화면에서 잘리지 않게): '카라쉬 부족 (오크·고블린)' → '카라쉬 부족'. */
@@ -262,5 +281,8 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
     paused: input.paused || input.stunned === true,
     pausedText: input.stunned ? '💫 기절' : input.paused ? '이동 중' : '',
     mergeNext: mergeNextText(input.mergeCycle ?? null),
+    sellLabel: sellLabel(input.sell?.price ?? 0, input.sell?.confirming === true),
+    sellConfirming: input.sell?.confirming === true,
+    sellPriceText: `+${String(input.sell?.price ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}원`,
   };
 }
