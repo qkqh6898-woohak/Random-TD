@@ -9,6 +9,9 @@ import { mkdirSync } from 'node:fs';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 
+// 시트를 여러 번 열고 버튼을 수십 번 누르는 흐름이라 헤드리스 Chromium(초당 10프레임 남짓)에서 30초에 빠듯하다
+test.describe.configure({ timeout: 90_000 });
+
 interface MobLite {
   id: number;
   mob: string;
@@ -316,11 +319,12 @@ test('강화: [비용]을 누르면 Lv·효과·공속 배율 ⚡ 갱신, 길게
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
   await page.mouse.down();
   await expect.poll(() => inScene(page, (s) => s.match.state.upgrades[0]![0], null), { timeout: 6000 }).toBe(4);
-  await page.waitForTimeout(600);
+  // 돈이 떨어지면 연속이 멈추고 모자란 만큼 알림 (누르고 있어도 더 올라가지 않는다)
+  await expect(page.locator('.toast', { hasText: '250원이 더 필요해요' })).toBeVisible();
+  await page.waitForTimeout(400);
   await page.mouse.up();
   expect(await inScene(page, (s) => s.match.state.upgrades[0]![0], null)).toBe(4);
   expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(0);
-  await expect(page.locator('.toast', { hasText: '250원이 더 필요해요' })).toBeVisible();
   await expect(page.getByTestId('upgrade-row-normal').locator('.up-effect')).toHaveText('+40% → +50%');
   await expect(page.getByTestId('menu-badge-upgrade')).toHaveText('Lv 5');
   // 초월: 등급 강화 3종 모두 50 → 능력치 탭 맨 아래에 나타남
@@ -400,8 +404,8 @@ test('미션: 달성하면 한 줄 배너·배지 "n 받기" → [받기]로 보
   await page.goto('/?debug=1&seed=42');
   await page.evaluate(() => localStorage.removeItem('rtd.account'));
   await start(page);
-  // 보유금 3,000원·10,000원 달성
-  await addGold(page, 9000);
+  // 보유금 3,000원·10,000원 달성 (명령만 넣고 화면 프레임 안에서 실행되게 — 빨리 감기로 지나간 달성은 알리지 않는다)
+  await inScene(page, (s) => s.match.world.enqueue({ type: 'debugAddGold', amount: 9000 }).ok, null);
   await expect(page.locator('[data-testid="banner-mission"]', { hasText: '📋 미션 2개 달성!' })).toBeVisible();
   await expect(page.getByTestId('menu-badge-mission')).toHaveText('2 받기');
   await page.getByTestId('menu-mission').click();
@@ -426,10 +430,10 @@ test('미션: 달성하면 한 줄 배너·배지 "n 받기" → [받기]로 보
   await expect(page.getByTestId('mission-summary')).toHaveText('발견 0/11');
   // 소환 0회로 5단계 → 히든 '소환 거부' 달성 (금색 배너) → 공개 + 영구 기록
   await page.getByTestId('sheet-close').click();
-  for (let s = 1; s <= 5; s++) {
-    await skipTo(page, s);
-    await page.waitForTimeout(50);
-  }
+  await skipTo(page, 4);
+  // 마지막 건너뛰기는 화면 프레임 안에서 (빨리 감기로 지나간 달성은 알리지 않는다)
+  await inScene(page, (s) => s.match.world.enqueue({ type: 'debugSkipStage' }).ok, null);
+  await expect.poll(() => inScene(page, (s) => s.match.state.stage, null)).toBe(5);
   await expect(page.locator('[data-testid="banner-gold"]', { hasText: '히든 미션 발견! 「소환 거부」' })).toBeVisible();
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { hidden?: string[] });
   expect(saved.hidden).toContain('h08');
@@ -527,27 +531,32 @@ test('M5 스크린샷: 10단계 보스 + 도전 3단계 (체력바 2줄) · 강�
     [6, 4, 'archer'],
   ]);
   await addGold(page, 30000);
+  // 강화부터 (버튼을 화면에서 누른다)
+  await page.getByTestId('menu-upgrade').click();
+  for (let i = 0; i < 6; i++) await page.getByTestId('upgrade-buy-normal').click();
+  await page.getByTestId('sheet-tab-stat').click();
+  for (const id of ['aps', 'aps', 'aps', 'aps', 'aps', 'crit', 'crit', 'range']) await page.getByTestId(`upgrade-buy-${id}`).click();
+  await expect(page.getByTestId('upgrade-aps')).toHaveText('⚡×1.2');
+  // 그다음 도전 3단계(30초 제한)와 10단계 보스 — 시트는 열어 둔 채 명령으로 (느린 기기에서도 촬영 전에 도전이 끝나지 않게)
   await inScene(
     page,
     (s) => {
       s.match.state.challengeOpen = 3;
+      s.match.world.enqueue({ type: 'startChallenge', lv: 3 });
+      s.debugFastForward(1);
       return null;
     },
     null,
   );
-  await page.getByTestId('menu-challenge').click();
-  await page.getByTestId('challenge-start-3').click();
   await skipTo(page, 10);
-  await ff(page, 60);
-  await page.getByTestId('menu-upgrade').click();
-  await page.getByTestId('sheet-tab-stat').click();
-  for (const id of ['aps', 'aps', 'aps', 'aps', 'aps', 'crit', 'crit', 'range']) await page.getByTestId(`upgrade-buy-${id}`).click();
-  await expect(page.getByTestId('upgrade-aps')).toHaveText('⚡×1.2');
-  await page.getByTestId('sheet-tab-grade').click();
-  for (let i = 0; i < 6; i++) await page.getByTestId('upgrade-buy-normal').click();
-  await page.getByTestId('sheet-tab-stat').click();
+  await ff(page, 40);
   await expect(page.getByTestId('hud-banner-slot')).toHaveClass(/is-split/);
   await expect(page.locator('.toast')).toHaveCount(0, { timeout: 5000 });
+  await expect(page.getByTestId('hud-banner-slot')).toHaveClass(/is-split/);
+  await page.evaluate(() => {
+    const body = document.querySelector('.bs-body');
+    if (body) body.scrollTop = 0; // 버튼을 누르며 내려간 목록을 맨 위로 (⚡ 공속 줄부터)
+  });
   await shot(page, 'M5-upgrade', 'M5');
   expect(errors).toEqual([]);
 });
