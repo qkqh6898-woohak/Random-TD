@@ -541,6 +541,8 @@ export interface ChallengeConfig {
 export interface GameConfig {
   version: number;
   speeds: SpeedOption[];
+  /** 개발자 모드 배속 순환 목록 (T-1, src/devMode.ts). ×1부터 오름차순, 최대 ×16, 일반 배속을 모두 포함 */
+  devSpeeds: number[];
   maxFrameMs: number;
   maxPlayers: number;
   match: MatchConfig;
@@ -1104,6 +1106,13 @@ export const gameSchema: Schema = s.obj({
       }
     },
   ),
+  // 개발자 배속 (T-1): TickClock이 받는 최대 배속이 ×16
+  devSpeeds: s.withCheck<number[]>(s.arr(s.int({ min: 1, max: 16 }), { minLength: 1 }), (v, path, issues) => {
+    if (v[0] !== 1) issues.push({ path: `${path}[0]`, message: '첫 개발자 배속은 ×1이어야 한다' });
+    for (let i = 1; i < v.length; i++) {
+      if ((v[i] as number) <= (v[i - 1] as number)) issues.push({ path: `${path}[${i}]`, message: '개발자 배속은 오름차순이어야 한다' });
+    }
+  }),
   maxFrameMs: s.int({ min: 50, max: 2000 }),
   maxPlayers: s.int({ min: 1, max: 4 }),
   match: s.obj({
@@ -1462,6 +1471,10 @@ export function crossCheck(data: GameData): Issue[] {
   });
   if (!towers.towers.some((t) => t.grade === 'god') && data.game.summon.godChance > 0) {
     issues.push({ file: 'game.json', path: 'summon.godChance', message: '신 타워가 없는데 확률이 0보다 크다' });
+  }
+  // 개발자 배속은 일반 배속을 모두 포함한다 (개발자 모드에서 쓸 수 없는 일반 배속이 없게, T-1)
+  for (const o of data.game.speeds) {
+    if (!data.game.devSpeeds.includes(o.mul)) issues.push({ file: 'game.json', path: 'devSpeeds', message: `일반 배속 ×${o.mul}이 개발자 배속에 없다` });
   }
   crossCheckM4(data, issues);
   crossCheckM5(data, issues);

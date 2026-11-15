@@ -37,7 +37,8 @@
 import Phaser from 'phaser';
 import { GRADE_COLORS, hexToInt } from '../../art/palette';
 import type { Grade } from '../../data/load';
-import { TICK_HZ, TickClock } from '../../sim/World';
+import { TICK_HZ, TickClock, type SimEvent } from '../../sim/World';
+import { TickCostMeter, capTicks, simBudgetMs } from '../tickBudget';
 import type { Projectile } from '../../sim/entities/Projectile';
 import { towerAt, type Tower } from '../../sim/entities/Tower';
 import { canMergeGrade, mergeOutcomes } from '../../sim/Deck';
@@ -147,19 +148,15 @@ import { MobLayer } from '../render/MobSprite';
 import { ProjectileLayer, type ProjectileLook } from '../render/ProjectileSprite';
 import { SelectionLayer } from '../render/SelectionLayer';
 import { TowerLayer } from '../render/TowerSprite';
-import { DAMAGE_COLORS, damageColor, eventFxVisible } from '../render/fxModel';
+import { DAMAGE_COLORS, damageColor, eventFxVisible, fxBudget } from '../render/fxModel';
 import { FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../render/towerGeom';
 import { PuddleLayer, SoldierLayer } from '../render/AbilitySprites';
 import { passiveAuraGlows, type AuraGlow } from '../render/abilityModel';
 import { mobLookView, mobScaleMul, mobStatusView } from '../render/statusModel';
 /** HUD 띠 아래 끝과 알림 사이 간격 (무대 너비 비율, 2cqw) */
 const TOAST_GAP_OF_WIDTH = 0.02;
-/** 한 프레임에 띄우는 피해 숫자 최대 수 */
-const MAX_DAMAGE_TEXTS_PER_FRAME = 16;
-/** 한 프레임에 만드는 맞음 불꽃 최대 수 */
-const MAX_SPARKS_PER_FRAME = 12;
-/** 한 프레임에 만드는 광역 폭발·연쇄 번개 최대 수 */
-const MAX_AREA_FX_PER_FRAME = 8;
+/** 한 프레임에 띄우는 회복 숫자 최대 수 (피해 숫자·불꽃·광역 연출·동전 한도는 배속별 fxBudget) */
+const MAX_HEAL_TEXTS_PER_FRAME = 16;
 /** 운석 한 번에 떨어뜨리는 불덩이 최대 수 */
 const MAX_METEOR_FX = 8;
 /** '{타워} 승급 가능!' 알림은 판당 처음 몇 번만 (UI.md 8장) */
@@ -207,6 +204,8 @@ export class GameScene extends Phaser.Scene {
   /** 지금 판 (E2E·디버그가 읽을 수 있게 공개, 화면은 읽기만) */
   match!: Match;
   private clock!: TickClock;
+  /** 틱 하나의 평균 비용 → 한 프레임 틱 상한 (T-1: ×16에서 느린 기기가 멈추지 않게, 화면 전용) */
+  private readonly tickMeter = new TickCostMeter();
   private hud!: HudView;
   private layout!: MapLayout;
   private mapArea!: Rect;
@@ -308,7 +307,8 @@ export class GameScene extends Phaser.Scene {
       accountLevels: [this.ctx.accountLevel],
     });
     this.clock = new TickClock({ speed: 1, maxFrameMs: config.maxFrameMs });
-    this.speeds = availableSpeeds(config.speeds, this.ctx.accountLevel, this.ctx.debug);
+    this.tickMeter.reset();
+    this.speeds = availableSpeeds(config.speeds, this.ctx.accountLevel, this.ctx.debug, config.devSpeeds);
     this.paused = false;
     this.gameOver = false;
     this.prevProgress = new Map();
@@ -415,7 +415,15 @@ export class GameScene extends Phaser.Scene {
       this.updateToastTop();
     }
     this.frameStartTick = this.match.tick;
-    if (!this.gameOver) this.runTicks(this.clock.advance(deltaMs));
+    if (!this.gameOver) {
+      // ×16에서도 한 프레임 sim 시간을 예산 안으로 (덜 돌린 틱은 버림 → 게임이 조금 느려질 뿐, ×1 몫은 그대로)
+      const requested = this.clock.advance(deltaMs);
+      const n = capTicks(requested, this.clock.speed, this.tickMeter.avgMs, simBudgetMs(deltaMs));
+      this.tickMeter.dropped += requested - n;
+      const t0 = performance.now();
+      this.runTicks(n);
+      this.tickMeter.record(n, performance.now() - t0);
+    }
     this.handleEvents(time);
     this.updatePress(this.time.now);
     // 들려 있어야 할 타워(끄는 중 / 놓고 명령을 기다리는 중) 말고는 내려놓는다 — 끌기를 끝내는 길을 놓쳐도 유령 그림이 남지 않게
@@ -472,6 +480,11 @@ export class GameScene extends Phaser.Scene {
     this.prevProjectiles.clear();
     this.prevSoldiers.clear();
     return done;
+  }
+
+  /** 틱 비용·버린 틱 수 (E2E·성능 측정용, T-1). */
+  get simStats(): { avgTickMs: number; droppedTicks: number; speed: number } {
+    return { avgTickMs: this.tickMeter.avgMs, droppedTicks: this.tickMeter.dropped, speed: this.clock.speed };
   }
 
   /** 화면에 그려진 몹 수 (E2E가 sim 몹 수와 비교). */
@@ -1084,6 +1097,32 @@ export class GameScene extends Phaser.Scene {
     let sparks = 0;
     let areaFx = 0;
     let meteors = 0;
+    let coins = 0;
+    // 배속별 연출 한도 (×4부터 줄임, ×3까지는 예전 그대로 — T-1)
+    const budget = fxBudget(this.clock.speed);
+    this.floatingText.setMaxActive(budget.activeTexts);
+    /** 높은 배속: 이번 프레임 피해 숫자 후보 (큰 피해부터 budget.damageTexts개만 띄운다) */
+    const hitTexts: SimEvent[] = [];
+    const spawnDamageText = (ev: SimEvent): boolean => {
+      const color = damageColor(Number(ev.p), Number(ev.m), Number(ev.t));
+      const crit = ev.crit === true;
+      const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
+      const jitter = (Math.random() - 0.5) * this.layout.tile * 0.3;
+      // 같은 자리에 몰리면 위로 쌓고, 쌓을 자리가 없으면 띄우지 않는다 (겹쳐서 다른 숫자처럼 읽히지 않게). 치명타는 크게 + '!'
+      const label = crit ? `${ev.damage}!` : String(ev.damage);
+      return this.floatingText.spawn(px.x + jitter, px.y - this.layout.tile * 0.42, label, color, time, crit);
+    };
+    /** 돈 연출 (동전 + '+n원'): 한도 안이면 날리고, 넘으면 HUD 돈에 바로 */
+    const goldFx = (x: number, y: number, amount: number, riseTiles: number): void => {
+      if (coins >= budget.coins) {
+        this.hud.gainGold(amount);
+        return;
+      }
+      coins++;
+      const px = unitsToPx(this.layout, x, y);
+      this.floatingText.spawn(px.x, px.y - this.layout.tile * riseTiles, `+${amount}원`, DAMAGE_COLORS.gold, time, true);
+      this.fx.coin(x, y, time, () => this.hud.gainGold(amount));
+    };
     /** 이번 프레임에 운석을 떨어뜨린 '타워:틱' (그 틱의 그 타워 피해 자리마다 불덩이) */
     const meteorKeys = new Set<string>();
     /** 이번 프레임에 받은 미션 보상 (모두 받기는 알림 하나로) */
@@ -1163,12 +1202,12 @@ export class GameScene extends Phaser.Scene {
           }
           break;
         case 'blast':
-          if (!recent || areaFx >= MAX_AREA_FX_PER_FRAME) break;
+          if (!recent || areaFx >= budget.areaFx) break;
           areaFx++;
           this.fx.blastRing(Number(ev.x), Number(ev.y), Number(ev.r), this.areaColor(Number(ev.tower)));
           break;
         case 'chain':
-          if (!recent || areaFx >= MAX_AREA_FX_PER_FRAME) break;
+          if (!recent || areaFx >= budget.areaFx) break;
           areaFx++;
           this.fx.chainBolt(Number(ev.x1), Number(ev.y1), Number(ev.x2), Number(ev.y2));
           break;
@@ -1181,18 +1220,11 @@ export class GameScene extends Phaser.Scene {
           }
           // 지속 피해(화상·독·출혈)는 깜빡이지 않고 숫자만 (0.5초마다라 몹이 늘 하얗게 보이지 않게)
           if (ev.dot !== true) this.mobLayer.flash(Number(ev.target), time);
-          const color = damageColor(Number(ev.p), Number(ev.m), Number(ev.t));
-          const crit = ev.crit === true;
-          if (texts < MAX_DAMAGE_TEXTS_PER_FRAME || crit) {
-            const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
-            const jitter = (Math.random() - 0.5) * this.layout.tile * 0.3;
-            // 같은 자리에 몰리면 위로 쌓고, 쌓을 자리가 없으면 띄우지 않는다 (겹쳐서 다른 숫자처럼 읽히지 않게). 치명타는 크게 + '!'
-            const label = crit ? `${ev.damage}!` : String(ev.damage);
-            if (this.floatingText.spawn(px.x + jitter, px.y - this.layout.tile * 0.42, label, color, time, crit)) texts++;
-          }
-          if (sparks < MAX_SPARKS_PER_FRAME) {
+          if (!budget.forceCrit) hitTexts.push(ev);
+          else if ((texts < budget.damageTexts || ev.crit === true) && spawnDamageText(ev)) texts++;
+          if (sparks < budget.sparks) {
             sparks++;
-            this.fx.hitSpark(Number(ev.x), Number(ev.y), hexToInt(color));
+            this.fx.hitSpark(Number(ev.x), Number(ev.y), hexToInt(damageColor(Number(ev.p), Number(ev.m), Number(ev.t))));
           }
           break;
         }
@@ -1202,9 +1234,7 @@ export class GameScene extends Phaser.Scene {
           const reward = Number(ev.reward);
           // 보상 없는 조각(작은 슬라임)·보스 조각은 '+0원'을 띄우지 않는다 (보스 보상은 bossKill 사건)
           if (!(reward > 0)) break;
-          const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
-          this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.15, `+${reward}원`, DAMAGE_COLORS.gold, time, true);
-          this.fx.coin(Number(ev.x), Number(ev.y), time, () => this.hud.gainGold(reward));
+          goldFx(Number(ev.x), Number(ev.y), reward, 0.15);
           break;
         }
         case 'miss':
@@ -1213,10 +1243,7 @@ export class GameScene extends Phaser.Scene {
         case 'abilityGold': {
           // 특색 돈 (광부·상인·연금술사): 타워 위 '+n원' + 동전이 HUD로
           if (!recent) break;
-          const amount = Number(ev.amount);
-          const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
-          this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.55, `+${amount}원`, DAMAGE_COLORS.gold, time, true);
-          this.fx.coin(Number(ev.x), Number(ev.y), time, () => this.hud.gainGold(amount));
+          goldFx(Number(ev.x), Number(ev.y), Number(ev.amount), 0.55);
           this.noteFx('gold');
           break;
         }
@@ -1321,7 +1348,7 @@ export class GameScene extends Phaser.Scene {
           if (eventFxVisible('action', ev.tick, now, frameStart)) this.cameras.main.shake(420, 0.01);
           break;
         case 'heal': {
-          if (!recent || heals >= MAX_DAMAGE_TEXTS_PER_FRAME) break;
+          if (!recent || heals >= MAX_HEAL_TEXTS_PER_FRAME) break;
           heals++;
           const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
           this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.42, `+${ev.amount}`, DAMAGE_COLORS.heal, time);
@@ -1427,6 +1454,14 @@ export class GameScene extends Phaser.Scene {
           claimed.total += Number(ev.reward);
           claimed.count++;
           break;
+      }
+    }
+    // 높은 배속: 큰 피해부터 한도만큼 (작은 숫자는 건너뛴다)
+    if (hitTexts.length > 0) {
+      hitTexts.sort((a, b) => Number(b.damage) - Number(a.damage));
+      for (const ev of hitTexts) {
+        if (texts >= budget.damageTexts) break;
+        if (spawnDamageText(ev)) texts++;
       }
     }
     // 같은 프레임에 달성한 일반 미션은 한 줄 배너 하나로 (알림이 쌓여 맵 위쪽 줄을 가리지 않게)

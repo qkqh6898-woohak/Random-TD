@@ -160,7 +160,7 @@ test('게임 루프 안에서 예외가 나면 콘솔에만 남기지 않고 오
   await expect(page.getByRole('button', { name: '다시 시도' })).toBeVisible();
 });
 
-test('?debug=1 이면 ×3 배속까지 순환하고, ×2에서 틱이 ×1보다 빨리 돈다', async ({ page }) => {
+test('?debug=1(개발자 모드)이면 ×16 배속까지 순환하고, ×2에서 틱이 ×1보다 빨리 돈다', async ({ page }) => {
   await page.goto('/?debug=1&seed=7');
   await page.getByRole('button', { name: '시작' }).click();
   const speed = page.getByRole('button', { name: '배속' });
@@ -177,8 +177,9 @@ test('?debug=1 이면 ×3 배속까지 순환하고, ×2에서 틱이 ×1보다 
   const r2 = await rate();
   expect(r1).toBeGreaterThan(12); // 약 20
   expect(r2).toBeGreaterThan(r1 * 1.5); // 약 40
-  await speed.click();
-  await expect(speed).toHaveText('×3');
-  await speed.click();
-  await expect(speed).toHaveText('×1');
+  // 개발자 배속 (T-1, game.json devSpeeds): ×3 → ×4 → ×8 → ×16 → ×1
+  for (const label of ['×3', '×4', '×8', '×16', '×1']) {
+    await speed.click();
+    await expect(speed).toHaveText(label);
+  }
 });

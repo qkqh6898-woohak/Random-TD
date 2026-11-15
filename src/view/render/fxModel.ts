@@ -45,6 +45,34 @@ export function eventFxVisible(kind: EventFxKind, evTick: number, nowTick: numbe
   return recent || evTick >= frameStartTick;
 }
 
+/**
+ * 배속별 연출 한도 (T-1, 화면 전용 — sim과 무관). 한 프레임에 만드는 피해 숫자·맞음 불꽃·광역 연출·동전 수와 동시에 떠 있는 숫자 수.
+ * - ×3까지(일반 모드가 쓸 수 있는 배속)는 예전 값 그대로: 숫자 16개/프레임(치명타는 늘), 불꽃 12, 광역 8, 동전 제한 없음.
+ * - ×4부터(개발자 배속)는 줄이고, 피해 숫자는 이번 프레임의 큰 피해부터 고른다(작은 숫자는 건너뜀, 치명타도 크기로만).
+ *   한도를 넘은 처치·특색 돈은 동전·'+n원' 없이 HUD 돈에 바로 더한다 (돈 표시는 sim 값이라 그대로 맞다).
+ */
+export interface FxBudget {
+  /** 한 프레임에 띄우는 피해 숫자 */
+  damageTexts: number;
+  /** true = 치명타는 한도와 상관없이 (예전 방식), false = 큰 피해부터 한도만큼 */
+  forceCrit: boolean;
+  /** 동시에 떠 있는 숫자 최대 */
+  activeTexts: number;
+  sparks: number;
+  areaFx: number;
+  /** 한 프레임에 날리는 동전(+ '+n원') 최대 */
+  coins: number;
+}
+
+export const FX_BUDGET_NORMAL: FxBudget = Object.freeze({ damageTexts: 16, forceCrit: true, activeTexts: 48, sparks: 12, areaFx: 8, coins: Number.POSITIVE_INFINITY });
+
+export function fxBudget(speed: number): FxBudget {
+  if (speed <= 3) return FX_BUDGET_NORMAL;
+  if (speed < 8) return { damageTexts: 4, forceCrit: false, activeTexts: 24, sparks: 6, areaFx: 4, coins: 4 };
+  if (speed < 16) return { damageTexts: 3, forceCrit: false, activeTexts: 16, sparks: 4, areaFx: 3, coins: 3 };
+  return { damageTexts: 2, forceCrit: false, activeTexts: 12, sparks: 3, areaFx: 2, coins: 2 };
+}
+
 /** 피해 숫자 한 개가 떠 있는 시간 (ms) */
 export const DAMAGE_TEXT_MS = 650;
 /** 동전이 HUD까지 날아가는 시간 (ms) */

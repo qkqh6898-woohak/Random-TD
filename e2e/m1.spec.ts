@@ -99,7 +99,7 @@ test('[시작] → 무한 모드 순환의 정원: 0단계 준비, 몹 0/150, �
   // 보스 배너는 보스 단계에만
   await expect(page.getByTestId('hud-boss')).toBeHidden();
   // debug가 아니면 단계 건너뛰기 버튼 없음
-  await expect(page.getByRole('button', { name: '단계 건너뛰기 (디버그)' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '다음 단계로 즉시 이동' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
@@ -211,7 +211,7 @@ test('?debug=1: [캠페인 1] → 사거리 미로, 목숨 20 → 몹이 출구�
 test('?debug=1: ⏭ 단계 건너뛰기로 10단계 → 보스 단계 표시(👑 + 배너), 일반 몹 없음', async ({ page }) => {
   const errors = collectErrors(page);
   await startInfinite(page, '?debug=1&seed=9');
-  const skip = page.getByRole('button', { name: '단계 건너뛰기 (디버그)' });
+  const skip = page.getByRole('button', { name: '다음 단계로 즉시 이동' });
   for (let s = 1; s <= 10; s++) {
     await skip.click();
     await expect(page.getByTestId('hud-stage')).toContainText(`${s}단계`);

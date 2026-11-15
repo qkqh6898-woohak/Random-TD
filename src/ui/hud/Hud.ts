@@ -2,7 +2,7 @@
  * 게임 HUD (DOM, UI.md 4.1·4.2, DEV_PLAN M1-8).
  *
  * 1줄: 단계(보스 단계는 👑) · ⏱ 단계 남은 시간 · 👾 몹 수/한도(무한) 또는 ❤ 목숨(캠페인) · ⏸
- * 2줄: 💰 돈 · 👷 일꾼 수/최대 (M4, 최대면 금색) · [💰+ debug] · [⏭ debug] · 배속
+ * 2줄: 💰 돈 · 👷 일꾼 수/최대 (M4, 최대면 금색) · [💰+ 개발자] · [⏭ 개발자: 다음 단계로 즉시 이동] · 배속(개발자 ×16까지)
  * 그 아래: 보스 막대 자리 (UI.md 4.1 '보스가 있을 때만'). 자리는 늘 비워 두고 보스 단계에만 보인다
  *   → 보스 단계가 와도 HUD 높이가 그대로라 맵이 밀리거나 가려지지 않는다. 맵 위쪽 끝은 Game 장면이 이 높이를 재서 정한다.
  *   M4: 막대 = 군단·계급 이름표 「보스 이름」 + 체력만큼 채운 띠 + 남은 초 (10초 이하 빨간 깜빡). 보스를 잡으면 '보스 처치!'.
@@ -25,6 +25,7 @@
  * 루트의 data-tick 속성 = 지금 틱 (E2E가 게임 시간이 흐르는지 볼 때 쓴다, 화면에는 안 보임).
  */
 import { h } from '../dom';
+import { attachHoldRepeat, skipRepeatDelay, type HoldHandle } from '../hold';
 import type { UiView } from '../root';
 import { livesDropped, withCommas, type HudModel } from './hudModel';
 import type { SheetKind } from '../sheets/sheetModels';
@@ -38,9 +39,9 @@ export interface HudOptions {
   onSpeed: () => void;
   /** ⏸: 일시정지 메뉴를 연다 (바로 나가지 않는다) */
   onPause: () => void;
-  /** ?debug=1 일 때만: 다음 단계로 건너뛰기 */
+  /** 개발자 모드만 (src/devMode.ts): ⏭ 다음 단계로 즉시 이동 (길게 누르면 초당 4번) */
   onSkipStage?: () => void;
-  /** ?debug=1 일 때만: 돈 추가 (CLAUDE.md 4장 개발용 치트) */
+  /** 개발자 모드만: 돈 추가 (CLAUDE.md 4장 개발용 치트) */
   onAddGold?: () => void;
   /** 아래 띠 '⬆ 승급 가능 n': 승급할 수 있는 타워를 골라 정보 패널을 연다 (M3) */
   onMergeReady?: () => void;
@@ -69,7 +70,10 @@ export interface HudView extends UiView {
   readonly choiceSlot: HTMLElement;
   /** 돈 글자 가운데 (무대 기준 CSS px) — 동전이 날아갈 곳 */
   goldAnchor(): { x: number; y: number };
-  /** 돈이 들어옴: 돈 글자 반짝 + '+n원' (짧은 사이에 여러 번이면 합친다) */
+  /**
+   * 돈이 들어옴: 돈 글자 반짝 + '+n원' (짧은 사이에 여러 번이면 합친다).
+   * 같은 프레임에 여러 번 불려도 DOM은 다음 update()에서 한 번만 바꾼다 (높은 배속에 동전이 몰려도 강제 레이아웃 한 번, T-1).
+   */
   gainGold(amount: number): void;
   update(model: HudModel): void;
 }
@@ -113,15 +117,26 @@ export function createHud(opts: HudOptions): HudView {
     text: '⏸',
     on: { click: () => opts.onPause() },
   });
-  // debug 전용 ⏭는 2줄(배속 옆)에 둔다: 1줄에 넣으면 보스 배지·세 자리 몹 수와 함께 넘쳐 ⏸가 잘린다
+  // 개발자 전용 ⏭는 2줄(배속 옆)에 둔다: 1줄에 넣으면 보스 배지·세 자리 몹 수와 함께 넘쳐 ⏸가 잘린다
+  // 누를 때마다 다음 단계가 바로 시작되고, 길게 누르면 초당 4번 (T-1)
   const skipBtn = opts.onSkipStage
     ? h('button', {
         class: 'btn btn-chip hud-skip',
-        attrs: { type: 'button', 'data-action': 'skip-stage', 'aria-label': '단계 건너뛰기 (디버그)' },
+        attrs: { type: 'button', 'data-action': 'skip-stage', 'aria-label': '다음 단계로 즉시 이동', title: '다음 단계로 즉시 이동 (길게 누르면 계속)' },
         text: '⏭',
-        on: { click: () => opts.onSkipStage?.() },
       })
     : null;
+  let skipHold: HoldHandle | null = null;
+  if (skipBtn) {
+    skipHold = attachHoldRepeat(
+      skipBtn,
+      () => {
+        opts.onSkipStage?.();
+        return true;
+      },
+      { delay: skipRepeatDelay },
+    );
+  }
   const addGoldBtn = opts.onAddGold
     ? h('button', {
         class: 'btn btn-chip hud-add-gold',
@@ -242,6 +257,24 @@ export function createHud(opts: HudOptions): HudView {
   let breakTimer: ReturnType<typeof setTimeout> | undefined;
   let gainTimer: ReturnType<typeof setTimeout> | undefined;
   let gainSum = 0;
+  /** 이번 프레임에 들어온 돈 (update()에서 한 번에 보여 준다) */
+  let pendingGain = 0;
+  const showGain = (amount: number): void => {
+    gainSum = gainTimer === undefined ? amount : gainSum + amount;
+    gainEl.textContent = `+${withCommas(gainSum)}원`;
+    gainEl.classList.remove('is-on');
+    goldEl.classList.remove('is-gain');
+    void gainEl.offsetWidth; // 애니메이션을 처음부터 다시
+    gainEl.classList.add('is-on');
+    goldEl.classList.add('is-gain');
+    clearTimeout(gainTimer);
+    gainTimer = setTimeout(() => {
+      gainTimer = undefined;
+      gainSum = 0;
+      gainEl.classList.remove('is-on');
+      goldEl.classList.remove('is-gain');
+    }, GOLD_GAIN_MS);
+  };
   const breakHeart = (): void => {
     countIcon.textContent = '💔';
     countIcon.classList.remove('is-break');
@@ -286,22 +319,13 @@ export function createHud(opts: HudOptions): HudView {
     },
     gainGold(amount) {
       if (!(amount > 0)) return;
-      gainSum = gainTimer === undefined ? amount : gainSum + amount;
-      gainEl.textContent = `+${withCommas(gainSum)}원`;
-      gainEl.classList.remove('is-on');
-      goldEl.classList.remove('is-gain');
-      void gainEl.offsetWidth; // 애니메이션을 처음부터 다시
-      gainEl.classList.add('is-on');
-      goldEl.classList.add('is-gain');
-      clearTimeout(gainTimer);
-      gainTimer = setTimeout(() => {
-        gainTimer = undefined;
-        gainSum = 0;
-        gainEl.classList.remove('is-on');
-        goldEl.classList.remove('is-gain');
-      }, GOLD_GAIN_MS);
+      pendingGain += amount;
     },
     update(m) {
+      if (pendingGain > 0) {
+        showGain(pendingGain);
+        pendingGain = 0;
+      }
       if (last.tick !== m.tick) el.dataset.tick = String(m.tick);
       if (last.stage !== m.stage || last.boss !== m.boss) {
         stageEl.textContent = m.boss ? `👑 ${m.stage}` : m.stage;
@@ -375,6 +399,8 @@ export function createHud(opts: HudOptions): HudView {
       if (dropped) breakHeart();
     },
     destroy() {
+      skipHold?.detach();
+      skipHold = null;
       clearTimeout(breakTimer);
       breakTimer = undefined;
       clearTimeout(gainTimer);

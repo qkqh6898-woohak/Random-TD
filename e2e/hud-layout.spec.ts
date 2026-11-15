@@ -211,7 +211,7 @@ for (const vp of [
     expect(m.rows.every((d) => d <= 0)).toBe(true);
     expect(m.btns.every(Boolean)).toBe(true);
     // ⏭는 2줄(배속 옆)
-    await expect(page.locator('.hud-row').nth(1).getByRole('button', { name: '단계 건너뛰기 (디버그)' })).toHaveCount(1);
+    await expect(page.locator('.hud-row').nth(1).getByRole('button', { name: '다음 단계로 즉시 이동' })).toHaveCount(1);
     await page.getByRole('button', { name: '일시정지' }).click();
     await page.getByRole('button', { name: '계속' }).click();
     const shift = await page.evaluate(() => {

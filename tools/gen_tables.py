@@ -14,6 +14,7 @@ T = json.load(open(ROOT / "src/data/towers.json", encoding="utf-8"))
 E = json.load(open(ROOT / "src/data/enemies.json", encoding="utf-8"))
 C = json.load(open(ROOT / "src/data/campaign.json", encoding="utf-8"))
 MS = json.load(open(ROOT / "src/data/missions.json", encoding="utf-8"))["missions"]
+G = json.load(open(ROOT / "src/data/game.json", encoding="utf-8"))
 towers = T["towers"]; BASE = T["baseDps"]
 GRADES = ["normal", "rare", "unique", "hero", "legend", "god", "hidden"]
 GK = {"normal": "노말", "rare": "레어", "unique": "유니크", "hero": "히어로", "legend": "레전드", "god": "신", "hidden": "히든"}
@@ -60,6 +61,13 @@ def eff_dps(t, arm, mr, pen_up=0.0):
 
 # ---------- 검사 ----------
 errors = []
+# 배속 (UI.md 4.2) · 개발자 배속 (T-1): ×1부터 오름차순, 최대 ×16(TickClock 한도), 개발자 목록은 일반 배속을 모두 포함
+_sp = [o["mul"] for o in G["speeds"]]; _dev = G.get("devSpeeds", [])
+for name, lst in (("speeds", _sp), ("devSpeeds", _dev)):
+    if not lst or lst[0] != 1: errors.append(f"game.json {name}: ×1부터 시작해야 함 ({lst})")
+    if any(b <= a for a, b in zip(lst, lst[1:])): errors.append(f"game.json {name}: 오름차순이어야 함 ({lst})")
+    if any(not isinstance(v, int) or v < 1 or v > 16 for v in lst): errors.append(f"game.json {name}: 1~16 정수만 ({lst})")
+if any(v not in _dev for v in _sp): errors.append(f"game.json devSpeeds {_dev}에 일반 배속 {_sp}이 모두 있어야 함")
 need_special = {"normal": 2, "rare": 4, "unique": 6, "hero": 8, "legend": 10}
 deck_min = {"normal": 1, "rare": 2, "unique": 3, "hero": 4, "legend": 5}
 for g in need_special:
@@ -314,7 +322,7 @@ SECTIONS = {
 if errors:
     print("❌ 데이터 규칙 위반:"); [print("  -", e) for e in errors]
 else:
-    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 미션 {len(MS)}개, 감지 타워(노말~레전드) {len(detect)}종")
+    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 미션 {len(MS)}개, 감지 타워(노말~레전드) {len(detect)}종, 배속 {_sp} · 개발자 {_dev}")
 if "--check" in sys.argv or errors:
     sys.exit(1 if errors else 0)
 for doc, secs in SECTIONS.items():

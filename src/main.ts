@@ -36,7 +36,7 @@ function boot(): void {
 
   try {
     const data = loadGameData();
-    const url = readUrlOptions(location.search);
+    const url = readUrlOptions(location.search, import.meta.env.VITE_TEST_BUILD);
     const account = createAccountStore(defaultStorage());
     const ctx: GameContext = {
       data,
@@ -49,7 +49,7 @@ function boot(): void {
     };
     game = createGame(must('game'), ctx);
     if (import.meta.env.DEV || url.debug) {
-      // 개발·디버그 확인용 (E2E에서 장면 상태를 볼 때도 사용)
+      // 개발 서버·개발자 모드 확인용 (E2E에서 장면 상태를 볼 때도 사용)
       (window as unknown as { __rtd?: unknown }).__rtd = { game, ctx };
     }
   } catch (e) {

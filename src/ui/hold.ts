@@ -22,6 +22,19 @@ export function holdRepeatDelay(n: number): number {
   return d < HOLD_MIN_MS ? HOLD_MIN_MS : d;
 }
 
+/** ⏭ 다음 단계로 즉시 이동을 길게 누를 때 간격 (ms) — 초당 4번 (T-1) */
+export const SKIP_REPEAT_MS = 250;
+
+/** ⏭ 길게 누르기: 처음은 HOLD_DELAY_MS, 그 뒤 일정하게 SKIP_REPEAT_MS (단계가 너무 빨리 넘어가 세지 못하게 빨라지지 않는다). */
+export function skipRepeatDelay(n: number): number {
+  return n <= 0 ? HOLD_DELAY_MS : SKIP_REPEAT_MS;
+}
+
+export interface HoldOptions {
+  /** n번째 연속 발사(0부터) 전 기다릴 시간 (기본 holdRepeatDelay — 강화 버튼처럼 점점 빨라짐) */
+  delay?: (n: number) => number;
+}
+
 export interface HoldHandle {
   /** 연속 중인가 (E2E·테스트) */
   readonly active: boolean;
@@ -33,7 +46,8 @@ export interface HoldHandle {
  * 버튼에 길게 눌러 연속을 붙인다. fire()는 한 번 실행하고 계속할지(true) 돌려준다.
  * 타이머는 setTimeout (화면 전용 — sim 시간과 무관, 명령은 fire 안에서 큐에 들어가 다음 틱에 실행된다).
  */
-export function attachHoldRepeat(btn: HTMLElement, fire: () => boolean): HoldHandle {
+export function attachHoldRepeat(btn: HTMLElement, fire: () => boolean, options: HoldOptions = {}): HoldHandle {
+  const delay = options.delay ?? holdRepeatDelay;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let count = 0;
   let pointerFired = false;
@@ -52,7 +66,7 @@ export function attachHoldRepeat(btn: HTMLElement, fire: () => boolean): HoldHan
       }
       count++;
       schedule();
-    }, holdRepeatDelay(count));
+    }, delay(count));
   };
   const onDown = (ev: Event): void => {
     const pe = ev as PointerEvent;
