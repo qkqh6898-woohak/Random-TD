@@ -5,6 +5,7 @@
  * 바깥 그림 매니페스트(public/assets/characters/manifest.json)도 여기서 읽어 둔다 (없거나 비면 절차 그림 그대로).
  * HF-2: 힉스필드 타이틀 그림(키 아트 1~2 중 무작위)도 여기서 받는다. 받았으면 그것을 꽉 차게 깔고 절차 배경·캐릭터는 그리지 않는다.
  * A-1: 자동 저장된 판이 있으면 [▶ 이어 하기]로 그 판을 되살려 Game 장면에 넘긴다. [📜 기록] = 전투 기록 (일반 무한 판).
+ * U-1: 안드로이드 앱이면 타이틀이 보일 때 업데이트를 한 번 확인한다 (이번 실행에서 처음 한 번, 새 버전이면 타이틀 위 창).
  */
 import Phaser from 'phaser';
 import { GRADE_COLORS } from '../../art/palette';
@@ -133,12 +134,15 @@ export class BootScene extends Phaser.Scene {
     // 타이틀의 뒤로 가기: 열린 창(기록·새 게임 확인)은 nativeBack이 닫고, 그 밖에는 앱이 닫힌다
     setBackHandler(null);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.ctx.update?.setTitleVisible(false);
       this.scale.off(Phaser.Scale.Events.RESIZE, this.onResize, this);
       this.ctx.ui.clear('screen');
       this.titleChars = [];
       this.keyArtView = null;
     });
     this.game.events.emit('rtd:title-ready');
+    // 앱 안 업데이트 (U-1): 타이틀이 보임 → 이번 실행에서 처음이면 확인 (창은 타이틀에서만)
+    this.ctx.update?.setTitleVisible(true);
   }
 
   /** 게임 크기가 바뀜 (T-3 가변 높이) */

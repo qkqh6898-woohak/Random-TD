@@ -5,6 +5,10 @@ name: Android APK
 #   sign    — build가 올린 서명 전 APK만 내려받아 apksigner로 서명·확인 (npm을 돌리지 않음). **main에서만** (서명 배포는 main만),
 #             Environment 'android-release'(배포 브랜치 = main)의 비밀값이 있을 때만 (ANDROID_KEY_ALIAS는 없으면 'randomtd').
 #   publish — 서명된 APK를 Release android-v<버전>에 (main만, 태그가 이미 있으면 건너뜀).
+# 버전 (U-1): main 푸시마다 새 APK가 나가도록 build가 tools/release-version.mjs로 고른다 —
+#   package.json version이 이미 나온 android-v* 태그보다 크면 그대로, 아니면 가장 높은 태그의 다음 patch (0.1.9 → 0.1.10).
+#   versionCode = major×1000000 + minor×1000 + patch. 고른 버전은 CI 작업 폴더의 package.json·package-lock.json·AndroidManifest에만 쓴다 (커밋하지 않음).
+#   문서만 바꾼 푸시(docs/**, *.md)는 돌지 않는다 (새 APK 없음). 같은 ref의 실행은 하나씩 (concurrency) → 버전이 겹치지 않는다.
 # feat/android 푸시는 build(서명 전 APK)만. 옛 codex/android-apk-v* 갈래는 이제 빌드하지 않는다.
 # 비밀값: ANDROID_KEYSTORE_BASE64 · ANDROID_KEYSTORE_PASSWORD · ANDROID_KEY_ALIAS · ANDROID_KEY_PASSWORD (README '안드로이드 APK').
 # 액션은 커밋 SHA로 고정 (git ls-remote로 확인한 v4 태그의 커밋, 주석 = 태그).
@@ -13,6 +17,10 @@ on:
     branches:
       - main
       - feat/android
+    # 문서만 바뀐 푸시는 새 APK를 만들지 않는다 (수동 실행은 그대로)
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
   workflow_dispatch:
 
 permissions:
@@ -28,10 +36,14 @@ jobs:
     timeout-minutes: 40
     outputs:
       version: ${{ steps.version.outputs.version }}
+      versionCode: ${{ steps.version.outputs.versionCode }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+          # 버전·릴리스 노트에 android-v* 태그와 그 사이 커밋이 필요하다 (전체 기록 + 태그)
+          fetch-depth: 0
+          fetch-tags: true
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
@@ -41,8 +53,48 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: 버전 확인 (package.json = AndroidManifest)
+      - name: 릴리스 버전 정하기 (CI 작업 폴더에만 씀)
+        id: plan
+        run: |
+          [[ "$(git rev-parse --is-shallow-repository)" == "false" ]] || { echo "::error::전체 기록이 아니다 (fetch-depth: 0)"; exit 1; }
+          git tag -l 'android-v*' > "$RUNNER_TEMP/rtd-tags.txt"
+          echo "기존 태그: $(tr '\n' ' ' < "$RUNNER_TEMP/rtd-tags.txt")"
+          # (기본 셸은 pipefail이 없어 파이프 대신 파일로 — 스크립트가 거절하면 이 단계가 실패해야 한다)
+          node tools/release-version.mjs --tags-file "$RUNNER_TEMP/rtd-tags.txt" --write > "$RUNNER_TEMP/rtd-plan.txt"
+          cat "$RUNNER_TEMP/rtd-plan.txt"
+          cat "$RUNNER_TEMP/rtd-plan.txt" >> "$GITHUB_OUTPUT"
+          git diff --stat -- package.json package-lock.json android/AndroidManifest.xml
+
+      - name: 릴리스 노트 (이전 android-v 태그 이후 커밋 제목)
+        env:
+          PREV_TAG: ${{ steps.plan.outputs.previousTag }}
+        run: |
+          mkdir -p release-notes
+          range=HEAD
+          if [[ -n "$PREV_TAG" ]] && git rev-parse -q --verify "refs/tags/$PREV_TAG" >/dev/null; then
+            range="$PREV_TAG..HEAD"
+          fi
+          # 제목만 (%s) — Co-Authored-By·Claude-Session 꼬리 줄은 본문이라 들어가지 않지만, 혹시 제목에 있으면 뺀다
+          git log --no-merges --format='- %s' "$range" | grep -v -i -E '^- (Co-Authored-By|Claude-Session):' > "$RUNNER_TEMP/rtd-log.txt" || true
+          total=$(wc -l < "$RUNNER_TEMP/rtd-log.txt")
+          {
+            echo "Assets의 APK를 내려받아 설치하거나 기존 앱 위에 업데이트하세요 (v0.1.7과 같은 앱 ID·서명). 앱은 오프라인에서 동작합니다."
+            echo
+            echo "### 바뀐 점"
+            if (( total == 0 )); then
+              echo "- 자잘한 정리"
+            else
+              head -n 30 "$RUNNER_TEMP/rtd-log.txt"
+              if (( total > 30 )); then echo "- … 외 $((total - 30))개"; fi
+            fi
+          } > release-notes/notes.md
+          cat release-notes/notes.md
+
+      - name: 버전 확인 (package.json = AndroidManifest = 고른 버전)
         id: version
+        env:
+          PLANNED: ${{ steps.plan.outputs.version }}
+          PLANNED_CODE: ${{ steps.plan.outputs.versionCode }}
         run: |
           version=$(node -p 'require("./package.json").version')
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::package.json version이 x.y.z가 아니다: $version"; exit 1; }
@@ -50,6 +102,7 @@ jobs:
           code=$(sed -n 's/.*android:versionCode="\([0-9]*\)".*/\1/p' android/AndroidManifest.xml)
           [[ "$manifest" == "$version" ]] || { echo "::error::AndroidManifest versionName($manifest) ≠ package.json($version)"; exit 1; }
           [[ "$code" =~ ^[0-9]+$ ]] || { echo "::error::AndroidManifest versionCode가 없다"; exit 1; }
+          [[ "$version" == "$PLANNED" && "$code" == "$PLANNED_CODE" ]] || { echo "::error::쓴 버전($version/$code)이 고른 버전($PLANNED/$PLANNED_CODE)과 다르다"; exit 1; }
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "versionCode=$code" >> "$GITHUB_OUTPUT"
 
@@ -61,12 +114,13 @@ jobs:
         run: npm run check
       - name: 웹 빌드
         run: npm run build
-      - name: Java 검사 (AssetPaths)
+      - name: Java 검사 (AssetPaths · UpdateLogic)
         run: bash android/check-java.sh
 
       - name: 서명 전 APK 빌드
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          VERSION_CODE: ${{ steps.version.outputs.versionCode }}
         run: |
           sdk="$RUNNER_TEMP/rtd-android"
           bash android/setup-sdk.sh "$sdk"
@@ -76,11 +130,23 @@ jobs:
           echo "$badging"
           [[ "$badging" == *"name='com.woohak.randomtd'"* ]] || { echo "::error::앱 ID가 com.woohak.randomtd가 아니다"; exit 1; }
           [[ "$badging" == *"versionName='$VERSION'"* ]] || { echo "::error::APK versionName이 $VERSION이 아니다"; exit 1; }
+          [[ "$badging" == *"versionCode='$VERSION_CODE'"* ]] || { echo "::error::APK versionCode가 $VERSION_CODE가 아니다"; exit 1; }
+          # 앱 안 업데이트(U-1)에 필요한 권한: 인터넷(자바 쪽 HTTPS만 — WebView는 APK 안 파일만 연다) · 업데이트 설치
+          perms=$("$sdk/build-tools/android-15/aapt2" dump permissions "android-build/Random-TD_Offline_v$VERSION-unsigned.apk")
+          echo "$perms"
+          for p in android.permission.INTERNET android.permission.REQUEST_INSTALL_PACKAGES; do
+            grep -Fq "name='$p'" <<< "$perms" || { echo "::error::APK 권한 $p가 없다"; exit 1; }
+          done
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: android-unsigned-v${{ steps.version.outputs.version }}
           path: android-build/*.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-notes-v${{ steps.version.outputs.version }}
+          path: release-notes/notes.md
           if-no-files-found: error
 
   sign:
@@ -196,6 +262,10 @@ jobs:
         with:
           name: android-release-v${{ needs.build.outputs.version }}
           path: android-release
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-notes-v${{ needs.build.outputs.version }}
+          path: release-notes
       - name: GitHub Releases에 APK 게시
         env:
           GH_TOKEN: ${{ github.token }}
@@ -203,10 +273,11 @@ jobs:
         run: |
           tag="android-v$VERSION"
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "::notice title=게시 건너뜀::$tag Release가 이미 있습니다. 새로 게시하려면 package.json version과 AndroidManifest versionName·versionCode를 올리세요."
+            # 버전은 build가 태그를 보고 자동으로 고르므로 보통 일어나지 않는다 (같은 커밋을 수동으로 다시 돌렸을 때 등)
+            echo "::notice title=게시 건너뜀::$tag Release가 이미 있습니다."
             exit 0
           fi
           gh release create "$tag" "android-release/Random-TD_Offline_v$VERSION.apk" android-release/SHA256SUMS \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "운빨 디펜스 Android v$VERSION" \
-            --notes "Assets의 APK를 내려받아 설치하거나 기존 앱 위에 업데이트하세요 (v0.1.7과 같은 앱 ID·서명). 앱은 오프라인에서 동작합니다."
+            --notes-file release-notes/notes.md

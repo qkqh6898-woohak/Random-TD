@@ -956,3 +956,60 @@
   - 설계로 둠: 2배 그림은 폭이 약 1.77칸이라 옆 열로 삐져나온 부분은 그 타워를 누르지 않는다 (옆 칸이 빈 소환 칸이면 소환 — '빈 칸이 먼저'). 대각선 이웃은 '붙음'이 아니다.
   - 버전 0.1.9 (versionCode 10).
   - 완료 조건 (고친 뒤 한 번에): Vitest **1,257 통과 + 2 건너뜀**, check·build 통과, E2E **137 통과 · 1 건너뜀 · 실패 0** (42.1분).
+
+## U-1 자동 릴리스 · 앱 안 업데이트 (상태: 완료 — 갈래 `feat/auto-update`, main 7d50ff7에서)
+
+> 사용자 요청: ① main에 푸시할 때마다 버전을 손대지 않아도 서명된 APK가 Release로 나가게 ② 안드로이드 앱이 켜질 때 새 버전이 있으면 알려 주고 한 번 눌러 업데이트.
+
+- **1) 자동 릴리스 (CI)**
+  - 문제: 예전에는 `package.json`·`AndroidManifest` 버전을 사람이 안 올리면 publish가 '태그가 이미 있음'으로 조용히 건너뛰었다.
+  - `tools/release-version.mjs`(순수 함수 + CLI, 타입 `tools/release-version.d.mts`): 기준 = `package.json` version, 입력 = 기존 `android-v*` 태그.
+    기준이 가장 높은 태그보다 크면(또는 태그가 없으면) 기준 그대로, 아니면 **가장 높은 태그의 다음 patch**. 기준이 태그보다 낮아도 내려가지 않는다(업데이트 설치는 versionCode가 커야 함 — 요청의 '기준 태그가 없으면 기준'보다 이 규칙을 앞세움).
+    모양이 틀린 태그(`android-v1.2`, `-rc`, 앞자리 0 …)는 무시. **versionCode = major×1000000 + minor×1000 + patch** (0.1.10 → 1010 > 예전 10), minor·patch ≥ 1000이면 거절, 지금 Manifest versionCode보다 크지 않으면 거절.
+    `--write`면 `package.json`·`package-lock.json`(맨 위 `version`과 `packages[""].version` 두 곳 — 다른 줄은 그대로)·`AndroidManifest.xml`(versionName·versionCode)에 쓴다. 출력 `version=…`·`versionCode=…`·`previousTag=…`.
+  - 워크플로 `build`: checkout `fetch-depth: 0` + `fetch-tags: true`(얕은 기록이면 실패) → `git tag -l 'android-v*'` → `release-version.mjs --write`(**CI 작업 폴더에만**, 커밋하지 않음 — `npm ci`·`npm run build` 전이라 앱 안 `__APP_VERSION__`도 같은 값)
+    → 릴리스 노트 → 기존 버전 확인 단계(package.json = Manifest, 그리고 = 고른 버전) → 나머지 그대로. `aapt2 dump badging`에서 versionCode도, `aapt2 dump permissions`에서 INTERNET·REQUEST_INSTALL_PACKAGES도 확인.
+    기본 셸에 pipefail이 없어 스크립트 출력은 파이프 대신 파일 → `$GITHUB_OUTPUT`.
+  - **릴리스 노트**: `git log --no-merges --format='- %s' <이전 android-v 태그>..HEAD`(제목만이라 Co-Authored-By·Claude-Session 꼬리 줄은 안 들어감 + 혹시 몰라 그런 줄을 grep으로 뺌), 최대 30줄(넘으면 '… 외 n개'), 맨 위 한국어 설치 안내 줄 그대로.
+    build가 `release-notes-v<버전>` artifact로 올리고 publish가 받아 `gh release create --notes-file`.
+  - `paths-ignore: docs/**, **/*.md` — 문서만 바꾼 푸시는 새 APK 없음(수동 실행은 그대로). 섞인 푸시는 돈다.
+  - 보안 그대로: 액션 SHA 고정, 비밀값은 sign 작업 env에만(YAML에서 secrets 참조 build 0·sign 4·publish 0), 키는 `$RUNNER_TEMP`·`always()` 삭제, 기본 `contents: read`·publish만 write, concurrency 그룹 그대로(같은 ref 실행이 하나씩 → 버전이 겹치지 않음). 새 비밀값 없음.
+  - 지금 저장소로 확인: `git ls-remote --tags origin 'android-v*'` = 0.1.7·0.1.8·0.1.9 → **다음 main 푸시는 v0.1.10 (versionCode 1010)**, 노트 범위 `android-v0.1.9..HEAD`. 그다음 푸시는 0.1.11 …
+  - README '안드로이드 APK': 버전은 자동, minor/major(예: 0.2.0)로 올릴 때만 `package.json`·Manifest versionName을 손으로.
+- **2) 앱 안 업데이트 (안드로이드 앱)**
+  - 자바 (`android/src/com/woohak/randomtd/`):
+    - `UpdateLogic.java`(안드로이드 API 없음, JVM 검사 `android/test/…/UpdateLogicTest.java` — `check-java.sh`가 `--release 8`로 AssetPaths와 함께 컴파일·실행): semver 비교, 태그 `android-v<x.y.z>`, 자산 `Random-TD_Offline_v<x.y.z>.apk`,
+      작은 JSON 파서(깊이 64), 초안·시험판·크기(≤ 64MB)·주소 확인, `digest`("sha256:<hex>") 또는 `SHA256SUMS` 줄, 허용 주소(HTTPS + `api.github.com`·`github.com`·`objects.githubusercontent.com`·`release-assets.githubusercontent.com`만, 사용자 정보·다른 포트 거절),
+      리다이렉트 풀기·확인, hex 비교, JS로 보낼 JSON 이스케이프(제어 문자·U+2028/2029·`<`·`>`). 실제 v0.1.9 Release JSON 모양으로 시험.
+    - `Updater.java`: 네트워크는 여기서만(`HttpsURLConnection`, 단일 백그라운드 스레드, 연결 10초·읽기 30초, `User-Agent: RandomTD-Android`, 인증 없음, 리다이렉트를 직접 따라가며 호스트를 한 번씩 확인, 최대 5번).
+      `releases/latest` → 새 버전이면 'available'. [지금 업데이트] → `canRequestPackageInstalls()`가 아니면 'permission'(웹이 설명) → [설정 열기] = `ACTION_MANAGE_UNKNOWN_APP_SOURCES` + `package:` → `onResume`에서 허용됐으면 이어 받기, 아니면 오류.
+      받기: 캐시 폴더 `updates/update.apk`, 진행 150ms마다, 크기 상한·Content-Length·자산 크기 일치, **SHA-256 일치 + `getPackageArchiveInfo`로 앱 ID·versionName·versionCode(설치본보다 큼) 확인**, 틀리면 파일 지움.
+      설치: `PackageInstaller` 세션(MODE_FULL_INSTALL, `setAppPackageName`) → `commit`(명시적 Intent의 PendingIntent, API 31+ `FLAG_MUTABLE` — 설치기가 결과를 채워 넣음). 받은 파일은 세션에 쓴 뒤 지운다.
+      확인하는 동안 [취소]했으면 설치 창을 띄우지 않는다. 람다를 쓰지 않는다(ecj가 android.jar로 컴파일할 때 `LambdaMetafactory`를 못 찾음 — 실제 빌드에서 발견).
+    - `InstallReceiver.java`(매니페스트 `exported="false"`): `STATUS_PENDING_USER_ACTION` → 시스템 확인 Intent를 연다(대상이 이 앱 자신이면 열지 않음), 성공·사용자 취소(`ABORTED`)·그 밖 실패를 웹으로.
+    - `GameActivity`: `addJavascriptInterface(NativeBridge, "RandomTDNative")` — 메서드 넷(`checkUpdate`·`startUpdate`·`openInstallSettings`·`cancelUpdate`) **인자 없음**(웹은 주소·파일을 못 고름), JavaBridge 스레드 → UI 스레드로 넘긴 뒤 지금 페이지가 게임 주소일 때만 실행.
+      결과는 `evaluateJavascript("window.__rtdUpdate && window.__rtdUpdate(<이스케이프된 JSON>)")`, 이것도 게임 주소 페이지일 때만. WebView 설정은 그대로(파일·콘텐츠 접근 끔, `GameAssets`가 APK 밖 주소를 모두 404·이동 막음).
+    - 매니페스트: `INTERNET`, `REQUEST_INSTALL_PACKAGES`, `<receiver .InstallReceiver exported=false>`.
+  - 웹 (`src/update/`, `src/ui/screens/UpdateDialog.ts`):
+    - `updateModel.ts`(순수): 자바 사건 읽기(버전 모양·크기·숫자 확인, 노트 4000자), 상태 기계 `idle → checking → available → (permission →) downloading → verifying → installing → installed` / `error(check|update)` / `dismissed`, 맞지 않는 때 온 사건은 무시, 노트 정리(설치 안내 줄 빼기, `###`·`-` 모양), 글.
+    - `UpdateService.ts`: 다리가 없으면 만들지 않음(브라우저·PWA·아이폰은 아무것도 안 함). `window.__rtdUpdate`를 건다. **타이틀이 보이면(Boot 장면) 이번 실행에서 한 번만** 확인. 다리 호출이 던지면 'bridge' 오류(게임 그대로).
+    - `UpdateDialog.ts`: 타이틀 창과 같은 모양의 `<dialog>`(UI 루트에 붙음 — `#ui-root`가 pointer-events none이라 창에서 다시 켬; 처음 E2E에서 버튼이 안 눌려 발견).
+      '새 버전 v0.1.10이 나왔어요 (지금 v0.1.9)' + 바뀐 점(최대 30줄, 34vh 스크롤) + '내려받기 14.0MB · 저장한 판과 기록은 그대로예요' + [나중에]/[지금 업데이트] → 권한 설명 + [설정 열기] → '내려받는 중… n% (a / bMB)' 진행 막대 + [취소] → '받은 파일을 확인하는 중이에요…' → '설치 화면에서 [업데이트]를 눌러 주세요' + [닫기].
+      **창은 타이틀에서만 연다** — 확인이 늦게 끝나 이미 전투면 띄우지 않고 타이틀로 돌아왔을 때. 뒤로 가기(nativeBack이 열린 창을 닫음)·Esc = 나중에(받는 중이면 취소).
+      업데이트 중 실패 → 창 닫고 짧은 알림('업데이트를 받지 못했어요. 인터넷 연결을 확인해 주세요' · '받은 파일이 맞지 않아 지웠어요…' · '설치 권한이 없어 업데이트를 멈췄어요' · '업데이트를 취소했어요' …).
+      **켤 때 확인 실패(오프라인 등)는 알리지 않는다** — 오프라인 게임이라 매번 알림이 뜨면 귀찮음('실패 → 알림'은 사람이 누른 업데이트에만).
+  - 테스트: Vitest `tests/unit/update.test.ts` 17개(사건 읽기·상태 기계·가짜 다리 서비스: 한 번만 확인, 시작·설정·취소가 맞는 상태에서만 다리 호출, 틀린 사건 무시, 다리 예외), `tests/unit/release-version.test.ts` 18개(실제 태그로 0.1.10/1010, 파일 쓰기·CLI 포함).
+    E2E `e2e/update.spec.ts` 11개(가짜 `window.RandomTDNative`를 addInitScript로): 창·버전·노트 → [나중에] → 게임 시작·일시정지, 진행 막대 50%·확인 중·설치 안내·설치 화면 취소 알림, 권한 → 설정 열기 → 받기, 권한 거절 알림, 받는 중 실패·파일 불일치 알림, [취소], 뒤로 가기(나중에·받는 중 취소, 창 없으면 예전처럼 앱 종료), 다리 없음, 새 버전 없음·확인 실패 조용히, 전투 중에는 창 안 띄움 → 타이틀로 돌아오면.
+  - 스크린샷 (412×915, deviceScaleFactor 1): `docs/screens/U1-update-dialog.png`(새 버전 창) · `U1-update-progress.png`(내려받는 중 50%).
+- **확인 (이 컨테이너)**: `npm test` Vitest **1,292 통과 + 2 건너뜀**(67파일, +35), `npm run check`·`npm run build` 통과, `android/check-java.sh`(AssetPathsTest·UpdateLogicTest) 통과.
+  E2E(관련 스펙만, 포트 5199 — 전체는 다른 작업이 돌고 있어 돌리지 않음): `update.spec`(11) + `a1.spec` + `smoke.spec` **24 통과 · 실패 0** (9.2분).
+  **실제 안드로이드 빌드**: `setup-sdk.sh`(dl.google.com, 첫 시도는 429 → 다시 받아 통과) → `build-apk.sh`로 Java 4개 컴파일·dex·APK(237개 파일, 15MB).
+  CI 흉내(작업 폴더 복사본에 `release-version.mjs --write` → `npm ci --dry-run` 통과 → APK): `aapt2 dump badging` = `versionCode='1010' versionName='0.1.10'`,
+  `aapt2 dump permissions` = INTERNET · REQUEST_INSTALL_PACKAGES, 매니페스트 `receiver .InstallReceiver exported=false`. 워크플로 YAML `yaml.safe_load` + `run` 블록 12개 모두 `bash -n` 통과, 액션 모두 40자 SHA.
+- **남은 문제 / 다음 작업자에게**:
+  - **v0.1.9 이하에는 업데이트 기능이 없다** → v0.1.10은 한 번 직접(Release에서 APK) 설치해야 하고, 그다음부터 앱 안에서 업데이트된다.
+  - 처음 업데이트할 때 안드로이드(갤럭시 포함)가 '출처를 알 수 없는 앱 설치'를 이 앱에 한 번 허용하라고 한다(우리 창이 설명 → [설정 열기]). 일부 기기는 이 권한을 바꾸면 앱을 다시 시작한다 → 다시 켜면 타이틀에서 또 물으니 [지금 업데이트]를 한 번 더.
+  - 실제 기기에서 확인하지 못한 것: PackageInstaller 세션·시스템 확인 창·설치 후 localStorage 유지, GitHub 다운로드 리다이렉트(`release-assets.githubusercontent.com`) 실제 호스트, 권한 설정 왕복(onResume). 이 컨테이너에는 에뮬레이터가 없다.
+  - `INTERNET` 권한이 생겨 이론상 WebView의 WebSocket·WebRTC는 바깥에 닿을 수 있다(HTTP(S) 요청·이동은 `GameAssets`가 여전히 모두 막음). 게임 코드는 그런 연결을 쓰지 않는다. `setBlockNetworkLoads(true)`는 가로챈 응답과의 관계를 기기에서 확인하지 못해 넣지 않았다(흰 화면 위험) — 기기에서 확인되면 넣을 것.
+  - GitHub API 비인증 한도(시간당 60번/IP)를 넘으면 그 실행은 조용히 확인을 건너뛴다.
+  - 사람이 0.1.x 위로 직접 태그를 만들거나 지우면 다음 버전 계산이 그 태그를 따른다(가장 높은 `android-v*` 기준).

@@ -1,6 +1,6 @@
 /**
  * 진입점: 데이터 로드·검사 → DOM 오버레이 → Phaser 시작 (Boot 장면 위에 타이틀).
- * 업데이트 확인(M12)은 게임 시작 뒤 백그라운드로 붙인다.
+ * 앱 안 업데이트(U-1): 안드로이드 앱(자바 다리가 있을 때)만 — 타이틀이 보이면 한 번 확인한다 (Boot 장면 → UpdateService).
  *
  * 오류: 시작 중(동기) 오류는 try/catch로, 그 뒤 게임 루프 안(장면 create·update)이나 Promise에서 터진 예외는
  * window 'error'·'unhandledrejection' 처리기로 받아 같은 오류 화면을 띄운다.
@@ -19,6 +19,8 @@ import { ScreenShake } from './save/ScreenShake';
 import { EffectAudio } from './audio/EffectAudio';
 import { prefersReducedMotion } from './ui/motion';
 import { installNativeBack } from './ui/nativeBack';
+import { UpdateService } from './update/UpdateService';
+import { mountUpdateDialog } from './ui/screens/UpdateDialog';
 import { describeFatal, installFatalHandlers, type FatalPhase } from './ui/fatal';
 import { UiRoot } from './ui/root';
 import { fitStageToWindow, watchViewport } from './ui/stage';
@@ -70,6 +72,9 @@ function boot(): void {
     for (const type of ['click', 'touchend', 'keydown']) window.addEventListener(type, unlockAudio, true);
     // 안드로이드 뒤로 가기 (A-1): 열린 창 → 장면 처리기
     installNativeBack(window, document);
+    // 앱 안 업데이트 (U-1): 다리가 없으면(브라우저·PWA) null → 아무것도 하지 않음. 실패해도 게임은 그대로
+    const update = UpdateService.fromWindow(window);
+    if (update) mountUpdateDialog(update, ui);
     const ctx: GameContext = {
       data,
       ui,
@@ -83,6 +88,7 @@ function boot(): void {
       screenShake: new ScreenShake(storage, () => prefersReducedMotion(window)),
       audio,
       version: __APP_VERSION__,
+      update,
     };
     // 화면 꽉 차게 (T-3): 무대 = 화면 비율대로 (가로 1080, 세로 1920~2600), 크기·방향이 바뀌면 다시 맞춘다
     const stage = must('stage');

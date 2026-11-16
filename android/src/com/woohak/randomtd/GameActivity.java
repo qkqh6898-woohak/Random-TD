@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 import android.view.WindowInsets;
+import android.webkit.JavascriptInterface;
 import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
 import android.webkit.WebResourceRequest;
@@ -30,6 +31,9 @@ import java.util.Collections;
  * - 오프라인: 게임 파일은 모두 APK 안 (AssetPaths가 주소 → assets 경로, 하위 폴더 그림 포함).
  * - 뒤로 가기: 페이지에 취소 가능한 'randomtd:native-back' 사건 → 웹이 처리했으면(열린 창 닫기·일시정지/계속) 그대로, 아니면 앱 종료.
  * - 백그라운드: 'randomtd:native-pause' → 전투면 일시정지 + 자동 저장.
+ * - 앱 안 업데이트 (U-1): JS 다리 window.RandomTDNative (checkUpdate·startUpdate·openInstallSettings·cancelUpdate, 인자 없음)
+ *   → Updater(자바 HTTPS·PackageInstaller) → 결과는 window.__rtdUpdate(JSON). 게임 주소 페이지에서만 받고 보낸다.
+ *   WebView 자체는 여전히 APK 안 파일만 연다 (GameAssets가 다른 주소를 모두 404·이동 막음).
  * applicationId·서명은 v0.1.7과 같다 (업데이트 설치).
  */
 public final class GameActivity extends Activity {
@@ -40,6 +44,8 @@ public final class GameActivity extends Activity {
     private FrameLayout root;
     private WebView game;
     private OnBackInvokedCallback backCallback;
+    private Updater updater;
+    private final Handler ui = new Handler(Looper.getMainLooper());
     private boolean handlingBack;
     /** evaluateJavascript 답이 오지 않으면(페이지가 멈춤 등) 이만큼 뒤에 다시 뒤로 가기를 받는다 */
     private static final long BACK_TIMEOUT_MS = 1000;
@@ -66,6 +72,13 @@ public final class GameActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         game.setWebViewClient(new GameAssets(getAssets()));
+        updater = new Updater(this, new Updater.Sink() {
+            @Override
+            public void send(String json) {
+                sendToGame(json);
+            }
+        });
+        game.addJavascriptInterface(new NativeBridge(), "RandomTDNative");
 
         root.addView(game, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
@@ -134,6 +147,77 @@ public final class GameActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (game != null) game.onResume();
+        if (updater != null) updater.onResume();
+    }
+
+    /** 지금 WebView가 게임 주소(https://appassets.androidplatform.net/game/…)를 열고 있나 (UI 스레드) */
+    private boolean onGamePage() {
+        if (game == null) return false;
+        String url = game.getUrl();
+        if (url == null) return false;
+        Uri uri = Uri.parse(url);
+        return AssetPaths.assetPath(uri.getScheme(), uri.getAuthority(), uri.getPath()) != null;
+    }
+
+    /** 업데이트 결과를 웹으로 (json은 UpdateLogic.jsonObject가 만든 이스케이프된 JSON — 그대로 JS 식) */
+    private void sendToGame(String json) {
+        if (!onGamePage()) return;
+        game.evaluateJavascript("window.__rtdUpdate && window.__rtdUpdate(" + json + ")", null);
+    }
+
+    /**
+     * JS 다리 (U-1). 메서드는 JavaBridge 스레드에서 불리므로 UI 스레드로 넘기고, 그때 게임 주소 페이지인지 확인한다.
+     * 인자를 받지 않는다 — 웹은 주소·파일을 고를 수 없고, '확인/시작/설정 열기/취소'만 요청한다.
+     */
+    public final class NativeBridge {
+        @JavascriptInterface
+        public void checkUpdate() {
+            run(new Runnable() {
+                @Override
+                public void run() {
+                    updater.check();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void startUpdate() {
+            run(new Runnable() {
+                @Override
+                public void run() {
+                    updater.start();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void openInstallSettings() {
+            run(new Runnable() {
+                @Override
+                public void run() {
+                    updater.openInstallSettings();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void cancelUpdate() {
+            run(new Runnable() {
+                @Override
+                public void run() {
+                    updater.cancel();
+                }
+            });
+        }
+
+        private void run(final Runnable action) {
+            ui.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (updater != null && !isFinishing() && onGamePage()) action.run();
+                }
+            });
+        }
     }
 
     @Override
@@ -148,11 +232,17 @@ public final class GameActivity extends Activity {
     @Override
     protected void onDestroy() {
         backTimeout.removeCallbacks(releaseBack);
+        ui.removeCallbacksAndMessages(null);
+        if (updater != null) {
+            updater.destroy();
+            updater = null;
+        }
         if (Build.VERSION.SDK_INT >= 33 && backCallback != null) {
             getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);
             backCallback = null;
         }
         if (game != null) {
+            game.removeJavascriptInterface("RandomTDNative");
             root.removeView(game);
             game.stopLoading();
             game.destroy();
