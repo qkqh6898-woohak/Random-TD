@@ -7,7 +7,7 @@
 - 저장소 절대 경로: `/home/user/random-td`. 셸은 명령마다 작업 폴더가 초기화될 수 있으니 **모든 명령을 `cd /home/user/random-td && ...`로 시작**한다.
 - 기획 문서: `docs/` (GDD, TOWERS, ENEMIES, MAPS, CAMPAIGN, STORY, PROGRESSION, UI, ART, BALANCE, MULTIPLAYER, DEV_PLAN, ARCHITECTURE). 수치·규칙의 정답은 **`src/data/*.json` + 문서**다. 코드에 수치를 박지 말고 JSON에서 읽는다.
 - 진행 기록: `docs/PROGRESS.md` — 마일스톤을 끝낼 때마다 "무엇을 만들었고, 어떤 결정을 했고, 남은 문제는 무엇인지"를 추가한다. 다음 에이전트는 여기서 맥락을 얻는다.
-- **git**: 로컬 커밋만 한다. `git push` 금지 (마지막에 사람이 직접 올린다). 커밋 메시지 형식: `M3-4 피해 공식 전체` (한국어). 커밋 메시지 끝에 아래 두 줄:
+- **git**: 평소에는 로컬 커밋만 한다. **시험판이 완성되면**(완료 조건 통과 + 한 파일 빌드 전달) 그 브랜치를 `origin`에 푸시한다 (작업 에이전트가 아니라 시험판을 확인·전달한 쪽이 한 번에). `main`은 시험판이 독립 검토를 통과한 뒤에만 합쳐서(앞으로 당기기) 푸시한다. 강제 푸시 금지. 커밋 메시지 형식: `M3-4 피해 공식 전체` (한국어). 커밋 메시지 끝에 아래 두 줄:
   ```
   Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
   Claude-Session: https://claude.ai/code/session_01TtVcSoY665DmsK6h3dcafN
