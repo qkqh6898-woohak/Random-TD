@@ -320,6 +320,8 @@ export interface MatchRules {
   readonly penMaxBp: number;
   /** 치명타 확률 최대 (bp) */
   readonly critChanceMaxBp: number;
+  /** 모든 타워 공격력% 기본 보정 (bp, T-3 작은 맵 보정 — game.json combat.towerAtkPct). 공격력% 합에 더한다 */
+  readonly towerAtkPctBp: number;
   /** 받는 피해 증가 합 최대 (bp, +100% = 10000) */
   readonly vulnMaxBp: number;
   /** 연쇄: 튕길 때마다 남는 피해 비율 (bp, −20% → 8000) */
@@ -611,6 +613,7 @@ export function buildMatchRules(data: GameData): MatchRules {
     apsMaxMilli: int('game.json combat.apsMaxPerSec', game.combat.apsMaxPerSec) * APS_SCALE,
     penMaxBp: bp(game.combat.penMax),
     critChanceMaxBp: bp(game.combat.critChanceMax),
+    towerAtkPctBp: bp(game.combat.towerAtkPct),
     vulnMaxBp: bp(game.combat.vulnMax),
     chainKeepBp: BP_ONE - bp(game.combat.chainFalloff),
     chainRange: tiles(game.combat.chainRange),

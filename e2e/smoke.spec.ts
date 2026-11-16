@@ -41,15 +41,14 @@ test('타이틀 화면: 운빨 디펜스 글자와 [시작] 버튼이 Phaser 캔
   const start = page.getByRole('button', { name: '시작' });
   await expect(start).toBeVisible();
 
-  // Phaser 캔버스: 9:16 상자를 가로로 꽉 채움 (412 × 732)
+  // Phaser 캔버스: 화면을 빈 띠 없이 꽉 채움 (T-3: 412 × 915 → 논리 1080 × 2399)
   const canvas = page.locator('#game canvas');
   await expect(canvas).toHaveCount(1);
   const box = await canvas.boundingBox();
   expect(box).not.toBeNull();
   expect(Math.round(box!.width)).toBe(412);
-  expect(Math.abs(box!.height - (412 * 16) / 9)).toBeLessThan(2);
-  // 가운데 정렬 (위아래 여백이 같음)
-  expect(Math.abs(box!.y - (915 - box!.height) / 2)).toBeLessThan(2);
+  expect(Math.abs(box!.height - 915)).toBeLessThan(1);
+  expect(Math.abs(box!.y)).toBeLessThan(1);
 
   // DOM 오버레이가 캔버스와 같은 영역
   const overlay = await page.locator('#ui-root').boundingBox();

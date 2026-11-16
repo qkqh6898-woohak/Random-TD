@@ -12,7 +12,7 @@
 | 무엇 | 파일 | 쓰는 곳 | 대체 |
 |------|------|---------|------|
 | 타워·각성·적·인물 캐릭터 | `assets/characters/<id>.webp` · `<id>_awaken` · `enemy_<id>` · `person_<id>` (+ `manifest.json` 목록) | 맵 위 타워·몹, 정보 패널·캐릭터 카드 초상 (Boot.preload에서 모두 받음) | 절차 파츠 그림 (`src/art/characters/`) |
-| 전투 배경 | `assets/backgrounds/bg_tTT_bB.webp` (테마 10 × 하늘 밴드 5, 720×1280) | Game 장면 맨 아래, 1080×1920을 덮게 (`BattleBackground`) | 절차 풀밭 (`MapRenderer` 배경) |
+| 전투 배경 | `assets/backgrounds/bg_tTT_bB.webp` (테마 10 × 하늘 밴드 5, 720×1280) | Game 장면 맨 아래, 지금 화면(가로 1080 × 세로 1920~2600, T-3)을 덮게 + 넓은 화면 양옆 띠에 흐리게 (`BattleBackground`) | 절차 풀밭 (`MapRenderer` 배경) |
 | 보스 컷인 | `assets/cutins/cutin_<보스 id>.webp` (19종) | 단계 보스 등장 DOM 컷인 (`ui/cutin/BossCutin.ts`) | 컷인 없음 (보스 이름표 배너만) |
 | 타이틀 | `assets/title/title_keyart_1·2.webp` | 타이틀 화면 뒤 (켤 때마다 하나) | 절차 타이틀 (하늘·성벽·대기 동작 타워) |
 

@@ -117,9 +117,9 @@ test('상태 이상 표시: 얼음·진흙·화염 타워가 맞힌 몹에 색·
   const errors = collectErrors(page);
   await start(page);
   await place(page, [
-    [4, 2, 'icemage'],
-    [2, 2, 'mudshaman'],
-    [6, 2, 'flamemage'],
+    [2, 3, 'icemage'],
+    [1, 3, 'mudshaman'],
+    [5, 3, 'flamemage'],
   ]);
   await fastForwardTo(page, 1200 + 400);
   await expect.poll(() => inScene(page, (s) => s.statusIconCount, null), { timeout: 15_000 }).toBeGreaterThan(0);
@@ -147,9 +147,11 @@ test('상태 이상 표시: 얼음·진흙·화염 타워가 맞힌 몹에 색·
 test('진흙 웅덩이·소환 병사: 화면 수 = sim 수, 병사는 경로를 거슬러 걷는다 (진행도 감소)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
+  // 진흙 주술사는 몹이 처음 지나는 윗줄 옆(사거리 3 안에 등장 칸), 소환사는 고리 아래쪽 — 병사가 몹을 등장 칸에서 다 잡아
+  // 주술사 사거리에 몹이 들어오지 않던 것 (T-3 작은 맵)
   await place(page, [
-    [4, 2, 'mudshaman'],
-    [2, 2, 'summoner'],
+    [2, 3, 'mudshaman'],
+    [5, 7, 'summoner'],
   ]);
   await fastForwardTo(page, 1200 + 150);
   await expect.poll(() => inScene(page, (s) => s.match.soldiers().length, null), { timeout: 15_000 }).toBeGreaterThan(0);
@@ -174,19 +176,20 @@ test('진흙 웅덩이·소환 병사: 화면 수 = sim 수, 병사는 경로를
 test('오라: 대장장이를 고르면 3×3 범위와 효과 받는 타워, 옆 궁수 패널 공격력은 초록 11 (기본 10)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
+  // 순환의 정원 v2: 대장장이 (4,4)의 주변 8칸 안 배치 칸 = (4,3)·(5,3)·(5,4)
   await place(page, [
     [4, 4, 'blacksmith'],
-    [4, 5, 'archer'],
-    [3, 3, 'apprentice'],
-    [6, 7, 'warrior'],
+    [4, 3, 'archer'],
+    [5, 4, 'apprentice'],
+    [1, 7, 'warrior'],
   ]);
-  await tapTile(page, 4, 5);
+  await tapTile(page, 4, 3);
   const panel = page.getByTestId('tower-panel');
   await expect(panel).toBeVisible();
   const atk = panel.locator('.tp-stat.is-buffed').filter({ hasText: '물리' });
   await expect(atk.locator('.tp-value')).toHaveText('11');
   await expect(atk.locator('.tp-base')).toHaveText('(10)');
-  await tapTile(page, 4, 5); // 닫기
+  await tapTile(page, 4, 3); // 닫기
   await tapTile(page, 4, 4);
   await expect.poll(() => inScene(page, (s) => s.selectedAura, null)).toEqual({ area: 'around8', radius: 1, buffed: 2 });
   await expect(panel.getByTestId('tp-ability')).toContainText('주변 8칸');
@@ -199,7 +202,7 @@ test('평소 오라 빛: 고르지 않아도 대장장이(3×3)·학자(자기 �
   await place(page, [
     [4, 4, 'blacksmith'],
     [2, 6, 'scholar'],
-    [6, 7, 'archer'],
+    [1, 9, 'archer'],
   ]);
   await expect
     .poll(() => inScene(page, (s) => s.passiveAuras, null))
@@ -213,10 +216,11 @@ test('평소 오라 빛: 고르지 않아도 대장장이(3×3)·학자(자기 �
   expect(errors).toEqual([]);
 });
 
-test('정보 패널: 맵 가운데 줄(5·6줄) 타워를 골라도 특색 줄이 보인다 — 보유·대상·관통 줄을 먼저 접는다 (검토 반영)', async ({ page }) => {
+test('정보 패널: 맵 가운데 줄(4·6·7줄) 타워를 골라도 특색 줄이 보인다 — 보유·대상·관통 줄을 먼저 접는다 (검토 반영)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
-  const cells = await inScene(page, (s) => [5, 6, 7].map((y) => s.match.map.buildable.find(([, yy]) => yy === y)!), null);
+  // 순환의 정원 v2(7×11): 가운데 5줄은 빈 땅 → 그 위아래 배치 칸 줄
+  const cells = await inScene(page, (s) => [4, 6, 7].map((y) => s.match.map.buildable.find(([, yy]) => yy === y)!), null);
   for (const id of ['scholar', 'archmage']) {
     for (const [x, y] of cells) {
       await inScene(
@@ -251,10 +255,10 @@ test('특색 연출: 연금술사 10초 +20원, 운석·시간 정지·주사위
   const errors = collectErrors(page);
   await start(page);
   await place(page, [
-    [8, 0, 'alchemist'],
-    [8, 10, 'archmage'],
-    [0, 10, 'chronomancer'],
-    [0, 2, 'gambler'],
+    [5, 0, 'alchemist'],
+    [5, 9, 'archmage'],
+    [1, 9, 'chronomancer'],
+    [1, 1, 'gambler'],
   ]);
   // 몹이 나오기 직전으로 → 첫 몹이 나오자마자 운석·시간 정지 (주기는 이미 찼다)
   await fastForwardTo(page, 1190);
@@ -275,13 +279,13 @@ test('M3b 스크린샷: 상태 이상 아이콘·진흙 웅덩이·소환 병사
   // 화력이 약한 조합 → 몹이 오래 살아 상태 이상이 여러 마리에 보인다
   // 패널이 아래 절반을 덮으므로 특색 타워는 위쪽 경로(몹이 처음 지나는 줄) 둘레에
   await place(page, [
-    [2, 2, 'mudshaman'],
-    [4, 0, 'icemage'],
-    [6, 2, 'mudshaman'],
-    [6, 0, 'summoner'],
-    [3, 4, 'blacksmith'],
-    [2, 4, 'archer'],
-    [4, 2, 'warrior'],
+    [1, 3, 'mudshaman'],
+    [4, 1, 'icemage'],
+    [5, 3, 'mudshaman'],
+    [5, 1, 'summoner'],
+    [2, 4, 'blacksmith'],
+    [1, 4, 'archer'],
+    [2, 3, 'warrior'],
   ]);
   // 15단계까지 건너뛴 뒤(M4: 10단계 보스를 이 약한 조합으로는 못 잡아 제한 시간 패배 → debug 건너뛰기는 보스를 지운다) 400틱:
   // 몹이 단단해 상태 이상이 오래 보인다
@@ -296,11 +300,11 @@ test('M3b 스크린샷: 상태 이상 아이콘·진흙 웅덩이·소환 병사
   expect(await inScene(page, (s) => s.match.state.stage, null)).toBe(15);
   await expect.poll(() => inScene(page, (s) => s.statusIconCount, null), { timeout: 15_000 }).toBeGreaterThan(1);
   await expect.poll(() => inScene(page, (s) => s.renderedPuddleCount + s.renderedSoldierCount, null), { timeout: 20_000 }).toBeGreaterThan(1);
-  await tapTile(page, 3, 4);
+  await tapTile(page, 2, 4);
   await expect(page.getByTestId('tower-panel')).toBeVisible();
   await expect.poll(() => inScene(page, (s) => s.selectedAura?.buffed ?? 0, null)).toBeGreaterThan(0);
   await expect(page.locator('.toast')).toHaveCount(0, { timeout: 5000 });
-  // 위쪽 경로(진행도 0~6500 = 패널에 가리지 않는 줄)에 얼어 있는 몹·병사와 웅덩이가 같이 있는 순간에 장면을 멈추고 찍는다
+  // 위쪽 경로(진행도 0~6000 = 순환의 정원 v2 고리 윗줄, 패널에 가리지 않는 줄)에 얼어 있는 몹·병사와 웅덩이가 같이 있는 순간에 장면을 멈추고 찍는다
   // (빙결은 0.5초라 50ms마다 본다. Phaser 장면만 멈추므로 일시정지 메뉴는 뜨지 않는다)
   await page.waitForFunction(
     () => {
@@ -309,7 +313,7 @@ test('M3b 스크린샷: 상태 이상 아이콘·진흙 웅덩이·소환 병사
         scene: { pause(): void };
       };
       const t = s.match.tick;
-      const top = (p: number): boolean => ((p % 28000) + 28000) % 28000 < 6500;
+      const top = (p: number): boolean => ((p % 24000) + 24000) % 24000 < 6000;
       const ok =
         s.match.mobs().some((m) => t + 3 < m.freezeUntil && top(m.progress)) &&
         s.match.soldiers().some((x) => top(x.progress)) &&

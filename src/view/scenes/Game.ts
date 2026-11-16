@@ -175,9 +175,11 @@ import { FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../render/towerGeom';
 import { PuddleLayer, SoldierLayer } from '../render/AbilitySprites';
 import { BattleBackground } from '../render/BattleBackground';
 import { BossCutinPlayer, bossCutinId, cutinPath } from '../../ui/cutin/BossCutin';
+import { setSideBackground } from '../../ui/stage';
 import { assetUrl } from '../../assets';
 import { backgroundBand, upcomingBand } from '../artBand';
 import { passiveAuraGlows, type AuraGlow } from '../render/abilityModel';
+import { buildHintAlpha } from '../render/buildHint';
 import { mobLookView, mobScaleMul, mobStatusView } from '../render/statusModel';
 /** HUD 띠 아래 끝과 알림 사이 간격 (무대 너비 비율, 2cqw) */
 const TOAST_GAP_OF_WIDTH = 0.02;
@@ -208,6 +210,8 @@ interface GroundPress {
   auto: boolean;
   /** 마지막으로 소환을 시도한 시각 */
   lastMs: number;
+  /** 배치 칸이 아닌 곳(길·빈 땅)을 눌렀는가 — 짧게 떼면 배치 칸을 잠깐 보여준다 (T-3) */
+  hint: boolean;
 }
 
 /** 타워를 누르고 있는 중 (탭 또는 길게 눌러 끌기). */
@@ -351,6 +355,8 @@ export class GameScene extends Phaser.Scene {
   /** 정보 패널을 [⬆ 승급 가능 n]으로 열었는가 (패널 안 [다음 묶음 ▶]을 보인다) */
   private panelFromMergeCycle = false;
   private mergeHighlight: { tiles: { tx: number; ty: number }[]; startMs: number } | null = null;
+  /** 배치 칸을 잠깐 보이기 시작한 때 (T-3 타일 숨김: 판 시작·배치할 수 없는 곳을 누름). 없으면 null */
+  private buildHintAt: number | null = null;
   /** 도전 보스 그림 (몹 id → 이미지 주소) · 단계 → 특수 능력 글자 */
   private challengePics = new Map<string, string | null>();
   private challengeAbilities = new Map<number, string>();
@@ -406,6 +412,7 @@ export class GameScene extends Phaser.Scene {
     this.chanceQueuedTick = -1;
     this.mergeCycle = 0;
     this.mergeHighlight = null;
+    this.buildHintAt = this.time.now;
     this.challengeAbilities = new Map(this.ctx.data.enemies.challenges.map((c) => [c.level, c.ability]));
     this.towerNames = new Map(this.ctx.data.towers.towers.map((t) => [t.id, t.name]));
 
@@ -434,6 +441,7 @@ export class GameScene extends Phaser.Scene {
     this.background = new BattleBackground(this, {
       crossfadeMs: config.art.crossfadeMs,
       onCover: (covered) => this.mapRenderer?.setBackdropVisible(!covered),
+      onImage: (url) => setSideBackground(url),
     });
     this.updateBackground();
     this.cutin = new BossCutinPlayer(this.ctx.ui);
@@ -459,7 +467,11 @@ export class GameScene extends Phaser.Scene {
       this.resizeObserver.observe(this.hud.bottomBand);
       this.resizeObserver.observe(this.hud.menuBar);
       this.resizeObserver.observe(this.ctx.ui.el);
+      // 알림 한 줄 높이가 바뀌면 (스타일·글꼴이 늦게 적용됨 등) 알림 자리·위쪽 패널 위치를 다시 잰다 (T-3 병합, m3a 알림 겹침)
+      this.resizeObserver.observe(this.ctx.ui.toastProbe);
     }
+    // 화면 크기·방향이 바뀌어 논리 높이가 달라지면 (T-3): 배경을 새 크기로 덮고 맵을 다시 배치
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.onResize, this);
 
     // 맵 탭 → 소환 (M2-7), 타워 탭 → 정보 패널 (M3-11), 타워 길게 눌러 끌기 → 이동·교환 (M3-10)
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
@@ -474,6 +486,7 @@ export class GameScene extends Phaser.Scene {
     this.game.events.on(Phaser.Core.Events.HIDDEN, this.pause, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.game.events.off(Phaser.Core.Events.HIDDEN, this.pause, this);
+      this.scale.off(Phaser.Scale.Events.RESIZE, this.onResize, this);
       this.resizeObserver?.disconnect();
       this.resizeObserver = null;
       this.input.off(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
@@ -509,12 +522,18 @@ export class GameScene extends Phaser.Scene {
     this.game.events.emit('rtd:game-ready', { seed: this.match.world.seed, mode: this.sceneData.mode });
   }
 
+  /** 논리 크기가 바뀜 (T-3, Scale RESIZE): 배경은 바로 새 크기로, 맵은 다음 update에서 HUD를 다시 재고 배치 */
+  private onResize(): void {
+    this.background?.resize();
+    this.layoutDirty = true;
+  }
+
   override update(time: number, deltaMs: number): void {
     if (this.layoutDirty) {
       this.layoutDirty = false;
       const area = this.measureMapArea();
       // 글자 반올림 같은 작은 흔들림으로 맵을 다시 굽지 않게 (기준 px 2 이상 바뀔 때만)
-      if (Math.abs(area.y - this.mapArea.y) >= 2 || Math.abs(area.h - this.mapArea.h) >= 2) this.applyLayout(area);
+      if (Math.abs(area.y - this.mapArea.y) >= 2 || Math.abs(area.h - this.mapArea.h) >= 2 || this.mapArea.w !== area.w) this.applyLayout(area);
       this.updateToastTop();
     }
     this.frameStartTick = this.match.tick;
@@ -566,6 +585,12 @@ export class GameScene extends Phaser.Scene {
   /** 띄운 보스 컷인 수·지금 떠 있는가·미리 받은 컷인 그림 수 (E2E, HF-2) */
   get cutinStats(): { played: number; showing: boolean; preloaded: number } {
     return { played: this.cutin?.played ?? 0, showing: this.cutin?.showing ?? false, preloaded: this.cutinPreload.length };
+  }
+
+  /** 배치 칸 진하기 0~1 (T-3: 끄는 중 1, 판 시작·배치할 수 없는 곳을 누른 뒤 잠깐, 평소 0) — E2E */
+  get buildHint(): number {
+    const showing = this.press?.dragging === true || this.moveMode !== null;
+    return buildHintAlpha(showing, this.time.now, this.buildHintAt, effectsOff());
   }
 
   /** 지금 보이는 전투 배경 텍스처 키 (E2E, HF-2). 그림이 아직 없으면 null */
@@ -732,7 +757,7 @@ export class GameScene extends Phaser.Scene {
     const w = this.ctx.ui.el.clientWidth;
     const band = this.hud.bandBottom();
     const toastLane = band > 0 ? w * TOAST_GAP_OF_WIDTH + this.ctx.ui.measureToastHeight() : 0;
-    return mapAreaBelowHud(cssToGamePx(band + toastLane, w), cssToGamePx(this.hud.bottomTop(), w));
+    return mapAreaBelowHud(cssToGamePx(band + toastLane, w), cssToGamePx(this.hud.bottomTop(), w), this.scale.height);
   }
 
   /**
@@ -828,10 +853,14 @@ export class GameScene extends Phaser.Scene {
       this.closePanel();
       return;
     }
+    const fail = summonCheck(this.match.ctx, this.match.world, tx, ty);
     // 빈 땅 (T-2): 누르고 있으면 0.3초 뒤부터 자동 칸에 연속 소환 (맵 안이면 배치 칸이 아니어도)
     const inMap = tx >= 0 && ty >= 0 && tx < this.match.map.width && ty < this.match.map.height;
-    if (inMap) this.groundPress = { pointer, downMs: now, downX: pointer.worldX, downY: pointer.worldY, auto: false, lastMs: now };
-    const action = decideTap(summonCheck(this.match.ctx, this.match.world, tx, ty), tx, ty, summonCost(this.match.ctx));
+    const hint = fail === 'notBuildable';
+    if (inMap) this.groundPress = { pointer, downMs: now, downX: pointer.worldX, downY: pointer.worldY, auto: false, lastMs: now, hint };
+    // 길·빈 땅을 짧게 누르면 배치 칸을 잠깐 보여준다 (T-3: 평소에는 칸을 숨김). 맵 안은 뗄 때(꾹 눌러 연속 소환이면 안 보임), 맵 밖은 바로
+    else if (hint) this.buildHintAt = now;
+    const action = decideTap(fail, tx, ty, summonCost(this.match.ctx));
     if (action.kind === 'summon') {
       if (!tapAllowed(this.lastTapMs, now)) return;
       this.lastTapMs = now;
@@ -902,7 +931,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
-    if (this.groundPress?.pointer === pointer) this.groundPress = null;
+    const g = this.groundPress;
+    if (g?.pointer === pointer) {
+      // 짧게 누른 길·빈 땅 (꾹 눌러 연속 소환이 시작되지 않음) → 배치 칸 잠깐 보이기
+      if (g.hint && !g.auto) this.buildHintAt = this.time.now;
+      this.groundPress = null;
+    }
     const p = this.press;
     if (!p || p.pointer !== pointer) return;
     this.press = null;
@@ -1333,6 +1367,7 @@ export class GameScene extends Phaser.Scene {
         drop: p && p.drop && stats && t ? { ...p.drop, range: towerRange(this.match.state, t.owner, stats.range) } : null,
         highlight: this.highlightView(),
         moveMode: this.moveModeView(),
+        buildable: { tiles: this.match.map.buildable, alpha: this.buildHint },
       },
       timeMs,
     );

@@ -340,11 +340,14 @@ export interface MapData {
   crossings: Point[];
   mobLimit?: number;
   lives?: number;
+  /** 배치 블록 (T-3: 모두 2×2 — `MAP_BLOCK_SIZE`, checkMapBlocks) */
   blocks: Record<string, { x: number; y: number; w: number; h: number }>;
   buildableCount: number;
   notes: string;
-  edgePlots?: Record<string, Point[]>;
 }
+
+/** 맵 문법 (T-3, 사용자 요청 '3x3인데 2x2로'): 배치 칸은 모두 이 크기의 정사각 블록에 들어 있다. */
+export const MAP_BLOCK_SIZE = 2;
 
 export interface SpeedOption {
   mul: number;
@@ -419,6 +422,11 @@ export interface CombatConfig {
   pierceWidth: number;
   /** 이동·교환한 타워가 공격하지 않는 시간 (초, 1틱 단위) */
   movePauseSeconds: number;
+  /**
+   * 모든 타워 공격력% 기본 보정 (T-3 작은 맵 보정, 0.2 = +20%). 공격력% 합(강화·오라·레벨)에 더한다 — 합연산.
+   * 맵이 2×2 블록으로 작아져(배치 칸 40~50%) 칸이 다 차는 후반에 같은 봇이 일찍 지던 것을 메운다 (docs/BALANCE.md 'T-3').
+   */
+  towerAtkPct: number;
 }
 
 /** 승급 (GDD.md 4.4). */
@@ -1126,6 +1134,52 @@ function checkMap(m: MapData, root: string, issues: Issue[]): void {
     if (m.lives === undefined) issues.push({ path: `${path}lives`, message: '스테이지 맵에는 lives가 필요하다' });
     if (m.exit === undefined) issues.push({ path: `${path}exit`, message: '스테이지 맵에는 exit가 필요하다' });
   }
+  checkMapBlocks(m, path, issues);
+}
+
+/**
+ * 2×2 블록 문법 (T-3): 블록은 모두 MAP_BLOCK_SIZE×MAP_BLOCK_SIZE이고 블록 칸은 모두 B, 블록끼리 겹치거나 맞닿지 않으며
+ * (길·빈 땅으로 떨어져 있음 — 위아래·옆으로 붙은 칸이 없음), 블록 밖에는 B가 없다. 테마 2~10 맵도 이 검사를 통과해야 한다.
+ */
+export function checkMapBlocks(m: Pick<MapData, 'tiles' | 'blocks'>, path: string, issues: Issue[]): void {
+  const owner = new Map<string, string>();
+  const at = (x: number, y: number): string | undefined => m.tiles[y]?.[x];
+  for (const [name, b] of Object.entries(m.blocks)) {
+    if (b.w !== MAP_BLOCK_SIZE || b.h !== MAP_BLOCK_SIZE) {
+      issues.push({ path: `${path}blocks.${name}`, message: `블록은 ${MAP_BLOCK_SIZE}×${MAP_BLOCK_SIZE}이어야 한다 (지금 ${b.w}×${b.h})` });
+      continue;
+    }
+    for (let y = b.y; y < b.y + b.h; y++) {
+      for (let x = b.x; x < b.x + b.w; x++) {
+        const key = `${x},${y}`;
+        if (at(x, y) !== 'B') issues.push({ path: `${path}blocks.${name}`, message: `블록 칸 [${x},${y}]이 B가 아니다 (${JSON.stringify(at(x, y) ?? '맵 밖')})` });
+        const other = owner.get(key);
+        if (other !== undefined) issues.push({ path: `${path}blocks.${name}`, message: `블록 ${other}와 겹친다 ([${x},${y}])` });
+        owner.set(key, name);
+      }
+    }
+  }
+  const touching = new Set<string>();
+  for (const [key, name] of owner) {
+    const [x, y] = key.split(',').map(Number) as [number, number];
+    for (const [dx, dy] of [[1, 0], [0, 1]] as const) {
+      const other = owner.get(`${x + dx},${y + dy}`);
+      if (other !== undefined && other !== name) {
+        const pair = [name, other].sort().join('·');
+        if (!touching.has(pair)) {
+          touching.add(pair);
+          issues.push({ path: `${path}blocks`, message: `블록 ${pair}가 맞닿아 있다 — 길이나 빈 땅으로 떨어뜨릴 것` });
+        }
+      }
+    }
+  }
+  const stray: string[] = [];
+  m.tiles.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) if (row[x] === 'B' && !owner.has(`${x},${y}`)) stray.push(`[${x},${y}]`);
+  });
+  if (stray.length > 0) {
+    issues.push({ path: `${path}tiles`, message: `블록 밖 배치 칸(B) ${stray.length}개: ${stray.slice(0, 8).join(' ')} — 배치 칸은 모두 ${MAP_BLOCK_SIZE}×${MAP_BLOCK_SIZE} 블록에` });
+  }
 }
 
 export const mapSchema: Schema = s.withCheck<MapData>(
@@ -1150,7 +1204,6 @@ export const mapSchema: Schema = s.withCheck<MapData>(
     blocks: s.rec(s.obj({ x: s.int({ min: 0 }), y: s.int({ min: 0 }), w: s.int({ min: 1 }), h: s.int({ min: 1 }) })),
     buildableCount: s.int({ min: 0 }),
     notes: s.str(),
-    edgePlots: s.opt(s.rec(s.arr(point))),
   }),
   checkMap,
 );
@@ -1240,6 +1293,7 @@ export const gameSchema: Schema = s.obj({
       const ticks = v * TICK_HZ;
       if (Math.abs(ticks - Math.round(ticks)) > 1e-9) issues.push({ path, message: `0.05초(1틱) 단위여야 하는데 ${v}` });
     }),
+    towerAtkPct: s.num({ min: 0, max: 5 }),
   }),
   merge: s.obj({
     count: s.int({ min: 2, max: 10 }),

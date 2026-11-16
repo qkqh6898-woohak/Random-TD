@@ -15,8 +15,9 @@ import { onEffectsChange, setEffectsOff } from './view/effects';
 import { defaultStorage } from './save/storage';
 import { describeFatal, installFatalHandlers, type FatalPhase } from './ui/fatal';
 import { UiRoot } from './ui/root';
+import { fitStageToWindow, watchViewport } from './ui/stage';
 import { readUrlOptions, type GameContext } from './view/context';
-import { createGame } from './view/game';
+import { createGame, resizeGame } from './view/game';
 
 function must<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
@@ -65,7 +66,12 @@ function boot(): void {
       settings,
       version: __APP_VERSION__,
     };
-    game = createGame(must('game'), ctx);
+    // 화면 꽉 차게 (T-3): 무대 = 화면 비율대로 (가로 1080, 세로 1920~2600), 크기·방향이 바뀌면 다시 맞춘다
+    const stage = must('stage');
+    const fit = fitStageToWindow(window, stage);
+    const g = createGame(must('game'), ctx, fit.gameH);
+    game = g;
+    watchViewport(window, () => resizeGame(g, fitStageToWindow(window, stage)));
     if (import.meta.env.DEV || url.debug) {
       // 개발 서버·개발자 모드 확인용 (E2E에서 장면 상태를 볼 때도 사용)
       (window as unknown as { __rtd?: unknown }).__rtd = { game, ctx };

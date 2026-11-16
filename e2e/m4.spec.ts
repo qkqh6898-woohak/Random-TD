@@ -133,15 +133,15 @@ async function ff(page: Page, ticks: number): Promise<void> {
 }
 
 /** 순환의 정원 안쪽 블록 가장자리 칸들 (경로와 맞닿음) */
+/** 순환의 정원 v2(T-3 2×2 블록) 고리 안쪽 블록 4개 = 16칸 (모두 경로와 맞닿음) */
+const INNER: [number, number][] = [3, 4, 6, 7].flatMap((y) => [1, 2, 4, 5].map((x) => [x, y] as [number, number]));
+
 function innerRing(kinds: string[], skip: [number, number][] = []): [number, number, string][] {
   const out: [number, number, string][] = [];
   let k = 0;
-  for (let y = 2; y <= 8; y++) {
-    for (let x = 2; x <= 6; x++) {
-      if (!(x === 2 || x === 6 || y === 2 || y === 8)) continue;
-      if (skip.some(([a, b]) => a === x && b === y)) continue;
-      out.push([x, y, kinds[k++ % kinds.length]!]);
-    }
+  for (const [x, y] of INNER) {
+    if (skip.some(([a, b]) => a === x && b === y)) continue;
+    out.push([x, y, kinds[k++ % kinds.length]!]);
   }
   return out;
 }
@@ -226,12 +226,13 @@ test('보스: 10단계 박쥐 여왕 — 보스 막대(이름표·체력·남은
   const errors = collectErrors(page);
   await start(page);
   expect(await skipTo(page, 10)).toBe(10);
+  // 보스 등장 = 한 줄 배너 하나 ('N단계 보스 단계!' 알림을 따로 띄우지 않는다 — 맵 0~1줄을 가리던 것, 검토 반영).
+  // 배너는 실제 시간 3.2초 — 느린 헤드리스 화면에서도 놓치지 않게 건너뛰자마자 본다
+  await expect(page.getByTestId('banner-boss')).toHaveText('👑 10단계 · 질풍 군단 · 대장 「박쥐 여왕」');
+  await expect(page.locator('.toast', { hasText: '보스 단계!' })).toHaveCount(0);
   await expect(page.getByTestId('hud-boss-name')).toHaveText('질풍 군단 · 대장 「박쥐 여왕」');
   await expect(page.getByTestId('hud-boss-time')).toHaveText(/^\d+초$/);
   expect(await page.getByTestId('hud-boss-hp').evaluate((el) => (el as HTMLElement).style.width)).toBe('100%');
-  // 보스 등장 = 한 줄 배너 하나 ('N단계 보스 단계!' 알림을 따로 띄우지 않는다 — 맵 0~1줄을 가리던 것, 검토 반영)
-  await expect(page.getByTestId('banner-boss')).toHaveText('👑 10단계 · 질풍 군단 · 대장 「박쥐 여왕」');
-  await expect(page.locator('.toast', { hasText: '보스 단계!' })).toHaveCount(0);
   await page.getByRole('button', { name: '일시정지' }).click();
   await expect(page.locator('.layer-toast > *')).toHaveCount(0); // 일시정지 메뉴 위에도 알림이 남지 않는다 (검토 반영)
   await page.waitForTimeout(100);
@@ -255,12 +256,12 @@ test('보스: 10단계 박쥐 여왕 — 보스 막대(이름표·체력·남은
   await expect(panel).toBeHidden();
   await expect(page.getByTestId('choice-reopen')).toBeVisible();
   expect(await inScene(page, (s) => s.match.state.cardOffers.length, null)).toBe(1);
-  // 알약은 아래 띠 안 (맵 칸을 덮어 소환 탭을 가로채지 않는다 — 검토 반영: 예전엔 (6~8, 10) 칸 위)
+  // 알약은 아래 띠 안 (맵 칸을 덮어 소환 탭을 가로채지 않는다 — 검토 반영: 예전엔 맵 맨 아래 줄 오른쪽 칸 위. T-3: 순환의 정원 v2 (4~6, 10))
   const pill = (await page.getByTestId('choice-reopen').boundingBox())!;
   const band = (await page.locator('.hud-bottom').boundingBox())!;
   expect(pill.y).toBeGreaterThanOrEqual(band.y);
   expect(pill.y + pill.height).toBeLessThanOrEqual(band.y + band.height + 0.5);
-  for (const tx of [6, 7, 8]) {
+  for (const tx of [4, 5, 6]) {
     const c = await tileCenter(page, tx, 10);
     expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.tagName, [c.x, c.y])).toBe('CANVAS');
   }
@@ -301,8 +302,8 @@ test('투명 몹: 감지 없이 처음 나오면 경고 배너, 정찰병 감지
   expect(await inScene(page, (s) => s.match.mobs().filter((m) => m.invisible).length, null)).toBeGreaterThan(0);
   // 정찰병 2개 (위·아래 경로)
   await place(page, [
-    [4, 2, 'scout'],
-    [4, 8, 'scout'],
+    [4, 3, 'scout'],
+    [4, 7, 'scout'],
   ]);
   await expect
     .poll(() => inScene(page, (s) => s.match.mobs().filter((m) => m.invisible && s.match.tick < m.revealedUntil).length, null), { timeout: 20_000 })
@@ -348,11 +349,11 @@ test('승급의 축복 카드: 승급하면 "결과 2개 중 선택" 창 → [�
   const idx = await inScene(page, (s) => s.match.rules.cards.findIndex((c) => c.id === 'mergeBless'), null);
   await inScene(page, (s, c) => s.match.world.enqueue({ type: 'debugCard', c }), idx);
   await place(page, [
-    [0, 0, 'goblin'],
     [1, 0, 'goblin'],
     [2, 0, 'goblin'],
+    [1, 1, 'goblin'],
   ]);
-  await inScene(page, (s) => s.match.world.enqueue({ type: 'merge', x: 0, y: 0 }), null);
+  await inScene(page, (s) => s.match.world.enqueue({ type: 'merge', x: 1, y: 0 }), null);
   const panel = page.getByTestId('choice-merge');
   await expect(panel).toBeVisible();
   await expect(panel.locator('.cp-option')).toHaveCount(2);
@@ -373,12 +374,12 @@ test('승급의 축복을 정보 패널 [⬆ 승급]으로: 고르기 창이 뜨
   const idx = await inScene(page, (s) => s.match.rules.cards.findIndex((c) => c.id === 'mergeBless'), null);
   await inScene(page, (s, c) => s.match.world.enqueue({ type: 'debugCard', c }), idx);
   await place(page, [
-    [0, 0, 'goblin'],
     [1, 0, 'goblin'],
     [2, 0, 'goblin'],
-    [6, 0, 'archer'],
+    [1, 1, 'goblin'],
+    [5, 0, 'archer'],
   ]);
-  await tapTile(page, 0, 0);
+  await tapTile(page, 1, 0);
   await expect(page.getByTestId('tower-panel')).toBeVisible();
   await page.locator('.tp-merge').click();
   const choice = page.getByTestId('choice-merge');
@@ -388,7 +389,7 @@ test('승급의 축복을 정보 패널 [⬆ 승급]으로: 고르기 창이 뜨
   expect(await inScene(page, (s) => s.panelOpen, null)).toBe(false);
   await shot(page, 'M4-merge-pick-panel');
   // 창이 펼쳐진 동안 위쪽 타워 탭 → 창은 알약으로, 패널만 보인다
-  await tapTile(page, 6, 0);
+  await tapTile(page, 5, 0);
   await expect(page.getByTestId('tower-panel')).toBeVisible();
   await expect(choice).toBeHidden();
   expect(await inScene(page, (s) => s.choiceCollapsed, null)).toBe(true);
@@ -442,11 +443,11 @@ test('혼돈의 용(60단계): 15초마다 타워 3개 기절 → 기절한 타�
   const errors = collectErrors(page);
   await start(page);
   await place(page, [
-    [0, 0, 'archer'],
+    [1, 0, 'archer'],
     [2, 0, 'archer'],
     [4, 0, 'archer'],
-    [6, 0, 'archer'],
-    [8, 0, 'archer'],
+    [5, 0, 'archer'],
+    [1, 1, 'archer'],
   ]);
   await skipTo(page, 60);
   expect(await inScene(page, (s) => s.match.state.bossId, null)).toBe('chaosdragon');
@@ -469,15 +470,15 @@ test('M4 스크린샷: 40단계 망령 군주 — 줄어드는 보스 막대 + �
   await expect(page.getByTestId('hud-workers')).toHaveText('3/10');
   // 안쪽 블록 네 귀퉁이에 정찰병(감지 오라 r3) + 나머지 가장자리에 레전드: 드러난 보스의 체력 막대가 줄어드는 모습 (패널·고르기 창은 열지 않음)
   await place(page, [
-    [2, 2, 'scout'],
-    [6, 2, 'scout'],
-    [2, 8, 'scout'],
-    [6, 8, 'scout'],
+    [1, 3, 'scout'],
+    [5, 3, 'scout'],
+    [1, 7, 'scout'],
+    [5, 7, 'scout'],
     ...innerRing(['fortuna', 'dragoncaller', 'archmage', 'warlord'], [
-      [2, 2],
-      [6, 2],
-      [2, 8],
-      [6, 8],
+      [1, 3],
+      [5, 3],
+      [1, 7],
+      [5, 7],
     ]),
   ]);
   await skipTo(page, 40);

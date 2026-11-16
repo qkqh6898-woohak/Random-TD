@@ -47,6 +47,12 @@ export function fitBannerLines(el: HTMLElement): void {
 export class UiRoot {
   private readonly layers: Record<LayerName, HTMLElement>;
   private readonly mounted: Partial<Record<LayerName, UiView>> = {};
+  /**
+   * 알림 한 줄 높이를 재는 보이지 않는 알림 (늘 붙어 있음). 알림 층과 같은 자리(같은 cqw·글꼴)에 있어 실제 알림과 높이가 같다.
+   * Game 장면이 ResizeObserver로 지켜본다 → 스타일·글꼴·무대 크기가 늦게 적용돼 높이가 바뀌면 알림 자리를 다시 잰다
+   * (T-3 병합: 첫 배치 때 잰 높이(약 21px)가 실제 알림(약 39px)보다 작아 알림이 위쪽 패널 머리줄을 11px 덮던 것).
+   */
+  readonly toastProbe: HTMLElement;
 
   constructor(readonly el: HTMLElement) {
     el.replaceChildren();
@@ -60,7 +66,10 @@ export class UiRoot {
       card: h('div', { class: 'layer layer-card' }),
       toast: h('div', { class: 'layer layer-toast', attrs: { role: 'status', 'aria-live': 'polite' } }),
     };
+    this.toastProbe = h('div', { class: 'toast-probe', text: '가' });
+    const measure = h('div', { class: 'layer layer-measure', attrs: { 'aria-hidden': 'true' } }, this.toastProbe);
     el.append(
+      measure,
       this.layers.hud,
       this.layers.cutin,
       this.layers.panel,
@@ -135,18 +144,11 @@ export class UiRoot {
   }
 
   /**
-   * 알림 한 줄의 높이 (CSS px). 보이지 않는 알림을 잠깐 넣어 실제 DOM 높이를 잰다 (글자 크기가 무대 너비(cqw)를 따라 바뀜).
+   * 알림 한 줄의 높이 (CSS px). 늘 붙어 있는 보이지 않는 알림(toastProbe)의 그려진 높이 (글자 크기가 무대 너비(cqw)를 따라 바뀜).
    * Game 장면이 HUD 띠와 맵 사이에 알림 자리를 비워 두는 데 쓴다 → 알림이 맵 첫 줄을 가리지 않는다.
    */
   measureToastHeight(): number {
-    const probe = h('div', { class: 'toast', text: '가', attrs: { 'aria-hidden': 'true' } });
-    probe.style.visibility = 'hidden';
-    probe.style.position = 'absolute';
-    probe.style.animation = 'none';
-    this.layers.toast.append(probe);
-    const height = probe.offsetHeight;
-    probe.remove();
-    return height;
+    return this.toastProbe.offsetHeight;
   }
 
   /** 알림이 뜨는 높이 (무대 위쪽에서 CSS px). HUD 띠 바로 아래에 띄우려고 Game 장면이 넣는다. null이면 기본값. */

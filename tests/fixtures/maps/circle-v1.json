@@ -1,0 +1,67 @@
+{
+  "id": "circle",
+  "name": "순환의 정원",
+  "mode": "infinite",
+  "version": 1,
+  "width": 9,
+  "height": 11,
+  "legend": {
+    "P": "몹 경로(순환)",
+    "B": "타워 배치 칸",
+    "X": "장식(배치 불가)"
+  },
+  "tiles": [
+    "BBBBBBBBB",
+    "BPPPPPPPB",
+    "BPBBBBBPB",
+    "BPBBBBBPB",
+    "BPBBBBBPB",
+    "BPBBBBBPB",
+    "BPBBBBBPB",
+    "BPBBBBBPB",
+    "BPBBBBBPB",
+    "BPPPPPPPB",
+    "BBBBBBBBB"
+  ],
+  "waypoints": [
+    [
+      1,
+      1
+    ],
+    [
+      7,
+      1
+    ],
+    [
+      7,
+      9
+    ],
+    [
+      1,
+      9
+    ],
+    [
+      1,
+      1
+    ]
+  ],
+  "loop": true,
+  "spawn": [
+    1,
+    1
+  ],
+  "pathLength": 28,
+  "turns": 4,
+  "crossings": [],
+  "mobLimit": 150,
+  "blocks": {
+    "안쪽": {
+      "x": 2,
+      "y": 2,
+      "w": 5,
+      "h": 7
+    }
+  },
+  "buildableCount": 71,
+  "notes": "무한 모드 기본 맵. 경로 안쪽 5x7=35칸 + 바깥쪽 테두리 36칸."
+}

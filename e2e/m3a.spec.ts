@@ -36,6 +36,8 @@ type SceneLike = {
   mergeEffects: number;
   selectedTowerId: number | null;
   dragState: { id: number; drop: { tx: number; ty: number; preview: string } | null } | null;
+  /** 배치 칸 진하기 (T-3 타일 숨김: 끄는 중 1) */
+  buildHint: number;
   renderedTowerCount: number;
   draggingTowerCount: number;
   towerFootPx(id: number): { x: number; y: number } | null;
@@ -162,7 +164,7 @@ test('타워 탭 → 정보 패널: 이름·스탯·감지·보유 1/3, 승급 �
   await tapTile(page, t!.tx, t!.ty);
   await expect(panel).toBeVisible();
   const gold = await inScene(page, (s) => s.match.state.gold, null);
-  await tapTile(page, 2, 2);
+  await tapTile(page, 1, 3);
   await expect(panel).toHaveCount(0);
   expect((await towers(page)).length).toBe(1);
   expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(gold);
@@ -246,14 +248,17 @@ test('모두 승급: 같은 종류 n개 → ⌊n/3⌋번 승급, 아래 띠 [⬆
   expect(errors).toEqual([]);
 });
 
-test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 타워 위에 놓으면 교환(파랑), 짧게 누르면 패널만', async ({ page }) => {
+test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 타워 위에 놓으면 교환(파랑), 짧게 누르면 패널만 + 끄는 동안 배치 칸 보임 (T-3)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
+  // 순환의 정원 v2: 고리 안쪽 위 블록 (1,3)·(5,3), 옮길 빈 칸 (2,3), 경로 칸 (3,2)
   await summonMany(page, [
-    [2, 2],
-    [6, 2],
+    [1, 3],
+    [5, 3],
   ]);
   const [a, b] = await towers(page);
+  // 판 시작 때 잠깐 보인 배치 칸이 사라진 뒤 (평소에는 칸을 그리지 않는다)
+  await expect.poll(async () => inScene(page, (s) => s.buildHint, null), { timeout: 5000 }).toBe(0);
   // 놓을 칸은 손가락이 움직인 만큼만 바뀐다 (그림만 0.45칸 들려 그려짐) → 칸 중심에서 목표 칸 중심으로 끌면 된다
   const from = await tilePoint(page, a!.tx, a!.ty);
   await page.mouse.move(from.x, from.y);
@@ -261,20 +266,23 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   await page.waitForTimeout(450); // 0.3초 넘게 누르기
   // 끄는 동안 그 타워는 공격하지 않는다 (hold 명령, GDD 4.5)
   await expect.poll(async () => inScene(page, (s, id) => s.match.towers().find((t) => t.id === id)!.held, a!.id)).toBe(true);
-  const to = await tilePoint(page, 3, 2);
+  const to = await tilePoint(page, 2, 3);
   await page.mouse.move(to.x, to.y, { steps: 6 });
   await expect.poll(async () => inScene(page, (s) => s.dragState?.drop?.preview ?? null, null)).toBe('move');
-  expect(await inScene(page, (s) => s.dragState?.drop, null)).toMatchObject({ tx: 3, ty: 2 });
+  expect(await inScene(page, (s) => s.dragState?.drop, null)).toMatchObject({ tx: 2, ty: 3 });
+  // 끄는 동안 배치 칸이 옅게 보인다 (T-3 타일 숨김)
+  expect(await inScene(page, (s) => s.buildHint, null)).toBe(1);
   await shot(page, 'M3a-drag');
   await page.mouse.up();
   await expect.poll(async () => inScene(page, (s) => s.match.state.moves, null)).toBe(1);
+  expect(await inScene(page, (s) => s.buildHint, null)).toBe(0);
   let list = await towers(page);
-  expect(list.find((t) => t.id === a!.id)).toMatchObject({ tx: 3, ty: 2 });
+  expect(list.find((t) => t.id === a!.id)).toMatchObject({ tx: 2, ty: 3 });
   expect(await inScene(page, (s, id) => s.match.towers().find((t) => t.id === id)!.held, a!.id)).toBe(false);
   await expect(page.getByTestId('tower-panel')).toHaveCount(0);
 
-  // 교환: a(3,2)를 b(6,2) 위로
-  const from2 = await tilePoint(page, 3, 2);
+  // 교환: a(2,3)를 b(5,3) 위로
+  const from2 = await tilePoint(page, 2, 3);
   await page.mouse.move(from2.x, from2.y);
   await page.mouse.down();
   await page.waitForTimeout(450);
@@ -285,14 +293,14 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   await expect.poll(async () => inScene(page, (s) => s.match.state.moves, null)).toBe(2);
   list = await towers(page);
   expect(list.find((t) => t.id === a!.id)).toMatchObject({ tx: b!.tx, ty: b!.ty });
-  expect(list.find((t) => t.id === b!.id)).toMatchObject({ tx: 3, ty: 2 });
+  expect(list.find((t) => t.id === b!.id)).toMatchObject({ tx: 2, ty: 3 });
 
   // 경로 칸 위에 놓으면 빨강 미리 보기 → 그대로
-  const from3 = await tilePoint(page, 3, 2);
+  const from3 = await tilePoint(page, 2, 3);
   await page.mouse.move(from3.x, from3.y);
   await page.mouse.down();
   await page.waitForTimeout(450);
-  const to3 = await tilePoint(page, 1, 1);
+  const to3 = await tilePoint(page, 3, 2);
   await page.mouse.move(to3.x, to3.y, { steps: 6 });
   await expect.poll(async () => inScene(page, (s) => s.dragState?.drop?.preview ?? null, null)).toBe('invalid');
   await page.mouse.up();
@@ -300,7 +308,7 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   expect(await inScene(page, (s) => s.match.state.moves, null)).toBe(2);
 
   // HUD 버튼(DOM) 위에서 손을 떼도 끌기가 끝난다 (Phaser 'pointerupoutside'), 이동하지 않고 배속도 그대로
-  const from4 = await tilePoint(page, 3, 2);
+  const from4 = await tilePoint(page, 2, 3);
   await page.mouse.move(from4.x, from4.y);
   await page.mouse.down();
   await page.waitForTimeout(450);
@@ -313,7 +321,7 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   await expect(page.locator('[data-action="speed"]')).toHaveText('×1');
 
   // 짧게 누르면(0.3초 전) 끌기 없이 패널
-  await tapTile(page, 3, 2);
+  await tapTile(page, 2, 3);
   await expect(page.getByTestId('tower-panel')).toBeVisible();
   expect(await inScene(page, (s) => s.dragState, null)).toBeNull();
   expect(await inScene(page, (s) => s.draggingTowerCount, null)).toBe(0);
@@ -324,8 +332,8 @@ test('느린 탭: 캐릭터 얼굴·머리를 0.4초 누르고 움직이지 않�
   const errors = collectErrors(page);
   await start(page);
   await summonMany(page, [
-    [0, 4],
-    [0, 3],
+    [1, 4],
+    [1, 3],
   ]);
   const before = await towers(page);
   const lower = before.find((t) => t.ty === 4)!;
@@ -355,8 +363,8 @@ test('두 손가락: 끄는 중에 다른 손가락이 다른 타워를 눌러�
   const errors = collectErrors(page);
   await start(page);
   await summonMany(page, [
-    [2, 2],
-    [6, 2],
+    [1, 3],
+    [5, 3],
   ]);
   const [a, b] = await towers(page);
   const cdp = await page.context().newCDPSession(page);
@@ -364,12 +372,12 @@ test('두 손가락: 끄는 중에 다른 손가락이 다른 타워를 눌러�
   const pa = await tilePoint(page, a!.tx, a!.ty);
   await touch('touchStart', [{ ...pa, id: 1 }]);
   await page.waitForTimeout(450);
-  const to = await tilePoint(page, 3, 4);
+  const to = await tilePoint(page, 2, 4);
   for (let i = 1; i <= 6; i++) {
     await touch('touchMove', [{ x: pa.x + ((to.x - pa.x) * i) / 6, y: pa.y + ((to.y - pa.y) * i) / 6, id: 1 }]);
     await page.waitForTimeout(30);
   }
-  await expect.poll(async () => inScene(page, (s) => s.dragState?.drop ?? null, null)).toMatchObject({ tx: 3, ty: 4, preview: 'move' });
+  await expect.poll(async () => inScene(page, (s) => s.dragState?.drop ?? null, null)).toMatchObject({ tx: 2, ty: 4, preview: 'move' });
   // 둘째 손가락이 타워 b를 눌렀다 뗀다 → 무시 (끌기는 a 그대로)
   const pb = await tilePoint(page, b!.tx, b!.ty);
   await touch('touchStart', [
@@ -385,7 +393,7 @@ test('두 손가락: 끄는 중에 다른 손가락이 다른 타워를 눌러�
   await page.waitForTimeout(600);
   const list = await towers(page);
   const ma = list.find((t) => t.id === a!.id)!;
-  expect(ma).toMatchObject({ tx: 3, ty: 4 });
+  expect(ma).toMatchObject({ tx: 2, ty: 4 });
   // 그림 발밑 = 실제 칸 (칸 중심 + 0.3칸) — 끌던 자리에 유령 그림이 남지 않는다
   const foot = await inScene(page, (s, id) => s.towerFootPx(id), a!.id);
   const want = await inScene(page, (s, xy) => ({ x: s.mapLayout.originX + (xy[0] + 0.5) * s.mapLayout.tile, y: s.mapLayout.originY + (xy[1] + 0.8) * s.mapLayout.tile }), [ma.tx, ma.ty] as const);
@@ -440,7 +448,7 @@ test('정보 패널은 어느 줄의 타워를 골라도 그 타워 그림을 �
     }
     return out;
   }, null);
-  expect(rows.length).toBe(11);
+  expect(rows.length).toBe(8); // 순환의 정원 v2: 배치 칸이 있는 줄 0·1·3·4·6·7·9·10
   const seen = new Set<string>();
   for (const [x, y] of rows) {
     await summonMany(page, [[x, y]]);
@@ -475,6 +483,12 @@ test('위쪽 패널 + 알림: 칸이 가득 찬 판에서 아래쪽 타워를 �
   await expect(page.getByTestId('tower-panel')).toHaveClass(/is-top/);
   await page.waitForTimeout(250);
   await expect(page.locator('.toast', { hasText: '빈 칸이 없어요' })).toBeVisible();
+  // 알림 자리를 잰 높이(늘 붙어 있는 보이지 않는 알림) = 실제 알림 한 줄 높이 (T-3 병합: 예전엔 21px로 재어 11px 겹침)
+  const heights = await page.evaluate(() => ({
+    probe: (document.querySelector('.toast-probe') as HTMLElement).offsetHeight,
+    real: (document.querySelector('.layer-toast .toast:last-child') as HTMLElement).offsetHeight,
+  }));
+  expect(Math.abs(heights.probe - heights.real), JSON.stringify(heights)).toBeLessThanOrEqual(1);
   const m = await panelVsTower(page, lowest[0], lowest[1]);
   expect(m.overlap).toBe(0);
   expect(m.toasts.length).toBeGreaterThanOrEqual(1);
@@ -498,9 +512,9 @@ test('위쪽 패널 + 알림: 칸이 가득 찬 판에서 아래쪽 타워를 �
 test('M3a 스크린샷: 정보 패널(스탯·보유 n/3·승급 버튼) + 사거리 원 + 같은 종류 강조, 8단계 전투 중', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
-  // 고리 안팎에 고르게 12개 (순환의 정원)
+  // 고리 안팎에 고르게 12개 (순환의 정원 v2)
   const ring: [number, number][] = [
-    [2, 2], [6, 2], [2, 8], [6, 8], [4, 0], [0, 5], [8, 5], [4, 10], [3, 2], [5, 8], [2, 5], [6, 5],
+    [1, 3], [5, 3], [1, 7], [5, 7], [4, 1], [2, 1], [1, 9], [5, 9], [2, 3], [4, 7], [2, 6], [4, 4],
   ];
   await summonMany(page, ring);
   // 가장 많은 종류가 3개 이상이면 한 번 승급해 레어를 만든다

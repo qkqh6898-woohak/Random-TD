@@ -11,9 +11,12 @@ import { createChibi, type ChibiProp } from '../../art/chibi';
 import { TitleCharacter } from '../../art/characters/title';
 import { queueExternalCharacterArt } from '../../art/characters/phaserArt';
 import { createTitleScreen } from '../../ui/screens/TitleScreen';
+import { setSideBackground } from '../../ui/stage';
+import { assetUrl } from '../../assets';
 import { GAME_HEIGHT, GAME_WIDTH, SCENE_BOOT, SCENE_GAME } from '../config';
+import { titleArtPath } from '../artBand';
 import { drawTitleBackdrop } from '../render/TitleBackdrop';
-import { drawTitleKeyArt, pickTitleArt, queueTitleArt } from '../render/TitleKeyArt';
+import { drawTitleKeyArt, pickTitleArt, queueTitleArt, type TitleKeyArtView } from '../render/TitleKeyArt';
 import type { GameContext } from '../context';
 import type { MatchMode } from '../../sim/state';
 import { randomSeed, type GameSceneData } from './Game';
@@ -38,6 +41,9 @@ export class BootScene extends Phaser.Scene {
   private titleChars: TitleCharacter[] = [];
   /** 이번에 고른 타이틀 그림 텍스처 키 (없으면 null) */
   private keyArtKey: string | null = null;
+  /** 이번에 고른 타이틀 그림 번호 (무대 밖 띠 배경 주소용) */
+  private keyArtN: number | null = null;
+  private keyArtView: TitleKeyArtView | null = null;
 
   constructor(private readonly ctx: GameContext) {
     super({ key: SCENE_BOOT });
@@ -53,10 +59,13 @@ export class BootScene extends Phaser.Scene {
     // 타이틀 그림: 켤 때마다 하나 (화면 전용 무작위). 한 번 고르면 타이틀로 돌아와도 같은 그림
     if (this.keyArtKey === null) {
       const n = pickTitleArt(this.ctx.data.game.art.titleArts, Math.random());
-      if (n !== null) this.keyArtKey = queueTitleArt(this, n);
+      if (n !== null) {
+        this.keyArtKey = queueTitleArt(this, n);
+        this.keyArtN = n;
+      }
     }
     const label = this.add
-      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '', { fontFamily: '-apple-system, "Noto Sans KR", "Malgun Gothic", sans-serif', fontSize: '44px', color: '#f7f3e9' })
+      .text(this.scale.width / 2, this.scale.height / 2, '', { fontFamily: '-apple-system, "Noto Sans KR", "Malgun Gothic", sans-serif', fontSize: '44px', color: '#f7f3e9' })
       .setOrigin(0.5);
     this.load.on(Phaser.Loader.Events.PROGRESS, (p: number) => label.setText(`그림 불러오는 중 ${Math.round(p * 100)}%`));
     this.load.once(Phaser.Loader.Events.COMPLETE, () => label.destroy());
@@ -66,8 +75,10 @@ export class BootScene extends Phaser.Scene {
     const { data } = this.ctx;
     const kingdom = data.towers.factions.kingdom?.color ?? '#2E5AAC';
     // 타이틀 그림이 있으면 그것만 (절차 배경·캐릭터는 숨김), 없으면 예전 절차 타이틀
-    const keyArt = this.keyArtKey !== null && drawTitleKeyArt(this, this.keyArtKey);
+    this.keyArtView = this.keyArtKey !== null ? drawTitleKeyArt(this, this.keyArtKey) : null;
+    const keyArt = this.keyArtView !== null;
     if (!keyArt) drawTitleBackdrop(this, { kingdomColor: kingdom });
+    setSideBackground(keyArt && this.keyArtN !== null ? assetUrl(titleArtPath(this.keyArtN)) : null);
 
     const towers = new Map(data.towers.towers.map((t) => [t.id, t]));
     this.titleChars = [];
@@ -90,7 +101,8 @@ export class BootScene extends Phaser.Scene {
       });
     });
 
-    this.cameras.main.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    this.layoutCamera();
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.onResize, this);
     this.cameras.main.fadeIn(250, 13, 18, 32);
 
     this.ctx.ui.clear('hud');
@@ -104,10 +116,35 @@ export class BootScene extends Phaser.Scene {
       }),
     );
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off(Phaser.Scale.Events.RESIZE, this.onResize, this);
       this.ctx.ui.clear('screen');
       this.titleChars = [];
+      this.keyArtView = null;
     });
     this.game.events.emit('rtd:title-ready');
+  }
+
+  /** 게임 크기가 바뀜 (T-3 가변 높이) */
+  private onResize(): void {
+    this.keyArtView?.resize();
+    this.layoutCamera();
+  }
+
+  /**
+   * 카메라: 타이틀 그림은 지금 크기를 직접 덮으므로 그대로. 절차 타이틀(1080×1920 기준으로 그린 그림)은
+   * 높이가 더 길면 카메라를 확대해 덮는다 (양옆이 조금 잘림, 빈 띠 없음).
+   */
+  private layoutCamera(): void {
+    const cam = this.cameras.main;
+    const { width: w, height: h } = this.scale;
+    cam.setSize(w, h);
+    if (this.keyArtView) {
+      cam.setZoom(1).setBounds(0, 0, w, h).setScroll(0, 0);
+      return;
+    }
+    const zoom = Math.max(w / GAME_WIDTH, h / GAME_HEIGHT);
+    cam.removeBounds();
+    cam.setZoom(zoom).centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
   }
 
   private startGame(mode: MatchMode): void {

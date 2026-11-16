@@ -13,6 +13,7 @@ test.describe.configure({ timeout: 150_000 });
 type SceneLike = {
   match: {
     state: { stage: number };
+    map: { buildable: [number, number][] };
     rules: { towerOrder: string[] };
     world: { enqueue(c: unknown): { ok: boolean } };
     towers(): { id: number; tower: string }[];
@@ -59,16 +60,20 @@ async function startGame(page: Page, url: string): Promise<void> {
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
 }
 
-/** 개발자 debugTower로 타워 65종을 순환의 정원 배치 칸에 하나씩 놓는다 */
+/**
+ * 개발자 debugTower로 타워를 순환의 정원 배치 칸마다 하나씩 놓는다 (T-3: 칸이 32개라 65종 중 등급을 고르게 32종 —
+ * 크기 비교용 음유시인·궁수·운명의 여신은 꼭 넣는다). 놓은 수를 돌려준다.
+ */
 async function placeAllTowers(page: Page): Promise<number> {
   return sim(page, (s) => {
-    const cells: [number, number][] = [];
-    for (let y = 2; y <= 8; y++) for (let x = 2; x <= 6; x++) cells.push([x, y]);
-    for (let x = 0; x <= 8; x++) cells.push([x, 0], [x, 10]);
-    for (let y = 1; y <= 9; y++) cells.push([0, y], [8, y]);
-    s.match.rules.towerOrder.forEach((_, i) => {
-      const c = cells[i];
-      if (c) s.match.world.enqueue({ type: 'debugTower', x: c[0], y: c[1], t: i });
+    const cells = s.match.map.buildable;
+    const order = s.match.rules.towerOrder;
+    const must = ['bard', 'archer', 'fate'].map((id) => order.indexOf(id));
+    const spread = Array.from({ length: cells.length }, (_, k) => Math.floor((k * order.length) / cells.length));
+    const pick = [...new Set([...must, ...spread])].slice(0, cells.length);
+    pick.forEach((t, i) => {
+      const c = cells[i]!;
+      s.match.world.enqueue({ type: 'debugTower', x: c[0], y: c[1], t });
     });
     s.debugFastForward(1);
     return s.match.towers().length;
@@ -120,12 +125,12 @@ test('전투 배경: 1단계 낮 → ⏭로 11단계가 되면 노을 밴드, �
   const errors = collectErrors(page);
   await startGame(page, '/?dev=1&seed=7');
   await expect.poll(() => sim(page, (s) => s.backgroundKey), { timeout: 20_000 }).toBe('bg-t01-b1');
-  // 캐릭터별 크기: 65종을 놓으면 그림 배수가 여러 가지 (요정은 작고 신은 크다)
-  expect(await placeAllTowers(page)).toBe(65);
-  await expect.poll(() => sim(page, (s) => s.towerLayer.count)).toBe(65);
+  // 캐릭터별 크기: 등급을 고르게 32종을 놓으면 그림 배수가 여러 가지 (요정은 작고 신은 크다)
+  expect(await placeAllTowers(page)).toBe(32);
+  await expect.poll(() => sim(page, (s) => s.towerLayer.count)).toBe(32);
   const scales = await sim(page, (s) => s.match.towers().map((t) => ({ id: t.tower, k: s.towerLayer.artScaleOf(t.id) })));
   const byId = new Map(scales.map((x) => [x.id, x.k ?? 0]));
-  expect(new Set(scales.map((x) => x.k)).size).toBeGreaterThan(20);
+  expect(new Set(scales.map((x) => x.k)).size).toBeGreaterThan(12);
   expect(byId.get('bard')!).toBeLessThan(byId.get('archer')!);
   expect(byId.get('archer')!).toBeLessThan(byId.get('fate')!);
   if (SAVE_DOCS) await settle(page);

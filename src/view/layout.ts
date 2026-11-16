@@ -1,7 +1,8 @@
 /**
  * 맵 화면 배치 (순수 계산, Phaser 없음 → 단위 테스트 가능).
  *
- * - MAPS.md 0장: 맵은 화면 가로폭에 맞춰 확대 (13칸 기준 1칸 ≈ 화면 폭의 1/13.5).
+ * - MAPS.md 0장: 맵은 HUD와 아래 띠 사이 영역에 들어가는 가장 큰 크기로 확대 (가로·세로 반 칸 여백, 가운데).
+ * - T-3: 논리 높이는 화면 비율대로 1920~2600 (viewport.ts) → 맵 영역 아래 끝은 잰 아래 띠 위치(없으면 지금 높이 − BOTTOM_UI_PX).
  * - 위는 DOM HUD(2줄 + 보스 막대 자리), 아래는 DOM 아래 띠(M2: 타워 수·소환 안내, M4·M5에서 버튼·하단 메뉴가 늘어남).
  *   둘 다 실제 높이를 재서 그 사이 영역에 맵 전체(화면 밖 등장·퇴장 칸 포함)가 들어가게 → HUD가 맵 칸을 덮지 않는다.
  * - 좌표 변환: sim 단위(1칸 = 1000) → 화면 픽셀. sim 칸 중심 (x·1000 + 500)이 화면 칸 중심에 온다.
@@ -58,13 +59,14 @@ export interface MapLayout {
  * Game 장면은 hudBottomPx에 알림 한 줄 자리(간격 + 실제 알림 높이)를 더해 넘긴다 → 알림이 맵 첫 줄을 가리지 않는다.
  * HUD 아래 끝 + 여백부터 아래 띠 위쪽 끝 − 여백까지. 아래 띠를 재지 못하면(생략·0) `BOTTOM_UI_PX`를 비워 둔다.
  * HUD가 작게 재져도(측정 전 0 등) `HUD_TOP_PX`보다 위로 올리지 않고, 맵 영역이 `MIN_MAP_AREA_PX`보다 작아지게 내리지도 않는다.
+ * gameH = 지금 논리 높이 (T-3 가변 높이 1920~2600, 장면의 `this.scale.height`).
  */
-export function mapAreaBelowHud(hudBottomPx: number, bottomTopPx?: number): Rect {
+export function mapAreaBelowHud(hudBottomPx: number, bottomTopPx?: number, gameH: number = GAME_HEIGHT): Rect {
   const measured = Number.isFinite(hudBottomPx) && hudBottomPx > 0 ? Math.ceil(hudBottomPx) + MAP_TOP_GAP_PX : 0;
   const measuredBottom =
     bottomTopPx !== undefined && Number.isFinite(bottomTopPx) && bottomTopPx > 0 ? Math.floor(bottomTopPx) - MAP_BOTTOM_GAP_PX : 0;
   // 아래 끝: 잰 값 (단, HUD 최소 높이 + 맵 최소 높이보다 위로는 올리지 않음)
-  const bottom = measuredBottom > 0 ? Math.min(GAME_HEIGHT, Math.max(HUD_TOP_PX + MIN_MAP_AREA_PX, measuredBottom)) : GAME_HEIGHT - BOTTOM_UI_PX;
+  const bottom = measuredBottom > 0 ? Math.min(gameH, Math.max(HUD_TOP_PX + MIN_MAP_AREA_PX, measuredBottom)) : gameH - BOTTOM_UI_PX;
   const maxTop = bottom - MIN_MAP_AREA_PX;
   const y = Math.min(maxTop, Math.max(HUD_TOP_PX, measured));
   return { x: 0, y, w: GAME_WIDTH, h: bottom - y };
@@ -80,7 +82,11 @@ export function gameToCssPx(gamePx: number, stageCssWidth: number): number {
   return (gamePx * stageCssWidth) / GAME_WIDTH;
 }
 
-/** 맵(격자 + 웨이포인트)이 영역 안에 꽉 차게 들어가는 배치. 가로·세로 반 칸씩 여백. */
+/**
+ * 맵(격자 + 웨이포인트)이 영역 안에 꽉 차게 들어가는 배치 (가능한 가장 큰 정수 칸, 가운데). 가로·세로 반 칸씩 여백.
+ * T-3: 화면이 길쭉해 영역이 커지면 칸도 커진다 — 칸 ↔ 화면 변환은 모두 이 결과(MapLayout)와 아래 함수
+ * (`tileCenterPx`·`unitsToPx`·`pxToTile`)로 한다. 1920 같은 높이를 코드에 박지 말 것.
+ */
 export function computeMapLayout(map: MapBoundsInput, area: Rect = MAP_AREA): MapLayout {
   let minCol = 0;
   let minRow = 0;

@@ -16,12 +16,19 @@ const DIR = join(__dirname, '..', 'replays');
 const rules = buildMatchRules(data);
 const t = (id: string): number => rules.towerOrder.indexOf(id);
 
-/** 순환의 정원 안쪽 블록 가장자리 20칸 (경로와 맞닿은 칸)에 레전드를 돌려 가며 놓는다 (debug). */
-function innerRing(kinds: string[]): [number, number, number][] {
+/** 순환의 정원 v2(T-3 2×2 블록)의 고리 안쪽 블록 4개 = 16칸(모두 경로와 맞닿음, skip 제외)에 타워를 돌려 가며 놓는다 (debug). */
+function innerRing(kinds: string[], skip: readonly [number, number][] = []): [number, number, number][] {
+  const cells = data.maps.circle!.blocks;
   const out: [number, number, number][] = [];
   let k = 0;
-  for (let y = 2; y <= 8; y++) {
-    for (let x = 2; x <= 6; x++) if (x === 2 || x === 6 || y === 2 || y === 8) out.push([x, y, t(kinds[k++ % kinds.length] as string)]);
+  for (const name of ['안1', '안2', '안3', '안4']) {
+    const b = cells[name]!;
+    for (let y = b.y; y < b.y + b.h; y++) {
+      for (let x = b.x; x < b.x + b.w; x++) {
+        if (skip.some(([sx, sy]) => sx === x && sy === y)) continue;
+        out.push([x, y, t(kinds[k++ % kinds.length] as string)]);
+      }
+    }
   }
   return out;
 }
@@ -50,25 +57,26 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       endTick: 1200 + 15 * 1200,
       allMerge: true,
       moveEvery: 900,
+      // T-3: 순환의 정원 v2 (7×11, 2×2 블록) 칸으로 옮김
       debugTowers: [
-        // 소환사는 몹이 나오는 곳(진행도 0) 옆 → 병사가 경로를 거슬러 걸어 막 나온 몹과 만난다
-        [2, 2, t('summoner')],
-        [4, 2, t('icemage')],
-        [6, 2, t('flamemage')],
-        [2, 8, t('mudshaman')],
-        [4, 8, t('archmage')],
-        [6, 8, t('chronomancer')],
-        [3, 4, t('blacksmith')],
-        [5, 4, t('scholar')],
-        [3, 6, t('warlord')],
-        [5, 6, t('dragoncaller')],
-        [4, 5, t('assassin')],
-        [0, 0, t('fortuna')],
-        [8, 0, t('alchemist')],
-        [0, 10, t('merchant')],
-        [0, 2, t('gambler')],
-        [4, 0, t('miner')],
-        [2, 0, t('berserker')],
+        // 소환사는 몹이 나오는 곳(진행도 0 = (0,2)) 옆 → 병사가 경로를 거슬러 걸어 막 나온 몹과 만난다
+        [1, 3, t('summoner')],
+        [2, 3, t('icemage')],
+        [5, 3, t('flamemage')],
+        [1, 7, t('mudshaman')],
+        [4, 7, t('archmage')],
+        [5, 7, t('chronomancer')],
+        [2, 4, t('blacksmith')],
+        [4, 4, t('scholar')],
+        [2, 6, t('warlord')],
+        [4, 6, t('dragoncaller')],
+        [5, 4, t('assassin')],
+        [1, 0, t('fortuna')],
+        [5, 0, t('alchemist')],
+        [1, 10, t('merchant')],
+        [2, 0, t('gambler')],
+        [4, 1, t('miner')],
+        [2, 1, t('berserker')],
       ],
     },
   },
@@ -85,7 +93,7 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
   },
   {
     name: 'r3-invisible',
-    note: '무한 모드 debug, 감지 타워가 없는 덱(Lv15) + 안쪽 블록 레전드 20개, 일꾼·보스 카드 고르기 — 10·20·30 보스는 잡고 40단계 망령 군주(항상 투명)에서 제한 시간 패배 (DEV_PLAN 3.2 r3-invisible)',
+    note: '무한 모드 debug, 감지 타워가 없는 덱(Lv15) + 고리 안쪽 2×2 블록 레전드 16개, 일꾼·보스 카드 고르기 — 10·20·30 보스는 잡고 40단계 망령 군주(항상 투명)에서 제한 시간 패배 (DEV_PLAN 3.2 r3-invisible)',
     match: { seed: 3, mode: 'infinite', debug: true, decks: [NO_DETECT_DECK], levels: [allLv(NO_DETECT_DECK, 15)] },
     bot: { endTick: 1200 + 45 * 1200, pickCard: 0, workers: 0, debugTowers: innerRing(['fortuna', 'archmage', 'dragoncaller', 'stormlord', 'fortuna']) },
   },
@@ -100,13 +108,13 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       pickCard: 1,
       workers: 3,
       debugTowers: [
-        [0, 2, t('mudshaman')],
-        [8, 2, t('mudshaman')],
-        [0, 8, t('flamemage')],
-        [8, 8, t('flamemage')],
-        [4, 4, t('scout')],
+        [1, 1, t('mudshaman')],
+        [5, 1, t('mudshaman')],
+        [1, 9, t('flamemage')],
+        [5, 9, t('flamemage')],
+        [2, 4, t('scout')],
         [4, 6, t('scout')],
-        ...innerRing(['dragoncaller', 'archmage', 'warlord', 'fortuna']),
+        ...innerRing(['dragoncaller', 'archmage', 'warlord', 'fortuna'], [[2, 4], [4, 6]]),
       ],
     },
   },
@@ -120,10 +128,10 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       debugGold: 200_000,
       upgrades: [[3, 50]],
       debugTowers: [
-        [2, 4, t('gunner')],
-        [2, 3, t('bard')],
-        [2, 5, t('drummer')],
-        [4, 5, t('warlord')],
+        [1, 4, t('gunner')],
+        [1, 3, t('bard')],
+        [2, 4, t('drummer')],
+        [4, 4, t('warlord')],
       ],
     },
   },
@@ -146,7 +154,7 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       ],
       gamble: { t: 1, every: 100 },
       pickCard: 0,
-      debugTowers: [[4, 4, t('celestial')], [4, 6, t('celestial')], ...innerRing(['infiniteblade', 'warlord', 'goldking', 'archmage', 'fortuna'])],
+      debugTowers: [[1, 1, t('celestial')], [4, 9, t('celestial')], ...innerRing(['infiniteblade', 'warlord', 'goldking', 'archmage', 'fortuna'])],
     },
   },
 ];
@@ -267,7 +275,7 @@ describe('M4 리플레이', () => {
 describe('기록 → 재생', () => {
   it('짧은 판을 기록해 JSON으로 저장·읽기 → 재생하면 같은 해시, 두 번 재생해도 같다', () => {
     const m = createMatch(data, { seed: 99, mode: 'infinite', debug: true });
-    runBot(m, { endTick: 3000, moveEvery: 700, debugTowers: [[4, 2, t('icemage')], [4, 8, t('summoner')]] });
+    runBot(m, { endTick: 3000, moveEvery: 700, debugTowers: [[4, 3, t('icemage')], [4, 7, t('summoner')]] });
     const file = recordReplay(data, m, { name: 'short', checkpointTicks: 100 });
     expect(file.finalHash).toBe(m.hash());
     const loaded = JSON.parse(replayToJson(file)) as ReplayFile;

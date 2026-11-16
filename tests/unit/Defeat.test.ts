@@ -70,7 +70,7 @@ describe('캠페인: 목숨 0', () => {
     const match = campaign(1);
     match.state.lives = 1;
     addMob(match, 'slime');
-    match.stepN(1039);
+    match.stepN(786);
     expect(match.state.phase).toBe('playing');
     match.step();
     expect(match.state.lives).toBe(0);
@@ -82,7 +82,7 @@ describe('캠페인: 목숨 0', () => {
     const match = campaign(1);
     match.state.lives = 2;
     addMob(match, 'slime');
-    match.stepN(1040);
+    match.stepN(787);
     expect(match.state.lives).toBe(1);
     expect(match.state.phase).toBe('playing');
   });

@@ -1,5 +1,6 @@
 /** 테스트 도우미: 판 만들기·몹 넣기. */
-import { loadGameData, type GameData } from '../../src/data/load';
+import { loadGameData, type GameData, type MapData } from '../../src/data/load';
+import circleV1 from '../fixtures/maps/circle-v1.json';
 import { createMatch, type Match, type MatchOptions } from '../../src/sim/match';
 import type { CommandInput } from '../../src/sim/Commands';
 import type { Mob } from '../../src/sim/entities/Mob';
@@ -8,7 +9,20 @@ import { spawnMob } from '../../src/sim/systems/Spawn';
 
 export const data: GameData = loadGameData();
 
+/**
+ * 규칙 테스트용 시험장 데이터 (T-3): 무한 모드 맵만 예전 순환의 정원 v1 (9×11, 배치 71칸, 사각 고리 28칸 — tests/fixtures/maps).
+ * 게임 맵(src/data/maps/circle.json v2, 7×11·2×2 블록 32칸)이 바뀌어도 규칙 테스트의 칸 좌표(예: 진행도 3000 = 칸 (4, 1),
+ * 그 옆 (4, 2)·(4, 0) 타워)가 흔들리지 않게 고정한 맵이다. 실제 맵을 쓰는 판은 `realInfinite` · `createMatch(data, …)`.
+ */
+export const arenaData: GameData = { ...data, maps: { ...data.maps, circle: circleV1 as unknown as MapData } };
+
+/** 무한 판 (시험장 맵 = 예전 순환의 정원 v1 — 칸 좌표를 쓰는 규칙 테스트용) */
 export function infinite(seed = 1, extra: Partial<MatchOptions> = {}): Match {
+  return createMatch(arenaData, { seed, mode: 'infinite', ...extra });
+}
+
+/** 무한 판 (실제 게임 맵 = 순환의 정원 v2) */
+export function realInfinite(seed = 1, extra: Partial<MatchOptions> = {}): Match {
   return createMatch(data, { seed, mode: 'infinite', ...extra });
 }
 

@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import type { Command } from '../../src/sim/Commands';
 import type { Point } from '../../src/data/load';
 import { createMatch, type Match } from '../../src/sim/match';
-import { campaign, data, infinite, runToStage } from '../helpers/match';
+import { arenaData, campaign, infinite, runToStage } from '../helpers/match';
 
 /** 순환의 정원 안쪽 고리(경로 바로 안쪽) 칸: 몹이 지나가는 길에 가깝다. */
 function ringTiles(match: Match): Point[] {
@@ -106,7 +106,7 @@ describe('결정성', () => {
 
   it('실행된 명령 기록을 새 판에 그대로 넣으면 끝 해시가 같다 (리플레이 재료)', () => {
     const a = trace(31337);
-    const m = createMatch(data, { seed: 31337, mode: 'infinite' });
+    const m = createMatch(arenaData, { seed: 31337, mode: 'infinite' }); // trace()와 같은 시험장 맵
     for (const c of a.commands) expect(m.world.enqueue(c).ok).toBe(true);
     m.stepN(6000);
     expect(m.hash()).toBe(a.final);
