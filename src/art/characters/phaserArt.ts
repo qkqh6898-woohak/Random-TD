@@ -326,7 +326,8 @@ export function enemyCharacterTexture(scene: Phaser.Scene, mobId: string, legion
   const ext = externalArtKey('enemy', mobId, false);
   // 데이터 움직임 그대로 (walk·flap·float·slither — mobPose가 모두 그린다)
   const motion: MobMotion = look.motion;
-  if (scene.textures.exists(ext)) {
+  if (look.rank === 'minion' && scene.textures.exists(ext)) {
+    // 보스는 SD 절차 그림을 사용한다. 하수인은 기존 바깥 그림 우선.
     // 바깥 그림은 캐릭터 경계로 잘려 정사각형이 아니다 → 긴 변을 크기로 (몹 지름에 맞춤)
     const img = scene.textures.get(ext).getSourceImage() as { width: number; height: number };
     // 몸 전체 그림은 둥근 절차 몹보다 같은 지름에서 작아 보인다 → EXTERNAL_ENEMY_SCALE배로

@@ -7,14 +7,14 @@ import { loadGameData } from '../../src/data/load';
 describe('배속 버튼 규칙 (UI.md 4.2)', () => {
   const speeds = loadGameData().game.speeds;
 
-  it('계정 Lv1은 ×1·×2, Lv12부터 ×3', () => {
-    expect(availableSpeeds(speeds, 1)).toEqual([1, 2]);
-    expect(availableSpeeds(speeds, 11)).toEqual([1, 2]);
-    expect(availableSpeeds(speeds, 12)).toEqual([1, 2, 3]);
+  it('계정 Lv1부터 모든 일반 배속', () => {
+    expect(availableSpeeds(speeds, 1)).toEqual([1, 2, 4, 8, 16]);
+    expect(availableSpeeds(speeds, 11)).toEqual([1, 2, 4, 8, 16]);
+    expect(availableSpeeds(speeds, 12)).toEqual([1, 2, 4, 8, 16]);
   });
 
   it('debug면 레벨과 상관없이 전부', () => {
-    expect(availableSpeeds(speeds, 1, true)).toEqual([1, 2, 3]);
+    expect(availableSpeeds(speeds, 1, true)).toEqual([1, 2, 4, 8, 16]);
   });
 
   it('누를 때마다 순환, 목록에 없는 값이면 첫 값', () => {

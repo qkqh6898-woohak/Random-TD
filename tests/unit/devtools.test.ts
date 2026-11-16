@@ -54,9 +54,9 @@ describe('개발자 배속 (game.json devSpeeds)', () => {
     expect(availableSpeeds(game.speeds, 12, true, game.devSpeeds)).not.toContain(3);
   });
 
-  it('일반 모드는 예전 그대로 (계정 Lv1 ×1·×2, Lv12 ×3) — devSpeeds를 넘겨도 쓰지 않는다', () => {
-    expect(availableSpeeds(game.speeds, 1, false, game.devSpeeds)).toEqual([1, 2]);
-    expect(availableSpeeds(game.speeds, 12, false, game.devSpeeds)).toEqual([1, 2, 3]);
+  it('일반 모드도 Lv1부터 ×1·×2·×4·×8·×16', () => {
+    expect(availableSpeeds(game.speeds, 1, false, game.devSpeeds)).toEqual([1, 2, 4, 8, 16]);
+    expect(availableSpeeds(game.speeds, 12, false, game.devSpeeds)).toEqual([1, 2, 4, 8, 16]);
   });
 
   it('검사: ×1부터 오름차순·최대 ×16 (T-2부터 일반 배속 ×3을 포함하지 않아도 된다)', () => {
@@ -168,12 +168,11 @@ describe('그림 주소 표 (src/assets.ts, 한 파일 빌드의 window.__RTD_AS
 describe('배속별 연출 한도 (fxModel.fxBudget, 화면 전용)', () => {
   it('×3까지는 예전 값 그대로 (일반 모드 화면이 바뀌지 않는다)', () => {
     for (const sp of [0, 1, 2, 3]) expect(fxBudget(sp)).toBe(FX_BUDGET_NORMAL);
-    expect(FX_BUDGET_NORMAL).toMatchObject({ damageTexts: 16, forceCrit: true, activeTexts: 48, sparks: 12, areaFx: 8 });
+    expect(FX_BUDGET_NORMAL).toMatchObject({ damageTexts: 16, activeTexts: 48, sparks: 12, areaFx: 8 });
     expect(FX_BUDGET_NORMAL.coins).toBe(Number.POSITIVE_INFINITY);
   });
   it('×4·×8·×16은 점점 줄이고 큰 피해부터 고른다 (치명타 강제 없음)', () => {
     const [a, b, c] = [fxBudget(4), fxBudget(8), fxBudget(16)];
-    for (const x of [a, b, c]) expect(x.forceCrit).toBe(false);
     expect([a.damageTexts, b.damageTexts, c.damageTexts]).toEqual([4, 3, 2]);
     expect([a.activeTexts, b.activeTexts, c.activeTexts]).toEqual([24, 16, 12]);
     expect(a.coins).toBeGreaterThan(c.coins);

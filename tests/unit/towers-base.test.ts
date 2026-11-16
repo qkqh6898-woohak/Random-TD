@@ -55,13 +55,13 @@ describe('노말', () => {
     expect(m.state.gold - gold0).toBe(5 * gains.length);
   });
 
-  it('고블린: 근접 단일 4 × 공속 2.5 → 20초(400틱)에 50번, 피해 200', () => {
+  it('고블린: 근접 단일 6 × 공속 2.5 → 20초(400틱)에 50번, 피해 300', () => {
     const m = arena();
     const mob = tank(m, 3000, 10_000);
     const g = placeTower(m.world, 'goblin', 0, 4, 2);
     m.stepN(400);
     expect(g.attacks).toBe(50);
-    expect(10_000 - mob.hp).toBe(200);
+    expect(10_000 - mob.hp).toBe(300);
   });
 
   it('궁수: 사거리 3.5 — 4칸 떨어진 몹은 못 맞히고 3칸 떨어진 몹을 쏜다', () => {
@@ -84,14 +84,14 @@ describe('노말', () => {
     expect([a.hp < 1_000_000, b.hp < 1_000_000, c.hp < 1_000_000]).toEqual([true, true, false]);
   });
 
-  it('전사: 방어 관통 10% — 공격력 18 vs 방어 100 → A = 90 → 첫 타 9 (나머지 이어 감)', () => {
+  it('전사: 방어 관통 10% — 공격력 27 vs 방어 100 → A = 90 → 첫 타 14 (나머지 이어 감)', () => {
     expect(rules.towers.get('warrior')?.armorPenBp).toBe(1000);
     const m = arena();
     const mob = tank(m, 3000, 1000);
     mob.armor = 100;
     placeTower(m.world, 'warrior', 0, 4, 2);
     m.step();
-    expect(1000 - mob.hp).toBe(9);
+    expect(1000 - mob.hp).toBe(14);
   });
 });
 
@@ -205,8 +205,8 @@ describe('유니크', () => {
     const dice = eventsOf(m, 'dice').filter((e) => e.tower === g.id);
     expect(dice.length).toBe(300);
     expect(new Set(dice.map((e) => e.value))).toEqual(new Set([1, 2, 3, 4, 5, 6]));
-    // 39 + 39 = 78 × Σ(2·눈/7) — 투사체 도착 전 마지막 한두 발은 빼고 비교
-    const expected = dice.reduce((a, e) => a + (78 * 2 * Number(e.value)) / 7, 0);
+    // 58.5 + 58.5 = 117 × Σ(2·눈/7) — 투사체 도착 전 마지막 한두 발은 빼고 비교
+    const expected = dice.reduce((a, e) => a + (117 * 2 * Number(e.value)) / 7, 0);
     expect(10_000_000 - mob.hp).toBeGreaterThan(expected - 200);
     expect(10_000_000 - mob.hp).toBeLessThanOrEqual(expected);
   });
@@ -262,7 +262,7 @@ describe('히어로', () => {
     const [s] = listSoldiers(m.world);
     expect(s).toBeDefined();
     expect(s!.progress).toBeLessThanOrEqual(3000);
-    expect(s!.dmgM).toBe(20_000); // 250 × 0.8 (× ATK_SCALE)
+    expect(s!.dmgM).toBe(30_000); // 375 × 0.8 (× ATK_SCALE)
     const p0 = s!.progress;
     m.stepN(30);
     expect(s!.progress).toBeLessThan(p0);
@@ -402,11 +402,11 @@ describe('레전드', () => {
     boss.boss = true;
     placeTower(m.world, 'assassin', 0, 4, 2);
     m.stepN(3);
-    expect(100_000 - boss.hp).toBe(3000); // 1500 × 2 (방어 0)
-    // 일반 몹: 1500을 맞고 100 남음 (≤ 5% = 5000) → 즉사
+    expect(100_000 - boss.hp).toBe(4500); // 2250 × 2 (방어 0)
+    // 일반 몹: 2250을 맞고 100 남음 (≤ 5% = 5000) → 즉사
     const m2 = arena();
     const mob = tank(m2, 3000, 100_000);
-    mob.hp = 1600;
+    mob.hp = 2350;
     placeTower(m2.world, 'assassin', 0, 4, 2);
     m2.stepN(3);
     expect(m2.world.entities.has(mob.id)).toBe(false);
@@ -415,7 +415,7 @@ describe('레전드', () => {
     const m3 = arena();
     const b3 = tank(m3, 3000, 100_000);
     b3.boss = true;
-    b3.hp = 3100;
+    b3.hp = 4600;
     const a3 = placeTower(m3.world, 'assassin', 0, 4, 2);
     m3.stepN(3);
     expect(b3.hp).toBe(100);

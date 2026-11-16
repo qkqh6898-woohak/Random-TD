@@ -1,13 +1,13 @@
 {
- "version": 5,
+ "version": 6,
  "baseDps": {
-  "normal": 10,
-  "rare": 35,
-  "unique": 120,
-  "hero": 400,
-  "legend": 1400,
-  "god": 6000,
-  "hidden": 3000
+  "normal": 15,
+  "rare": 52.5,
+  "unique": 180,
+  "hero": 600,
+  "legend": 2100,
+  "god": 9000,
+  "hidden": 4500
  },
  "notes": "atk=물리 공격력, matk=마법 공격력, tatk=고정 피해. aps=초당 공격 횟수, range=사거리(칸), shapeValue=광역 반경 또는 관통/연쇄/다중 수. design.ratio=등급 기준 DPS 대비 목표 전투력. 특색 수치 params는 [Lv1, Lv15]. 특색 수치 params는 [Lv1, Lv15] 배열(타워 레벨로 균등 보간) 또는 레벨과 무관한 상수. 초 단위 값은 0.05초(1틱) 단위, 비율은 0~1 소수 (M3b: 능력 모듈 src/sim/abilities/<id>.ts가 읽는다). lore·role = 캐릭터 설명 두 문장(정보 패널·캐릭터 카드, 화면 전용): lore = 어떤 인물인가, role = 전투에서 하는 일 (원문 docs/art/tower_descs.json).",
  "towers": [
@@ -49,7 +49,7 @@
     "ratio": 0.7,
     "shapeFactor": 1.0
    },
-   "atk": 7,
+   "atk": 10.5,
    "matk": 0,
    "tatk": 0,
    "faction": "dwarf",
@@ -94,7 +94,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 4.5,
+   "matk": 6.75,
    "tatk": 0,
    "faction": "orc",
    "element": null
@@ -131,7 +131,7 @@
     "ratio": 1.0,
     "shapeFactor": 1.0
    },
-   "atk": 4,
+   "atk": 6,
    "matk": 0,
    "tatk": 0,
    "faction": "orc",
@@ -169,7 +169,7 @@
     "ratio": 1.0,
     "shapeFactor": 1.0
    },
-   "atk": 10,
+   "atk": 15,
    "matk": 0,
    "tatk": 0,
    "faction": "elf",
@@ -208,7 +208,7 @@
     "shapeFactor": 2.2
    },
    "atk": 0,
-   "matk": 6.5,
+   "matk": 9.75,
    "tatk": 0,
    "faction": "kingdom",
    "element": null
@@ -245,7 +245,7 @@
     "ratio": 1.1,
     "shapeFactor": 1.0
    },
-   "atk": 18,
+   "atk": 27,
    "matk": 0,
    "tatk": 0,
    "faction": "kingdom",
@@ -283,7 +283,7 @@
     "ratio": 1.15,
     "shapeFactor": 1.5
    },
-   "atk": 8.5,
+   "atk": 12.75,
    "matk": 0,
    "tatk": 0,
    "faction": "kingdom",
@@ -321,7 +321,7 @@
     "ratio": 1.15,
     "shapeFactor": 2.8
    },
-   "atk": 10,
+   "atk": 15,
    "matk": 0,
    "tatk": 0,
    "faction": "dwarf",
@@ -357,7 +357,7 @@
     "ratio": 1.15,
     "shapeFactor": 2.2
    },
-   "atk": 4,
+   "atk": 6,
    "matk": 0,
    "tatk": 0,
    "faction": "darkelf",
@@ -398,7 +398,7 @@
     "ratio": 1.1,
     "shapeFactor": 1.0
    },
-   "atk": 4.6,
+   "atk": 6.9,
    "matk": 0,
    "tatk": 0,
    "faction": "modern",
@@ -441,7 +441,7 @@
     "ratio": 0.6,
     "shapeFactor": 1.0
    },
-   "atk": 21,
+   "atk": 31.5,
    "matk": 0,
    "tatk": 0,
    "faction": "dwarf",
@@ -493,7 +493,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 19,
+   "matk": 28.5,
    "tatk": 0,
    "faction": "orc",
    "element": "mud"
@@ -537,7 +537,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 16,
+   "matk": 24,
    "tatk": 0,
    "faction": "fairy",
    "element": null
@@ -584,7 +584,7 @@
     "ratio": 0.65,
     "shapeFactor": 1.0
    },
-   "atk": 19,
+   "atk": 28.5,
    "matk": 0,
    "tatk": 0,
    "faction": "modern",
@@ -628,7 +628,7 @@
     "shapeFactor": 2.5
    },
    "atk": 0,
-   "matk": 13,
+   "matk": 19.5,
    "tatk": 0,
    "faction": "kingdom",
    "element": "fire"
@@ -665,7 +665,7 @@
     "ratio": 1.15,
     "shapeFactor": 2.8
    },
-   "atk": 18,
+   "atk": 27,
    "matk": 0,
    "tatk": 0,
    "faction": "orc",
@@ -703,7 +703,7 @@
     "ratio": 1.15,
     "shapeFactor": 1.0
    },
-   "atk": 48,
+   "atk": 72,
    "matk": 0,
    "tatk": 0,
    "faction": "darkelf",
@@ -741,7 +741,7 @@
     "ratio": 1.05,
     "shapeFactor": 1.0
    },
-   "atk": 12,
+   "atk": 18,
    "matk": 0,
    "tatk": 0,
    "faction": "modern",
@@ -779,7 +779,7 @@
     "ratio": 1.15,
     "shapeFactor": 2.95
    },
-   "atk": 27,
+   "atk": 40.5,
    "matk": 0,
    "tatk": 0,
    "faction": "dwarf",
@@ -819,7 +819,7 @@
     "shapeFactor": 2.0
    },
    "atk": 0,
-   "matk": 15,
+   "matk": 22.5,
    "tatk": 0,
    "faction": "elf",
    "element": null
@@ -864,7 +864,7 @@
     "shapeFactor": 2.8
    },
    "atk": 0,
-   "matk": 40,
+   "matk": 60,
    "tatk": 0,
    "faction": "elf",
    "element": "ice"
@@ -907,8 +907,8 @@
     "ratio": 0.65,
     "shapeFactor": 1.0
    },
-   "atk": 39,
-   "matk": 39,
+   "atk": 58.5,
+   "matk": 58.5,
    "tatk": 0,
    "faction": "darkelf",
    "element": null
@@ -951,7 +951,7 @@
     "ratio": 0.6,
     "shapeFactor": 1.0
    },
-   "atk": 90,
+   "atk": 135,
    "matk": 0,
    "tatk": 0,
    "faction": "dwarf",
@@ -996,7 +996,7 @@
     "ratio": 0.65,
     "shapeFactor": 1.0
    },
-   "atk": 39,
+   "atk": 58.5,
    "matk": 0,
    "tatk": 0,
    "faction": "orc",
@@ -1041,7 +1041,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 66,
+   "matk": 99,
    "tatk": 0,
    "faction": "fairy",
    "element": null
@@ -1088,7 +1088,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 60,
+   "matk": 90,
    "tatk": 0,
    "faction": "dwarf",
    "element": null
@@ -1126,7 +1126,7 @@
     "ratio": 1.15,
     "shapeFactor": 1.0
    },
-   "atk": 290,
+   "atk": 435,
    "matk": 0,
    "tatk": 0,
    "faction": "modern",
@@ -1167,7 +1167,7 @@
     "ratio": 1.0,
     "shapeFactor": 1.0
    },
-   "atk": 100,
+   "atk": 150,
    "matk": 0,
    "tatk": 0,
    "faction": "orc",
@@ -1206,7 +1206,7 @@
     "shapeFactor": 2.01
    },
    "atk": 0,
-   "matk": 69,
+   "matk": 103.5,
    "tatk": 0,
    "faction": "kingdom",
    "element": "lightning"
@@ -1249,7 +1249,7 @@
     "ratio": 1.2,
     "shapeFactor": 1.0
    },
-   "atk": 39,
+   "atk": 58.5,
    "matk": 0,
    "tatk": 0,
    "faction": "darkelf",
@@ -1298,7 +1298,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 250,
+   "matk": 375,
    "tatk": 0,
    "faction": "darkelf",
    "element": null
@@ -1341,7 +1341,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 200,
+   "matk": 300,
    "tatk": 0,
    "faction": "fairy",
    "element": null
@@ -1385,7 +1385,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 240,
+   "matk": 360,
    "tatk": 0,
    "faction": "fairy",
    "element": null
@@ -1431,7 +1431,7 @@
     "shapeFactor": 2.5
    },
    "atk": 0,
-   "matk": 88,
+   "matk": 132,
    "tatk": 0,
    "faction": "dwarf",
    "element": null
@@ -1475,7 +1475,7 @@
     "ratio": 0.6,
     "shapeFactor": 2.8
    },
-   "atk": 110,
+   "atk": 165,
    "matk": 0,
    "tatk": 0,
    "faction": "kingdom",
@@ -1519,7 +1519,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 220,
+   "matk": 330,
    "tatk": 0,
    "faction": "darkelf",
    "element": null
@@ -1567,7 +1567,7 @@
     "ratio": 0.6,
     "shapeFactor": 3.25
    },
-   "atk": 150,
+   "atk": 225,
    "matk": 0,
    "tatk": 0,
    "faction": "modern",
@@ -1612,7 +1612,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 220,
+   "matk": 330,
    "tatk": 0,
    "faction": "elf",
    "element": null
@@ -1649,7 +1649,7 @@
     "ratio": 1.15,
     "shapeFactor": 3.25
    },
-   "atk": 180,
+   "atk": 270,
    "matk": 0,
    "tatk": 0,
    "faction": "elf",
@@ -1687,7 +1687,7 @@
     "ratio": 1.15,
     "shapeFactor": 3.4
    },
-   "atk": 140,
+   "atk": 210,
    "matk": 0,
    "tatk": 0,
    "faction": "elf",
@@ -1732,7 +1732,7 @@
     "shapeFactor": 3.25
    },
    "atk": 0,
-   "matk": 340,
+   "matk": 510,
    "tatk": 0,
    "faction": "fairy",
    "element": "fire"
@@ -1775,7 +1775,7 @@
     "ratio": 0.7,
     "shapeFactor": 3.25
    },
-   "atk": 380,
+   "atk": 570,
    "matk": 0,
    "tatk": 0,
    "faction": "orc",
@@ -1821,7 +1821,7 @@
     "shapeFactor": 3.25
    },
    "atk": 0,
-   "matk": 540,
+   "matk": 810,
    "tatk": 0,
    "faction": "kingdom",
    "element": "fire"
@@ -1868,7 +1868,7 @@
     "ratio": 0.85,
     "shapeFactor": 1.0
    },
-   "atk": 1500,
+   "atk": 2250,
    "matk": 0,
    "tatk": 0,
    "faction": "darkelf",
@@ -1916,7 +1916,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 840,
+   "matk": 1260,
    "tatk": 0,
    "faction": "fairy",
    "element": null
@@ -1958,7 +1958,7 @@
     "ratio": 0.8,
     "shapeFactor": 3.0
    },
-   "atk": 530,
+   "atk": 795,
    "matk": 0,
    "tatk": 0,
    "faction": "elf",
@@ -2004,7 +2004,7 @@
     "shapeFactor": 2.65
    },
    "atk": 0,
-   "matk": 400,
+   "matk": 600,
    "tatk": 0,
    "faction": "elf",
    "element": "lightning"
@@ -2047,7 +2047,7 @@
     "ratio": 0.6,
     "shapeFactor": 1.0
    },
-   "atk": 840,
+   "atk": 1260,
    "matk": 0,
    "tatk": 0,
    "faction": "modern",
@@ -2095,7 +2095,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 840,
+   "matk": 1260,
    "tatk": 0,
    "faction": "kingdom",
    "element": null
@@ -2140,7 +2140,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 1100,
+   "matk": 1650,
    "tatk": 0,
    "faction": "modern",
    "element": null
@@ -2180,7 +2180,7 @@
    },
    "atk": 0,
    "matk": 0,
-   "tatk": 4500,
+   "tatk": 6750,
    "faction": "ancient",
    "element": null
   },
@@ -2217,7 +2217,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 3000,
+   "matk": 4500,
    "tatk": 0,
    "faction": "ancient",
    "element": null
@@ -2254,7 +2254,7 @@
    },
    "atk": 0,
    "matk": 0,
-   "tatk": 2400,
+   "tatk": 3600,
    "faction": "ancient",
    "element": null
   },
@@ -2299,8 +2299,8 @@
     "ratio": 0.9,
     "shapeFactor": 4.0
    },
-   "atk": 220,
-   "matk": 220,
+   "atk": 330,
+   "matk": 330,
    "tatk": 0,
    "faction": "alliance",
    "element": "multi"
@@ -2341,7 +2341,7 @@
     "ratio": 0.55,
     "shapeFactor": 1.0
    },
-   "atk": 1700,
+   "atk": 2550,
    "matk": 0,
    "tatk": 0,
    "faction": "alliance",
@@ -2384,7 +2384,7 @@
     "ratio": 1.2,
     "shapeFactor": 1.0
    },
-   "atk": 1500,
+   "atk": 2250,
    "matk": 0,
    "tatk": 0,
    "faction": "alliance",
@@ -2427,7 +2427,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 1800,
+   "matk": 2700,
    "tatk": 0,
    "faction": "alliance",
    "element": null
@@ -2470,7 +2470,7 @@
     "ratio": 1.0,
     "shapeFactor": 3.25
    },
-   "atk": 920,
+   "atk": 1380,
    "matk": 0,
    "tatk": 0,
    "faction": "alliance",
@@ -2513,7 +2513,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 1800,
+   "matk": 2700,
    "tatk": 0,
    "faction": "alliance",
    "element": null
@@ -2556,7 +2556,7 @@
     "ratio": 0.7,
     "shapeFactor": 1.0
    },
-   "atk": 1000,
+   "atk": 1500,
    "matk": 0,
    "tatk": 0,
    "faction": "alliance",
@@ -2604,7 +2604,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 770,
+   "matk": 1155,
    "tatk": 0,
    "faction": "alliance",
    "element": "poison"
@@ -2645,7 +2645,7 @@
     "ratio": 0.8,
     "shapeFactor": 4.0
    },
-   "atk": 1200,
+   "atk": 1800,
    "matk": 0,
    "tatk": 0,
    "faction": "alliance",
@@ -2689,7 +2689,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 1700,
+   "matk": 2550,
    "tatk": 0,
    "faction": "alliance",
    "element": null
@@ -2731,7 +2731,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 1500,
+   "matk": 2250,
    "tatk": 0,
    "faction": "alliance",
    "element": null
@@ -2773,7 +2773,7 @@
     "shapeFactor": 3.21
    },
    "atk": 0,
-   "matk": 790,
+   "matk": 1185,
    "tatk": 0,
    "faction": "alliance",
    "element": "lightning"

@@ -160,10 +160,10 @@ describe('HUD 값 = sim 값', () => {
     expect(m.boss).toBe(true);
     expect(m.bossBanner).toBe('질풍 군단 · 대장 「박쥐 여왕」');
     expect(m.bossHp).toBe(1000);
-    expect(m.bossTime).toBe('60초');
+    expect(m.bossTime).toBe('90초');
     const queen = match.mobs().find((x) => x.boss)!;
     queen.hp = Math.floor(queen.maxHp / 4);
-    match.stepN(1200 - 200);
+    match.stepN(match.rules.bossTimeTicks - 200);
     const late = buildHudModel(withBoss(), cfg);
     expect(late.bossHp).toBe(250);
     expect(late.bossTime).toBe('10초');

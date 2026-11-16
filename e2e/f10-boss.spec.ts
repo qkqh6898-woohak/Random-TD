@@ -153,7 +153,7 @@ test('9단계 예고 → 10단계 박쥐 여왕 → 비행 중 표시 → 처치
   expect(errors).toEqual([]);
 });
 
-test('제한 시간 패배: "박쥐 여왕을 60초 안에 잡지 못했어요 · 남은 체력 N%" + 대응 한 줄 (N = sim 남은 체력 올림)', async ({ page }) => {
+test('제한 시간 패배: "박쥐 여왕을 90초 안에 잡지 못했어요 · 남은 체력 N%" + 대응 한 줄 (N = sim 남은 체력 올림)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
   // 개발자 '이번 판 기록'용 첫 소환 한 번 (F10-4 검토: 패배 화면·지난 판에 기록이 남는지)
@@ -166,7 +166,7 @@ test('제한 시간 패배: "박쥐 여왕을 60초 안에 잡지 못했어요 �
     (s) => [[1, 3], [2, 3], [4, 3]].every(([x, y]) => s.match.world.enqueue({ type: 'debugTower', x, y, t: 0 }).ok),
     null,
   );
-  await ff(page, 1250);
+  await ff(page, 1850);
   const st = await inScene(
     page,
     (s) => {
@@ -179,7 +179,7 @@ test('제한 시간 패배: "박쥐 여왕을 60초 안에 잡지 못했어요 �
   expect([st.phase, st.reason]).toEqual(['defeat', 'bossTime']);
   const pct = Math.min(100, Math.ceil((st.hp * 100) / st.max));
   expect(pct).toBeGreaterThan(0);
-  await expect(page.locator('.gameover-reason')).toHaveText(`박쥐 여왕을 60초 안에 잡지 못했어요 · 남은 체력 ${pct}%`);
+  await expect(page.locator('.gameover-reason')).toHaveText(`박쥐 여왕을 90초 안에 잡지 못했어요 · 남은 체력 ${pct}%`);
   await expect(page.getByTestId('gameover-tip')).toHaveText(COUNTER);
   await expect(page.locator('.gameover-record')).toHaveText('10단계까지 버텼어요');
   // 개발자 모드: 패배 화면에 이번 판 기록 (패배 화면이 🛠를 덮어도 읽을 수 있게, 결정 6)

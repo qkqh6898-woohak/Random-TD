@@ -1,3 +1,4 @@
+import { drawSdBoss, usesSdBoss } from './sdBoss';
 /**
  * 녹스 군단 적 32종 그림 (Canvas 2D, 128 단위 정사각형 — 기존 art/mobs.ts와 같은 좌표라 MobSprite 위치 계산이 그대로다).
  *
@@ -718,6 +719,10 @@ function noxSigil(c: Ctx, x: number, y: number, r: number, legion: string): void
 
 /** 적 한 마리 (128×128 단위, 원점 = 왼쪽 위). legionColor = enemies.json 군단 색 (군주 직속은 보라). */
 export function drawEnemy(c: Ctx, look: EnemyLook, legionColor: string): void {
+  if (usesSdBoss(look)) {
+    drawSdBoss(c, look);
+    return;
+  }
   const a = CREATURE_ANCHORS[look.creature];
   const e: EnemyCtx = { c, body: look.colors[0] ?? '#888888', accent: look.colors[1] ?? '#CCCCCC', legion: legionColor, eye: look.eyes === 'red' ? RED_EYE : NOX_EYE };
   const rank: RankId = look.rank;

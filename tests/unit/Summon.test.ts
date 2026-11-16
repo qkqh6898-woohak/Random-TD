@@ -24,14 +24,14 @@ describe('데이터: 소환 규칙과 기본 덱', () => {
     for (const g of ['normal', 'rare', 'unique', 'hero', 'legend'] as const) expect(rules.baseDeck[g]).toHaveLength(5);
   });
 
-  it('towers.json 수치 → 정수: 견습 마법사 마법 6.5 → 650, 공속 0.8 → 800, 사거리 2.5칸 → 2500 / 근접은 즉시, 원거리는 투사체', () => {
+  it('towers.json 수치 → 정수: 견습 마법사 마법 9.75 → 975, 공속 0.8 → 800, 사거리 2.5칸 → 2500 / 근접은 즉시, 원거리는 투사체', () => {
     const app = rules.towers.get('apprentice')!;
-    expect(app.matkC).toBe(650);
+    expect(app.matkC).toBe(975);
     expect(app.apsMilli).toBe(800);
     expect(app.range).toBe(2500);
     expect(app.instant).toBe(false);
     expect(rules.towers.get('goblin')!.instant).toBe(true); // melee
-    expect(rules.towers.get('warrior')!.atkC).toBe(1800);
+    expect(rules.towers.get('warrior')!.atkC).toBe(2700);
     expect(rules.towers.get('archer')!.instant).toBe(false); // single
     expect(rules.towers.get('cleaver')!.instant).toBe(true); // melee_aoe
   });

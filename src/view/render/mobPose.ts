@@ -85,3 +85,17 @@ export function approachLean(current: number, target: number, dtMs: number): num
   const k = Math.min(1, dtMs / MOB_LEAN_EASE_MS);
   return current + (target - current) * k;
 }
+
+/** 보스마다 다른 박자와 체중감. 실제 렌더 시간 기준이며 sim 배속과 분리한다. */
+export function bossPose(id: string, motion: MobMotion, timeMs: number, phase: number): MobPose {
+  let seed = 0;
+  for (const ch of id) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const slow = id === 'ancientgolem' || id === 'steelcolossus' || id === 'gordam';
+  const jelly = id === 'kingslime';
+  const pace = slow ? 0.55 : jelly ? 0.72 : 0.8 + (seed % 9) * 0.065;
+  const p = mobPose(motion, timeMs * pace, phase);
+  const u = timeMs / (slow ? 280 : 170) + phase;
+  if (jelly) return { bob: p.bob * 1.5, sx: 1 + (p.sx - 1) * 2.5, sy: 1 + (p.sy - 1) * 2.5, angle: p.angle * 0.5 };
+  if (slow) return { bob: p.bob * 0.3, sx: p.sx, sy: p.sy, angle: Math.sin(u) * 0.075 };
+  return { ...p, angle: p.angle + Math.sin(u) * (0.012 + (seed % 5) * 0.008) };
+}

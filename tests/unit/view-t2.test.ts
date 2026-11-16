@@ -176,8 +176,8 @@ describe('도박 릴·꾹 누르기·자동 소환 간격', () => {
     expect(AUTO_SUMMON_FAST_MS).toBeLessThan(AUTO_SUMMON_MS);
   });
 
-  it('배속: 개발자 ×1·×2·×4·×8·×16, 일반 ×1·×2 (Lv12 ×3)', () => {
+  it('배속: 개발자 ×1·×2·×4·×8·×16, 일반도 Lv1부터 전부', () => {
     expect(availableSpeeds(data.game.speeds, 1, true, data.game.devSpeeds)).toEqual([1, 2, 4, 8, 16]);
-    expect(availableSpeeds(data.game.speeds, 12, false, data.game.devSpeeds)).toEqual([1, 2, 3]);
+    expect(availableSpeeds(data.game.speeds, 12, false, data.game.devSpeeds)).toEqual([1, 2, 4, 8, 16]);
   });
 });

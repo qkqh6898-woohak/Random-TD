@@ -1741,9 +1741,6 @@ function crossCheckM4(data: GameData, issues: Issue[]): void {
   game.art.cutins.forEach((id, i) => {
     if (!known.has(id)) issues.push({ file: 'game.json', path: `art.cutins[${i}]`, message: `보스 데이터·군단 체계에 없는 id: ${id}` });
   });
-  if (game.boss.timeLimitSeconds > game.match.stageSeconds) {
-    issues.push({ file: 'game.json', path: 'boss.timeLimitSeconds', message: `단계 길이(${game.match.stageSeconds}초)보다 길다` });
-  }
   if (game.formation.previewSeconds >= game.match.stageSeconds) {
     issues.push({ file: 'game.json', path: 'formation.previewSeconds', message: `단계 길이(${game.match.stageSeconds}초)보다 짧아야 한다` });
   }

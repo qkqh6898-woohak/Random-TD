@@ -417,9 +417,9 @@ describe('원소 5종 — 판 안 실제 타워', () => {
     return { m, mob, tower };
   }
 
-  it('🔥 화염 (화염 마법사): 맞은 몹에 화상 3초 — 초당 공격력 13 × 30% = 3.9 (× ATK_SCALE 390), 고정 피해가 들어간다', () => {
+  it('🔥 화염 (화염 마법사): 맞은 몹에 화상 3초 — 초당 공격력 19.5 × 30% = 5.85 (× ATK_SCALE 585), 고정 피해가 들어간다', () => {
     const { m, mob } = duel('flamemage', 3);
-    expect(mob.dots).toEqual([expect.objectContaining({ src: 'flamemage', kind: 'burn', dps: 390 })]);
+    expect(mob.dots).toEqual([expect.objectContaining({ src: 'flamemage', kind: 'burn', dps: 585 })]);
     m.world.drainEvents();
     m.stepN(30);
     expect(eventsOf(m, 'hit').some((e) => e.dot === true && Number(e.t) > 0)).toBe(true);
@@ -464,9 +464,9 @@ describe('원소 5종 — 판 안 실제 타워', () => {
     expect(mob.slowBp).toBe(2500);
   });
 
-  it('출혈 (군견병): 맞은 몹에 2초 출혈 — 초당 공격력 4.6 × 50% = 2.3 (× ATK_SCALE 230), 고정 피해', () => {
+  it('출혈 (군견병): 맞은 몹에 2초 출혈 — 초당 공격력 6.9 × 50% = 3.45 (× ATK_SCALE 345), 고정 피해', () => {
     const { m, mob } = duel('k9', 3);
-    expect(mob.dots).toEqual([expect.objectContaining({ src: 'k9', kind: 'bleed', dps: 230 })]);
+    expect(mob.dots).toEqual([expect.objectContaining({ src: 'k9', kind: 'bleed', dps: 345 })]);
     expect(dotStacks(mob, 'bleed', m.tick)).toBe(1);
   });
 

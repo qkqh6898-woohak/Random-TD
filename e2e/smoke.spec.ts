@@ -67,7 +67,7 @@ test('타이틀 화면: 운빨 디펜스 글자와 [시작] 버튼이 Phaser 캔
   expect(errors).toEqual([]);
 });
 
-test('[시작] → 게임 장면: 고정 틱이 돌고 배속 버튼이 ×1 → ×2 → ×1로 순환, ⏸ 메뉴를 거쳐 타이틀 복귀', async ({ page }) => {
+test('[시작] → 게임 장면: 고정 틱이 돌고 배속 버튼이 ×1 → ×2 → ×4 → ×8 → ×16 → ×1로 순환, ⏸ 메뉴를 거쳐 타이틀 복귀', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=42');
   await clickStart(page);
@@ -85,14 +85,16 @@ test('[시작] → 게임 장면: 고정 틱이 돌고 배속 버튼이 ×1 → 
   // 0단계 준비 60초가 줄어든다
   await expect(page.getByTestId('hud-timer')).not.toHaveText('1:00');
 
-  // 배속: 계정 Lv1이라 ×3은 잠김 → ×1, ×2만 순환
+  // 배속: 일반 계정 Lv1부터 다섯 가지 모두 순환
   const speed = page.getByRole('button', { name: '배속' });
   await expect(speed).toHaveText('×1');
   await speed.click();
   await expect(speed).toHaveText('×2');
   await shot(page, 'game-x2');
-  await speed.click();
-  await expect(speed).toHaveText('×1');
+  for (const n of [4, 8, 16, 1]) {
+    await speed.click();
+    await expect(speed).toHaveText(`×${n}`);
+  }
 
   // HUD 칩은 손가락으로 누를 만한 크기 (44px 이상)
   for (const name of ['배속', '일시정지']) {

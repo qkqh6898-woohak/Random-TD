@@ -41,7 +41,7 @@ describe('번들 데이터 로드', () => {
     expect(data.enemies.challenges).toHaveLength(10);
     expect(data.enemies.formations).toHaveLength(6);
     expect(data.campaign.themes).toHaveLength(10);
-    expect(data.game.speeds.map((x) => x.mul)).toEqual([1, 2, 3]);
+    expect(data.game.speeds.map((x) => x.mul)).toEqual([1, 2, 4, 8, 16]);
   });
 
   it('맵 파일을 자동으로 모두 읽는다 (T-3 2×2 블록: circle 32칸, crossroads 36칸)', () => {
@@ -408,13 +408,13 @@ describe('M4 데이터: 몹 특성·보스·편대·카드', () => {
     expect(issues.some((i) => /bosses\[\d+\]\.params\.summonMob/.test(i.path))).toBe(true);
   });
 
-  it('보스 순환에 모르는 id, 보스 제한 시간이 단계보다 길면 잡는다', () => {
+  it('보스 순환에 모르는 id는 잡되, 일반 단계보다 긴 90초 보스 제한은 허용', () => {
     const raw = rawCopy();
     (enemiesOf(raw).bossCycle as Json).captains = ['batqueen', 'nobody'];
-    (gameOf(raw).boss as Json).timeLimitSeconds = 61;
+    (gameOf(raw).boss as Json).timeLimitSeconds = 90;
     const issues = issuesOf(() => buildGameData(raw));
     expect(issues.some((i) => i.path === 'bossCycle.captains[1]')).toBe(true);
-    expect(issues.some((i) => i.path === 'boss.timeLimitSeconds')).toBe(true);
+    expect(issues.some((i) => i.path === 'boss.timeLimitSeconds')).toBe(false);
   });
 
   it('편대 예고 글자(banner·hint)는 필수', () => {

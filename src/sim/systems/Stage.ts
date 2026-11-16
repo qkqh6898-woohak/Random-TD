@@ -1,10 +1,10 @@
 /**
  * 단계 타이머 (DEV_PLAN M1-5, GDD 2.2).
  *
- * - 0단계 = 준비 60초 (몹 없음). 그 뒤 60초마다 다음 단계 → n단계 시작 틱 = 1200 + (n−1)·1200.
+ * - 0단계 = 준비 60초 (몹 없음). 그 뒤 일반 단계 60초, 보스 단계 max(stageTicks, bossTimeTicks).
  * - 단계는 몹이 남아 있어도 예정대로 넘어간다 (몹이 쌓이는 압박). 보스가 살아 있어도 흐른다.
  * - 단계가 바뀌면 'stageStart' 사건 { stage, boss }. 보스 단계(10의 배수)에는 Spawn이 보스를 내보낸다 (M4-5).
- * - 보스 제한 시간 (M4-6, GDD 2.2): 보스 단계 시작 + 60초(= 다음 단계 시작 틱)에 보스(조각)가 하나라도 살아 있으면 패배 'bossTime'.
+ * - 보스 제한 시간 (M4-6, GDD 2.2): 보스 단계 시작 + bossTimeTicks(기본 90초)에 보스(조각)가 하나라도 살아 있으면 패배 'bossTime'.
  *   다음 단계로 넘어가기 전에 본다 → 패배 단계 = 그 보스 단계. 보스를 일찍 잡으면 남은 시간은 휴식 (다음 단계는 원래 시각).
  * - 편대 예고 (M4-3b): 다음 단계 시작 10초 전, 다음 단계가 편대 단계면 편대를 정하고 'formationPreview' { stage, id }.
  * - 캠페인은 마지막 단계(50) 다음으로 넘어가지 않는다 (테마 클리어 판정은 M6).
@@ -25,8 +25,9 @@ export function ticksToNextStage(ctx: MatchContext, tick: number): number {
 }
 
 /** n단계가 시작되는 틱 (n ≥ 1). */
-export function stageStartTick(prepTicks: number, stageTicks: number, stage: number): number {
-  return prepTicks + (stage - 1) * stageTicks;
+export function stageStartTick(prepTicks: number, stageTicks: number, stage: number, bossEvery = 10, bossTicks = stageTicks): number {
+  const bossesBefore = Math.floor((stage - 1) / bossEvery);
+  return prepTicks + (stage - 1) * stageTicks + bossesBefore * Math.max(0, bossTicks - stageTicks);
 }
 
 /** 다음 단계 시작: 단계 +1, 시작 틱 = 지금, 다음 단계 = 지금 + 60초, 'stageStart' 사건. (단계 시스템·단계 건너뛰기 공용) */
@@ -34,8 +35,9 @@ function beginNextStage(ctx: MatchContext, world: World): void {
   const { state, rules } = ctx;
   state.stage += 1;
   state.stageStartTick = world.tick;
-  state.nextStageTick = world.tick + rules.stageTicks;
   state.bossStage = isBossStage(rules, state.stage);
+  // 보스 제한 시간 전체를 같은 단계에서 보장한다. 일반 단계는 기존 길이 유지.
+  state.nextStageTick = world.tick + (state.bossStage ? Math.max(rules.stageTicks, rules.bossTimeTicks) : rules.stageTicks);
   world.emit('stageStart', { stage: state.stage, boss: state.bossStage });
 }
 

@@ -3714,3 +3714,11 @@ body {
   padding: 1cqw 2cqw;
   font-size: 3.2cqw;
 }
+
+/* 일꾼은 고용 UI 안의 SD 작업자. 맵 위 전투 타워와 다른 실루엣. */
+.hud-worker-art { width: 26px; height: 29px; object-fit: contain; flex: 0 0 auto; vertical-align: middle; }
+.hud-hire { display: inline-flex; align-items: center; justify-content: center; gap: 3px; }
+.hud-hire .hud-worker-art { width: 30px; height: 34px; transform-origin: 50% 90%; animation: worker-nod 1.8s ease-in-out infinite; }
+.hud-hire.is-off .hud-worker-art { animation-play-state: paused; }
+@keyframes worker-nod { 0%, 100% { transform: rotate(-4deg); } 50% { transform: translateY(-2px) rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .hud-hire .hud-worker-art { animation: none; } }

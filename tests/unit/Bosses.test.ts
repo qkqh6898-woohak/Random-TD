@@ -1,5 +1,5 @@
 /**
- * M4-5 기본 대장 5종 패턴 (상태 기계) + M4-6 보스 60초 제한 패배 + 보스 처치 보상·카드 + 캠페인 보스 출구 도달 패배.
+ * M4-5 기본 대장 5종 패턴 (상태 기계) + M4-6 보스 90초 제한 패배 + 보스 처치 보상·카드 + 캠페인 보스 출구 도달 패배.
  */
 import { describe, expect, it } from 'vitest';
 import { listMobs, type Mob } from '../../src/sim/entities/Mob';
@@ -46,7 +46,7 @@ describe('보스 데이터·모듈 (M4-5)', () => {
     expect(b).toMatchObject({ mob: 'kingslime', boss: true, progress: 45 }); // 나온 틱에 첫 걸음 (0.9칸/초 ÷ 20)
     expect(b.hp).toBe(stageHp(rules, 20) * 40);
     expect(b.armor).toBe(stageArmor(rules, 20, 20));
-    expect(m.state).toMatchObject({ bossId: 'kingslime', bossNum: 2, bossMaxHp: b.hp, bossDeadline: m.tick - 1 + 1200 });
+    expect(m.state).toMatchObject({ bossId: 'kingslime', bossNum: 2, bossMaxHp: b.hp, bossDeadline: m.tick - 1 + rules.bossTimeTicks });
     expect(eventsOf(m, 'bossSpawn')[0]).toMatchObject({ boss: 'kingslime', stage: 20 });
   });
 
@@ -58,14 +58,14 @@ describe('보스 데이터·모듈 (M4-5)', () => {
   });
 });
 
-describe('보스 제한 시간 (M4-6, 60초)', () => {
-  it('보스 단계 + 60초에 보스가 살아 있으면 그 단계에서 패배 (bossTime), 다음 단계로 넘어가지 않는다', () => {
+describe('보스 제한 시간 (M4-6, 90초)', () => {
+  it('보스 단계 + 90초에 보스가 살아 있으면 그 단계에서 패배 (bossTime), 다음 단계로 넘어가지 않는다', () => {
     const m = infinite(1);
     jumpToStage(m, 10);
     const start = m.tick - 1;
     while (!m.defeated && m.tick < start + 2000) m.step();
     expect(m.state.defeatReason).toBe('bossTime');
-    expect(m.state.defeatTick).toBe(start + 1200);
+    expect(m.state.defeatTick).toBe(start + rules.bossTimeTicks);
     expect(m.state.stage).toBe(10);
     expect(eventsOf(m, 'defeat')[0]).toMatchObject({ reason: 'bossTime', stage: 10 });
   });

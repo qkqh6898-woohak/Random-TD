@@ -23,7 +23,7 @@ import { EYE_ICON_H, EYE_ICON_W, MOB_TEX_SIZE, SIZE_SCALE, MOB_LOOKS, ensureEyeI
 import type { Mob } from '../../sim/entities/Mob';
 import { directionAt, positionAt, type SimPath } from '../../sim/map';
 import { unitsToPx, type MapLayout } from '../layout';
-import { approachLean, leanTarget, mobPose, type MobMotion } from './mobPose';
+import { approachLean, bossPose, leanTarget, mobPose, type MobMotion } from './mobPose';
 import { ensureStatusTextures, statusIconKey } from '../../art/status';
 import { enemyCharacterTexture } from '../../art/characters/phaserArt';
 import { enemyLook, lookScale } from '../../art/characters/looks';
@@ -101,6 +101,7 @@ export class MobSprite {
   private outlineColor: number | null = null;
   /** M4: 보스·보호막 */
   private readonly boss: boolean;
+  private readonly mobId: string;
   private readonly shieldBar: Phaser.GameObjects.Rectangle;
   private guardRing: Phaser.GameObjects.Ellipse | null = null;
   private look: MobLookView = NO_LOOK;
@@ -113,6 +114,7 @@ export class MobSprite {
     this.id = mob.id;
     this.scene = scene;
     this.boss = mob.boss;
+    this.mobId = mob.mob;
     const legion = art.legionColor(mob.legion);
     const newArt = enemyCharacterTexture(scene, mob.mob, legion);
     const key = newArt ? newArt.key : ensureMobTexture(scene, mob.mob, legion);
@@ -306,7 +308,7 @@ export class MobSprite {
     const target = leanTarget(this.motion, dir.dx);
     this.lean = this.lastTimeMs === null ? target : approachLean(this.lean, target, timeMs - this.lastTimeMs);
     this.lastTimeMs = timeMs;
-    const pose = mobPose(this.motion, poseTime, this.phase);
+    const pose = this.boss ? bossPose(this.mobId, this.motion, poseTime, this.phase) : mobPose(this.motion, poseTime, this.phase);
     const s = this.baseScale;
     // 날아오른 박쥐 여왕: 0.35칸 떠오르고 그림자가 작아진다
     const lift = this.look.flying ? -layout.tile * 0.35 : 0;

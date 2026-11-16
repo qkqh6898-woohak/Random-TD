@@ -1,0 +1,331 @@
+{
+  "base": "ee40acb59e7934df683b0a8e3ff4e9ff475fc725",
+  "bossSeconds": 60,
+  "attacks": {
+    "miner": {
+      "atk": 7,
+      "matk": 0,
+      "tatk": 0
+    },
+    "drummer": {
+      "atk": 0,
+      "matk": 4.5,
+      "tatk": 0
+    },
+    "goblin": {
+      "atk": 4,
+      "matk": 0,
+      "tatk": 0
+    },
+    "archer": {
+      "atk": 10,
+      "matk": 0,
+      "tatk": 0
+    },
+    "apprentice": {
+      "atk": 0,
+      "matk": 6.5,
+      "tatk": 0
+    },
+    "warrior": {
+      "atk": 18,
+      "matk": 0,
+      "tatk": 0
+    },
+    "spearman": {
+      "atk": 8.5,
+      "matk": 0,
+      "tatk": 0
+    },
+    "stonegolem": {
+      "atk": 10,
+      "matk": 0,
+      "tatk": 0
+    },
+    "ninja": {
+      "atk": 4,
+      "matk": 0,
+      "tatk": 0
+    },
+    "k9": {
+      "atk": 4.6,
+      "matk": 0,
+      "tatk": 0
+    },
+    "merchant": {
+      "atk": 21,
+      "matk": 0,
+      "tatk": 0
+    },
+    "mudshaman": {
+      "atk": 0,
+      "matk": 19,
+      "tatk": 0
+    },
+    "bard": {
+      "atk": 0,
+      "matk": 16,
+      "tatk": 0
+    },
+    "scout": {
+      "atk": 19,
+      "matk": 0,
+      "tatk": 0
+    },
+    "flamemage": {
+      "atk": 0,
+      "matk": 13,
+      "tatk": 0
+    },
+    "cleaver": {
+      "atk": 18,
+      "matk": 0,
+      "tatk": 0
+    },
+    "duelist": {
+      "atk": 48,
+      "matk": 0,
+      "tatk": 0
+    },
+    "gunner": {
+      "atk": 12,
+      "matk": 0,
+      "tatk": 0
+    },
+    "dwarfbomber": {
+      "atk": 27,
+      "matk": 0,
+      "tatk": 0
+    },
+    "windarcher": {
+      "atk": 0,
+      "matk": 15,
+      "tatk": 0
+    },
+    "icemage": {
+      "atk": 0,
+      "matk": 40,
+      "tatk": 0
+    },
+    "gambler": {
+      "atk": 39,
+      "matk": 39,
+      "tatk": 0
+    },
+    "blacksmith": {
+      "atk": 90,
+      "matk": 0,
+      "tatk": 0
+    },
+    "goblinchief": {
+      "atk": 39,
+      "matk": 0,
+      "tatk": 0
+    },
+    "astrologer": {
+      "atk": 0,
+      "matk": 66,
+      "tatk": 0
+    },
+    "banker": {
+      "atk": 0,
+      "matk": 60,
+      "tatk": 0
+    },
+    "sniper": {
+      "atk": 290,
+      "matk": 0,
+      "tatk": 0
+    },
+    "berserker": {
+      "atk": 100,
+      "matk": 0,
+      "tatk": 0
+    },
+    "lightning": {
+      "atk": 0,
+      "matk": 69,
+      "tatk": 0
+    },
+    "poisonarcher": {
+      "atk": 39,
+      "matk": 0,
+      "tatk": 0
+    },
+    "summoner": {
+      "atk": 0,
+      "matk": 250,
+      "tatk": 0
+    },
+    "scholar": {
+      "atk": 0,
+      "matk": 200,
+      "tatk": 0
+    },
+    "chronomancer": {
+      "atk": 0,
+      "matk": 240,
+      "tatk": 0
+    },
+    "alchemist": {
+      "atk": 0,
+      "matk": 88,
+      "tatk": 0
+    },
+    "paladin": {
+      "atk": 110,
+      "matk": 0,
+      "tatk": 0
+    },
+    "necromancer": {
+      "atk": 0,
+      "matk": 220,
+      "tatk": 0
+    },
+    "artillery": {
+      "atk": 150,
+      "matk": 0,
+      "tatk": 0
+    },
+    "prophet": {
+      "atk": 0,
+      "matk": 220,
+      "tatk": 0
+    },
+    "swordsaint": {
+      "atk": 180,
+      "matk": 0,
+      "tatk": 0
+    },
+    "stormarcher": {
+      "atk": 140,
+      "matk": 0,
+      "tatk": 0
+    },
+    "dragoncaller": {
+      "atk": 0,
+      "matk": 340,
+      "tatk": 0
+    },
+    "warlord": {
+      "atk": 380,
+      "matk": 0,
+      "tatk": 0
+    },
+    "archmage": {
+      "atk": 0,
+      "matk": 540,
+      "tatk": 0
+    },
+    "assassin": {
+      "atk": 1500,
+      "matk": 0,
+      "tatk": 0
+    },
+    "fortuna": {
+      "atk": 0,
+      "matk": 840,
+      "tatk": 0
+    },
+    "spearsgod": {
+      "atk": 530,
+      "matk": 0,
+      "tatk": 0
+    },
+    "stormlord": {
+      "atk": 0,
+      "matk": 400,
+      "tatk": 0
+    },
+    "tycoon": {
+      "atk": 840,
+      "matk": 0,
+      "tatk": 0
+    },
+    "saint": {
+      "atk": 0,
+      "matk": 840,
+      "tatk": 0
+    },
+    "dimensionist": {
+      "atk": 0,
+      "matk": 1100,
+      "tatk": 0
+    },
+    "fate": {
+      "atk": 0,
+      "matk": 0,
+      "tatk": 4500
+    },
+    "plenty": {
+      "atk": 0,
+      "matk": 3000,
+      "tatk": 0
+    },
+    "ruin": {
+      "atk": 0,
+      "matk": 0,
+      "tatk": 2400
+    },
+    "elemental": {
+      "atk": 220,
+      "matk": 220,
+      "tatk": 0
+    },
+    "goldking": {
+      "atk": 1700,
+      "matk": 0,
+      "tatk": 0
+    },
+    "celestial": {
+      "atk": 1500,
+      "matk": 0,
+      "tatk": 0
+    },
+    "legion": {
+      "atk": 0,
+      "matk": 1800,
+      "tatk": 0
+    },
+    "infiniteblade": {
+      "atk": 920,
+      "matk": 0,
+      "tatk": 0
+    },
+    "timelord": {
+      "atk": 0,
+      "matk": 1800,
+      "tatk": 0
+    },
+    "goblinking": {
+      "atk": 1000,
+      "matk": 0,
+      "tatk": 0
+    },
+    "deathlord": {
+      "atk": 0,
+      "matk": 770,
+      "tatk": 0
+    },
+    "goldbattery": {
+      "atk": 1200,
+      "matk": 0,
+      "tatk": 0
+    },
+    "fateseer": {
+      "atk": 0,
+      "matk": 1700,
+      "tatk": 0
+    },
+    "festival": {
+      "atk": 0,
+      "matk": 1500,
+      "tatk": 0
+    },
+    "stormavatar": {
+      "atk": 0,
+      "matk": 790,
+      "tatk": 0
+    }
+  }
+}

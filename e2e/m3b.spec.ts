@@ -174,7 +174,7 @@ test('진흙 웅덩이·소환 병사: 화면 수 = sim 수, 병사는 경로를
   expect(errors).toEqual([]);
 });
 
-test('오라: 대장장이를 고르면 3×3 범위와 효과 받는 타워, 옆 궁수 패널 공격력은 초록 11 (기본 10)', async ({ page }) => {
+test('오라: 대장장이를 고르면 3×3 범위와 효과 받는 타워, 옆 궁수 패널 공격력은 초록 16.5 (기본 15)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
   // 순환의 정원 v2: 대장장이 (4,4)의 주변 8칸 안 배치 칸 = (4,3)·(5,3)·(5,4)
@@ -188,8 +188,8 @@ test('오라: 대장장이를 고르면 3×3 범위와 효과 받는 타워, 옆
   const panel = page.getByTestId('tower-panel');
   await expect(panel).toBeVisible();
   const atk = panel.locator('.tp-stat.is-buffed').filter({ hasText: '물리' });
-  await expect(atk.locator('.tp-value')).toHaveText('11');
-  await expect(atk.locator('.tp-base')).toHaveText('(10)');
+  await expect(atk.locator('.tp-value')).toHaveText('16.5');
+  await expect(atk.locator('.tp-base')).toHaveText('(15)');
   await tapTile(page, 4, 3); // 닫기
   await tapTile(page, 4, 4);
   await expect.poll(() => inScene(page, (s) => s.selectedAura, null)).toEqual({ area: 'around8', radius: 1, buffed: 2 });

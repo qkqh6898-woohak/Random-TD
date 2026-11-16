@@ -58,14 +58,14 @@ describe('대장장이 (주변 8칸 공격력 +10%)', () => {
     expect(auras.get(b.id)?.atkPctBp).toBe(1000);
   });
 
-  it('붙은 궁수는 실제로 피해가 10% 더 들어간다 (10 → 11)', () => {
+  it('붙은 궁수는 실제로 피해가 10% 더 들어간다 (15 → 16, 소수 피해 나머지 보존)', () => {
     const m = arena();
     const mob = mobAt(m, 'slime', 3000);
     mob.hp = 1000;
     placeTower(m.world, 'archer', 0, 4, 2);
     placeTower(m.world, 'blacksmith', 0, 3, 3);
     m.stepN(3);
-    expect(1000 - mob.hp).toBe(11);
+    expect(1000 - mob.hp).toBe(16);
   });
 
   it('이동하면 다시 계산: 대장장이를 멀리 옮기면 이웃의 보너스가 사라진다', () => {

@@ -200,7 +200,7 @@ test('?dev=1: 배속 ×1 → ×2 → ×4 → ×8 → ×16 → ×1 (T-2: ×3 없�
   expect(errors).toEqual([]);
 });
 
-test('일반 주소: ⏭·💰+ 없음, 배속은 예전대로 ×1 ↔ ×2 (×4 이상 없음)', async ({ page }) => {
+test('일반 주소: ⏭·💰+ 없음, Lv1부터 ×1·×2·×4·×8·×16 순환', async ({ page }) => {
   const errors = collectErrors(page);
   await startGame(page, '/?seed=24');
   await expect(page.getByRole('button', { name: '다음 단계로 즉시 이동' })).toHaveCount(0);
@@ -211,7 +211,7 @@ test('일반 주소: ⏭·💰+ 없음, 배속은 예전대로 ×1 ↔ ×2 (×4 
     await speed.click();
     seen.push((await speed.textContent()) ?? '');
   }
-  expect(seen).toEqual(['×2', '×1', '×2']);
+  expect(seen).toEqual(['×2', '×4', '×8']);
   // 일반 판에는 window.__rtd도 없다 (개발 서버라 열려 있으면 debug 판이 아님만 확인)
   const debug = await page.evaluate(() => {
     const r = (window as unknown as { __rtd?: { ctx: { debug: boolean } } }).__rtd;
