@@ -7,6 +7,7 @@
  * sim 상태는 개발 서버의 window.__rtd 로 읽는다 (화면은 읽기만, 단계 건너뛰기는 debug 명령).
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 function collectErrors(page: Page): string[] {
@@ -20,7 +21,7 @@ function collectErrors(page: Page): string[] {
 
 async function startInfinite(page: Page, query: string): Promise<void> {
   await page.goto(`/${query}`);
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
 }
 

@@ -1,7 +1,7 @@
 /**
  * 맵 화면 배치 (순수 계산, Phaser 없음 → 단위 테스트 가능).
  *
- * - MAPS.md 0장: 맵은 HUD와 아래 띠 사이 영역에 들어가는 가장 큰 크기로 확대 (가로는 여백 없이 꽉, 세로만 반 칸 여백, 가운데 — 맵 B안).
+ * - MAPS.md 0장: 맵은 HUD와 아래 띠 사이 영역에 들어가는 가장 큰 크기로 확대 (가로·세로 모두 여백 없이 꽉, 남는 축 가운데 — 맵 B안 + A-1).
  * - T-3: 논리 높이는 화면 비율대로 1920~2600 (viewport.ts) → 맵 영역 아래 끝은 잰 아래 띠 위치(없으면 지금 높이 − BOTTOM_UI_PX).
  * - 위는 DOM HUD(2줄 + 보스 막대 자리), 아래는 DOM 아래 띠(M2: 타워 수·소환 안내, M4·M5에서 버튼·하단 메뉴가 늘어남).
  *   둘 다 실제 높이를 재서 그 사이 영역에 맵 전체(화면 밖 등장·퇴장 칸 포함)가 들어가게 → HUD가 맵 칸을 덮지 않는다.
@@ -84,8 +84,9 @@ export function gameToCssPx(gamePx: number, stageCssWidth: number): number {
 
 /**
  * 맵(격자 + 웨이포인트)이 영역 안에 꽉 차게 들어가는 배치 (가능한 가장 큰 정수 칸, 가운데).
- * 가로는 여백 없이 영역 너비를 꽉 채우고(시험판 4 맵 B안 '칸을 더 키워서 가로를 꽉 채워줘'), 세로만 반 칸 여백 (알림·아래 띠와 숨 쉴 틈).
- * 세로가 먼저 차는 맵(사거리 미로 7×11 등 길쭉한 판)은 세로 기준 크기 그대로 — 가로 가운데.
+ * 가로·세로 모두 여백 없이 영역을 꽉 채운다 — 시험판 4 맵 B안('칸을 더 키워서 가로를 꽉 채워줘')에서 가로 반 칸 여백을,
+ * A-1('원형 맵은 A로: 위아래 여백도 없애줘')에서 세로 반 칸 여백을 없앴다. 알림·아래 띠와의 틈은 영역 쪽(MAP_TOP_GAP_PX·MAP_BOTTOM_GAP_PX)이 둔다.
+ * 먼저 차는 축 기준 크기, 남는 축은 가운데 (세로가 먼저 차는 순환의 정원 7×11은 가로 가운데, 가로가 먼저 차는 사거리 미로는 세로 가운데).
  * T-3: 화면이 길쭉해 영역이 커지면 칸도 커진다 — 칸 ↔ 화면 변환은 모두 이 결과(MapLayout)와 아래 함수
  * (`tileCenterPx`·`unitsToPx`·`pxToTile`)로 한다. 1920 같은 높이를 코드에 박지 말 것.
  */
@@ -102,7 +103,7 @@ export function computeMapLayout(map: MapBoundsInput, area: Rect = MAP_AREA): Ma
   }
   const cols = maxCol - minCol + 1;
   const rows = maxRow - minRow + 1;
-  const tile = Math.floor(Math.min(area.w / cols, area.h / (rows + 0.5)));
+  const tile = Math.floor(Math.min(area.w / cols, area.h / rows));
   const usedW = cols * tile;
   const usedH = rows * tile;
   const left = area.x + Math.round((area.w - usedW) / 2);

@@ -13,6 +13,12 @@ import { createAccountStore } from './meta/account';
 import { createSettingsStore } from './meta/settings';
 import { onEffectsChange, setEffectsOff } from './view/effects';
 import { defaultStorage } from './save/storage';
+import { MatchSaves } from './save/MatchSaves';
+import { BattleRecords } from './save/BattleRecords';
+import { ScreenShake } from './save/ScreenShake';
+import { EffectAudio } from './audio/EffectAudio';
+import { prefersReducedMotion } from './ui/motion';
+import { installNativeBack } from './ui/nativeBack';
 import { describeFatal, installFatalHandlers, type FatalPhase } from './ui/fatal';
 import { UiRoot } from './ui/root';
 import { fitStageToWindow, watchViewport } from './ui/stage';
@@ -56,6 +62,14 @@ function boot(): void {
     // (DOM 애니메이션·전환은 UI 루트의 .fx-off 클래스로 한꺼번에 끈다 — styles.css)
     onEffectsChange((off) => ui.el.classList.toggle('fx-off', off));
     setEffectsOff(url.debug && settings.get().effectsOff);
+    const audio = new EffectAudio(storage);
+    // 효과음은 사람이 누른 입력 안에서만 켠다 (브라우저 자동 재생 규칙, A-1)
+    const unlockAudio = (ev: Event): void => {
+      if (ev.isTrusted) audio.unlock();
+    };
+    for (const type of ['click', 'touchend', 'keydown']) window.addEventListener(type, unlockAudio, true);
+    // 안드로이드 뒤로 가기 (A-1): 열린 창 → 장면 처리기
+    installNativeBack(window, document);
     const ctx: GameContext = {
       data,
       ui,
@@ -64,6 +78,10 @@ function boot(): void {
       accountLevel: account.level(),
       account,
       settings,
+      saves: new MatchSaves(data, storage, { version: __APP_VERSION__, dev: url.debug }),
+      records: new BattleRecords(storage),
+      screenShake: new ScreenShake(storage, () => prefersReducedMotion(window)),
+      audio,
       version: __APP_VERSION__,
     };
     // 화면 꽉 차게 (T-3): 무대 = 화면 비율대로 (가로 1080, 세로 1920~2600), 크기·방향이 바뀌면 다시 맞춘다

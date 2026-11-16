@@ -208,9 +208,10 @@ describe('맵 화면 배치 (MAPS.md 0장: HUD와 아래 띠 사이에 가장 �
   const circle = data.maps.circle!;
   const crossroads = data.maps.crossroads!;
 
-  it('순환의 정원 7×11: HUD와 아래 메뉴 사이 영역에 꽉 차고 가로 가운데', () => {
+  it('순환의 정원 7×11: HUD와 아래 메뉴 사이 영역에 꽉 차고 가로 가운데 (A-1: 위아래 반 칸 여백 없음, 예전 109px)', () => {
     const L = computeMapLayout(circle);
-    expect(L.tile).toBe(109);
+    expect(L.tile).toBe(114);
+    expect(L.tile).toBe(Math.floor(MAP_AREA.h / 11));
     expect([L.cols, L.rows, L.minCol, L.minRow]).toEqual([7, 11, 0, 0]);
     const left = L.originX;
     const right = L.originX + 7 * L.tile;

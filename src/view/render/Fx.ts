@@ -7,6 +7,9 @@
  * - 동전: 처치 자리에서 살짝 튀어 오른 뒤 HUD 돈 쪽으로 날아간다 (도착하면 콜백 → HUD 돈 반짝 + '+n원').
  * - M3: 승급(빛 구슬이 빨려 들어간 뒤 빛 기둥), 광역 폭발 고리, 연쇄 번개.
  * - M3b 특색: 운석(불덩이가 떨어져 폭발), 진흙 웅덩이 튐, 도박꾼 주사위 눈, 시간 정지(화면 흑백 0.2초 + 시계 고리, TOWERS.md 11장).
+ * - A-1 (Codex 갈래 M6-10에서 옮김) 주사위: 소환하면 빛 기둥과 함께 발밑에 등급 색 소환진이 퍼지고 주사위가 굴러 튀어 오른다.
+ *   승급하면 재료 칸의 주사위가 결과 칸으로 굴러 모인 뒤 결과 칸에서 큰 주사위 + 소환진. 동시에 도는 주사위는 MAX_DICE개까지.
+ *   연출 끄기(T-2)면 아무것도, 기기 '동작 줄이기'(prefers-reduced-motion)면 주사위 없이 예전 빛 기둥·빛 구슬만.
  * 동전은 매 프레임 시각으로 위치를 계산하고(fxModel.coinPath), 나머지는 Phaser 트윈을 쓴다 (화면 전용, sim과 무관).
  */
 import Phaser from 'phaser';
@@ -14,6 +17,7 @@ import { effectsOff } from '../effects';
 import { TEX_COIN, TEX_ORB, TEX_PILLAR, TEX_SPARK, ensureFxTextures } from '../../art/fx';
 import { diceKey, ensureStatusTextures } from '../../art/status';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
+import { prefersReducedMotion } from '../../ui/motion';
 import { COIN_FLY_MS, coinPath } from './fxModel';
 
 export const FX_DEPTH = 5500;
@@ -22,6 +26,8 @@ export const COIN_DEPTH = 7000;
 export const MAX_COINS = 24;
 /** 승급 빛 구슬이 결과 칸으로 빨려 드는 시간 (ms) — UI.md 9장 '승급 연출 0.3초' */
 export const MERGE_SUCK_MS = 300;
+/** 동시에 도는 주사위 연출 최대 수 (A-1 — 꾹 눌러 연속 소환·모두 승급에도 화면이 덮이지 않게) */
+export const MAX_DICE = 12;
 
 interface Coin {
   img: Phaser.GameObjects.Image;
@@ -34,12 +40,83 @@ export class FxLayer {
   private coins: Coin[] = [];
   private readonly freeCoins: Phaser.GameObjects.Image[] = [];
   private readonly objects = new Set<Phaser.GameObjects.GameObject>();
+  /** 지금 도는 주사위 수 · 지금까지 띄운 주사위 수 (E2E 확인용) */
+  private diceLive = 0;
+  diceShown = 0;
+  /** 동시에 돈 주사위 최대 수 (E2E: MAX_DICE를 넘지 않음) */
+  dicePeak = 0;
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly layout: MapLayout,
+    private readonly reducedMotion: () => boolean = () => prefersReducedMotion(),
   ) {
     ensureFxTextures(scene);
+  }
+
+  /** 주사위를 띄울 수 있는가 (연출 켜짐 + 동작 줄이기 아님 + 한도 안) */
+  private diceAllowed(): boolean {
+    return !effectsOff() && !this.reducedMotion() && this.diceLive < MAX_DICE;
+  }
+
+  /** 주사위 하나 만들기 (한도 셈 포함). */
+  private die(name: string, x: number, y: number, face: number, depth: number, size: number): Phaser.GameObjects.Image {
+    ensureStatusTextures(this.scene);
+    const img = this.track(this.scene.add.image(x, y, diceKey(face)))
+      .setName(name)
+      .setDepth(depth)
+      .setDisplaySize(size, size);
+    this.diceLive++;
+    this.diceShown++;
+    if (this.diceLive > this.dicePeak) this.dicePeak = this.diceLive;
+    img.once(Phaser.GameObjects.Events.DESTROY, () => this.diceLive--);
+    return img;
+  }
+
+  /**
+   * 소환·승급 결과 칸 (A-1): 빛 기둥 + 등급 색 소환진 + 굴러 튀어 오르는 주사위.
+   * 주사위를 못 띄우면(연출 끄기·동작 줄이기·한도) 빛 기둥만 (연출 끄기면 그것도 없음).
+   */
+  summonDice(tx: number, ty: number, color: number, kind: 'summon' | 'merge' = 'summon'): void {
+    this.summonPillar(tx, ty, color);
+    if (!this.diceAllowed()) return;
+    const L = this.layout;
+    const { x, y } = tileCenterPx(L, tx, ty);
+    const tile = L.tile;
+    const merge = kind === 'merge';
+    const die = this.die(`${kind}-die`, x, y - tile * 0.46, merge ? 5 : 3, FX_DEPTH + 12, tile * 0.28).setAngle(-210);
+    const size = tile * (merge ? 0.62 : 0.5);
+    this.scene.tweens.add({
+      targets: die,
+      y: y - tile * 0.94,
+      angle: 150,
+      displayWidth: size,
+      displayHeight: size,
+      duration: 240,
+      ease: 'Back.easeOut',
+      onComplete: () =>
+        this.scene.tweens.add({ targets: die, y: die.y - tile * 0.15, alpha: 0, delay: 120, duration: 170, onComplete: () => die.destroy() }),
+    });
+    // 발밑 소환진: 등급 색 타원 + 금색 안쪽 타원 + 별 6개 (화면 전용 그림)
+    const seal = this.track(this.scene.add.graphics({ x, y: y + tile * 0.3 })).setDepth(FX_DEPTH + 1);
+    seal.lineStyle(Math.max(3, tile * 0.038), color, 0.93).strokeEllipse(0, 0, tile * 0.91, tile * 0.43);
+    seal.lineStyle(Math.max(2, tile * 0.032), 0xffe7a0, 0.92).strokeEllipse(0, 0, tile * 0.72, tile * 0.34);
+    seal.fillStyle(0xffedb1, 1);
+    for (let i = 0; i < 6; i++) {
+      const a = (i * Math.PI) / 3;
+      const sx = Math.cos(a) * tile * 0.5;
+      const sy = Math.sin(a) * tile * 0.25;
+      const st = tile * 0.07;
+      seal.fillTriangle(sx - st, sy, sx + st, sy, sx, sy - st * 1.35);
+      seal.fillTriangle(sx - st, sy, sx + st, sy, sx, sy + st * 1.35);
+    }
+    seal.setScale(0.48);
+    this.scene.tweens.add({ targets: seal, scale: merge ? 1.38 : 1.18, alpha: 0, duration: 430, ease: 'Cubic.easeOut', onComplete: () => seal.destroy() });
+  }
+
+  /** 지금 도는 주사위 수 (E2E) */
+  get diceActive(): number {
+    return this.diceLive;
   }
 
   private track<T extends Phaser.GameObjects.GameObject>(obj: T): T {
@@ -73,32 +150,38 @@ export class FxLayer {
   }
 
   /**
-   * 승급 (UI.md 10장 '3개가 빨려 들어가 합쳐짐'): 사라진 칸들에서 빛 구슬이 결과 칸으로 0.3초 동안 빨려 들어가고,
-   * 도착하면 결과 등급 색의 빛 기둥.
+   * 승급 (UI.md 10장 '3개가 빨려 들어가 합쳐짐'): 사라진 칸들에서 0.3초 동안 결과 칸으로 빨려 들어간 뒤 결과 칸 연출.
+   * A-1: 주사위를 띄울 수 있으면 재료 칸의 주사위가 굴러 모이고 결과 칸에 큰 주사위 + 소환진(summonDice 'merge'),
+   * 아니면 예전처럼 빛 구슬 → 결과 등급 색 빛 기둥.
    */
   mergeSuck(from: readonly { tx: number; ty: number }[], to: { tx: number; ty: number }, color: number): void {
     if (effectsOff()) return; // 연출 끄기 (T-2)
     const L = this.layout;
     const end = tileCenterPx(L, to.tx, to.ty);
-    for (const f of from) {
+    const dice = this.diceAllowed();
+    from.forEach((f, i) => {
       const start = tileCenterPx(L, f.tx, f.ty);
-      const orb = this.track(this.scene.add.image(start.x, start.y, TEX_ORB))
-        .setTint(0xfff3c4)
-        .setBlendMode(Phaser.BlendModes.ADD)
-        .setDepth(FX_DEPTH)
-        .setDisplaySize(L.tile * 0.55, L.tile * 0.55);
+      const useDie = dice && this.diceLive < MAX_DICE;
+      const obj = useDie
+        ? this.die('merge-material-die', start.x, start.y - L.tile * 0.15, 2 + (i % 2), FX_DEPTH, L.tile * 0.33)
+        : this.track(this.scene.add.image(start.x, start.y, TEX_ORB))
+            .setTint(0xfff3c4)
+            .setBlendMode(Phaser.BlendModes.ADD)
+            .setDepth(FX_DEPTH)
+            .setDisplaySize(L.tile * 0.55, L.tile * 0.55);
       this.scene.tweens.add({
-        targets: orb,
+        targets: obj,
         x: end.x,
         y: end.y,
-        displayWidth: L.tile * 0.25,
-        displayHeight: L.tile * 0.25,
+        ...(useDie ? { angle: i % 2 === 0 ? 120 : -120 } : {}),
+        displayWidth: L.tile * (useDie ? 0.15 : 0.25),
+        displayHeight: L.tile * (useDie ? 0.15 : 0.25),
         duration: MERGE_SUCK_MS,
         ease: 'Cubic.easeIn',
-        onComplete: () => orb.destroy(),
+        onComplete: () => obj.destroy(),
       });
-    }
-    this.scene.time.delayedCall(from.length > 0 ? MERGE_SUCK_MS : 0, () => this.summonPillar(to.tx, to.ty, color));
+    });
+    this.scene.time.delayedCall(from.length > 0 ? MERGE_SUCK_MS : 0, () => this.summonDice(to.tx, to.ty, color, 'merge'));
   }
 
   /** 광역 폭발 고리 (반경 = 단위). */
@@ -220,13 +303,19 @@ export class FxLayer {
     this.scene.tweens.add({ targets: veil, alpha: 0, duration: 200, onComplete: () => veil.destroy() });
   }
 
-  /** 돈 부족: 칸이 빨갛게 깜빡이며 흔들림. */
-  shakeTile(tx: number, ty: number): void {
+  /**
+   * 돈 부족: 칸이 빨갛게 깜빡이며 흔들림. animate = false(화면 흔들림 끔·연출 끄기, A-1)면 자리를 움직이지 않고 빨간 칸만 잠깐.
+   */
+  shakeTile(tx: number, ty: number, animate = true): void {
     const L = this.layout;
     const c = tileCenterPx(L, tx, ty);
     const rect = this.track(this.scene.add.rectangle(c.x, c.y, L.tile * 0.9, L.tile * 0.9, 0xe53935, 0.28))
       .setStrokeStyle(Math.max(2, L.tile * 0.05), 0xff6b5e, 1)
       .setDepth(FX_DEPTH);
+    if (!animate) {
+      this.scene.tweens.add({ targets: rect, alpha: 0, delay: 250, duration: 200, onComplete: () => rect.destroy() });
+      return;
+    }
     this.scene.tweens.add({
       targets: rect,
       x: { from: c.x - L.tile * 0.08, to: c.x + L.tile * 0.08 },

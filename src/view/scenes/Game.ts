@@ -49,6 +49,8 @@ import type { Projectile } from '../../sim/entities/Projectile';
 import { towerAt, type Tower } from '../../sim/entities/Tower';
 import { canMergeGrade, mergeOutcomes } from '../../sim/Deck';
 import { createMatch, type Match } from '../../sim/match';
+import type { SavedMatch } from '../../save/MatchSaves';
+import { NATIVE_PAUSE_EVENT, setBackHandler } from '../../ui/nativeBack';
 import { isBuildable } from '../../sim/map';
 import type { MatchMode } from '../../sim/state';
 import { NO_MODS, effectiveStats, towerRange } from '../../sim/stats';
@@ -266,6 +268,19 @@ export interface GameSceneData {
   mode?: MatchMode;
   /** 캠페인 테마 (기본 1) */
   theme?: number;
+  /** 이어 하기 (A-1): 되살린 판 (있으면 seed·mode·theme 대신 이 판) */
+  saved?: SavedMatch;
+}
+
+/** 자동 저장 간격 (틱, 게임 시간 5초) · 명령이 있었을 때 최소 간격 (1초) — A-1 */
+const AUTOSAVE_TICKS = 5 * TICK_HZ;
+const AUTOSAVE_AFTER_COMMAND_TICKS = TICK_HZ;
+
+/** 판 식별자 (전투 기록용, 화면에서만 만든다) */
+function newRunId(): string {
+  const c = globalThis.crypto;
+  if (c && typeof c.getRandomValues === 'function') return Array.from(c.getRandomValues(new Uint32Array(3)), (n) => n.toString(36)).join('-');
+  return `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`;
 }
 
 /** 무작위 시드 (화면 쪽에서만 만든다. sim 안에서는 Math.random 금지). */
@@ -324,7 +339,13 @@ export class GameScene extends Phaser.Scene {
   private summonFxCount = 0;
   /** 만든 승급 연출 수 (E2E 확인용) */
   private mergeFxCount = 0;
-  private sceneData: Required<GameSceneData> = { seed: 0, mode: 'infinite', theme: 1 };
+  private sceneData: Required<Omit<GameSceneData, 'saved'>> = { seed: 0, mode: 'infinite', theme: 1 };
+  /** 판 식별자 · 마지막 저장 토큰 · 마지막 저장 시점 (A-1 자동 저장) */
+  private runId = '';
+  private saveToken: string | null = null;
+  private lastSave = { tick: -1, stage: -1, commands: -1 };
+  /** 이 판이 이어 하기로 시작했다 (E2E) */
+  private resumed = false;
   private selectionLayer!: SelectionLayer;
   /** 고른 타워 (정보 패널) 엔티티 id */
   private selectedId: number | null = null;
@@ -424,18 +445,31 @@ export class GameScene extends Phaser.Scene {
 
   create(data: GameSceneData): void {
     const { game: config } = this.ctx.data;
-    this.sceneData = { seed: data?.seed ?? 0, mode: data?.mode ?? 'infinite', theme: data?.theme ?? 1 };
-    this.match = createMatch(this.ctx.data, {
-      seed: this.sceneData.seed,
-      mode: this.sceneData.mode,
-      theme: this.sceneData.theme,
-      maxPlayers: config.maxPlayers,
-      debug: this.ctx.debug,
-      accountLevels: [this.ctx.accountLevel],
-    });
-    this.clock = new TickClock({ speed: 1, maxFrameMs: config.maxFrameMs });
+    const saved = data?.saved ?? null;
+    this.sceneData = saved
+      ? { seed: saved.match.world.seed, mode: saved.match.state.mode, theme: saved.match.state.theme || 1 }
+      : { seed: data?.seed ?? 0, mode: data?.mode ?? 'infinite', theme: data?.theme ?? 1 };
+    this.match =
+      saved?.match ??
+      createMatch(this.ctx.data, {
+        seed: this.sceneData.seed,
+        mode: this.sceneData.mode,
+        theme: this.sceneData.theme,
+        maxPlayers: config.maxPlayers,
+        debug: this.ctx.debug,
+        accountLevels: [this.ctx.accountLevel],
+      });
     this.tickMeter.reset();
     this.speeds = availableSpeeds(config.speeds, this.ctx.accountLevel, this.ctx.debug, config.devSpeeds);
+    // 이어 하기면 저장한 배속 (지금 쓸 수 있는 배속이 아니면 ×1)
+    const startSpeed = saved && this.speeds.includes(saved.speed) ? saved.speed : 1;
+    this.clock = new TickClock({ speed: startSpeed, maxFrameMs: config.maxFrameMs });
+    this.resumeSpeed = startSpeed;
+    this.runId = saved?.runId ?? newRunId();
+    this.saveToken = saved?.token ?? null;
+    this.lastSave = { tick: -1, stage: -1, commands: -1 };
+    this.resumed = saved !== null;
+    if (saved) this.releaseSavedHolds();
     this.paused = false;
     this.gameOver = false;
     this.prevProgress = new Map();
@@ -486,6 +520,7 @@ export class GameScene extends Phaser.Scene {
       onSpeed: () => {
         if (this.paused || this.gameOver) return;
         this.clock.speed = nextSpeed(this.clock.speed, this.speeds);
+        this.saveMatch();
         this.refreshHud();
       },
       onPause: () => this.pause(),
@@ -548,9 +583,17 @@ export class GameScene extends Phaser.Scene {
     // 이동 모드는 Esc로 그만둔다 (T-2)
     window.addEventListener('keydown', this.onKeyDown);
 
-    // 앱이 백그라운드로 가면 자동 일시정지 (UI.md 7장: 돌아오면 일시정지 메뉴)
+    // 앱이 백그라운드로 가면 자동 일시정지 (UI.md 7장: 돌아오면 일시정지 메뉴) + 자동 저장 (A-1: 일시정지가 저장한다)
     this.game.events.on(Phaser.Core.Events.HIDDEN, this.pause, this);
+    window.addEventListener('pagehide', this.onPageHide);
+    window.addEventListener(NATIVE_PAUSE_EVENT, this.onNativePause);
+    setBackHandler(() => this.goBack());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      // 타이틀로 나가거나 다시 하기: 진행 중이면 마지막 상태를 남긴다 (패배한 판은 이미 지움)
+      if (!this.gameOver) this.saveMatch();
+      window.removeEventListener('pagehide', this.onPageHide);
+      window.removeEventListener(NATIVE_PAUSE_EVENT, this.onNativePause);
+      setBackHandler(null);
       this.savePastRun('나감');
       this.startHintEl?.remove();
       this.startHintEl = null;
@@ -593,6 +636,8 @@ export class GameScene extends Phaser.Scene {
     // 첫 소환 전: 추천 칸이 빛난다 (F10) — 처음 몇 프레임(텍스처 굽기로 느림)이 지난 뒤 짧은 안내 한 번 (좁은 화면에서도 한 줄)
     this.startHintFrames = 3;
     this.startHintEl = null;
+    // 새 판·이어 한 판 모두 바로 한 번 저장 (타이틀에 [이어 하기]가 생긴다)
+    this.saveMatch();
     this.cameras.main.fadeIn(200, 13, 18, 32);
     this.game.events.emit('rtd:game-ready', { seed: this.match.world.seed, mode: this.sceneData.mode });
   }
@@ -622,6 +667,7 @@ export class GameScene extends Phaser.Scene {
       this.tickMeter.record(n, performance.now() - t0);
     }
     this.handleEvents(time);
+    this.autoSave();
     this.updateBackground();
     this.updatePress(this.time.now);
     this.updateGroundPress(this.time.now);
@@ -648,6 +694,84 @@ export class GameScene extends Phaser.Scene {
     this.fx.update(time, () => this.goldAnchorPx());
     this.refreshHud();
     this.refreshSheet(this.time.now);
+  }
+
+  /**
+   * 자동 저장 (A-1): 단계가 바뀌면 바로, 명령이 실행됐으면 1초(게임 시간) 뒤, 그 밖에는 5초마다. 일시정지·패배 화면에서는 쉰다
+   * (일시정지는 열 때 저장한다). 저장은 틱 경계(프레임 사이)에서만 한다.
+   */
+  private autoSave(): void {
+    if (this.gameOver || this.paused) return;
+    const m = this.match;
+    const since = m.tick - this.lastSave.tick;
+    if (m.state.stage !== this.lastSave.stage || since >= AUTOSAVE_TICKS || (m.world.executed.length !== this.lastSave.commands && since >= AUTOSAVE_AFTER_COMMAND_TICKS)) {
+      this.saveMatch();
+    }
+  }
+
+  /** 지금 판 저장. 썼으면 true (패배한 판·다른 창이 새 판을 시작한 슬롯이면 false). */
+  private saveMatch(): boolean {
+    if (!this.match || this.gameOver) return false;
+    const m = this.match;
+    this.lastSave = { tick: m.tick, stage: m.state.stage, commands: m.world.executed.length };
+    const speed = this.paused ? this.resumeSpeed : this.clock.speed;
+    const token = this.ctx.saves.write(m, speed > 0 ? speed : 1, this.saveToken, this.runId);
+    if (token === null) return false;
+    this.saveToken = token;
+    return true;
+  }
+
+  /** 이어 하기: 저장 전 손가락이 들고 있던 타워(hold)를 내려놓는다 — 새 화면에는 그 손가락이 없다. */
+  private releaseSavedHolds(): void {
+    const w = this.match.world;
+    const releasing = new Set(w.queue.pending().filter((c) => c.type === 'hold' && c.on === 0).map((c) => (c.type === 'hold' ? `${c.x},${c.y}` : '')));
+    for (const t of this.match.towers()) {
+      if (t.owner === LOCAL_PLAYER && t.held && !releasing.has(`${t.tx},${t.ty}`)) w.enqueue({ type: 'hold', x: t.tx, y: t.ty, on: 0 });
+    }
+  }
+
+  private readonly onPageHide = (): void => {
+    this.saveMatch();
+  };
+
+  private readonly onNativePause = (): void => {
+    this.pause();
+    this.saveMatch();
+  };
+
+  /**
+   * 안드로이드 뒤로 가기 (A-1): 열린 창부터 닫는다 — 변환 고르기 → 캐릭터 카드 → 바텀 시트 → 이동 모드 → 타워 패널 → 펼친 고르기 창.
+   * 닫을 것이 없으면 일시정지 ↔ 계속, 패배 화면이면 타이틀로. 늘 처리한다 (전투 중에 앱이 닫히지 않게).
+   */
+  private goBack(): boolean {
+    if (this.gameOver) {
+      this.scene.start(SCENE_BOOT);
+      return true;
+    }
+    if (this.paused) {
+      this.resume();
+      return true;
+    }
+    if (this.convertOpen) this.closeConvertPicker();
+    else if (this.ctx.ui.has('card')) this.ctx.ui.clear('card');
+    else if (this.sheet) this.closeSheet();
+    else if (this.moveMode) {
+      this.moveMode = null;
+      this.ctx.ui.toast(MOVE_CANCELED);
+    } else if (this.panel) this.closePanel();
+    else if (this.choice && !this.choice.collapsed) this.choice.collapse();
+    else this.pause();
+    return true;
+  }
+
+  /** E2E: 자동 저장 상태 */
+  get saveState(): { runId: string; saved: boolean; resumed: boolean; lastTick: number } {
+    return { runId: this.runId, saved: this.saveToken !== null, resumed: this.resumed, lastTick: this.lastSave.tick };
+  }
+
+  /** E2E: 주사위 연출 (지금 도는 수 · 지금까지 띄운 수) */
+  get diceStats(): { active: number; shown: number; peak: number } {
+    return { active: this.fx?.diceActive ?? 0, shown: this.fx?.diceShown ?? 0, peak: this.fx?.dicePeak ?? 0 };
   }
 
   /** 전투 배경: 지금 단계의 테마·밴드 그림 + 밴드 끝 무렵 다음 그림 미리 받기 (HF-2, game.json art) */
@@ -958,7 +1082,7 @@ export class GameScene extends Phaser.Scene {
       // 돈 부족·빈 칸 없음이면 꾹 눌러도 연속 소환하지 않는다
       this.groundPress = null;
       this.ctx.ui.toast(action.text);
-      if (action.shake) this.fx.shakeTile(action.x, action.y);
+      if (action.shake) this.fx.shakeTile(action.x, action.y, this.shakeOn());
     }
   }
 
@@ -1647,8 +1771,9 @@ export class GameScene extends Phaser.Scene {
           }
           if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
           this.towerLayer.noteSummoned(Number(ev.id));
-          this.fx.summonPillar(Number(ev.x), Number(ev.y), hexToInt(GRADE_COLORS[(ev.grade as Grade) || 'normal'] ?? GRADE_COLORS.normal));
+          this.fx.summonDice(Number(ev.x), Number(ev.y), hexToInt(GRADE_COLORS[(ev.grade as Grade) || 'normal'] ?? GRADE_COLORS.normal));
           this.summonFxCount++;
+          if (ev.player === LOCAL_PLAYER) this.ctx.audio.play('summon');
           if (ev.rare === true && ev.player === LOCAL_PLAYER) {
             this.ctx.ui.toast(FORTUNA_RARE);
             this.noteFx('fortuna');
@@ -1660,7 +1785,7 @@ export class GameScene extends Phaser.Scene {
           if (!eventFxVisible('action', ev.tick, now, frameStart) || ev.player !== 0) break;
           const text = summonFailText(String(ev.reason), cost);
           if (text) this.ctx.ui.toast(text);
-          if (ev.reason === 'gold') this.fx.shakeTile(Number(ev.x), Number(ev.y));
+          if (ev.reason === 'gold') this.fx.shakeTile(Number(ev.x), Number(ev.y), this.shakeOn());
           break;
         }
         case 'attack':
@@ -1697,6 +1822,7 @@ export class GameScene extends Phaser.Scene {
             });
           this.fx.mergeSuck(from, { tx: Number(ev.x), ty: Number(ev.y) }, hexToInt(GRADE_COLORS[(ev.grade as Grade) || 'normal'] ?? GRADE_COLORS.normal));
           this.mergeFxCount++;
+          this.ctx.audio.play('merge');
           if (ev.grade === 'legend' || ev.grade === 'god') this.shake(260, 0.006);
           if (ev.double === true) {
             this.ctx.ui.toast(FORTUNA_DOUBLE);
@@ -2045,9 +2171,14 @@ export class GameScene extends Phaser.Scene {
     this.ctx.ui.toast(mergeReadyToast(fresh.map((g) => this.towerNames.get(g.tower) ?? g.tower)));
   }
 
-  /** 화면 흔들림 — 연출 끄기(T-2)면 흔들지 않는다. */
+  /** 화면 흔들림을 써도 되는가: 연출 끄기(T-2)가 아니고 일시정지 메뉴 '화면 흔들림'이 켜짐(A-1, 기본 = 동작 줄이기가 아니면 켜짐). */
+  private shakeOn(): boolean {
+    return !effectsOff() && this.ctx.screenShake.enabled;
+  }
+
+  /** 화면 흔들림 — 연출 끄기(T-2)·화면 흔들림 끔(A-1)이면 흔들지 않는다. */
   private shake(ms: number, intensity: number): void {
-    if (!effectsOff()) this.cameras.main.shake(ms, intensity);
+    if (this.shakeOn()) this.cameras.main.shake(ms, intensity);
   }
 
   /** 광역 폭발 색: 쏜 타워의 피해 종류 (물리 주황 · 마법 하늘 · 고정 노랑). 타워가 없으면 주황. */
@@ -2093,6 +2224,10 @@ export class GameScene extends Phaser.Scene {
     if (this.paused) this.paused = false;
     this.clock.speed = 0;
     const text = defeatText(this.match.state, this.defeatBossInfo());
+    // 전투 기록 (A-1, 일반 무한 판만) + 끝난 판의 자동 저장 지우기
+    const best = this.ctx.records.complete(this.match, this.runId);
+    if (this.saveToken !== null) this.ctx.saves.clear(this.saveToken);
+    this.saveToken = null;
     // 개발자 모드: 이번 판 기록을 패배 화면에도 보이고 '지난 판'에 남긴다 (F10-4 검토, 결정 6 — 패배 화면이 🛠를 덮음)
     const log = this.ctx.debug ? this.runLogRows : undefined;
     this.savePastRun('패배');
@@ -2100,6 +2235,7 @@ export class GameScene extends Phaser.Scene {
       'screen',
       createGameOverScreen({
         ...text,
+        record: best?.newBest ? `${text.record} · 🏆 새 최고 기록` : text.record,
         log,
         onRetry: () => this.scene.restart({ ...this.sceneData, seed: this.ctx.seed ?? randomSeed() }),
         onExit: () => this.scene.start(SCENE_BOOT),
@@ -2116,11 +2252,26 @@ export class GameScene extends Phaser.Scene {
     this.resumeSpeed = this.clock.speed;
     this.clock.speed = 0;
     this.ctx.ui.clearToasts();
+    const saved = this.saveMatch();
     this.ctx.ui.show(
       'screen',
       createPauseMenu({
         onResume: () => this.resume(),
         onExit: () => this.scene.start(SCENE_BOOT),
+        saved,
+        effectVolume: this.ctx.audio.volume,
+        onEffectVolume: (v) => {
+          this.ctx.audio.volume = v;
+        },
+        onPreviewAudio: () => {
+          this.ctx.audio.unlock();
+          this.ctx.audio.play('merge');
+        },
+        screenShake: this.ctx.screenShake.enabled,
+        onScreenShake: (on) => {
+          this.ctx.screenShake.enabled = on;
+          if (!on) this.cameras.main.shakeEffect.reset();
+        },
         tapMerge: this.ctx.settings.get().tapMerge,
         onTapMerge: (on) => this.ctx.settings.set('tapMerge', on),
         // 도움말 다시 보기 (F10): 계정 기록을 지우고 이 판에서도 다시 띄울 수 있게

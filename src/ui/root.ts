@@ -91,6 +91,11 @@ export class UiRoot {
     this.layers[layer].append(view.el);
   }
 
+  /** 그 층에 화면이 떠 있는가 (안드로이드 뒤로 가기: 열린 창부터 닫기, A-1). */
+  has(layer: LayerName): boolean {
+    return this.mounted[layer] !== undefined;
+  }
+
   /** 층 비우기. */
   clear(layer: LayerName): void {
     const view = this.mounted[layer];

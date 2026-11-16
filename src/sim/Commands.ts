@@ -373,4 +373,26 @@ export class CommandQueue {
   peekNextSeq(player: number): number {
     return this.nextSeq[player] ?? 0;
   }
+
+  /**
+   * 저장 복원용 (A-1): 빈 큐에 저장된 대기 명령을 원래 틱·플레이어·seq 그대로 다시 넣고, 다음 명령 번호와
+   * '꺼낸 틱' 경계(tick = 다음에 실행할 틱)를 맞춘다. 명령이 잘못됐거나 번호가 거꾸로면 에러.
+   */
+  restore(pending: readonly Command[], nextSeq: readonly number[], tick: number): void {
+    if (this.size !== 0 || nextSeq.length !== this.players || nextSeq.some((seq) => !isNonNegInt(seq))) {
+      throw new Error('저장된 명령 큐가 잘못됐다');
+    }
+    for (const cmd of pending) {
+      const err = validateCommand(cmd, this.players);
+      if (err) throw new Error(`저장된 대기 명령이 잘못됐다: ${err}`);
+      const result = this.enqueue(cmd as unknown as CommandInput, tick);
+      if (!result.ok) throw new Error(`저장된 대기 명령을 넣을 수 없다: ${result.reason}`);
+    }
+    for (let p = 0; p < this.players; p++) {
+      const seq = nextSeq[p] as number;
+      if (seq < (this.nextSeq[p] ?? 0)) throw new Error('저장된 다음 명령 번호가 대기 명령보다 작다');
+      this.nextSeq[p] = seq;
+    }
+    this.openFrom = tick;
+  }
 }

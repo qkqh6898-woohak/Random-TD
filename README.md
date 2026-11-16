@@ -35,6 +35,39 @@ npm start           # 게임 실행 (= npm run dev) → 브라우저에서 http:
 - Playwright 브라우저: 미리 설치된 Chromium을 쓴다. 다른 경로의 Chromium을 쓰려면 `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run e2e`. 포트는 `E2E_PORT`(기본 5173).
 - 개발 규칙은 [CLAUDE.md](CLAUDE.md), 진행 기록은 [docs/PROGRESS.md](docs/PROGRESS.md).
 
+## 안드로이드 APK (v0.1.8~)
+
+앱 ID `com.woohak.randomtd`, 서명 키는 v0.1.7과 같다 → 기존 v0.1.7 앱 위에 **업데이트**로 설치된다 (안드로이드 10 이상, 오프라인).
+버전은 `package.json`의 `version`과 `android/AndroidManifest.xml`의 `versionName`이 같아야 하고 `versionCode`는 올려야 한다 (`npm test`·빌드 스크립트·워크플로가 확인).
+
+### GitHub에서 빌드·서명·게시
+
+`.github/workflows/android.yml` (**Android APK**)이 `main`·`feat/android`·`codex/android-apk-v*`에 푸시할 때와 수동 실행(workflow_dispatch) 때 돈다.
+
+1. `npm ci` → `npm test` → `npm run check` → `npm run build` (E2E는 돌리지 않음) → `android/check-java.sh`
+2. `android/setup-sdk.sh`(공개 SDK·컴파일러를 SHA-256 확인 후 받음) → `android/build-apk.sh` → **서명 전 APK** (artifact `android-unsigned-v<버전>`). `dist/` 파일이 APK `assets/`에 모두 들어갔는지 확인한다.
+3. 아래 비밀값 4개가 **모두** 있으면 `apksigner`로 서명(v2+v3)하고, 서명 인증서 SHA-256이 v0.1.7 키(`0422434c…7cd02a`)와 다르면 실패한다. 키 저장소는 `$RUNNER_TEMP`에만 풀고 끝나면 지운다. 하나라도 없으면 서명 전 APK만 올리고 초록으로 끝난다 (어떤 비밀값이 없는지 알림).
+4. 서명됐고 브랜치가 `main` 또는 `codex/android-apk-v*`이면 Release `android-v<버전>`을 만들고 APK + `SHA256SUMS`를 올린다. 같은 태그가 이미 있으면 건너뛴다 (버전을 올리라는 알림). `feat/android`는 게시하지 않는다.
+
+비밀값 (저장소 Settings → Secrets and variables → Actions → New repository secret):
+
+| 이름 | 값 |
+|------|----|
+| `ANDROID_KEYSTORE_BASE64` | v0.1.7을 서명한 키 저장소 파일(**PKCS12**, `randomtd.p12`)을 base64로 (`base64 -w0 randomtd.p12`) |
+| `ANDROID_KEYSTORE_PASSWORD` | 키 저장소 비밀번호 |
+| `ANDROID_KEY_ALIAS` | 키 별칭 (v0.1.7 키는 `randomtd`) |
+| `ANDROID_KEY_PASSWORD` | 키 비밀번호 (PKCS12는 보통 `ANDROID_KEYSTORE_PASSWORD`와 같다) |
+
+### 직접 빌드 (Linux, JDK 21 + Node.js 22)
+
+```bash
+npm ci && npm run build
+bash android/setup-sdk.sh /tmp/randomtd-sdk
+bash android/build-apk.sh /tmp/randomtd-sdk android-build/Random-TD-unsigned.apk   # 서명 전
+```
+
+APK·키 저장소는 저장소에 넣지 않는다 (`.gitignore`: `android-build/`·`android-release/`·`downloads/`·`*.apk`·`*.keystore`·`*.jks`·`*.p12`).
+
 ## 문서
 
 | 문서 | 내용 |

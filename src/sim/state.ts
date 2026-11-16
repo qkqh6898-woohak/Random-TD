@@ -209,3 +209,9 @@ export interface MatchContext {
    */
   readonly accountLevels: readonly number[];
 }
+
+/**
+ * 판 상태에서 처음엔 없다가 생기는 필드 (A-1 저장 복원 검사용). 위 MatchState의 `?:` 필드와 같게 유지한다
+ * (tests/integration/match-saves.test.ts가 확인).
+ */
+export const OPTIONAL_STATE_KEYS: readonly (keyof MatchState)[] = Object.freeze(['chanceOv', 'sells']);

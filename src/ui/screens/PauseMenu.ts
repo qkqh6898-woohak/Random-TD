@@ -3,6 +3,8 @@
  * M0: [계속] [타이틀로]. 설정·도감·포기(정산)는 해당 마일스톤에서 붙인다.
  * T-2: 설정 한 줄 '눌러서 바로 승급' (켜짐: 승급할 수 있는 타워를 누르면 바로 승급 / 꺼짐: 패널을 연다). 저장은 Game 장면이 한다.
  * F10: [❔ 도움말 다시 보기] — 계정에 기록된 '본 도움말'(첫 승급 안내)을 지워, 다음에 승급할 수 있게 되면 다시 안내한다.
+ * A-1 (Codex 갈래 M6-10·M6-11에서 옮김): '효과음 크기' 0~100% (5% 단위, 0 = 음소거) + [미리 듣기], '화면 흔들림' 켜짐/꺼짐 — 둘 다 기기에 저장.
+ *   열 때 자동 저장했으면 아래 글을 '자동 저장했어요 · 타이틀에서 이어 할 수 있어요'로.
  * 메뉴가 열려 있는 동안 게임 시간은 멈춘다 (Game 장면이 TickClock 배속을 0으로).
  */
 import { h } from '../dom';
@@ -16,6 +18,74 @@ export interface PauseMenuOptions {
   onTapMerge?: (on: boolean) => void;
   /** [❔ 도움말 다시 보기] (F10). 없으면 버튼도 없다 */
   onHelpAgain?: () => void;
+  /** 메뉴를 열며 자동 저장했다 (A-1) */
+  saved?: boolean;
+  /** 화면 흔들림 지금 값과 바꿀 때 (A-1). 없으면 줄도 없다 */
+  screenShake?: boolean;
+  onScreenShake?: (on: boolean) => void;
+  /** 효과음 크기 0~100 (A-1). 없으면 줄도 없다 */
+  effectVolume?: number;
+  onEffectVolume?: (volume: number) => void;
+  onPreviewAudio?: () => void;
+}
+
+/** 볼륨 글자 ('음소거' · '40%') */
+export function volumeText(volume: number): string {
+  return volume === 0 ? '음소거' : `${volume}%`;
+}
+
+/** 켜고 끄는 설정 줄 (이름·설명 + [켜짐/꺼짐] 스위치). */
+function switchRow(name: string, desc: string, value: boolean, testId: string, onChange: (on: boolean) => void): HTMLElement {
+  const sw = h('button', {
+    class: 'btn dv-switch pause-switch',
+    attrs: { type: 'button', role: 'switch', 'aria-checked': String(value), 'data-testid': testId, 'aria-label': name },
+    text: value ? '켜짐' : '꺼짐',
+  });
+  sw.classList.toggle('is-on', value);
+  sw.addEventListener('click', () => {
+    const v = sw.getAttribute('aria-checked') !== 'true';
+    sw.setAttribute('aria-checked', String(v));
+    sw.textContent = v ? '켜짐' : '꺼짐';
+    sw.classList.toggle('is-on', v);
+    onChange(v);
+  });
+  return h(
+    'div',
+    { class: 'pause-setting' },
+    h('div', { class: 'pause-setting-main' }, h('div', { class: 'pause-setting-name', text: name }), h('div', { class: 'pause-setting-desc', text: desc })),
+    sw,
+  );
+}
+
+/** 효과음 크기 줄: 이름 + 지금 값, 밀대(0~100, 5 단위) + [🔊 미리 듣기]. */
+function volumeRow(opts: PauseMenuOptions, initial: number): HTMLElement {
+  const reading = h('output', { class: 'pause-volume-value', attrs: { for: 'pause-volume', 'aria-hidden': 'true', 'data-testid': 'pause-volume-value' } });
+  const preview = h('button', {
+    class: 'btn dv-switch pause-switch pause-preview',
+    attrs: { type: 'button', 'aria-label': '효과음 미리 듣기', 'data-testid': 'pause-volume-preview' },
+    text: '🔊 미리 듣기',
+  });
+  preview.addEventListener('click', () => opts.onPreviewAudio?.());
+  const slider = h('input', {
+    class: 'pause-volume',
+    attrs: { id: 'pause-volume', type: 'range', min: '0', max: '100', step: '5', value: String(initial), 'aria-label': '효과음 크기', 'data-testid': 'pause-volume' },
+  });
+  const show = (v: number): void => {
+    reading.textContent = volumeText(v);
+    slider.setAttribute('aria-valuetext', volumeText(v));
+    preview.disabled = v === 0;
+  };
+  slider.addEventListener('input', () => {
+    const v = slider.valueAsNumber;
+    opts.onEffectVolume?.(v);
+    show(v);
+  });
+  show(initial);
+  return h(
+    'div',
+    { class: 'pause-setting pause-setting-volume' },
+    h('div', { class: 'pause-setting-main' }, h('div', { class: 'pause-setting-name' }, h('label', { text: '효과음 크기', attrs: { for: 'pause-volume' } }), ' ', reading), h('div', { class: 'pause-volume-controls' }, slider, preview)),
+  );
 }
 
 export function createPauseMenu(opts: PauseMenuOptions): UiView {
@@ -35,28 +105,11 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
     text: '타이틀로',
     on: { click: () => opts.onExit() },
   });
-  let tapRow: HTMLElement | null = null;
-  if (opts.tapMerge !== undefined) {
-    const sw = h('button', {
-      class: 'btn dv-switch pause-switch',
-      attrs: { type: 'button', role: 'switch', 'aria-checked': String(opts.tapMerge), 'data-testid': 'pause-tap-merge', 'aria-label': '눌러서 바로 승급' },
-      text: opts.tapMerge ? '켜짐' : '꺼짐',
-    });
-    sw.classList.toggle('is-on', opts.tapMerge);
-    sw.addEventListener('click', () => {
-      const v = sw.getAttribute('aria-checked') !== 'true';
-      sw.setAttribute('aria-checked', String(v));
-      sw.textContent = v ? '켜짐' : '꺼짐';
-      sw.classList.toggle('is-on', v);
-      opts.onTapMerge?.(v);
-    });
-    tapRow = h(
-      'div',
-      { class: 'pause-setting' },
-      h('div', { class: 'pause-setting-main' }, h('div', { class: 'pause-setting-name', text: '눌러서 바로 승급' }), h('div', { class: 'pause-setting-desc', text: '승급할 수 있는 타워를 누르면 바로 승급' })),
-      sw,
-    );
-  }
+  const tapRow =
+    opts.tapMerge !== undefined ? switchRow('눌러서 바로 승급', '승급할 수 있는 타워를 누르면 바로 승급', opts.tapMerge, 'pause-tap-merge', (v) => opts.onTapMerge?.(v)) : null;
+  const volume = opts.effectVolume !== undefined ? volumeRow(opts, opts.effectVolume) : null;
+  const shakeRow =
+    opts.screenShake !== undefined ? switchRow('화면 흔들림', '보스·큰 승급 때 화면을 흔들어요', opts.screenShake, 'pause-screen-shake', (v) => opts.onScreenShake?.(v)) : null;
   let help: HTMLButtonElement | null = null;
   if (opts.onHelpAgain) {
     const b = h('button', {
@@ -80,9 +133,11 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
       h('h2', { class: 'pause-title', text: '일시정지', attrs: { id: 'pause-title' } }),
       resume,
       tapRow,
+      volume,
+      shakeRow,
       help,
       exit,
-      h('p', { class: 'pause-note', text: '타이틀로 나가면 이 판은 끝나요' }),
+      h('p', { class: 'pause-note', attrs: { 'data-testid': 'pause-note' }, text: opts.saved ? '자동 저장했어요 · 타이틀에서 이어 할 수 있어요' : '타이틀로 나가면 이 판은 끝나요' }),
     ),
   );
   // 키보드 사용자를 위해 [계속]에 초점 (화면에 붙은 뒤)

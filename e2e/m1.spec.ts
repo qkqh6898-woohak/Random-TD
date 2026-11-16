@@ -4,6 +4,7 @@
  * 스크린샷: test-results/screens/ (항상), docs/screens/M1.png (SAVE_SCREENS=1, `npm run screens`).
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
@@ -83,7 +84,7 @@ const timerText = (ticksLeft: number): string => {
 
 async function startInfinite(page: Page, query = '?seed=42'): Promise<void> {
   await page.goto(`/${query}`);
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
 }
 

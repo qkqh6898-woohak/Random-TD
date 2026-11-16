@@ -1,0 +1,168 @@
+name: Android APK
+
+# 웹 검사(npm test·check·build) → 서명 전 APK → (비밀값이 있으면) v0.1.7과 같은 키로 서명·확인 → main·codex/android-apk-v*면 Release 게시.
+# 비밀값: ANDROID_KEYSTORE_BASE64 · ANDROID_KEYSTORE_PASSWORD · ANDROID_KEY_ALIAS · ANDROID_KEY_PASSWORD (README '안드로이드 APK').
+on:
+  push:
+    branches:
+      - main
+      - feat/android
+      - 'codex/android-apk-v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      signed: ${{ steps.sign.outputs.signed }}
+    env:
+      SIGNER_SHA256: 0422434cc6f7026d53e97e8c5aac9a29ff5d5ccf8d2d1228525d8feb2a7cd02a
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: 버전 확인 (package.json = AndroidManifest)
+        id: version
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::package.json version이 x.y.z가 아니다: $version"; exit 1; }
+          manifest=$(sed -n 's/.*android:versionName="\([^"]*\)".*/\1/p' android/AndroidManifest.xml)
+          code=$(sed -n 's/.*android:versionCode="\([0-9]*\)".*/\1/p' android/AndroidManifest.xml)
+          [[ "$manifest" == "$version" ]] || { echo "::error::AndroidManifest versionName($manifest) ≠ package.json($version)"; exit 1; }
+          [[ "$code" =~ ^[0-9]+$ ]] || { echo "::error::AndroidManifest versionCode가 없다"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "versionCode=$code" >> "$GITHUB_OUTPUT"
+
+      - name: 의존성 설치
+        run: npm ci
+      - name: 단위·통합 테스트
+        run: npm test
+      - name: 타입·결정성·데이터 검사
+        run: npm run check
+      - name: 웹 빌드
+        run: npm run build
+      - name: Java 검사 (AssetPaths)
+        run: bash android/check-java.sh
+
+      - name: 서명 전 APK 빌드
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          sdk="$RUNNER_TEMP/rtd-android"
+          bash android/setup-sdk.sh "$sdk"
+          bash android/build-apk.sh "$sdk" "android-build/Random-TD_Offline_v$VERSION-unsigned.apk"
+          dump=$("$sdk/build-tools/android-15/aapt2" dump badging "android-build/Random-TD_Offline_v$VERSION-unsigned.apk")
+          badging=${dump%%$'\n'*}
+          echo "$badging"
+          [[ "$badging" == *"name='com.woohak.randomtd'"* ]] || { echo "::error::앱 ID가 com.woohak.randomtd가 아니다"; exit 1; }
+          [[ "$badging" == *"versionName='$VERSION'"* ]] || { echo "::error::APK versionName이 $VERSION이 아니다"; exit 1; }
+
+      - name: 서명 (비밀값이 있을 때만)
+        id: sign
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing=()
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            [[ -n "${!name}" ]] || missing+=("$name")
+          done
+          if (( ${#missing[@]} > 0 )); then
+            echo "::notice title=서명 안 함::비밀값이 없어 서명 전 APK만 올립니다. 저장소 Settings → Secrets and variables → Actions에 추가하세요: ${missing[*]}"
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          tools="$RUNNER_TEMP/rtd-android/build-tools/android-15"
+          keydir="$RUNNER_TEMP/rtd-signing"
+          mkdir -m 700 -p "$keydir"
+          # 키 저장소(PKCS12, v0.1.7의 randomtd.p12)는 작업 폴더가 아닌 RUNNER_TEMP에만 풀고, 값은 출력하지 않는다
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode > "$keydir/release.p12"
+          unsigned="android-build/Random-TD_Offline_v$VERSION-unsigned.apk"
+          mkdir -p android-release
+          signed="android-release/Random-TD_Offline_v$VERSION.apk"
+          "$tools/apksigner" sign \
+            --ks "$keydir/release.p12" \
+            --ks-type PKCS12 \
+            --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --key-pass env:ANDROID_KEY_PASSWORD \
+            --v1-signing-enabled false \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out "$signed" "$unsigned"
+          rm -f "$keydir/release.p12"
+          "$tools/apksigner" verify --verbose --print-certs "$signed" > "$RUNNER_TEMP/rtd-cert.txt"
+          grep -Fx 'Verified using v2 scheme (APK Signature Scheme v2): true' "$RUNNER_TEMP/rtd-cert.txt"
+          grep -Fx 'Verified using v3 scheme (APK Signature Scheme v3): true' "$RUNNER_TEMP/rtd-cert.txt"
+          if ! grep -Fxq "Signer #1 certificate SHA-256 digest: $SIGNER_SHA256" "$RUNNER_TEMP/rtd-cert.txt"; then
+            echo "::error title=서명 키가 다름::서명 인증서 SHA-256이 v0.1.7 키($SIGNER_SHA256)와 다릅니다. 이 APK는 기존 앱 위에 업데이트로 설치되지 않습니다."
+            grep 'certificate SHA-256 digest' "$RUNNER_TEMP/rtd-cert.txt" || true
+            exit 1
+          fi
+          (cd android-release && sha256sum -- *.apk > SHA256SUMS)
+          cat android-release/SHA256SUMS
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+      - name: 키 저장소 지우기
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/rtd-signing"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-unsigned-v${{ steps.version.outputs.version }}
+          path: android-build/*.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: steps.sign.outputs.signed == 'true'
+        with:
+          name: android-release-v${{ steps.version.outputs.version }}
+          path: android-release/
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: needs.build.outputs.signed == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/codex/android-apk-v'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-release-v${{ needs.build.outputs.version }}
+          path: android-release
+      - name: GitHub Releases에 APK 게시
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          tag="android-v$VERSION"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::notice title=게시 건너뜀::$tag Release가 이미 있습니다. 새로 게시하려면 package.json version과 AndroidManifest versionName·versionCode를 올리세요."
+            exit 0
+          fi
+          gh release create "$tag" "android-release/Random-TD_Offline_v$VERSION.apk" android-release/SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "운빨 디펜스 Android v$VERSION" \
+            --notes "Assets의 APK를 내려받아 설치하거나 기존 앱 위에 업데이트하세요 (v0.1.7과 같은 앱 ID·서명). 앱은 오프라인에서 동작합니다."

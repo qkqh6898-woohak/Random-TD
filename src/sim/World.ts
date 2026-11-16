@@ -9,7 +9,7 @@
  * - Phaser·DOM·window를 모른다. 화면은 상태를 읽기만 하고, 바꾸려면 `enqueue()`로 명령을 넣는다.
  */
 
-import { COMMAND_TYPES, CommandQueue, type Command, type CommandInput, type CommandType, type EnqueueResult } from './Commands';
+import { COMMAND_TYPES, CommandQueue, validateCommand, type Command, type CommandInput, type CommandType, type EnqueueResult } from './Commands';
 import { hashValue } from './hash';
 import { Rng, type RngSnapshot } from './Rng';
 
@@ -72,6 +72,12 @@ export class EntityStore<T extends Entity = Entity> {
 
   get nextId(): number {
     return this.nextIdValue;
+  }
+
+  /** 저장 복원용 (A-1): 지워진 엔티티가 썼던 번호까지 이어 가도록 다음 ID를 맞춘다. 지금 가진 ID보다 작으면 에러. */
+  restoreNextId(nextId: number): void {
+    if (!Number.isSafeInteger(nextId) || nextId < this.nextIdValue) throw new Error(`저장된 다음 엔티티 ID가 잘못됐다: ${nextId}`);
+    this.nextIdValue = nextId;
   }
 
   /** ID 오름차순 배열 (읽기 전용으로 쓸 것). */
@@ -137,6 +143,27 @@ export const streamSummon = (player: number): string => `p${player}.summon`;
 export const streamGamble = (player: number): string => `p${player}.gamble`;
 /** 보스 카드 제시 (M4-7): 플레이어별 */
 export const streamCards = (player: number): string => `p${player}.cards`;
+
+/** 해시에 들어가는 확정 상태 (World.hashView). */
+export interface WorldStateView {
+  tick: number;
+  seed: number;
+  players: number;
+  rng: Record<string, RngSnapshot>;
+  nextId: number;
+  entities: readonly Entity[];
+  state: object;
+}
+
+/**
+ * 틱 경계의 판 전체 (A-1 자동 저장·이어 하기): 해시 상태 + 아직 실행하지 않은 명령·다음 명령 번호 + 실행 기록.
+ * JSON으로 바로 쓸 수 있는 읽기 전용 뷰다 (값을 복사하지 않음 — 쓰는 쪽이 곧바로 직렬화한다).
+ */
+export interface WorldCheckpoint extends WorldStateView {
+  pending: readonly Command[];
+  nextSeq: readonly number[];
+  executed: readonly Command[];
+}
 
 export class World {
   readonly seed: number;
@@ -271,7 +298,7 @@ export class World {
   }
 
   /** 해시에 들어가는 상태 (대기 중인 명령은 빼고 확정된 상태만). */
-  hashView(): unknown {
+  hashView(): WorldStateView {
     const rng: Record<string, RngSnapshot> = {};
     for (const [name, r] of this.streams) rng[name] = r.snapshot();
     return {
@@ -283,6 +310,77 @@ export class World {
       entities: this.entities.list(),
       state: this.state,
     };
+  }
+
+  /** 틱 경계의 판 전체 (자동 저장용, A-1). step 도중에 부르면 에러 — 화면은 프레임 사이에서만 부른다. */
+  checkpointView(): WorldCheckpoint {
+    return {
+      ...this.hashView(),
+      pending: this.queue.pending(),
+      nextSeq: Array.from({ length: this.players }, (_, p) => this.queue.peekNextSeq(p)),
+      executed: this.executed,
+    };
+  }
+
+  /**
+   * 저장한 판 되살리기 (A-1): 같은 시작 입력(시드·인원·모드·덱 …)으로 막 만든 World에 확정 상태·난수·엔티티·다음 ID·
+   * 대기 명령·실행 기록·틱을 넣는다. 이어서 같은 명령을 넣고 돌리면 끊기지 않은 판과 같은 해시가 나온다 (tests/integration/match-saves).
+   * - optionalStateKeys: 판 상태에서 처음에는 없다가 생기는 필드 (MatchState의 chanceOv·sells — 해시에 빠져 있어야 예전 리플레이가 그대로).
+   * - 모양이 다르면 에러를 던지고, 부르는 쪽(MatchSaves)이 저장을 버린다. 이 World는 그 뒤 쓰지 않는다.
+   */
+  restoreCheckpoint(saved: WorldCheckpoint, optionalStateKeys: readonly string[] = []): void {
+    if (this.tick !== 0 || this.entities.size > 0 || this.queue.size > 0 || this.executed.length > 0) throw new Error('새로 만든 판에만 되살릴 수 있다');
+    if (saved === null || typeof saved !== 'object') throw new Error('저장된 판이 객체가 아니다');
+    if (saved.seed !== this.seed || saved.players !== this.players || !Number.isSafeInteger(saved.tick) || saved.tick < 0) {
+      throw new Error('저장된 판의 시작 정보가 다르다');
+    }
+    const st = saved.state as Record<string, unknown> | null;
+    if (st === null || typeof st !== 'object' || Array.isArray(st)) throw new Error('저장된 판 상태가 객체가 아니다');
+    const fresh = this.state as Record<string, unknown>;
+    for (const k of Object.keys(fresh)) {
+      if (!Object.hasOwn(st, k)) throw new Error(`저장된 판 상태에 ${k}가 없다`);
+      const a = fresh[k];
+      const b = st[k];
+      // 같은 모양인지 (배열·객체·원시 값 종류) — 다른 판 형식에서 온 저장을 걸러낸다
+      if (Array.isArray(a) !== Array.isArray(b) || typeof a !== typeof b || (a === null) !== (b === null)) throw new Error(`저장된 판 상태 ${k}의 모양이 다르다`);
+    }
+    for (const k of Object.keys(st)) {
+      if (!Object.hasOwn(fresh, k) && !optionalStateKeys.includes(k)) throw new Error(`저장된 판 상태에 모르는 필드 ${k}`);
+    }
+    const rng = saved.rng as Record<string, RngSnapshot> | null;
+    if (rng === null || typeof rng !== 'object' || Object.keys(rng).length !== this.streams.size) throw new Error('저장된 난수 흐름 수가 다르다');
+    const restored = new Map<string, Rng>();
+    for (const [name, r] of this.streams) {
+      const s = rng[name];
+      if (!s || s.seed !== r.snapshot().seed || !Number.isSafeInteger(s.state) || s.state !== s.state >>> 0) throw new Error(`저장된 난수 흐름이 잘못됐다: ${name}`);
+      restored.set(name, Rng.restore(s));
+    }
+    if (!Array.isArray(saved.entities)) throw new Error('저장된 엔티티가 배열이 아니다');
+    let prevId = 0;
+    for (const e of saved.entities) {
+      if (e === null || typeof e !== 'object' || !Number.isSafeInteger(e.id) || e.id <= prevId || typeof e.kind !== 'string') throw new Error('저장된 엔티티가 잘못됐다');
+      prevId = e.id;
+    }
+    if (!Array.isArray(saved.pending) || !Array.isArray(saved.nextSeq) || !Array.isArray(saved.executed)) throw new Error('저장된 명령 기록이 배열이 아니다');
+    let prevExec: Command | null = null;
+    for (const c of saved.executed) {
+      const err = validateCommand(c, this.players);
+      if (err) throw new Error(`저장된 실행 명령이 잘못됐다: ${err}`);
+      if (c.tick >= saved.tick || (prevExec && c.tick < prevExec.tick)) throw new Error('저장된 실행 명령의 틱 순서가 잘못됐다');
+      prevExec = c;
+    }
+    // 여기부터 실제로 넣는다 (위 검사를 모두 통과한 뒤)
+    for (const [name, r] of restored) this.streams.set(name, r);
+    for (const e of saved.entities) this.entities.insert(e);
+    this.entities.restoreNextId(saved.nextId);
+    this.queue.restore(saved.pending, saved.nextSeq, saved.tick);
+    for (const c of saved.executed) {
+      if (c.seq >= this.queue.peekNextSeq(c.player)) throw new Error('저장된 실행 명령 번호가 다음 번호보다 크다');
+      this.executed.push(Object.freeze({ ...c }));
+    }
+    for (const k of optionalStateKeys) if (!Object.hasOwn(st, k)) delete fresh[k];
+    Object.assign(fresh, st);
+    this.tick = saved.tick;
   }
 
   /** 현재 상태 해시 (FNV-1a 32비트). */

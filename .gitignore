@@ -13,3 +13,10 @@ android/app/build/
 android/.gradle/
 *.keystore
 *.jks
+# 안드로이드 빌드 결과·서명 (A-1): APK와 키 저장소는 저장소에 넣지 않는다 (GitHub Actions가 비밀값으로 서명)
+android/.signing/
+android-build/
+android-release/
+downloads/
+*.apk
+*.p12

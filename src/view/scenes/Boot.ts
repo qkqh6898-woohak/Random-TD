@@ -4,6 +4,7 @@
  * 타이틀 타워는 캐릭터 다양화 그림(art/characters, 캐릭터별 대기 동작)으로 그린다. 외형 데이터가 없으면 예전 chibi 그림.
  * 바깥 그림 매니페스트(public/assets/characters/manifest.json)도 여기서 읽어 둔다 (없거나 비면 절차 그림 그대로).
  * HF-2: 힉스필드 타이틀 그림(키 아트 1~2 중 무작위)도 여기서 받는다. 받았으면 그것을 꽉 차게 깔고 절차 배경·캐릭터는 그리지 않는다.
+ * A-1: 자동 저장된 판이 있으면 [▶ 이어 하기]로 그 판을 되살려 Game 장면에 넘긴다. [📜 기록] = 전투 기록 (일반 무한 판).
  */
 import Phaser from 'phaser';
 import { GRADE_COLORS } from '../../art/palette';
@@ -20,6 +21,9 @@ import { drawTitleKeyArt, pickTitleArt, queueTitleArt, type TitleKeyArtView } fr
 import type { GameContext } from '../context';
 import type { MatchMode } from '../../sim/state';
 import { randomSeed, type GameSceneData } from './Game';
+import { formatStage } from '../../ui/hud/hudModel';
+import { buildRecordsView } from '../../ui/screens/BattleRecordsDialog';
+import { setBackHandler } from '../../ui/nativeBack';
 
 interface TitleTower {
   towerId: string;
@@ -106,15 +110,28 @@ export class BootScene extends Phaser.Scene {
     this.cameras.main.fadeIn(250, 13, 18, 32);
 
     this.ctx.ui.clear('hud');
+    // 이어 할 판 (맞지 않는 저장은 MatchSaves가 버린다)
+    const saved = this.ctx.saves.read();
+    const record = this.ctx.records.read();
     this.ctx.ui.show(
       'screen',
       createTitleScreen({
-        version: `v${this.ctx.version} · M2`,
+        version: `v${this.ctx.version}`,
         keyArt,
         onStart: () => this.startGame('infinite'),
         onCampaign: this.ctx.debug ? () => this.startGame('campaign') : undefined,
+        saved: saved
+          ? {
+              stage: formatStage(saved.match.state),
+              dev: saved.dev,
+              onResume: () => this.scene.start(SCENE_GAME, { seed: saved.match.world.seed, saved } satisfies GameSceneData),
+            }
+          : undefined,
+        records: buildRecordsView(record, this.ctx.data.enemies.bosses, this.ctx.data.enemies.challenges),
       }),
     );
+    // 타이틀의 뒤로 가기: 열린 창(기록·새 게임 확인)은 nativeBack이 닫고, 그 밖에는 앱이 닫힌다
+    setBackHandler(null);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.onResize, this);
       this.ctx.ui.clear('screen');

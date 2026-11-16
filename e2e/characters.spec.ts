@@ -3,6 +3,7 @@
  * 게임 화면의 타워·몹이 새 캐릭터 그림(파츠 텍스처)으로 그려지는지. SAVE_SCREENS=1(npm run screens)이면 docs/screens/characters-*.png 저장.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
@@ -221,7 +222,7 @@ test('게임 화면: 타워·몹이 새 캐릭터 그림(파츠 텍스처)으로
   test.setTimeout(60_000);
   const errors = collectErrors(page);
   await page.goto('/?debug=1&seed=7');
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
   const placed = await inScene(
     page,

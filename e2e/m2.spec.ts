@@ -3,6 +3,7 @@
  * sim 상태는 개발 서버의 window.__rtd 로 읽는다 (화면은 읽기만). 스크린샷: test-results/screens/, docs/screens/M2.png (SAVE_SCREENS=1).
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 // T-2: 이 파일은 정보 패널 [⬆ 승급] 흐름을 본다 → '눌러서 바로 승급'(기본 켜짐)을 끄고 시작 (켜진 동작은 e2e/t2.spec.ts)
@@ -78,7 +79,7 @@ async function view(page: Page): Promise<View> {
 
 async function start(page: Page, query = '?seed=42'): Promise<void> {
   await page.goto(`/${query}`);
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
 }
 

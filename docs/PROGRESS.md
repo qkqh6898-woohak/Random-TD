@@ -829,3 +829,75 @@
 - 게이트: Vitest **1,218 통과 + 2 건너뜀**, `npm run check`·`npm run build` 통과, E2E 전체(`E2E_PORT=5193`, 40.7분) **114 통과 · 1 건너뜀 · 1 실패** — 실패는 `art.spec` '전투 배경'(새로 띄운 vite 서버의 첫 몇 테스트 중 페이지가 다시 불러와져 `window.__rtd`가 사라짐, 8.7초)이고 같은 포트로 `art.spec`만 다시 돌리면 4/4 통과(따로 5195에서도 통과). 이번 변경과 무관한 차가운 서버 흔들림.
 - 첫 보스 봇: 밸런스 수치·sim 변경 없음 → A **10/20** · B **15/20** 그대로 (F10-2·F10-3 측정).
 - 남은 문제: 사람 시험(실제 휴대폰에서 준비 완료/60초 판의 첫 보스 결과를 🛠 '이번 판 기록'·'지난 판 기록'으로 기록) · 순환의 정원 가로 꽉 채우기는 맵 영역 높이 문제(위 표) · 20단계 킹 슬라임 벽 · 긴 정보 패널과 안내 카드 겹침.
+
+## A-1 안드로이드 빌드 통합 (v0.1.8) (상태: 완료)
+
+> 사용자 결정: **우리 갈래(시험판 4, 0576a2c)를 바탕**으로, Codex가 만든 안드로이드 갈래(`codex/android-apk-v0.1.7`, 98a5308 — 옛 main 336ce91(M5-2)에서 갈라짐)의
+> 안드로이드 빌드 설정을 가져오고 **Codex에만 있던 기능 다섯 개를 우리 구조에 맞춰 다시 구현**한다. 두 갈래가 같은 일을 다르게 한 것은 우리 것이 이긴다.
+
+- **가져온 것 (98a5308에서)**
+  - 안드로이드 래퍼: `android/AndroidManifest.xml`(앱 ID `com.woohak.randomtd` 그대로 → v0.1.7 위에 업데이트 설치), `android/setup-sdk.sh`(SDK·ecj를 SHA-256 확인, 그대로),
+    `android/build-apk.sh`, `android/res/drawable/game_icon.xml`, `android/src/com/woohak/randomtd/GameActivity.java`, `.gitignore`, README 절.
+  - 바꾼 것: ① `GameActivity`가 `assets/` **바로 아래 파일만** 열던 것을 하위 폴더(`assets/characters/…`·`backgrounds/`·`cutins/`·`title/` — 우리 빌드의 그림 231개 + JSON)까지
+    열도록 순수 클래스 `AssetPaths.java`로 분리(조각마다 `[A-Za-z0-9_.-]+`, `.`·`..`·빈 조각 거절, json MIME). JVM 검사 `android/test/…/AssetPathsTest.java` + `android/check-java.sh`(SDK 없이 돎, 워크플로에서도 실행).
+    ② 뒤로 가기 JS는 사건(`randomtd:native-back`)만 보내고 열린 창 닫기는 웹 쪽이 한다. ③ `android:configChanges` 추가(화면 크기·uiMode 바뀜에 WebView가 다시 불러오지 않게).
+    ④ `build-apk.sh`: `src/` 아래 Java 모두 컴파일, versionName = package.json version 확인, webp 재압축 안 함(`-0 webp`), **dist/의 모든 파일이 APK `assets/`에 같은 경로로 들어갔는지 목록 비교**(우리 dist ≈ 16MB·237개 파일 — 작은 번들을 가정하는 곳 없음).
+  - 버전: `package.json` **0.1.8**, `AndroidManifest` versionName **0.1.8** · versionCode **9** (v0.1.7 = 8). 단위 테스트(`tests/unit/a1.test.ts`)·`build-apk.sh`·워크플로가 versionName = package.json을 확인한다.
+  - `downloads/Random-TD_Offline_v0.1.7.apk`(서명 APK를 저장소에 넣던 흐름)는 가져오지 않았다 — 이제 서명은 GitHub 비밀값으로 (아래). `downloads/`·`*.apk`는 `.gitignore`.
+- **워크플로 `.github/workflows/android.yml`** (Codex 것을 고쳐 씀)
+  - 언제: `main`·`feat/android`·`codex/android-apk-v*` 푸시 + 수동 실행. 권한 기본 `contents: read`, 게시 작업만 `contents: write`. 동시 실행은 ref마다 하나. 액션은 Codex처럼 주 버전 고정(@v4).
+  - 순서: 버전 확인 → `npm ci` → `npm test` → `npm run check` → `npm run build` (E2E는 안 돌림) → `android/check-java.sh` → `setup-sdk.sh`(해시 확인) → `build-apk.sh` → `aapt2 dump badging`으로 앱 ID·versionName 확인 → 서명 전 APK artifact.
+  - **서명 (비밀값)**: `ANDROID_KEYSTORE_BASE64` · `ANDROID_KEYSTORE_PASSWORD` · `ANDROID_KEY_ALIAS` · `ANDROID_KEY_PASSWORD`가 **모두** 있으면 키 저장소를 `$RUNNER_TEMP/rtd-signing`(작업 폴더 밖)에 풀어
+    `apksigner sign --ks-type PKCS12`(v0.1.7 키는 PKCS12 `randomtd.p12`·별칭 `randomtd`, 키 비밀번호는 보통 저장소 비밀번호와 같음; v1 끔, **v2+v3**, 비밀번호는 `env:`로 넘겨 명령줄·로그에 안 나옴) → `apksigner verify --verbose --print-certs`로 v2·v3 확인 + **서명 인증서 SHA-256 = `0422434cc6f7026d53e97e8c5aac9a29ff5d5ccf8d2d1228525d8feb2a7cd02a`(v0.1.7 키)** 이 아니면 작업 실패.
+    키 파일은 서명 직후 지우고 `if: always()` 단계가 폴더를 한 번 더 지운다. 비밀값이 하나라도 없으면 서명 전 APK만 올리고 `::notice::`로 빠진 이름을 알린 뒤 초록으로 끝난다.
+  - **게시**: 서명됐고 `main` 또는 `codex/android-apk-v*`일 때만(`feat/android`는 안 함) Release `android-v<버전>`에 APK + `SHA256SUMS`. 태그가 이미 있으면 실패하지 않고 '버전을 올리라'는 notice로 건너뛴다.
+  - 확인(이 컨테이너, SDK 내려받기가 막혀 APK 자체는 GitHub에서 검증): YAML 파싱, 단계별 `bash -n`, 버전 단계·'비밀값 없음' 단계를 실제로 돌림, 가짜 `apksigner`로 서명 단계(맞는 지문 → signed=true·키 폴더 비움 / 다른 지문 → 실패), dist → assets 목록 비교 흐름.
+- **옮긴 기능 다섯 (우리 World·Commands·Game·Hud·PauseMenu·TitleScreen에 맞춰 다시 씀)**
+  - **a) 자동 저장·이어 하기 (M6-5)** — `src/save/MatchSaves.ts`, `World.checkpointView()/restoreCheckpoint()`, `CommandQueue.restore()`, `EntityStore.restoreNextId()`, `OPTIONAL_STATE_KEYS`(state.ts).
+    - 담는 것: 판 시작 입력(리플레이의 `matchInputs` — 시드·모드·테마·덱·타워 레벨·계정 레벨·debug) + World 체크포인트(틱·난수 흐름 전부·엔티티·다음 ID·**대기 명령**·다음 명령 번호·실행 기록·판 상태 전체)
+      + 배속·판 식별자. 판 상태를 통째로 담으므로 강화·도박(잭팟 게이지)·도전(쿨타임)·미션·카드 제안/효과·일꾼·준비 완료·T-2의 `chanceOv`·`sells`까지 돌아온다.
+    - 지문: 저장 형식 번호 + **앱 버전** + **데이터 지문**(`dataFingerprint`). 다르거나, 내용 해시(`RTD1 <fnv>\n<JSON>`)가 안 맞거나, 상태 모양이 다르면 저장을 버리고 슬롯을 지운다 → 타이틀은 [시작].
+      앱 버전까지 넣은 것은 규칙 코드가 바뀐 뒤 옛 상태를 이어 붙이지 않기 위해서다(업데이트 직후 진행 중이던 판 하나는 잃는다 — 안전 쪽).
+    - **개발자 판**(?dev·?debug·테스트 빌드)은 저장하되 따로(`rtd.match.dev`, `dev: true`, sim의 `state.debug`와 같은 값) 두고 타이틀에 '🛠 개발자 판'으로 표시. 일반 주소에는 안 보이고 일반 저장을 덮지 않는다.
+    - 저장 때: 판 시작 직후, 단계가 바뀔 때, 명령 실행 뒤 1초(게임 시간), 그 밖 5초마다, 일시정지(앱 백그라운드 `visibilitychange`·`randomtd:native-pause` 포함), `pagehide`, 배속 바꿈, 타이틀로·다시 하기(장면 종료). 패배하면 지운다.
+      다른 창이 슬롯을 바꿨으면(토큰 비교) 덮어쓰지 않는다. 이어 하면 저장 전 손가락이 들고 있던 타워(hold)는 내려놓는 명령을 넣는다.
+    - 타이틀: 저장이 있으면 [시작] 자리에 **[▶ 이어 하기 · n단계]**, 그 아래 여백에 **[새 게임]**(확인 창 '이어 하던 판(n단계)은 지워져요' [취소]/[새 게임 시작]). 저장이 없으면 예전 [▶ 시작] 그대로.
+    - 결정성: `tests/integration/match-saves.test.ts` — 저장한 리플레이 7개 모두 판 1/3·2/3 지점에서 저장(JSON 글자) → 되살려 남은 명령을 돌리면 **주기 해시·끝 해시가 그대로**. 되살린 판을 이어 `recordReplay`해도 0틱부터 다시 돌린 끝 해시와 같다(실행 기록이 이어짐).
+  - **b) 전투 기록·최근 5판 (M6-6/7)** — `src/save/BattleRecords.ts`, `src/ui/screens/BattleRecordsDialog.ts`, 타이틀 왼쪽 위 **[📜 기록]**(<dialog>).
+    일반 1인 무한 판의 패배 때 최고 단계·단계 보스별 최고 처치 단계·최고 도전 단계·최근 5판(단계·게임 시간·처치한 보스, 펼치기). 개발자 판·치트 쓴 판은 안 남김. 판 식별자로 이어 한 판도 한 번만.
+    최고를 넘으면 패배 화면 기록 줄에 '· 🏆 새 최고 기록'.
+  - **c) 소환·승급 주사위 + 화면 흔들림 설정 (M6-10)** — `FxLayer.summonDice`(빛 기둥 + 등급 색 소환진 + 굴러 튀는 주사위), 승급은 재료 칸 주사위가 결과 칸으로 모인 뒤 큰 주사위. **동시 12개**(`MAX_DICE`).
+    개발자 '연출 끄기'면 아무것도, 기기 '동작 줄이기'면 주사위 없이 예전 빛 기둥·빛 구슬. 일시정지 **[화면 흔들림]**(`src/save/ScreenShake.ts`, 저장값이 없으면 동작 줄이기를 따름) — 끄면 카메라 흔들림을 멈추고 돈 부족 칸은 움직이지 않고 빨간 칸만. 연출 끄기는 설정과 상관없이 흔들림을 끈다.
+  - **d) 효과음·볼륨 (M6-11)** — `src/audio/EffectAudio.ts`(WebAudio 합성만, 파일 없음). 소환·승급 소리, 연타는 하나로. 일시정지 **'효과음 크기'** 0~100% 5% 단위·기본 40%·0 = 음소거·[🔊 미리 듣기], 기기 저장.
+    AudioContext는 사람이 누른 입력(click·touchend·keydown) 안에서 처음 만든다 — 그 전에는 만들지도 않는다(E2E 확인).
+  - **e) 안드로이드 뒤로 가기** — `GameActivity`가 취소 가능한 `randomtd:native-back`을 보내고 `src/ui/nativeBack.ts`가 처리: ① 열린 <dialog>(기록·새 게임 확인) ② 전투: 변환 고르기 → 캐릭터 카드 → 바텀 시트 → 이동 모드 → 타워 패널 → 펼친 고르기 창,
+    없으면 일시정지 ↔ 계속, 패배 화면이면 타이틀로. 타이틀에서 열린 창이 없으면 처리하지 않음 → 앱 종료.
+  - 저장 키: 모두 우리 `KeyValueStorage`(src/save/storage.ts) 뒤. `rtd.match`·`rtd.match.dev`·`rtd.records`·`rtd.screenShake`·`rtd.effectVolume`. v0.1.7 기기의 `random-td.battle-records`(형식 v1·v2)·`random-td.screen-shake`·`random-td.effect-volume`는 새 키가 없을 때 읽는다(업데이트한 사람의 기록·설정 유지). v0.1.7의 진행 중 판(`random-td.active-match`)은 형식·데이터가 달라 쓰지 않는다.
+- **일부러 가져오지 않은 것 (우리 것이 이김)**: 첫 10단계 업데이트(우리 F10 — 준비 완료·추천 칸·안내 카드; Codex의 `finishPrep` 명령·빠른 소환·BattleSheet 없음), 캐릭터 그림(`src/art/chibi.ts` 다시 쓰기, `portraits/*.webp` — 우리 힉스필드 그림),
+  타이틀 그림(`title-summoning.webp` — 우리 HF-2 키 아트), 맵 그리기(`MapRenderer`·`TitleBackdrop` 변경 — 우리 T-3 2×2·B안), HUD 배치(Codex `Hud.ts`·`styles.css` 581줄 — 우리 F10-4 배치), 보스 밸런스(`firstInfiniteHpMul` — 우리 F10-2 `stageHpMul["10"]=0.1`), 리플레이 다시 쓰기·`Spawn`/`Stage`/`Bosses` 변경, `docs/screens/M5·M6-*.png`.
+- **sim 변경과 리플레이**: World·Commands에 **복원용 함수만** 추가(실행 경로·해시 모양·명령 종류 그대로) → `npm run replays`로 다시 만든 리플레이 7개가 **바이트까지 같다**(git diff 없음). 첫 보스 봇 결과도 그대로(규칙·수치 변경 없음).
+- **추가 요청 '원형 맵은 A로: 위아래 여백도 없애줘'** (화면만, sim 그대로): `computeMapLayout`의 세로 반 칸 여백을 없앰 — `tile = floor(min(area.w / cols, area.h / rows))`, 남는 축은 가운데.
+  알림·아래 띠와의 틈은 영역 쪽 `MAP_TOP_GAP_PX`·`MAP_BOTTOM_GAP_PX`가 그대로 둔다. 실제 브라우저에서 잰 1칸(기준 px, 괄호 = CSS px):
+
+  | 화면 | 순환의 정원 7×11 | 사거리 미로 10×11 |
+  |------|------|------|
+  | 412×915 | 135 → **141** (51.5 → 53.8) | 108 → 108 (41.2) |
+  | 360×800 | 130 → **136** (43.3 → 45.3) | 108 → 108 (36.0) |
+  | 390×844 | 128 → **134** (46.2 → 48.4) | 108 → 108 (39.0) |
+
+  사거리 미로는 가로가 먼저 차서(1080 / 10) 그대로. E2E `e2e/map-fill.spec.ts`(세 화면): 맨 위 줄이 HUD 띠([▶ 준비 완료] 막대가 보일 때·10단계 보스 막대가 보일 때 모두)와 알림 줄 아래,
+  맨 아래 줄이 아래 띠 위. 0번 줄에 돌 골렘(×1.25)·용 소환사를 놓아 머리가 맵 위로 나와도 일시정지·배속 버튼 가운데를 누르면 그 버튼(DOM이 캔버스 위). 단위 테스트 `hud.test`(순환의 정원 기준 영역 109 → 114 = 영역 높이 / 11), `t3-screen.test`(새 공식 + 세로도 영역 안). 캡처 `docs/screens/A1-map.png`.
+- **E2E 바꾼 것**: 저장이 있으면 타이틀이 [이어 하기]·[새 게임]이 되므로, 한 테스트 안에서 판을 여러 번 시작하는 스펙(m5 도박 해금·미션, t2 아래 띠, t3 캠페인, f10 재시작 …)이 쓰는 시작 도우미를
+  `e2e/title.ts` `clickStart`(저장이 있으면 [새 게임] → [새 게임 시작])로 모았다. 새 스펙: `e2e/a1.spec.ts` 7개(Codex save·audio·dice-effects를 우리 화면에 맞춰 옮김 + 뒤로 가기·개발자 판·망가진 저장·주사위 한도), `e2e/map-fill.spec.ts` 3개.
+- **Vitest 새 테스트**: `tests/integration/match-saves.test.ts` 15개(리플레이 7개 중간 저장·되살리기 포함), `tests/integration/battle-records.test.ts` 4개, `tests/unit/a1.test.ts` 7개(볼륨·사람 입력 전 무음·화면 흔들림·뒤로 가기 순서·안드로이드 버전 = package.json).
+- 스크린샷 (412×915, deviceScaleFactor 1): `docs/screens/A1-title.png`(이어 하기·새 게임·📜 기록) · `A1-records.png`(전투 기록 창) · `A1-pause.png`(효과음 크기·화면 흔들림) · `A1-dice.png`(소환 주사위) · `A1-map.png`(위아래 여백 없는 순환의 정원).
+- **게이트** (한 번에, `npm test && npm run check && npm run build && E2E_PORT=5197 npm run e2e -- --trace off`): Vitest **1,244 통과 + 2 건너뜀**(64파일, +26), `npm run check`·`npm run build` 통과,
+  E2E **125 통과 · 1 건너뜀 · 실패 0** (45.2분). `npm run replays` 다시 써도 리플레이 7개 변경 없음. `android/check-java.sh` 통과.
+  - 앞선 두 번의 전체 실행에서 나온 실패와 처리: ① [이어 하기] 타이틀 때문에 판을 두 번 시작하는 스펙 4개(m5 도박 해금·미션, t2 아래 띠, t3 캠페인)가 [시작]을 못 찾음 → `clickStart`로 고침.
+    ② f10 '기본 5종 흑백' 실루엣 면적 하한(0.12)을 고블린이 0.116으로 밑돎 — 맵 칸이 커진 뒤(위 추가 요청), 하한 0.1로 (이유 주석). ③ devtools ×1 틱 수(50 < 60)·m2 '+10원' 연출 poll은
+    다른 갈래 Playwright가 함께 돌던 부하 때 실제 시간 창 실패 — 조용할 때 따로·전체 다시 돌리면 통과.
+- **남은 문제 / 다음 작업자에게**:
+  - APK 자체(SDK 내려받기·aapt2·d8·apksigner)는 이 컨테이너에서 못 돌렸다 → 첫 GitHub Actions 실행에서 확인. 비밀값 4개를 넣기 전에는 서명 전 APK만 나온다(초록).
+  - 실제 휴대폰에서 확인할 것: v0.1.7 위 업데이트 설치, 하위 폴더 그림(`assets/characters/…`)이 WebView에서 열림, 뒤로 가기(창 닫기 → 일시정지/계속 → 타이틀에서 앱 종료), 백그라운드 → 다시 열기 이어 하기, 효과음.
+  - 앱 버전이 바뀌면 진행 중이던 판 저장은 버려진다(안전 쪽 결정). 업데이트 직후 판을 잃지 않게 하려면 sim 상태 형식 번호를 따로 두는 방식으로 바꿀 수 있다.
+  - 개발자 판 타이틀에서 [캠페인 1]은 확인 없이 개발자 저장을 덮는다(개발자 전용이라 그대로 둠).

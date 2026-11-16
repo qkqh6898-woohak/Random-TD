@@ -1,7 +1,7 @@
 {
   "name": "random-td",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.8",
   "description": "운빨 디펜스 — 랜덤 소환 + 3개 합성 타워 디펜스 (모바일 세로)",
   "type": "module",
   "engines": {

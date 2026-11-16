@@ -4,6 +4,7 @@
  * sim은 window.__rtd로 읽기만 하고 버튼은 화면에서 누른다.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -46,7 +47,7 @@ async function sim<T>(page: Page, fn: (s: SceneLike) => T): Promise<T> {
 
 async function startGame(page: Page, url: string): Promise<void> {
   await page.goto(url);
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
 }
 
@@ -234,7 +235,7 @@ test.describe('한 파일 빌드 (npm run build:single → release/운빨디펜�
     await page.goto(pathToFileURL(file).href);
     await expect(page).toHaveTitle('운빨 디펜스');
     expect(await page.evaluate(() => typeof (window as unknown as { __RTD_ASSETS__?: unknown }).__RTD_ASSETS__)).toBe('object');
-    await page.getByRole('button', { name: '시작' }).click();
+    await clickStart(page);
     await expect(page.locator('[data-screen="game"]')).toBeVisible();
     // 빈 칸 (2, 4)를 눌러 소환 → 돈 1,000 → 900원, 타워 1개 (순환의 정원 v2 고리 안쪽 블록)
     const p = await sim(page, (s) => s.mapLayout);

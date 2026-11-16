@@ -4,6 +4,7 @@
  * sim 상태는 개발 서버의 window.__rtd 로 읽는다 (화면은 읽기만). 판 준비(소환)는 명령으로 보낸다.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 // T-2: 이 파일은 정보 패널 [⬆ 승급] 흐름을 본다 → '눌러서 바로 승급'(기본 켜짐)을 끄고 시작 (켜진 동작은 e2e/t2.spec.ts)
@@ -55,7 +56,7 @@ function collectErrors(page: Page): string[] {
 
 async function start(page: Page, query = '?debug=1&seed=42'): Promise<void> {
   await page.goto(`/${query}`);
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
 }
 

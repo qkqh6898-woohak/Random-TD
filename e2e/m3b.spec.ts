@@ -4,6 +4,7 @@
  * M3b 스크린샷. 특색 타워는 개발용 debugTower 명령(?debug=1)으로 놓는다. sim은 window.__rtd로 읽기만 한다.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
@@ -54,7 +55,7 @@ function collectErrors(page: Page): string[] {
 
 async function start(page: Page, query = '?debug=1&seed=42'): Promise<void> {
   await page.goto(`/${query}`);
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
 }
 

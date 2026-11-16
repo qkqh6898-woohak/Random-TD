@@ -4,6 +4,7 @@
  * sim은 window.__rtd로 읽기만 한다 (타워 놓기는 개발자 명령).
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
@@ -55,7 +56,9 @@ async function shot(page: Page, name: string): Promise<void> {
 
 async function startGame(page: Page, url = '/?dev=1&seed=42', mode: 'infinite' | 'campaign' = 'infinite'): Promise<void> {
   await page.goto(url);
-  await page.getByRole('button', { name: mode === 'campaign' ? '캠페인 1 (디버그)' : '시작' }).click();
+  // A-1: 저장된 판이 있으면 [시작] 대신 [새 게임]→확인 (clickStart). [캠페인 1]은 저장과 상관없이 있다
+  if (mode === 'campaign') await page.getByRole('button', { name: '캠페인 1 (디버그)' }).click();
+  else await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
   await expect.poll(() => sim(page, (s) => s.match.map.id)).toBe(mode === 'campaign' ? 'crossroads' : 'circle');
 }
@@ -159,7 +162,7 @@ test('화면 크기가 바뀌면 논리 높이·맵을 다시 맞춘다 (412×91
   await page.setViewportSize({ width: 412, height: 732 });
   await expect.poll(async () => Math.round((await frame(page)).canvas.h)).toBe(732);
   await page.setViewportSize({ width: 412, height: 915 });
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
   const tall = await sim(page, (s) => ({ h: s.scale.height, tile: s.mapLayout.tile }));
   expect(tall.h).toBe(2399);

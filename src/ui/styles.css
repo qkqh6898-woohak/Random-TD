@@ -3475,3 +3475,242 @@ body {
   text-align: left;
   margin: 0 0 2.4cqw;
 }
+
+/* ---------------------------------------------------------------- A-1 이어 하기 · 전투 기록 · 일시정지 설정 */
+/* [▶ 이어 하기 · n단계]: [시작]과 같은 자리·크기, 단계는 작은 줄로 */
+.btn-resume {
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+
+.title-save-stage,
+.title-save-dev {
+  flex-basis: 100%;
+  font-size: 3.6cqw;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #5a3a12;
+}
+
+.title-save-dev {
+  font-size: 3cqw;
+  color: #4b2d7a;
+}
+
+/* [시작] 아래 여백 줄: [새 게임]·[캠페인 1]이 함께면 나란히 */
+.title-debug.is-pair {
+  gap: 2.4cqw;
+}
+
+.title-debug.is-pair .btn-campaign {
+  min-width: 0;
+  flex: 0 1 40cqw;
+  font-size: 3.8cqw;
+}
+
+/* [📜 기록]: 왼쪽 위 모서리 (아이폰 노치 아래) */
+.title-records-btn {
+  position: absolute;
+  left: 3cqw;
+  top: calc(3cqw + env(safe-area-inset-top, 0px));
+  background: rgba(13, 18, 32, 0.72);
+}
+
+/* 타이틀 창 (<dialog>): 무대 너비 기준 크기, 배경은 어둡게 */
+.title-dialog {
+  width: min(86cqw, 92vw);
+  max-height: 82vh;
+  padding: 0;
+  color: var(--text);
+  font-family: var(--font);
+  background: #141b2e;
+  border: 0.4cqw solid var(--panel-line);
+  border-radius: 4cqw;
+  box-shadow: 0 2.4cqw 6cqw rgba(0, 0, 0, 0.6);
+}
+
+.title-dialog::backdrop {
+  background: rgba(5, 8, 16, 0.7);
+}
+
+.title-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3cqw;
+  padding: 6cqw;
+}
+
+.title-dialog h2 {
+  margin: 0;
+  font-size: 5.6cqw;
+  font-weight: 900;
+}
+
+.title-dialog p {
+  margin: 0;
+  font-size: 3.8cqw;
+  color: var(--text-dim);
+}
+
+.title-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2.4cqw;
+}
+
+.title-confirm-actions .btn {
+  min-height: max(11cqw, 44px);
+  font-size: 4.2cqw;
+}
+
+.records-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.records-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3cqw;
+  padding: 4cqw 5cqw 3cqw;
+  border-bottom: 0.3cqw solid var(--panel-line);
+}
+
+.records-close {
+  min-width: max(16cqw, 44px);
+  min-height: max(11cqw, 44px);
+  font-size: 3.8cqw;
+}
+
+.records-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4cqw;
+  padding: 4cqw 5cqw 6cqw;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.records-best {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 3cqw 4cqw;
+  border-radius: 3cqw;
+  background: rgba(245, 183, 0, 0.12);
+}
+
+.records-best span {
+  font-size: 3.8cqw;
+  color: var(--text-dim);
+}
+
+.records-dialog .records-best strong {
+  font-size: 6cqw;
+  font-weight: 900;
+  color: var(--gold);
+}
+
+.records-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6cqw;
+}
+
+.records-group h3 {
+  margin: 0;
+  font-size: 4.2cqw;
+  font-weight: 900;
+}
+
+.records-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2cqw;
+}
+
+.records-group li,
+.records-run summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 3.8cqw;
+  padding: 2cqw 3cqw;
+  border-radius: 2.4cqw;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.records-group li strong {
+  color: #ffe08a;
+}
+
+.records-note {
+  font-size: 3.2cqw;
+}
+
+.records-run summary {
+  cursor: pointer;
+  min-height: max(11cqw, 44px);
+  list-style: none;
+}
+
+.records-run summary::-webkit-details-marker {
+  display: none;
+}
+
+.records-run-summary {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.records-run-summary strong {
+  font-size: 4.4cqw;
+  color: #ffe08a;
+}
+
+.records-run-summary time {
+  font-size: 3.4cqw;
+  color: var(--text-dim);
+}
+
+.records-run-bosses {
+  padding: 1.6cqw 3cqw 0;
+}
+
+.records-run-bosses p {
+  font-size: 3.4cqw;
+}
+
+/* 일시정지: 효과음 크기 밀대 + [🔊 미리 듣기] */
+.pause-volume-value {
+  margin-left: 1.6cqw;
+  font-size: 3.6cqw;
+  font-weight: 800;
+  color: #ffe08a;
+}
+
+.pause-volume-controls {
+  display: flex;
+  align-items: center;
+  gap: 2.4cqw;
+  margin-top: 1.2cqw;
+}
+
+.pause-volume {
+  flex: 1;
+  min-width: 0;
+  height: max(9.5cqw, 40px);
+  accent-color: var(--gold);
+}
+
+.pause-panel .pause-preview {
+  min-width: 0;
+  padding: 1cqw 2cqw;
+  font-size: 3.2cqw;
+}

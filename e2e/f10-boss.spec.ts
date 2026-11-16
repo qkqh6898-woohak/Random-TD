@@ -4,6 +4,7 @@
  * 단계 이동·타워는 개발용 명령(?debug=1 / ?dev=1). sim은 window.__rtd로 읽기만 한다 (명령은 enqueue).
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
@@ -33,7 +34,7 @@ function collectErrors(page: Page): string[] {
 
 async function start(page: Page, query = '?debug=1&seed=42'): Promise<void> {
   await page.goto(`/${query}`);
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
 }
 

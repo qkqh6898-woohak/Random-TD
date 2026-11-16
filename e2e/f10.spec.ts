@@ -10,6 +10,7 @@
  * 이 파일은 빈 저장소(첫 승급 안내를 아직 안 본 새 계정)로 시작한다 — 다른 스펙은 playwright.config의 '안내를 본 계정'.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -76,7 +77,7 @@ function collectErrors(page: Page): string[] {
 
 async function start(page: Page, query: string): Promise<void> {
   await page.goto(`/${query}`);
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
   // 판 시작 첫 프레임들(텍스처 굽기)이 지나 layout·guideState가 채워질 때까지
   await expect.poll(() => inScene(page, (s) => s.mapLayout.tile, null)).toBeGreaterThan(0);
@@ -660,7 +661,8 @@ test('기본 5종: 이름표 없이 나란히 흑백 캡처해도 서로 다르�
     return { area, xor };
   });
   console.log('기본 5종 흑백 실루엣', JSON.stringify(sil));
-  for (const a of sil.area) expect(a).toBeGreaterThan(0.12);
+  // 면적 하한 0.1: F10-4 실측 0.12~0.31, A-1에서 맵 위아래 여백을 없애 칸이 커진(135 → 141px) 뒤 고블린 0.116 (외곽선 두께가 정수 px로 반올림됨)
+  for (const a of sil.area) expect(a).toBeGreaterThan(0.1);
   for (const x of sil.xor) expect(x).toBeGreaterThan(0.2);
   // 다섯 장이 서로 충분히 다르다 (흑백 평균 차이)
   const diffs = await sheet.evaluate(async () => {

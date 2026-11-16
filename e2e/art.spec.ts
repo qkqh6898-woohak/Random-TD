@@ -4,6 +4,7 @@
  * SAVE_SCREENS=1(npm run screens)이면 docs/screens/T2-art-*.png 저장. sim은 window.__rtd로 읽기만 하고 버튼은 화면에서 누른다.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
@@ -56,7 +57,7 @@ async function shot(page: Page, name: string, opts: { animations?: 'disabled' | 
 
 async function startGame(page: Page, url: string): Promise<void> {
   await page.goto(url);
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
 }
 

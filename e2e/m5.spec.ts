@@ -5,6 +5,7 @@
  * 단계·타워·돈은 개발용 명령(?debug=1)으로. sim은 window.__rtd로 읽기만 하고 버튼은 화면에서 누른다.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 // T-2: 이 파일은 정보 패널 [⬆ 승급] 흐름을 본다 → '눌러서 바로 승급'(기본 켜짐)을 끄고 시작 (켜진 동작은 e2e/t2.spec.ts)
@@ -73,7 +74,7 @@ function collectErrors(page: Page): string[] {
 
 async function start(page: Page, query = '?debug=1&seed=42'): Promise<void> {
   await page.goto(`/${query}`);
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
 }
 

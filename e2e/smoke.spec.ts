@@ -5,6 +5,7 @@
  * 틱은 HUD 루트의 data-tick 속성으로 읽는다 (화면에는 안 보임).
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
@@ -69,7 +70,7 @@ test('타이틀 화면: 운빨 디펜스 글자와 [시작] 버튼이 Phaser 캔
 test('[시작] → 게임 장면: 고정 틱이 돌고 배속 버튼이 ×1 → ×2 → ×1로 순환, ⏸ 메뉴를 거쳐 타이틀 복귀', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/?seed=42');
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
 
   await expect(page.locator('[data-screen="title"]')).toHaveCount(0);
   const hud = page.locator('[data-screen="game"]');
@@ -127,7 +128,7 @@ test('[시작] → 게임 장면: 고정 틱이 돌고 배속 버튼이 ×1 → 
 
 test('화면 읽기: 자주 바뀌는 타이머·몹 수는 aria-live 영역 밖, 알림은 toast 층에서만', async ({ page }) => {
   await page.goto('/?seed=3');
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect.poll(() => tickValue(page), { timeout: 5000 }).toBeGreaterThan(0);
   expect(await page.locator('#ui-root').getAttribute('aria-live')).toBeNull();
   for (const id of ['hud-timer', 'hud-count', 'hud-gold', 'hud-stage']) {
@@ -143,7 +144,7 @@ test('화면 읽기: 자주 바뀌는 타이머·몹 수는 aria-live 영역 밖
 
 test('게임 루프 안에서 예외가 나면 콘솔에만 남기지 않고 오류 화면을 띄운다', async ({ page }) => {
   await page.goto('/?seed=5');
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect.poll(() => tickValue(page), { timeout: 5000 }).toBeGreaterThan(0);
   // 장면 update 안에서 예외가 난 것처럼: Phaser 다음 프레임 콜백에서 던진다
   await page.evaluate(() => {
@@ -161,7 +162,7 @@ test('게임 루프 안에서 예외가 나면 콘솔에만 남기지 않고 오
 
 test('?debug=1(개발자 모드)이면 ×16 배속까지 순환하고, ×2에서 틱이 ×1보다 빨리 돈다', async ({ page }) => {
   await page.goto('/?debug=1&seed=7');
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   const speed = page.getByRole('button', { name: '배속' });
   await expect.poll(() => tickValue(page)).toBeGreaterThan(0);
 

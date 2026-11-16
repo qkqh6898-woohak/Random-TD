@@ -5,6 +5,7 @@
  * 맵 좌표에 기대지 않는다 (다른 갈래가 맵을 바꾸는 중): 칸은 sim의 배치 칸 목록에서 고른다.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
@@ -41,7 +42,7 @@ function collectErrors(page: Page): string[] {
 
 async function start(page: Page, query = '?dev=1&seed=42'): Promise<void> {
   await page.goto(`/${query}`);
-  await page.getByRole('button', { name: '시작' }).click();
+  await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
 }
 

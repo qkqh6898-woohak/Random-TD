@@ -4,6 +4,10 @@ import { isDevMode } from '../devMode';
 import type { UiRoot } from '../ui/root';
 import type { AccountStore } from '../meta/account';
 import type { SettingsStore } from '../meta/settings';
+import type { MatchSaves } from '../save/MatchSaves';
+import type { BattleRecords } from '../save/BattleRecords';
+import type { ScreenShake } from '../save/ScreenShake';
+import type { EffectAudio } from '../audio/EffectAudio';
 
 export interface GameContext {
   data: GameData;
@@ -21,6 +25,14 @@ export interface GameContext {
   account: AccountStore;
   /** 화면 설정 (T-2: 눌러서 바로 승급·연출 끄기·히든 미션 조건 보기) */
   settings: SettingsStore;
+  /** 진행 중인 판 자동 저장 (A-1). 개발자 모드면 개발자 판 슬롯 */
+  saves: MatchSaves;
+  /** 전투 기록·최근 5판 (A-1) */
+  records: BattleRecords;
+  /** 화면 흔들림 설정 (A-1, 기기 저장) */
+  screenShake: ScreenShake;
+  /** 효과음 (A-1, WebAudio 합성) */
+  audio: EffectAudio;
   version: string;
 }
 
