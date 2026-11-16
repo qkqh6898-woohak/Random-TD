@@ -57,6 +57,12 @@ export class FxLayer {
     ensureFxTextures(scene);
   }
 
+  /** HUD 띠 아래 끝 (게임 px): 소환·승급 주사위가 그보다 위로 올라가 HUD 밑에 숨지 않게 (검토 반영) */
+  private topLimit = Number.NEGATIVE_INFINITY;
+  setTopLimit(topLimit: number): void {
+    this.topLimit = topLimit;
+  }
+
   /** 주사위를 띄울 수 있는가 (연출 켜짐 + 동작 줄이기 아님 + 한도 안) */
   private diceAllowed(): boolean {
     return !effectsOff() && !this.reducedMotion() && this.diceLive < MAX_DICE;
@@ -88,12 +94,15 @@ export class FxLayer {
     const tile = L.tile;
     const merge = kind === 'merge';
     const revealedFace = merge ? 5 : 3;
-    const die = this.die(`${kind}-die`, x, y - tile * 0.46, revealedFace, FX_DEPTH + 12, tile * 0.28).setAngle(-210);
-    let lastFace = revealedFace;
+    // 첫 프레임부터 굴러가는 면으로 시작 (예전엔 결과 면으로 만들었다가 바로 다른 면으로 튐, 검토 반영)
+    const firstFace = rollingDieFace(0, revealedFace);
+    const die = this.die(`${kind}-die`, x, y - tile * 0.46, firstFace, FX_DEPTH + 12, tile * 0.28).setAngle(-210);
+    let lastFace = firstFace;
     const size = tile * (merge ? 0.62 : 0.5);
     this.scene.tweens.add({
       targets: die,
-      y: y + tile * dieApexTiles(this.figureScaleAt(tx, ty)),
+      // 머리 위, 단 HUD 띠 아래 (맨 윗줄은 그림이 HUD 아래로 줄어 있어 주사위가 HUD 밑으로 들어가던 것)
+      y: Math.max(y + tile * dieApexTiles(this.figureScaleAt(tx, ty)), this.topLimit + size / 2),
       angle: 150,
       displayWidth: size,
       displayHeight: size,

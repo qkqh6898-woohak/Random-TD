@@ -986,6 +986,10 @@ export class GameScene extends Phaser.Scene {
     const w = this.ctx.ui.el.clientWidth;
     const gap = w * TOAST_GAP_OF_WIDTH;
     this.ctx.ui.setToastTop(bottom > 0 ? bottom + gap : null);
+    // 맵 영역이 그대로여도 HUD 띠가 커지면 캐릭터 머리·주사위 한계를 새로 (B-1 검토 반영)
+    const hudBottom = cssToGamePx(bottom, w);
+    this.towerLayer?.setTopLimit(hudBottom);
+    this.fx?.setTopLimit(hudBottom);
     this.panelTopCss = bottom + gap + this.ctx.ui.measureToastHeight() + gap / 2;
     // 첫 승급 안내 카드를 위에 띄울 때의 위쪽 끝 (F10) = 위쪽 패널과 같은 자리 (알림 한 줄 아래)
     this.ctx.ui.el.style.setProperty('--guide-top', `${Math.round(this.panelTopCss)}px`);
@@ -1581,7 +1585,7 @@ export class GameScene extends Phaser.Scene {
     // 패널이 고른 타워 그림을 가리지 않게: 실제 패널 높이와 그림 위치를 재서 쪽·접기 단계를 정한다 (바뀔 때만)
     const ui = this.ctx.ui.el;
     const figureScale = this.towerLayer.artScaleOf(t.id) ?? 1;
-    const key = `${t.id}|${t.tx},${t.ty}|${this.layout.tile}|${this.layout.originY}|${ui.clientWidth}x${ui.clientHeight}|${figureScale}`;
+    const key = `${t.id}|${t.tx},${t.ty}|${this.layout.tile}|${this.layout.originY}|${ui.clientWidth}x${ui.clientHeight}|${figureScale.toFixed(3)}`;
     if (!changed && key === this.panelPlaceKey) return;
     this.panelPlaceKey = key;
     const L = this.layout;

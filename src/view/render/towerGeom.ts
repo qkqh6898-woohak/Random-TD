@@ -43,6 +43,27 @@ export function towerFigureSpanTiles(scale = 1): { top: number; bottom: number }
   return { top: FOOT_OFFSET_TILES - HEAD_ABOVE_FOOT_TILES * scale, bottom: FIGURE_BOTTOM_TILES };
 }
 
+/**
+ * 이웃 붙음 판정 (B-1, 검토 반영 — TowerLayer.sync·expectedScale이 같이 쓴다): 위·아래·왼쪽·오른쪽 칸에 다른 타워가 있으면 붙음 (대각선은 아님).
+ * 열 수 + 2를 한 줄 간격으로 써서 한 줄 끝(tx = cols−1)과 다음 줄 시작(tx = 0)이 이웃으로 잡히지 않게 한다.
+ */
+export function occupancyKey(tx: number, ty: number, cols: number): number {
+  return ty * (cols + 2) + tx;
+}
+
+/** 타워 칸 목록을 out에 채운다 (매 프레임 같은 Set을 다시 쓴다). */
+export function fillOccupancy(out: Set<number>, towers: readonly { tx: number; ty: number }[], cols: number): Set<number> {
+  out.clear();
+  for (const t of towers) out.add(occupancyKey(t.tx, t.ty, cols));
+  return out;
+}
+
+export function isCrowded(occupied: ReadonlySet<number>, tx: number, ty: number, cols: number): boolean {
+  const key = occupancyKey(tx, ty, cols);
+  const stride = cols + 2;
+  return occupied.has(key - 1) || occupied.has(key + 1) || occupied.has(key - stride) || occupied.has(key + stride);
+}
+
 /** 소환·승급 주사위가 머리 끝보다 더 올라가 멈추는 높이 (칸 배수) */
 export const DIE_ABOVE_HEAD_TILES = 0.104;
 

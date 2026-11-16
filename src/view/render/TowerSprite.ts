@@ -35,7 +35,7 @@ import type { Tower } from '../../sim/entities/Tower';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { MOB_DEPTH_BASE } from './MobSprite';
 import { attackAnimMs, towerPose } from './towerPose';
-import { battleFigureScale, FIGURE_TILES, FOOT_OFFSET_TILES, PEDESTAL_WIDTH_TILES } from './towerGeom';
+import { battleFigureScale, FIGURE_TILES, FOOT_OFFSET_TILES, fillOccupancy, isCrowded, PEDESTAL_WIDTH_TILES } from './towerGeom';
 
 /** 이동·교환 뒤 새 칸으로 미끄러지는 시간 (ms) */
 const SLIDE_MS = 140;
@@ -281,9 +281,14 @@ export class TowerLayer {
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly layout: MapLayout,
-    private readonly topLimit: number,
+    private topLimit: number,
     private readonly art: TowerArt,
   ) {}
+
+  /** HUD 띠 아래 끝 (게임 px)이 바뀜 — 맵 영역이 그대로여도 HUD가 커지면 머리가 HUD 밑으로 들어가지 않게 (검토 반영) */
+  setTopLimit(topLimit: number): void {
+    this.topLimit = topLimit;
+  }
 
   /** 소환 사건: 다음 sync에서 그림이 생길 때 등장 동작. */
   noteSummoned(id: number): void {
@@ -298,10 +303,8 @@ export class TowerLayer {
   /** @param tick 지금 sim 틱 (기절 표시: tick < stunUntil). 생략하면 기절 표시 없음 */
   sync(towers: readonly Tower[], timeMs: number, tick?: number): void {
     const seen = new Set<number>();
-    // 한 줄 끝과 다음 줄 시작이 이웃으로 잡히지 않게 여유 열을 둔다.
-    const stride = this.layout.cols + 2;
-    this.occupied.clear();
-    for (const t of towers) this.occupied.add(t.ty * stride + t.tx);
+    const cols = this.layout.cols;
+    fillOccupancy(this.occupied, towers, cols);
     for (const t of towers) {
       seen.add(t.id);
       let sprite = this.sprites.get(t.id);
@@ -320,9 +323,7 @@ export class TowerLayer {
         if (this.pendingAppear.delete(t.id)) sprite.appear(timeMs);
       } else sprite.follow(t, timeMs);
       sprite.setStunned(tick !== undefined && tick < (t.stunUntil ?? 0));
-      const key = t.ty * stride + t.tx;
-      const crowded = this.occupied.has(key - 1) || this.occupied.has(key + 1) || this.occupied.has(key - stride) || this.occupied.has(key + stride);
-      sprite.update(timeMs, crowded, this.topLimit);
+      sprite.update(timeMs, isCrowded(this.occupied, t.tx, t.ty, cols), this.topLimit);
     }
     for (const [id, s] of this.sprites) {
       if (!seen.has(id)) {
@@ -390,7 +391,8 @@ export class TowerLayer {
   expectedScale(t: Tower, towers: readonly Tower[]): number {
     const sprite = this.sprites.get(t.id);
     if (sprite) return sprite.artScale;
-    const crowded = towers.some((o) => o.id !== t.id && Math.abs(o.tx - t.tx) + Math.abs(o.ty - t.ty) === 1);
+    const cols = this.layout.cols;
+    const crowded = isCrowded(fillOccupancy(new Set<number>(), towers, cols), t.tx, t.ty, cols);
     const footY = tileCenterPx(this.layout, t.tx, t.ty).y + this.layout.tile * FOOT_OFFSET_TILES;
     return battleFigureScale(lookScale(towerLook(t.tower), this.art.awakened?.(t.tower) ?? false), crowded, (footY - this.topLimit) / this.layout.tile);
   }

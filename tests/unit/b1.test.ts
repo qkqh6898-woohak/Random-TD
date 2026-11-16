@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { tapTile } from '../../src/view/input/tap';
 import type { MapLayout } from '../../src/view/layout';
 import { DIE_ROLL_STEPS, rollingDieFace } from '../../src/view/render/fxModel';
-import { battleFigureScale, dieApexTiles, FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../../src/view/render/towerGeom';
+import { battleFigureScale, dieApexTiles, fillOccupancy, FOOT_OFFSET_TILES, isCrowded, towerFigureSpanTiles } from '../../src/view/render/towerGeom';
 
 // 1칸 100px, 칸 (0, 0) 왼쪽 위 = (0, 0)
 const L: MapLayout = { tile: 100, originX: 0, originY: 0, minCol: 0, minRow: 0, cols: 9, rows: 11 };
@@ -90,5 +90,33 @@ describe('B-1 굴러가는 주사위 눈', () => {
     // 진행도가 범위를 넘어도 (Back.easeOut이 아니라 progress라 0~1이지만) 안전
     expect(rollingDieFace(1.2, 3)).toBe(3);
     expect(rollingDieFace(-0.1, 3)).toBe(4);
+  });
+});
+
+describe('B-1 이웃 붙음 판정 (TowerLayer.sync·expectedScale 공용, 검토 반영)', () => {
+  const cols = 9;
+  const occ = (cells: [number, number][]) => fillOccupancy(new Set<number>(), cells.map(([tx, ty]) => ({ tx, ty })), cols);
+
+  it('위·아래·왼쪽·오른쪽 이웃이면 붙음, 대각선·두 칸 떨어지면 아님', () => {
+    for (const n of [[4, 5], [6, 5], [5, 4], [5, 6]] as [number, number][]) {
+      expect(isCrowded(occ([[5, 5], n]), 5, 5, cols)).toBe(true);
+    }
+    for (const n of [[4, 4], [6, 6], [7, 5], [5, 3]] as [number, number][]) {
+      expect(isCrowded(occ([[5, 5], n]), 5, 5, cols)).toBe(false);
+    }
+    expect(isCrowded(occ([[5, 5]]), 5, 5, cols)).toBe(false); // 자기 자신만
+  });
+
+  it('한 줄 끝(tx = cols−1)과 다음 줄 시작(tx = 0)은 이웃이 아니다', () => {
+    expect(isCrowded(occ([[cols - 1, 2], [0, 3]]), cols - 1, 2, cols)).toBe(false);
+    expect(isCrowded(occ([[cols - 1, 2], [0, 3]]), 0, 3, cols)).toBe(false);
+    expect(isCrowded(occ([[0, 2], [cols - 1, 1]]), 0, 2, cols)).toBe(false);
+  });
+
+  it('fillOccupancy는 같은 Set을 비우고 다시 채운다', () => {
+    const s = occ([[1, 1], [2, 1]]);
+    fillOccupancy(s, [{ tx: 7, ty: 7 }], cols);
+    expect(s.size).toBe(1);
+    expect(isCrowded(s, 1, 1, cols)).toBe(false);
   });
 });
