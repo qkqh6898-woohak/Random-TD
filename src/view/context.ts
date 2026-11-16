@@ -8,6 +8,7 @@ import type { MatchSaves } from '../save/MatchSaves';
 import type { BattleRecords } from '../save/BattleRecords';
 import type { ScreenShake } from '../save/ScreenShake';
 import type { EffectAudio } from '../audio/EffectAudio';
+import type { UpdateService } from '../update/UpdateService';
 
 export interface GameContext {
   data: GameData;
@@ -34,6 +35,8 @@ export interface GameContext {
   /** 효과음 (A-1, WebAudio 합성) */
   audio: EffectAudio;
   version: string;
+  /** 앱 안 업데이트 (U-1). 안드로이드 앱(자바 다리 window.RandomTDNative)에서만 있고, 브라우저·PWA는 null */
+  update?: UpdateService | null;
 }
 
 /** URL 쿼리에서 설정 읽기. testBuild = `import.meta.env.VITE_TEST_BUILD` (테스트 빌드면 개발자 모드). */

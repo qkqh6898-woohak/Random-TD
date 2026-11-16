@@ -38,15 +38,23 @@ npm start           # 게임 실행 (= npm run dev) → 브라우저에서 http:
 ## 안드로이드 APK (v0.1.8~)
 
 앱 ID `com.woohak.randomtd`, 서명 키는 v0.1.7과 같다 → 기존 v0.1.7 앱 위에 **업데이트**로 설치된다 (안드로이드 10 이상, 오프라인).
-버전은 `package.json`의 `version`과 `android/AndroidManifest.xml`의 `versionName`이 같아야 하고 `versionCode`는 올려야 한다 (`npm test`·빌드 스크립트·워크플로가 확인).
+**버전은 자동이다 (U-1)**: `main`에 푸시할 때마다 워크플로가 `tools/release-version.mjs`로 다음 버전을 골라 새 APK를 낸다 —
+`package.json` `version`이 이미 나온 `android-v*` 태그보다 크면 그대로, 아니면 가장 높은 태그의 다음 patch(0.1.9 → 0.1.10 → 0.1.11 …).
+`versionCode` = major × 1,000,000 + minor × 1,000 + patch (0.1.10 → 1010). 고른 버전은 CI 작업 폴더의 `package.json`·`package-lock.json`·`AndroidManifest.xml`에만 쓰고 커밋하지 않는다(앱 안 버전 표시 `v…`도 그 값).
+그래서 평소에는 버전을 손대지 않는다. **minor/major를 올릴 때만**(예: 0.2.0) `package.json` `version`과 `AndroidManifest`의 `versionName`을 같이 올린다(둘이 같아야 `npm test`·빌드 스크립트가 통과). patch가 999에 닿으면 워크플로가 멈추니 그때도 minor를 올린다.
+문서만 바꾼 푸시(`docs/**`, `*.md`)는 새 APK를 만들지 않는다.
+
+**앱 안 업데이트 (U-1)**: 안드로이드 앱은 켤 때(타이틀) GitHub의 최신 Release를 확인해 새 버전이면 '새 버전 vX가 나왔어요' 창을 띄운다 → [지금 업데이트]를 누르면 앱 안에서 APK를 받아
+SHA-256을 확인하고 안드로이드 설치 확인 창을 연다(같은 앱 ID·같은 서명 → 업데이트, 저장한 판·기록 그대로). [나중에]는 다음에 켤 때까지 묻지 않는다. 처음 한 번은 '출처를 알 수 없는 앱 설치'를 허용해야 한다.
+네트워크는 자바(`android/src/…/Updater.java`)만 쓰고 WebView는 여전히 APK 안 파일만 연다. 브라우저·PWA에서는 아무것도 하지 않는다. v0.1.9 이하에는 이 기능이 없어 v0.1.10은 한 번 직접 설치해야 한다.
 
 ### GitHub에서 빌드·서명·게시
 
 `.github/workflows/android.yml` (**Android APK**)이 `main`·`feat/android`에 푸시할 때와 수동 실행(workflow_dispatch) 때 돈다. 작업은 셋 (A-1b: 서명을 외부 코드에서 떼어 냄):
 
-1. **build** — `npm ci` → `npm test` → `npm run check` → `npm run build` (E2E는 안 돌림) → `android/check-java.sh` → `android/setup-sdk.sh`(공개 SDK·컴파일러를 SHA-256 확인 후 받음) → `android/build-apk.sh` → **서명 전 APK** (artifact `android-unsigned-v<버전>`). `dist/` 파일이 APK `assets/`에 모두 들어갔는지 확인한다. **서명 비밀값을 전혀 참조하지 않는다** (npm 패키지 코드가 비밀값과 같은 작업에서 돌지 않게).
+1. **build** — 릴리스 버전 정하기(전체 기록·태그를 받아 `tools/release-version.mjs --write`) → 릴리스 노트 → `npm ci` → `npm test` → `npm run check` → `npm run build` (E2E는 안 돌림) → `android/check-java.sh` → `android/setup-sdk.sh`(공개 SDK·컴파일러를 SHA-256 확인 후 받음) → `android/build-apk.sh` → **서명 전 APK** (artifact `android-unsigned-v<버전>`). `dist/` 파일이 APK `assets/`에 모두 들어갔는지 확인한다. **서명 비밀값을 전혀 참조하지 않는다** (npm 패키지 코드가 비밀값과 같은 작업에서 돌지 않게).
 2. **sign** — **`main`에서만** (서명 배포는 main만, `feat/android`는 서명 전 APK만). 서명 전 APK artifact만 내려받아 `apksigner`로 서명(PKCS12, v2+v3)하고, 서명 인증서 SHA-256이 v0.1.7 키(`0422434c…7cd02a`)와 다르면 실패한다. npm은 돌리지 않는다. 키 저장소는 `$RUNNER_TEMP`에만 풀고 끝나면(`always()`) 지운다. 비밀값이 없으면 알림만 남기고 초록으로 끝난다.
-3. **publish** — `main`에서 서명됐으면 Release `android-v<버전>`을 만들고 APK + `SHA256SUMS`를 올린다. 같은 태그가 이미 있으면 건너뛴다 (버전을 올리라는 알림).
+3. **publish** — `main`에서 서명됐으면 Release `android-v<버전>`을 만들고 APK + `SHA256SUMS`를 올린다. 릴리스 노트 = 설치 안내 한 줄 + 이전 `android-v` 태그 이후 커밋 제목(최대 30줄, build가 만듦). 같은 태그가 이미 있으면 건너뛴다.
 
 액션은 커밋 SHA로 고정했다 (주석 = 태그).
 

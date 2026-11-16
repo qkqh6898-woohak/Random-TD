@@ -243,9 +243,10 @@ test('보스: 10단계 박쥐 여왕 — 보스 막대(이름표·체력·남은
   const drawn = await inScene(page, (s) => ({ sim: s.match.mobs().length, drawn: s.renderedMobCount }), null);
   expect(drawn.drawn).toBe(drawn.sim);
   await page.getByRole('button', { name: '계속' }).click();
-  // 안쪽 블록 레전드 → 보스를 잡는다
-  await place(page, innerRing(['fortuna', 'archmage', 'dragoncaller', 'warlord']));
+  // 안쪽 블록 레전드 → 보스를 잡는다. 돈은 놓기 전에 잰다 — B-2 공격력 ×1.5로 놓는 동안(debugFastForward 포함) 보스가 이미 죽어
+  // 보상이 gold0에 들어가 버리던 흔들림 (돈은 줄지 않으므로 그 전 값과 비교해도 +200 검사가 성립)
   const gold0 = await inScene(page, (s) => s.match.state.gold, null);
+  await place(page, innerRing(['fortuna', 'archmage', 'dragoncaller', 'warlord']));
   await expect.poll(() => inScene(page, (s) => s.match.state.bossId, null), { timeout: 20_000 }).toBe('');
   expect(await inScene(page, (s) => s.match.state.gold, null)).toBeGreaterThanOrEqual(gold0 + 200);
   await expect(page.getByTestId('hud-boss-name')).toHaveText('👑 보스 처치! 남은 시간은 휴식');
