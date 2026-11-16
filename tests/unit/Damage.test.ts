@@ -103,20 +103,20 @@ describe('감소율 A ÷ (A + 100) (GDD 5.4 표)', () => {
 
 describe('배율: 공격력% 합연산 · 치명타 · 약화 · 보스', () => {
   it('공격력%는 모두 더한 뒤 한 번 곱한다 (+20% + +30% = ×1.5)', () => {
-    const stats = rules.towers.get('archer')!; // 물리 10
+    const stats = rules.towers.get('archer')!; // 물리 15
     const mods = { ...newPlayerMods(), atkPctBp: 2000 + 3000 };
     const hit = rollHit(stats, effectiveStats(rules, stats, mods));
-    expect(hit.p).toBe(1500);
+    expect(hit.p).toBe(2250);
   });
 
   it('치명타 배율은 타워 값(저격수 ×3) + 치명타 피해 강화', () => {
     const sniper = rules.towers.get('sniper')!;
     expect(sniper.critBp).toBe(3000);
     expect(sniper.critMulBp).toBe(30_000);
-    expect(rollHit(sniper, effectiveStats(rules, sniper), true).p).toBe(29_000 * 3);
+    expect(rollHit(sniper, effectiveStats(rules, sniper), true).p).toBe(43_500 * 3);
     const mods = { ...newPlayerMods(), critMulBp: 5000 };
-    expect(rollHit(sniper, effectiveStats(rules, sniper, mods), true).p).toBe(29_000 * 3.5);
-    expect(rollHit(sniper, effectiveStats(rules, sniper, mods), false).p).toBe(29_000);
+    expect(rollHit(sniper, effectiveStats(rules, sniper, mods), true).p).toBe(43_500 * 3.5);
+    expect(rollHit(sniper, effectiveStats(rules, sniper, mods), false).p).toBe(43_500);
   });
 
   it('치명타 확률: 타워 + 강화, 최대 100% / 0%면 난수를 쓰지 않음 / 100%면 난수 없이 치명타', () => {
@@ -146,8 +146,8 @@ describe('배율: 공격력% 합연산 · 치명타 · 약화 · 보스', () => 
     const stats = rules.towers.get('archer')!;
     const hit = rollHit(stats, effectiveStats(rules, stats, { ...newPlayerMods(), bossDmgPctBp: 10_000 }));
     expect(hit.bossMulBp).toBe(20_000);
-    expect(splitAtk(damageAgainst(hit, { armor: 0, magicRes: 0, boss: true }, caps).total, 0).dmg).toBe(20);
-    expect(splitAtk(damageAgainst(hit, { armor: 0, magicRes: 0, boss: false }, caps).total, 0).dmg).toBe(10);
+    expect(splitAtk(damageAgainst(hit, { armor: 0, magicRes: 0, boss: true }, caps).total, 0).dmg).toBe(30);
+    expect(splitAtk(damageAgainst(hit, { armor: 0, magicRes: 0, boss: false }, caps).total, 0).dmg).toBe(15);
   });
 
   it('모든 배율을 곱한 뒤 방어로 깎는다: 물리 100 × 1.5(공격력) × 2(치명) × 1.2(약화) × 2(보스) vs 방어 100·관통 50% → 720 × 2/3 = 480', () => {
@@ -178,12 +178,12 @@ describe('판 안에서: 관통·치명타 타워가 실제로 그렇게 때린�
     return { m, mob };
   }
 
-  it('전사(물리 18, 방어 관통 10%) vs 방어 100 → A = 90 → 1회 18 × 100/190 = 9.47 (10번 합 94~95)', () => {
+  it('전사(물리 27, 방어 관통 10%) vs 방어 100 → A = 90 → 10회 합 142', () => {
     const { m, mob } = setup();
     mob.armor = 100;
     const w = placeTower(m.world, 'warrior', 0, 4, 0);
     while (w.attacks < 10) m.step();
-    expect(1_000_000 - mob.hp).toBe(94);
+    expect(1_000_000 - mob.hp).toBe(142);
   });
 
   it('단일딜 전사(치명타 20% ×2, 관통 30%): 치명타가 섞이고 hit 사건에 crit 표시, 평균 = 이론값 ±2%', () => {
@@ -198,14 +198,14 @@ describe('판 안에서: 관통·치명타 타워가 실제로 그렇게 때린�
         hits++;
         if (e.crit === true) {
           crits++;
-          expect(e.damage === 96 || e.damage === 95 || e.damage === 97).toBe(true);
+          expect(e.damage === 144 || e.damage === 143 || e.damage === 145).toBe(true);
         }
       }
     }
     expect(hits).toBe(2000);
     expect(crits / hits).toBeGreaterThan(0.17);
     expect(crits / hits).toBeLessThan(0.23);
-    const ideal = 2000 * 48 * 1.2;
+    const ideal = 2000 * 72 * 1.2;
     expect(Math.abs(1_000_000 - mob.hp - ideal) / ideal).toBeLessThan(0.02);
   });
 
@@ -220,13 +220,13 @@ describe('판 안에서: 관통·치명타 타워가 실제로 그렇게 때린�
     expect(m.world.rng(STREAM_COMBAT).snapshot()).not.toEqual(combat);
   });
 
-  it('판 내 보정(state.mods): 공격력 +100% → 궁수 1회 20', () => {
+  it('판 내 보정(state.mods): 공격력 +100% → 궁수 1회 30', () => {
     const { m, mob } = setup();
     m.state.mods[0]!.atkPctBp = 10_000;
     const a = placeTower(m.world, 'archer', 0, 4, 0);
     while (a.attacks < 5) m.step();
     m.stepN(3);
-    expect(1_000_000 - mob.hp).toBe(100);
+    expect(1_000_000 - mob.hp).toBe(150);
   });
 
   it('applyHit은 판 규칙의 한도로 자른다 (관통 200% → 90%)', () => {

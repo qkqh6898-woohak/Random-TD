@@ -7,14 +7,21 @@ import { loadGameData } from '../../src/data/load';
 describe('배속 버튼 규칙 (UI.md 4.2)', () => {
   const speeds = loadGameData().game.speeds;
 
-  it('계정 Lv1은 ×1·×2, Lv12부터 ×3', () => {
-    expect(availableSpeeds(speeds, 1)).toEqual([1, 2]);
-    expect(availableSpeeds(speeds, 11)).toEqual([1, 2]);
-    expect(availableSpeeds(speeds, 12)).toEqual([1, 2, 3]);
+  it('계정 Lv1부터 모든 일반 배속', () => {
+    expect(availableSpeeds(speeds, 1)).toEqual([1, 2, 4, 8, 16]);
+    expect(availableSpeeds(speeds, 11)).toEqual([1, 2, 4, 8, 16]);
+    expect(availableSpeeds(speeds, 12)).toEqual([1, 2, 4, 8, 16]);
+  });
+
+  it('해금 레벨이 있는 배속은 그 레벨부터 (데이터가 모두 Lv1이어도 규칙은 남김 — B-2 검토)', () => {
+    const gated = [{ mul: 1, unlockLevel: 1 }, { mul: 2, unlockLevel: 1 }, { mul: 4, unlockLevel: 12 }];
+    expect(availableSpeeds(gated, 11)).toEqual([1, 2]);
+    expect(availableSpeeds(gated, 12)).toEqual([1, 2, 4]);
+    expect(nextSpeed(4, availableSpeeds(gated, 11))).toBe(1); // 저장된 ×4를 쓸 수 없으면 첫 값
   });
 
   it('debug면 레벨과 상관없이 전부', () => {
-    expect(availableSpeeds(speeds, 1, true)).toEqual([1, 2, 3]);
+    expect(availableSpeeds(speeds, 1, true)).toEqual([1, 2, 4, 8, 16]);
   });
 
   it('누를 때마다 순환, 목록에 없는 값이면 첫 값', () => {

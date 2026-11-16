@@ -145,13 +145,13 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
     expect(detectText(tower('archer'))).toBe('없음');
   });
 
-  it('견습 마법사: 마법 6.5, 공속 0.8 (×1), 사거리 2.5, 광역 r0.8, 보유 1/3 → 승급 꺼짐 + 안내', () => {
+  it('견습 마법사: 마법 9.8 (정확한 기본값 9.75), 공속 0.8 (×1), 사거리 2.5, 광역 r0.8, 보유 1/3 → 승급 꺼짐 + 안내', () => {
     const m = buildTowerPanelModel(panelInput('apprentice'));
     expect(m).toMatchObject({ name: '견습 마법사', stars: '★', level: 'Lv1', owned: '1/3', mergeEnabled: false, mergeAllEnabled: false });
     expect(m.subtitle).toBe('노말 · 왕국 · 마법');
     const flat = m.stats.flat();
     expect(flat.find((c) => c.label === '물리')!.value).toBe('—');
-    expect(flat.find((c) => c.label === '마법')!.value).toBe('6.5');
+    expect(flat.find((c) => c.label === '마법')!.value).toBe('9.8');
     expect(flat.find((c) => c.label === '공속')!.value).toBe('0.8 (×1)');
     expect(flat.find((c) => c.label === '사거리')!.value).toBe('2.5');
     expect(flat.find((c) => c.label === '범위')!.value).toBe('광역 r0.8');
@@ -220,12 +220,12 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
     expect(m.target).toBe('최대 체력');
   });
 
-  it('버프로 오른 값은 초록 + (기본값): 공격력 +50%·공속 +100% → 물리 15 (10), 공속 2 (×2) (1)', () => {
+  it('버프로 오른 값은 초록 + (기본값): 공격력 +50%·공속 +100% → 물리 22.5 (15), 공속 2 (×2) (1)', () => {
     const stats = rules.towers.get('archer')!;
     const eff = effectiveStats(rules, stats, { ...newPlayerMods(), atkPctBp: 5000, apsPctBp: 10_000 });
     const m = buildTowerPanelModel(panelInput('archer', { eff }));
     const flat = m.stats.flat();
-    expect(flat.find((c) => c.label === '물리')).toMatchObject({ value: '15', buffed: true, base: '10' });
+    expect(flat.find((c) => c.label === '물리')).toMatchObject({ value: '22.5', buffed: true, base: '15' });
     expect(flat.find((c) => c.label === '공속')).toMatchObject({ value: '2 (×2)', buffed: true, base: '1' });
   });
 
@@ -249,10 +249,10 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
     ]);
   });
 
-  it('신·고정 피해: 파멸의 신 고정 2400 · 범위 전체 · 사거리 맵 전체', () => {
+  it('신·고정 피해: 파멸의 신 고정 3600 · 범위 전체 · 사거리 맵 전체', () => {
     const m = buildTowerPanelModel(panelInput('ruin', { mergeableGrade: false }));
     const flat = m.stats.flat();
-    expect(flat.find((c) => c.label === '고정')!.value).toBe('2400');
+    expect(flat.find((c) => c.label === '고정')!.value).toBe('3600');
     expect(flat.find((c) => c.label === '범위')!.value).toBe('전체');
     expect(flat.find((c) => c.label === '사거리')!.value).toBe('맵 전체');
     expect(m.stars).toBe('👑');

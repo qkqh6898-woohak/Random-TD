@@ -148,7 +148,7 @@ export function runFirstBoss(d: GameData, seed: number, strategy: Strategy, opts
   let firstMerge = -1;
   let bossHp = 0;
   let grades: Record<string, number> = {};
-  const limit = m.rules.prepTicks + bossStage * m.rules.stageTicks + 40;
+  const limit = m.rules.prepTicks + (bossStage - 1) * m.rules.stageTicks + Math.max(m.rules.stageTicks, m.rules.bossTimeTicks) + Math.floor((bossStage - 1) / m.rules.bossEvery) * Math.max(0, m.rules.bossTimeTicks - m.rules.stageTicks) + 40;
   while (!m.defeated && w.tick < limit) {
     if (w.tick % ACT_EVERY === 0) {
       const cmd = decide(m, strategy, summons, opts);

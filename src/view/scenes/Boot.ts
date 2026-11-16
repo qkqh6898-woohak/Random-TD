@@ -130,6 +130,10 @@ export class BootScene extends Phaser.Scene {
         records: buildRecordsView(record, this.ctx.data.enemies.bosses, this.ctx.data.enemies.challenges),
       }),
     );
+    // 업데이트로 진행 중 판을 이어 할 수 없게 됐으면 한 번 알린다 (예전엔 말없이 사라졌다 — B-2 통합 검토)
+    if (!saved && this.ctx.saves.discardedByUpdate) {
+      this.ctx.ui.toast('업데이트로 진행 중이던 판은 이어 할 수 없어요. 계정·설정·전투 기록은 그대로예요.', 4000);
+    }
     // 타이틀의 뒤로 가기: 열린 창(기록·새 게임 확인)은 nativeBack이 닫고, 그 밖에는 앱이 닫힌다
     setBackHandler(null);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {

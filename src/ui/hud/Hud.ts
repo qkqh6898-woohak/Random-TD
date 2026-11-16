@@ -24,6 +24,7 @@
  * HUD는 sim을 읽기만 한다. 배속은 화면 설정(TickClock), 돈 추가·단계 건너뛰기(debug)는 명령으로 보낸다.
  * 루트의 data-tick 속성 = 지금 틱 (E2E가 게임 시간이 흐르는지 볼 때 쓴다, 화면에는 안 보임).
  */
+import { WORKER_PORTRAIT } from '../../art/worker';
 import { h } from '../dom';
 import { HOLD_DELAY_MS, attachHoldRepeat, skipRepeatDelay, type HoldHandle } from '../hold';
 import type { UiView } from '../root';
@@ -167,7 +168,7 @@ export function createHud(opts: HudOptions): HudView {
   const bannerTime = h('span', { class: 'hud-banner-time', attrs: { 'data-testid': 'hud-boss-time', role: 'timer', 'aria-live': 'off' }, text: '' });
   // 일꾼 (2줄): 👷 3/10
   const workersEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-workers', 'aria-label': '일꾼 수', ...off }, text: '0/0' });
-  const workersItem = h('span', { class: 'hud-item hud-workers' }, h('span', { class: 'hud-label', text: '👷', attrs: { 'aria-hidden': 'true' } }), workersEl);
+  const workersItem = h('span', { class: 'hud-item hud-workers' }, h('img', { class: 'hud-worker-art', attrs: { src: WORKER_PORTRAIT, alt: '', 'aria-hidden': 'true' } }), workersEl);
   const bannerEl = h('div', { class: 'hud-banner', attrs: { 'data-testid': 'hud-boss', hidden: '' } }, bannerFill, bannerText, bannerTime);
   // 도전 보스 막대 (M5): 보스 막대와 같은 자리
   const chalFill = h('div', { class: 'hud-banner-fill', attrs: { 'data-testid': 'hud-challenge-hp', 'aria-hidden': 'true' } });
@@ -222,12 +223,13 @@ export function createHud(opts: HudOptions): HudView {
     text: '',
     on: { click: () => opts.onMergeReady?.() },
   });
+  const hireLabel = h('span', { text: '' });
+  const hireArt = h('img', { class: 'hud-worker-art', attrs: { src: WORKER_PORTRAIT, alt: '', 'aria-hidden': 'true' } });
   const hireBtn = h('button', {
     class: 'btn btn-chip hud-hire',
     attrs: { type: 'button', 'data-action': 'hire', 'data-testid': 'hud-hire', 'aria-label': '일꾼 고용' },
-    text: '👷',
     on: { click: () => opts.onHire?.() },
-  });
+  }, hireArt, hireLabel);
   // 접은 고르기 창의 알약 자리 (display: contents → 알약이 아래 띠의 flex 항목이 된다)
   const choiceSlot = h('span', { class: 'hud-choice-slot', attrs: { 'data-testid': 'hud-choice-slot' } });
   const bottomBand = h(
@@ -425,7 +427,7 @@ export function createHud(opts: HudOptions): HudView {
       setText(workersEl, 'workers', m.workers);
       if (last.workersFull !== m.workersFull) workersItem.classList.toggle('is-full', m.workersFull);
       if (last.hireLabel !== m.hireLabel) {
-        hireBtn.textContent = m.hireLabel;
+        hireLabel.textContent = m.hireLabel.replace('👷 ', '');
         hireBtn.setAttribute('aria-label', m.workersFull ? '일꾼 최대' : `일꾼 고용 ${m.hireLabel.replace('👷 ', '')}`);
       }
       if (last.hireReady !== m.hireReady) hireBtn.classList.toggle('is-off', !m.hireReady);

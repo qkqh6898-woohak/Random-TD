@@ -24,6 +24,8 @@ describe('단계 타이머 (GDD 2.2)', () => {
   it('이후 60초마다: n단계 시작 틱 = 1200 + (n−1) × 1200', () => {
     expect(stageStartTick(1200, 1200, 1)).toBe(1200);
     expect(stageStartTick(1200, 1200, 5)).toBe(6000);
+    expect(stageStartTick(1200, 1200, 11, 10, 1800)).toBe(13800);
+    expect(stageStartTick(1200, 1200, 21, 10, 1800)).toBe(26400);
     const match = infinite(2);
     const starts: number[] = [];
     for (let t = 0; t < 6100; t++) {

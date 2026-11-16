@@ -98,6 +98,9 @@ export class MatchSaves {
   readonly slot: string;
   /** 마지막으로 저장을 버린 이유 (확인·테스트용, 없으면 null) */
   lastDiscard: string | null = null;
+
+  /** 마지막 read()가 앱 업데이트(저장 형식·앱 버전·게임 데이터 변경) 때문에 진행 중 판을 버렸는가 → 타이틀 알림 */
+  discardedByUpdate = false;
   /** 마지막 write가 기기 저장소에 못 써짐 (용량 초과 등 — 이번 실행 동안 메모리 사본만, A-1b) */
   persistFailed = false;
 
@@ -117,6 +120,9 @@ export class MatchSaves {
 
   /** 저장된 판이 있으면 되살려 돌려준다. 없거나 맞지 않으면 null (맞지 않는 저장은 지운다). */
   read(): SavedMatch | null {
+    // 이번 읽기에서 버린 이유만 남긴다 (타이틀에 한 번만 알리게 — 버린 뒤 다시 읽으면 null)
+    this.lastDiscard = null;
+    this.discardedByUpdate = false;
     let raw: string | null;
     try {
       raw = this.storage.getItem(this.slot);
@@ -135,9 +141,10 @@ export class MatchSaves {
   private check(raw: string): SavedMatch | string {
     const p = decodeSave(raw) as Partial<SavePayload> | null;
     if (!p || typeof p !== 'object') return '망가진 저장';
-    if (p.format !== MATCH_SAVE_FORMAT) return `저장 형식이 다름 (${String(p.format)})`;
-    if (p.app !== this.opts.version) return `앱 버전이 다름 (${String(p.app)})`;
-    if (p.dataHash !== this.dataHash()) return '게임 데이터가 바뀜';
+    // 업데이트 때문에 맞지 않는 저장 (형식·앱 버전·데이터) → 타이틀에 한 번 알림 (문구가 아니라 이 표시로 판단)
+    if (p.format !== MATCH_SAVE_FORMAT) return this.updateMismatch(`저장 형식이 다름 (${String(p.format)})`);
+    if (p.app !== this.opts.version) return this.updateMismatch(`앱 버전이 다름 (${String(p.app)})`);
+    if (p.dataHash !== this.dataHash()) return this.updateMismatch('게임 데이터가 바뀜');
     if (p.dev !== this.opts.dev || !p.inputs || p.inputs.debug !== p.dev) return '개발자 판 표시가 슬롯과 다름';
     if (!Number.isSafeInteger(p.speed) || (p.speed as number) < 1) return '배속이 잘못됨';
     if (typeof p.runId !== 'string' || p.runId.length === 0 || p.runId.length > 64) return '판 식별자가 잘못됨';
@@ -151,6 +158,11 @@ export class MatchSaves {
     } catch (e) {
       return `되살리기 실패: ${e instanceof Error ? e.message : String(e)}`;
     }
+  }
+
+  private updateMismatch(reason: string): string {
+    this.discardedByUpdate = true;
+    return reason;
   }
 
   private discard(raw: string, reason: string): void {

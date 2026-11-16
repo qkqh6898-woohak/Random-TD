@@ -37,11 +37,12 @@ interface Active {
   start: number;
   dur: number;
   big: boolean;
+  critical: boolean;
 }
 
 export class FloatingTextLayer {
   /** 크기별 쉬는 글자 (보통 · 큰 글자) — 글자 크기를 바꾸지 않고 돌려 쓴다 */
-  private readonly free: { normal: Phaser.GameObjects.Text[]; big: Phaser.GameObjects.Text[] } = { normal: [], big: [] };
+  private readonly free: { normal: Phaser.GameObjects.Text[]; big: Phaser.GameObjects.Text[]; critical: Phaser.GameObjects.Text[] } = { normal: [], big: [], critical: [] };
   private active: Active[] = [];
   private readonly fontPx: number;
   private maxActive = MAX_ACTIVE;
@@ -63,16 +64,20 @@ export class FloatingTextLayer {
 
   private release(a: Active): void {
     a.text.setVisible(false);
-    (a.big ? this.free.big : this.free.normal).push(a.text);
+    (a.critical ? this.free.critical : a.big ? this.free.big : this.free.normal).push(a.text);
   }
 
-  private take(big: boolean): Phaser.GameObjects.Text {
+  private take(big: boolean, critical: boolean): Phaser.GameObjects.Text {
     // 꽉 찼으면 가장 오래된 것을 지워 자리를 만든다 (그 글자는 제 크기 쉼터로)
-    while (this.active.length >= this.maxActive) this.release(this.active.shift() as Active);
-    const pool = big ? this.free.big : this.free.normal;
+    while (this.active.length >= this.maxActive) {
+      // 치명타가 일반 피해·동전 때문에 즉시 밀려나지 않게 우선 보존한다.
+      const normal = this.active.findIndex((a) => !a.critical);
+      this.release(this.active.splice(normal < 0 ? 0 : normal, 1)[0] as Active);
+    }
+    const pool = critical ? this.free.critical : big ? this.free.big : this.free.normal;
     const t = pool.pop();
     if (t) return t;
-    const size = big ? Math.round(this.fontPx * BIG_SCALE) : this.fontPx;
+    const size = critical ? Math.round(this.fontPx * 1.8) : big ? Math.round(this.fontPx * BIG_SCALE) : this.fontPx;
     return this.scene.add
       .text(0, 0, '', {
         fontFamily: FONT_FAMILY,
@@ -98,7 +103,7 @@ export class FloatingTextLayer {
   /** 떠 있는 숫자 a의 timeMs 때 상자 (겹침 판정용, 화면 px). */
   private boxOf(a: Active, timeMs: number): TextBox {
     const f = floatingTextFrame((timeMs - a.start) / a.dur);
-    const size = a.big ? Math.round(this.fontPx * BIG_SCALE) : this.fontPx;
+    const size = a.critical ? Math.round(this.fontPx * 1.8) : a.big ? Math.round(this.fontPx * BIG_SCALE) : this.fontPx;
     return { cx: a.x, bottom: a.y - f.rise * this.tile * (a.big ? 0.8 : 1), w: a.text.width, h: size * BOX_H_OF_FONT };
   }
 
@@ -109,11 +114,11 @@ export class FloatingTextLayer {
    * @param big 크게 (돈·치명타). 쌓을 자리가 없어도 띄운다
    * @returns 띄웠으면 true (피해 숫자는 쌓을 자리가 없으면 false)
    */
-  spawn(x: number, y: number, label: string, color: string, timeMs: number, big = false): boolean {
+  spawn(x: number, y: number, label: string, color: string, timeMs: number, big = false, critical = false): boolean {
     // 연출 끄기 (T-2): 피해·돈·회복 숫자를 띄우지 않는다
     if (effectsOff()) return false;
-    const size = big ? Math.round(this.fontPx * BIG_SCALE) : this.fontPx;
-    const text = this.take(big); // 꽉 찼으면 가장 오래된 것을 빼서 다시 쓴다 → 그 뒤에 남은 것들과 겹침을 본다
+    const size = critical ? Math.round(this.fontPx * 1.8) : big ? Math.round(this.fontPx * BIG_SCALE) : this.fontPx;
+    const text = this.take(big, critical); // 꽉 찼으면 가장 오래된 것을 빼서 다시 쓴다 → 그 뒤에 남은 것들과 겹침을 본다
     const others = this.active.map((a) => this.boxOf(a, timeMs));
     FloatingTextLayer.paint(text, label, color);
     const box: TextBox = { cx: x, bottom: y, w: text.width, h: size * BOX_H_OF_FONT };
@@ -139,7 +144,7 @@ export class FloatingTextLayer {
     const sy = y - slot * box.h;
     text.setVisible(true).setAlpha(1).setScale(floatingTextFrame(0).scale);
     text.setPosition(x, sy);
-    this.active.push({ text, x, y: sy, start: timeMs, dur: DAMAGE_TEXT_MS, big });
+    this.active.push({ text, x, y: sy, start: timeMs, dur: DAMAGE_TEXT_MS, big, critical });
     return true;
   }
 
@@ -179,9 +184,10 @@ export class FloatingTextLayer {
 
   destroy(): void {
     for (const a of this.active) a.text.destroy();
-    for (const t of [...this.free.normal, ...this.free.big]) t.destroy();
+    for (const t of [...this.free.normal, ...this.free.big, ...this.free.critical]) t.destroy();
     this.active = [];
     this.free.normal.length = 0;
     this.free.big.length = 0;
+    this.free.critical.length = 0;
   }
 }

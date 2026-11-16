@@ -6,6 +6,7 @@
  * 금관은 4천왕만 쓴다 (대장 킹 슬라임은 젤리 왕관).
  * 모든 적은 보라 눈(녹투르만 붉은 눈)과 뾰족한 실루엣 → 연합의 고블린·돌 골렘(초록·금빛 눈, 둥근 실루엣)과 한눈에 구별된다.
  */
+import { drawSdBoss, usesSdBoss } from './sdBoss';
 import { OUTLINE, P, blob, circle, ellipse, flame, glow, line, paint, poly, rrect, shade, shine, skullIcon, sparkle, stroke, type Ctx } from './cv';
 import type { CreatureId, RankId } from './library';
 import type { EnemyLook } from './looks';
@@ -718,6 +719,10 @@ function noxSigil(c: Ctx, x: number, y: number, r: number, legion: string): void
 
 /** 적 한 마리 (128×128 단위, 원점 = 왼쪽 위). legionColor = enemies.json 군단 색 (군주 직속은 보라). */
 export function drawEnemy(c: Ctx, look: EnemyLook, legionColor: string): void {
+  if (usesSdBoss(look)) {
+    drawSdBoss(c, look);
+    return;
+  }
   const a = CREATURE_ANCHORS[look.creature];
   const e: EnemyCtx = { c, body: look.colors[0] ?? '#888888', accent: look.colors[1] ?? '#CCCCCC', legion: legionColor, eye: look.eyes === 'red' ? RED_EYE : NOX_EYE };
   const rank: RankId = look.rank;

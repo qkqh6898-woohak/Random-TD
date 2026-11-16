@@ -156,12 +156,14 @@ async function shot(page: Page, name: string, docsName?: string): Promise<void> 
   }
 }
 
-test('일꾼: [👷 300원] → 👷 1/10·돈 −300, 5초마다 +5원 / 모자라면 "…원이 더 필요해요" / 10명이면 👷 최대(금색)', async ({ page }) => {
+test('SD 일꾼: [작업자 그림 + 300원] → 1/10·돈 −300, 5초마다 +5원 / 모자라면 "…원이 더 필요해요" / 10명이면 👷 최대(금색)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
   const hire = page.getByTestId('hud-hire');
   const workers = page.getByTestId('hud-workers');
-  await expect(hire).toHaveText('👷 300원');
+  await expect(hire).toHaveText('300원');
+  await expect(hire.locator('.hud-worker-art')).toBeVisible();
+  await expect(hire).toHaveAccessibleName('일꾼 고용 300원');
   await expect(workers).toHaveText('0/10');
   // 게임은 실시간으로 흐르고 일꾼 수입은 100틱(5초)마다 들어온다 → 돈을 읽는 시점과 수입 틱이 겹쳐도 맞게 확인한다
   // (돈을 두 번 나눠 읽으면 그 사이에 수입이 끼어 테스트가 흔들렸다).
@@ -216,7 +218,8 @@ test('일꾼: [👷 300원] → 👷 1/10·돈 −300, 5초마다 +5원 / 모자
     await hire.click();
     await expect(page.getByTestId('hud-workers')).toHaveText(`${i + 1}/10`);
   }
-  await expect(hire).toHaveText('👷 최대');
+  await expect(hire).toHaveText('최대');
+  await expect(hire).toHaveAccessibleName('일꾼 최대');
   await expect(page.locator('.hud-workers')).toHaveClass(/is-full/);
   await hire.click();
   await expect(page.locator('.toast', { hasText: '일꾼이 꽉 찼어요 (10/10)' })).toBeVisible();
@@ -277,12 +280,12 @@ test('보스: 10단계 박쥐 여왕 — 보스 막대(이름표·체력·남은
   expect(errors).toEqual([]);
 });
 
-test('보스 제한 시간: 10단계 보스를 60초 안에 못 잡으면 패배 화면 "박쥐 여왕을 60초 안에 잡지 못했어요 · 남은 체력 100%" (F10-2)', async ({ page }) => {
+test('보스 제한 시간: 10단계 보스를 90초 안에 못 잡으면 패배 화면 "박쥐 여왕을 90초 안에 잡지 못했어요 · 남은 체력 100%" (F10-2)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
   await skipTo(page, 10);
-  await ff(page, 1250);
-  await expect(page.locator('.gameover-reason')).toHaveText('박쥐 여왕을 60초 안에 잡지 못했어요 · 남은 체력 100%');
+  await ff(page, 1850);
+  await expect(page.locator('.gameover-reason')).toHaveText('박쥐 여왕을 90초 안에 잡지 못했어요 · 남은 체력 100%');
   expect(await inScene(page, (s) => [s.match.state.phase, s.match.state.defeatReason, s.match.state.stage], null)).toEqual(['defeat', 'bossTime', 10]);
   // 패배 화면 위에 알림·배너가 남지 않는다 (알림 층이 화면 층보다 위라 '패배' 제목을 가리던 것, 검토 반영)
   await expect(page.locator('.layer-toast > *')).toHaveCount(0);

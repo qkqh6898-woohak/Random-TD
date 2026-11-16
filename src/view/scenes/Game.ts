@@ -195,7 +195,7 @@ import { MobLayer } from '../render/MobSprite';
 import { ProjectileLayer, type ProjectileLook } from '../render/ProjectileSprite';
 import { SelectionLayer } from '../render/SelectionLayer';
 import { TowerLayer } from '../render/TowerSprite';
-import { DAMAGE_COLORS, damageColor, eventFxVisible, fxBudget } from '../render/fxModel';
+import { DAMAGE_COLORS, damageColor, eventFxVisible, fxBudget, prioritizeDamage } from '../render/fxModel';
 import { FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../render/towerGeom';
 import { PuddleLayer, SoldierLayer } from '../render/AbilitySprites';
 import { BattleBackground } from '../render/BattleBackground';
@@ -1740,19 +1740,19 @@ export class GameScene extends Phaser.Scene {
     let areaFx = 0;
     let meteors = 0;
     let coins = 0;
-    // 배속별 연출 한도 (×4부터 줄임, ×3까지는 예전 그대로 — T-1)
+    // 배속별 연출 한도 (×4부터 줄임, 치명타 우선)
     const budget = fxBudget(this.clock.speed);
     this.floatingText.setMaxActive(budget.activeTexts);
-    /** 높은 배속: 이번 프레임 피해 숫자 후보 (큰 피해부터 budget.damageTexts개만 띄운다) */
+    /** 높은 배속: 이번 프레임 피해 숫자 후보 (치명타 우선으로 budget.damageTexts개만 띄운다) */
     const hitTexts: SimEvent[] = [];
     const spawnDamageText = (ev: SimEvent): boolean => {
-      const color = damageColor(Number(ev.p), Number(ev.m), Number(ev.t));
       const crit = ev.crit === true;
+      const color = crit ? DAMAGE_COLORS.critical : damageColor(Number(ev.p), Number(ev.m), Number(ev.t));
       const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
       const jitter = (Math.random() - 0.5) * this.layout.tile * 0.3;
       // 같은 자리에 몰리면 위로 쌓고, 쌓을 자리가 없으면 띄우지 않는다 (겹쳐서 다른 숫자처럼 읽히지 않게). 치명타는 크게 + '!'
       const label = crit ? `${ev.damage}!` : String(ev.damage);
-      return this.floatingText.spawn(px.x + jitter, px.y - this.layout.tile * 0.42, label, color, time, crit);
+      return this.floatingText.spawn(px.x + jitter, px.y - this.layout.tile * 0.42, label, color, time, crit, crit);
     };
     /** 돈 연출 (동전 + '+n원'): 한도 안이면 날리고, 넘으면 HUD 돈에 바로 */
     const goldFx = (x: number, y: number, amount: number, riseTiles: number): void => {
@@ -1881,7 +1881,12 @@ export class GameScene extends Phaser.Scene {
           this.fx.chainBolt(Number(ev.x1), Number(ev.y1), Number(ev.x2), Number(ev.y2));
           break;
         case 'hit': {
-          if (!recent) break;
+          // 고배속 프레임 초반에 난 치명타도 숫자는 놓치지 않는다 (렌더 개수는 아래 한도). 불꽃·깜빡임·운석은 최근 사건만 —
+          // 지난 치명타가 옛 자리에서 불꽃 한도를 먼저 쓰지 않게 (B-2 통합 검토)
+          if (!recent) {
+            if (ev.crit === true && eventFxVisible('action', ev.tick, now, frameStart)) hitTexts.push(ev);
+            break;
+          }
           // 운석 피해에만 불덩이 (같은 틱에 착탄한 그 대마법사의 일반 투사체 피해에는 붙이지 않는다 — fx 표시로 고름)
           if (ev.fx === METEOR_FX && meteors < MAX_METEOR_FX && meteorKeys.has(`${ev.source}:${ev.tick}`)) {
             meteors++;
@@ -1889,8 +1894,7 @@ export class GameScene extends Phaser.Scene {
           }
           // 지속 피해(화상·독·출혈)는 깜빡이지 않고 숫자만 (0.5초마다라 몹이 늘 하얗게 보이지 않게)
           if (ev.dot !== true) this.mobLayer.flash(Number(ev.target), time);
-          if (!budget.forceCrit) hitTexts.push(ev);
-          else if ((texts < budget.damageTexts || ev.crit === true) && spawnDamageText(ev)) texts++;
+          hitTexts.push(ev);
           if (sparks < budget.sparks) {
             sparks++;
             this.fx.hitSpark(Number(ev.x), Number(ev.y), hexToInt(damageColor(Number(ev.p), Number(ev.m), Number(ev.t))));
@@ -1910,8 +1914,9 @@ export class GameScene extends Phaser.Scene {
           if (recent) this.fx.missPuff(Number(ev.x), Number(ev.y));
           break;
         case 'abilityGold': {
-          // 특색 돈 (광부·상인·연금술사): 타워 위 '+n원' + 동전이 HUD로
-          if (!recent) break;
+          // 특색 돈 (광부·상인·연금술사): 타워 위 '+n원' + 동전이 HUD로. 몇 초에 한 번인 드문 사건이라 이번 프레임에 난 것은 모두
+          // (느린 프레임에서 '최근 몇 틱' 밖으로 밀려 연출이 빠지던 것 — m3b E2E 흔들림 원인, B-2 통합)
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
           goldFx(Number(ev.x), Number(ev.y), Number(ev.amount), 0.55);
           this.noteFx('gold');
           break;
@@ -2153,12 +2158,18 @@ export class GameScene extends Phaser.Scene {
           break;
       }
     }
-    // 높은 배속: 큰 피해부터 한도만큼 (작은 숫자는 건너뛴다)
+    // 치명타를 먼저, 같은 종류는 큰 피해부터 프레임 한도만큼.
     if (hitTexts.length > 0) {
-      hitTexts.sort((a, b) => Number(b.damage) - Number(a.damage));
-      for (const ev of hitTexts) {
+      // 자리가 없어 못 띄운 숫자가 있으면 다음 후보로 넘어간다 (자르지 않고 정렬만 — B-2 통합 검토)
+      for (const ev of prioritizeDamage(hitTexts)) {
         if (texts >= budget.damageTexts) break;
-        if (spawnDamageText(ev)) texts++;
+        if (spawnDamageText(ev)) {
+          texts++;
+          if (ev.crit === true) {
+            this.fx.criticalImpact(Number(ev.x), Number(ev.y));
+            this.noteFx('critical');
+          }
+        }
       }
     }
     // 같은 프레임에 달성한 일반 미션은 한 줄 배너 하나로 (알림이 쌓여 맵 위쪽 줄을 가리지 않게)

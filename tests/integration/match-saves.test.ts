@@ -173,6 +173,7 @@ describe('지문·슬롯·손상', () => {
     storage.setItem(MATCH_SLOT, raw.replace('"seed":13', '"seed":99'));
     expect(store.read()).toBeNull();
     expect(store.lastDiscard).toBe('망가진 저장');
+    expect(store.discardedByUpdate).toBe(false);
     expect(storage.getItem(MATCH_SLOT)).toBeNull();
 
     // 데이터가 바뀜 (수치 하나)
@@ -181,6 +182,10 @@ describe('지문·슬롯·손상', () => {
     const other = new MatchSaves(changed as typeof arenaData, storage, { version: VERSION, dev: false });
     expect(other.read()).toBeNull();
     expect(other.lastDiscard).toBe('게임 데이터가 바뀜');
+    expect(other.discardedByUpdate).toBe(true);
+    // 버린 뒤 다시 읽으면 저장이 없으니 알림도 없다 (타이틀에 한 번만)
+    expect(other.read()).toBeNull();
+    expect(other.discardedByUpdate).toBe(false);
     expect(storage.getItem(MATCH_SLOT)).toBeNull();
 
     // 앱 버전이 바뀜
@@ -188,10 +193,12 @@ describe('지문·슬롯·손상', () => {
     const newer = new MatchSaves(arenaData, storage, { version: '9.9.9', dev: false });
     expect(newer.read()).toBeNull();
     expect(newer.lastDiscard).toContain('앱 버전');
+    expect(newer.discardedByUpdate).toBe(true);
 
     // 형식이 다른 옛 저장 (Codex 갈래 v0.1.7 모양) — 머리가 없다
     storage.setItem(MATCH_SLOT, JSON.stringify({ version: 1, digest: 1, payload: '{}' }));
     expect(store.read()).toBeNull();
+    expect(store.discardedByUpdate).toBe(false); // 머리가 없는 옛 저장은 '망가진 저장' (형식 표시를 못 읽음)
   });
 
   it('개발자 판은 개발자 슬롯에만 (일반 저장을 덮지 않음, 서로 안 보임)', () => {

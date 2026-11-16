@@ -1661,6 +1661,15 @@ export function crossCheck(data: GameData): Issue[] {
   crossCheckM4(data, issues);
   crossCheckM5(data, issues);
   crossCheckT2(data, issues);
+  // 공격력은 sim에서 ×100 정수(rules ATK_SCALE)로 쓴다 → 0.01 단위가 아니면 반올림으로 조용히 바뀐다 (B-2 ×1.5 검토: 6.75×1.5 = 10.125 같은 값)
+  towers.towers.forEach((t, i) => {
+    for (const key of ['atk', 'matk', 'tatk'] as const) {
+      const scaled = t[key] * 100;
+      if (Math.abs(scaled - Math.round(scaled)) > 1e-6) {
+        issues.push({ file: 'towers.json', path: `towers[${i}].${key}`, message: `공격력은 0.01 단위여야 한다: ${t[key]}` });
+      }
+    }
+  });
   return issues;
 }
 
@@ -1741,9 +1750,6 @@ function crossCheckM4(data: GameData, issues: Issue[]): void {
   game.art.cutins.forEach((id, i) => {
     if (!known.has(id)) issues.push({ file: 'game.json', path: `art.cutins[${i}]`, message: `보스 데이터·군단 체계에 없는 id: ${id}` });
   });
-  if (game.boss.timeLimitSeconds > game.match.stageSeconds) {
-    issues.push({ file: 'game.json', path: 'boss.timeLimitSeconds', message: `단계 길이(${game.match.stageSeconds}초)보다 길다` });
-  }
   if (game.formation.previewSeconds >= game.match.stageSeconds) {
     issues.push({ file: 'game.json', path: 'formation.previewSeconds', message: `단계 길이(${game.match.stageSeconds}초)보다 짧아야 한다` });
   }

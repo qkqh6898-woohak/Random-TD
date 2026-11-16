@@ -19,7 +19,7 @@ import { EXPRESSIONS, type Expression } from '../../art/characters/portraits';
 import { ENEMY_BOX, PORTRAIT_BOX } from '../../art/characters/rig';
 import { GRADE_COLORS } from '../../art/palette';
 import type { Grade } from '../../data/load';
-import { mobPose, type MobMotion } from '../../view/render/mobPose';
+import { bossPose, mobPose, type MobMotion } from '../../view/render/mobPose';
 import { towerPose } from '../../view/render/towerPose';
 import { h } from '../dom';
 
@@ -288,7 +288,7 @@ export class Gallery {
       ctx.beginPath();
       ctx.ellipse(64, 112, 40, 9, 0, 0, Math.PI * 2);
       ctx.fill();
-      const p = this.play ? mobPose(motion, t, phase) : { bob: 0, sx: 1, sy: 1, angle: 0 };
+      const p = this.play ? (look.rank === 'minion' ? mobPose(motion, t, phase) : bossPose(look.id, motion, t, phase)) : { bob: 0, sx: 1, sy: 1, angle: 0 };
       ctx.translate(64, 79 + p.bob * 9);
       ctx.rotate(p.angle);
       ctx.scale(p.sx, p.sy);

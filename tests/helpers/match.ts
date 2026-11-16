@@ -37,7 +37,10 @@ export function addMob(match: Match, mobId: string): Mob {
 
 /** 그 단계가 시작된 직후까지 진행. 패배하거나 너무 오래 걸리면 에러 (테스트가 멈추지 않게). */
 export function runToStage(match: Match, stage: number): void {
-  const limit = match.tick + match.rules.prepTicks + stage * match.rules.stageTicks + 1;
+  // 보스 단계는 max(단계 길이, 보스 시간)만큼 길다 (B-2) → 보스 단계 수만큼 여유
+  const r = match.rules;
+  const extra = Math.max(0, r.bossTimeTicks - r.stageTicks) * Math.ceil(stage / r.bossEvery);
+  const limit = match.tick + r.prepTicks + stage * r.stageTicks + extra + 1;
   while (match.state.stage < stage) {
     if (match.defeated) throw new Error(`${stage}단계 전에 패배 (${match.state.stage}단계, ${match.state.defeatReason})`);
     if (match.tick > limit) throw new Error(`${stage}단계까지 가지 못함 (틱 ${match.tick})`);

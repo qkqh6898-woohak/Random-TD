@@ -3729,3 +3729,12 @@ body {
   padding: 1cqw 2cqw;
   font-size: 3.2cqw;
 }
+
+/* 일꾼은 고용 UI 안의 SD 작업자. 맵 위 전투 타워와 다른 실루엣. */
+/* 크기는 화면 너비 비율(cqw) — 아래 띠는 412·360·320px에서 한 줄 안에 맞춘다 (B-2 통합 검토: 고정 px는 320px에서 넘칠 수 있었다) */
+.hud-worker-art { width: 6.3cqw; height: 7cqw; object-fit: contain; flex: 0 0 auto; vertical-align: middle; }
+.hud-hire { display: inline-flex; align-items: center; justify-content: center; gap: 0.7cqw; }
+.hud-hire .hud-worker-art { width: 7.2cqw; height: 8.2cqw; transform-origin: 50% 90%; animation: worker-nod 1.8s ease-in-out infinite; }
+.hud-hire.is-off .hud-worker-art { animation-play-state: paused; }
+@keyframes worker-nod { 0%, 100% { transform: rotate(-4deg); } 50% { transform: translateY(-2px) rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .hud-hire .hud-worker-art { animation: none; } }

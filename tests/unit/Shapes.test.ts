@@ -127,11 +127,11 @@ describe('판 안에서 형태별 맞는 몹 수', () => {
     expect(ids).toEqual([mobs[0]!.id, mobs[1]!.id]);
   });
 
-  it('연쇄 3(번개 마법사): 3마리, 두 번째 −20%, 세 번째 −36% (마법 69)', () => {
+  it('연쇄 3(번개 마법사): 3마리, 두 번째 −20%, 세 번째 −36% (마법 103.5, 소수 나머지 누적)', () => {
     const { m, mobs } = board([3000, 4000, 5000, 6000]);
     const ids = firstVolley(m, 'lightning', 4, 0);
     expect(ids).toEqual([mobs[0]!.id, mobs[1]!.id, mobs[2]!.id]);
-    expect(hpLost(mobs)).toEqual([69, 55, 44, 0]); // 6900 → 5520 → 4416
+    expect(hpLost(mobs)).toEqual([103, 83, 66, 0]); // 6900 → 5520 → 4416
   });
 
   it('다중 3(표창 닌자): 서로 다른 3마리에게 투사체 3개', () => {

@@ -110,7 +110,7 @@ describe('이동·교환 (M3-10)', () => {
     m.step();
     command(m, { type: 'move', fx: 4, fy: 0, tx: 6, ty: 0 });
     m.stepN(6);
-    expect(mob.hp).toBe(110);
+    expect(mob.hp).toBe(105);
   });
 
   it('명령 검사: 네 좌표 모두 0~255 정수', () => {

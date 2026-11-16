@@ -89,10 +89,10 @@ describe('피해 (M2-6 기본 피해)', () => {
     expect(damageAgainst({ p: 0, m: 0, t: 10_000 }, { armor: 300, magicRes: 300 })).toMatchObject({ total: 10_000 });
   });
 
-  it('정수 피해는 합 + 나머지를 100으로 나눈 몫: 견습 마법사 마법 6.5 → 6, 7, 6, 7 … (10회 합 65)', () => {
+  it('정수 피해 누적: splitAtk 6.5 회귀 + 견습 마법사 9.75의 10회 합 97·나머지 0.5', () => {
     expect(splitAtk(650, 0)).toEqual({ dmg: 6, rem: 50 });
     expect(splitAtk(650, 50)).toEqual({ dmg: 7, rem: 0 });
-    expect(rollHit(rules.towers.get('apprentice')!)).toMatchObject({ p: 0, m: 650, t: 0, crit: false });
+    expect(rollHit(rules.towers.get('apprentice')!)).toMatchObject({ p: 0, m: 975, t: 0, crit: false });
     const { m, mob } = setup(3000);
     mob.hp = 1_000_000;
     mob.maxHp = 1_000_000;
@@ -102,20 +102,20 @@ describe('피해 (M2-6 기본 피해)', () => {
       m.step();
       for (const e of m.world.drainEvents()) if (e.type === 'hit') hits.push(Number(e.damage));
     }
-    expect(hits.slice(0, 4)).toEqual([6, 7, 6, 7]);
-    expect(hits.reduce((a, b) => a + b, 0)).toBe(65);
-    expect(t.remDmg).toBe(0);
+    expect(hits.slice(0, 4)).toEqual([9, 10, 10, 10]);
+    expect(hits.reduce((a, b) => a + b, 0)).toBe(97);
+    expect(t.remDmg).toBe(50);
   });
 
-  it('회귀: 공격력 4 타워가 방어 1 몹을 100번 때리면 합 396 (예전: 타격마다 3으로 내림 → 300, −24%)', () => {
+  it('회귀: 고블린 공격력 6 vs 방어 1, 소수 나머지를 누적해 100회 합 594', () => {
     const { m, mob } = setup(3000);
     mob.armor = 1;
     mob.hp = 1_000_000;
     mob.maxHp = 1_000_000;
-    const g = placeTower(m.world, 'goblin', 0, 4, 0); // 근접 물리 4
+    const g = placeTower(m.world, 'goblin', 0, 4, 0); // 근접 물리 6
     while (g.attacks < 100) m.step();
     expect(g.attacks).toBe(100);
-    expect(1_000_000 - mob.hp).toBe(396);
+    expect(1_000_000 - mob.hp).toBe(594);
   });
 
   it('회귀: 방어가 있는 몹 상대 피해 합 = 이론값 ±1 (골렘 방어 61: 광부·고블린·궁수, 400틱)', () => {
@@ -162,19 +162,19 @@ describe('피해 (M2-6 기본 피해)', () => {
 });
 
 describe('근접 공격: 즉시 피해', () => {
-  it('고블린(근접, 물리 4, 공속 2.5)이 옆 몹을 소환된 틱부터 8틱마다 즉시 때린다', () => {
+  it('고블린(근접, 물리 6, 공속 2.5)이 옆 몹을 소환된 틱부터 8틱마다 즉시 때린다', () => {
     // 순환의 정원: 진행도 3000 = (4500, 1500) = 칸 (4, 1) 중심. 고블린은 바로 위 (4, 0)
     const { m, mob } = setup(3000);
     const g = placeTower(m.world, 'goblin', 0, 4, 0);
     m.step();
-    expect(mob.hp).toBe(116);
+    expect(mob.hp).toBe(114);
     const evs = m.world.drainEvents();
     expect(evs.find((e) => e.type === 'attack')).toMatchObject({ tower: g.id, target: mob.id, instant: true });
-    expect(evs.find((e) => e.type === 'hit')).toMatchObject({ target: mob.id, source: g.id, damage: 4, p: 400, kill: false });
+    expect(evs.find((e) => e.type === 'hit')).toMatchObject({ target: mob.id, source: g.id, damage: 6, p: 600, kill: false });
     expect(listProjectiles(m.world)).toHaveLength(0);
     m.stepN(39); // 0, 8, 16, 24, 32 → 5회
     expect(g.attacks).toBe(5);
-    expect(mob.hp).toBe(120 - 20);
+    expect(mob.hp).toBe(120 - 30);
   });
 
   it('선두를 친다: 사거리 안 두 몹 중 앞선(먼저 나온) 쪽', () => {
@@ -184,7 +184,7 @@ describe('근접 공격: 즉시 피해', () => {
     back.speed = 0;
     placeTower(m.world, 'goblin', 0, 4, 0);
     m.step();
-    expect(mob.hp).toBe(116);
+    expect(mob.hp).toBe(114);
     expect(back.hp).toBe(120);
   });
 
@@ -214,16 +214,16 @@ describe('투사체 (M2-5)', () => {
     expect(stepToward(0, 0, -3000, -4000, 600)).toEqual({ x: -360, y: -480, arrived: false });
   });
 
-  it('궁수(물리 10, 사거리 3.5): 1칸 떨어진 몹 → 쏜 틱에 600 날고 다음 틱 도착해 피해', () => {
+  it('궁수(물리 15, 사거리 3.5): 1칸 떨어진 몹 → 쏜 틱에 600 날고 다음 틱 도착해 피해', () => {
     const { m, mob } = setup(3000); // (4500, 1500)
     const a = placeTower(m.world, 'archer', 0, 4, 0); // (4500, 500), 거리 1000
     m.step();
     expect(mob.hp).toBe(120);
     const [p] = listProjectiles(m.world);
-    expect(p).toMatchObject({ source: a.id, target: mob.id, x: 4500, y: 1100, dmgP: 1000, speed: 600 });
+    expect(p).toMatchObject({ source: a.id, target: mob.id, x: 4500, y: 1100, dmgP: 1500, speed: 600 });
     m.step();
     expect(listProjectiles(m.world)).toHaveLength(0);
-    expect(mob.hp).toBe(110);
+    expect(mob.hp).toBe(105);
   });
 
   it('먼 몹: 거리 √(3000² + 1000²) ≈ 3162 → 6틱째(틱 0~5)에 도착, 움직이는 몹을 따라간다', () => {
@@ -232,14 +232,14 @@ describe('투사체 (M2-5)', () => {
     m.stepN(5);
     expect(mob.hp).toBe(120);
     m.step();
-    expect(mob.hp).toBe(110);
+    expect(mob.hp).toBe(105);
 
     // 움직이는 몹 (1.5칸/초)도 초속 12칸 투사체가 따라잡는다
     const { m: m2, mob: mover } = setup(0);
     mover.speed = 1500;
     placeTower(m2.world, 'archer', 0, 4, 0);
     m2.stepN(8);
-    expect(mover.hp).toBe(110);
+    expect(mover.hp).toBe(105);
   });
 
   it('헛발: 날아가는 중 대상이 사라지면 그 자리에서 사라지고 피해·보상 없음', () => {
