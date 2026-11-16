@@ -235,7 +235,7 @@ export class TowerSprite {
         grade: look.grade,
         play: !this.stunned && !still,
       });
-      this.character.apply(compose(r, idle, still ? 0 : timeMs, this.seed));
+      this.character.apply(compose(r, idle, still ? 0 : timeMs, this.seed, !this.character.external));
     }
   }
 

@@ -25,6 +25,12 @@ export default defineConfig({
     isMobile: true,
     hasTouch: true,
     locale: 'ko-KR',
+    // F10: 기존 스펙은 '첫 승급 안내를 이미 본 계정'으로 시작한다 (안내 카드·탭 결과 칸 바꾸기가 예전 흐름을 바꾸지 않게).
+    // 새 플레이어 흐름은 e2e/f10.spec.ts가 빈 저장소로(test.use storageState 비움) 확인한다.
+    storageState: {
+      cookies: [],
+      origins: [{ origin: baseURL, localStorage: [{ name: 'rtd.account', value: JSON.stringify({ v: 1, level: 1, hidden: [], guides: ['firstMerge'] }) }] }],
+    },
     trace: 'off',
     screenshot: 'off',
     video: 'off',

@@ -155,8 +155,30 @@ export function pathTilesAround(map: SimMap, x: number, y: number, radius: numbe
 }
 
 /**
+ * 소환 추천 칸 순위 (순수 함수, F10 '첫 소환 전 추천 칸'·T-2 자동 소환이 같이 쓴다): 빈 배치 칸을 점수 순으로 n개.
+ * 점수 = 둘레(game.json summon.autoRadius = 2, 체비쇼프) 경로 칸 수, 같으면 y가 작은 칸, 그다음 x가 작은 칸.
+ * @param taken 이미 찬 칸 'x,y' (생략하면 판 위 타워 칸만). 화면이 아직 실행되지 않은 소환 칸을 더해 넘길 수 있다
+ */
+export function rankSummonTiles(
+  ctx: Pick<MatchContext, 'map' | 'rules'>,
+  world: World,
+  n: number,
+  taken?: ReadonlySet<string>,
+): (readonly [number, number])[] {
+  const used = new Set<string>(taken ?? []);
+  for (const e of world.entities.list()) if (isTower(e)) used.add(`${e.tx},${e.ty}`);
+  const scored: { t: readonly [number, number]; score: number }[] = [];
+  for (const t of ctx.map.buildable) {
+    if (used.has(`${t[0]},${t[1]}`)) continue;
+    scored.push({ t, score: pathTilesAround(ctx.map, t[0], t[1], ctx.rules.autoSummonRadius) });
+  }
+  scored.sort((a, b) => b.score - a.score || a.t[1] - b.t[1] || a.t[0] - b.t[0]);
+  return scored.slice(0, n > 0 ? n : 0).map((s) => s.t);
+}
+
+/**
  * 자동 소환 칸 (T-2: 꾹 눌러 연속 소환·[🎲 소환] 버튼). 순수 함수 — 화면이 이 칸으로 평소 summon 명령을 보낸다 (리플레이 그대로).
- * 빈 배치 칸 중 둘레(game.json summon.autoRadius = 2) 경로 칸이 가장 많은 칸, 같으면 y가 작은 칸, 그다음 x가 작은 칸.
+ * = 추천 칸 순위(rankSummonTiles)의 1등: 빈 배치 칸 중 둘레 경로 칸이 가장 많은 칸, 같으면 y가 작은 칸, 그다음 x가 작은 칸.
  * @param taken 이미 찬 칸 'x,y' (생략하면 판 위 타워 칸). 화면이 아직 실행되지 않은 소환 칸을 더해 넘길 수 있다
  * @returns 빈 칸이 없으면 null
  */
@@ -165,19 +187,7 @@ export function autoSummonTile(
   world: World,
   taken?: ReadonlySet<string>,
 ): readonly [number, number] | null {
-  const used = new Set<string>(taken ?? []);
-  for (const e of world.entities.list()) if (isTower(e)) used.add(`${e.tx},${e.ty}`);
-  let best: readonly [number, number] | null = null;
-  let bestScore = -1;
-  for (const t of ctx.map.buildable) {
-    if (used.has(`${t[0]},${t[1]}`)) continue;
-    const score = pathTilesAround(ctx.map, t[0], t[1], ctx.rules.autoSummonRadius);
-    if (score > bestScore || (score === bestScore && best !== null && (t[1] < best[1] || (t[1] === best[1] && t[0] < best[0])))) {
-      best = t;
-      bestScore = score;
-    }
-  }
-  return best;
+  return rankSummonTiles(ctx, world, 1, taken)[0] ?? null;
 }
 
 /** summon 명령 실행. 성공하면 놓인 타워, 실패하면 null (summonFail 사건). */

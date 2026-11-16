@@ -6,7 +6,7 @@
  * - seq는 플레이어마다 따로 매긴다. 비워 두면 큐가 다음 번호를 붙인다.
  *
  * 마일스톤마다 명령 종류가 늘어난다 (M2 소환, M3 승급·모두 승급·이동·들어 올리기·개발용 타워 놓기, M4 일꾼·카드·승급의 축복,
- * M5 강화·도박·도전 …, T-2 판매·개발자 변환·개발자 확률 조정).
+ * M5 강화·도박·도전 …, T-2 판매·개발자 변환·개발자 확률 조정, F10 준비 완료).
  * 새 명령은 `CommandPayload` 합집합에 추가하고 `COMMAND_TYPES`·`PAYLOAD_FIELDS`·`validatePayload`, World의 처리기를 함께 갱신한다.
  * - 큐에 들어가는 명령은 허용한 필드만 골라 새로 만든 **얼린(frozen) 객체**다. 호출자가 넘긴 객체나 돌려받은 객체를
  *   고쳐도 예약·실행·기록(executed)이 바뀌지 않는다. 모르는 필드는 거절한다 (네트워크로 받은 명령이 아무 내용이나 싣지 못하게).
@@ -64,7 +64,12 @@ export type CommandPayload =
   /**
    * 개발용 (T-2, 개발자 판만): 확률 조정 — key(game.json devChances 이름, 'all' = 모두)를 bp로 (0~10000, stepBp 단위). bp −1 = 기본값으로
    */
-  | { type: 'debugSetChance'; key: string; bp: number };
+  | { type: 'debugSetChance'; key: string; bp: number }
+  /**
+   * 준비 완료 (F10, 첫 10단계 개선): 준비 단계(0단계)에서만 — 1단계를 이 틱에 바로 시작한다 (남은 준비 시간을 건너뜀).
+   * 그 뒤 단계는 여기서부터 60초마다. 준비 단계가 아니면 무시 (연타해도 1단계는 한 번).
+   */
+  | { type: 'readyNow' };
 
 export type CommandType = CommandPayload['type'];
 
@@ -90,6 +95,7 @@ export const COMMAND_TYPES: readonly CommandType[] = [
   'sellTower',
   'debugConvertTower',
   'debugSetChance',
+  'readyNow',
 ];
 
 /** 칸 좌표 상한 (맵은 이보다 훨씬 작다. 네트워크로 받은 터무니없는 값을 거른다) */
@@ -120,6 +126,7 @@ export const PAYLOAD_FIELDS: { readonly [K in CommandType]: readonly string[] } 
   sellTower: ['x', 'y'],
   debugConvertTower: ['x', 'y', 't'],
   debugSetChance: ['key', 'bp'],
+  readyNow: [],
 };
 
 /** 확률 조정 key 글자 한도 (데이터 이름보다 넉넉히, 네트워크로 받은 터무니없는 값을 거른다) */
@@ -183,6 +190,7 @@ export function validatePayload(cmd: unknown): string | null {
     case 'debugSkipStage':
     case 'hireWorker':
     case 'claimAllMissions':
+    case 'readyNow':
       return null;
     case 'upgrade':
       if (!isNonNegInt(c.k) || c.k > MAX_UPGRADE_INDEX) return `k가 0~${MAX_UPGRADE_INDEX} 정수가 아님: ${String(c.k)} (upgrade 명령)`;

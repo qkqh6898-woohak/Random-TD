@@ -474,6 +474,18 @@ export interface HudConfig {
   livesWarn: number;
 }
 
+/**
+ * 첫 승급 안내 (F10 첫 10단계 개선, 화면 전용 — sim 규칙과 무관).
+ * - recommendCount: 첫 소환 전에 빛내는 추천 칸 수 (자동 소환과 같은 점수 순, sim rankSummonTiles)
+ * - resultToasts: 승급 결과 타워 이름·역할 알림을 판마다 처음 몇 번 띄우나 (첫 승급 안내 중에는 늘)
+ * - resultToastSeconds: 그 알림 시간 (초)
+ */
+export interface GuideConfig {
+  recommendCount: number;
+  resultToasts: number;
+  resultToastSeconds: number;
+}
+
 /** 개발용 치트 (?debug=1, CLAUDE.md 4장). */
 export interface DebugConfig {
   /** HUD [💰+] 한 번에 더하는 돈 (원) */
@@ -592,6 +604,8 @@ export interface GameConfig {
   combat: CombatConfig;
   merge: MergeConfig;
   hud: HudConfig;
+  /** 첫 승급 안내 (F10) */
+  guide: GuideConfig;
   debug: DebugConfig;
   status: StatusConfig;
   aura: AuraConfig;
@@ -1302,6 +1316,11 @@ export const gameSchema: Schema = s.obj({
     timerWarnSeconds: s.int({ min: 0 }),
     mobWarnCount: s.int({ min: 0 }),
     livesWarn: s.int({ min: 0 }),
+  }),
+  guide: s.obj({
+    recommendCount: s.int({ min: 0, max: 10 }),
+    resultToasts: s.int({ min: 0, max: 100 }),
+    resultToastSeconds: s.num({ min: 0.5, max: 10 }),
   }),
   debug: s.obj({
     // debugAddGold 명령 한도(MAX_DEBUG_GOLD = 10억)를 넘지 않게

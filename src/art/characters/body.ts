@@ -424,10 +424,12 @@ function drawOffhand(b: BodyCtx, item: OffhandId): void {
   const [x, y] = b.handL;
   switch (item) {
     case 'round_shield':
-      paint(c, P.circle(x - 6, y + 2, 26), main, { cel: true });
-      circle(c, x - 6, y + 2, 26, null, { lw: 5, stroke: shade(STEEL, -0.1) });
-      circle(c, x - 6, y + 2, 26, null, { lw: 2 });
-      circle(c, x - 6, y + 2, 8, STEEL, { lw: 3 });
+      // F10: 넓은 방패 (몸통 반을 가리는 큰 원 — 흑백에서도 전사 실루엣)
+      paint(c, P.circle(x - 10, y + 4, 38), main, { cel: true });
+      circle(c, x - 10, y + 4, 38, null, { lw: 6, stroke: shade(STEEL, -0.1) });
+      circle(c, x - 10, y + 4, 38, null, { lw: 2 });
+      stroke(c, [x - 10, y - 28, x - 10, y + 36], shade(STEEL, -0.05), 4);
+      circle(c, x - 10, y + 4, 11, STEEL, { lw: 3 });
       break;
     case 'lion_shield':
       paint(c, P.circle(x - 6, y + 2, 28), '#F5C518', { cel: true });

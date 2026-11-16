@@ -110,6 +110,8 @@ export interface HumanLook {
   aura?: AuraId;
   /** 떠 있는 높이 (그림 단위, 요정은 체형이 따로 띄움) */
   lift?: number;
+  /** 몸 기울기 (도, + = 바라보는 쪽으로 앞으로 기욺 — F10 고블린 '앞으로 기운 자세'). 절차 그림에만 (바깥 그림은 그림 자체 자세) */
+  lean?: number;
   idle?: IdleId;
   /** 인물 초상 특징 */
   item?: PortraitItem;
@@ -216,6 +218,7 @@ const humanFields: Record<string, Schema> = {
   fx: opt(e(FX)),
   aura: opt(e(AURAS)),
   lift: opt(s.int({ min: 0, max: 60 })),
+  lean: opt(s.int({ min: -15, max: 15 })),
   idle: opt(e(IDLES)),
   item: opt(e(PORTRAIT_ITEMS)),
   scale: opt(scaleField()),

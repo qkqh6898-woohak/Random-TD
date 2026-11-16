@@ -2,6 +2,7 @@
  * 일시정지 메뉴 (UI.md 4.6). HUD의 ⏸를 누르거나 앱이 백그라운드로 가면 열린다.
  * M0: [계속] [타이틀로]. 설정·도감·포기(정산)는 해당 마일스톤에서 붙인다.
  * T-2: 설정 한 줄 '눌러서 바로 승급' (켜짐: 승급할 수 있는 타워를 누르면 바로 승급 / 꺼짐: 패널을 연다). 저장은 Game 장면이 한다.
+ * F10: [❔ 도움말 다시 보기] — 계정에 기록된 '본 도움말'(첫 승급 안내)을 지워, 다음에 승급할 수 있게 되면 다시 안내한다.
  * 메뉴가 열려 있는 동안 게임 시간은 멈춘다 (Game 장면이 TickClock 배속을 0으로).
  */
 import { h } from '../dom';
@@ -13,6 +14,8 @@ export interface PauseMenuOptions {
   /** '눌러서 바로 승급' 지금 값과 바꿀 때 (T-2). 없으면 줄도 없다 */
   tapMerge?: boolean;
   onTapMerge?: (on: boolean) => void;
+  /** [❔ 도움말 다시 보기] (F10). 없으면 버튼도 없다 */
+  onHelpAgain?: () => void;
 }
 
 export function createPauseMenu(opts: PauseMenuOptions): UiView {
@@ -54,6 +57,20 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
       sw,
     );
   }
+  let help: HTMLButtonElement | null = null;
+  if (opts.onHelpAgain) {
+    const b = h('button', {
+      class: 'btn pause-help',
+      attrs: { type: 'button', 'data-testid': 'pause-help', 'aria-label': '도움말 다시 보기' },
+      text: '❔ 도움말 다시 보기',
+    });
+    b.addEventListener('click', () => {
+      opts.onHelpAgain?.();
+      b.textContent = '✓ 안내를 다시 보여 드려요';
+      b.disabled = true;
+    });
+    help = b;
+  }
   const el = h(
     'div',
     { class: 'screen pause-screen', attrs: { 'data-screen': 'pause', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'pause-title' } },
@@ -63,6 +80,7 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
       h('h2', { class: 'pause-title', text: '일시정지', attrs: { id: 'pause-title' } }),
       resume,
       tapRow,
+      help,
       exit,
       h('p', { class: 'pause-note', text: '타이틀로 나가면 이 판은 끝나요' }),
     ),

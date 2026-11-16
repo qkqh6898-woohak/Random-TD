@@ -118,22 +118,23 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
   prayer: () => {},
   meditate: () => {},
   pickaxe: (p) => {
+    // F10 기본 5종 외형: 머리 위로 솟은 큰 곡괭이 (긴 자루 + 넓게 휜 날 — 흑백에서도 광부 실루엣)
     const { c } = p;
-    shaft(c, -10, 30, 16, -96);
-    p.glow(14, -100, 40);
+    shaft(c, -12, 34, 22, -132, WOOD, 11);
+    p.glow(20, -138, 46);
     paint(
       c,
       (cc) => {
         cc.beginPath();
-        cc.moveTo(-40, -86);
-        cc.quadraticCurveTo(14, -128, 66, -82);
-        cc.quadraticCurveTo(16, -108, -40, -86);
+        cc.moveTo(-58, -112);
+        cc.quadraticCurveTo(20, -176, 96, -106);
+        cc.quadraticCurveTo(22, -146, -58, -112);
         cc.closePath();
       },
       p.col(STEEL),
-      { lw: 4.5, cel: true, celOffset: 2 },
+      { lw: 5, cel: true, celOffset: 3 },
     );
-    rrect(c, 4, -110, 20, 22, 4, '#6B4226', { lw: 3.5 });
+    rrect(c, 8, -150, 26, 28, 5, '#6B4226', { lw: 4 });
   },
   drumsticks: (p) => {
     const { c } = p;
@@ -144,10 +145,11 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
     circle(c, -38, -33, 8, p.col('#F3EAD3'), { lw: 3.5 });
   },
   dagger: (p) => {
+    // F10: 짧은 단검 — 짧고 넓은 날을 앞으로 내민다 (앞으로 기운 고블린 자세와 함께)
     const { c } = p;
-    rotated(c, 0, -6, 0.35, () => {
-      p.glow(0, -30, 24);
-      blade(c, 48, 13, p.col(STEEL));
+    rotated(c, 0, -6, 0.95, () => {
+      p.glow(0, -26, 24);
+      blade(c, 40, 17, p.col(STEEL), 0.32);
       rrect(c, -14, -2, 28, 7, 3, GOLD, { lw: 3 });
       rrect(c, -4, 4, 8, 16, 3, '#6B4226', { lw: 3 });
     });
@@ -163,18 +165,21 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
     }
   },
   longbow: (p) => {
+    // F10: 몸 옆으로 크게 펼친 장궁 (키만 한 활 — 흑백에서도 활 모양이 먼저 보이게)
     const { c } = p;
-    p.glow(18, -40, 34);
-    bowArc(c, -30, -10, 72, p.col('#A0703A'), 8, 1.2);
-    line(c, [-8, -10, 74, -10], '#C9A86A', 3.5, true);
-    poly(c, [74, -16, 88, -10, 74, -4], STEEL, { lw: 2.5 });
-    poly(c, [-8, -10, -16, -16, -18, -10, -16, -4], '#7ED957', { lw: 2 });
+    p.glow(18, -40, 40);
+    bowArc(c, -40, -12, 104, p.col('#A0703A'), 10, 1.18);
+    line(c, [-8, -12, 80, -12], '#C9A86A', 3.5, true);
+    poly(c, [80, -19, 96, -12, 80, -5], STEEL, { lw: 2.5 });
+    poly(c, [-8, -12, -18, -19, -20, -12, -18, -5], '#7ED957', { lw: 2 });
   },
   wand: (p) => {
+    // F10: 끝이 빛나는 지팡이 — 머리 높이까지 오는 막대 + 밝은 빛 구슬
     const { c } = p;
-    shaft(c, -6, 12, 18, -44, '#6B4226', 7);
-    glow(c, 20, -50, 26, '#FFF3A8', 0.7);
-    star(c, 20, -50, 11, '#FFE27A', { lw: 3 });
+    shaft(c, -6, 30, 20, -96, '#6B4226', 8);
+    glow(c, 22, -104, 44, '#FFF3A8', 0.85);
+    orb(c, 22, -104, 13, '#FFE27A');
+    star(c, 22, -104, 7, '#FFFFFF', { lw: 0 });
   },
   crystal_staff: (p) => {
     const { c } = p;
@@ -186,11 +191,12 @@ export const PROP_DRAW: Readonly<Record<PropId, PropDraw>> = {
     });
   },
   short_sword: (p) => {
+    // F10: 짧고 굵은 검 (넓은 날 + 큰 코등이)
     const { c } = p;
     rotated(c, 0, -6, 0.3, () => {
-      p.glow(0, -45, 34);
-      blade(c, 76, 15, p.col(STEEL));
-      rrect(c, -18, -3, 36, 8, 3, GOLD, { lw: 3 });
+      p.glow(0, -40, 34);
+      blade(c, 64, 24, p.col(STEEL), 0.26);
+      rrect(c, -22, -4, 44, 10, 3, GOLD, { lw: 3 });
       rrect(c, -4, 5, 8, 14, 3, '#6B4226', { lw: 3 });
       circle(c, 0, 21, 5, GOLD, { lw: 2.5 });
     });

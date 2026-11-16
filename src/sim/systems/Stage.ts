@@ -8,6 +8,7 @@
  *   다음 단계로 넘어가기 전에 본다 → 패배 단계 = 그 보스 단계. 보스를 일찍 잡으면 남은 시간은 휴식 (다음 단계는 원래 시각).
  * - 편대 예고 (M4-3b): 다음 단계 시작 10초 전, 다음 단계가 편대 단계면 편대를 정하고 'formationPreview' { stage, id }.
  * - 캠페인은 마지막 단계(50) 다음으로 넘어가지 않는다 (테마 클리어 판정은 M6).
+ * - 준비 완료 (F10, readyNow 명령): 준비 단계에서 누르면 1단계를 바로 시작 (`readyNow`). 60초를 기다리는 길도 그대로.
  */
 import type { System, World } from '../World';
 import { isMob } from '../entities/Mob';
@@ -67,6 +68,23 @@ export function skipStage(ctx: MatchContext, world?: World): void {
   }
   // 지금 틱 이하로 당기면 같은 틱 단계 시스템이 바로 다음 단계를 시작하고, 다음 단계 시각을 지금 + 60초로 다시 잡는다
   state.nextStageTick = 0;
+}
+
+/**
+ * 준비 완료 (readyNow 명령, F10): 준비 단계(0단계, 판 진행 중)에서만 1단계를 이 틱에 바로 시작한다.
+ * - 명령은 시스템보다 먼저 실행된다 → 다음 단계 시각을 지금 틱으로 당기면 같은 틱의 단계 시스템이 1단계를 시작하고
+ *   다음 단계를 지금 + 60초로 잡는다 (60초를 다 기다린 판과 같은 길, 시작 틱만 이르다).
+ * - 준비 단계가 아니면 아무 일도 하지 않는다 → 연타해도 1단계는 한 번 (같은 틱 두 번째 명령도 같은 시각을 다시 적을 뿐).
+ * - 성공하면 'readyNow' 사건 { player, left } (left = 건너뛴 준비 틱).
+ */
+export function readyNow(ctx: MatchContext, world: World, player: number): boolean {
+  const { state } = ctx;
+  if (state.phase !== 'playing' || state.stage !== 0) return false;
+  if (state.nextStageTick <= world.tick) return false;
+  const left = state.nextStageTick - world.tick;
+  state.nextStageTick = world.tick;
+  world.emit('readyNow', { player, left });
+  return true;
 }
 
 export function createStageSystem(ctx: MatchContext): System {

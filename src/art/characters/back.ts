@@ -98,6 +98,13 @@ export const BACK_DRAW: Readonly<Record<BackId, BackDraw>> = {
     });
   },
   quiver_leaf: (b) => {
+    // F10: 잎 모양 망토 (끝이 뾰족한 큰 잎 + 잎맥) 위에 화살통
+    const { c, spec } = b;
+    const hw = spec.torsoHW + 10;
+    const bot = Math.min(b.footY - 4, 100);
+    blob(c, [0, -24, hw + 20, 4, hw + 26, bot * 0.5, hw * 0.6, bot - 4, 0, bot + 8, -hw * 0.6, bot - 4, -hw - 26, bot * 0.5, -hw - 20, 4], '#3E9E57', { cel: true, celOffset: 8 });
+    stroke(c, [0, -16, 0, bot], '#24683A', 3.5);
+    for (const s of [-1, 1]) for (let i = 0; i < 3; i++) stroke(c, [0, 6 + i * 26, s * (hw * 0.7 - i * 6), 20 + i * 26], '#24683A', 2.5, 0.85);
     rotated(b.c, 22, -10, 0.45, () => {
       for (const dx of [-6, 0, 6]) poly(b.c, [dx, -74, dx + 5, -60, dx - 5, -60], '#F3EAD3', { lw: 2 });
       blob(b.c, [0, -50, 16, -30, 12, 20, 0, 30, -12, 20, -16, -30], '#5DBB63', { cel: true, celOffset: 3 });

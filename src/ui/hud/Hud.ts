@@ -58,6 +58,8 @@ export interface HudOptions {
   onSummon?: () => boolean;
   /** 꾹 눌러 연속 소환 간격 (ms) — 연출 끄기면 더 빠르다 */
   summonInterval?: () => number;
+  /** [▶ 준비 완료] (F10): 준비 단계에서 1단계를 바로 시작 (Game이 readyNow 명령을 보낸다) */
+  onReady?: () => void;
 }
 
 export interface HudView extends UiView {
@@ -85,6 +87,10 @@ export interface HudView extends UiView {
    */
   gainGold(amount: number): void;
   update(model: HudModel): void;
+  /** [▶ 준비 완료] 상태 (F10): hidden · ready · sent(눌렀고 시작을 기다림 — 다시 눌러도 아무 일 없음) */
+  setReady(state: 'hidden' | 'ready' | 'sent'): void;
+  /** 첫 승급 안내 (F10): [⬆ 승급 가능] 버튼을 반짝여 강조 */
+  setMergeGuide(on: boolean): void;
 }
 
 /** 게임 시간 표시: 0:00.0 형식 (디버그·기록용). */
@@ -168,7 +174,14 @@ export function createHud(opts: HudOptions): HudView {
   const chalText = h('span', { class: 'hud-banner-text', attrs: { 'data-testid': 'hud-challenge-name' }, text: ' ' });
   const chalTime = h('span', { class: 'hud-banner-time', attrs: { 'data-testid': 'hud-challenge-time', role: 'timer', 'aria-live': 'off' }, text: '' });
   const chalEl = h('div', { class: 'hud-banner hud-banner-challenge has-hp', attrs: { 'data-testid': 'hud-challenge', hidden: '' } }, chalFill, chalText, chalTime);
-  const bannerSlot = h('div', { class: 'hud-banner-slot', attrs: { 'data-testid': 'hud-banner-slot' } }, bannerEl, chalEl);
+  // [▶ 준비 완료] (F10): 보스 막대 자리를 같이 쓴다 (준비 단계엔 보스가 없다). 누르는 영역은 위아래로 넓혀 44px 이상 (CSS ::after)
+  const readyBtn = h('button', {
+    class: 'btn hud-ready',
+    attrs: { type: 'button', 'data-testid': 'hud-ready', 'data-action': 'ready', 'aria-label': '준비 완료 — 1단계 바로 시작', hidden: '' },
+    text: '▶ 준비 완료 · 바로 시작',
+    on: { click: () => opts.onReady?.() },
+  });
+  const bannerSlot = h('div', { class: 'hud-banner-slot', attrs: { 'data-testid': 'hud-banner-slot' } }, bannerEl, chalEl, readyBtn);
   // 화면 가장자리 붉은 테두리 (몹 120 이상, 무한)
   const edgeEl = h('div', { class: 'hud-edge', attrs: { 'aria-hidden': 'true', 'data-testid': 'hud-edge' } });
   // 돈 '+n원' (돈 글자 옆에서 떠오름)
@@ -283,6 +296,7 @@ export function createHud(opts: HudOptions): HudView {
   const el = h('div', { class: 'hud-root', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band, dock);
 
   let last: Partial<HudModel> = {};
+  let readyState: 'hidden' | 'ready' | 'sent' = 'hidden';
   let breakTimer: ReturnType<typeof setTimeout> | undefined;
   let gainTimer: ReturnType<typeof setTimeout> | undefined;
   let gainSum = 0;
@@ -417,7 +431,7 @@ export function createHud(opts: HudOptions): HudView {
       if (last.challengeHp !== m.challengeHp) chalFill.style.width = m.challengeHp < 0 ? '0%' : `${m.challengeHp / 10}%`;
       setText(chalTime, 'challengeTime', m.challengeTime);
       if (last.challengeTimeWarn !== m.challengeTimeWarn) chalTime.classList.toggle('is-warn', m.challengeTimeWarn);
-      const split = m.bossBanner !== null && m.challengeBanner !== null;
+      const split = [m.bossBanner !== null, m.challengeBanner !== null, readyState !== 'hidden'].filter(Boolean).length >= 2;
       if (bannerSlot.classList.contains('is-split') !== split) bannerSlot.classList.toggle('is-split', split);
       // 하단 메뉴 배지
       const badges: [SheetKind, string, boolean][] = [
@@ -433,6 +447,19 @@ export function createHud(opts: HudOptions): HudView {
       }
       last = { ...m };
       if (dropped) breakHeart();
+    },
+    setReady(state) {
+      if (state === readyState) return;
+      readyState = state;
+      readyBtn.hidden = state === 'hidden';
+      readyBtn.disabled = state === 'sent';
+      readyBtn.textContent = state === 'sent' ? '▶ 시작!' : '▶ 준비 완료 · 바로 시작';
+      readyBtn.dataset.state = state;
+      const split = [!bannerEl.hidden, !chalEl.hidden, state !== 'hidden'].filter(Boolean).length >= 2;
+      bannerSlot.classList.toggle('is-split', split);
+    },
+    setMergeGuide(on) {
+      if (mergeReadyBtn.classList.contains('is-guide') !== on) mergeReadyBtn.classList.toggle('is-guide', on);
     },
     destroy() {
       skipHold?.detach();

@@ -10,7 +10,7 @@
  *   전투가 패배 판정보다 먼저라서 같은 틱의 처치가 몹 수에 먼저 반영된다 (UI.md 9장). 감지는 이동 다음이라 이번 틱 위치로 드러낸다.
  * - 명령: summon(소환), merge·mergeAll(승급·모두 승급), move(이동·교환), hold(끄는 동안 공격 정지),
  *   hireWorker(일꾼), pickCard(보스 카드), pickMerge(승급의 축복), upgrade(판 내 강화), gamble(도박), startChallenge(도전),
- *   claimMission·claimAllMissions(미션 보상), sellTower(판매, T-2),
+ *   claimMission·claimAllMissions(미션 보상), sellTower(판매, T-2), readyNow(준비 완료 — 1단계 바로 시작, F10),
  *   debugSkipStage·debugAddGold·debugTower·debugCard·debugConvertTower·debugSetChance(개발용, debug 판에서만).
  * - 계정 레벨: 플레이어별 (도박 1000원 Lv7·10000원 Lv20 해금, 생략하면 1). 판 시작 때 정해진 입력.
  * - 덱: 플레이어별 (생략하면 decks.json 기본 덱). 판 시작 때 등급별로 복사·동결하고 검사한다 (판 도중 바깥에서 못 바꿈).
@@ -36,7 +36,7 @@ import { createCombatSystem } from './systems/Combat';
 import { createDefeatSystem } from './systems/Defeat';
 import { createMovementSystem } from './systems/Movement';
 import { createSpawnSystem } from './systems/Spawn';
-import { createStageSystem, skipStage, ticksToNextStage } from './systems/Stage';
+import { createStageSystem, readyNow, skipStage, ticksToNextStage } from './systems/Stage';
 import { merge, mergeAll, pickMerge } from './systems/Merge';
 import { createMobTraitSystem } from './systems/MobTraits';
 import { createDetectionSystem } from './systems/Detection';
@@ -328,6 +328,9 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     if (cmd.type === 'debugSetChance') setChance(ctx, w, cmd.player, cmd.key, cmd.bp);
   });
   world.setCommandHandler('debugSkipStage', (w) => skipStage(ctx, w));
+  world.setCommandHandler('readyNow', (w, cmd) => {
+    if (cmd.type === 'readyNow') readyNow(ctx, w, cmd.player);
+  });
   world.setCommandHandler('hireWorker', (w, cmd) => {
     if (cmd.type === 'hireWorker') hireWorker(ctx, w, cmd.player);
   });

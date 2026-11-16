@@ -37,14 +37,17 @@ export function towerFigureSpanTiles(scale = 1): { top: number; bottom: number }
 /**
  * 타워 칸 (tx, ty)의 그림 중 위 칸으로 삐져나온 머리 영역 (칸 좌표, 칸 (0,0) 왼쪽 위 = (0,0), 1칸 = 1).
  * top < ty 이고 bottom = ty (칸 위쪽 경계)까지.
+ * F10 (캐릭터별 크기, looks scale): 큰 캐릭터는 머리가 더 높이·넓게 올라오므로 영역도 크기만큼 넓힌다. 작은 캐릭터는 좁아진다.
+ * 단 위 칸에 다른 타워가 있으면(upperOccupied) 영역 위쪽 끝을 크기 1 기준보다 높이 올리지 않는다 — 위 타워를 누르기 쉬움이 먼저
+ * (큰 캐릭터 머리가 위 타워 칸을 대부분 덮어 위 타워를 누르거나 길게 눌러 옮기기 어렵던 것을 막는다).
  */
-export function towerHeadZone(tx: number, ty: number): { left: number; right: number; top: number; bottom: number } {
+export function towerHeadZone(tx: number, ty: number, scale = 1, upperOccupied = false): { left: number; right: number; top: number; bottom: number } {
   const cx = tx + 0.5;
   const cy = ty + 0.5;
-  return {
-    left: cx - HEAD_HALF_WIDTH_TILES,
-    right: cx + HEAD_HALF_WIDTH_TILES,
-    top: cy + FIGURE_TOP_TILES - FIGURE_MOTION_MARGIN_TILES,
-    bottom: ty,
-  };
+  const s = scale > 0 ? scale : 1;
+  const base = cy + FIGURE_TOP_TILES - FIGURE_MOTION_MARGIN_TILES;
+  let top = cy + towerFigureSpanTiles(s).top;
+  if (upperOccupied && top < base) top = base;
+  const half = HEAD_HALF_WIDTH_TILES * (upperOccupied ? Math.min(1, s) : s);
+  return { left: cx - half, right: cx + half, top, bottom: ty };
 }

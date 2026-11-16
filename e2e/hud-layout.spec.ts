@@ -217,7 +217,8 @@ for (const vp of [
     const m = await page.evaluate(() => {
       const stage = document.getElementById('stage')!.getBoundingClientRect();
       const rows = [...document.querySelectorAll('.hud-row')].map((r) => r.scrollWidth - r.clientWidth);
-      const btns = [...document.querySelectorAll('.hud .btn')].map((b) => {
+      // 숨긴 버튼(F10 [준비 완료]는 준비 단계에만, display: none → 상자 0)은 빼고 잰다
+      const btns = [...document.querySelectorAll('.hud .btn')].filter((b) => b.getBoundingClientRect().width > 0).map((b) => {
         const r = b.getBoundingClientRect();
         return r.left >= stage.left - 0.5 && r.right <= stage.right + 0.5;
       });

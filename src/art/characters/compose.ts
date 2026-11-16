@@ -33,7 +33,10 @@ export interface Composition {
 /** 오라 중심 높이 (발밑 기준) */
 export const AURA_Y = -110;
 
-export function compose(r: HumanRender, idle: IdleParts, timeMs: number, seed: number): Composition {
+/**
+ * @param lean look.lean(몸 기울기)을 쓸지 — 바깥 그림(힉스필드)은 그림 자체 자세가 있으므로 false
+ */
+export function compose(r: HumanRender, idle: IdleParts, timeMs: number, seed: number, lean = true): Composition {
   const { rig, look } = r;
   const lift = rig.lift;
   const ops: DrawOp[] = [];
@@ -61,5 +64,6 @@ export function compose(r: HumanRender, idle: IdleParts, timeMs: number, seed: n
   }
   const fx = fxOf(look);
   if (fx !== 'none') for (const p of idle.fx) ops.push({ kind: 'fx', x: p.x, y: p.y - lift, rot: 0, sx: p.scale, sy: p.scale, alpha: p.alpha });
-  return { rig: idle.body, ops, aura, auraR, fx };
+  const tilt = lean && look.lean ? (look.lean * Math.PI) / 180 : 0;
+  return { rig: tilt !== 0 ? { ...idle.body, rot: idle.body.rot + tilt } : idle.body, ops, aura, auraR, fx };
 }

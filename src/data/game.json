@@ -82,6 +82,11 @@
     "mobWarnCount": 120,
     "livesWarn": 5
   },
+  "guide": {
+    "recommendCount": 3,
+    "resultToasts": 3,
+    "resultToastSeconds": 2.6
+  },
   "debug": {
     "addGold": 1000
   },

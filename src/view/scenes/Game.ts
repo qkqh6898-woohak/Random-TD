@@ -55,14 +55,31 @@ import { isPaused, moveCheck } from '../../sim/systems/Move';
 import { auraCovers, auraRadiusOf, auraSpecOf, computeAuras, towerBonus } from '../../sim/systems/Aura';
 import { towerLevel } from '../../sim/abilities';
 import { METEOR_FX } from '../../sim/abilities/archmage';
-import { autoSummonTile, summonCheck, summonCost, towerCount } from '../../sim/systems/Summon';
+import { autoSummonTile, rankSummonTiles, summonCheck, summonCost, towerCount } from '../../sim/systems/Summon';
 import { convertTargets, sellCheck, sellPrice } from '../../sim/systems/Sell';
 import { effectsOff, onEffectsChange, setEffectsOff } from '../effects';
 import { autoSummonInterval } from '../../ui/hold';
 import { createDevSheet, type DevSheetView } from '../../ui/sheets/DevSheet';
 import { devChanceModel, hiddenRecipeRows, nextChanceBp, type DevTab } from '../../ui/sheets/devModels';
 import { createConvertPicker } from '../../ui/panels/ConvertPicker';
-import { sellNeedsConfirm } from '../../ui/panels/towerPanelModel';
+import { GRADE_NAMES, sellNeedsConfirm } from '../../ui/panels/towerPanelModel';
+import {
+  GUIDE_FIRST_MERGE,
+  mergeGuideText,
+  mergePreview,
+  mergeResultText,
+  newRunLog,
+  pairBadges,
+  readyButtonState,
+  recordRunEvent,
+  runLogRows,
+  showRecommended,
+  type MergeGuideStep,
+  type ReadyState,
+  type RunLog,
+} from '../../ui/guide/guideModel';
+import { createGuideCard, type GuideCardView } from '../../ui/guide/GuideCard';
+import { GuideLayer } from '../render/GuideLayer';
 import { goldWithBonus, hireCheck } from '../../sim/systems/Economy';
 import { formationById } from '../../sim/systems/Formation';
 import { currentOffer } from '../../sim/systems/Cards';
@@ -357,6 +374,32 @@ export class GameScene extends Phaser.Scene {
   private mergeHighlight: { tiles: { tx: number; ty: number }[]; startMs: number } | null = null;
   /** 배치 칸을 잠깐 보이기 시작한 때 (T-3 타일 숨김: 판 시작·배치할 수 없는 곳을 누름). 없으면 null */
   private buildHintAt: number | null = null;
+  // ---- F10 첫 10단계 개선 ----
+  private guideLayer!: GuideLayer;
+  /** 첫 승급 안내 (계정마다 한 번): 안내하는 타워 종류·결과 칸 타워·단계 (없으면 null) */
+  private guide: { kind: string; anchorId: number; step: MergeGuideStep } | null = null;
+  private guideCard: GuideCardView | null = null;
+  /** 이 판에서 첫 승급 안내를 끝냈다 (닫거나 승급함) */
+  private guideDone = false;
+  /** [▶ 준비 완료]를 눌러 readyNow 명령을 보냈다 (실행되면 1단계 → 버튼이 사라짐) */
+  private readySent = false;
+  /** 개발자 도구 '이번 판 기록' */
+  private runLog: RunLog = newRunLog();
+  /** 정보 패널이 붙은 쪽 (첫 승급 안내 카드는 반대쪽에 — 패널 층이 안내 층보다 위라 카드 버튼을 덮지 않게) */
+  private panelSide: 'top' | 'bottom' = 'bottom';
+  /** 이 프레임 수가 지나면 '빛나는 칸을 눌러…' 안내 (판 시작 첫 프레임들은 텍스처 굽기로 느려 알림이 보이기 전에 사라졌다) */
+  private startHintFrames = 0;
+  /** 그 안내 알림 (소환하거나 단계가 바뀌면 바로 지운다 — 다른 알림 아래로 쌓여 알림 자리를 넘지 않게) */
+  private startHintEl: HTMLElement | null = null;
+  /** 이번 판에 띄운 승급 결과 알림 수 (game.json guide.resultToasts) */
+  private resultToastsShown = 0;
+  /** 이번 프레임 안내 그림에 쓴 값 (E2E) */
+  private guideFrame: { recommended: (readonly [number, number])[]; preview: ReturnType<typeof mergePreview>; badges: number; ready: ReadyState } = {
+    recommended: [],
+    preview: null,
+    badges: 0,
+    ready: 'hidden',
+  };
   /** 도전 보스 그림 (몹 id → 이미지 주소) · 단계 → 특수 능력 글자 */
   private challengePics = new Map<string, string | null>();
   private challengeAbilities = new Map<number, string>();
@@ -413,6 +456,12 @@ export class GameScene extends Phaser.Scene {
     this.mergeCycle = 0;
     this.mergeHighlight = null;
     this.buildHintAt = this.time.now;
+    this.guide = null;
+    this.guideCard = null;
+    this.guideDone = false;
+    this.readySent = false;
+    this.runLog = newRunLog();
+    this.resultToastsShown = 0;
     this.challengeAbilities = new Map(this.ctx.data.enemies.challenges.map((c) => [c.level, c.ability]));
     this.towerNames = new Map(this.ctx.data.towers.towers.map((t) => [t.id, t.name]));
 
@@ -432,6 +481,7 @@ export class GameScene extends Phaser.Scene {
       devMenu: this.ctx.debug,
       onSummon: () => this.autoSummonOnce() !== 'stop',
       summonInterval: () => autoSummonInterval(effectsOff()),
+      onReady: () => this.sendReady(),
     });
     this.ctx.ui.clear('screen');
     this.ctx.ui.show('hud', this.hud);
@@ -511,6 +561,9 @@ export class GameScene extends Phaser.Scene {
       this.cutin = null;
       this.cutinPreload = [];
       this.ctx.ui.clear('card');
+      this.ctx.ui.clear('guide');
+      this.guide = null;
+      this.guideCard = null;
       this.ctx.ui.clear('hud');
       this.ctx.ui.setToastTop(null);
       this.ctx.ui.setToastSingle(false);
@@ -518,6 +571,9 @@ export class GameScene extends Phaser.Scene {
       this.paused = false;
       this.gameOver = false;
     });
+    // 첫 소환 전: 추천 칸이 빛난다 (F10) — 처음 몇 프레임(텍스처 굽기로 느림)이 지난 뒤 짧은 안내 한 번 (좁은 화면에서도 한 줄)
+    this.startHintFrames = 3;
+    this.startHintEl = null;
     this.cameras.main.fadeIn(200, 13, 18, 32);
     this.game.events.emit('rtd:game-ready', { seed: this.match.world.seed, mode: this.sceneData.mode });
   }
@@ -567,6 +623,7 @@ export class GameScene extends Phaser.Scene {
     this.towerLayer.sync(this.match.towers(), time, tick);
     this.syncChoice();
     this.updateSelection(time);
+    this.updateGuide(time);
     this.projectileLayer.sync(this.match.projectiles(), this.prevProjectiles, (p) => this.projectileOrigin(p), alpha);
     this.floatingText.update(time);
     this.fx.update(time, () => this.goldAnchorPx());
@@ -770,6 +827,8 @@ export class GameScene extends Phaser.Scene {
     const gap = w * TOAST_GAP_OF_WIDTH;
     this.ctx.ui.setToastTop(bottom > 0 ? bottom + gap : null);
     this.panelTopCss = bottom + gap + this.ctx.ui.measureToastHeight() + gap / 2;
+    // 첫 승급 안내 카드를 위에 띄울 때의 위쪽 끝 (F10) = 위쪽 패널과 같은 자리 (알림 한 줄 아래)
+    this.ctx.ui.el.style.setProperty('--guide-top', `${Math.round(this.panelTopCss)}px`);
     this.panelPlaceKey = '';
     // 바텀 시트 아래 끝 = 하단 메뉴 위, 고르기 창 아래 끝 = 아래 띠 위 (M5)
     const H = this.ctx.ui.el.clientHeight;
@@ -793,6 +852,7 @@ export class GameScene extends Phaser.Scene {
 
   private destroyLayers(): void {
     this.selectionLayer?.destroy();
+    this.guideLayer?.destroy();
     this.mobLayer?.destroy();
     this.towerLayer?.destroy();
     this.projectileLayer?.destroy();
@@ -825,7 +885,16 @@ export class GameScene extends Phaser.Scene {
     }
     // 아래 칸 타워의 머리(위 칸으로 삐져나온 부분)를 누르면 그 타워 칸 (위 칸 소환 아님)
     const world = this.match.world;
-    const { tx, ty } = tapTile(this.layout, pointer.worldX, pointer.worldY, (x, y) => towerAt(world, x, y) !== undefined);
+    const { tx, ty } = tapTile(
+      this.layout,
+      pointer.worldX,
+      pointer.worldY,
+      (x, y) => towerAt(world, x, y) !== undefined,
+      (x, y) => {
+        const t = towerAt(world, x, y);
+        return t ? (this.towerLayer.artScaleOf(t.id) ?? 1) : 1;
+      },
+    );
     // 패널 [↔ 이동] 모드 (T-2): 빈 배치 칸 = 이동, 내 다른 타워 = 교환, 같은 타워·맵 밖·못 놓는 칸 = 취소
     if (this.moveMode) {
       this.finishMoveMode(tx, ty);
@@ -958,6 +1027,18 @@ export class GameScene extends Phaser.Scene {
    * T-2 '눌러서 바로 승급' (설정, 기본 켜짐): 지금 승급할 수 있는 타워(같은 종류 3개)면 패널 없이 그 칸에 merge 명령 → 결과가 누른 칸에 생긴다.
    */
   private tapTower(p: PressState): void {
+    // 첫 승급 안내 중 (F10, 눌러서 바로 승급): 안내하는 묶음의 다른 타워를 누르면 그 칸이 새 결과 칸 (재료도 다시 계산) — 바로 승급하지 않는다.
+    // 금색 결과 칸을 누르면 평소처럼 승급 → 표시한 재료 두 칸이 실제로 사라진다
+    const g = this.guide;
+    if (g && this.ctx.settings.get().tapMerge) {
+      const t = this.match.world.entities.get(p.id) as Tower | undefined;
+      if (t && t.kind === 'tower' && t.tower === g.kind && t.owner === LOCAL_PLAYER && t.id !== g.anchorId) {
+        g.anchorId = t.id;
+        g.step = 2;
+        this.closePanel();
+        return;
+      }
+    }
     if (this.ctx.settings.get().tapMerge && !(this.selectedId === p.id && this.panel)) {
       const mc = mergeCheck(this.match.ctx, this.match.world, LOCAL_PLAYER, p.tx, p.ty);
       const now = this.time.now;
@@ -1091,9 +1172,13 @@ export class GameScene extends Phaser.Scene {
     if (this.paused || this.gameOver) return;
     const groups = mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
     if (groups.length === 0) return;
+    // 첫 승급 안내 중이면 안내하는 묶음의 결과 칸 타워를 고른다 (F10)
+    const guided = this.guide ? groups.findIndex((x) => x.tower === this.guide?.kind) : -1;
+    if (guided >= 0) this.mergeCycle = guided;
     const g = groups[this.mergeCycle % groups.length] as (typeof groups)[number];
     this.mergeCycle++;
-    this.selectTower(g.first.id);
+    const guideAnchor = guided >= 0 && this.guide ? this.guide.anchorId : null;
+    this.selectTower(guideAnchor !== null && this.match.world.entities.has(guideAnchor) ? guideAnchor : g.first.id);
     this.panelFromMergeCycle = true;
     this.refreshPanel();
     this.mergeHighlight = {
@@ -1322,6 +1407,7 @@ export class GameScene extends Phaser.Scene {
     const w = ui.clientWidth;
     const figure = { top: gameToCssPx(c.y + L.tile * span.top, w), bottom: gameToCssPx(c.y + L.tile * span.bottom, w) };
     const placement = this.panel.place(figure, this.panelTopCss);
+    this.panelSide = placement.side === 'top' ? 'top' : 'bottom';
     this.ctx.ui.setToastSingle(placement.side === 'top');
   }
 
@@ -1431,6 +1517,7 @@ export class GameScene extends Phaser.Scene {
     this.floatingText = new FloatingTextLayer(this, this.layout.tile);
     this.fx = new FxLayer(this, this.layout);
     this.selectionLayer = new SelectionLayer(this, this.layout);
+    this.guideLayer = new GuideLayer(this, this.layout);
     this.updateToastTop();
   }
 
@@ -1492,6 +1579,9 @@ export class GameScene extends Phaser.Scene {
     const claimed = { total: 0, count: 0 };
     /** 이번 프레임에 달성한 일반 미션 (알림 하나로) */
     const done = { names: [] as string[], total: 0 };
+    /** 이번 프레임에 승급 결과 알림을 띄웠다 (모두 승급은 하나만, F10) */
+    let resultShown = false;
+    const stageNow = this.match.state.stage;
     for (const ev of this.match.world.drainEvents()) {
       const recent = eventFxVisible('bulk', ev.tick, now, frameStart);
       switch (ev.type) {
@@ -1500,8 +1590,17 @@ export class GameScene extends Phaser.Scene {
           break;
         case 'defeat':
           defeated = true;
+          if (ev.reason === 'bossTime') {
+            // 이번 판 기록 (개발자 도구): 시간 초과 때 남은 보스 체력
+            const b = bossHudInput(this.match.rules, this.legionNames, this.match.state, this.match.mobs(), this.match.tick);
+            recordRunEvent(this.runLog, { type: 'bossTimeout', tick: ev.tick, stage: Number(ev.stage), hp: b?.hp ?? 0, maxHp: b?.maxHp ?? this.match.state.bossMaxHp });
+          }
+          break;
+        case 'readyNow':
+          if (ev.player === LOCAL_PLAYER) recordRunEvent(this.runLog, { type: 'readyNow', tick: ev.tick, left: Number(ev.left) });
           break;
         case 'summon':
+          if (ev.player === LOCAL_PLAYER) recordRunEvent(this.runLog, { type: 'summon', tick: ev.tick, stage: stageNow });
           if (ev.god === true && eventFxVisible('rare', ev.tick, now, frameStart)) {
             this.ctx.ui.toast(godDescends(this.ctx.data.towers.towers.find((t) => t.id === ev.tower)?.name ?? String(ev.tower)), 2400);
           }
@@ -1528,6 +1627,19 @@ export class GameScene extends Phaser.Scene {
           break;
         case 'merge': {
           if (ev.player !== LOCAL_PLAYER) break;
+          recordRunEvent(this.runLog, { type: 'merge', tick: ev.tick, stage: stageNow });
+          // 승급 결과 이름·역할 (F10): 첫 승급 안내 중이면 늘, 아니면 판마다 처음 몇 번 (game.json guide.resultToasts)
+          const guiding = this.guide !== null;
+          if (guiding) this.endGuide(true);
+          if (!resultShown && (guiding || this.resultToastsShown < this.ctx.data.game.guide.resultToasts)) {
+            const d = this.ctx.data.towers.towers.find((t) => t.id === ev.tower);
+            if (d) {
+              resultShown = true;
+              this.resultToastsShown++;
+              const r = mergeResultText(d.name, GRADE_NAMES[d.grade], d.role ?? '');
+              this.ctx.ui.banner(r.title, r.sub || null, Math.round(this.ctx.data.game.guide.resultToastSeconds * 1000), 'merge');
+            }
+          }
           // 고른 타워가 승급되면 패널이 결과 타워를 따라간다
           if (this.selectedId === Number(ev.from)) this.selectedId = Number(ev.id);
           if (ev.god === true && eventFxVisible('rare', ev.tick, now, frameStart)) {
@@ -1653,6 +1765,10 @@ export class GameScene extends Phaser.Scene {
           this.noteFx('workerIncome');
           break;
         case 'bossSpawn': {
+          {
+            const bb = this.match.rules.bosses.get(String(ev.boss));
+            recordRunEvent(this.runLog, { type: 'bossSpawn', tick: ev.tick, stage: Number(ev.stage), name: bb?.name ?? String(ev.boss) });
+          }
           if (!eventFxVisible('rare', ev.tick, now, frameStart)) break;
           const b = this.match.rules.bosses.get(String(ev.boss));
           if (b) {
@@ -1669,6 +1785,7 @@ export class GameScene extends Phaser.Scene {
           break;
         }
         case 'bossKill': {
+          recordRunEvent(this.runLog, { type: 'bossKill', tick: ev.tick, stage: Number(ev.stage) });
           if (!eventFxVisible('rare', ev.tick, now, frameStart)) break;
           const b = this.match.rules.bosses.get(String(ev.boss));
           const reward = Number(ev.reward);
@@ -1857,6 +1974,10 @@ export class GameScene extends Phaser.Scene {
       this.ctx.ui.toast(missionClaimText(claimed.total, claimed.count));
       this.noteFx('missionClaim');
     }
+    if (this.startHintEl && (lastStage || this.match.state.summons > 0)) {
+      this.startHintEl.remove();
+      this.startHintEl = null;
+    }
     if (lastStage && !(lastStage.boss && bossArrived)) {
       const { mode, theme } = this.match.state;
       this.ctx.ui.toast(stageToastText({ mode, theme, stage: lastStage.stage, bossStage: lastStage.boss }));
@@ -1876,6 +1997,8 @@ export class GameScene extends Phaser.Scene {
     const fresh = groups.filter((g) => !this.mergeReadyKinds.has(g.tower));
     this.mergeReadyKinds = now;
     if (fresh.length === 0 || this.mergeReadyToasts >= MERGE_READY_TOASTS_PER_MATCH) return;
+    // 첫 승급 안내가 뜰 때는 안내 카드가 같은 말을 한다 (F10)
+    if (this.guide !== null || this.guideWillOpen()) return;
     this.mergeReadyToasts++;
     this.ctx.ui.toast(mergeReadyToast(fresh.map((g) => this.towerNames.get(g.tower) ?? g.tower)));
   }
@@ -1933,6 +2056,11 @@ export class GameScene extends Phaser.Scene {
         onExit: () => this.scene.start(SCENE_BOOT),
         tapMerge: this.ctx.settings.get().tapMerge,
         onTapMerge: (on) => this.ctx.settings.set('tapMerge', on),
+        // 도움말 다시 보기 (F10): 계정 기록을 지우고 이 판에서도 다시 띄울 수 있게
+        onHelpAgain: () => {
+          this.ctx.account.resetGuides();
+          this.guideDone = false;
+        },
       }),
     );
     this.refreshHud();
@@ -2040,6 +2168,144 @@ export class GameScene extends Phaser.Scene {
   /** E2E: 그 몹 그림의 크기 배율 (statusModel.mobScaleMul과 비교) */
   drawnMobScale(id: number): number | null {
     return this.mobLayer.scaleMulOf(id);
+  }
+
+  // ---------------------------------------------------------------- F10 첫 10단계 개선
+
+  /** [▶ 준비 완료]: 준비 단계에서만 readyNow 명령 (sim이 실행 틱에 다시 검사 — 연타해도 1단계는 한 번). */
+  private sendReady(): void {
+    if (this.paused || this.gameOver || this.readySent) return;
+    const st = this.match.state;
+    if (st.phase !== 'playing' || st.stage !== 0) return;
+    if (this.match.world.enqueue({ type: 'readyNow' }).ok) this.readySent = true;
+  }
+
+  /** 이번 프레임 안내: [▶ 준비 완료] 상태, 첫 승급 안내, 추천 칸·승급 미리 보기·보유 2/3 배지 그리기. */
+  private updateGuide(timeMs: number): void {
+    const { state } = this.match;
+    const mine = this.match.towers().filter((t) => t.owner === LOCAL_PLAYER);
+    if (state.stage !== 0) this.readySent = false;
+    if (this.startHintFrames > 0 && --this.startHintFrames === 0 && showRecommended(state.phase, state.summons, mine.length)) {
+      this.startHintEl = this.ctx.ui.toast('빛나는 칸을 눌러 소환해요', 2600);
+    }
+    const ready = this.gameOver || this.paused ? 'hidden' : readyButtonState(state.phase, state.stage, mine.length, this.readySent);
+    this.hud.setReady(ready);
+    this.syncMergeGuide();
+    const preview = this.mergePreviewView();
+    const recommended = showRecommended(state.phase, state.summons, mine.length)
+      ? rankSummonTiles(this.match.ctx, this.match.world, this.ctx.data.game.guide.recommendCount)
+      : [];
+    const rules = this.match.rules;
+    const badges = pairBadges(mine, LOCAL_PLAYER, rules.mergeCount, (id) => {
+      const g = rules.towers.get(id)?.grade;
+      return g !== undefined && canMergeGrade(g);
+    });
+    this.guideFrame = { recommended, preview, badges: badges.length, ready };
+    this.guideLayer.draw({ recommended, preview, badges, still: effectsOff() }, timeMs);
+  }
+
+  /** 승급 미리 보기 칸: 승급할 수 있는 타워의 패널이 열려 있으면 그 타워가 결과 칸, 아니면 첫 승급 안내의 결과 칸. */
+  private mergePreviewView(): ReturnType<typeof mergePreview> {
+    if (this.press?.dragging || this.moveMode) return null;
+    const world = this.match.world;
+    let anchor: Tower | null = null;
+    const sel = this.panel ? this.selectedTower() : null;
+    if (sel && sel.owner === LOCAL_PLAYER && mergeCheck(this.match.ctx, world, LOCAL_PLAYER, sel.tx, sel.ty).ok) anchor = sel;
+    if (!anchor && this.guide) {
+      const e = world.entities.get(this.guide.anchorId);
+      anchor = e && e.kind === 'tower' ? (e as Tower) : null;
+    }
+    if (!anchor) return null;
+    return mergePreview(sameKindTowers(world, anchor.tower, LOCAL_PLAYER), anchor, this.match.rules.mergeCount);
+  }
+
+  /** 첫 승급 안내를 지금 띄울 차례인가 (계정에서 아직 안 봤고, 이 판에서 끝내지 않았고, 승급 가능한 묶음이 있음). */
+  private guideWillOpen(): boolean {
+    if (this.guide || this.guideDone || this.gameOver || this.ctx.account.guideSeen(GUIDE_FIRST_MERGE)) return false;
+    return mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER).length > 0;
+  }
+
+  /**
+   * 첫 승급 안내 (계정마다 한 번): 처음 승급할 수 있게 되면 가장 먼저 소환된 타워가 있는 묶음을 골라 결과 칸(그 타워)·재료 두 칸·
+   * [⬆ 승급 가능] 버튼을 강조하고 카드를 띄운다. 묶음이 사라지면(판매 등) 기록 없이 닫고, 승급하거나 ✕를 누르면 기록하고 닫는다.
+   */
+  private syncMergeGuide(): void {
+    if (this.gameOver) {
+      if (this.guide) this.endGuide(false);
+      return;
+    }
+    const g = this.guide;
+    const world = this.match.world;
+    if (g) {
+      const group = sameKindTowers(world, g.kind, LOCAL_PLAYER);
+      if (group.length < this.match.rules.mergeCount) {
+        this.endGuide(false);
+        return;
+      }
+      if (!group.some((t) => t.id === g.anchorId)) g.anchorId = (group[0] as Tower).id;
+      // 패널로 같은 종류 타워를 고르면 그 타워가 결과 칸
+      const sel = this.panel ? this.selectedTower() : null;
+      if (sel && sel.tower === g.kind && sel.owner === LOCAL_PLAYER) g.anchorId = sel.id;
+      this.updateGuideCard();
+      return;
+    }
+    if (!this.guideWillOpen()) return;
+    const first = mergeableGroups(this.match.ctx, world, LOCAL_PLAYER)[0];
+    if (!first) return;
+    this.guide = { kind: first.tower, anchorId: first.first.id, step: 1 };
+    this.guideCard = createGuideCard({
+      onNext: () => {
+        if (this.guide) this.guide.step = 2;
+        this.updateGuideCard();
+      },
+      onClose: () => this.endGuide(true),
+    });
+    this.ctx.ui.show('guide', this.guideCard);
+    this.hud.setMergeGuide(true);
+    this.updateGuideCard();
+  }
+
+  private updateGuideCard(): void {
+    const g = this.guide;
+    if (!g || !this.guideCard) return;
+    const name = this.towerNames.get(g.kind) ?? g.kind;
+    const text = mergeGuideText(g.step, name, this.ctx.settings.get().tapMerge);
+    // 강조한 칸이 맵 아래쪽이면 카드는 위에 (칸을 가리지 않게)
+    const p = this.mergePreviewView();
+    const rows = p ? [p.result.ty, ...p.materials.map((m) => m.ty)] : [];
+    const avg = rows.length > 0 ? rows.reduce((a, b) => a + b, 0) / rows.length : 0;
+    let side: 'top' | 'bottom' = avg >= this.match.map.height / 2 ? 'top' : 'bottom';
+    if (this.panel) side = this.panelSide === 'top' ? 'bottom' : 'top';
+    this.guideCard.update({ ...text, step: g.step, steps: 2, side });
+  }
+
+  /** 첫 승급 안내 닫기. seen = 계정에 '봤음' 기록 (승급했거나 ✕) — 다음 판부터 안 뜬다 ([도움말 다시 보기]로 다시). */
+  private endGuide(seen: boolean): void {
+    this.guide = null;
+    this.guideCard = null;
+    this.ctx.ui.clear('guide');
+    this.hud?.setMergeGuide(false);
+    if (seen) {
+      this.ctx.account.markGuide(GUIDE_FIRST_MERGE);
+      this.guideDone = true;
+    }
+  }
+
+  /** E2E (F10): 추천 칸 · 승급 미리 보기(결과·재료 칸) · 보유 2/3 배지 수 · [준비 완료] 상태 · 첫 승급 안내 */
+  get guideState(): {
+    recommended: (readonly [number, number])[];
+    preview: ReturnType<typeof mergePreview>;
+    badges: number;
+    ready: ReadyState;
+    guide: { kind: string; anchorId: number; step: number } | null;
+    resultToasts: number;
+  } {
+    return { ...this.guideFrame, guide: this.guide ? { ...this.guide } : null, resultToasts: this.resultToastsShown };
+  }
+
+  /** E2E·개발자 도구: 이번 판 기록 */
+  get runLogRows(): { label: string; value: string }[] {
+    return runLogRows(this.runLog, this.match.tick);
   }
 
   private refreshHud(): void {
@@ -2198,7 +2464,7 @@ export class GameScene extends Phaser.Scene {
       (view as UpgradeSheetView).update(upgradeSheetModel(ctx, LOCAL_PLAYER), gambleSheetModel(ctx, this.match.world, LOCAL_PLAYER), slotView);
     } else if (this.sheetKind === 'mission') {
       (view as MissionSheetView).update(missionSheetModel(ctx, this.match.world, this.ctx.account.hiddenFound(), this.revealHidden()));
-    } else if (this.sheetKind === 'dev') (view as DevSheetView).update(devChanceModel(ctx, this.ctx.data.game.devChances.list), this.recipeRows());
+    } else if (this.sheetKind === 'dev') (view as DevSheetView).update(devChanceModel(ctx, this.ctx.data.game.devChances.list), this.recipeRows(), this.runLogRows);
   }
 
   /** 도박 슬롯 (테이블마다): 1초 돌고 결과에서 멈춤 (연출 끄기면 바로). 처음 멈춘 프레임에 '+n원'·대박 알림. */

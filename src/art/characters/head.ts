@@ -518,12 +518,17 @@ export const HEADGEAR_DEFS: Readonly<Record<HeadgearId, HeadgearDef>> = {
     color: '#F2C230',
     front: (h, col) => {
       const { c, x, y, r } = h;
-      paint(c, P.dome(x, y - r * 0.18, r * 1.06, 0.92), col, { cel: true });
-      brim(h, shade(col, -0.1), 1.2, 0.18, 0.14);
-      rrect(c, x - r * 0.3, y - r * 0.85, r * 0.6, r * 0.18, 4, shade(col, -0.25), { lw: 3 });
-      glow(c, x, y - r * 0.62, r * 0.55, '#FFF3A8', 0.55);
-      circle(c, x, y - r * 0.62, r * 0.2, '#FFF7C9', { lw: 3.5 });
-      circle(c, x, y - r * 0.62, r * 0.1, '#FFFFFF', { lw: 0 });
+      // F10: 낮고 넓은 헬멧 + 밝은 헤드램프 (빛줄기까지 — 흑백에서도 가장 밝은 점)
+      paint(c, P.dome(x, y - r * 0.12, r * 1.1, 0.78), col, { cel: true });
+      brim(h, shade(col, -0.1), 1.32, 0.1, 0.16);
+      rrect(c, x - r * 0.3, y - r * 0.76, r * 0.6, r * 0.18, 4, shade(col, -0.25), { lw: 3 });
+      c.save();
+      c.globalAlpha *= 0.35;
+      poly(c, [x + r * 0.15, y - r * 0.66, x + r * 1.9, y - r * 1.05, x + r * 1.9, y - r * 0.15], '#FFF7C9', { lw: 0 });
+      c.restore();
+      glow(c, x, y - r * 0.55, r * 0.8, '#FFF3A8', 0.85);
+      circle(c, x, y - r * 0.55, r * 0.26, '#FFF7C9', { lw: 3.5 });
+      circle(c, x, y - r * 0.55, r * 0.14, '#FFFFFF', { lw: 0 });
     },
   },
   bone_headband: {
@@ -541,9 +546,10 @@ export const HEADGEAR_DEFS: Readonly<Record<HeadgearId, HeadgearDef>> = {
     front: (h, col) => {
       const { c, x, y, r } = h;
       brim(h, shade(col, -0.1), 1.4, 0.5, 0.22);
-      blob(c, [x - r * 0.78, y - r * 0.55, x - r * 0.45, y - r * 1.25, x + r * 0.05, y - r * 1.65, x + r * 0.75, y - r * 1.55, x + r * 0.35, y - r * 1.25, x + r * 0.78, y - r * 0.55], col, { cel: true });
+      // F10: 뾰족한 두건 모자 — 끝이 높이 솟아 뒤로 꺾인다 (흑백 실루엣의 뾰족한 삼각형)
+      poly(c, [x - r * 0.8, y - r * 0.55, x - r * 0.2, y - r * 1.5, x + r * 0.35, y - r * 2.05, x + r * 0.95, y - r * 1.85, x + r * 0.45, y - r * 1.4, x + r * 0.8, y - r * 0.55], col, { lw: 4, cel: true, celOffset: 3 });
       rrect(c, x - r * 0.76, y - r * 0.76, r * 1.52, r * 0.2, 4, h.trim, { lw: 3.5 });
-      circle(c, x + r * 0.82, y - r * 1.52, r * 0.12, '#F5D76E', { lw: 3 });
+      circle(c, x + r * 0.98, y - r * 1.86, r * 0.13, '#F5D76E', { lw: 3 });
     },
   },
   kettle_helmet: {
@@ -555,6 +561,8 @@ export const HEADGEAR_DEFS: Readonly<Record<HeadgearId, HeadgearDef>> = {
       paint(c, P.dome(x, y - r * 0.42, r * 0.92, 0.85), col, { cel: true });
       shine(c, x - r * 0.35, y - r * 0.95, r * 0.2, r * 0.08, 0.8);
       stroke(c, [x, y - r * 1.2, x, y - r * 0.45], shade(col, -0.3), 3);
+      // F10: 투구 볏 (위로 솟은 작은 날)
+      poly(c, [x - r * 0.1, y - r * 1.22, x, y - r * 1.48, x + r * 0.1, y - r * 1.22], shade(col, -0.2), { lw: 3 });
     },
   },
   knight_helmet: {

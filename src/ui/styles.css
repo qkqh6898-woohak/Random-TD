@@ -1324,6 +1324,13 @@ body {
   color: #fff3c4;
 }
 
+/* 승급 결과 이름·역할 (F10): 금빛 테두리 + 보라 바탕 (보스 처치·잭팟 금색 배너와 구별) */
+.toast-banner.is-merge {
+  background: linear-gradient(180deg, rgba(70, 40, 120, 0.95), rgba(36, 20, 70, 0.95));
+  border-color: #ffd85a;
+  color: #fff3c4;
+}
+
 /* ---------- M4 고르기 창 (보스 카드·승급의 축복) ---------- */
 .layer-modal {
   pointer-events: none;
@@ -3169,4 +3176,202 @@ body {
 /* 개발자 모드: 하단 메뉴 4칸 (도전·강화·미션·개발) — 개발 칸은 좁게 */
 .hud-menu:has(.is-dev) {
   grid-template-columns: repeat(3, 1fr) 0.62fr;
+}
+
+/* ---------- F10 첫 10단계 개선: [▶ 준비 완료] · 승급 버튼 강조 · 첫 승급 안내 카드 ---------- */
+/* 준비 완료: 보스 막대 자리 (준비 단계엔 보스가 없다). 보이는 높이는 막대 자리(7.6cqw)지만 누르는 영역은 위아래로 넓혀 44px 이상 */
+.hud-ready {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 0 3cqw;
+  border-radius: 2cqw;
+  font-size: 3.6cqw;
+  font-weight: 800;
+  line-height: 1;
+  color: #2a1a05;
+  background: linear-gradient(180deg, #ffe27a 0%, var(--gold) 70%, var(--gold-deep) 100%);
+  border: 0.4cqw solid #fff3c4;
+  box-shadow: 0 0 2.4cqw rgba(255, 210, 74, 0.55);
+  white-space: nowrap;
+  animation: hud-ready-glow 1.4s ease-in-out infinite alternate;
+}
+
+.hud-ready::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -8px;
+  bottom: -10px;
+}
+
+.hud-ready[hidden] {
+  display: none;
+}
+
+.hud-ready:disabled {
+  opacity: 0.75;
+  animation: none;
+}
+
+.hud-banner-slot.is-split .hud-ready {
+  font-size: 2.7cqw;
+  border-radius: 1.2cqw;
+}
+
+@keyframes hud-ready-glow {
+  0% {
+    box-shadow: 0 0 1cqw rgba(255, 210, 74, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 3.4cqw rgba(255, 210, 74, 0.9);
+  }
+}
+
+/* 첫 승급 안내 중: [⬆ 승급 가능] 버튼이 반짝인다 */
+.hud-merge-ready.is-guide {
+  animation: hud-guide-pulse 0.9s ease-in-out infinite alternate;
+  outline: 0.6cqw solid #fff3c4;
+  outline-offset: 0.4cqw;
+}
+
+@keyframes hud-guide-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(255, 216, 90, 0);
+  }
+  100% {
+    transform: scale(1.08);
+    box-shadow: 0 0 3cqw rgba(255, 216, 90, 0.95);
+  }
+}
+
+/* 안내 카드: 누르기를 통과시킨다 (버튼만 받음) → 카드 밑의 칸·HUD도 누를 수 있다 */
+.layer-guide,
+.layer-guide > *,
+.guide-card,
+.guide-card * {
+  pointer-events: none;
+}
+
+.guide-card {
+  position: absolute;
+  left: 4cqw;
+  right: 4cqw;
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+  padding: 2cqw 2.4cqw 2cqw 3.4cqw;
+  border-radius: 3cqw;
+  background: rgba(24, 18, 6, 0.9);
+  border: 0.4cqw solid rgba(255, 210, 74, 0.85);
+  box-shadow: 0 1cqw 3cqw rgba(0, 0, 0, 0.45);
+  color: var(--text);
+  animation: guide-in 0.25s ease-out;
+}
+
+.guide-card.is-bottom {
+  bottom: calc(var(--dock-h, max(15cqw, 60px)) + 2cqw);
+}
+
+.guide-card.is-top {
+  top: var(--guide-top, 30cqw);
+}
+
+.guide-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.guide-title {
+  font-size: 3.7cqw;
+  font-weight: 800;
+  color: #ffd85a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.guide-body {
+  margin-top: 0.6cqw;
+  font-size: 3.2cqw;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.guide-step {
+  font-size: 2.8cqw;
+  color: var(--text-dim);
+  margin-left: 1.4cqw;
+  font-weight: 600;
+}
+
+.guide-card .btn {
+  pointer-events: auto;
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 2.6cqw;
+  font-size: 3.3cqw;
+}
+
+.guide-next {
+  color: #2a1a05;
+  background: linear-gradient(180deg, #ffe27a 0%, var(--gold) 70%, var(--gold-deep) 100%);
+  border-color: #fff3c4;
+  font-weight: 800;
+}
+
+@keyframes guide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(2cqw);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 일시정지 메뉴 [도움말 다시 보기] */
+.pause-help {
+  width: 100%;
+}
+
+/* 개발자 도구 '이번 판 기록' (F10) */
+.dv-log {
+  margin: 1.4cqw 0 2cqw;
+  padding: 2cqw 2.6cqw;
+  border-radius: 2.4cqw;
+  background: rgba(255, 255, 255, 0.06);
+  border: 0.3cqw solid var(--panel-line);
+}
+
+.dv-log-title {
+  font-size: 3.3cqw;
+  font-weight: 800;
+  margin-bottom: 1cqw;
+}
+
+.dv-log-row {
+  display: flex;
+  gap: 2cqw;
+  font-size: 3cqw;
+  line-height: 1.5;
+}
+
+.dv-log-label {
+  flex: 0 0 30%;
+  min-width: 0;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dv-log-value {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }

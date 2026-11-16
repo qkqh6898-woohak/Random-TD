@@ -7,6 +7,8 @@
  *   둘 다 저장된다 (Game 장면이 settings에 쓴다).
  * - 확률: 줄마다 지금 값 · [−0.1%p] [+0.1%p] (꾹 누르면 계속) · 맨 위 [초기화]. 누르면 Game이 debugSetChance 명령을 보낸다.
  * - 히든 조합: 12종 결과 초상화·이름 + 재료 3개 (판 위에 있으면 ✓, 지금 덱에 있으면 '덱'). 보기만 (조합은 M6).
+ * - '이번 판 기록' (F10, 설정 탭 맨 위): 첫 소환·준비 완료·첫 승급·보스 등장/처치 시각(게임 시간)과 시간 초과 때 남은 보스 체력
+ *   — 실제 휴대폰 시험에서 첫 승급 시간·첫 보스 결과를 적어 두려고 (값은 ui/guide/guideModel.runLogRows).
  * 값은 devModels(순수), 여기서는 그리기만.
  */
 import { h } from '../dom';
@@ -29,7 +31,7 @@ export interface DevSheetOptions {
 }
 
 export interface DevSheetView extends BottomSheetView<DevTab> {
-  update(chances: DevChanceModel, recipes: readonly HiddenRecipeRow[]): void;
+  update(chances: DevChanceModel, recipes: readonly HiddenRecipeRow[], runLog?: readonly { label: string; value: string }[]): void;
 }
 
 const TABS = [
@@ -78,6 +80,19 @@ export function createDevSheet(opts: DevSheetOptions, firstChances: DevChanceMod
   });
   sheet.body.append(panes.fx, panes.chance, panes.recipes);
   showPane(sheet.tab ?? 'fx');
+
+  // ---- 이번 판 기록 (F10)
+  const logList = h('div', { class: 'dv-log-list', attrs: { 'data-testid': 'dev-run-log' } });
+  panes.fx.append(h('div', { class: 'dv-log' }, h('div', { class: 'dv-log-title', text: '📝 이번 판 기록 (게임 시간)' }), logList));
+  let lastLog = '';
+  const drawLog = (rows: readonly { label: string; value: string }[]): void => {
+    const key = rows.map((r) => `${r.label}=${r.value}`).join('|');
+    if (key === lastLog) return;
+    lastLog = key;
+    logList.replaceChildren(
+      ...rows.map((r) => h('div', { class: 'dv-log-row' }, h('span', { class: 'dv-log-label', text: r.label }), h('span', { class: 'dv-log-value', text: r.value }))),
+    );
+  };
 
   // ---- 설정
   panes.fx.append(
@@ -161,7 +176,8 @@ export function createDevSheet(opts: DevSheetOptions, firstChances: DevChanceMod
     get tab() {
       return sheet.tab;
     },
-    update(chances, recipes) {
+    update(chances, recipes, runLog) {
+      if (runLog) drawLog(runLog);
       for (const r of chances.rows) {
         const e = rowEls.get(r.key);
         if (!e) continue;
