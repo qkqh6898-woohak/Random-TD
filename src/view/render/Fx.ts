@@ -84,7 +84,9 @@ export class FxLayer {
     const { x, y } = tileCenterPx(L, tx, ty);
     const tile = L.tile;
     const merge = kind === 'merge';
-    const die = this.die(`${kind}-die`, x, y - tile * 0.46, merge ? 5 : 3, FX_DEPTH + 12, tile * 0.28).setAngle(-210);
+    const revealedFace = merge ? 5 : 3;
+    const die = this.die(`${kind}-die`, x, y - tile * 0.46, revealedFace, FX_DEPTH + 12, tile * 0.28).setAngle(-210);
+    let lastFace = revealedFace;
     const size = tile * (merge ? 0.62 : 0.5);
     this.scene.tweens.add({
       targets: die,
@@ -94,21 +96,30 @@ export class FxLayer {
       displayHeight: size,
       duration: 240,
       ease: 'Back.easeOut',
+      onUpdate: (tween) => {
+        const turn = Math.floor(tween.progress * 8);
+        const face = turn < 7 ? 1 + (revealedFace + turn) % 6 : revealedFace;
+        if (face === lastFace) return;
+        lastFace = face;
+        die.setTexture(diceKey(face));
+      },
       onComplete: () =>
         this.scene.tweens.add({ targets: die, y: die.y - tile * 0.15, alpha: 0, delay: 120, duration: 170, onComplete: () => die.destroy() }),
     });
-    // 발밑 소환진: 등급 색 타원 + 금색 안쪽 타원 + 별 6개 (화면 전용 그림)
+    // 발밑 소환진과 솜사탕 빛 별: 같은 그래픽으로 함께 퍼지게 한다.
     const seal = this.track(this.scene.add.graphics({ x, y: y + tile * 0.3 })).setDepth(FX_DEPTH + 1);
     seal.lineStyle(Math.max(3, tile * 0.038), color, 0.93).strokeEllipse(0, 0, tile * 0.91, tile * 0.43);
     seal.lineStyle(Math.max(2, tile * 0.032), 0xffe7a0, 0.92).strokeEllipse(0, 0, tile * 0.72, tile * 0.34);
-    seal.fillStyle(0xffedb1, 1);
+    const sparkColors = [0xffedb1, 0xffaed0, 0xb7f9cb] as const;
     for (let i = 0; i < 6; i++) {
       const a = (i * Math.PI) / 3;
-      const sx = Math.cos(a) * tile * 0.5;
-      const sy = Math.sin(a) * tile * 0.25;
-      const st = tile * 0.07;
-      seal.fillTriangle(sx - st, sy, sx + st, sy, sx, sy - st * 1.35);
-      seal.fillTriangle(sx - st, sy, sx + st, sy, sx, sy + st * 1.35);
+      const sx = Math.cos(a) * tile * (0.53 + (i % 2) * 0.12);
+      const sy = Math.sin(a) * tile * (0.28 + (i % 2) * 0.15);
+      const st = tile * (merge ? 0.088 : 0.065);
+      seal.fillStyle(sparkColors[i % sparkColors.length] ?? sparkColors[0], 1);
+      seal.fillTriangle(sx - st, sy, sx + st, sy, sx, sy - st * 1.5);
+      seal.fillTriangle(sx - st, sy, sx + st, sy, sx, sy + st * 1.5);
+      seal.fillCircle(sx * 0.77, sy * 0.77, st * 0.29);
     }
     seal.setScale(0.48);
     this.scene.tweens.add({ targets: seal, scale: merge ? 1.38 : 1.18, alpha: 0, duration: 430, ease: 'Cubic.easeOut', onComplete: () => seal.destroy() });

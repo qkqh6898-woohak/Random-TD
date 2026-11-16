@@ -19,10 +19,6 @@ import { GAME_HEIGHT, GAME_WIDTH } from './config';
 export const HUD_TOP_PX = 330;
 /** 아래 띠를 아직 재지 못했을 때 비워 두는 높이 (기준 px). 실제로는 아래 띠 위쪽 끝을 잰다 → `mapAreaBelowHud`. */
 export const BOTTOM_UI_PX = 330;
-/** 맵과 아래 띠 사이 여백 (기준 px) */
-export const MAP_BOTTOM_GAP_PX = 12;
-/** HUD 아래 끝과 맵 사이 여백 (기준 px) */
-export const MAP_TOP_GAP_PX = 12;
 /** 맵 영역 최소 높이 (기준 px): 아주 납작한 화면에서 HUD가 커져도 맵이 사라지지 않게 */
 export const MIN_MAP_AREA_PX = 640;
 
@@ -57,14 +53,14 @@ export interface MapLayout {
 /**
  * DOM HUD가 실제로 차지하는 높이(기준 px)를 받아 맵 영역을 정한다 (UI.md 4.1: HUD 2줄 → 보스 막대 줄 → 맵 → 아래 띠).
  * Game 장면은 hudBottomPx에 알림 한 줄 자리(간격 + 실제 알림 높이)를 더해 넘긴다 → 알림이 맵 첫 줄을 가리지 않는다.
- * HUD 아래 끝 + 여백부터 아래 띠 위쪽 끝 − 여백까지. 아래 띠를 재지 못하면(생략·0) `BOTTOM_UI_PX`를 비워 둔다.
+ * 알림 자리 아래 끝부터 아래 띠 위쪽 끝까지 쓴다. 아래 띠를 재지 못하면(생략·0) `BOTTOM_UI_PX`를 비워 둔다.
  * HUD가 작게 재져도(측정 전 0 등) `HUD_TOP_PX`보다 위로 올리지 않고, 맵 영역이 `MIN_MAP_AREA_PX`보다 작아지게 내리지도 않는다.
  * gameH = 지금 논리 높이 (T-3 가변 높이 1920~2600, 장면의 `this.scale.height`).
  */
 export function mapAreaBelowHud(hudBottomPx: number, bottomTopPx?: number, gameH: number = GAME_HEIGHT): Rect {
-  const measured = Number.isFinite(hudBottomPx) && hudBottomPx > 0 ? Math.ceil(hudBottomPx) + MAP_TOP_GAP_PX : 0;
+  const measured = Number.isFinite(hudBottomPx) && hudBottomPx > 0 ? Math.ceil(hudBottomPx) : 0;
   const measuredBottom =
-    bottomTopPx !== undefined && Number.isFinite(bottomTopPx) && bottomTopPx > 0 ? Math.floor(bottomTopPx) - MAP_BOTTOM_GAP_PX : 0;
+    bottomTopPx !== undefined && Number.isFinite(bottomTopPx) && bottomTopPx > 0 ? Math.floor(bottomTopPx) : 0;
   // 아래 끝: 잰 값 (단, HUD 최소 높이 + 맵 최소 높이보다 위로는 올리지 않음)
   const bottom = measuredBottom > 0 ? Math.min(gameH, Math.max(HUD_TOP_PX + MIN_MAP_AREA_PX, measuredBottom)) : gameH - BOTTOM_UI_PX;
   const maxTop = bottom - MIN_MAP_AREA_PX;
@@ -85,7 +81,7 @@ export function gameToCssPx(gamePx: number, stageCssWidth: number): number {
 /**
  * 맵(격자 + 웨이포인트)이 영역 안에 꽉 차게 들어가는 배치 (가능한 가장 큰 정수 칸, 가운데).
  * 가로·세로 모두 여백 없이 영역을 꽉 채운다 — 시험판 4 맵 B안('칸을 더 키워서 가로를 꽉 채워줘')에서 가로 반 칸 여백을,
- * A-1('원형 맵은 A로: 위아래 여백도 없애줘')에서 세로 반 칸 여백을 없앴다. 알림·아래 띠와의 틈은 영역 쪽(MAP_TOP_GAP_PX·MAP_BOTTOM_GAP_PX)이 둔다.
+ * A-1('원형 맵은 A로: 위아래 여백도 없애줘')에서 세로 반 칸 여백을 없앴다.
  * 먼저 차는 축 기준 크기, 남는 축은 가운데 (세로가 먼저 차는 순환의 정원 7×11은 가로 가운데, 가로가 먼저 차는 사거리 미로는 세로 가운데).
  * T-3: 화면이 길쭉해 영역이 커지면 칸도 커진다 — 칸 ↔ 화면 변환은 모두 이 결과(MapLayout)와 아래 함수
  * (`tileCenterPx`·`unitsToPx`·`pxToTile`)로 한다. 1920 같은 높이를 코드에 박지 말 것.

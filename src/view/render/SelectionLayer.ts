@@ -9,8 +9,7 @@
  *   + 그 칸에 놓았을 때의 사거리 원.
  * - [⬆ 승급 가능 n]을 누르면 (M5-7): 그 묶음 타워마다 금색 고리가 퍼지며 1.5초 동안 강조된다 (highlight, t = 0~1 진행도).
  * - 패널 [↔ 이동] 모드 (T-2): 옮길 수 있는 칸 모두 — 빈 칸 = 옅은 초록, 내 다른 타워(교환) = 옅은 파랑, 옮길 타워 = 흰 테두리.
- * - 배치 칸 (T-3 타일 숨김): 평소에는 칸을 그리지 않고, 타워를 끄는 동안·배치할 수 없는 곳을 눌렀을 때 잠깐(+ 판 시작)만
- *   옅은 흰 네모로 보여준다 (buildable, alpha 0~1). 2×2 블록 안의 칸은 틈 없이 이어져 블록 덩어리로 보인다.
+ * - 배치 칸: 타워를 끄는 동안·배치할 수 없는 곳을 눌렀을 때 소환 바닥을 흰색으로 강조한다 (buildable, alpha 0~1).
  * 화면 전용 (sim을 바꾸지 않는다). 몇 개 안 되는 도형이라 매 프레임 다시 그린다.
  */
 import Phaser from 'phaser';
@@ -148,16 +147,11 @@ export class SelectionLayer {
     const L = this.layout;
     const t = L.tile;
     const set = new Set(tiles.map(([x, y]) => `${x},${y}`));
-    const inset = t * 0.06;
     g.fillStyle(BUILD_COLOR, 0.2 * alpha);
     for (const [x, y] of tiles) {
       const left = L.originX + x * t;
       const top = L.originY + y * t;
-      const l = set.has(`${x - 1},${y}`) ? 0 : inset;
-      const r = set.has(`${x + 1},${y}`) ? 0 : inset;
-      const u = set.has(`${x},${y - 1}`) ? 0 : inset;
-      const d = set.has(`${x},${y + 1}`) ? 0 : inset;
-      g.fillRect(left + l, top + u, t - l - r, t - u - d);
+      g.fillRect(left, top, t, t);
     }
     g.lineStyle(line, BUILD_COLOR, 0.6 * alpha);
     for (const [x, y] of tiles) {
@@ -167,14 +161,10 @@ export class SelectionLayer {
       const hasR = set.has(`${x + 1},${y}`);
       const hasU = set.has(`${x},${y - 1}`);
       const hasD = set.has(`${x},${y + 1}`);
-      const x0 = left + (hasL ? 0 : inset);
-      const x1 = left + t - (hasR ? 0 : inset);
-      const y0 = top + (hasU ? 0 : inset);
-      const y1 = top + t - (hasD ? 0 : inset);
-      if (!hasU) g.lineBetween(x0, y0, x1, y0);
-      if (!hasD) g.lineBetween(x0, y1, x1, y1);
-      if (!hasL) g.lineBetween(x0, y0, x0, y1);
-      if (!hasR) g.lineBetween(x1, y0, x1, y1);
+      if (!hasU) g.lineBetween(left, top, left + t, top);
+      if (!hasD) g.lineBetween(left, top + t, left + t, top + t);
+      if (!hasL) g.lineBetween(left, top, left, top + t);
+      if (!hasR) g.lineBetween(left + t, top, left + t, top + t);
     }
   }
 

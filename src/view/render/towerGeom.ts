@@ -1,13 +1,15 @@
 /**
  * 맵 위 타워 그림의 크기·위치 (순수 계산, Phaser 없음 → 단위 테스트). TowerSprite와 탭 판정(input/tap.ts)이 같이 쓴다.
  *
- * 캐릭터는 1.1칸 높이이고 발이 칸 중심보다 0.3칸 아래라서, 머리·헬멧·별(위쪽 약 0.28칸 + 대기 동작)이 위 칸으로 삐져나와 그려진다.
- * 그 부분을 탭하면 위 칸이 아니라 그 타워를 누른 것으로 본다 (`towerTapZone`).
+ * 기존 1.1칸 그림을 전투에서 확대한다. 머리·헬멧·별이 위 칸으로 올라가도 소환 칸 가운데는 터치할 수 있다.
  */
 import { CHIBI_BOUNDS, PEDESTAL_BOUNDS } from '../../art/chibiBounds';
 
 /** 캐릭터 높이 (칸 배수) */
 export const FIGURE_TILES = 1.1;
+/** 전투 화면의 기본 확대 배율과 붙어 있는 캐릭터의 배율 */
+export const BATTLE_FIGURE_SCALE = 2;
+const CROWDED_FIGURE_SCALE = 1.4;
 /** 발밑 위치: 칸 중심에서 아래로 (칸 배수) */
 export const FOOT_OFFSET_TILES = 0.3;
 
@@ -22,16 +24,23 @@ export const FIGURE_BOTTOM_TILES = FOOT_OFFSET_TILES + (PEDESTAL_WIDTH_TILES * P
 
 /** 대기 동작(위아래 흔들림·숨쉬기·고유 동작 뜀·등장 넘침)으로 더 올라가는 여유 (칸 배수) */
 export const FIGURE_MOTION_MARGIN_TILES = 0.06;
+const HEAD_ABOVE_FOOT_TILES = FOOT_OFFSET_TILES - FIGURE_TOP_TILES + FIGURE_MOTION_MARGIN_TILES;
 
 /** 위 칸으로 삐져나온 머리 부분의 가로 반폭 (칸 배수): 머리(반지름 62)·별·두건 ≈ 0.28칸 + 여유 */
 export const HEAD_HALF_WIDTH_TILES = 0.34;
+
+/** 주변 칸과 HUD 앞에서 실루엣이 겹치지 않게 확대 폭을 줄인다. headroom = 발밑에서 HUD 아래까지의 거리 (칸). */
+export function battleFigureScale(lookScale: number, crowded: boolean, headroom: number): number {
+  const desired = lookScale * (crowded ? CROWDED_FIGURE_SCALE : BATTLE_FIGURE_SCALE);
+  return Math.min(desired, Math.max(lookScale, headroom / HEAD_ABOVE_FOOT_TILES));
+}
 
 /**
  * 타워 그림 전체(머리·별 + 대기 동작 여유 ~ 받침대 아래)의 세로 범위: 칸 중심 기준 칸 배수 — 정보 패널이 가리지 않게.
  * @param scale 캐릭터별 크기 배수 (HF-2, looks scale): 발밑에서 위로 그만큼 커진다
  */
 export function towerFigureSpanTiles(scale = 1): { top: number; bottom: number } {
-  return { top: FOOT_OFFSET_TILES + (FIGURE_TOP_TILES - FOOT_OFFSET_TILES) * scale - FIGURE_MOTION_MARGIN_TILES * scale, bottom: FIGURE_BOTTOM_TILES };
+  return { top: FOOT_OFFSET_TILES - HEAD_ABOVE_FOOT_TILES * scale, bottom: FIGURE_BOTTOM_TILES };
 }
 
 /**

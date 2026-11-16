@@ -1,9 +1,8 @@
 /**
  * 맵 그리기 (DEV_PLAN M1-7, T-3 '타일 숨김'): 테마 1 「국경 평원」·순환의 정원 색.
  *
- * - T-3 (사용자 요청 "타일은 구역 안보이게 숨기고"): 평소에는 칸 네모·격자선·블록 상자를 그리지 않는다. 땅은 이어진 한 장 —
- *   힉스필드 전투 배경 그림(BattleBackground)이 판 뒤를 덮고, 그림이 없을 때만 절차 풀밭 + 판 자리의 옅은 땅 한 덩어리.
- *   배치 칸은 쓸모 있을 때만 보인다 (타워를 끄는 동안·배치할 수 없는 곳을 눌렀을 때 잠깐 — SelectionLayer `buildable`).
+ * - 배치 칸은 칸 전체를 덮는 소환 바닥으로 표시한다. 붙어 있는 칸은 빈틈 없이 이어지며 바깥쪽에만 두꺼운 가장자리를 둔다.
+ *   힉스필드 전투 배경 그림(BattleBackground)이 판 뒤를 덮고, 그림이 없을 때는 절차 풀밭을 쓴다.
  * - 길(경로)은 언제나 또렷하게: 어두운 테두리 + 흙길 + 진행 방향 화살표. 칸을 이어 그려 꺾임·교차가 끊기지 않는다.
  * - 몹 등장 지점 = 녹스 군단의 보라 균열(빙글빙글 도는 소용돌이), 캠페인 출구 = 왕국 성문.
  * - 정적 그림은 한 번 그려 텍스처로 굽는다 (PROGRESS M0 결정). 길 텍스처는 판 크기만큼만(예전처럼 화면 전체가 아니라) → GPU 메모리 절약.
@@ -14,7 +13,7 @@
  */
 import Phaser from 'phaser';
 import { COLORS, hexToInt, lerpColor, shade } from '../../art/palette';
-import type { SimMap } from '../../sim/map';
+import { isBuildable, type SimMap } from '../../sim/map';
 import { pathCells, tileCenterPx, type MapLayout } from '../layout';
 
 /** 테마 1 풀밭 색 (ART.md 1장: 땅 = 풀밭, 경로 = 흙길). */
@@ -43,6 +42,7 @@ const BACKDROP_RES = 0.5;
 /** 길 너비 (칸 대비): 테두리 · 흙 */
 const ROAD_EDGE = 0.9;
 const ROAD_FILL = 0.76;
+const SUMMON_PAD = { base: 0x568f65, shade: 0x2c654d, edge: 0x214639, shine: 0xc9ed9e, rune: 0xf9e4a4 } as const;
 
 /** 화면용 고정 시드 난수. */
 function lcg(seed: number): () => number {
@@ -130,6 +130,7 @@ export class MapRenderer {
     }
     if (!this.scene.textures.exists(this.textureKey)) {
       const g = this.scene.make.graphics({}, false);
+      this.drawSummonPads(g, board.x, board.y);
       this.drawRoad(g, board.x, board.y);
       g.generateTexture(this.textureKey, board.w, board.h);
       g.destroy();
@@ -137,6 +138,36 @@ export class MapRenderer {
     this.objects.push(this.scene.add.image(board.x, board.y, this.textureKey).setOrigin(0).setDepth(0));
     this.drawSpawnRift();
     if (this.map.exit) this.drawExitGate(this.map.exit[0], this.map.exit[1]);
+  }
+
+  /** 각 칸의 바닥과 맞닿은 가장자리를 같은 텍스처에 굽는다. */
+  private drawSummonPads(g: Phaser.GameObjects.Graphics, ox: number, oy: number): void {
+    const { layout: L, map } = this;
+    const t = L.tile;
+    const edge = Math.max(2, Math.round(t * 0.04));
+    for (const [tx, ty] of map.buildable) {
+      const left = L.originX + tx * t - ox;
+      const top = L.originY + ty * t - oy;
+      g.fillStyle((tx + ty) % 2 === 0 ? SUMMON_PAD.base : SUMMON_PAD.shade, 0.91).fillRect(left, top, t, t);
+      g.fillStyle(SUMMON_PAD.shine, 0.16).fillRect(left, top, t, t * 0.62);
+      g.fillStyle(SUMMON_PAD.edge, 0.25).fillRect(left, top + t * 0.78, t, t * 0.22);
+
+      g.fillStyle(SUMMON_PAD.edge, 0.92);
+      if (!isBuildable(map, tx - 1, ty)) g.fillRect(left, top, edge, t);
+      if (!isBuildable(map, tx + 1, ty)) g.fillRect(left + t - edge, top, edge, t);
+      if (!isBuildable(map, tx, ty + 1)) g.fillRect(left, top + t - edge * 1.5, t, edge * 1.5);
+      if (!isBuildable(map, tx, ty - 1)) {
+        g.fillStyle(SUMMON_PAD.shine, 0.75).fillRect(left, top, t, edge);
+      }
+
+      const cx = left + t / 2;
+      const cy = top + t * 0.56;
+      const r = t * 0.13;
+      g.fillStyle(SUMMON_PAD.edge, 0.6).fillCircle(cx, cy, r);
+      g.lineStyle(Math.max(2, t * 0.024), SUMMON_PAD.rune, 0.88);
+      g.lineBetween(cx - r * 0.46, cy, cx + r * 0.46, cy);
+      g.lineBetween(cx, cy - r * 0.46, cx, cy + r * 0.46);
+    }
   }
 
   /**

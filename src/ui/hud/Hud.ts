@@ -206,7 +206,7 @@ export function createHud(opts: HudOptions): HudView {
       class: 'btn btn-chip hud-summon',
       attrs: { type: 'button', 'data-action': 'summon', 'data-testid': 'hud-summon', 'aria-label': '소환 (꾹 누르면 연속)' },
     },
-    h('span', { attrs: { 'aria-hidden': 'true' }, text: '🎲' }),
+    h('span', { class: 'hud-summon-die', attrs: { 'aria-hidden': 'true' }, text: '🎲' }),
     h('span', { class: 'hud-summon-word', text: '소환' }),
     summonCost,
   );

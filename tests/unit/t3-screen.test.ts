@@ -62,9 +62,9 @@ describe('가변 높이 맵 영역 (layout.ts mapAreaBelowHud + computeMapLayout
     const hud = cssToGamePx(146, 412);
     const bottomTop = cssToGamePx(915 - 140, 412);
     const tall = mapAreaBelowHud(hud, bottomTop, gameH);
-    expect(tall.y + tall.h).toBe(Math.floor(bottomTop) - 12);
+    expect(tall.y + tall.h).toBe(Math.floor(bottomTop));
     // 아래 띠를 못 쟀을 때도 지금 높이 기준
-    expect(mapAreaBelowHud(hud, undefined, gameH).h).toBe(gameH - BOTTOM_UI_PX - (Math.ceil(hud) + 12));
+    expect(mapAreaBelowHud(hud, undefined, gameH).h).toBe(gameH - BOTTOM_UI_PX - Math.ceil(hud));
     const circle = data.maps.circle!;
     const old = computeMapLayout(circle, mapAreaBelowHud(hud, cssToGamePx(732 - 140, 412), GAME_HEIGHT));
     const L = computeMapLayout(circle, tall);

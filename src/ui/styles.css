@@ -2860,11 +2860,24 @@ body {
   flex-shrink: 0;
   gap: 1cqw;
   padding: 0.6cqw 2.2cqw;
-  color: #ffe27a;
+  color: #412513;
+  background: linear-gradient(180deg, #fff6c9 0%, #ffd267 56%, #f3a94b 100%);
+  border-color: #fff2b5;
+  box-shadow: 0 0.65cqw 0 #995633, inset 0 0.35cqw 0 #fffbed;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   touch-action: manipulation;
+}
+
+.hud-summon-die {
+  display: inline-block;
+  transform: rotate(-12deg);
+}
+
+.hud-summon:not(.is-off):active {
+  background: linear-gradient(180deg, #ffe6a4, #f3ac4d);
+  box-shadow: 0 0.25cqw 0 #995633, inset 0 0.35cqw 0 #fff2b5;
 }
 
 .hud-summon[hidden] {
@@ -2872,8 +2885,10 @@ body {
 }
 
 .hud-summon.is-off {
-  color: #ff8a7a;
-  opacity: 0.8;
+  color: #ffd4bd;
+  background: #4b3c43;
+  border-color: #8c6868;
+  box-shadow: none;
 }
 
 /* 승급 가능 버튼이나 접은 고르기 창 알약이 보이면 '소환' 글자를 숨겨 줄이 넘치지 않게 ([🎲 100원]) */

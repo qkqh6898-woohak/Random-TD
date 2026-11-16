@@ -35,7 +35,7 @@ import type { Tower } from '../../sim/entities/Tower';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { MOB_DEPTH_BASE } from './MobSprite';
 import { attackAnimMs, towerPose } from './towerPose';
-import { FIGURE_TILES, FOOT_OFFSET_TILES, PEDESTAL_WIDTH_TILES } from './towerGeom';
+import { battleFigureScale, FIGURE_TILES, FOOT_OFFSET_TILES, PEDESTAL_WIDTH_TILES } from './towerGeom';
 
 /** 이동·교환 뒤 새 칸으로 미끄러지는 시간 (ms) */
 const SLIDE_MS = 140;
@@ -65,8 +65,9 @@ export class TowerSprite {
   private readonly character: CharacterFigure | null;
   private readonly preset: IdlePreset | null;
   private readonly scale: number;
-  /** 캐릭터별 크기 배수 (HF-2) */
-  readonly artScale: number;
+  private readonly lookScale: number;
+  /** 캐릭터별 크기에 전투 확대와 위치를 반영한 배수. 터치와 정보 패널도 사용한다. */
+  artScale: number;
   private readonly tile: number;
   private readonly seed: number;
   private readonly attackMs: number;
@@ -96,9 +97,9 @@ export class TowerSprite {
     this.layout = layout;
     const charLook = towerLook(tower.tower);
     const awakened = art.awakened?.(tower.tower) ?? false;
-    // 캐릭터별 크기 배수 (HF-2, characterLooks.json scale): 칸에 맞추지 않고 몸집대로 (칸 밖으로 삐져나와도 됨). 탭 판정은 칸 그대로
-    this.artScale = lookScale(charLook, awakened);
-    this.scale = ((layout.tile * FIGURE_TILES) / FIGURE_TEX_H) * this.artScale;
+    this.lookScale = lookScale(charLook, awakened);
+    this.artScale = this.lookScale;
+    this.scale = (layout.tile * FIGURE_TILES) / FIGURE_TEX_H;
     this.tx = tower.tx;
     this.ty = tower.ty;
     const c = tileCenterPx(layout, tower.tx, tower.ty);
@@ -178,7 +179,7 @@ export class TowerSprite {
     return this.stunned;
   }
 
-  update(timeMs: number): void {
+  update(timeMs: number, crowded: boolean, topLimit: number): void {
     // 연출 끄기 (T-2): 대기 동작·공격 몸짓·미끄러짐 없이 고정 자세
     const still = effectsOff();
     if (still) this.slideFrom = null;
@@ -212,7 +213,8 @@ export class TowerSprite {
       gesture: preset?.gesture,
       gestureMs: preset?.gestureMs,
     });
-    const s = this.scale;
+    this.artScale = battleFigureScale(this.lookScale, crowded, (this.baseY - topLimit) / this.tile);
+    const s = this.scale * this.artScale;
     this.figure.setPosition(this.lungeDx * pose.lunge * this.tile + pose.dx * this.tile, pose.bob * this.tile + this.lungeDy * pose.lunge * this.tile);
     this.figure.setScale(s * pose.sx * this.facing, s * pose.sy);
     // 기절: 좌우로 작게 떨린다
@@ -272,12 +274,14 @@ export class TowerSprite {
 /** 화면의 타워 그림 묶음: sim 타워 목록과 맞춰 만들고 지운다. */
 export class TowerLayer {
   private readonly sprites = new Map<number, TowerSprite>();
+  private readonly occupied = new Set<number>();
   /** 소환 사건을 받았지만 아직 그림이 없는 타워 → 그림을 만들 때 등장 동작 */
   private readonly pendingAppear = new Set<number>();
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly layout: MapLayout,
+    private readonly topLimit: number,
     private readonly art: TowerArt,
   ) {}
 
@@ -294,6 +298,10 @@ export class TowerLayer {
   /** @param tick 지금 sim 틱 (기절 표시: tick < stunUntil). 생략하면 기절 표시 없음 */
   sync(towers: readonly Tower[], timeMs: number, tick?: number): void {
     const seen = new Set<number>();
+    // 한 줄 끝과 다음 줄 시작이 이웃으로 잡히지 않게 여유 열을 둔다.
+    const stride = this.layout.cols + 2;
+    this.occupied.clear();
+    for (const t of towers) this.occupied.add(t.ty * stride + t.tx);
     for (const t of towers) {
       seen.add(t.id);
       let sprite = this.sprites.get(t.id);
@@ -312,7 +320,9 @@ export class TowerLayer {
         if (this.pendingAppear.delete(t.id)) sprite.appear(timeMs);
       } else sprite.follow(t, timeMs);
       sprite.setStunned(tick !== undefined && tick < (t.stunUntil ?? 0));
-      sprite.update(timeMs);
+      const key = t.ty * stride + t.tx;
+      const crowded = this.occupied.has(key - 1) || this.occupied.has(key + 1) || this.occupied.has(key - stride) || this.occupied.has(key + stride);
+      sprite.update(timeMs, crowded, this.topLimit);
     }
     for (const [id, s] of this.sprites) {
       if (!seen.has(id)) {
@@ -368,7 +378,7 @@ export class TowerLayer {
     return ensureTowerTexture(this.scene, look, color);
   }
 
-  /** 그 타워 그림의 캐릭터별 크기 배수 (E2E, HF-2) */
+  /** 그 타워 그림의 현재 크기 배수 */
   artScaleOf(id: number): number | null {
     return this.sprites.get(id)?.artScale ?? null;
   }

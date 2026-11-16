@@ -178,8 +178,8 @@ describe('아래 띠·맵 영역', () => {
     expect(summonInfo(5000, 71, 71, 100)).toEqual({ towers: '71/71', summonHint: '빈 칸이 없어요', summonCost: '100원', summonAffordable: false });
   });
 
-  it('아래 띠를 재면 맵 영역 아래 끝 = 띠 위쪽 − 여백, 안 재면 기본 330px 비움', () => {
-    expect(mapAreaBelowHud(382, 1780)).toEqual({ x: 0, y: 394, w: 1080, h: 1768 - 394 });
+  it('알림 영역과 아래 띠 사이를 여백 없이 쓰고, 아래 띠를 못 재면 기본 330px 비움', () => {
+    expect(mapAreaBelowHud(382, 1780)).toEqual({ x: 0, y: 382, w: 1080, h: 1780 - 382 });
     const unmeasured = mapAreaBelowHud(382);
     expect(unmeasured.y + unmeasured.h).toBe(GAME_HEIGHT - BOTTOM_UI_PX);
     // 아래 띠가 아주 커져도 맵 영역은 최소 높이를 지킨다
@@ -188,7 +188,7 @@ describe('아래 띠·맵 영역', () => {
     expect(squeezed.y).toBeGreaterThanOrEqual(HUD_TOP_PX);
     const circle = data.maps.circle!;
     const L = computeMapLayout(circle, mapAreaBelowHud(382, 1780));
-    expect(L.originY + (L.minRow + L.rows) * L.tile).toBeLessThanOrEqual(1768);
+    expect(L.originY + (L.minRow + L.rows) * L.tile).toBeLessThanOrEqual(1780);
   });
 });
 
@@ -217,6 +217,13 @@ describe('검토 반영: 타워 머리 탭 → 그 타워 칸 (위 칸 소환 �
   it('아래 칸에 타워가 없으면 늘 그 자리의 칸', () => {
     expect(tapTile(L, 350, 388, () => false)).toEqual({ tx: 3, ty: 3 });
     expect(tapTile(L, 250, 388, towerAt34)).toEqual({ tx: 2, ty: 3 });
+  });
+
+  it('커진 타워는 두 줄 위의 장식 칸에서도 선택되고 소환 칸 가운데 터치를 막지 않는다', () => {
+    const heroScale = () => 2;
+    expect(tapTile(L, 350, 280, towerAt34, heroScale)).toEqual({ tx: 3, ty: 4 });
+    const summonPad = (tx: number, ty: number) => tx === 3 && ty === 3;
+    expect(tapTile(L, 350, 350, towerAt34, heroScale, summonPad)).toEqual({ tx: 3, ty: 3 });
   });
 });
 

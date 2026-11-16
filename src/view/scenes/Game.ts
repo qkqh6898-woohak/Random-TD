@@ -1580,12 +1580,13 @@ export class GameScene extends Phaser.Scene {
     const changed = this.panel.update(model, this.portraitOf(t.tower));
     // 패널이 고른 타워 그림을 가리지 않게: 실제 패널 높이와 그림 위치를 재서 쪽·접기 단계를 정한다 (바뀔 때만)
     const ui = this.ctx.ui.el;
-    const key = `${t.id}|${t.tx},${t.ty}|${this.layout.tile}|${this.layout.originY}|${ui.clientWidth}x${ui.clientHeight}`;
+    const figureScale = this.towerLayer.artScaleOf(t.id) ?? 1;
+    const key = `${t.id}|${t.tx},${t.ty}|${this.layout.tile}|${this.layout.originY}|${ui.clientWidth}x${ui.clientHeight}|${figureScale}`;
     if (!changed && key === this.panelPlaceKey) return;
     this.panelPlaceKey = key;
     const L = this.layout;
     const c = tileCenterPx(L, t.tx, t.ty);
-    const span = towerFigureSpanTiles(this.towerLayer.artScaleOf(t.id) ?? 1);
+    const span = towerFigureSpanTiles(figureScale);
     const w = ui.clientWidth;
     const figure = { top: gameToCssPx(c.y + L.tile * span.top, w), bottom: gameToCssPx(c.y + L.tile * span.bottom, w) };
     const placement = this.panel.place(figure, this.panelTopCss);
@@ -1676,7 +1677,8 @@ export class GameScene extends Phaser.Scene {
     );
     const rules = this.match.rules;
     const towerData = new Map(towers.towers.map((t) => [t.id, t]));
-    this.towerLayer = new TowerLayer(this, this.layout, {
+    const hudBottom = cssToGamePx(this.hud.bandBottom(), this.ctx.ui.el.clientWidth);
+    this.towerLayer = new TowerLayer(this, this.layout, hudBottom, {
       look: (id) => {
         const t = towerData.get(id);
         if (!t) throw new Error(`없는 타워: ${id}`);

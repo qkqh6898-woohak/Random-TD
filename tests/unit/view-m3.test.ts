@@ -36,7 +36,7 @@ import {
   releaseAction,
 } from '../../src/view/input/press';
 import { pxToTile, type MapLayout } from '../../src/view/layout';
-import { FIGURE_BOTTOM_TILES, FIGURE_TOP_TILES, FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../../src/view/render/towerGeom';
+import { battleFigureScale, FIGURE_BOTTOM_TILES, FIGURE_TOP_TILES, FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../../src/view/render/towerGeom';
 import { data, infinite } from '../helpers/match';
 
 const rules = buildMatchRules(data);
@@ -279,6 +279,15 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
     expect(span.top).toBeCloseTo(-0.836, 2);
     expect(span.bottom).toBe(FIGURE_BOTTOM_TILES);
     expect(span.bottom).toBeCloseTo(0.475, 2);
+  });
+
+  it('전투 확대는 기본 2배이며, 이웃 캐릭터와 HUD에 맞춰 줄어든다', () => {
+    expect(battleFigureScale(1.25, false, 5)).toBe(2.5);
+    expect(battleFigureScale(1.25, true, 5)).toBe(1.75);
+    const headroom = 1.5;
+    const scale = battleFigureScale(1, false, headroom);
+    expect(scale).toBeGreaterThan(1);
+    expect(FOOT_OFFSET_TILES - towerFigureSpanTiles(scale).top).toBeCloseTo(headroom);
   });
 });
 

@@ -54,8 +54,8 @@ export function tapAllowed(lastAcceptedMs: number | null, nowMs: number): boolea
 }
 
 /**
- * 탭한 화면 px → 누른 칸. 기본은 그 자리의 칸이고, 바로 아래 칸에 타워가 있으며 그 타워의 머리 영역(위 칸으로 삐져나온 부분)을
- * 눌렀으면 그 타워 칸. 아래 타워가 앞에 그려지므로(깊이 = 발밑 y) 위 칸에 타워가 있어도 아래 타워가 이긴다.
+ * 탭한 화면 px → 누른 칸. 소환 칸에서는 바로 아래 타워의 기존 머리 영역만 받는다.
+ * 길·장식 칸에서는 큰 캐릭터가 최대 세 줄 위까지 보이고, 가장 앞에 그려진 아래 타워부터 검사한다.
  */
 export function tapTile(
   layout: MapLayout,
@@ -68,11 +68,14 @@ export function tapTile(
   buildableAt?: (tx: number, ty: number) => boolean,
 ): { tx: number; ty: number } {
   const base = pxToTile(layout, px, py);
-  const below = { tx: base.tx, ty: base.ty + 1 };
-  if (!hasTower(below.tx, below.ty)) return base;
   const fx = (px - layout.originX) / layout.tile;
   const fy = (py - layout.originY) / layout.tile;
   const cap = hasTower(base.tx, base.ty) || (buildableAt?.(base.tx, base.ty) ?? false);
-  const z = towerHeadZone(below.tx, below.ty, scaleAt?.(below.tx, below.ty) ?? 1, cap);
-  return fx >= z.left && fx <= z.right && fy >= z.top ? below : base;
+  for (let dy = cap ? 1 : 3; dy >= 1; dy--) {
+    const ty = base.ty + dy;
+    if (!hasTower(base.tx, ty)) continue;
+    const z = towerHeadZone(base.tx, ty, scaleAt?.(base.tx, ty) ?? 1, cap);
+    if (fx >= z.left && fx <= z.right && fy >= z.top) return { tx: base.tx, ty };
+  }
+  return base;
 }

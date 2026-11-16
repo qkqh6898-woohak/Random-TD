@@ -7,7 +7,6 @@ import {
   BOTTOM_UI_PX,
   HUD_TOP_PX,
   MAP_AREA,
-  MAP_TOP_GAP_PX,
   MIN_MAP_AREA_PX,
   computeMapLayout,
   cssToGamePx,
@@ -253,7 +252,7 @@ describe('맵 화면 배치 (MAPS.md 0장: HUD와 아래 띠 사이에 가장 �
     expect(mapAreaBelowHud(200).y).toBe(HUD_TOP_PX);
     // 412×915: HUD 2줄 + 보스 막대 자리 ≈ 383 기준 px → 맵은 그 아래 + 여백
     const area = mapAreaBelowHud(382.4);
-    expect(area.y).toBe(383 + MAP_TOP_GAP_PX);
+    expect(area.y).toBe(383);
     expect(area.y + area.h).toBe(GAME_HEIGHT - BOTTOM_UI_PX);
     expect(area.w).toBe(GAME_WIDTH);
     const L = computeMapLayout(circle, area);
