@@ -1,5 +1,7 @@
 /**
- * 전투 배경 그림 (HF-2): 힉스필드 배경(테마 × 하늘 밴드)을 Game 장면 맨 아래에 1080×1920을 덮게 그린다.
+ * 전투 배경 그림 (HF-2): 힉스필드 배경(테마 × 하늘 밴드)을 Game 장면 맨 아래에 화면 전체를 덮게 그린다.
+ * T-3: 논리 높이가 화면 비율대로 1920~2600이라 지금 게임 크기(scene.scale)를 덮고, 크기가 바뀌면 `resize()`로 다시 덮는다.
+ * 넓은 화면의 무대 밖 띠에도 같은 그림을 흐리게 깔도록 바뀔 때마다 `onImage(주소)`를 부른다.
  *
  * - 어떤 그림인지는 artBand.ts(순수)가 정한다. 여기서는 불러오기·서서히 바꾸기·지우기만.
  * - 처음 쓰는 그림만 Phaser 로더로 그때 받는다 (assetUrl → 한 파일 빌드면 data URI). 밴드가 끝나기 몇 단계 전에 다음 그림을 미리 받는다.
@@ -9,7 +11,6 @@
  */
 import Phaser from 'phaser';
 import { assetUrl } from '../../assets';
-import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { effectsOff } from '../effects';
 import { backgroundPath, backgroundTextureKey, coverScale, type BandKey } from '../artBand';
 
@@ -28,6 +29,8 @@ export interface BattleBackgroundOptions {
   crossfadeMs: number;
   /** 배경 그림이 화면을 다 덮었는가 (true면 절차 배경을 숨겨도 된다) */
   onCover?: (covered: boolean) => void;
+  /** 지금 보이기 시작한 배경 그림 주소 (무대 밖 띠용, T-3) */
+  onImage?: (url: string) => void;
 }
 
 export class BattleBackground {
@@ -40,6 +43,8 @@ export class BattleBackground {
   private scrim: Phaser.GameObjects.Image | null = null;
   private destroyed = false;
   private coveredFlag = false;
+  /** 텍스처 키 → 그림 주소 (무대 밖 띠) */
+  private readonly urls = new Map<string, string>();
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -94,7 +99,9 @@ export class BattleBackground {
       this.loading.delete(key);
       if (!this.destroyed && key === this.wantedKey) this.show(key);
     });
-    this.scene.load.image(key, assetUrl(backgroundPath(k)));
+    const url = assetUrl(backgroundPath(k));
+    this.urls.set(key, url);
+    this.scene.load.image(key, url);
     if (!this.scene.load.isLoading()) this.scene.load.start();
   }
 
@@ -106,10 +113,11 @@ export class BattleBackground {
 
   private show(key: string): void {
     if (this.current?.key === key) return;
-    const img = this.scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, key).setDepth(BATTLE_BG_DEPTH);
-    // 화면 흔들림(보스 등장·레전드 승급)에도 가장자리가 비지 않게 조금 크게
-    img.setScale(coverScale(img.width, img.height, GAME_WIDTH, GAME_HEIGHT) * COVER_BLEED);
+    const img = this.scene.add.image(0, 0, key).setDepth(BATTLE_BG_DEPTH);
+    this.cover(img);
     this.ensureScrim();
+    const url = this.urls.get(key);
+    if (url) this.opts.onImage?.(url);
     const prev = this.current;
     this.current = { key, img };
     const fadeMs = effectsOff() ? 0 : this.opts.crossfadeMs;
@@ -159,7 +167,23 @@ export class BattleBackground {
         tex.refresh();
       }
     }
-    this.scrim = this.scene.add.image(0, 0, SCRIM_KEY).setOrigin(0).setDisplaySize(GAME_WIDTH, GAME_HEIGHT).setDepth(SCRIM_DEPTH);
+    this.scrim = this.scene.add.image(0, 0, SCRIM_KEY).setOrigin(0).setDepth(SCRIM_DEPTH);
+    this.scrim.setDisplaySize(this.scene.scale.width, this.scene.scale.height);
+  }
+
+  /** 그림 하나를 지금 게임 크기 가운데에 꽉 차게 (화면 흔들림(보스 등장·레전드 승급)에도 가장자리가 비지 않게 조금 크게) */
+  private cover(img: Phaser.GameObjects.Image): void {
+    const { width: w, height: h } = this.scene.scale;
+    img.setPosition(w / 2, h / 2);
+    img.setScale(coverScale(img.width, img.height, w, h) * COVER_BLEED);
+  }
+
+  /** 게임 크기가 바뀜 (T-3): 지금·사라지는 중인 그림과 어둠을 새 크기로 다시 덮는다 */
+  resize(): void {
+    if (this.destroyed) return;
+    if (this.current) this.cover(this.current.img);
+    for (const o of this.leaving) this.cover(o);
+    this.scrim?.setDisplaySize(this.scene.scale.width, this.scene.scale.height);
   }
 
   /** 지금·다음·서서히 사라지는 중인 그림이 아닌 배경 텍스처를 지운다 (메모리) */

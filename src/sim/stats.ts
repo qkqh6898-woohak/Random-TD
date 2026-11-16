@@ -1,7 +1,7 @@
 /**
  * 타워의 지금 능력치 (DEV_PLAN M3-4, GDD 5.4 '규칙' 표). 기본 스탯(TowerStats, 데이터) + 판 내 보정(PlayerMods) → 실제로 쓰는 값.
  *
- * - 공격력%: 모두 더한 뒤 한 번 곱한다 (합연산). 배율 = 1 + 공격력% 합.
+ * - 공격력%: 모두 더한 뒤 한 번 곱한다 (합연산). 배율 = 1 + 공격력% 합 (T-3: 모든 타워 기본 보정 game.json combat.towerAtkPct 포함).
  * - 공속%: 모두 더한다. 최종 공속 = 기본 × (1 + 공속% 합), **최대 기본의 5배**, 그리고 **초당 15회**를 넘지 않는다 (game.json combat).
  *   0 아래로는 내려가지 않는다.
  * - 치명타 확률: 타워 + 강화 + 특성, 최대 100%. 치명타 배율: 타워 배율(기본 ×2, 저격수 ×3) + '치명타 피해' 강화.
@@ -119,7 +119,8 @@ export function effectiveStats(
   const apsMilli = cappedAps(rules, stats.apsMilli, apsPct);
   const uncapped = mulBp(stats.apsMilli, BP_ONE + apsPct);
   const crit = stats.critBp + mods.critChanceBp;
-  const atkMul = BP_ONE + mods.atkPctBp + bonus.atkPctBp;
+  // T-3: 모든 타워 기본 공격력% (작은 맵 보정, game.json combat.towerAtkPct)도 같은 합에 더한다
+  const atkMul = BP_ONE + rules.towerAtkPctBp + mods.atkPctBp + bonus.atkPctBp;
   return {
     apsMilli,
     apsMulBp: stats.apsMilli > 0 ? Math.floor((apsMilli * BP_ONE) / stats.apsMilli) : BP_ONE,

@@ -85,11 +85,11 @@ describe('순환의 정원 한 바퀴 (DEV_PLAN M1-3 완료 조건)', () => {
 });
 
 describe('캠페인 출구 도달 (CAMPAIGN 목숨)', () => {
-  it('사거리 미로 78칸을 슬라임은 52초(1040틱)에 지나 목숨 1을 잃는다', () => {
+  it('사거리 미로 59칸(T-3 2×2 블록 맵)을 슬라임은 39.4초(787틱)에 지나 목숨 1을 잃는다', () => {
     const match = campaign(1);
     expect(match.state.lives).toBe(20);
     const mob = addMob(match, 'slime');
-    match.stepN(1039);
+    match.stepN(786); // 59000 / 75 = 786.7 → 787번째 틱에 출구
     expect(match.world.entities.has(mob.id)).toBe(true);
     match.step();
     expect(match.world.entities.has(mob.id)).toBe(false);
@@ -101,8 +101,8 @@ describe('캠페인 출구 도달 (CAMPAIGN 목숨)', () => {
 
   it('암흑 골렘(목숨 피해 2)이 출구에 닿으면 목숨 20 → 18', () => {
     const match = campaign(1);
-    const golem = addMob(match, 'golem'); // 1.2칸/초 → 78000 / 60 = 1300틱
-    match.stepN(1299);
+    const golem = addMob(match, 'golem'); // 1.2칸/초 → 59000 / 60 = 983.3 → 984틱
+    match.stepN(983);
     expect(match.state.lives).toBe(20);
     match.step();
     expect(match.world.entities.has(golem.id)).toBe(false);
@@ -116,17 +116,17 @@ describe('캠페인 출구 도달 (CAMPAIGN 목숨)', () => {
     addMob(match, 'gemgolem');
     match.stepN(5000);
     expect(match.state.lives).toBe(0);
-    // 도둑(867틱) → 목숨 2, 보석 골렘(1950틱) → 0 = 패배. 패배 뒤에는 1단계 슬라임(2240틱~)이 와도 더 세지 않는다
+    // 도둑(656틱) → 목숨 2, 보석 골렘(1475틱) → 0 = 패배. 패배 뒤에는 1단계 슬라임(1987틱~)이 와도 더 세지 않는다
     expect(match.state.leaked).toBe(2);
     expect(match.state.phase).toBe('defeat');
   });
 
-  it('출구 직전 위치는 (4,-1) 칸 중심 쪽 위로 올라가는 중', () => {
+  it('출구 직전 위치는 (3,-1) 칸 중심 쪽 위로 올라가는 중', () => {
     const match = campaign(1);
     const mob = addMob(match, 'slime');
-    match.stepN(1030);
+    match.stepN(777);
     const pos = positionAt(match.map.path, mob.progress);
-    expect(pos.x).toBe(tileCenter(4, -1).x);
-    expect(pos.y).toBeGreaterThan(tileCenter(4, -1).y);
+    expect(pos.x).toBe(tileCenter(3, -1).x);
+    expect(pos.y).toBeGreaterThan(tileCenter(3, -1).y);
   });
 });

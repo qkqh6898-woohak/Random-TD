@@ -235,11 +235,13 @@ test('도전: 1단계 [시작] → 시트가 닫히고 도전 보스 막대·진
   await page.getByTestId('challenge-start-1').click();
   await expect(page.getByTestId('sheet-challenge')).toHaveCount(0);
   await expect.poll(() => inScene(page, (s) => s.match.state.challengeLevel, null)).toBe(1);
+  // 배너는 실제 시간 3.2초 — 느린 헤드리스 화면(T-3: 캔버스가 화면 높이만큼 커짐)에서도 놓치지 않게 시작하자마자 본다
+  await expect(page.locator('[data-testid="banner-challenge"]', { hasText: '도전 1단계' })).toBeVisible();
   await expect(page.getByTestId('hud-challenge')).toBeVisible();
   await expect(page.getByTestId('hud-challenge-name')).toHaveText('⚔ 도전 1단계 「황금 슬라임」');
-  await expect(page.getByTestId('hud-challenge-time')).toHaveText(/^(30|29)초$/);
+  // 30초부터 줄어든다 (느린 헤드리스 화면에서는 여기까지 몇 초 걸릴 수 있다 — 20초대까지 허용)
+  await expect(page.getByTestId('hud-challenge-time')).toHaveText(/^(30|2\d)초$/);
   await expect(page.getByTestId('menu-badge-challenge')).toHaveText('진행 중');
-  await expect(page.locator('[data-testid="banner-challenge"]', { hasText: '도전 1단계' })).toBeVisible();
   // 도전 보스 그림 (몹 수 한도에 넣지 않음 — HUD 👾는 0)
   await expect.poll(() => inScene(page, (s) => s.renderedMobCount, null)).toBe(1);
   await expect(page.getByTestId('hud-count')).toHaveText('0/150');
@@ -274,9 +276,9 @@ test('도전 처치: 보상 +20원·2단계 열림·✅, 10단계 보스와 겹�
   await expect.poll(() => inScene(page, (s) => s.match.state.challengeLevel, null)).toBe(1);
   // 경로 시작점 옆에 궁수 여럿 + 보스 체력을 조금만 남긴다
   await place(page, [
-    [2, 0, 'archer'],
-    [3, 0, 'archer'],
-    [4, 0, 'archer'],
+    [1, 1, 'archer'],
+    [2, 1, 'archer'],
+    [4, 1, 'archer'],
   ]);
   await inScene(
     page,
@@ -509,36 +511,37 @@ test('[⬆ 승급 가능 n]: 누를 때마다 다음 묶음의 패널을 열고 
   const errors = collectErrors(page);
   await start(page);
   await place(page, [
-    [2, 2, 'archer'],
-    [3, 2, 'archer'],
-    [4, 2, 'archer'],
-    [2, 8, 'miner'],
-    [3, 8, 'miner'],
-    [4, 8, 'miner'],
+    [1, 3, 'archer'],
+    [2, 3, 'archer'],
+    [1, 4, 'archer'],
+    [1, 7, 'miner'],
+    [2, 7, 'miner'],
+    [1, 6, 'miner'],
   ]);
   const btn = page.getByTestId('hud-merge-ready');
   await expect(btn).toHaveText('⬆ 승급 가능 2');
+  // 강조는 1.5초 — 느린 헤드리스 화면(T-3: 캔버스가 화면 높이만큼 커짐)에서도 놓치지 않게 누르자마자 잰다
   await btn.click();
+  expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
   await expect(page.getByTestId('tower-panel')).toBeVisible();
   await expect(page.getByTestId('tp-name')).toHaveText('궁수');
-  expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
   // 아래에 붙은 패널이 [⬆ 승급 가능 n]을 덮어도 패널 안 [다음 묶음 ▶]으로 이어서 넘긴다 (M5 검토 반영)
   const next = page.locator('[data-action="merge-next"]');
   await expect(next).toHaveText('다음 묶음 ▶ 1/2');
   await next.click();
+  expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
   await expect(page.getByTestId('tp-name')).toHaveText('광부');
   await expect(next).toHaveText('다음 묶음 ▶ 2/2');
-  expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
   await next.click();
   await expect(page.getByTestId('tp-name')).toHaveText('궁수');
   // 패널을 닫고 버튼을 눌러도 다음 묶음
   await page.locator('[data-action="panel-close"]').click();
   await btn.click();
-  await expect(page.getByTestId('tp-name')).toHaveText('광부');
   expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
+  await expect(page.getByTestId('tp-name')).toHaveText('광부');
   // 타워를 직접 눌러 연 패널에는 [다음 묶음 ▶]이 없다
   await page.locator('[data-action="panel-close"]').click();
-  await tapTile(page, 3, 2);
+  await tapTile(page, 2, 3);
   await expect(page.getByTestId('tp-name')).toHaveText('궁수');
   await expect(next).toBeHidden();
   // 1.5초 뒤 강조 끝
@@ -550,15 +553,15 @@ test('바텀 시트는 하나만: 시트를 열면 정보 패널이 닫히고, �
   const errors = collectErrors(page);
   await start(page);
   // 아래쪽 줄 타워 → 정보 패널은 위에 붙어 하단 메뉴가 보인다
-  await place(page, [[3, 8, 'archer']]);
-  await tapTile(page, 3, 8);
+  await place(page, [[2, 9, 'archer']]);
+  await tapTile(page, 2, 9);
   await expect(page.getByTestId('tower-panel')).toHaveClass(/is-top/);
   await page.getByTestId('menu-upgrade').click();
   await expect(page.getByTestId('sheet-upgrade')).toBeVisible();
   await expect(page.getByTestId('tower-panel')).toHaveCount(0);
   // 시트가 열린 동안 (시트 위쪽) 타워를 누르면 시트만 닫힌다 (패널 안 열림)
-  await place(page, [[2, 2, 'archer']]);
-  await tapTile(page, 2, 2);
+  await place(page, [[2, 1, 'archer']]);
+  await tapTile(page, 2, 1);
   await expect(page.getByTestId('sheet-upgrade')).toHaveCount(0);
   expect(await inScene(page, (s) => s.panelOpen, null)).toBe(false);
   // 시트를 쓰는 중 보스 카드가 생기면 창은 알약으로 접혀 뜬다
@@ -589,15 +592,15 @@ test('M5 스크린샷: 10단계 보스 + 도전 3단계 (체력바 2줄) · 강�
   const errors = collectErrors(page);
   await start(page);
   await place(page, [
-    [2, 2, 'archer'],
-    [3, 2, 'archer'],
-    [4, 2, 'warrior'],
-    [5, 2, 'miner'],
-    [6, 2, 'apprentice'],
-    [2, 3, 'spearman'],
-    [6, 3, 'goblin'],
+    [1, 3, 'archer'],
+    [2, 3, 'archer'],
+    [4, 3, 'warrior'],
+    [5, 3, 'miner'],
+    [1, 1, 'apprentice'],
+    [1, 4, 'spearman'],
+    [5, 4, 'goblin'],
     [2, 4, 'drummer'],
-    [6, 4, 'archer'],
+    [4, 4, 'archer'],
   ]);
   await addGold(page, 30000);
   // 강화부터 (버튼을 화면에서 누른다)

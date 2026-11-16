@@ -192,7 +192,7 @@ test('?debug=1: [캠페인 1] → 사거리 미로, 목숨 20 → 몹이 출구�
   await expect(page.getByTestId('hud-count')).toHaveAttribute('aria-label', '목숨');
   const v0 = await simView(page);
   expect(v0.mapId).toBe('crossroads');
-  // 1단계 첫 슬라임(1200)이 78칸을 52초(1040틱)에 지나 출구(틱 2239) → 목숨 19, 둘째(2289) → 18.
+  // 1단계 첫 슬라임(1200)이 59칸(T-3 2×2 블록 맵)을 39.4초(787틱)에 지나 출구(틱 1986) → 목숨 19, 둘째 → 18 …
   // 2단계 시작(2400)까지 100틱(5초) 여유를 둔다 (헤드리스 화면이 느려도 1-1에서 확인하게)
   await fastForward(page, 2300 - v0.tick);
   await page.waitForTimeout(150);

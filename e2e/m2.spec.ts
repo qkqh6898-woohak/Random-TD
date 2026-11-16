@@ -111,19 +111,21 @@ async function shot(page: Page, name: string, docsName?: string): Promise<void> 
   }
 }
 
-/** 순환의 정원 안쪽 고리 칸 (경로 바로 안쪽·바깥쪽) */
+/** 순환의 정원 v2(T-3 2×2 블록) 고리 안쪽 블록 칸 (경로와 맞닿음) */
 const RING: [number, number][] = [
-  [2, 2], [6, 2], [2, 8], [6, 8], [4, 0], [0, 5], [8, 5], [4, 10], [3, 2], [5, 8], [2, 5], [6, 5], [4, 2], [4, 8],
+  [1, 3], [5, 3], [1, 7], [5, 7], [2, 3], [4, 3], [2, 7], [4, 7], [1, 4], [5, 4], [1, 6], [5, 6], [2, 4], [4, 6],
 ];
+/** 배치 칸 수 (순환의 정원 v2) */
+const CELLS = 32;
 
-test('빈 배치 칸 탭 → 소환: 타워가 보이고 돈 1,000 → 900원, 🗼 1/71 / 경로·타워 칸 탭은 아무 일 없음', async ({ page }) => {
+test('빈 배치 칸 탭 → 소환: 타워가 보이고 돈 1,000 → 900원, 🗼 1/32 / 경로·타워 칸 탭은 아무 일 없음', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
-  await expect(page.getByTestId('hud-towers')).toHaveText('0/71');
+  await expect(page.getByTestId('hud-towers')).toHaveText(`0/${CELLS}`);
   await expect(page.getByTestId('hud-hint')).toHaveText('소환 · 100원');
-  await tapTile(page, 2, 2);
+  await tapTile(page, 1, 3);
   await expect(page.getByTestId('hud-gold')).toHaveText('900원');
-  await expect(page.getByTestId('hud-towers')).toHaveText('1/71');
+  await expect(page.getByTestId('hud-towers')).toHaveText(`1/${CELLS}`);
   let v = await view(page);
   expect(v.towers).toBe(1);
   expect(v.gold).toBe(900);
@@ -132,12 +134,12 @@ test('빈 배치 칸 탭 → 소환: 타워가 보이고 돈 1,000 → 900원, �
     const s = (window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } }).__rtd.game.scene.getScene('Game') as SceneLike;
     return s.match.towers()[0]!;
   });
-  expect([t.tx, t.ty]).toEqual([2, 2]);
+  expect([t.tx, t.ty]).toEqual([1, 3]);
   expect(['miner', 'goblin', 'archer', 'apprentice', 'warrior']).toContain(t.tower);
 
-  // 경로 칸 (1, 1)과 이미 타워가 있는 칸 → 아무 일 없음
-  await tapTile(page, 1, 1);
-  await tapTile(page, 2, 2);
+  // 경로 칸 (0, 2)과 이미 타워가 있는 칸 → 아무 일 없음
+  await tapTile(page, 0, 2);
+  await tapTile(page, 1, 3);
   await page.waitForTimeout(200);
   v = await view(page);
   expect(v.towers).toBe(1);
@@ -151,7 +153,7 @@ test('돈 부족: 10번 소환해 0원 → 11번째 탭은 "100원이 필요해�
   await start(page);
   for (const [x, y] of RING.slice(0, 10)) await tapTile(page, x, y);
   await expect(page.getByTestId('hud-gold')).toHaveText('0원');
-  await expect(page.getByTestId('hud-towers')).toHaveText('10/71');
+  await expect(page.getByTestId('hud-towers')).toHaveText(`10/${CELLS}`);
   await expect(page.getByTestId('hud-hint')).toHaveClass(/is-short/);
   await tapTile(page, 4, 4);
   await expect(page.locator('.toast', { hasText: '100원이 필요해요' })).toBeVisible();
@@ -161,7 +163,7 @@ test('돈 부족: 10번 소환해 0원 → 11번째 탭은 "100원이 필요해�
   await expect.poll(async () => (await view(page)).renderedTowers).toBe(10);
   // 연타해도 같은 알림이 쌓이지 않는다
   await tapTile(page, 4, 4);
-  await tapTile(page, 4, 5);
+  await tapTile(page, 2, 6);
   await expect(page.locator('.toast', { hasText: '100원이 필요해요' })).toHaveCount(1);
   await shot(page, 'M2-no-gold');
   expect(errors).toEqual([]);
@@ -176,14 +178,14 @@ test('배치 칸이 가득 차면 타워 칸 탭 → "빈 칸이 없어요 — �
     s.match.world.enqueue({ type: 'debugAddGold', amount: 10_000 });
     for (const [x, y] of s.match.map.buildable) s.match.world.enqueue({ type: 'summon', x, y });
   });
-  await expect(page.getByTestId('hud-towers')).toHaveText('71/71');
+  await expect(page.getByTestId('hud-towers')).toHaveText(`${CELLS}/${CELLS}`);
   // 승급 버튼이 보이면 안내는 비고(잘리지 않게, M4 검토 반영), 없으면 '빈 칸이 없어요' — 어느 쪽이든 글자가 잘리지 않는다
   await expect(page.getByTestId('hud-merge-ready')).toBeVisible();
   await expect(page.getByTestId('hud-hint')).toHaveText('');
-  await expect.poll(async () => (await view(page)).renderedTowers).toBe(71);
+  await expect.poll(async () => (await view(page)).renderedTowers).toBe(CELLS);
   await tapTile(page, 4, 4);
   await expect(page.locator('.toast', { hasText: '빈 칸이 없어요 — 승급으로 칸을 비워 보세요' })).toBeVisible();
-  expect((await view(page)).towers).toBe(71);
+  expect((await view(page)).towers).toBe(CELLS);
   await shot(page, 'M2-full');
   expect(errors).toEqual([]);
 });
@@ -192,7 +194,7 @@ test('타워는 공격하지 않아도 대기 동작으로 계속 움직인다 (
   const errors = collectErrors(page);
   await start(page);
   await tapTile(page, 4, 4);
-  await tapTile(page, 3, 4);
+  await tapTile(page, 4, 3);
   const ids = await page.evaluate(() => {
     const s = (window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } }).__rtd.game.scene.getScene('Game') as SceneLike;
     return s.match.towers().map((t) => t.id);
@@ -282,10 +284,10 @@ type W = { __rtd: { game: { scene: { getScene(k: string): unknown } } } };
 test('검토 반영: 타워 머리(위 칸으로 삐져나온 헬멧·별)를 탭해도 위 칸에 소환되지 않는다', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=7');
-  await tapTile(page, 3, 4);
-  await expect(page.getByTestId('hud-towers')).toHaveText('1/71');
+  await tapTile(page, 1, 4);
+  await expect(page.getByTestId('hud-towers')).toHaveText(`1/${CELLS}`);
   await expect.poll(async () => (await view(page)).renderedTowers).toBe(1);
-  // (3, 4) 칸 위쪽 경계에서 0.12칸·0.25칸 위 = 캐릭터 헬멧·별이 그려진 자리 (리뷰 재현: 여기를 누르면 (3, 3)에 소환됐다)
+  // (1, 4) 칸 위쪽 경계에서 0.12칸·0.25칸 위 = 캐릭터 헬멧·별이 그려진 자리 (리뷰 재현: 여기를 누르면 위 칸 (1, 3)에 소환됐다)
   for (const up of [0.12, 0.25]) {
     const p = await page.evaluate(
       ([dy]) => {
@@ -293,7 +295,7 @@ test('검토 반영: 타워 머리(위 칸으로 삐져나온 헬멧·별)를 �
         const L = s.mapLayout;
         const r = document.getElementById('stage')!.getBoundingClientRect();
         const k = r.width / 1080;
-        return { x: r.left + (L.originX + 3.5 * L.tile) * k, y: r.top + (L.originY + (4 - dy!) * L.tile) * k };
+        return { x: r.left + (L.originX + 1.5 * L.tile) * k, y: r.top + (L.originY + (4 - dy!) * L.tile) * k };
       },
       [up] as const,
     );
@@ -304,8 +306,8 @@ test('검토 반영: 타워 머리(위 칸으로 삐져나온 헬멧·별)를 �
   expect(v.towers).toBe(1);
   expect(v.gold).toBe(900);
   // 위 칸 가운데는 그대로 소환된다
-  await tapTile(page, 3, 3);
-  await expect(page.getByTestId('hud-towers')).toHaveText('2/71');
+  await tapTile(page, 1, 3);
+  await expect(page.getByTestId('hud-towers')).toHaveText(`2/${CELLS}`);
   v = await view(page);
   expect(v.gold).toBe(800);
   expect(errors).toEqual([]);
@@ -319,7 +321,7 @@ test('검토 반영: 느린 프레임(한 번에 5틱)에도 소환 연출과 "1
   const r = await page.evaluate(() => {
     const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
     const before = { fx: s.summonEffects, tick: s.match.tick };
-    s.match.world.enqueue({ type: 'summon', x: 2, y: 2 });
+    s.match.world.enqueue({ type: 'summon', x: 1, y: 3 });
     s.update(s.time.now, 300);
     return { fx: s.summonEffects - before.fx, ticks: s.match.tick - before.tick, towers: s.match.towers().length };
   });
@@ -329,7 +331,7 @@ test('검토 반영: 느린 프레임(한 번에 5틱)에도 소환 연출과 "1
   // 돈을 다 쓴 뒤, 화면 검사 없이 들어간 소환(sim이 거절) → 느린 프레임에도 알림
   await page.evaluate(() => {
     const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
-    const cells: [number, number][] = [[6, 2], [2, 8], [6, 8], [4, 0], [0, 5], [8, 5], [4, 10], [3, 2], [5, 8]];
+    const cells: [number, number][] = [[5, 3], [1, 7], [5, 7], [2, 3], [4, 3], [2, 7], [4, 7], [1, 4], [5, 4]];
     for (const [x, y] of cells) s.match.world.enqueue({ type: 'summon', x, y });
     s.debugFastForward(1);
   });

@@ -338,6 +338,91 @@ def reward_table():
         rows.append(f"| {t} | " + " | ".join(cells) + f" | {tot:,} |")
     return "\n".join(rows)
 
+# ---------- 맵 (T-3: 배치 칸은 모두 2×2 블록, docs/MAPS.md) ----------
+MAPS = {p.stem: json.load(open(p, encoding="utf-8")) for p in sorted((ROOT / "src/data/maps").glob("*.json"))}
+MAP_BLOCK = 2
+def route_cells(m, inmap=True):
+    """경로가 지나는 칸 (지나는 순서, 교차점은 두 번). inmap이면 맵 밖 등장·퇴장 칸은 뺀다."""
+    out = []
+    wp = m["waypoints"]
+    for i in range(1, len(wp)):
+        (ax, ay), (bx, by) = wp[i - 1], wp[i]
+        dx, dy = (bx > ax) - (bx < ax), (by > ay) - (by < ay)
+        x, y = ax, ay
+        while True:
+            if not out or out[-1] != (x, y): out.append((x, y))
+            if (x, y) == (bx, by): break
+            x += dx; y += dy
+    if m.get("loop") and out and out[0] == out[-1]: out.pop()
+    if inmap: out = [c for c in out if 0 <= c[0] < m["width"] and 0 <= c[1] < m["height"]]
+    return out
+def coverage(m, x, y, r):
+    return sum(1 for (px, py) in route_cells(m) if (px - x) ** 2 + (py - y) ** 2 <= r * r)
+for mid, m in MAPS.items():
+    tiles, owner = m["tiles"], {}
+    for name, b in m["blocks"].items():
+        if (b["w"], b["h"]) != (MAP_BLOCK, MAP_BLOCK):
+            errors.append(f"maps/{mid}.json 블록 {name}: {MAP_BLOCK}×{MAP_BLOCK}이어야 함 ({b['w']}×{b['h']})"); continue
+        for y in range(b["y"], b["y"] + b["h"]):
+            for x in range(b["x"], b["x"] + b["w"]):
+                ch = tiles[y][x] if 0 <= y < len(tiles) and 0 <= x < len(tiles[y]) else None
+                if ch != "B": errors.append(f"maps/{mid}.json 블록 {name}: [{x},{y}]이 B가 아님 ({ch})")
+                if (x, y) in owner: errors.append(f"maps/{mid}.json 블록 {name}: {owner[(x, y)]}와 겹침 [{x},{y}]")
+                owner[(x, y)] = name
+    touching = set()
+    for (x, y), n in owner.items():
+        for dx, dy in ((1, 0), (0, 1)):
+            o = owner.get((x + dx, y + dy))
+            if o is not None and o != n: touching.add("·".join(sorted((n, o))))
+    for pair in sorted(touching): errors.append(f"maps/{mid}.json 블록 {pair}가 맞닿음 (길·빈 땅으로 떨어뜨릴 것)")
+    stray = [(x, y) for y, row in enumerate(tiles) for x, ch in enumerate(row) if ch == "B" and (x, y) not in owner]
+    if stray: errors.append(f"maps/{mid}.json 블록 밖 배치 칸 {len(stray)}개: {stray[:6]}")
+    nb = sum(row.count("B") for row in tiles)
+    if nb != m["buildableCount"]: errors.append(f"maps/{mid}.json buildableCount {m['buildableCount']} ≠ 실제 B {nb}")
+    if m["mode"] == "stage" and m["turns"] < 5: errors.append(f"maps/{mid}.json 스테이지 맵 회전 {m['turns']}번 (5번 이상)")
+    if len(m["blocks"]) < 6: errors.append(f"maps/{mid}.json 블록 {len(m['blocks'])}개 (6개 이상)")
+
+def maplist_table():
+    rows = ["| 맵 | 모드 | 크기 | 2×2 블록 | 배치 칸 | 경로 길이 | 회전 | 교차 |", "|------|------|------|------|------|------|------|------|"]
+    for mid, m in MAPS.items():
+        mode = "무한 (순환)" if m["mode"] == "infinite" else "스테이지"
+        rows.append(f"| {m['name']} (`{mid}`) | {mode} | {m['width']}×{m['height']} | {len(m['blocks'])}개 | **{m['buildableCount']}칸** | {m['pathLength']}칸 | {m['turns']}번 | {len(m['crossings'])}곳 |")
+    return "\n".join(rows)
+def tiles_block(mid):
+    m = MAPS[mid]
+    bname = {}
+    for name, b in m["blocks"].items(): bname[(b["x"], b["y"])] = name[0]
+    lines = ["```", "     x: " + " ".join(str(x % 10) for x in range(m["width"]))]
+    for y, row in enumerate(m["tiles"]):
+        cells = []
+        for x, ch in enumerate(row):
+            cells.append("·" if ch == "X" else ch)
+        lines.append(f"y={y:2d}    " + " ".join(cells))
+    lines.append("```")
+    return "\n".join(lines)
+def cover_block(mid, r):
+    m = MAPS[mid]
+    lines = ["```"]
+    for y, row in enumerate(m["tiles"]):
+        lines.append(" ".join(f"{coverage(m, x, y, r):2d}" if ch == "B" else " ·" for x, ch in enumerate(row)))
+    lines.append("```")
+    return "\n".join(lines)
+def block_table(mid):
+    m = MAPS[mid]
+    path = set(route_cells(m))
+    rows = ["| 블록 | 칸 | 경로가 닿는 면 | 사거리 2.5 평균 커버리지 | 사거리 1.5 평균 |", "|------|------|------|------|------|"]
+    for name, b in m["blocks"].items():
+        cells = [(x, y) for y in range(b["y"], b["y"] + b["h"]) for x in range(b["x"], b["x"] + b["w"])]
+        sides = sum(1 for side in (
+            [(x, b["y"] - 1) for x in range(b["x"], b["x"] + b["w"])],
+            [(x, b["y"] + b["h"]) for x in range(b["x"], b["x"] + b["w"])],
+            [(b["x"] - 1, y) for y in range(b["y"], b["y"] + b["h"])],
+            [(b["x"] + b["w"], y) for y in range(b["y"], b["y"] + b["h"])]) if any(c in path for c in side))
+        c25 = sum(coverage(m, x, y, 2.5) for x, y in cells) / len(cells)
+        c15 = sum(coverage(m, x, y, 1.5) for x, y in cells) / len(cells)
+        rows.append(f"| {name} | ({b['x']},{b['y']})~({b['x'] + 1},{b['y'] + 1}) | {sides}면 | {c25:.1f} | {c15:.1f} |")
+    return "\n".join(rows)
+
 def map_table():
     rows = ["| 테마 | 맵 | 구조 | 배경 |", "|------|------|------|------|"]
     for t in C["themes"]:
@@ -349,12 +434,15 @@ SECTIONS = {
     "docs/ENEMIES.md": {"MOBS": mob_table, "ARMOR": armor_table, "COMP": comp_table, "BOSSES": boss_table, "CHALLENGES": challenge_table, "FORMATIONS": formation_table, "HIERARCHY": hierarchy_table, "COMMANDERS": commander_table, "CAPTAINS": captain_table},
     "docs/CAMPAIGN.md": {"THEMES": theme_table, "REWARDS": reward_table, "MAPS": map_table, "SCHEDULE": schedule_table},
     "docs/BALANCE.md": {"MATCHUP": matchup_table},
+    "docs/MAPS.md": {"MAPLIST": maplist_table} | {f"TILES_{k.upper()}": (lambda k=k: tiles_block(k)) for k in MAPS}
+        | {f"COVER25_{k.upper()}": (lambda k=k: cover_block(k, 2.5)) for k in MAPS} | {f"COVER15_{k.upper()}": (lambda k=k: cover_block(k, 1.5)) for k in MAPS}
+        | {f"BLOCKS_{k.upper()}": (lambda k=k: block_table(k)) for k in MAPS},
 }
 
 if errors:
     print("❌ 데이터 규칙 위반:"); [print("  -", e) for e in errors]
 else:
-    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 미션 {len(MS)}개, 감지 타워(노말~레전드) {len(detect)}종, 배속 {_sp} · 개발자 {_dev}, 캐릭터 설명·크기 {len(towers)}+{len(look_e)}, 배경 {ART.get('themes',0)}×{ART.get('bands',0)} · 컷인 {len(ART.get('cutins',[]))}")
+    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 미션 {len(MS)}개, 감지 타워(노말~레전드) {len(detect)}종, 배속 {_sp} · 개발자 {_dev}, 캐릭터 설명·크기 {len(towers)}+{len(look_e)}, 배경 {ART.get('themes',0)}×{ART.get('bands',0)} · 컷인 {len(ART.get('cutins',[]))}, 맵 {len(MAPS)}개(2×2 블록 · 배치 칸 {', '.join(f"{k} {m['buildableCount']}" for k, m in MAPS.items())})")
 if "--check" in sys.argv or errors:
     sys.exit(1 if errors else 0)
 for doc, secs in SECTIONS.items():

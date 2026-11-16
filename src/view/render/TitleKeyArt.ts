@@ -2,10 +2,10 @@
  * 타이틀 그림 (HF-2): 힉스필드 키 아트(연합 영웅들 + 녹스 균열)를 타이틀 화면 뒤에 꽉 차게(cover) 깐다.
  * 켤 때마다 하나를 무작위로 고른다 (화면 전용 무작위 — sim과 무관). 위(로고)·아래([▶ 시작])에 옅은 어둠을 깔아 글자가 잘 보이게 한다.
  * 그림이 없거나 못 받으면 Boot 장면이 예전 절차 타이틀(하늘·성벽·대기 동작 타워)을 그린다.
+ * T-3: 지금 게임 크기(가변 높이)를 덮고, 크기가 바뀌면 `resize()`로 다시 덮는다.
  */
 import Phaser from 'phaser';
 import { assetUrl } from '../../assets';
-import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { coverScale, titleArtKey, titleArtPath } from '../artBand';
 
 export { pickTitleArt } from '../artBand';
@@ -19,11 +19,15 @@ export function queueTitleArt(scene: Phaser.Scene, n: number): string {
 
 const SCRIM_KEY = 'title-scrim';
 
-/** 타이틀 그림 + 글자용 어둠을 그린다. 텍스처가 없으면 false (절차 타이틀로) */
-export function drawTitleKeyArt(scene: Phaser.Scene, key: string): boolean {
-  if (!scene.textures.exists(key)) return false;
-  const img = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, key).setDepth(-10);
-  img.setScale(coverScale(img.width, img.height, GAME_WIDTH, GAME_HEIGHT));
+export interface TitleKeyArtView {
+  /** 게임 크기가 바뀜: 그림·어둠을 새 크기로 다시 덮는다 */
+  resize(): void;
+}
+
+/** 타이틀 그림 + 글자용 어둠을 그린다. 텍스처가 없으면 null (절차 타이틀로) */
+export function drawTitleKeyArt(scene: Phaser.Scene, key: string): TitleKeyArtView | null {
+  if (!scene.textures.exists(key)) return null;
+  const img = scene.add.image(0, 0, key).setDepth(-10);
   if (!scene.textures.exists(SCRIM_KEY)) {
     const tex = scene.textures.createCanvas(SCRIM_KEY, 4, 256);
     if (tex) {
@@ -41,6 +45,12 @@ export function drawTitleKeyArt(scene: Phaser.Scene, key: string): boolean {
       tex.refresh();
     }
   }
-  scene.add.image(0, 0, SCRIM_KEY).setOrigin(0).setDisplaySize(GAME_WIDTH, GAME_HEIGHT).setDepth(-9);
-  return true;
+  const scrim = scene.add.image(0, 0, SCRIM_KEY).setOrigin(0).setDepth(-9);
+  const resize = (): void => {
+    const { width: w, height: h } = scene.scale;
+    img.setPosition(w / 2, h / 2).setScale(coverScale(img.width, img.height, w, h));
+    scrim.setDisplaySize(w, h);
+  };
+  resize();
+  return { resize };
 }

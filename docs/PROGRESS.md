@@ -597,3 +597,37 @@
   - 한 파일 빌드가 배경 50장·컷인 19장·타이틀 2장을 모두 품어 커졌다 (그림 약 14MB → base64). 필요하면 배경을 낮은 화질 WebP로 다시 뽑을 것.
   - 컷인은 무한 모드 기본 보스 5종만 실제로 나온다 (대장 14·4천왕·군주 데이터가 생기는 M6부터 나머지 그림이 자동으로 쓰임).
   - 크기 배수는 첫 값이다 — 사용자가 해 보고 크다/작다 하면 `characterLooks.json scale`만 고치면 된다.
+
+## T-3 — 화면 꽉 차게 · 맵 2×2 블록(칸 줄임) · 타일 숨김 · 밸런스 확인 (상태: 완료)
+
+> 사용자 요청 (시험판 2 피드백): "맵 화면은 전체 꽉차게" / "타일은 구역 안보이게 숨기고 … 지금 너무 많다. 칸 갯수 다 줄이자. 지금 3x3인데 2x2로". 브랜치 `feat/map` (HF-2 위).
+
+- 만든 것:
+  - **화면 꽉 차게** (`src/view/viewport.ts` 순수 + `src/ui/stage.ts` DOM + `src/view/game.ts resizeGame`): 논리 가로 1080 고정, 세로 = clamp(round(1080 × 화면 높이 / 너비), 1920, 2600) → 412×915 = 1080×2399, 360×800 = 2400, 390×844 = 2337, 412×732 = 1920. 무대(#stage)를 JS로 그 CSS 크기에 맞추고 Phaser 게임 크기를 같게(`Scale.FIT` 캔버스가 무대를 정확히 덮음). 남는 띠가 1px 미만이면 무대 = 화면. 화면 크기·방향이 바뀌면(`resize`·`orientationchange`·`visualViewport`, 한 프레임에 한 번) `scale.setGameSize` → 장면 Scale RESIZE 사건.
+    - 9:16보다 넓은 화면(태블릿·PC·가로)은 1080×1920 가운데 + 양옆 띠, 2600보다 길쭉하면 위아래 띠 — 띠는 검정이 아니라 지금 전투 배경·타이틀 그림을 흐리고 어둡게(`#app::before`, `--side-bg`; 무대가 화면을 다 덮으면 그리지 않음).
+    - HUD는 맨 위(`env(safe-area-inset-top)`을 위 여백에 더함), 아래 띠·하단 메뉴는 맨 아래(원래 `safe-area-inset-bottom`). Hud.ts·TowerPanel.ts는 고치지 않았다(CSS만).
+    - Game 장면: 맵 영역 = 잰 HUD 띠 아래 ~ 잰 아래 띠 위 (`mapAreaBelowHud(…, this.scale.height)`), 그 안에 가장 큰 정수 칸으로 가운데. RESIZE → 배경 다시 덮기 + 맵·층 다시 배치. 412×915에서 순환의 정원 1칸 ≈ 132 기준 px(예전 9×11·1920 고정 ≈ 109).
+    - 전투 배경(`BattleBackground.resize`)·타이틀 키 아트(`TitleKeyArtView.resize`)는 지금 게임 크기를 덮는다(720×1280 그림 → 양옆이 조금 잘림). 그림이 없을 때의 절차 타이틀은 카메라 확대로 덮는다.
+  - **맵 2×2 블록** (`src/data/maps/*.json`): 순환의 정원 v2 = 7×11, 사각 고리 24칸(시계 방향) 안쪽 2×2 블록 4개 + 고리 위·아래 바깥 2개씩 = **배치 32칸**(예전 71, 45%). 사거리 미로 v3 = 10×10, 블록 9개 = **36칸**(예전 96, 38%), 경로 59칸 — 회전 10·교차 4곳·등장 (0,−1)→출구 (3,−1)의 모양은 그대로. 블록 사이 틈은 `X` 빈 땅.
+    - 문법 검사: `load.ts checkMapBlocks`(게임 시작 때 — 블록은 모두 2×2·블록 칸은 B·블록끼리 겹치거나 맞닿지 않음·블록 밖 B 없음) + `gen_tables.py --check`(같은 검사 + 스테이지 맵 회전 5번 이상·블록 6개 이상). `edgePlots`(가장자리 땅) 필드는 없앴다.
+    - `docs/MAPS.md` 0~2장을 새 맵으로 다시 썼다: 맵 목록·타일 그림·블록 분석·칸별 커버리지(사거리 2.5/1.5)는 `gen_tables.py`가 맵 JSON에서 만드는 GEN 구역. CLAUDE.md 4장 '테마 2~10 맵' 줄 = 2×2 블록, 1장 '화면' 줄·UI.md·ART.md = 가변 높이.
+  - **타일 숨김** (`MapRenderer` 다시 씀): 평소에는 칸 네모·격자·블록 상자·판 테두리를 그리지 않는다. 길만 또렷하게(그림자 + 어두운 테두리 + 흙 + 조약돌 + 두 칸마다 진행 방향 화살표, 칸을 이어 그려 꺾임·교차가 끊기지 않음). 균열·성문 그대로. 전투 배경 그림이 없을 때만 절차 풀밭 + 판 자리의 옅은 땅 한 덩어리(가장자리 부드럽게). 길 텍스처는 판 크기만(예전 화면 전체 1080×1920 텍스처), 절차 풀밭은 절반 해상도.
+    - **배치 칸 보이기** (`render/buildHint.ts` 순수 + `SelectionLayer.buildable`): 타워를 끄는 동안 계속, 길·빈 땅을 눌렀을 때와 판 시작 때 1.6초(끝 0.5초 서서히). 옅은 흰 칠 + 블록 바깥 테두리만 → 2×2 블록이 한 덩어리로 보인다. `Game.buildHint`(E2E).
+  - **밸런스 봇** (`tests/integration/botCheck.test.ts`, `npm run bot`): 예전 맵 v1(`tests/fixtures/maps/circle-v1.json`) vs 새 맵, 시드 5개. 기본 봇(소환·승급만) **0% 차이** (둘 다 10단계 박쥐 여왕에서 짐 — 10단계까지 타워 9~15개라 칸이 차지 않음). 칸이 다 차는 후반을 흉내 낸 부자 봇은 −26.7%인데 원인은 40단계 망령 군주(늘 투명) + 감지 타워 수(새 맵 2개 vs 예전 7~9개)이고, 공격력 +25~150%를 줘도 −20~23%라 **보정은 넣지 않았다**. 손잡이 `game.json combat.towerAtkPct`(모든 타워 공격력%, 지금 0)만 만들어 두었다. 표: `docs/BALANCE.md` 7.1.
+- 다른 코드가 칸 ↔ 화면을 바꿀 때 쓸 것 (PLAY 갈래 병합용): `Game.mapLayout`(= `computeMapLayout(map, area)` 결과 MapLayout) + `layout.ts`의 `tileCenterPx(L, tx, ty)`·`unitsToPx(L, ux, uy)`·`pxToTile(L, px, py)`·`input/tap.ts tapTile`(머리 영역 보정). 맵 영역은 `mapAreaBelowHud(hudBottomPx, bottomTopPx, this.scale.height)`, DOM CSS px ↔ 기준 px는 `cssToGamePx`/`gameToCssPx`(무대 너비 기준, 가로가 늘 1080이라 그대로). **화면 높이 1920·칸 좌표를 코드에 박지 말 것** — 지금 높이는 `scene.scale.height`, 배치 칸은 `match.map.buildable`.
+- 주요 결정:
+  - 규칙 테스트(단위)의 칸 좌표는 그대로 두고 **시험장 맵**을 고정했다: `tests/helpers/match.ts`의 `infinite()`·`arena()`는 예전 순환의 정원 v1(`arenaData`)으로 판을 만든다(게임 맵이 바뀌어도 '진행도 3000 = 칸 (4,1) 옆 (4,2) 타워' 같은 규칙 테스트가 흔들리지 않게). 실제 맵은 `realInfinite()`·`createMatch(data, …)`. 맵 자체·캠페인·리플레이·E2E는 새 맵.
+  - 리플레이 7개는 새 맵 칸으로 옮겨(`innerRing` = 고리 안쪽 블록 16칸) **다시 만들었다**(`npm run replays`) — 맵이 바뀌어 결과가 달라지는 것이 의도. 기존 검사(특색 연출·40단계 망령 군주 패배·45단계 돌파 편대·공속 한도·도전 10단계)는 모두 그대로 통과. r3-campaign도 여전히 10단계 박쥐 때문에 목숨 0.
+  - 길·빈 땅을 누르면 알림 대신 배치 칸을 잠깐 보여 준다(소환 없음은 예전과 같음).
+  - 배치 칸은 '보이기'만 바뀌고 sim 규칙(배치 가능 칸)은 맵 데이터 그대로.
+- 테스트: Vitest **1,149개 통과 + 1개 건너뜀**(`npm run bot` 전용 비교) — 새 `tests/unit/t3-screen.test.ts`(무대 맞추기 412×915·360×800·390×844·412×732·768×1024·아주 길쭉한 화면, 가변 높이 맵 영역·칸 크기, 배치 칸 보이기, 공격력 손잡이), `map.test.ts`(새 맵 제원·경로·2×2 문법 검사: 게임 맵 통과, 예전 3×3 맵·맞닿음·겹침·B 아님 잡기), `load.test.ts`(로드할 때 2×2 문법 오류), 봇 1시드. 캠페인 이동·패배 틱(59칸 = 슬라임 787틱)·화면 배치 테스트를 새 값으로.
+  E2E **93개**: 새 `e2e/t3-screen.spec.ts` 8개(휴대폰 4종 빈 띠 없음·HUD 맨 위·하단 메뉴 맨 아래·맵 사이, 768×1024 가운데 + 흐린 배경 띠, 화면 크기 바뀜(타이틀·게임), 2×2 맵 소환 + 빈 땅 탭 → 배치 칸, 캠페인 1 소환·타워 20개·끄는 동안 배치 칸). 기존 m2·m3a·m3b·m4·m5·art·characters·devtools의 칸 좌표를 새 순환의 정원 칸으로(71 → 32칸, 65종 → 등급 고르게 32종), m3a 끌기에 배치 칸 보임 검사, smoke 타이틀 캔버스 = 화면 전체.
+    컨테이너가 다른 갈래의 E2E와 같이 돌아 아주 느릴 때(캔버스도 화면 높이만큼 커져 소프트웨어 그리기가 약 25% 무거움) 실제 시간으로 사라지는 것(1.5초 승급 강조·3.2초 도전/보스 배너·도전 남은 초)을 늦게 재던 m5 두 테스트·m4 보스 테스트는 누르자마자 재도록 순서를 바꿨다(검사 내용은 그대로, 남은 초는 20초대까지 허용).
+    마지막 전체 실행: 90 통과 + 1 건너뜀, 실패 2개(m4 보스 = 순서 바꾸기 전 코드, m3a '위쪽 패널 + 알림' = 가끔 실패)는 따로 다시 돌려 통과.
+  - 스크린샷 (412×915, deviceScaleFactor 1): `docs/screens/T2-full-412x915.png`·`T2-full-360x800.png`·`T2-full-390x844.png`·`T2-full-412x732.png`·`T2-full-768x1024.png`, `T2-map-infinite-empty.png`·`T2-map-infinite-20.png`·`T2-map-campaign1.png`·`T2-map-drag.png`.
+- 남은 문제 / 다음 작업자에게:
+  - PLAY 갈래(탭 승급·꾹 눌러 자동 소환·[🎲 소환])와 합칠 때: `Game.ts`는 `onPointerDown`의 `fail === 'notBuildable'` 한 줄·`updateSelection`의 `buildable` 한 줄·`onResize`·`buildHint` getter만 더했다. 자동 소환 칸 고르기는 `match.map.buildable`을 쓰면 새 맵에서도 그대로 맞는다. 합친 뒤 리플레이는 `npm run replays`로 다시.
+  - MAPS.md의 `images/crossroads_map.png`·`circle_map.png`는 예전 맵 그림이다(새 그림은 `docs/screens/T2-map-*.png`).
+  - 봇은 감지 타워를 고르지 않는다 — 후반 비교를 더 정확히 하려면 '투명 경고가 뜨면 감지 타워를 남기는' 봇이 필요하다 (M11 `npm run sim`).
+  - 아주 납작한 화면(가로 915×412)은 예전처럼 9:16 무대가 가운데에 작게 뜬다(양옆은 흐린 배경).
+  - E2E `m3a '위쪽 패널 + 알림'`이 아주 바쁜 컨테이너에서 한 번 실패했다(알림 자리를 잰 높이가 실제 알림 한 줄보다 작게 재짐 — `measureToastHeight` 시점 문제로 보임, 다시 돌리면 통과). 또 나오면 `updateToastTop`이 알림 높이를 잴 때를 확인할 것.

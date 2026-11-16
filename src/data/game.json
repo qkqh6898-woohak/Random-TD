@@ -41,7 +41,8 @@
     "chainFalloff": 0.2,
     "chainRange": 2,
     "pierceWidth": 1,
-    "movePauseSeconds": 0.5
+    "movePauseSeconds": 0.5,
+    "towerAtkPct": 0
   },
   "merge": {
     "count": 3

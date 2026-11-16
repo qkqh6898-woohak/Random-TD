@@ -186,6 +186,7 @@ test('캐릭터 스크린샷 (갤러리: 타워 3장·각성·적·인물)', asy
 type SceneLike = {
   match: {
     towers(): { id: number; tower: string }[];
+    map: { buildable: [number, number][] };
     mobCount(): number;
     state: { stage: number };
     rules: { towerOrder: string[] };
@@ -225,10 +226,8 @@ test('게임 화면: 타워·몹이 새 캐릭터 그림(파츠 텍스처)으로
   const placed = await inScene(
     page,
     (s, ids) => {
-      const cells: [number, number][] = [];
-      for (let y = 2; y <= 8; y++) for (let x = 2; x <= 6; x++) cells.push([x, y]);
-      for (let x = 0; x <= 8; x++) cells.push([x, 0], [x, 10]);
-      for (let y = 1; y <= 9; y++) cells.push([0, y], [8, y]);
+      // 순환의 정원 배치 칸 모두 (T-3 v2: 32칸) — 타워 종류는 돌려 가며
+      const cells = s.match.map.buildable;
       let n = 0;
       cells.forEach(([x, y], i) => {
         const id = ids[i % ids.length]!;
@@ -239,14 +238,14 @@ test('게임 화면: 타워·몹이 새 캐릭터 그림(파츠 텍스처)으로
     },
     INGAME_TOWERS,
   );
-  expect(placed).toBe(71);
+  expect(placed).toBe(32);
   // 다음 프레임에 그림이 생긴다: 모든 타워가 새 파츠 텍스처, 종류마다 한 장
-  await expect.poll(() => inScene(page, (s) => s.towerLayer.characterKeys.length, null)).toBe(71);
+  await expect.poll(() => inScene(page, (s) => s.towerLayer.characterKeys.length, null)).toBe(32);
   const keys = await inScene(page, (s) => s.towerLayer.characterKeys, null);
   // 힉스필드 그림이 있으면 그것(ext-char-tower-…, HF-1), 없으면 절차 파츠 텍스처(char-tower-…)
   expect(keys.every((k) => k.startsWith('char-tower-') || k.startsWith('ext-char-tower-'))).toBe(true);
-  expect(new Set(keys).size).toBe(INGAME_TOWERS.length);
-  expect(await inScene(page, (s) => ['char-tower-miner-n', 'char-tower-saint-n'].every((k) => s.textures.exists(k)), null)).toBe(true);
+  expect(new Set(keys).size).toBe(Math.min(32, INGAME_TOWERS.length));
+  expect(await inScene(page, (s) => ['char-tower-miner-n', 'char-tower-necromancer-n'].every((k) => s.textures.exists(k)), null)).toBe(true);
   // 몹: 몹이 살아 있는 단계로 건너뛰면 새 적 그림
   await inScene(
     page,

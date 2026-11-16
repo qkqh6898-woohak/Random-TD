@@ -187,7 +187,7 @@ describe('summon 명령', () => {
     };
     const base = run(0);
     expect(run(7)).toEqual(base);
-    expect(run(30)).toEqual(base);
+    expect(run(12)).toEqual(base); // 12 + 20 = 32칸 (순환의 정원 v2 배치 칸 전부)
     expect(new Set(base).size).toBeGreaterThan(1);
   });
 

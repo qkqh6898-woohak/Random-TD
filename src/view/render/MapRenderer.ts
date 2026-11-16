@@ -1,36 +1,35 @@
 /**
- * 맵 그리기 (DEV_PLAN M1-7): 테마 1 「국경 평원」·순환의 정원 색 — 잔디 단상(배치 칸) + 흙길(경로).
+ * 맵 그리기 (DEV_PLAN M1-7, T-3 '타일 숨김'): 테마 1 「국경 평원」·순환의 정원 색.
  *
- * - 바닥 전체(배경 풀밭 + 칸)는 한 번 그려 텍스처로 굽는다 (정적 그림은 generateTexture, PROGRESS M0 결정).
- * - 배치 칸 = 살짝 솟은 잔디 단상 (아랫단 그림자로 입체감, 체크무늬로 칸 구분), 경로 = 흙길 + 진행 방향 화살표.
+ * - T-3 (사용자 요청 "타일은 구역 안보이게 숨기고"): 평소에는 칸 네모·격자선·블록 상자를 그리지 않는다. 땅은 이어진 한 장 —
+ *   힉스필드 전투 배경 그림(BattleBackground)이 판 뒤를 덮고, 그림이 없을 때만 절차 풀밭 + 판 자리의 옅은 땅 한 덩어리.
+ *   배치 칸은 쓸모 있을 때만 보인다 (타워를 끄는 동안·배치할 수 없는 곳을 눌렀을 때 잠깐 — SelectionLayer `buildable`).
+ * - 길(경로)은 언제나 또렷하게: 어두운 테두리 + 흙길 + 진행 방향 화살표. 칸을 이어 그려 꺾임·교차가 끊기지 않는다.
  * - 몹 등장 지점 = 녹스 군단의 보라 균열(빙글빙글 도는 소용돌이), 캠페인 출구 = 왕국 성문.
+ * - 정적 그림은 한 번 그려 텍스처로 굽는다 (PROGRESS M0 결정). 길 텍스처는 판 크기만큼만(예전처럼 화면 전체가 아니라) → GPU 메모리 절약.
+ *   절차 풀밭 배경은 화면 크기의 절반 해상도로 굽고 늘려 그린다 (흐린 풀밭이라 티가 나지 않음).
  * - 장식용 무작위(조약돌·풀·꽃)는 맵 id로 시드를 정한 간단한 난수 → 매번 같은 그림 (sim의 Rng와 무관).
- * - HF-2: 맵 바깥 풀밭(배경)은 따로 구운 그림(BACKDROP_DEPTH)이다 — 힉스필드 전투 배경(BattleBackground)이 뜨면 숨기고, 그림이 없을 때의 대체.
- *   맵 아래 판(테두리 그림자)은 칸과 같이 구워 배경 그림 위에서도 맵이 또렷하다.
+ * - HF-2: 절차 풀밭(+ 옅은 땅)은 BACKDROP_DEPTH — 전투 배경 그림이 화면을 다 덮으면 숨긴다 (`setBackdropVisible`).
+ * - T-3: 화면 크기는 지금 게임 크기(scene.scale, 가변 높이)를 읽는다.
  */
 import Phaser from 'phaser';
 import { COLORS, hexToInt, lerpColor, shade } from '../../art/palette';
 import type { SimMap } from '../../sim/map';
-import { GAME_HEIGHT, GAME_WIDTH } from '../config';
 import { pathCells, tileCenterPx, type MapLayout } from '../layout';
 
-/** 테마 1 풀밭 색 (ART.md 1장: 블록 = 잔디 단상, 경로 = 흙길). */
+/** 테마 1 풀밭 색 (ART.md 1장: 땅 = 풀밭, 경로 = 흙길). */
 export const MEADOW = {
   bgTop: 0x1f4a2a,
   bgMid: 0x2c6633,
   bgBottom: 0x1d4527,
-  board: 0x173a20,
-  grassA: 0x7cc35a,
-  grassB: 0x72b952,
-  grassLip: 0x3f7a33,
-  grassEdge: 0x2f5e27,
-  grassShine: 0xa6df7e,
+  ground: 0x4f9a3f,
+  groundLight: 0x67b24f,
   tuft: 0x5a9e45,
   dirt: 0xcaa46c,
-  dirtDark: 0x9a7444,
+  dirtDark: 0x7a5a34,
   dirtLight: 0xe2c592,
   pebble: 0xa8844f,
-  chevron: 0x9b7646,
+  chevron: 0x8f6a3d,
   rift: 0x9b4dff,
   riftCore: 0x2a0b4d,
   stone: 0x9aa0a6,
@@ -39,6 +38,11 @@ export const MEADOW = {
 const OUTLINE = hexToInt(COLORS.outline);
 /** 절차 풀밭 배경 깊이 (전투 배경 그림 BattleBackground보다 아래, 맵 바닥 0보다 아래) */
 export const BACKDROP_DEPTH = -50;
+/** 절차 풀밭 배경을 굽는 해상도 (화면 크기 대비) */
+const BACKDROP_RES = 0.5;
+/** 길 너비 (칸 대비): 테두리 · 흙 */
+const ROAD_EDGE = 0.9;
+const ROAD_FILL = 0.76;
 
 /** 화면용 고정 시드 난수. */
 function lcg(seed: number): () => number {
@@ -60,10 +64,26 @@ export interface MapRendererOptions {
   kingdomColor: number;
 }
 
+/** 판(화면 밖 등장·퇴장 칸 포함)이 차지하는 화면 상자 (px, 여백 포함) */
+export function boardRectPx(layout: MapLayout, marginTiles = 0.5): { x: number; y: number; w: number; h: number } {
+  const m = Math.round(layout.tile * marginTiles);
+  return {
+    x: Math.floor(layout.originX + layout.minCol * layout.tile - m),
+    y: Math.floor(layout.originY + layout.minRow * layout.tile - m),
+    w: Math.ceil(layout.cols * layout.tile + m * 2),
+    h: Math.ceil(layout.rows * layout.tile + m * 2),
+  };
+}
+
 export class MapRenderer {
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
-  /** 구운 바닥 텍스처 키 (배치가 같으면 다시 그리지 않고 같이 쓴다) */
+  /** 구운 길 텍스처 키 (배치가 같으면 다시 그리지 않고 같이 쓴다) */
   readonly textureKey: string;
+  /** 판 자리의 옅은 땅 (배경 그림이 없을 때만) 텍스처 키 */
+  private readonly groundKey: string;
+  /** 절차 풀밭 배경 + 판 땅 (전투 배경 그림이 뜨면 숨긴다) */
+  private backdrops: Phaser.GameObjects.Image[] = [];
+  private backdropVisible = true;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -73,39 +93,55 @@ export class MapRenderer {
   ) {
     // 칸 크기만이 아니라 위치도 키에 넣는다: HUD 높이에 따라 같은 칸 크기로 위아래만 달라질 수 있다
     this.textureKey = `map-${map.id}-${layout.tile}-${layout.originX}-${layout.originY}`;
+    this.groundKey = `${this.textureKey}-ground`;
   }
-
-  /** 절차 풀밭 배경 (맵 바깥). 전투 배경 그림이 뜨면 숨긴다 */
-  private backdrop: Phaser.GameObjects.Image | null = null;
 
   /** 바닥 텍스처를 굽고 장면에 올린다. */
   draw(): void {
-    // 맵 바깥 풀밭은 배치와 무관 → 맵마다 한 장 (전투 배경 그림이 없을 때의 대체)
-    const bgKey = `map-backdrop-${this.map.id}`;
+    const W = this.scene.scale.width;
+    const H = this.scene.scale.height;
+    // 맵 바깥 풀밭: 배치와 무관 → 맵·화면 크기마다 한 장 (전투 배경 그림이 없을 때의 대체). 다른 크기의 예전 것은 지운다
+    const bw = Math.ceil(W * BACKDROP_RES);
+    const bh = Math.ceil(H * BACKDROP_RES);
+    const bgKey = `map-backdrop-${this.map.id}-${bw}x${bh}`;
+    for (const k of this.scene.textures.getTextureKeys()) {
+      if (k.startsWith(`map-backdrop-${this.map.id}-`) && k !== bgKey) this.scene.textures.remove(k);
+    }
     if (!this.scene.textures.exists(bgKey)) {
       const g = this.scene.make.graphics({}, false);
-      this.drawBackdrop(g);
-      g.generateTexture(bgKey, GAME_WIDTH, GAME_HEIGHT);
+      this.drawBackdrop(g, bw, bh);
+      g.generateTexture(bgKey, bw, bh);
       g.destroy();
     }
-    this.backdrop = this.scene.add.image(0, 0, bgKey).setOrigin(0).setDepth(BACKDROP_DEPTH).setVisible(this.backdropVisible);
-    this.objects.push(this.backdrop);
-    const key = this.textureKey;
-    if (!this.scene.textures.exists(key)) {
+    const board = boardRectPx(this.layout);
+    if (!this.scene.textures.exists(this.groundKey)) {
       const g = this.scene.make.graphics({}, false);
-      this.drawBoardFrame(g);
-      this.drawTiles(g);
-      g.generateTexture(key, GAME_WIDTH, GAME_HEIGHT);
+      this.drawGround(g, board.w, board.h);
+      g.generateTexture(this.groundKey, board.w, board.h);
       g.destroy();
     }
-    this.objects.push(this.scene.add.image(0, 0, key).setOrigin(0).setDepth(0));
+    this.backdrops = [
+      this.scene.add.image(0, 0, bgKey).setOrigin(0).setDisplaySize(W, H).setDepth(BACKDROP_DEPTH),
+      this.scene.add.image(board.x, board.y, this.groundKey).setOrigin(0).setDepth(BACKDROP_DEPTH + 1),
+    ];
+    for (const b of this.backdrops) {
+      b.setVisible(this.backdropVisible);
+      this.objects.push(b);
+    }
+    if (!this.scene.textures.exists(this.textureKey)) {
+      const g = this.scene.make.graphics({}, false);
+      this.drawRoad(g, board.x, board.y);
+      g.generateTexture(this.textureKey, board.w, board.h);
+      g.destroy();
+    }
+    this.objects.push(this.scene.add.image(board.x, board.y, this.textureKey).setOrigin(0).setDepth(0));
     this.drawSpawnRift();
     if (this.map.exit) this.drawExitGate(this.map.exit[0], this.map.exit[1]);
   }
 
   /**
    * 장면에서 내린다 (화면 크기가 바뀌어 다시 배치할 때).
-   * @param removeTexture 구운 바닥 텍스처도 지운다 (다른 배치로 바뀌어 다시 쓰지 않을 때)
+   * @param removeTexture 구운 길·땅 텍스처도 지운다 (다른 배치로 바뀌어 다시 쓰지 않을 때)
    */
   destroy(removeTexture = false): void {
     for (const o of this.objects) {
@@ -113,124 +149,115 @@ export class MapRenderer {
       o.destroy();
     }
     this.objects.length = 0;
-    if (removeTexture && this.scene.textures.exists(this.textureKey)) this.scene.textures.remove(this.textureKey);
+    this.backdrops = [];
+    if (removeTexture) {
+      for (const k of [this.textureKey, this.groundKey]) if (this.scene.textures.exists(k)) this.scene.textures.remove(k);
+    }
   }
-
-  private backdropVisible = true;
 
   /** 절차 풀밭 배경 보이기/숨기기 (전투 배경 그림이 화면을 다 덮으면 숨겨 그리는 비용을 아낀다) */
   setBackdropVisible(on: boolean): void {
     this.backdropVisible = on;
-    this.backdrop?.setVisible(on);
+    for (const b of this.backdrops) b.setVisible(on);
   }
 
-  private drawBackdrop(g: Phaser.GameObjects.Graphics): void {
+  /** 맵 바깥 풀밭 (w×h 텍스처 = 화면의 BACKDROP_RES 배) */
+  private drawBackdrop(g: Phaser.GameObjects.Graphics, w: number, h: number): void {
     const bands = 64;
-    const h = GAME_HEIGHT / bands;
+    const bandH = h / bands;
     for (let i = 0; i < bands; i++) {
       const t = i / (bands - 1);
       const c = t < 0.5 ? lerpColor(MEADOW.bgTop, MEADOW.bgMid, t * 2) : lerpColor(MEADOW.bgMid, MEADOW.bgBottom, (t - 0.5) * 2);
       g.fillStyle(c, 1);
-      g.fillRect(0, i * h, GAME_WIDTH, h + 1);
+      g.fillRect(0, i * bandH, w, bandH + 1);
     }
     const rnd = lcg(seedOf(`bg-${this.map.id}`));
+    const s = BACKDROP_RES;
     // 짙은 풀 덩어리와 작은 꽃 (맵 바깥 풀밭)
     for (let i = 0; i < 70; i++) {
       g.fillStyle(shade(MEADOW.bgMid, -0.18 + rnd() * 0.1), 0.55);
-      g.fillEllipse(rnd() * GAME_WIDTH, rnd() * GAME_HEIGHT, 40 + rnd() * 90, 18 + rnd() * 30);
+      g.fillEllipse(rnd() * w, rnd() * h, (40 + rnd() * 90) * s, (18 + rnd() * 30) * s);
     }
     const flowers = [0xffffff, 0xffe066, 0xff9ec7, 0xb9a6ff];
     for (let i = 0; i < 90; i++) {
       g.fillStyle(flowers[i % flowers.length] as number, 0.75);
-      g.fillCircle(rnd() * GAME_WIDTH, rnd() * GAME_HEIGHT, 3 + rnd() * 3);
+      g.fillCircle(rnd() * w, rnd() * h, (3 + rnd() * 3) * s);
     }
   }
 
-  /** 맵 아래 판 (테두리 그림자) — 배경 그림 위에서도 맵이 또렷하게 */
-  private drawBoardFrame(g: Phaser.GameObjects.Graphics): void {
-    const L = this.layout;
-    const pad = L.tile * 0.22;
-    g.fillStyle(0x000000, 0.22);
-    g.fillRoundedRect(L.originX + L.minCol * L.tile - pad, L.originY + L.minRow * L.tile - pad + 10, L.cols * L.tile + pad * 2, L.rows * L.tile + pad * 2, pad);
-    g.fillStyle(MEADOW.board, 0.9);
-    g.fillRoundedRect(L.originX + L.minCol * L.tile - pad, L.originY + L.minRow * L.tile - pad, L.cols * L.tile + pad * 2, L.rows * L.tile + pad * 2, pad);
+  /**
+   * 판 자리의 옅은 땅 한 덩어리 (배경 그림이 없을 때만 보임): 칸 구분 없이 이어진 밝은 풀밭, 가장자리는 여러 겹으로 부드럽게.
+   * w×h = 판 상자 (boardRectPx) 크기, 좌표는 상자 왼쪽 위 기준.
+   */
+  private drawGround(g: Phaser.GameObjects.Graphics, w: number, h: number): void {
+    const t = this.layout.tile;
+    const steps = 6;
+    for (let i = 0; i < steps; i++) {
+      const inset = (t * 0.42 * (steps - 1 - i)) / steps;
+      g.fillStyle(MEADOW.ground, 0.16);
+      g.fillRoundedRect(inset, inset, w - inset * 2, h - inset * 2, Math.max(4, t * 0.5 - inset * 0.5));
+    }
+    const rnd = lcg(seedOf(`ground-${this.map.id}`));
+    const m = t * 0.5;
+    // 밝은 풀 얼룩과 풀 포기 (칸과 무관한 자리)
+    for (let i = 0; i < 26; i++) {
+      g.fillStyle(MEADOW.groundLight, 0.18);
+      g.fillEllipse(m + rnd() * (w - m * 2), m + rnd() * (h - m * 2), t * (0.8 + rnd() * 1.2), t * (0.35 + rnd() * 0.4));
+    }
+    g.lineStyle(Math.max(2, t * 0.022), MEADOW.tuft, 0.7);
+    for (let i = 0; i < 40; i++) {
+      const cx = m + rnd() * (w - m * 2);
+      const cy = m + rnd() * (h - m * 2);
+      const s = t * 0.06;
+      g.lineBetween(cx - s, cy - s * 1.2, cx, cy);
+      g.lineBetween(cx + s, cy - s * 1.3, cx, cy);
+    }
   }
 
-  private drawTiles(g: Phaser.GameObjects.Graphics): void {
+  /**
+   * 길: 칸마다 가운데 네모 + 이웃 길 칸 쪽으로 이어지는 띠 → 꺾임·교차가 끊기지 않는 한 줄 길.
+   * 1) 어두운 테두리(넓게) 2) 흙(좁게) 3) 조약돌 4) 진행 방향 화살표(두 칸마다). (ox, oy) = 텍스처 왼쪽 위의 화면 px.
+   */
+  private drawRoad(g: Phaser.GameObjects.Graphics, ox: number, oy: number): void {
     const { map, layout } = this;
     const t = layout.tile;
-    const rnd = lcg(seedOf(`tiles-${map.id}`));
+    const rnd = lcg(seedOf(`road-${map.id}`));
     const cells = pathCells(map);
     const isPath = new Set(cells.map((c) => `${c.x},${c.y}`));
-
-    // 1) 잔디 단상 (배치 칸)
-    const inset = Math.max(2, Math.round(t * 0.035));
-    const lip = Math.max(3, Math.round(t * 0.07));
-    const radius = Math.round(t * 0.14);
-    for (let y = 0; y < map.height; y++) {
-      for (let x = 0; x < map.width; x++) {
-        const kind = map.kinds[y * map.width + x];
-        if (kind === 'path') continue;
-        const px = layout.originX + x * t;
-        const py = layout.originY + y * t;
-        if (kind === 'decor') {
-          g.fillStyle(shade(MEADOW.tuft, -0.2), 1);
-          g.fillCircle(px + t / 2, py + t / 2, t * 0.36);
-          continue;
-        }
-        g.fillStyle(MEADOW.grassEdge, 1);
-        g.fillRoundedRect(px + inset, py + inset + lip * 0.4, t - inset * 2, t - inset * 2, radius);
-        g.fillStyle(MEADOW.grassLip, 1);
-        g.fillRoundedRect(px + inset, py + inset, t - inset * 2, t - inset * 2, radius);
-        g.fillStyle((x + y) % 2 === 0 ? MEADOW.grassA : MEADOW.grassB, 1);
-        g.fillRoundedRect(px + inset, py + inset, t - inset * 2, t - inset * 2 - lip, radius);
-        g.fillStyle(MEADOW.grassShine, 0.5);
-        g.fillRoundedRect(px + inset + radius * 0.6, py + inset + lip * 0.5, t - inset * 2 - radius * 1.2, Math.max(2, lip * 0.45), lip * 0.2);
-        // 풀 포기 2~3개
-        g.lineStyle(Math.max(2, t * 0.022), MEADOW.tuft, 0.9);
-        const tufts = 2 + Math.floor(rnd() * 2);
-        for (let k = 0; k < tufts; k++) {
-          const cx = px + t * (0.2 + rnd() * 0.6);
-          const cy = py + t * (0.25 + rnd() * 0.45);
-          const s = t * 0.06;
-          g.lineBetween(cx - s, cy - s * 1.2, cx, cy);
-          g.lineBetween(cx + s, cy - s * 1.3, cx, cy);
-        }
-        if (map.mode === 'infinite' && rnd() < 0.18) {
-          g.fillStyle(rnd() < 0.5 ? 0xffffff : 0xffe066, 0.9);
-          g.fillCircle(px + t * (0.25 + rnd() * 0.5), py + t * (0.25 + rnd() * 0.4), t * 0.035);
-        }
+    const centerOf = (x: number, y: number): { x: number; y: number } => {
+      const c = tileCenterPx(layout, x, y);
+      return { x: c.x - ox, y: c.y - oy };
+    };
+    const band = (width: number, color: number, alpha: number): void => {
+      g.fillStyle(color, alpha);
+      const half = width / 2;
+      for (const c of cells) {
+        const p = centerOf(c.x, c.y);
+        g.fillRect(p.x - half, p.y - half, width, width);
+        // 오른쪽·아래 이웃으로만 이으면 모든 이음이 한 번씩
+        if (isPath.has(`${c.x + 1},${c.y}`)) g.fillRect(p.x, p.y - half, t, width);
+        if (isPath.has(`${c.x},${c.y + 1}`)) g.fillRect(p.x - half, p.y, width, t);
       }
-    }
-
-    // 2) 흙길 (맵 밖 등장·퇴장 칸 포함)
+    };
+    // 바닥 그림자 (배경 그림 위에서도 길이 떠 보이게)
+    g.translateCanvas(0, Math.max(2, t * 0.05));
+    band(t * ROAD_EDGE, 0x000000, 0.22);
+    g.translateCanvas(0, -Math.max(2, t * 0.05));
+    band(t * ROAD_EDGE, MEADOW.dirtDark, 1);
+    band(t * ROAD_FILL, MEADOW.dirt, 1);
+    // 조약돌·밝은 흙
     for (const c of cells) {
-      const px = layout.originX + c.x * t;
-      const py = layout.originY + c.y * t;
-      g.fillStyle(MEADOW.dirt, 1);
-      g.fillRect(px, py, t, t);
-    }
-    // 길 가장자리 어두운 띠 (이웃이 길이 아닌 쪽만)
-    const edge = Math.max(3, Math.round(t * 0.06));
-    for (const c of cells) {
-      const px = layout.originX + c.x * t;
-      const py = layout.originY + c.y * t;
-      g.fillStyle(MEADOW.dirtDark, 0.85);
-      if (!isPath.has(`${c.x},${c.y - 1}`)) g.fillRect(px, py, t, edge);
-      if (!isPath.has(`${c.x},${c.y + 1}`)) g.fillRect(px, py + t - edge, t, edge);
-      if (!isPath.has(`${c.x - 1},${c.y}`)) g.fillRect(px, py, edge, t);
-      if (!isPath.has(`${c.x + 1},${c.y}`)) g.fillRect(px + t - edge, py, edge, t);
-      // 조약돌·밝은 흙
+      const p = centerOf(c.x, c.y);
       for (let k = 0; k < 3; k++) {
         g.fillStyle(k === 0 ? MEADOW.dirtLight : MEADOW.pebble, 0.8);
-        g.fillEllipse(px + t * (0.18 + rnd() * 0.64), py + t * (0.18 + rnd() * 0.64), t * (0.06 + rnd() * 0.06), t * (0.04 + rnd() * 0.04));
+        g.fillEllipse(p.x + t * (rnd() - 0.5) * 0.56, p.y + t * (rnd() - 0.5) * 0.56, t * (0.06 + rnd() * 0.06), t * (0.04 + rnd() * 0.04));
       }
     }
     // 진행 방향 화살표 (두 칸마다)
-    g.lineStyle(Math.max(3, t * 0.045), MEADOW.chevron, 0.75);
+    g.lineStyle(Math.max(3, t * 0.05), MEADOW.chevron, 0.85);
     cells.forEach((c, i) => {
       if (i % 2 !== 1) return;
-      const { x: cx, y: cy } = tileCenterPx(layout, c.x, c.y);
+      const { x: cx, y: cy } = centerOf(c.x, c.y);
       const s = t * 0.13;
       const fx = c.dx * s;
       const fy = c.dy * s;
