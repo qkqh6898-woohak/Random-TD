@@ -134,6 +134,50 @@ export function queueExternalCharacterArt(scene: Phaser.Scene): void {
 /** 기절 중 오라·입자 알파 (잿빛 몸 뒤에서 은은하게만) */
 const TINT_GLOW_ALPHA = 0.35;
 
+/** 바깥 그림 외곽선 두께 (그림 높이 대비) — 412px 휴대폰에서 약 1.2px (F10-4: 흑백에서도 풀밭과 캐릭터가 갈라지게) */
+export const EXTERNAL_OUTLINE_OF_H = 0.022;
+/** 바깥 그림 외곽선 색 (palette outline 진한 갈색)·알파 */
+const EXTERNAL_OUTLINE_RGBA = 'rgba(40, 24, 14, 0.9)';
+/** 외곽선을 찍는 방향 수 (원 둘레) */
+const EXTERNAL_OUTLINE_STEPS = 16;
+
+/**
+ * 바깥 그림(힉스필드)에 굵은 진한 외곽선을 두른 텍스처 키 (처음 한 번 굽는다). 문서 4장 '컬러 대비와 굵은 외곽선은 배경과 타워를 분리' —
+ * 밝은 궁수·고블린이 흑백 캡처에서 풀밭과 섞이던 것 (F10-4 검토). 그림 둘레에 pad만큼 여백을 더한다.
+ * 그림 원본을 읽을 수 없으면(캔버스 없음 등) 원래 키 그대로.
+ */
+export function outlinedExternalTexture(scene: Phaser.Scene, key: string): { key: string; pad: number; w: number; h: number } {
+  const src = scene.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+  const w = src.width;
+  const h = src.height;
+  const pad = Math.max(2, Math.round(h * EXTERNAL_OUTLINE_OF_H));
+  const olKey = `${key}-ol`;
+  if (scene.textures.exists(olKey)) return { key: olKey, pad, w, h };
+  try {
+    const sil = document.createElement('canvas');
+    sil.width = w;
+    sil.height = h;
+    const sg = sil.getContext('2d');
+    const tex = scene.textures.createCanvas(olKey, w + pad * 2, h + pad * 2);
+    const g = tex?.getContext();
+    if (!sg || !tex || !g) throw new Error('no canvas');
+    sg.drawImage(src, 0, 0);
+    sg.globalCompositeOperation = 'source-in';
+    sg.fillStyle = EXTERNAL_OUTLINE_RGBA;
+    sg.fillRect(0, 0, w, h);
+    for (let i = 0; i < EXTERNAL_OUTLINE_STEPS; i++) {
+      const a = (i / EXTERNAL_OUTLINE_STEPS) * Math.PI * 2;
+      g.drawImage(sil, pad + Math.cos(a) * pad, pad + Math.sin(a) * pad);
+    }
+    g.drawImage(src, pad, pad);
+    tex.refresh();
+    return { key: olKey, pad, w, h };
+  } catch {
+    if (scene.textures.exists(olKey)) scene.textures.remove(olKey);
+    return { key, pad: 0, w, h };
+  }
+}
+
 // ---------------------------------------------------------------------------
 // 캐릭터 그림 (파츠 Image 묶음)
 // ---------------------------------------------------------------------------
@@ -174,9 +218,10 @@ export class CharacterFigure {
       this.container.add(this.auraImg);
     } else this.auraImg = null;
     if (this.external) {
-      // 바깥 그림: 몸 상자 높이에 맞춰 한 장 (발밑 = 그림 아래 가운데)
-      const img = scene.add.image(0, 0, extKey).setOrigin(0.5, 1);
-      this.extScale = externalFigureScale(img.width, img.height);
+      // 바깥 그림: 몸 상자 높이에 맞춰 한 장 (발밑 = 그림 아래 가운데). 외곽선 텍스처는 둘레 여백만큼 커서 원점을 그만큼 옮긴다 — 크기·발밑은 그대로
+      const ol = outlinedExternalTexture(scene, extKey);
+      const img = scene.add.image(0, 0, ol.key).setOrigin(0.5, (ol.h + ol.pad) / (ol.h + ol.pad * 2));
+      this.extScale = externalFigureScale(ol.w, ol.h);
       img.setScale(this.extScale);
       this.partImgs.set('body', img);
       this.container.add(img);

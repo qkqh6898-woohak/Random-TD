@@ -69,6 +69,29 @@ export function mergePreview(group: readonly Tower[], anchor: Tower, mergeCount:
   };
 }
 
+/** 세로 구간 [top, bottom] (CSS px) */
+export interface Span {
+  top: number;
+  bottom: number;
+}
+
+function overlap(a: Span, b: Span): number {
+  return Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+}
+
+/**
+ * 첫 승급 안내 카드를 위·아래 어디에 띄울지 (F10-4 검토: 예전엔 강조 칸 줄의 평균만 봐서, 결과·재료 칸이 맵 위아래로 흩어지거나
+ * 판이 커진 화면(맵 B안)에서 카드가 강조 칸을 덮을 수 있었다). cells = 강조 칸(결과·재료)의 세로 구간 (머리까지),
+ * top·bottom = 카드를 위·아래에 놓았을 때 차지할 구간. 덮는 길이가 더 짧은 쪽, 같으면 fallback.
+ */
+export function guideCardSide(cells: readonly Span[], top: Span, bottom: Span, fallback: 'top' | 'bottom'): 'top' | 'bottom' {
+  const cover = (band: Span): number => cells.reduce((a, c) => a + overlap(c, band), 0);
+  const t = cover(top);
+  const b = cover(bottom);
+  if (t === b) return fallback;
+  return t < b ? 'top' : 'bottom';
+}
+
 /** 첫 승급 안내 단계: 1 = 결과·재료 칸 설명, 2 = 누르는 법 (타워 또는 [⬆ 승급 가능]) */
 export type MergeGuideStep = 1 | 2;
 
@@ -81,7 +104,8 @@ export function mergeGuideText(step: MergeGuideStep, towerName: string, tapMerge
     };
   }
   return {
-    title: '원하는 칸에서 승급하기',
+    // 종류 이름을 넣는다 (F10-4 검토: 두 묶음이 함께 준비되면 지금 어떤 종류를 합치는지 2단계에서도 보이게)
+    title: `${towerName} 승급 칸 고르기`,
     body: tapMerge ? '금색 타워를 누르면 승급 · 다른 타워를 누르면 그 칸이 결과 칸' : '타워를 눌러 [⬆ 승급] · 누른 타워 칸에 결과가 생겨요',
   };
 }
@@ -179,13 +203,21 @@ function hpPct(bp: number): string {
   return `${Math.ceil(bp / 100)}%`;
 }
 
-/** 이번 판 기록 줄 (개발자 도구 '이번 판 기록'). 시각은 게임 시간 (배속·일시정지와 무관). 보스는 최근 3마리. */
-export function runLogRows(log: RunLog, nowTick: number): { label: string; value: string }[] {
+/**
+ * 이번 판 기록 줄 (개발자 도구 '이번 판 기록'). 시각은 게임 시간 (배속·일시정지와 무관). 보스는 최근 3마리.
+ * stageNow = 지금 단계: 준비 단계(0)면 아직 준비 완료를 누를 수 있으니 '— (아직)', 1단계가 준비 완료 없이 시작됐으면 '— (60초 기다림)' (F10-4 검토).
+ */
+export function runLogRows(log: RunLog, nowTick: number, stageNow = 1): { label: string; value: string }[] {
   const rows: { label: string; value: string }[] = [{ label: '게임 시간', value: gameClock(nowTick) }];
   rows.push({ label: '첫 소환', value: log.firstSummonTick === null ? '—' : `${gameClock(log.firstSummonTick)} · ${stageWord(log.firstSummonStage)}` });
   rows.push({
     label: '준비 완료',
-    value: log.readyTick === null ? '— (60초 기다림)' : `${gameClock(log.readyTick)} · ${Math.round(log.readyLeftTicks / TICK_HZ)}초 일찍`,
+    value:
+      log.readyTick !== null
+        ? `${gameClock(log.readyTick)} · ${Math.round(log.readyLeftTicks / TICK_HZ)}초 일찍`
+        : stageNow <= 0
+          ? '— (아직)'
+          : '— (60초 기다림)',
   });
   rows.push({ label: '첫 승급', value: log.firstMergeTick === null ? '—' : `${gameClock(log.firstMergeTick)} · ${stageWord(log.firstMergeStage)}` });
   if (log.bosses.length === 0) rows.push({ label: '보스', value: '— (아직 없음)' });

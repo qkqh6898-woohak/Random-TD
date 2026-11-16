@@ -2,8 +2,8 @@
  * 첫 10단계 개선 (F10) 맵 위 안내 그림 (화면 전용, sim을 바꾸지 않는다). 칸 테두리는 여전히 숨기고, 필요한 칸만 빛낸다.
  *
  * - 추천 칸 (첫 소환 전): 자동 소환과 같은 점수의 앞 몇 칸에 옅은 금빛 네모가 숨 쉬고, 가장 좋은 칸에는 '추천' 글자.
- * - 승급 미리 보기 (승급할 수 있는 타워를 고르거나 첫 승급 안내 중): 결과가 생길 칸 = 금색 네모 + '결과',
- *   재료로 사라질 두 칸 = 빨간 ✕ + '재료'. 타워 위 층에 그린다 (타워 그림에 가리지 않게).
+ * - 승급 미리 보기 (승급할 수 있는 타워를 고르거나 첫 승급 안내 중): 결과가 생길 칸 = 금색 네모 + 금색 '결과' 알약,
+ *   재료로 사라질 두 칸 = 빨간 ✕ + 빨간 '재료' 알약. 타워 위 층에 그린다 (타워 그림에 가리지 않게).
  * - 보유 n/3 배지: 같은 종류가 2개인 내 타워의 발밑 오른쪽에 작은 '2/3' 알약.
  * 몇 개 안 되는 도형이라 매 프레임 다시 그리고, 글자는 미리 만든 Text를 다시 쓴다.
  */
@@ -55,6 +55,20 @@ export class GuideLayer {
     t.setFontSize(size).setColor(color).setStroke(stroke, Math.max(2, size * 0.22)).setPosition(x, y).setVisible(true);
   }
 
+  /**
+   * '결과'·'재료' 이름표 (F10-4 검토: 작은 글자만 있던 때는 아래 줄 타워 머리에 묻혀 읽기 어려웠다) — 칸 아래 테두리에 걸친
+   * 진한 알약 + 굵은 글자. 알약 바탕이 있어 무엇 위에 놓여도 읽힌다. 글자 층(OVER_DEPTH + 1)이 알약 위.
+   */
+  private chip(x: number, y: number, s: string, fill: number, line: number, color: string): void {
+    const t = this.layout.tile;
+    const size = Math.round(t * 0.2);
+    const w = size * 2.7;
+    const hgt = size * 1.45;
+    this.over.fillStyle(fill, 0.96).fillRoundedRect(x - w / 2, y - hgt / 2, w, hgt, hgt / 2);
+    this.over.lineStyle(Math.max(2, t * 0.025), line, 1).strokeRoundedRect(x - w / 2, y - hgt / 2, w, hgt, hgt / 2);
+    this.text(x, y, s, size, color, fill === GOLD ? '#fff3c4' : '#5a0000');
+  }
+
   draw(view: GuideView, timeMs: number): void {
     const g = this.under;
     const o = this.over;
@@ -80,7 +94,7 @@ export class GuideLayer {
       const rc = tileCenterPx(L, p.result.tx, p.result.ty);
       o.lineStyle(line * 2.2, GOLD, pulse).strokeRoundedRect(rc.x - s / 2, rc.y - s / 2, s, s, t * 0.14);
       o.fillStyle(GOLD, 0.12 * pulse).fillRoundedRect(rc.x - s / 2, rc.y - s / 2, s, s, t * 0.14);
-      this.text(rc.x, rc.y + s / 2 - t * 0.05, '결과', Math.round(t * 0.18), '#ffe680', '#4a2f00');
+      this.chip(rc.x, rc.y + s / 2 - t * 0.02, '결과', GOLD, 0xfff3c4, '#3b2416');
       for (const m of p.materials) {
         const c = tileCenterPx(L, m.tx, m.ty);
         o.lineStyle(line * 1.6, RED, 0.9).strokeRoundedRect(c.x - s / 2, c.y - s / 2, s, s, t * 0.14);
@@ -91,7 +105,7 @@ export class GuideLayer {
         o.fillStyle(0x3a0000, 0.85).fillCircle(cx, cy, k * 1.25);
         o.lineStyle(line * 1.5, RED, 1).lineBetween(cx - k * 0.6, cy - k * 0.6, cx + k * 0.6, cy + k * 0.6);
         o.lineBetween(cx + k * 0.6, cy - k * 0.6, cx - k * 0.6, cy + k * 0.6);
-        this.text(c.x, c.y + s / 2 - t * 0.05, '재료', Math.round(t * 0.17), '#ffd0d0', '#4a0000');
+        this.chip(c.x, c.y + s / 2 - t * 0.02, '재료', 0xb81f1f, 0xffb3b3, '#ffffff');
       }
     }
     for (const b of view.badges) {

@@ -25,12 +25,14 @@ import {
   recordRunEvent,
   runLogRows,
   showRecommended,
+  guideCardSide,
 } from '../../src/ui/guide/guideModel';
 import { menuBadges, missionSheetModel, upgradeSheetModel } from '../../src/ui/sheets/sheetModels';
 import { command, data, eventsOf, infinite, realInfinite } from '../helpers/match';
 import { tapTile } from '../../src/view/input/tap';
 import { towerHeadZone } from '../../src/view/render/towerGeom';
 import type { MapLayout } from '../../src/view/layout';
+import { clearPastRuns, pastRuns, pushPastRun, PAST_RUNS_MAX } from '../../src/ui/guide/runHistory';
 
 describe('준비 완료 (readyNow 명령)', () => {
   it('명령 검사: 필드 없음만 받는다', () => {
@@ -213,6 +215,7 @@ describe('안내 표시값', () => {
 
   it('안내 글자·결과 알림 글자 (짧게)', () => {
     expect(mergeGuideText(1, '고블린', true).title).toBe('고블린 3개 — 승급할 수 있어요!');
+    expect(mergeGuideText(2, '고블린', true).title).toBe('고블린 승급 칸 고르기');
     expect(mergeGuideText(2, '고블린', true).body).toContain('금색 타워를 누르면 승급');
     expect(mergeGuideText(2, '고블린', false).body).toContain('[⬆ 승급]');
     const role = data.towers.towers.find((t) => t.id === 'merchant')!.role ?? '';
@@ -245,6 +248,9 @@ describe('이번 판 기록 (개발자 도구)', () => {
     recordRunEvent(log2, { type: 'bossKill', tick: 1940, stage: 10 });
     expect(runLogRows(log2, 2000).at(-1)?.value).toBe('등장 1:00 → 처치 1:37 (37초)');
     expect(runLogRows(newRunLog(), 0).map((r) => r.value)).toEqual(['0:00', '—', '— (60초 기다림)', '—', '— (아직 없음)']);
+    // F10-4: 준비 단계에서는 아직 준비 완료를 누를 수 있으니 '60초 기다림'이라 하지 않는다
+    expect(runLogRows(newRunLog(), 500, 0)[2]?.value).toBe('— (아직)');
+    expect(runLogRows(newRunLog(), 1300, 1)[2]?.value).toBe('— (60초 기다림)');
     expect(gameClock(1200 * 61)).toBe('61:00');
   });
 });
@@ -326,8 +332,42 @@ describe('캐릭터별 크기와 이웃 칸 누르기 (문서 4장)', () => {
     expect(tapTile(L, 350, 345, both, (_x, y) => (y === 4 ? 1.27 : 1))).toEqual({ tx: 3, ty: 3 });
     expect(tapTile(L, 350, 380, both, (_x, y) => (y === 4 ? 1.27 : 1))).toEqual({ tx: 3, ty: 4 });
   });
+  it('F10-4: 위 칸이 비어 있는 배치 칸이면 큰 캐릭터도 크기 1 높이까지만 → 빈 위 칸 가운데를 누르면 위 칸(소환), 아래 1/3은 그 타워', () => {
+    const build = (): boolean => true;
+    // 가운데(345 = 위 칸 0.45)는 위 칸 — 예전엔 골렘 머리 영역(위 칸 아래 62%)이라 소환이 안 됐다
+    expect(tapTile(L, 350, 345, only34, () => 1.25, build)).toEqual({ tx: 3, ty: 3 });
+    expect(tapTile(L, 350, 385, only34, () => 1.25, build)).toEqual({ tx: 3, ty: 4 });
+    // 위 칸이 길(배치 칸 아님)이면 머리 영역을 크기만큼 그대로
+    expect(tapTile(L, 350, 345, only34, () => 1.25, () => false)).toEqual({ tx: 3, ty: 4 });
+  });
   it('작은 캐릭터(×0.84)는 머리 영역이 낮다: 위 칸 아래쪽 0.3칸은 위 칸', () => {
     expect(tapTile(L, 350, 370, only34, () => 0.84)).toEqual({ tx: 3, ty: 3 });
     expect(tapTile(L, 350, 392, only34, () => 0.84)).toEqual({ tx: 3, ty: 4 });
+  });
+});
+
+describe('안내 카드 위치 (F10-4 검토)', () => {
+  it('강조 칸을 덜 덮는 쪽, 같으면 fallback', () => {
+    const top = { top: 100, bottom: 180 };
+    const bottom = { top: 700, bottom: 780 };
+    // 강조 칸이 위쪽 → 카드는 아래
+    expect(guideCardSide([{ top: 120, bottom: 200 }], top, bottom, 'top')).toBe('bottom');
+    // 강조 칸이 아래쪽 → 위
+    expect(guideCardSide([{ top: 690, bottom: 760 }], top, bottom, 'bottom')).toBe('top');
+    // 흩어져 있으면 덮는 길이가 짧은 쪽 (위 30 vs 아래 70)
+    expect(guideCardSide([{ top: 150, bottom: 260 }, { top: 710, bottom: 800 }], top, bottom, 'top')).toBe('top');
+    // 둘 다 안 덮으면 fallback
+    expect(guideCardSide([{ top: 300, bottom: 400 }], top, bottom, 'bottom')).toBe('bottom');
+  });
+});
+
+describe('지난 판 기록 (개발자, F10-4 검토)', () => {
+  it('최근 판이 앞, 최대 3판', () => {
+    clearPastRuns();
+    expect(pastRuns()).toEqual([]);
+    for (let i = 1; i <= 5; i++) pushPastRun({ title: `${i}판`, rows: [{ label: '첫 소환', value: `${i}` }] });
+    expect(pastRuns().map((r) => r.title)).toEqual(['5판', '4판', '3판']);
+    expect(pastRuns()).toHaveLength(PAST_RUNS_MAX);
+    clearPastRuns();
   });
 });

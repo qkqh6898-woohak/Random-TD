@@ -10,3 +10,4 @@ export function buildAssetTable(files: FileTable, exclude?: Set<string>): Record
 export function assetsScriptTag(table: Record<string, unknown>): string;
 export function inlineSingleHtml(html: string, files: FileTable): string;
 export function readTree(dir: string): Record<string, Buffer>;
+export function singleDevBuild(value: string | undefined): boolean;

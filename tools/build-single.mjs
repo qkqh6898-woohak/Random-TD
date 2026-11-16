@@ -8,6 +8,10 @@
  *    상대 경로 키('assets/characters/miner.webp')로: 그림 등은 base64 data URI, .json은 읽은 객체 그대로. (src/assets.ts가 이 표를 먼저 본다)
  * 3) `release/운빨디펜스-test.html`에 쓰고 크기를 출력한다. 서버 없이 file://로 열린다.
  *
+ * 환경 변수: `SINGLE_OUT=release/x.html` (출력 경로) · `SINGLE_SKIP=assets/a,assets/b` (넣지 않을 폴더) ·
+ * `SINGLE_DEV=0` → **일반판** (개발자 모드 없이: VITE_TEST_BUILD를 넣지 않는다 → ⏭·💰+·×16·🛠 개발 등이 안 보이고 주소 `?dev=1`로만 켜짐).
+ * 기본(생략·그 밖의 값)은 예전처럼 개발자판.
+ *
  * HTML 바꾸기는 순수 함수(inlineSingleHtml: html + 파일 표 → html)라 단위 테스트한다 (tests/unit/build-single.test.ts).
  */
 import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -155,17 +159,24 @@ function fmtSize(bytes) {
   return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(2)} MB` : `${(bytes / 1024).toFixed(1)} KB`;
 }
 
+/** SINGLE_DEV 환경 값 → 개발자판인가 ('0'·'false'·'no'·'off'면 일반판, 그 밖은 개발자판). */
+export function singleDevBuild(value) {
+  return !['0', 'false', 'no', 'off'].includes(String(value ?? '').trim().toLowerCase());
+}
+
 async function main() {
   const { build } = await import('vite');
   const outDir = join(ROOT, OUT_DIR);
-  // 테스트(개발자) 빌드 표시: 환경 변수 + define 둘 다 (vite가 VITE_ 환경 변수를 import.meta.env로 넘긴다)
-  process.env.VITE_TEST_BUILD = '1';
+  const dev = singleDevBuild(process.env.SINGLE_DEV);
+  // 테스트(개발자) 빌드 표시: 환경 변수 + define 둘 다 (vite가 VITE_ 환경 변수를 import.meta.env로 넘긴다). 일반판은 빈 값으로 덮는다
+  if (dev) process.env.VITE_TEST_BUILD = '1';
+  else delete process.env.VITE_TEST_BUILD;
   await build({
     root: ROOT,
     configFile: join(ROOT, 'vite.config.ts'),
     base: './',
     logLevel: 'warn',
-    define: { 'import.meta.env.VITE_TEST_BUILD': JSON.stringify('1') },
+    define: { 'import.meta.env.VITE_TEST_BUILD': JSON.stringify(dev ? '1' : '') },
     build: { outDir, emptyOutDir: true, modulePreload: false, cssCodeSplit: false, rollupOptions: { output: { inlineDynamicImports: true } } },
   });
   const files = readTree(outDir);
@@ -180,7 +191,7 @@ async function main() {
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, single);
   const assets = Object.keys(buildAssetTable(files, new Set(Object.keys(files).filter((k) => /\.(m?js|css)$/i.test(k))))).length;
-  console.log(`한 파일 빌드: ${relative(ROOT, target)} — ${fmtSize(Buffer.byteLength(single))} (그림·JSON ${assets}개 포함)`);
+  console.log(`한 파일 빌드 (${dev ? '개발자판' : '일반판'}): ${relative(ROOT, target)} — ${fmtSize(Buffer.byteLength(single))} (그림·JSON ${assets}개 포함)`);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -10,6 +10,7 @@ import {
   inlineSingleHtml,
   mimeOf,
   normalizeRef,
+  singleDevBuild,
 } from '../../tools/build-single.mjs';
 
 const HTML = `<!doctype html>
@@ -89,5 +90,15 @@ describe('한 파일 빌드 (tools/build-single.mjs)', () => {
     expect(mimeOf('assets/a.bin')).toBe('application/octet-stream');
     const t = buildAssetTable({ 'assets/a.js': 'x', 'assets/b.png': PNG, 'sw.js': 'y' }, new Set(['assets/a.js']));
     expect(Object.keys(t)).toEqual(['assets/b.png']);
+  });
+});
+
+describe('일반판·개발자판 (SINGLE_DEV, 시험판 4)', () => {
+  it('생략·1이면 개발자판, 0·false·off면 일반판', () => {
+    expect(singleDevBuild(undefined)).toBe(true);
+    expect(singleDevBuild('1')).toBe(true);
+    expect(singleDevBuild('0')).toBe(false);
+    expect(singleDevBuild(' false ')).toBe(false);
+    expect(singleDevBuild('OFF')).toBe(false);
   });
 });

@@ -11,7 +11,7 @@ const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 type SceneLike = {
   match: {
     tick: number;
-    state: { stage: number; phase: string; defeatReason: string; bossId: string; bossMaxHp: number; cardOffers: { cards: string[] }[]; cardsPicked: string[] };
+    state: { stage: number; phase: string; defeatReason: string; summons: number; bossId: string; bossMaxHp: number; cardOffers: { cards: string[] }[]; cardsPicked: string[] };
     mobs(): { boss: boolean; hp: number; flyUntil: number; challenge: number }[];
     towers(): unknown[];
     rules: { towerOrder: string[] };
@@ -155,6 +155,9 @@ test('9단계 예고 → 10단계 박쥐 여왕 → 비행 중 표시 → 처치
 test('제한 시간 패배: "박쥐 여왕을 60초 안에 잡지 못했어요 · 남은 체력 N%" + 대응 한 줄 (N = sim 남은 체력 올림)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
+  // 개발자 '이번 판 기록'용 첫 소환 한 번 (F10-4 검토: 패배 화면·지난 판에 기록이 남는지)
+  await page.getByTestId('hud-summon').click();
+  await expect.poll(() => inScene(page, (s) => s.match.state.summons, null)).toBe(1);
   await skipTo(page, 10);
   // 노말 타워 몇 개로 조금만 깎는다 → 남은 체력이 100% 아래
   await inScene(
@@ -178,10 +181,24 @@ test('제한 시간 패배: "박쥐 여왕을 60초 안에 잡지 못했어요 �
   await expect(page.locator('.gameover-reason')).toHaveText(`박쥐 여왕을 60초 안에 잡지 못했어요 · 남은 체력 ${pct}%`);
   await expect(page.getByTestId('gameover-tip')).toHaveText(COUNTER);
   await expect(page.locator('.gameover-record')).toHaveText('10단계까지 버텼어요');
+  // 개발자 모드: 패배 화면에 이번 판 기록 (패배 화면이 🛠를 덮어도 읽을 수 있게, 결정 6)
+  const goLog = page.getByTestId('gameover-run-log');
+  await expect(goLog).toBeVisible();
+  await expect(goLog).toContainText('첫 소환');
+  await expect(goLog).toContainText(`시간 초과 · 남은 체력 ${pct}%`);
+  // 패배 화면 안에 다 들어간다 (버튼이 밀려 화면 밖으로 나가지 않음)
+  const retryBox = (await page.getByRole('button', { name: '다시 하기' }).boundingBox())!;
+  expect(retryBox.y + retryBox.height).toBeLessThanOrEqual(page.viewportSize()!.height);
   await shot(page, 'F10-timeout', 'F10-boss-timeout');
   // 다시 하기 → 새 판 (같은 경로로 재시작)
   await page.getByRole('button', { name: '다시 하기' }).click();
   await expect.poll(() => inScene(page, (s) => [s.match.state.stage, s.match.state.phase], null)).toEqual([0, 'playing']);
+  // 새 판의 🛠: 이번 판 기록은 새로 시작, 지난 판 기록에 방금 판(10단계 패배 · 보스 시간 초과 · 남은 체력)
+  await page.getByTestId('menu-dev').click();
+  await expect(page.getByTestId('dev-run-log')).toContainText('— (아직)');
+  const past = page.getByTestId('dev-past-run').first();
+  await expect(past).toContainText('10단계 패배 · 보스 시간 초과');
+  await expect(past).toContainText(`남은 체력 ${pct}%`);
   expect(errors).toEqual([]);
 });
 

@@ -2905,8 +2905,14 @@ body {
 }
 
 .hud-bottom > .hud-summon,
-.hud-bottom > .hud-summon[hidden] + .hud-hire {
+.hud-bottom > .hud-summon[hidden] + .hud-hire,
+.hud-bottom > .hud-merge-ready:not([hidden]) {
   margin-left: auto;
+}
+
+/* 승급 가능 버튼이 소환 바로 앞에 있으면 소환은 그 옆에 붙인다 (소환·일꾼은 늘 오른쪽 끝 → 자리가 안 바뀐다) */
+.hud-bottom > .hud-merge-ready:not([hidden]) + .hud-summon {
+  margin-left: 0;
 }
 
 /* 알약 + 승급 가능 버튼까지 있으면(보스 카드를 접어 둔 동안) 간격을 좁히고 승급 버튼은 '⬆ n'만 — 320px에서도 한 줄 */
@@ -3381,7 +3387,12 @@ body {
   font-size: 3.3cqw;
 }
 
+.guide-card [hidden] {
+  display: none !important;
+}
+
 .guide-next {
+  white-space: nowrap;
   color: #2a1a05;
   background: linear-gradient(180deg, #ffe27a 0%, var(--gold) 70%, var(--gold-deep) 100%);
   border-color: #fff3c4;
@@ -3439,4 +3450,28 @@ body {
   flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.dv-log[hidden] {
+  display: none;
+}
+
+/* 지난 판 기록: 판마다 작은 제목 */
+.dv-past-run + .dv-past-run {
+  margin-top: 1.4cqw;
+  padding-top: 1.4cqw;
+  border-top: 0.2cqw solid var(--panel-line);
+}
+
+.dv-past-title {
+  font-size: 3cqw;
+  font-weight: 800;
+  color: #ffd85a;
+}
+
+/* 패배 화면의 이번 판 기록 (개발자 모드만): 왼쪽 정렬, 버튼 위 */
+.gameover-log {
+  width: 100%;
+  text-align: left;
+  margin: 0 0 2.4cqw;
 }

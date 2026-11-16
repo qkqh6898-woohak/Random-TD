@@ -222,6 +222,9 @@ test('새 플레이어 (디버그 없이): 추천 칸 소환 → 준비 완료 �
   // [다음] → 2단계 글자
   await page.getByTestId('guide-next').click();
   await expect(page.getByTestId('guide-step')).toHaveText('2/2');
+  // 마지막 단계: [다음] 대신 [확인] (F10-4 검토 — 예전엔 눌러도 아무 일 없는 [다음]이 남아 있었다)
+  await expect(page.getByTestId('guide-next')).toBeVisible();
+  await expect(page.getByTestId('guide-next')).toHaveText('확인');
   // 다른 칸 고르기: 재료로 표시된 타워를 누르면 그 칸이 새 결과 칸 (승급하지 않음), 재료도 다시 계산
   const other = list.find((t) => t.tower === anchor.tower && t.id !== anchor.id)!;
   await tapTile(page, other.tx, other.ty);
@@ -267,6 +270,62 @@ test('새 플레이어 (디버그 없이): 추천 칸 소환 → 준비 완료 �
   await expect(page.getByTestId('hud-merge-ready')).not.toHaveClass(/is-guide/);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { guides?: string[] });
   expect(saved.guides).toContain('firstMerge');
+  expect(errors).toEqual([]);
+});
+
+test('두 묶음이 함께 준비되면: 다른 묶음 타워를 누르면 안내가 옮겨 가고(바로 승급 안 함), [⬆ 승급 가능]으로 묶음을 돌아가며 · 아래 띠 소환·일꾼 자리는 그대로 · [확인]로 닫기', async ({ page }) => {
+  const errors = collectErrors(page);
+  await start(page, '?debug=1&seed=7');
+  // 승급 가능 버튼이 없을 때의 [🎲 소환]·[👷 일꾼] 자리
+  const summon = page.getByTestId('hud-summon');
+  const hire = page.getByTestId('hud-hire');
+  await expect(page.getByTestId('hud-merge-ready')).toBeHidden();
+  const s0 = (await summon.boundingBox())!;
+  const h0 = (await hire.boundingBox())!;
+  const cells = await inScene(page, (s) => s.match.map.buildable.slice(0, 6), null);
+  await place(page, [
+    ...cells.slice(0, 3).map(([x, y]) => [x, y, 'goblin'] as [number, number, string]),
+    ...cells.slice(3, 6).map(([x, y]) => [x, y, 'archer'] as [number, number, string]),
+  ]);
+  await expect(page.getByTestId('guide-card')).toBeVisible();
+  await expect(page.getByTestId('hud-merge-ready')).toBeVisible();
+  // 아래 띠: 일꾼은 그대로, 소환은 오른쪽 끝이 그대로이고 예전 소환 가운데를 눌러도 소환 (일꾼 고용이 아님)
+  const s1 = (await summon.boundingBox())!;
+  const h1 = (await hire.boundingBox())!;
+  expect(Math.abs(h1.x - h0.x)).toBeLessThan(1);
+  expect(Math.abs(h1.width - h0.width)).toBeLessThan(1);
+  expect(Math.abs(s1.x + s1.width - (s0.x + s0.width))).toBeLessThan(1);
+  const oldCenter = { x: s0.x + s0.width / 2, y: s0.y + s0.height / 2 };
+  expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('[data-testid]')?.getAttribute('data-testid'), [oldCenter.x, oldCenter.y] as const)).toBe('hud-summon');
+  // 안내는 먼저 소환된 고블린 묶음
+  let g = await guide(page);
+  expect(g.guide?.kind).toBe('goblin');
+  // 궁수(다른 묶음)를 누르면: 승급하지 않고 안내가 궁수 묶음으로 — 그 궁수가 결과 칸, 재료 = sim 재료
+  const list = await myTowers(page);
+  const archer = list.find((t) => t.tower === 'archer')!;
+  await tapTile(page, archer.tx, archer.ty);
+  await expect.poll(async () => (await guide(page)).guide?.kind).toBe('archer');
+  g = await guide(page);
+  expect(await inScene(page, (s) => s.match.state.merges, null)).toBe(0);
+  expect(g.guide?.anchorId).toBe(archer.id);
+  expect(g.preview!.result).toEqual({ tx: archer.tx, ty: archer.ty });
+  expect(g.preview!.materials).toEqual(simMaterials(list, archer.id));
+  await expect(page.getByTestId('guide-title')).toContainText('궁수');
+  // [⬆ 승급 가능]: 처음엔 안내 묶음(궁수) 결과 칸 패널, 패널의 [다음 묶음 ▶]을 누르면 다음 묶음(고블린)으로 — 안내도 함께
+  await page.getByTestId('hud-merge-ready').click({ force: true }); // 안내 중엔 반짝이며 커졌다 작아진다
+  await expect.poll(() => inScene(page, (s) => s.selectedTowerId, null)).toBe(archer.id);
+  await page.locator('[data-action="merge-next"]').click();
+  await expect.poll(async () => (await guide(page)).guide?.kind).toBe('goblin');
+  const gob = (await guide(page)).guide!.anchorId;
+  await expect.poll(() => inScene(page, (s) => s.selectedTowerId, null)).toBe(gob);
+  expect(await inScene(page, (s) => s.match.state.merges, null)).toBe(0);
+  await shot(page, 'F10-ui-two-groups');
+  // 2/2의 [확인] = 닫기 (계정에 기록)
+  if ((await page.getByTestId('guide-step').textContent()) !== '2/2') await page.getByTestId('guide-next').click();
+  await expect(page.getByTestId('guide-next')).toHaveText('확인');
+  await page.getByTestId('guide-next').click();
+  await expect(page.getByTestId('guide-card')).toBeHidden();
+  expect(await page.evaluate(() => (JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { guides?: string[] }).guides)).toEqual(['firstMerge']);
   expect(errors).toEqual([]);
 });
 
@@ -528,32 +587,84 @@ test('기본 5종: 이름표 없이 나란히 흑백 캡처해도 서로 다르�
   await start(page, '?debug=1&seed=9');
   const five = ['miner', 'goblin', 'archer', 'apprentice', 'warrior'];
   const cells = await inScene(page, (s) => s.match.map.buildable.slice(0, 5), null);
-  await place(page, cells.map(([x, y], i) => [x, y, five[i]!] as [number, number, string]));
-  await page.waitForTimeout(600);
-  // 이름표 없이 (HUD·알림 숨김) 타워 칸 둘레를 잘라 나란히 + 흑백
+  // 먼 칸에 타워 하나를 먼저 놓아 추천 칸 빛(첫 소환 전)을 끈다 — 빈 땅 사진에 빛이 섞이지 않게
+  const far = await inScene(page, (s) => s.match.map.buildable[s.match.map.buildable.length - 1]!, null);
+  await place(page, [[far[0], far[1], 'drummer']]);
+  // 이름표 없이 (HUD·알림 숨김) 타워 칸 둘레를 잘라 나란히 + 흑백. 타워를 놓기 전 같은 자리(빈 땅)도 잘라 두고 실루엣(바뀐 픽셀)을 뽑는다
   await page.addStyleTag({ content: '.layer-hud,.layer-toast,.layer-guide{display:none!important}' });
+  await page.waitForTimeout(300);
   const L = await inScene(page, (s) => s.mapLayout, null);
   const r = (await page.locator('#stage').boundingBox())!;
   const k = r.width / 1080;
-  const crops: string[] = [];
-  for (const [x, y] of cells) {
-    const p = await tilePoint(page, x, y);
-    const w = L.tile * k * 1.4;
-    const buf = await page.screenshot({ clip: { x: p.x - w / 2, y: p.y - L.tile * k * 1.05, width: w, height: L.tile * k * 1.6 } });
-    crops.push(`data:image/png;base64,${buf.toString('base64')}`);
-  }
+  const cropAll = async (): Promise<string[]> => {
+    const out: string[] = [];
+    for (const [x, y] of cells) {
+      const p = await tilePoint(page, x, y);
+      const w = L.tile * k * 1.4;
+      const buf = await page.screenshot({ clip: { x: p.x - w / 2, y: p.y - L.tile * k * 1.05, width: w, height: L.tile * k * 1.6 } });
+      out.push(`data:image/png;base64,${buf.toString('base64')}`);
+    }
+    return out;
+  };
+  const empty = await cropAll();
+  await place(page, cells.map(([x, y], i) => [x, y, five[i]!] as [number, number, string]));
+  await page.waitForTimeout(600);
+  const crops = await cropAll();
   const sheet = await context.newPage();
   await sheet.setViewportSize({ width: 412, height: 915 });
   await sheet.setContent(
     // isMobile 문맥이라 viewport 메타가 없으면 980px 너비로 그려져 작게 줄어든다
-    `<meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;background:#556;display:flex;align-items:flex-start;justify-content:center;gap:2px;padding-top:300px;height:915px;box-sizing:border-box">${crops
+    `<meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;background:#556;display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:center;gap:2px;padding-top:300px;height:915px;box-sizing:border-box">${crops
       .map((c) => `<img src="${c}" style="width:80px;flex:none;filter:grayscale(1)">`)
-      .join('')}</body>`,
+      .join('')}<div style="width:100%"></div>${empty.map((c) => `<img class="bg" src="${c}" style="width:80px;flex:none;opacity:0">`).join('')}</body>`,
   );
   await sheet.waitForTimeout(200);
+  // 흑백 실루엣 검사 (F10-4 검토: 예전엔 배경까지 든 자른 그림의 평균 차이만 봐서 실루엣이 다르다는 증거가 못 됐다)
+  //  - 실루엣 = 빈 땅과 흑백 값이 크게 다른 픽셀. 다섯 실루엣이 서로 충분히 겹치지 않는다 (서로 다른 모양: 다른 부분 / 합친 부분)
+  //  - 배경과 갈라진다: 실루엣 픽셀이 칸 둘레의 일정 비율 이상 (밝은 궁수·고블린이 풀밭에 묻히지 않게, 진한 외곽선)
+  const sil = await sheet.evaluate(async () => {
+    const W = 56;
+    const H = 64;
+    const gray = (im: HTMLImageElement): Uint8ClampedArray => {
+      const c = document.createElement('canvas');
+      c.width = W;
+      c.height = H;
+      const g = c.getContext('2d')!;
+      g.filter = 'grayscale(1)';
+      g.drawImage(im, 0, 0, W, H);
+      return g.getImageData(0, 0, W, H).data;
+    };
+    const figs = [...document.images].filter((im) => !im.classList.contains('bg')).map(gray);
+    const bgs = [...document.images].filter((im) => im.classList.contains('bg')).map(gray);
+    const masks = figs.map((f, i) => {
+      const b = bgs[i]!;
+      const m = new Uint8Array(W * H);
+      for (let p = 0; p < m.length; p++) m[p] = Math.abs(f[p * 4]! - b[p * 4]!) > 40 ? 1 : 0;
+      return m;
+    });
+    const area = masks.map((m) => m.reduce((a, v) => a + v, 0) / m.length);
+    const xor: number[] = [];
+    for (let i = 0; i < masks.length; i++) {
+      for (let j = i + 1; j < masks.length; j++) {
+        let x = 0;
+        let u = 0;
+        for (let p = 0; p < W * H; p++) {
+          const a = masks[i]![p]!;
+          const b = masks[j]![p]!;
+          if (a || b) u++;
+          if (a !== b) x++;
+        }
+        xor.push(u > 0 ? x / u : 0);
+      }
+    }
+    return { area, xor };
+  });
+  console.log('기본 5종 흑백 실루엣', JSON.stringify(sil));
+  for (const a of sil.area) expect(a).toBeGreaterThan(0.12);
+  for (const x of sil.xor) expect(x).toBeGreaterThan(0.2);
   // 다섯 장이 서로 충분히 다르다 (흑백 평균 차이)
   const diffs = await sheet.evaluate(async () => {
-    const imgs = [...document.images];
+    const imgs = [...document.images].filter((im) => !im.classList.contains('bg'));
     const data = imgs.map((im) => {
       const c = document.createElement('canvas');
       c.width = 48;
@@ -597,14 +708,18 @@ test('기본 5종: 이름표 없이 나란히 흑백 캡처해도 서로 다르�
   const golem = (await myTowers(page)).find((t) => t.tx === ux && t.ty === uy + 1)!;
   await expect.poll(() => inScene(page, (s, id) => s.towerLayer.artScaleOf(id), golem.id)).toBeGreaterThan(1.2);
   const n0 = (await myTowers(page)).length;
-  // 위 칸이 비었을 때: 골렘 머리(위 칸 아래쪽 45%)를 누르면 골렘 (위 칸에 소환되지 않음)
+  // 위 칸이 빈 배치 칸일 때: 골렘 머리 중 위 칸 아래쪽 1/3(크기 1 높이)을 누르면 골렘 (위 칸에 소환되지 않음)
   await page.waitForTimeout(400);
-  await tapTile(page, ux, uy, 0.05);
+  await tapTile(page, ux, uy, 0.35);
   await expect.poll(() => inScene(page, (s) => s.selectedTowerId, null)).toBe(golem.id);
   expect((await myTowers(page)).length).toBe(n0);
-  await tapTile(page, ux, uy, 0.05); // 다시 눌러 패널 닫기
-  // 위 칸에 타워를 놓으면 위 칸 가운데(0.0) 누르기 = 위 타워
-  await place(page, [[ux, uy, 'archer']]);
+  await tapTile(page, ux, uy, 0.35); // 다시 눌러 패널 닫기
+  await expect.poll(() => inScene(page, (s) => s.selectedTowerId, null)).toBeNull();
+  // F10-4 검토: 빈 위 칸의 가운데를 누르면 (골렘 머리가 그려져 있어도) 그 칸에 소환된다 — 칸 테두리가 숨어 있어 가운데가 소환 자리
+  await tapTile(page, ux, uy, 0.05);
+  await expect.poll(async () => (await myTowers(page)).some((t) => t.tx === ux && t.ty === uy)).toBe(true);
+  expect(await inScene(page, (s) => s.selectedTowerId, null)).toBeNull();
+  // 위 칸에 타워가 있으면 위 칸 가운데(0.0) 누르기 = 위 타워
   const upper = (await myTowers(page)).find((t) => t.tx === ux && t.ty === uy)!;
   await page.waitForTimeout(300);
   await tapTile(page, ux, uy, 0);

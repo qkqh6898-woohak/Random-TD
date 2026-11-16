@@ -69,7 +69,7 @@ describe('가변 높이 맵 영역 (layout.ts mapAreaBelowHud + computeMapLayout
     const old = computeMapLayout(circle, mapAreaBelowHud(hud, cssToGamePx(732 - 140, 412), GAME_HEIGHT));
     const L = computeMapLayout(circle, tall);
     expect(L.tile).toBeGreaterThan(old.tile);
-    // 판(가로·세로 반 칸 여백 포함)이 영역 안, 가로 가운데
+    // 판(세로 반 칸 여백 포함, 가로는 여백 없음 — 맵 B안)이 영역 안, 가로 가운데
     expect(L.originY).toBeGreaterThanOrEqual(tall.y);
     expect(L.originY + L.rows * L.tile).toBeLessThanOrEqual(tall.y + tall.h);
     expect(Math.abs(L.originX - (GAME_WIDTH - (L.originX + L.cols * L.tile)))).toBeLessThanOrEqual(1);
@@ -83,11 +83,14 @@ describe('가변 높이 맵 영역 (layout.ts mapAreaBelowHud + computeMapLayout
       for (const id of ['circle', 'crossroads'] as const) {
         const L = computeMapLayout(data.maps[id]!, area);
         (sizes[id] ??= []).push(L.tile);
-        expect(L.tile).toBe(Math.floor(Math.min(area.w / (L.cols + 0.5), area.h / (L.rows + 0.5))));
+        expect(L.tile).toBe(Math.floor(Math.min(area.w / L.cols, area.h / (L.rows + 0.5))));
+        // 가로는 영역 안 (여백 없이 꽉 찰 수 있음), 가운데
+        expect(L.originX + L.minCol * L.tile).toBeGreaterThanOrEqual(area.x);
+        expect(L.originX + (L.minCol + L.cols) * L.tile).toBeLessThanOrEqual(area.x + area.w);
       }
     }
-    // 9:16보다 길쭉한 휴대폰에서 사거리 미로(10칸 + 반 칸)는 가로가 꽉 찬다 (1080 / 10.5 = 102), 9:16(412×732)은 세로가 먼저 참
-    expect(sizes.crossroads!.slice(0, 3)).toEqual([102, 102, 102]);
+    // 9:16보다 길쭉한 휴대폰에서 사거리 미로(10칸)는 가로가 여백 없이 꽉 찬다 (맵 B안: 1080 / 10 = 108, 예전 반 칸 여백 102), 9:16(412×732)은 세로가 먼저 참
+    expect(sizes.crossroads!.slice(0, 3)).toEqual([108, 108, 108]);
     expect(sizes.crossroads![3]).toBeGreaterThanOrEqual(95);
     // 순환의 정원(7×11)은 길쭉할수록 칸이 커진다 (예전 9×11·1920 고정에서는 1칸 약 109px)
     expect(sizes.circle![0]).toBeGreaterThan(sizes.circle![3]!);

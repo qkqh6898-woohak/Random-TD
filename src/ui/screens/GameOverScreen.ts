@@ -13,6 +13,8 @@ export interface GameOverOptions {
   record: string;
   /** 보스 패배일 때 대응 한 줄 (F10-2, 예: '💡 날 때는 …'). 빈 글자면 줄 없음 */
   tip?: string;
+  /** 개발자 모드만 (F10-4 검토, 결정 6): '이번 판 기록' 줄 — 패배 화면이 🛠를 덮어도 첫 소환·첫 승급·보스 시각·남은 체력을 읽을 수 있게 */
+  log?: readonly { label: string; value: string }[];
   onRetry: () => void;
   onExit: () => void;
 }
@@ -61,6 +63,14 @@ export function createGameOverScreen(opts: GameOverOptions): UiView {
       reasonLine(opts.reason),
       h('p', { class: 'gameover-record', text: opts.record }),
       opts.tip ? h('p', { class: 'gameover-tip', attrs: { 'data-testid': 'gameover-tip' }, text: opts.tip }) : null,
+      opts.log && opts.log.length > 0
+        ? h(
+            'div',
+            { class: 'dv-log gameover-log', attrs: { 'data-testid': 'gameover-run-log' } },
+            h('div', { class: 'dv-log-title', text: '📝 이번 판 기록 (개발자)' }),
+            ...opts.log.map((r) => h('div', { class: 'dv-log-row' }, h('span', { class: 'dv-log-label', text: r.label }), h('span', { class: 'dv-log-value', text: r.value }))),
+          )
+        : null,
       retry,
       exit,
     ),

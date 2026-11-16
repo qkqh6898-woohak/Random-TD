@@ -15,6 +15,7 @@ import { h } from '../dom';
 import { attachHoldRepeat, type HoldHandle } from '../hold';
 import { createBottomSheet, type BottomSheetView } from './BottomSheet';
 import type { DevChanceModel, DevChanceRow, DevTab, HiddenRecipeRow } from './devModels';
+import type { PastRun } from '../guide/runHistory';
 
 export interface DevSheetOptions {
   onClose: () => void;
@@ -31,7 +32,13 @@ export interface DevSheetOptions {
 }
 
 export interface DevSheetView extends BottomSheetView<DevTab> {
-  update(chances: DevChanceModel, recipes: readonly HiddenRecipeRow[], runLog?: readonly { label: string; value: string }[]): void;
+  update(
+    chances: DevChanceModel,
+    recipes: readonly HiddenRecipeRow[],
+    runLog?: readonly { label: string; value: string }[],
+    /** 지난 판 기록 (최근 판이 앞, 최대 3판) — F10-4 검토: 패배·다시 하기 뒤에도 읽을 수 있게 */
+    past?: readonly PastRun[],
+  ): void;
 }
 
 const TABS = [
@@ -84,13 +91,27 @@ export function createDevSheet(opts: DevSheetOptions, firstChances: DevChanceMod
   // ---- 이번 판 기록 (F10)
   const logList = h('div', { class: 'dv-log-list', attrs: { 'data-testid': 'dev-run-log' } });
   panes.fx.append(h('div', { class: 'dv-log' }, h('div', { class: 'dv-log-title', text: '📝 이번 판 기록 (게임 시간)' }), logList));
+  // 지난 판 (최근 3판): 패배 화면이 🛠를 덮고 [다시 하기]가 이번 판 기록을 지우므로, 끝난 판의 기록을 여기서 다시 본다
+  const pastList = h('div', { class: 'dv-log-list', attrs: { 'data-testid': 'dev-past-runs' } });
+  const pastBox = h('div', { class: 'dv-log dv-log-past', attrs: { hidden: '' } }, h('div', { class: 'dv-log-title', text: '🗂 지난 판 기록' }), pastList);
+  panes.fx.append(pastBox);
+  const logRow = (r: { label: string; value: string }): HTMLElement =>
+    h('div', { class: 'dv-log-row' }, h('span', { class: 'dv-log-label', text: r.label }), h('span', { class: 'dv-log-value', text: r.value }));
   let lastLog = '';
   const drawLog = (rows: readonly { label: string; value: string }[]): void => {
     const key = rows.map((r) => `${r.label}=${r.value}`).join('|');
     if (key === lastLog) return;
     lastLog = key;
-    logList.replaceChildren(
-      ...rows.map((r) => h('div', { class: 'dv-log-row' }, h('span', { class: 'dv-log-label', text: r.label }), h('span', { class: 'dv-log-value', text: r.value }))),
+    logList.replaceChildren(...rows.map(logRow));
+  };
+  let lastPast = '';
+  const drawPast = (runs: readonly PastRun[]): void => {
+    const key = JSON.stringify(runs);
+    if (key === lastPast) return;
+    lastPast = key;
+    pastBox.hidden = runs.length === 0;
+    pastList.replaceChildren(
+      ...runs.map((run) => h('div', { class: 'dv-past-run', attrs: { 'data-testid': 'dev-past-run' } }, h('div', { class: 'dv-past-title', text: run.title }), ...run.rows.map(logRow))),
     );
   };
 
@@ -176,8 +197,9 @@ export function createDevSheet(opts: DevSheetOptions, firstChances: DevChanceMod
     get tab() {
       return sheet.tab;
     },
-    update(chances, recipes, runLog) {
+    update(chances, recipes, runLog, past) {
       if (runLog) drawLog(runLog);
+      if (past) drawPast(past);
       for (const r of chances.rows) {
         const e = rowEls.get(r.key);
         if (!e) continue;

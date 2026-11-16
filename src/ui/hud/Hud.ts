@@ -236,9 +236,11 @@ export function createHud(opts: HudOptions): HudView {
     h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl),
     choiceSlot,
     hintEl,
+    // [⬆ 승급 가능]은 소환 앞(왼쪽)에: 나타나거나 사라져도 [🎲 소환]·[👷 일꾼]의 오른쪽 끝 자리는 그대로 (F10-4 검토 —
+    // 예전엔 맨 오른쪽에 붙어 소환·일꾼이 왼쪽으로 밀려, 소환을 연타하던 손가락이 300원 일꾼을 샀다)
+    mergeReadyBtn,
     summonBtn,
     hireBtn,
-    mergeReadyBtn,
   );
 
   const band = h(

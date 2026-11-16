@@ -219,11 +219,14 @@ describe('맵 화면 배치 (MAPS.md 0장: HUD와 아래 띠 사이에 가장 �
     expect(L.originY + 11 * L.tile).toBeLessThanOrEqual(MAP_AREA.y + MAP_AREA.h);
   });
 
-  it('사거리 미로 10×10 + 화면 밖 등장·퇴장 줄(y = −1): 1칸 = 102px = 화면 폭 / 10.5 (예전 13×13은 80px)', () => {
+  it('사거리 미로 10×10 + 화면 밖 등장·퇴장 줄(y = −1): 1칸 = 108px = 화면 폭 / 10 (맵 B안: 가로 여백 없이 꽉, 예전 반 칸 여백 102px·13×13은 80px)', () => {
     const L = computeMapLayout(crossroads);
     expect([L.cols, L.rows, L.minRow]).toEqual([10, 11, -1]);
-    expect(L.tile).toBe(102);
-    expect(L.tile).toBe(Math.floor(GAME_WIDTH / 10.5));
+    expect(L.tile).toBe(108);
+    expect(L.tile).toBe(Math.floor(GAME_WIDTH / 10));
+    // 가로를 꽉 채운다: 왼쪽 끝 0, 오른쪽 끝 = 화면 폭
+    expect(L.originX).toBe(0);
+    expect(L.originX + L.cols * L.tile).toBe(GAME_WIDTH);
     const spawn = tileCenterPx(L, 0, -1);
     expect(spawn.y - L.tile / 2).toBeGreaterThanOrEqual(MAP_AREA.y);
   });

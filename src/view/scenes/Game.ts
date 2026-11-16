@@ -49,6 +49,7 @@ import type { Projectile } from '../../sim/entities/Projectile';
 import { towerAt, type Tower } from '../../sim/entities/Tower';
 import { canMergeGrade, mergeOutcomes } from '../../sim/Deck';
 import { createMatch, type Match } from '../../sim/match';
+import { isBuildable } from '../../sim/map';
 import type { MatchMode } from '../../sim/state';
 import { NO_MODS, effectiveStats, towerRange } from '../../sim/stats';
 import { mergeCheck, mergeableGroups, sameKindTowers } from '../../sim/systems/Merge';
@@ -78,8 +79,10 @@ import {
   type MergeGuideStep,
   type ReadyState,
   type RunLog,
+  guideCardSide,
 } from '../../ui/guide/guideModel';
 import { createGuideCard, type GuideCardView } from '../../ui/guide/GuideCard';
+import { pastRuns, pushPastRun } from '../../ui/guide/runHistory';
 import { GuideLayer } from '../render/GuideLayer';
 import { goldWithBonus, hireCheck } from '../../sim/systems/Economy';
 import { formationById } from '../../sim/systems/Formation';
@@ -221,6 +224,8 @@ const MERGE_HIGHLIGHT_MS = 1500;
 const GAMBLE_FAST_MS = 150;
 /** 이동 모드 안내 알림 시간 (ms) */
 const MOVE_HINT_MS = 3000;
+/** '빛나는 칸을 눌러 소환해요' 안내의 최대 시간 (ms). 보통은 첫 소환·1단계 시작·장면 종료에 먼저 지운다 */
+const START_HINT_MAX_MS = 90_000;
 
 /** 빈 땅을 누르고 있는 중 (T-2: 0.3초 지나면 자동 칸에 연속 소환). */
 interface GroundPress {
@@ -392,6 +397,8 @@ export class GameScene extends Phaser.Scene {
   private readySent = false;
   /** 개발자 도구 '이번 판 기록' */
   private runLog: RunLog = newRunLog();
+  /** 이번 판 기록을 '지난 판'에 남겼는가 (개발자 모드: 패배 때 또는 판을 떠날 때 한 번) */
+  private runLogSaved = false;
   /** 정보 패널이 붙은 쪽 (첫 승급 안내 카드는 반대쪽에 — 패널 층이 안내 층보다 위라 카드 버튼을 덮지 않게) */
   private panelSide: 'top' | 'bottom' = 'bottom';
   /** 이 프레임 수가 지나면 '빛나는 칸을 눌러…' 안내 (판 시작 첫 프레임들은 텍스처 굽기로 느려 알림이 보이기 전에 사라졌다) */
@@ -469,6 +476,7 @@ export class GameScene extends Phaser.Scene {
     this.guideDone = false;
     this.readySent = false;
     this.runLog = newRunLog();
+    this.runLogSaved = false;
     this.resultToastsShown = 0;
     this.challengeAbilities = new Map(this.ctx.data.enemies.challenges.map((c) => [c.level, c.ability]));
     this.towerNames = new Map(this.ctx.data.towers.towers.map((t) => [t.id, t.name]));
@@ -543,6 +551,9 @@ export class GameScene extends Phaser.Scene {
     // 앱이 백그라운드로 가면 자동 일시정지 (UI.md 7장: 돌아오면 일시정지 메뉴)
     this.game.events.on(Phaser.Core.Events.HIDDEN, this.pause, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.savePastRun('나감');
+      this.startHintEl?.remove();
+      this.startHintEl = null;
       this.game.events.off(Phaser.Core.Events.HIDDEN, this.pause, this);
       this.scale.off(Phaser.Scale.Events.RESIZE, this.onResize, this);
       this.resizeObserver?.disconnect();
@@ -902,6 +913,7 @@ export class GameScene extends Phaser.Scene {
         const t = towerAt(world, x, y);
         return t ? (this.towerLayer.artScaleOf(t.id) ?? 1) : 1;
       },
+      (x, y) => isBuildable(this.match.map, x, y),
     );
     // 패널 [↔ 이동] 모드 (T-2): 빈 배치 칸 = 이동, 내 다른 타워 = 교환, 같은 타워·맵 밖·못 놓는 칸 = 취소
     if (this.moveMode) {
@@ -1037,14 +1049,21 @@ export class GameScene extends Phaser.Scene {
   private tapTower(p: PressState): void {
     // 첫 승급 안내 중 (F10, 눌러서 바로 승급): 안내하는 묶음의 다른 타워를 누르면 그 칸이 새 결과 칸 (재료도 다시 계산) — 바로 승급하지 않는다.
     // 금색 결과 칸을 누르면 평소처럼 승급 → 표시한 재료 두 칸이 실제로 사라진다
+    // 두 묶음이 함께 준비됐으면 (F10-4 검토): 안내 중에 다른 승급 가능 묶음의 타워를 누르면 바로 승급하지 않고 안내가 그 묶음으로 옮겨 간다
+    // (그 타워 = 결과 칸, 재료 두 칸 다시 표시) — 어떤 종류를 어느 칸에서 합칠지 늘 화면에 보인 뒤에 승급한다
     const g = this.guide;
     if (g && this.ctx.settings.get().tapMerge) {
       const t = this.match.world.entities.get(p.id) as Tower | undefined;
-      if (t && t.kind === 'tower' && t.tower === g.kind && t.owner === LOCAL_PLAYER && t.id !== g.anchorId) {
-        g.anchorId = t.id;
-        g.step = 2;
-        this.closePanel();
-        return;
+      if (t && t.kind === 'tower' && t.owner === LOCAL_PLAYER && t.id !== g.anchorId) {
+        const sameGroup = t.tower === g.kind;
+        if (sameGroup || mergeCheck(this.match.ctx, this.match.world, LOCAL_PLAYER, t.tx, t.ty).ok) {
+          g.kind = t.tower;
+          g.anchorId = t.id;
+          g.step = 2;
+          this.closePanel();
+          this.updateGuideCard();
+          return;
+        }
       }
     }
     if (this.ctx.settings.get().tapMerge && !(this.selectedId === p.id && this.panel)) {
@@ -1180,12 +1199,26 @@ export class GameScene extends Phaser.Scene {
     if (this.paused || this.gameOver) return;
     const groups = mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
     if (groups.length === 0) return;
-    // 첫 승급 안내 중이면 안내하는 묶음의 결과 칸 타워를 고른다 (F10)
-    const guided = this.guide ? groups.findIndex((x) => x.tower === this.guide?.kind) : -1;
-    if (guided >= 0) this.mergeCycle = guided;
+    // 첫 승급 안내 중이면 안내하는 묶음의 결과 칸 타워를 고른다 (F10). 그 패널이 이미 열려 있으면 다음 묶음으로 넘어가고
+    // 안내도 그 묶음으로 옮긴다 (F10-4 검토: 두 묶음이 함께 준비돼도 버튼으로 돌아가며 볼 수 있게)
+    const guide = this.guide;
+    let guideAnchor: number | null = null;
+    if (guide) {
+      let idx = groups.findIndex((x) => x.tower === guide.kind);
+      const onGuide = idx >= 0 && this.panel !== null && this.selectedId === guide.anchorId;
+      if (idx < 0) idx = 0;
+      else if (onGuide && groups.length > 1) idx = (idx + 1) % groups.length;
+      const gg = groups[idx] as (typeof groups)[number];
+      if (gg.tower !== guide.kind || !this.match.world.entities.has(guide.anchorId)) {
+        guide.kind = gg.tower;
+        guide.anchorId = gg.first.id;
+      }
+      guideAnchor = guide.anchorId;
+      this.mergeCycle = idx;
+      this.updateGuideCard();
+    }
     const g = groups[this.mergeCycle % groups.length] as (typeof groups)[number];
     this.mergeCycle++;
-    const guideAnchor = guided >= 0 && this.guide ? this.guide.anchorId : null;
     this.selectTower(guideAnchor !== null && this.match.world.entities.has(guideAnchor) ? guideAnchor : g.first.id);
     this.panelFromMergeCycle = true;
     this.refreshPanel();
@@ -2060,10 +2093,14 @@ export class GameScene extends Phaser.Scene {
     if (this.paused) this.paused = false;
     this.clock.speed = 0;
     const text = defeatText(this.match.state, this.defeatBossInfo());
+    // 개발자 모드: 이번 판 기록을 패배 화면에도 보이고 '지난 판'에 남긴다 (F10-4 검토, 결정 6 — 패배 화면이 🛠를 덮음)
+    const log = this.ctx.debug ? this.runLogRows : undefined;
+    this.savePastRun('패배');
     this.ctx.ui.show(
       'screen',
       createGameOverScreen({
         ...text,
+        log,
         onRetry: () => this.scene.restart({ ...this.sceneData, seed: this.ctx.seed ?? randomSeed() }),
         onExit: () => this.scene.start(SCENE_BOOT),
       }),
@@ -2216,7 +2253,14 @@ export class GameScene extends Phaser.Scene {
     const mine = this.match.towers().filter((t) => t.owner === LOCAL_PLAYER);
     if (state.stage !== 0) this.readySent = false;
     if (this.startHintFrames > 0 && --this.startHintFrames === 0 && showRecommended(state.phase, state.summons, mine.length)) {
-      this.startHintEl = this.ctx.ui.toast('빛나는 칸을 눌러 소환해요', 2600);
+      // 첫 소환 또는 1단계 시작까지 남긴다 (F10-4 검토: 2.6초는 판 시작의 느린 프레임 동안 지나가 버려 휴대폰에서 못 볼 수 있었다).
+      // 지우기는 사건 처리(소환·단계 시작)와 장면 종료가 한다 — 시간은 안전 상한일 뿐 (준비 60초 + 여유)
+      this.startHintEl = this.ctx.ui.toast('빛나는 칸을 눌러 소환해요', START_HINT_MAX_MS);
+    }
+    // 추천 칸이 꺼지면(첫 타워가 생김 — 소환이든 개발자 배치든) 안내 글자도 지운다
+    if (this.startHintEl && !showRecommended(state.phase, state.summons, mine.length)) {
+      this.startHintEl.remove();
+      this.startHintEl = null;
     }
     const ready = this.gameOver || this.paused ? 'hidden' : readyButtonState(state.phase, state.stage, mine.length, this.readySent);
     this.hud.setReady(ready);
@@ -2273,9 +2317,15 @@ export class GameScene extends Phaser.Scene {
         return;
       }
       if (!group.some((t) => t.id === g.anchorId)) g.anchorId = (group[0] as Tower).id;
-      // 패널로 같은 종류 타워를 고르면 그 타워가 결과 칸
+      // 패널로 같은 종류 타워를 고르면 그 타워가 결과 칸. 다른 승급 가능 묶음의 타워를 고르면 안내가 그 묶음으로 (F10-4 검토)
       const sel = this.panel ? this.selectedTower() : null;
-      if (sel && sel.tower === g.kind && sel.owner === LOCAL_PLAYER) g.anchorId = sel.id;
+      if (sel && sel.owner === LOCAL_PLAYER && sel.id !== g.anchorId) {
+        if (sel.tower === g.kind) g.anchorId = sel.id;
+        else if (mergeCheck(this.match.ctx, world, LOCAL_PLAYER, sel.tx, sel.ty).ok) {
+          g.kind = sel.tower;
+          g.anchorId = sel.id;
+        }
+      }
       this.updateGuideCard();
       return;
     }
@@ -2305,6 +2355,19 @@ export class GameScene extends Phaser.Scene {
     const rows = p ? [p.result.ty, ...p.materials.map((m) => m.ty)] : [];
     const avg = rows.length > 0 ? rows.reduce((a, b) => a + b, 0) / rows.length : 0;
     let side: 'top' | 'bottom' = avg >= this.match.map.height / 2 ? 'top' : 'bottom';
+    // 실제 화면 위치로 다시: 카드가 강조 칸(결과·재료, 머리 포함)을 덜 덮는 쪽 (F10-4 검토)
+    const w = this.ctx.ui.el.clientWidth;
+    const cardH = this.guideCard.el.offsetHeight;
+    const dockTop = this.hud.bottomTop();
+    if (p && w > 0 && cardH > 0 && dockTop > 0) {
+      const L = this.layout;
+      const cells = [p.result, ...p.materials].map((c) => {
+        const y = tileCenterPx(L, c.tx, c.ty).y;
+        return { top: gameToCssPx(y - L.tile * 1.1, w), bottom: gameToCssPx(y + L.tile * 0.5, w) };
+      });
+      const gap = w * 0.02;
+      side = guideCardSide(cells, { top: this.panelTopCss, bottom: this.panelTopCss + cardH }, { top: dockTop - gap - cardH, bottom: dockTop - gap }, side);
+    }
     if (this.panel) side = this.panelSide === 'top' ? 'bottom' : 'top';
     this.guideCard.update({ ...text, step: g.step, steps: 2, side });
   }
@@ -2335,7 +2398,17 @@ export class GameScene extends Phaser.Scene {
 
   /** E2E·개발자 도구: 이번 판 기록 */
   get runLogRows(): { label: string; value: string }[] {
-    return runLogRows(this.runLog, this.match.tick);
+    return runLogRows(this.runLog, this.match.tick, this.match.state.stage);
+  }
+
+  /** 개발자 모드: 이번 판 기록을 '지난 판'(최근 3판, 세션)에 한 번 남긴다 — 소환을 한 판만 (그냥 들어왔다 나간 판은 빼고). */
+  private savePastRun(how: '패배' | '나감'): void {
+    if (!this.ctx.debug || this.runLogSaved || !this.match || this.runLog.firstSummonTick === null) return;
+    this.runLogSaved = true;
+    const st = this.match.state;
+    const where = st.stage <= 0 ? '준비 단계' : `${st.stage}단계`;
+    const why = how === '패배' && st.defeatReason === 'bossTime' ? ' · 보스 시간 초과' : '';
+    pushPastRun({ title: `${where} ${how}${why} · 시드 ${this.match.world.seed}`, rows: this.runLogRows });
   }
 
   private refreshHud(): void {
@@ -2494,7 +2567,7 @@ export class GameScene extends Phaser.Scene {
       (view as UpgradeSheetView).update(upgradeSheetModel(ctx, LOCAL_PLAYER), gambleSheetModel(ctx, this.match.world, LOCAL_PLAYER), slotView);
     } else if (this.sheetKind === 'mission') {
       (view as MissionSheetView).update(missionSheetModel(ctx, this.match.world, this.ctx.account.hiddenFound(), this.revealHidden()));
-    } else if (this.sheetKind === 'dev') (view as DevSheetView).update(devChanceModel(ctx, this.ctx.data.game.devChances.list), this.recipeRows(), this.runLogRows);
+    } else if (this.sheetKind === 'dev') (view as DevSheetView).update(devChanceModel(ctx, this.ctx.data.game.devChances.list), this.recipeRows(), this.runLogRows, pastRuns());
   }
 
   /** 도박 슬롯 (테이블마다): 1초 돌고 결과에서 멈춤 (연출 끄기면 바로). 처음 멈춘 프레임에 '+n원'·대박 알림. */
