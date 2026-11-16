@@ -150,9 +150,20 @@ jobs:
             --v3-signing-enabled true \
             --out "$signed" "$unsigned"
           rm -f "$keydir/release.p12"
-          "$tools/apksigner" verify --verbose --print-certs "$signed" > "$RUNNER_TEMP/rtd-cert.txt"
-          grep -Fx 'Verified using v2 scheme (APK Signature Scheme v2): true' "$RUNNER_TEMP/rtd-cert.txt"
-          grep -Fx 'Verified using v3 scheme (APK Signature Scheme v3): true' "$RUNNER_TEMP/rtd-cert.txt"
+          echo "서명 완료 — 확인 중"
+          if ! "$tools/apksigner" verify --verbose --print-certs "$signed" > "$RUNNER_TEMP/rtd-cert.txt"; then
+            echo "::error title=서명 확인 실패::apksigner verify가 실패했습니다."
+            grep -E 'Verified using|ERROR|WARNING|DOES NOT VERIFY' "$RUNNER_TEMP/rtd-cert.txt" || true
+            exit 1
+          fi
+          # 결과 요약 (인증서 지문·서명 방식만 — 공개 정보)
+          grep -E 'Verified using|certificate SHA-256 digest' "$RUNNER_TEMP/rtd-cert.txt" || true
+          # minSdkVersion 29(≥ 28)이면 apksigner verify는 v3로 전 범위를 확인하고 v2를 false로 보고한다
+          # (v2 블록은 들어 있지만 P 이상 기기는 v3만 본다) → v3만 필수로 확인
+          if ! grep -Fxq 'Verified using v3 scheme (APK Signature Scheme v3): true' "$RUNNER_TEMP/rtd-cert.txt"; then
+            echo "::error title=v3 서명 없음::APK Signature Scheme v3로 확인되지 않았습니다."
+            exit 1
+          fi
           if ! grep -Fxq "Signer #1 certificate SHA-256 digest: $SIGNER_SHA256" "$RUNNER_TEMP/rtd-cert.txt"; then
             echo "::error title=서명 키가 다름::서명 인증서 SHA-256이 v0.1.7 키($SIGNER_SHA256)와 다릅니다. 이 APK는 기존 앱 위에 업데이트로 설치되지 않습니다."
             grep 'certificate SHA-256 digest' "$RUNNER_TEMP/rtd-cert.txt" || true

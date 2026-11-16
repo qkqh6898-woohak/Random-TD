@@ -913,3 +913,4 @@
   - **GameActivity**: 웹 쪽 답(evaluateJavascript 콜백)이 1초 안에 안 오면 다시 뒤로 가기를 받는다(`handlingBack` 풀기). `android:allowBackup="true"`를 명시(자동 저장·기록·설정이 든 WebView localStorage를 백업에 일부러 포함, XML 주석).
     안드로이드 API 모양 스텁으로 `GameActivity.java`가 컴파일되는지 이 컨테이너에서 확인(스텁은 저장소에 넣지 않음).
   - 게이트 (A-1b, 한 번에): Vitest **1,246 통과 + 2 건너뜀**, `npm run check`·`npm run build` 통과, E2E **126 통과 · 1 건너뜀 · 실패 0** (48.3분, 새 'A-1b 뒤로 가기' 포함). 리플레이 7개 변경 없음.
+- **A-1c 서명 확인 고침 (main 첫 서명 실행 #4 실패)**: 서명은 됐지만 `apksigner verify`가 minSdkVersion 29(≥ 28)에서 v3로 전 범위를 확인하고 **v2를 false로 보고**해, v2 줄을 찾는 `grep -Fx`가 조용히 실패(출력 없이 종료 1)했다. → v3만 필수로 확인(서명은 그대로 v2+v3), verify 실패·v3 없음은 `::error`로 이유를 남기고, 서명 방식·인증서 지문 줄은 로그에 보이게(공개 정보). 지문 고정 확인은 그대로. 워크플로 파일만 바뀌어 게이트 입력이 같다 → YAML 파싱·모든 `run` 블록 `bash -n`만 확인.
