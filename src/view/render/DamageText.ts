@@ -13,6 +13,7 @@
  * - 깊이는 몹·타워·투사체 위.
  */
 import Phaser from 'phaser';
+import { effectsOff } from '../effects';
 import { COLORS } from '../../art/palette';
 import { FONT_FAMILY } from '../config';
 import { DAMAGE_TEXT_MS, bigTextSlot, floatingTextFrame, stackSlot, type TextBox } from './fxModel';
@@ -109,6 +110,8 @@ export class FloatingTextLayer {
    * @returns 띄웠으면 true (피해 숫자는 쌓을 자리가 없으면 false)
    */
   spawn(x: number, y: number, label: string, color: string, timeMs: number, big = false): boolean {
+    // 연출 끄기 (T-2): 피해·돈·회복 숫자를 띄우지 않는다
+    if (effectsOff()) return false;
     const size = big ? Math.round(this.fontPx * BIG_SCALE) : this.fontPx;
     const text = this.take(big); // 꽉 찼으면 가장 오래된 것을 빼서 다시 쓴다 → 그 뒤에 남은 것들과 겹침을 본다
     const others = this.active.map((a) => this.boxOf(a, timeMs));

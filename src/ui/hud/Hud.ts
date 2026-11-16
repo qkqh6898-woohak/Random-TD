@@ -25,7 +25,7 @@
  * 루트의 data-tick 속성 = 지금 틱 (E2E가 게임 시간이 흐르는지 볼 때 쓴다, 화면에는 안 보임).
  */
 import { h } from '../dom';
-import { attachHoldRepeat, skipRepeatDelay, type HoldHandle } from '../hold';
+import { HOLD_DELAY_MS, attachHoldRepeat, skipRepeatDelay, type HoldHandle } from '../hold';
 import type { UiView } from '../root';
 import { livesDropped, withCommas, type HudModel } from './hudModel';
 import type { SheetKind } from '../sheets/sheetModels';
@@ -49,6 +49,15 @@ export interface HudOptions {
   onHire?: () => void;
   /** 하단 메뉴 (M5): 도전·강화·미션 바텀 시트 열기/닫기 */
   onMenu?: (kind: SheetKind) => void;
+  /** 하단 메뉴 넷째 칸 [🛠 개발] (T-2, 개발자 모드만) */
+  devMenu?: boolean;
+  /**
+   * 아래 띠 [🎲 소환 100원] (T-2): 짧게 누르면 자동 칸에 하나, 꾹 누르면 계속. 한 번 소환(또는 앞 명령 기다림)이면 true,
+   * 돈 부족·빈 칸 없음이면 false (꾹 누르기 멈춤)
+   */
+  onSummon?: () => boolean;
+  /** 꾹 눌러 연속 소환 간격 (ms) — 연출 끄기면 더 빠르다 */
+  summonInterval?: () => number;
 }
 
 export interface HudView extends UiView {
@@ -174,6 +183,24 @@ export function createHud(opts: HudOptions): HudView {
   // 아래 띠: 타워 수 · 소환 안내
   const towersEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-towers', 'aria-label': '놓인 타워 수', ...off }, text: '0/0' });
   const hintEl = h('span', { class: 'hud-hint', attrs: { 'data-testid': 'hud-hint', ...off }, text: '' });
+  // [🎲 소환 100원] (T-2): 짧게 = 자동 칸에 하나, 꾹 = 계속 (초당 약 4번). 승급 가능 버튼이 보이면 '소환' 글자는 숨긴다 (CSS)
+  const summonCost = h('span', { class: 'hud-summon-cost', text: '' });
+  const summonBtn = h(
+    'button',
+    {
+      class: 'btn btn-chip hud-summon',
+      attrs: { type: 'button', 'data-action': 'summon', 'data-testid': 'hud-summon', 'aria-label': '소환 (꾹 누르면 연속)' },
+    },
+    h('span', { attrs: { 'aria-hidden': 'true' }, text: '🎲' }),
+    h('span', { class: 'hud-summon-word', text: '소환' }),
+    summonCost,
+  );
+  const summonHold: HoldHandle | null = opts.onSummon
+    ? attachHoldRepeat(summonBtn, () => opts.onSummon?.() ?? false, {
+        delay: (n) => (n <= 0 ? HOLD_DELAY_MS : (opts.summonInterval?.() ?? 250)),
+      })
+    : null;
+  if (!opts.onSummon) summonBtn.hidden = true;
   const mergeReadyBtn = h('button', {
     class: 'btn btn-chip hud-merge-ready',
     attrs: { type: 'button', 'data-action': 'merge-ready', 'data-testid': 'hud-merge-ready', hidden: '' },
@@ -194,6 +221,7 @@ export function createHud(opts: HudOptions): HudView {
     h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl),
     choiceSlot,
     hintEl,
+    summonBtn,
     hireBtn,
     mergeReadyBtn,
   );
@@ -249,6 +277,7 @@ export function createHud(opts: HudOptions): HudView {
     menuItem('challenge', '⚔', '도전'),
     menuItem('upgrade', '⬆', '강화'),
     menuItem('mission', '📋', '미션'),
+    opts.devMenu ? menuItem('dev', '🛠', '개발') : null,
   );
   const dock = h('div', { class: 'hud-dock' }, bottomBand, menuBar);
   const el = h('div', { class: 'hud-root', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band, dock);
@@ -346,9 +375,16 @@ export function createHud(opts: HudOptions): HudView {
       setText(goldEl, 'gold', m.gold);
       setText(towersEl, 'towers', m.towers);
       setText(hintEl, 'summonHint', m.summonHint);
-      if (last.summonAffordable !== m.summonAffordable) hintEl.classList.toggle('is-short', !m.summonAffordable);
+      setText(summonCost, 'summonCost', m.summonCost);
+      if (last.summonAffordable !== m.summonAffordable) {
+        hintEl.classList.toggle('is-short', !m.summonAffordable);
+        summonBtn.classList.toggle('is-off', !m.summonAffordable);
+      }
       if (last.mergeReady !== m.mergeReady) {
-        mergeReadyBtn.textContent = m.mergeReady;
+        // '⬆ 승급 가능 n' — 가운데 낱말은 따로 감싼다: 아래 띠가 붐비면(접은 고르기 알약까지) CSS가 '⬆ n'으로 줄인다 (글자 내용은 그대로)
+        const parts = /^(\S+)( .+)( \d+)$/.exec(m.mergeReady);
+        if (parts) mergeReadyBtn.replaceChildren(parts[1]!, h('span', { class: 'hud-mr-word', text: parts[2]! }), parts[3]!);
+        else mergeReadyBtn.textContent = m.mergeReady;
         mergeReadyBtn.hidden = m.mergeReady === '';
       }
       setText(speedBtn, 'speed', m.speed);
@@ -401,6 +437,7 @@ export function createHud(opts: HudOptions): HudView {
     destroy() {
       skipHold?.detach();
       skipHold = null;
+      summonHold?.detach();
       clearTimeout(breakTimer);
       breakTimer = undefined;
       clearTimeout(gainTimer);

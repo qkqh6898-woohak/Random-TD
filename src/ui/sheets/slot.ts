@@ -24,6 +24,8 @@ export interface SlotState {
   result: SlotResult | null;
   /** 결과를 보여 준 시각 (한 번만 알림·동전을 내려고) */
   revealedMs: number | null;
+  /** 이 릴이 도는 시간 (ms, 생략하면 SLOT_SPIN_MS). 연출 끄기면 0 → 결과가 오면 바로 멈춤 (T-2) */
+  spinMs?: number;
 }
 
 export interface SlotFrame {
@@ -37,7 +39,7 @@ export interface SlotFrame {
 /** 지금 릴 글자: 도는 동안은 배율 목록을 차례로, 1초가 지나고 결과가 있으면 결과. 결과가 아직 없으면 계속 돈다. */
 export function slotFrame(s: SlotState, nowMs: number, symbols: readonly string[]): SlotFrame {
   const elapsed = nowMs - s.startMs;
-  if (s.result && elapsed >= SLOT_SPIN_MS) {
+  if (s.result && elapsed >= (s.spinMs ?? SLOT_SPIN_MS)) {
     return { reel: s.result.mul, spinning: false, justRevealed: s.revealedMs === null };
   }
   const n = symbols.length;

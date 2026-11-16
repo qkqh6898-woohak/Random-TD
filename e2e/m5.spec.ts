@@ -7,6 +7,14 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 
+// T-2: 이 파일은 정보 패널 [⬆ 승급] 흐름을 본다 → '눌러서 바로 승급'(기본 켜짐)을 끄고 시작 (켜진 동작은 e2e/t2.spec.ts)
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('rtd.settings')) localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false }));
+  });
+});
+
+
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 
 interface MobLite {
@@ -389,13 +397,13 @@ test('도박: debug 판은 잠긴 테이블도 "디버그", 10원 도박 → 슬
   await expect(page.getByTestId('gamble-odds')).toHaveText('×0 40% · ×0.5 20% · ×1 21% · ×2 11% · ×3 6% · ×5 2% — 기대값 91% (잭팟 포함)');
   expect(await page.getByTestId('gamble-ev').evaluate((el) => el.getClientRects().length)).toBe(1);
   await page.getByTestId('gamble-table-10').click();
-  await expect(page.getByTestId('gamble-reel')).toHaveClass(/is-spin/);
+  await expect(page.getByTestId('gamble-reel-10')).toHaveClass(/is-spin/);
   await expect.poll(() => inScene(page, (s) => s.match.state.gambles, null)).toBe(1);
-  await expect(page.getByTestId('gamble-reel')).not.toHaveClass(/is-spin/, { timeout: 4000 });
+  await expect(page.getByTestId('gamble-reel-10')).not.toHaveClass(/is-spin/, { timeout: 4000 });
   const mul = await inScene(page, (s) => s.match.state.gamble[0]!.recent[0]!, null);
   const mulText = mul === 0 ? '×0' : mul === 5000 ? '×0.5' : `×${mul / 10000}`;
-  await expect(page.getByTestId('gamble-reel')).toHaveText(mulText);
-  await expect(page.getByTestId('gamble-result')).toContainText(mulText);
+  await expect(page.getByTestId('gamble-reel-10')).toHaveText(mulText);
+  await expect(page.getByTestId('gamble-result-10')).toContainText(mulText);
   await expect(page.getByTestId('gamble-recent')).toHaveText(`최근: ${mulText}`);
   // 잭팟 게이지
   await inScene(

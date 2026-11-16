@@ -25,6 +25,7 @@ import type { MatchContext } from '../state';
 import { bossForStage } from './BossSchedule';
 import { chooseFormation, formationById, formationSlots } from './Formation';
 import { bossSpawned } from '../bosses';
+import { chanceValue } from '../chances';
 
 /** 그 단계의 칸 목록 (섞기 전, 몹 순서 = enemies.json 순서). 구성이 없으면 빈 배열. */
 export function stageSlots(rules: MatchRules, stage: number): string[] {
@@ -190,8 +191,10 @@ export function spawnMob(ctx: MatchContext, world: World, mobId: string, swarmIn
 /** 이 몹을 정예로 만들까 (51단계부터 세계 난수 1.5%). 정예 단계 전이거나 확률 0이면 난수를 쓰지 않는다. */
 function rollElite(ctx: MatchContext, world: World): boolean {
   const { rules, state } = ctx;
-  if (state.stage < rules.eliteFromStage || rules.eliteChanceBp <= 0) return false;
-  return world.rng(STREAM_WORLD).chanceBp(rules.eliteChanceBp);
+  // 확률: 데이터 값 (개발자 확률 조정 'elite'가 있으면 그 값, T-2)
+  const chance = chanceValue(rules, state, 'elite');
+  if (state.stage < rules.eliteFromStage || chance <= 0) return false;
+  return world.rng(STREAM_WORLD).chanceBp(chance);
 }
 
 /** 칸 하나를 내보낸다: swarm 수만큼 같은 틱에. 대기열 칸이면(queue) 몹마다 정예 판정. */

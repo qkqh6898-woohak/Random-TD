@@ -10,6 +10,8 @@ import './ui/styles.css';
 import { loadGameData } from './data/load';
 import { allLooks } from './art/characters/looks';
 import { createAccountStore } from './meta/account';
+import { createSettingsStore } from './meta/settings';
+import { onEffectsChange, setEffectsOff } from './view/effects';
 import { defaultStorage } from './save/storage';
 import { describeFatal, installFatalHandlers, type FatalPhase } from './ui/fatal';
 import { UiRoot } from './ui/root';
@@ -46,7 +48,13 @@ function boot(): void {
     // 캐릭터 외형 데이터도 시작할 때 검사한다 → 틀리면 첫 그림(타이틀 장면) 안 'run' 오류가 아니라 'boot' 오류 (DataError: 파일 + 필드 경로)
     allLooks();
     const url = readUrlOptions(location.search, import.meta.env.VITE_TEST_BUILD);
-    const account = createAccountStore(defaultStorage());
+    const storage = defaultStorage();
+    const account = createAccountStore(storage);
+    const settings = createSettingsStore(storage);
+    // 연출 끄기 (개발자 도구, T-2): 개발자 모드에서만 저장값을 쓴다 — 일반 주소는 늘 연출이 켜진 예전 화면
+    // (DOM 애니메이션·전환은 UI 루트의 .fx-off 클래스로 한꺼번에 끈다 — styles.css)
+    onEffectsChange((off) => ui.el.classList.toggle('fx-off', off));
+    setEffectsOff(url.debug && settings.get().effectsOff);
     const ctx: GameContext = {
       data,
       ui,
@@ -54,6 +62,7 @@ function boot(): void {
       seed: url.seed,
       accountLevel: account.level(),
       account,
+      settings,
       version: __APP_VERSION__,
     };
     game = createGame(must('game'), ctx);

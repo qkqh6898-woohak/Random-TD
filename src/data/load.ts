@@ -369,6 +369,32 @@ export interface SummonConfig {
   cost: number;
   /** 신 타워 확률 (0.0001 = 0.01%) */
   godChance: number;
+  /** 자동 소환 칸 고르기 반경 (체비쇼프 칸, T-2 꾹 눌러 연속 소환·[🎲 소환] 버튼) */
+  autoRadius: number;
+}
+
+/** 타워 판매 (T-2, GDD 3장): 받는 돈 = 가치 × rateBp ÷ 10000 내림. 가치 = 소환 비용 × gradeMul (히든 = 재료 가치 합). */
+export interface SellConfig {
+  rateBp: number;
+  /** 등급별 가치 배율 (노말 1·레어 3·유니크 9·히어로 27·레전드 81·신 = 레전드). 히든은 재료 합이라 없다 */
+  gradeMul: Record<Exclude<Grade, 'hidden'>, number>;
+  /** 판매 버튼을 두 번 눌러야 하는 등급 */
+  confirmGrades: Grade[];
+  /** 두 번째 누르기를 기다리는 시간 (초) */
+  confirmSeconds: number;
+}
+
+/** 개발자 도구 '확률 조정' 한 줄 (T-2): key = sim이 아는 확률 이름 (god·gamble:i·cardRare·critBonus·summonRare·mergeDouble·elite) */
+export interface DevChanceData {
+  key: string;
+  name: string;
+  note?: string;
+}
+
+export interface DevChancesConfig {
+  /** 한 번 누를 때 바뀌는 값 (bp, 10 = 0.1%p) */
+  stepBp: number;
+  list: DevChanceData[];
 }
 
 /** 전투 (GDD.md 5.2~5.4, 4.5). */
@@ -545,12 +571,16 @@ export interface ChallengeConfig {
 export interface GameConfig {
   version: number;
   speeds: SpeedOption[];
-  /** 개발자 모드 배속 순환 목록 (T-1, src/devMode.ts). ×1부터 오름차순, 최대 ×16, 일반 배속을 모두 포함 */
+  /** 개발자 모드 배속 순환 목록 (T-1, src/devMode.ts). ×1부터 오름차순, 최대 ×16 (T-2: ×1·×2·×4·×8·×16 — 일반 ×3은 없음) */
   devSpeeds: number[];
   maxFrameMs: number;
   maxPlayers: number;
   match: MatchConfig;
   summon: SummonConfig;
+  /** 타워 판매 (T-2) */
+  sell: SellConfig;
+  /** 개발자 도구 확률 조정 목록 (T-2) */
+  devChances: DevChancesConfig;
   combat: CombatConfig;
   merge: MergeConfig;
   hud: HudConfig;
@@ -1171,6 +1201,26 @@ export const gameSchema: Schema = s.obj({
   summon: s.obj({
     cost: s.int({ min: 1 }),
     godChance: s.num({ min: 0, max: 1 }),
+    autoRadius: s.int({ min: 0, max: 10 }),
+  }),
+  // 타워 판매 (T-2): 가치 배율은 노말~신 (히든 = 조합 재료 합)
+  sell: s.obj({
+    rateBp: s.int({ min: 0, max: 10000 }),
+    gradeMul: s.obj({
+      normal: s.int({ min: 0 }),
+      rare: s.int({ min: 0 }),
+      unique: s.int({ min: 0 }),
+      hero: s.int({ min: 0 }),
+      legend: s.int({ min: 0 }),
+      god: s.int({ min: 0 }),
+    }),
+    confirmGrades: s.arr(s.str({ enum: GRADES })),
+    confirmSeconds: s.num({ min: 0, max: 10 }),
+  }),
+  // 개발자 도구 확률 조정 (T-2): key는 sim이 아는 이름 (교차 검사)
+  devChances: s.obj({
+    stepBp: s.int({ min: 1, max: 10000 }),
+    list: s.arr(s.obj({ key: s.str({ nonEmpty: true }), name: s.str({ nonEmpty: true }), note: s.opt(s.str()) }), { uniqueBy: 'key' }),
   }),
   combat: s.obj({
     projectileSpeed: s.withCheck<number>(s.num({ min: 0.02 }), (v, path, issues) => {
@@ -1526,13 +1576,43 @@ export function crossCheck(data: GameData): Issue[] {
   if (!towers.towers.some((t) => t.grade === 'god') && data.game.summon.godChance > 0) {
     issues.push({ file: 'game.json', path: 'summon.godChance', message: '신 타워가 없는데 확률이 0보다 크다' });
   }
-  // 개발자 배속은 일반 배속을 모두 포함한다 (개발자 모드에서 쓸 수 없는 일반 배속이 없게, T-1)
-  for (const o of data.game.speeds) {
-    if (!data.game.devSpeeds.includes(o.mul)) issues.push({ file: 'game.json', path: 'devSpeeds', message: `일반 배속 ×${o.mul}이 개발자 배속에 없다` });
-  }
+  // (T-1의 '개발자 배속은 일반 배속을 모두 포함' 검사는 T-2에서 뺐다 — 사용자 요청 "배속은 2 4 8 16만": 개발자 순환에 ×3 없음)
   crossCheckM4(data, issues);
   crossCheckM5(data, issues);
+  crossCheckT2(data, issues);
   return issues;
+}
+
+/** 개발자 도구 확률 조정이 아는 이름 (gamble:i는 배율표 번호 — ×0이 아닌 배율만). sim/chances.ts와 같은 목록 */
+export const DEV_CHANCE_KEYS = ['god', 'cardRare', 'critBonus', 'summonRare', 'mergeDouble', 'elite'] as const;
+
+/** T-2 교차 검사: 판매 등급·히든 재료, 확률 조정 key. */
+function crossCheckT2(data: GameData, issues: Issue[]): void {
+  const { game, towers } = data;
+  const byId = new Map(towers.towers.map((t) => [t.id, t]));
+  towers.towers.forEach((t, i) => {
+    if (t.grade !== 'hidden') return;
+    if (!Array.isArray(t.recipe) || t.recipe.length === 0) {
+      issues.push({ file: 'towers.json', path: `towers[${i}].recipe`, message: '히든 타워는 판매 가치를 정할 조합 재료가 있어야 한다' });
+      return;
+    }
+    t.recipe.forEach((id, j) => {
+      const m = byId.get(id);
+      if (!m) issues.push({ file: 'towers.json', path: `towers[${i}].recipe[${j}]`, message: `없는 재료: ${id}` });
+      else if (m.grade === 'hidden') issues.push({ file: 'towers.json', path: `towers[${i}].recipe[${j}]`, message: `히든 재료는 히든일 수 없다: ${id}` });
+    });
+  });
+  const zero = game.gamble.outcomes.findIndex((o) => o.mul === 0);
+  game.devChances.list.forEach((c, i) => {
+    const path = `devChances.list[${i}].key`;
+    const m = /^gamble:(\d+)$/.exec(c.key);
+    if (m) {
+      const k = Number(m[1]);
+      if (k >= game.gamble.outcomes.length || k === zero) issues.push({ file: 'game.json', path, message: `도박 배율표에 ×0이 아닌 ${k}번째 배율이 없다` });
+    } else if (!(DEV_CHANCE_KEYS as readonly string[]).includes(c.key)) {
+      issues.push({ file: 'game.json', path, message: `모르는 확률 이름: ${c.key} (${DEV_CHANCE_KEYS.join('·')}·gamble:i)` });
+    }
+  });
 }
 
 /** M4 데이터 교차 검사: 깨지는 몹·보스 소환 몹·보스 순환·보스 제한 시간·카드 수치. */

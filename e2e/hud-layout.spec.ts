@@ -102,17 +102,32 @@ for (const vp of VIEWPORTS) {
     // 보스 단계 전에도 HUD 아래에 맵 (보스 막대 자리는 늘 비워 둔다 → 보스가 와도 맵이 그대로)
     const before = await geometry(page);
     expect(before.hudBottom).toBeLessThanOrEqual(before.mapTop + 0.5);
+    // 단계 시작 알림의 자리는 알림이 생길 때 잰다: 알림은 1.6초뿐이라, 컴퓨터가 바쁘면(헤드리스 소프트웨어 WebGL + 다른 작업)
+    // 보스 막대를 확인하는 사이에 사라져 boundingBox가 null이 되던 경쟁을 없앤다. 등장 애니메이션(0.18초)이 끝난 0.25초 뒤의 자리
+    // (같은 스레드의 타이머라 1.6초 뒤 지우기보다 늘 먼저 돈다).
+    await page.evaluate(() => {
+      const w = window as unknown as { __toastRects: { top: number; bottom: number }[] };
+      w.__toastRects = [];
+      new MutationObserver((muts) => {
+        for (const m of muts)
+          for (const n of m.addedNodes)
+            if (n instanceof HTMLElement && n.classList.contains('toast'))
+              setTimeout(() => {
+                const b = n.getBoundingClientRect();
+                if (n.isConnected && b.height > 0) w.__toastRects.push({ top: b.top, bottom: b.bottom });
+              }, 250);
+      }).observe(document.body, { childList: true, subtree: true });
+    });
     expect(await skipStages(page, 10)).toBe(10);
     await expect(page.getByTestId('hud-boss')).toBeVisible();
     const g = await geometry(page);
     expect(g.originY).toBe(before.originY); // 보스 막대가 보여도 맵이 밀리지 않음
     expect(g.hudBottom).toBeLessThanOrEqual(g.mapTop + 0.5);
     // M2 검토 반영: 단계 시작 알림은 HUD 띠와 맵 사이 비워 둔 자리에 뜬다 → 맵 0줄(타워·피해 숫자)을 가리지 않는다
-    const toast = page.locator('.toast').first();
-    await expect(toast).toBeVisible();
-    const tb = (await toast.boundingBox())!;
-    expect(tb.y).toBeGreaterThanOrEqual(g.hudBottom - 0.5);
-    expect(tb.y + tb.height).toBeLessThanOrEqual(g.mapTop + 0.5);
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __toastRects: unknown[] }).__toastRects.length)).toBeGreaterThan(0);
+    const tb = await page.evaluate(() => (window as unknown as { __toastRects: { top: number; bottom: number }[] }).__toastRects[0]!);
+    expect(tb.top).toBeGreaterThanOrEqual(g.hudBottom - 0.5);
+    expect(tb.bottom).toBeLessThanOrEqual(g.mapTop + 0.5);
 
     // 0줄 (4, 0) 칸의 위쪽 10% 지점
     const x = g.stageLeft + (g.originX + 4.5 * g.tile) * g.k;

@@ -23,6 +23,7 @@ import type { CardStats } from '../rules';
 import type { MatchContext } from '../state';
 import { rollChanceBp } from './Damage';
 import { earnGold } from './Economy';
+import { chanceValue } from '../chances';
 
 /** 카드 고르기 실패 이유: 판이 끝남 / 받은 묶음 없음 / 없는 번호 */
 export type CardFail = 'phase' | 'none' | 'index';
@@ -33,7 +34,8 @@ export function rollOffer(ctx: MatchContext, world: World, player: number): stri
   const rng = world.rng(streamCards(player));
   const out: string[] = [];
   for (let k = 0; k < rules.cardOfferSize; k++) {
-    const rare = rollChanceBp(rng, rules.cardRareBp);
+    // 희귀 확률: 데이터 값 (개발자 확률 조정 'cardRare'가 있으면 그 값, T-2)
+    const rare = rollChanceBp(rng, chanceValue(rules, ctx.state, 'cardRare'));
     let pool = rules.cards.filter((c) => c.rare === rare && !out.includes(c.id));
     if (pool.length === 0) pool = rules.cards.filter((c) => !out.includes(c.id));
     if (pool.length === 0) break;

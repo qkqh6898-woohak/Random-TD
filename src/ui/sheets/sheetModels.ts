@@ -19,12 +19,13 @@ import type { MatchRules, UpgradeRule } from '../../sim/rules';
 import { MISSION_CLAIMED, MISSION_DONE, MISSION_OPEN, type MatchContext } from '../../sim/state';
 import { challengeCheck, challengeCooldownLeft, challengesAvailable } from '../../sim/systems/Challenge';
 import { goldWithBonus } from '../../sim/systems/Economy';
-import { gambleCheck, gambleExpectationBp, gambleRollExpectationBp, gambleTopMulBp, gambleUnlocked, gambleWeights } from '../../sim/systems/Gamble';
+import { gambleCheck, gambleExpectationBp, gambleRollExpectationBp, gambleRulesOf, gambleTopMulBp, gambleUnlocked, gambleWeights } from '../../sim/systems/Gamble';
 import { missionProgress, missionsClaimable, towerCensus } from '../../sim/systems/Mission';
 import { transcendOpen, upgradeCheck, upgradeCost, upgradeEffectBp, upgradeLevel } from '../../sim/systems/Upgrade';
 import { formatGold, formatTimer, withCommas } from '../hud/hudModel';
 
-export type SheetKind = 'challenge' | 'upgrade' | 'mission';
+/** 바텀 시트 종류 (T-2: 'dev' = 🛠 개발자 도구, 개발자 모드만) */
+export type SheetKind = 'challenge' | 'upgrade' | 'mission' | 'dev';
 export type UpgradeTab = 'grade' | 'stat' | 'gamble';
 export type MissionTab = 'normal' | 'hidden';
 
@@ -356,7 +357,10 @@ export function gambleSheetModel(ctx: Pick<MatchContext, 'rules' | 'state' | 'ac
   });
   const jackpot = g.gauge >= rules.jackpotGauge;
   const zeroCut = world && !jackpot ? gambleZeroReduction(ctx as MatchContext, world, player) : 0;
-  const w = gambleWeights(rules, zeroCut, jackpot);
+  // 개발자 확률 조정(T-2)을 반영한 배율표 — 덮어쓴 값이 없으면 데이터 그대로
+  const gr = gambleRulesOf(ctx);
+  let w = gambleWeights(gr, zeroCut, jackpot);
+  if (jackpot && w.every((x) => x === 0)) w = gambleWeights(rules, 0, true);
   const total = w.reduce((a, b) => a + b, 0);
   const odds = rules.gambleOutcomes.map((o, i) => ({
     mul: mulText(o.mulBp),
@@ -370,8 +374,8 @@ export function gambleSheetModel(ctx: Pick<MatchContext, 'rules' | 'state' | 'ac
     readyText: `다음 ${mulText(rules.jackpotMinMulBp)} 이상!`,
     odds,
     expectation: jackpot
-      ? `이번 기대값 ${pctText(Math.floor(gambleRollExpectationBp(rules, 0, true) / 100) * 100)}%`
-      : `기대값 ${pctText(Math.floor(gambleExpectationBp(rules, zeroCut) / 100) * 100)}% (잭팟 포함)`,
+      ? `이번 기대값 ${pctText(Math.floor(gambleRollExpectationBp(gr, 0, true) / 100) * 100)}%`
+      : `기대값 ${pctText(Math.floor(gambleExpectationBp(gr, zeroCut) / 100) * 100)}% (잭팟 포함)`,
     recent: g.recent.map((m) => mulText(m)),
   };
 }
@@ -425,6 +429,8 @@ export function missionSheetModel(
   ctx: Pick<MatchContext, 'rules' | 'state'>,
   world: World,
   hiddenFound: ReadonlySet<string>,
+  /** 개발자 도구 '히든 미션 조건 보기' (T-2): 히든 미션 이름·조건·보상·진행도를 모두 보인다 */
+  revealAll = false,
 ): MissionSheetModel {
   const { rules, state } = ctx;
   const census = towerCensus(world);
@@ -436,7 +442,7 @@ export function missionSheetModel(
   rules.missions.forEach((m, i) => {
     const st = state.missionStatus[i];
     const status = statusOf(st);
-    const revealed = !m.hidden || status !== 'open' || hiddenFound.has(m.id);
+    const revealed = !m.hidden || status !== 'open' || hiddenFound.has(m.id) || revealAll;
     const progress = missionProgress(ctx, world, i, census);
     const measurable = progress[1] > 1 || m.cond.type === 'stat' || m.cond.type === 'gamble';
     const row: MissionRowModel = {

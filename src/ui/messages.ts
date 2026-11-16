@@ -215,3 +215,20 @@ export function hiddenMissionText(name: string, reward: number): string {
 export function missionClaimText(total: number, count: number): string {
   return count > 1 ? `📋 미션 ${count}개 보상 +${withCommas(total)}원` : `📋 미션 보상 +${withCommas(total)}원`;
 }
+
+// ---------------------------------------------------------------- T-2 판매·이동·변환·자동 소환
+
+/** 판매 알림 '판매 +1,350원' */
+export function sellText(gold: number): string {
+  return `판매 +${withCommas(gold)}원`;
+}
+
+/** 이동 모드 안내 (패널 [↔ 이동]) */
+export const MOVE_PICK_HINT = '옮길 칸을 누르세요';
+/** 이동 모드를 그만둠 (같은 타워·맵 밖·Esc) */
+export const MOVE_CANCELED = '이동을 취소했어요';
+
+/** 변환 알림 (개발자) '🛠 용 소환사 → 대마법사' */
+export function convertText(from: string, to: string): string {
+  return `🛠 ${from} → ${to}`;
+}

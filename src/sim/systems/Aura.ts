@@ -21,6 +21,7 @@ import type { TowerBonus } from '../stats';
 import { abilityOf, abilityParams, towerLevel } from '../abilities';
 import type { AuraArea, AuraSpec } from '../abilities/types';
 import { gradeUpgradeBp } from './Upgrade';
+import { chanceBonus } from '../chances';
 
 /** 오라 하나가 받는 타워에게 닿는가. */
 export function auraCovers(
@@ -111,7 +112,9 @@ export function towerBonus(ctx: MatchContext, tower: Tower, auras: AuraMap): Tow
     if (def.bossMulBp) boss = mulBp(boss, def.bossMulBp(p));
   }
   if (atk < -BP_ONE) atk = -BP_ONE;
-  return { atkPctBp: atk, apsPctBp: aps, bossMulBp: boss };
+  // 개발자 확률 조정 'critBonus' (T-2): 모든 타워 치명타 확률 + (한도는 effectiveStats가 자른다)
+  const crit = chanceBonus(ctx.state, 'critBonus');
+  return crit > 0 ? { atkPctBp: atk, apsPctBp: aps, bossMulBp: boss, critBp: crit } : { atkPctBp: atk, apsPctBp: aps, bossMulBp: boss };
 }
 
 /** 타워 하나가 주는 지원 효과 (없으면 null) — 화면이 범위를 그릴 때 읽는다. */

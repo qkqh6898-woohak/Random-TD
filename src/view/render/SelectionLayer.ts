@@ -8,6 +8,7 @@
  * - 길게 눌러 끄는 동안: 놓을 칸을 색으로 미리 보여준다 (빈 칸 이동 = 초록, 교환 = 파랑, 못 놓음 = 빨강)
  *   + 그 칸에 놓았을 때의 사거리 원.
  * - [⬆ 승급 가능 n]을 누르면 (M5-7): 그 묶음 타워마다 금색 고리가 퍼지며 1.5초 동안 강조된다 (highlight, t = 0~1 진행도).
+ * - 패널 [↔ 이동] 모드 (T-2): 옮길 수 있는 칸 모두 — 빈 칸 = 옅은 초록, 내 다른 타워(교환) = 옅은 파랑, 옮길 타워 = 흰 테두리.
  * 화면 전용 (sim을 바꾸지 않는다). 몇 개 안 되는 도형이라 매 프레임 다시 그린다.
  */
 import Phaser from 'phaser';
@@ -40,6 +41,8 @@ export interface SelectionView {
   drop: { tx: number; ty: number; preview: DropPreview; range: number } | null;
   /** 승급 가능 묶음 강조 (M5-7): 칸들과 진행도 t (0 → 1, 끝나면 null) */
   highlight?: { tiles: readonly { tx: number; ty: number }[]; t: number } | null;
+  /** [↔ 이동] 모드 (T-2): 옮길 타워 칸과 놓을 수 있는 칸 (move = 빈 칸, swap = 교환) */
+  moveMode?: { from: { tx: number; ty: number }; targets: readonly { tx: number; ty: number; kind: 'move' | 'swap' }[] } | null;
 }
 
 export class SelectionLayer {
@@ -104,6 +107,18 @@ export class SelectionLayer {
         }
         o.fillStyle(SAME_KIND_COLOR, 0.18 * (1 - hl.t)).fillCircle(c.x, c.y, L.tile * 0.5);
       }
+    }
+    const mm = view.moveMode;
+    if (mm) {
+      const s = L.tile * 0.86;
+      for (const t of mm.targets) {
+        const c = tileCenterPx(L, t.tx, t.ty);
+        const color = DROP_COLORS[t.kind];
+        o.fillStyle(color, 0.16).fillRoundedRect(c.x - s / 2, c.y - s / 2, s, s, L.tile * 0.12);
+        o.lineStyle(line, color, 0.7).strokeRoundedRect(c.x - s / 2, c.y - s / 2, s, s, L.tile * 0.12);
+      }
+      const f = tileCenterPx(L, mm.from.tx, mm.from.ty);
+      o.lineStyle(line * 1.6, 0xffffff, 0.95).strokeRoundedRect(f.x - s / 2, f.y - s / 2, s, s, L.tile * 0.12);
     }
     if (view.drop && view.drop.preview !== 'none') {
       const c = tileCenterPx(L, view.drop.tx, view.drop.ty);

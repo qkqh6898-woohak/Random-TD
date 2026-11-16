@@ -26,6 +26,7 @@ import { canMergeGrade, isDeckGrade, rollMerge } from '../Deck';
 import type { MatchContext } from '../state';
 import { godChanceFor, placeTower } from './Summon';
 import { ownerBonus } from '../abilities';
+import { chanceBonus } from '../chances';
 
 /** 승급 실패 이유: 판이 끝남 / 그 칸에 타워가 없음 / 남의 타워 / 승급할 수 없는 등급(레전드·신·히든) / 같은 종류가 모자람 */
 export type MergeFail = 'phase' | 'noTower' | 'notOwner' | 'maxGrade' | 'count';
@@ -102,7 +103,8 @@ function mergeOnce(ctx: MatchContext, world: World, player: number, anchor: Towe
   if (!stats) throw new Error(`없는 타워: ${anchor.tower}`);
   const consumed = pickConsumed(group, anchor, ctx.rules.mergeCount - 1);
   const deck = ctx.decks[player] ?? ctx.rules.baseDeck;
-  const doubleBp = ownerBonus(ctx, world, player, (def, p) => def.mergeDoubleBp?.(p));
+  // 2등급 상승: 행운의 여신 + 개발자 확률 조정 'mergeDouble' (T-2)
+  const doubleBp = ownerBonus(ctx, world, player, (def, p) => def.mergeDoubleBp?.(p)) + chanceBonus(ctx.state, 'mergeDouble');
   const rng = world.rng(streamSummon(player));
   const roll = rollMerge(rng, ctx.rules, deck, stats.grade, doubleBp, godChanceFor(ctx, player));
   world.entities.remove(anchor.id);

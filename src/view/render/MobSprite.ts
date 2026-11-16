@@ -18,6 +18,7 @@
  *   없는 적(도전 보스 등)은 예전 art/mobs.ts 그림으로 그린다. 같은 128단위 좌표라 크기·위치 계산은 그대로다.
  */
 import Phaser from 'phaser';
+import { effectsOff } from '../effects';
 import { EYE_ICON_H, EYE_ICON_W, MOB_TEX_SIZE, SIZE_SCALE, MOB_LOOKS, ensureEyeIconTexture, ensureMobTexture } from '../../art/mobs';
 import type { Mob } from '../../sim/entities/Mob';
 import { directionAt, positionAt, type SimPath } from '../../sim/map';
@@ -160,12 +161,14 @@ export class MobSprite {
 
   /** 맞음: 0.1초 하얀 깜빡. */
   flash(timeMs: number): void {
+    if (effectsOff()) return; // 연출 끄기 (T-2)
     this.flashUntil = timeMs + MOB_HIT_FLASH_MS;
   }
 
   /** 처치됨: 납작해지며 사라지는 연출 시작. */
   die(timeMs: number): void {
-    if (this.dyingAt === null) this.dyingAt = timeMs;
+    // 연출 끄기 (T-2): 납작해지는 연출 없이 바로 사라진다
+    if (this.dyingAt === null) this.dyingAt = effectsOff() ? timeMs - MOB_DEATH_MS : timeMs;
     this.hpBg.setVisible(false);
     this.hpFill.setVisible(false);
     // 죽는 동안에는 상태 아이콘·얼음을 지운다 (사라지는 몸 위에 아이콘만 떠 있지 않게)
@@ -288,7 +291,8 @@ export class MobSprite {
     // 행동 불가 동안은 걷기 자세를 멈춘 시각에 고정한다
     if (status.paused) this.pausedAt ??= timeMs;
     else this.pausedAt = null;
-    const poseTime = this.pausedAt ?? timeMs;
+    // 연출 끄기 (T-2): 걷기 흔들림 없이 한 자세로
+    const poseTime = effectsOff() ? 0 : (this.pausedAt ?? timeMs);
     const p = positionAt(path, progress);
     const dir = directionAt(path, progress);
     let { x, y } = unitsToPx(layout, p.x, p.y);

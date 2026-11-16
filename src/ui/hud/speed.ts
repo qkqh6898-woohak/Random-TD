@@ -1,6 +1,6 @@
 /**
  * 배속 버튼 규칙 (UI.md 4.2: ×1 / ×2 / ×3(Lv12), 누를 때마다 순환).
- * 개발자 모드(src/devMode.ts)는 game.json devSpeeds(×1 → ×2 → ×3 → ×4 → ×8 → ×16) 순환 (T-1).
+ * 개발자 모드(src/devMode.ts)는 game.json devSpeeds 순환 (T-1, T-2부터 ×1 → ×2 → ×4 → ×8 → ×16 — 사용자 요청 "배속은 2 4 8 16만").
  * 배속은 sim 상태가 아니라 화면 쪽 TickClock 설정이다 (멀티에서는 ×1 고정 예정).
  */
 import type { SpeedOption } from '../../data/load';

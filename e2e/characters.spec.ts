@@ -246,7 +246,9 @@ test('게임 화면: 타워·몹이 새 캐릭터 그림(파츠 텍스처)으로
   // 힉스필드 그림이 있으면 그것(ext-char-tower-…, HF-1), 없으면 절차 파츠 텍스처(char-tower-…)
   expect(keys.every((k) => k.startsWith('char-tower-') || k.startsWith('ext-char-tower-'))).toBe(true);
   expect(new Set(keys).size).toBe(INGAME_TOWERS.length);
-  expect(await inScene(page, (s) => ['char-tower-miner-n', 'char-tower-saint-n'].every((k) => s.textures.exists(k)), null)).toBe(true);
+  expect(
+    await inScene(page, (s) => [['char-tower-miner-n', 'ext-char-tower-miner'], ['char-tower-saint-n', 'ext-char-tower-saint']].every((ks) => ks.some((k) => s.textures.exists(k))), null),
+  ).toBe(true);
   // 몹: 몹이 살아 있는 단계로 건너뛰면 새 적 그림
   await inScene(
     page,

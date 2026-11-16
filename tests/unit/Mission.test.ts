@@ -361,12 +361,14 @@ describe('도박 미션 (사건 구독: 연속·조건)', () => {
     expect(done(m, 'h03')).toBe(true);
   });
 
-  it('h10 도박왕: 1000원 도박 ×5 2연속 (사이에 다른 도박이 끼면 0부터)', () => {
+  it('h10 도박왕: 1000원 도박 ×5 2연속 (1000원 테이블에서 ×5가 아닌 결과가 끼면 0부터, 다른 테이블 도박은 끊지 않음 — T-2)', () => {
     const m = arena();
     fakeGamble(m, 2, 50_000);
-    fakeGamble(m, 0, 0);
+    fakeGamble(m, 2, 10_000);
     fakeGamble(m, 2, 50_000);
     expect(done(m, 'h10')).toBe(false);
+    // 10원 테이블을 함께 돌려도 (테이블 동시 도박) 1000원 연속은 이어진다
+    fakeGamble(m, 0, 0);
     fakeGamble(m, 2, 50_000);
     expect(done(m, 'h10')).toBe(true);
   });
