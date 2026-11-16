@@ -441,3 +441,28 @@ test.describe('A-1 화면 흔들림·주사위', () => {
     expect((await inScene(page, (s) => s.diceStats, null)).shown).toBe(0);
   });
 });
+
+test.describe('A-1b 뒤로 가기: 장면 넘어가는 중·첫 승급 안내', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test('[시작] 직후(타이틀 → 전투 넘어가는 중) 뒤로 가기는 삼키고, 첫 승급 안내 카드는 일시정지보다 먼저 닫힌다', async ({ page }) => {
+    test.slow();
+    await openTitle(page, '?seed=42');
+    const back = () => page.evaluate(() => !window.dispatchEvent(new Event('randomtd:native-back', { cancelable: true })));
+    // 누르자마자 (Game 장면이 처리기를 걸기 전일 수 있음) — 처리됨 = 앱이 닫히지 않음
+    await page.getByRole('button', { name: '시작' }).click();
+    expect(await back()).toBe(true);
+    await waitGame(page);
+    // 일시정지가 열렸다면 닫고 진행
+    if (await page.locator('[data-screen="pause"]').isVisible()) await page.getByRole('button', { name: '계속' }).click();
+    await placeThreeMiners(page);
+    await expect(page.getByTestId('guide-card')).toBeVisible();
+    expect(await back()).toBe(true);
+    await expect(page.getByTestId('guide-card')).toBeHidden();
+    await expect(page.locator('[data-screen="pause"]')).toHaveCount(0);
+    expect(await page.evaluate(() => (JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { guides?: string[] }).guides)).toEqual(['firstMerge']);
+    // 닫을 것이 없으면 일시정지
+    expect(await back()).toBe(true);
+    await expect(page.locator('[data-screen="pause"]')).toBeVisible();
+  });
+});

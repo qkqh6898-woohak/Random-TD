@@ -275,6 +275,11 @@ export interface GameSceneData {
 /** 자동 저장 간격 (틱, 게임 시간 5초) · 명령이 있었을 때 최소 간격 (1초) — A-1 */
 const AUTOSAVE_TICKS = 5 * TICK_HZ;
 const AUTOSAVE_AFTER_COMMAND_TICKS = TICK_HZ;
+/** 주기·명령 저장 사이 최소 실제 시간 (ms, A-1b 검토: ×16에서도 저장이 초당 여러 번 돌지 않게). 단계 바뀜·일시정지·페이지 숨김·장면 종료는 바로 저장 */
+const AUTOSAVE_MIN_REAL_MS = 2500;
+
+/** 자동 저장이 기기 저장소에 안 써질 때 알림 (A-1b, 판마다 한 번) */
+const SAVE_FAILED = '저장 실패 — 저장 공간을 확인해 주세요';
 
 /** 판 식별자 (전투 기록용, 화면에서만 만든다) */
 function newRunId(): string {
@@ -343,7 +348,9 @@ export class GameScene extends Phaser.Scene {
   /** 판 식별자 · 마지막 저장 토큰 · 마지막 저장 시점 (A-1 자동 저장) */
   private runId = '';
   private saveToken: string | null = null;
-  private lastSave = { tick: -1, stage: -1, commands: -1 };
+  private lastSave = { tick: -1, stage: -1, commands: -1, ms: -Infinity };
+  /** 저장 실패 알림을 이 판에서 이미 띄웠다 (A-1b) */
+  private saveFailToast = false;
   /** 이 판이 이어 하기로 시작했다 (E2E) */
   private resumed = false;
   private selectionLayer!: SelectionLayer;
@@ -467,7 +474,8 @@ export class GameScene extends Phaser.Scene {
     this.resumeSpeed = startSpeed;
     this.runId = saved?.runId ?? newRunId();
     this.saveToken = saved?.token ?? null;
-    this.lastSave = { tick: -1, stage: -1, commands: -1 };
+    this.lastSave = { tick: -1, stage: -1, commands: -1, ms: -Infinity };
+    this.saveFailToast = false;
     this.resumed = saved !== null;
     if (saved) this.releaseSavedHolds();
     this.paused = false;
@@ -703,19 +711,27 @@ export class GameScene extends Phaser.Scene {
   private autoSave(): void {
     if (this.gameOver || this.paused) return;
     const m = this.match;
-    const since = m.tick - this.lastSave.tick;
-    if (m.state.stage !== this.lastSave.stage || since >= AUTOSAVE_TICKS || (m.world.executed.length !== this.lastSave.commands && since >= AUTOSAVE_AFTER_COMMAND_TICKS)) {
+    if (m.state.stage !== this.lastSave.stage) {
       this.saveMatch();
+      return;
     }
+    if (performance.now() - this.lastSave.ms < AUTOSAVE_MIN_REAL_MS) return;
+    const since = m.tick - this.lastSave.tick;
+    if (since >= AUTOSAVE_TICKS || (m.world.executed.length !== this.lastSave.commands && since >= AUTOSAVE_AFTER_COMMAND_TICKS)) this.saveMatch();
   }
 
   /** 지금 판 저장. 썼으면 true (패배한 판·다른 창이 새 판을 시작한 슬롯이면 false). */
   private saveMatch(): boolean {
     if (!this.match || this.gameOver) return false;
     const m = this.match;
-    this.lastSave = { tick: m.tick, stage: m.state.stage, commands: m.world.executed.length };
+    this.lastSave = { tick: m.tick, stage: m.state.stage, commands: m.world.executed.length, ms: performance.now() };
     const speed = this.paused ? this.resumeSpeed : this.clock.speed;
     const token = this.ctx.saves.write(m, speed > 0 ? speed : 1, this.saveToken, this.runId);
+    // 기기 저장소에 못 씀 (용량 초과·막힘): 판마다 한 번 알림 — 이번 실행 동안은 메모리 사본으로 이어 간다
+    if (this.ctx.saves.persistFailed && !this.saveFailToast) {
+      this.saveFailToast = true;
+      this.ctx.ui.toast(SAVE_FAILED, 3200);
+    }
     if (token === null) return false;
     this.saveToken = token;
     return true;
@@ -740,7 +756,7 @@ export class GameScene extends Phaser.Scene {
   };
 
   /**
-   * 안드로이드 뒤로 가기 (A-1): 열린 창부터 닫는다 — 변환 고르기 → 캐릭터 카드 → 바텀 시트 → 이동 모드 → 타워 패널 → 펼친 고르기 창.
+   * 안드로이드 뒤로 가기 (A-1): 열린 창부터 닫는다 — 변환 고르기 → 캐릭터 카드 → 첫 승급 안내 카드(✕와 같게 '봤음') → 바텀 시트 → 이동 모드 → 타워 패널 → 펼친 고르기 창.
    * 닫을 것이 없으면 일시정지 ↔ 계속, 패배 화면이면 타이틀로. 늘 처리한다 (전투 중에 앱이 닫히지 않게).
    */
   private goBack(): boolean {
@@ -754,6 +770,7 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.convertOpen) this.closeConvertPicker();
     else if (this.ctx.ui.has('card')) this.ctx.ui.clear('card');
+    else if (this.guide) this.endGuide(true);
     else if (this.sheet) this.closeSheet();
     else if (this.moveMode) {
       this.moveMode = null;

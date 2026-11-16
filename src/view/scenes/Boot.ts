@@ -124,7 +124,7 @@ export class BootScene extends Phaser.Scene {
           ? {
               stage: formatStage(saved.match.state),
               dev: saved.dev,
-              onResume: () => this.scene.start(SCENE_GAME, { seed: saved.match.world.seed, saved } satisfies GameSceneData),
+              onResume: () => this.toGame({ seed: saved.match.world.seed, saved }),
             }
           : undefined,
         records: buildRecordsView(record, this.ctx.data.enemies.bosses, this.ctx.data.enemies.challenges),
@@ -166,6 +166,12 @@ export class BootScene extends Phaser.Scene {
 
   private startGame(mode: MatchMode): void {
     const data: GameSceneData = { seed: this.ctx.seed ?? randomSeed(), mode, theme: 1 };
+    this.toGame(data);
+  }
+
+  /** 전투 장면으로 (A-1b): 넘어가는 동안(Game 장면이 자기 처리기를 걸기 전)의 뒤로 가기는 삼킨다 — 앱이 닫히지 않게 */
+  private toGame(data: GameSceneData): void {
+    setBackHandler(() => true);
     this.scene.start(SCENE_GAME, data);
   }
 }

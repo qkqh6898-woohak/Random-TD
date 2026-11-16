@@ -42,20 +42,21 @@ npm start           # 게임 실행 (= npm run dev) → 브라우저에서 http:
 
 ### GitHub에서 빌드·서명·게시
 
-`.github/workflows/android.yml` (**Android APK**)이 `main`·`feat/android`·`codex/android-apk-v*`에 푸시할 때와 수동 실행(workflow_dispatch) 때 돈다.
+`.github/workflows/android.yml` (**Android APK**)이 `main`·`feat/android`에 푸시할 때와 수동 실행(workflow_dispatch) 때 돈다. 작업은 셋 (A-1b: 서명을 외부 코드에서 떼어 냄):
 
-1. `npm ci` → `npm test` → `npm run check` → `npm run build` (E2E는 돌리지 않음) → `android/check-java.sh`
-2. `android/setup-sdk.sh`(공개 SDK·컴파일러를 SHA-256 확인 후 받음) → `android/build-apk.sh` → **서명 전 APK** (artifact `android-unsigned-v<버전>`). `dist/` 파일이 APK `assets/`에 모두 들어갔는지 확인한다.
-3. 아래 비밀값 4개가 **모두** 있으면 `apksigner`로 서명(v2+v3)하고, 서명 인증서 SHA-256이 v0.1.7 키(`0422434c…7cd02a`)와 다르면 실패한다. 키 저장소는 `$RUNNER_TEMP`에만 풀고 끝나면 지운다. 하나라도 없으면 서명 전 APK만 올리고 초록으로 끝난다 (어떤 비밀값이 없는지 알림).
-4. 서명됐고 브랜치가 `main` 또는 `codex/android-apk-v*`이면 Release `android-v<버전>`을 만들고 APK + `SHA256SUMS`를 올린다. 같은 태그가 이미 있으면 건너뛴다 (버전을 올리라는 알림). `feat/android`는 게시하지 않는다.
+1. **build** — `npm ci` → `npm test` → `npm run check` → `npm run build` (E2E는 안 돌림) → `android/check-java.sh` → `android/setup-sdk.sh`(공개 SDK·컴파일러를 SHA-256 확인 후 받음) → `android/build-apk.sh` → **서명 전 APK** (artifact `android-unsigned-v<버전>`). `dist/` 파일이 APK `assets/`에 모두 들어갔는지 확인한다. **서명 비밀값을 전혀 참조하지 않는다** (npm 패키지 코드가 비밀값과 같은 작업에서 돌지 않게).
+2. **sign** — **`main`에서만** (서명 배포는 main만, `feat/android`는 서명 전 APK만). 서명 전 APK artifact만 내려받아 `apksigner`로 서명(PKCS12, v2+v3)하고, 서명 인증서 SHA-256이 v0.1.7 키(`0422434c…7cd02a`)와 다르면 실패한다. npm은 돌리지 않는다. 키 저장소는 `$RUNNER_TEMP`에만 풀고 끝나면(`always()`) 지운다. 비밀값이 없으면 알림만 남기고 초록으로 끝난다.
+3. **publish** — `main`에서 서명됐으면 Release `android-v<버전>`을 만들고 APK + `SHA256SUMS`를 올린다. 같은 태그가 이미 있으면 건너뛴다 (버전을 올리라는 알림).
 
-비밀값 (저장소 Settings → Secrets and variables → Actions → New repository secret):
+액션은 커밋 SHA로 고정했다 (주석 = 태그).
+
+비밀값: 저장소 Settings → Environments → **`android-release`** 만들기 → Deployment branches and tags를 **`main`만** 허용 → 그 Environment의 **Environment secrets**에 아래 넷 (저장소 수준 Repository secrets에 넣지 않는다 — 다른 브랜치·작업이 읽지 못하게). 키 저장소는 **PKCS12**(`randomtd.p12`)이고, PKCS12는 `ANDROID_KEY_PASSWORD`가 보통 `ANDROID_KEYSTORE_PASSWORD`와 같다.
 
 | 이름 | 값 |
 |------|----|
 | `ANDROID_KEYSTORE_BASE64` | v0.1.7을 서명한 키 저장소 파일(**PKCS12**, `randomtd.p12`)을 base64로 (`base64 -w0 randomtd.p12`) |
 | `ANDROID_KEYSTORE_PASSWORD` | 키 저장소 비밀번호 |
-| `ANDROID_KEY_ALIAS` | 키 별칭 (v0.1.7 키는 `randomtd`) |
+| `ANDROID_KEY_ALIAS` | 키 별칭 (v0.1.7 키는 `randomtd` — 비워 두면 `randomtd`를 쓴다) |
 | `ANDROID_KEY_PASSWORD` | 키 비밀번호 (PKCS12는 보통 `ANDROID_KEYSTORE_PASSWORD`와 같다) |
 
 ### 직접 빌드 (Linux, JDK 21 + Node.js 22)

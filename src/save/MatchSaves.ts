@@ -81,11 +81,25 @@ export function decodeSave(raw: string): unknown {
   }
 }
 
+/**
+ * 저장에 담는 실행 기록 상한 (A-1b 검토). 이어 하기·해시에는 실행 기록이 필요 없다(해시 밖) — 되살린 판을 0틱부터 다시 돌리는
+ * 리플레이 기록(개발 도구)에만 쓴다. 긴 판에서 저장 글자가 커지지 않게, 이 수를 넘으면 실행 기록을 통째로 빼고 저장한다
+ * (일부만 남기면 리플레이가 틀린 판을 재현하므로). 보통 판(수백 개)은 그대로 담는다.
+ */
+export const MAX_SAVED_EXECUTED = 4000;
+
+/** 저장할 체크포인트: 실행 기록이 상한을 넘으면 비운다 (순수). */
+export function savedCheckpoint(cp: WorldCheckpoint, max = MAX_SAVED_EXECUTED): WorldCheckpoint {
+  return cp.executed.length > max ? { ...cp, executed: [] } : cp;
+}
+
 export class MatchSaves {
   private fingerprint: number | null = null;
   readonly slot: string;
   /** 마지막으로 저장을 버린 이유 (확인·테스트용, 없으면 null) */
   lastDiscard: string | null = null;
+  /** 마지막 write가 기기 저장소에 못 써짐 (용량 초과 등 — 이번 실행 동안 메모리 사본만, A-1b) */
+  persistFailed = false;
 
   constructor(
     private readonly data: GameData,
@@ -164,12 +178,14 @@ export class MatchSaves {
         speed,
         runId,
         inputs: matchInputs(match),
-        world: match.world.checkpointView(),
+        world: savedCheckpoint(match.world.checkpointView()),
       };
       const token = encodeSave(payload);
       this.storage.setItem(this.slot, token);
+      this.persistFailed = this.storage.lastWriteFailed === true;
       return token;
     } catch {
+      this.persistFailed = true;
       return null;
     }
   }

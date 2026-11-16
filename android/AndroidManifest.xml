@@ -4,7 +4,9 @@
     android:versionCode="9"
     android:versionName="0.1.8">
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="35" />
+    <!-- allowBackup="true": 자동 저장·전투 기록·설정은 WebView localStorage에 있다 — 기기 백업·새 기기 복원에 일부러 포함한다 (A-1b) -->
     <application
+        android:allowBackup="true"
         android:label="운빨 디펜스"
         android:enableOnBackInvokedCallback="true"
         android:icon="@drawable/game_icon"

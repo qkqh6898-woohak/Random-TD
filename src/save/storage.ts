@@ -8,6 +8,8 @@ export interface KeyValueStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
+  /** 마지막 setItem이 기기 저장소에 못 쓰고 메모리에만 남았는가 (A-1b: 자동 저장 실패 알림). 메모리 저장소는 없음 */
+  readonly lastWriteFailed?: boolean;
 }
 
 /** 메모리 저장소 (테스트·localStorage를 못 쓸 때). */
@@ -30,6 +32,7 @@ export class MemoryStorage implements KeyValueStorage {
 /** 브라우저 localStorage를 감싼 저장소. 읽기·쓰기 예외는 삼키고 메모리 사본으로 이어 간다. */
 export class BrowserStorage implements KeyValueStorage {
   private readonly fallback = new MemoryStorage();
+  lastWriteFailed = false;
 
   constructor(private readonly ls: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null) {}
 
@@ -47,8 +50,10 @@ export class BrowserStorage implements KeyValueStorage {
     this.fallback.setItem(key, value);
     try {
       this.ls?.setItem(key, value);
+      this.lastWriteFailed = false;
     } catch {
       // 용량 초과·접근 거부: 메모리 사본만
+      this.lastWriteFailed = true;
     }
   }
 

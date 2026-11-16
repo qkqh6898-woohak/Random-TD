@@ -6,6 +6,8 @@ import android.graphics.Insets;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.WindowInsets;
 import android.webkit.MimeTypeMap;
@@ -39,6 +41,15 @@ public final class GameActivity extends Activity {
     private WebView game;
     private OnBackInvokedCallback backCallback;
     private boolean handlingBack;
+    /** evaluateJavascript 답이 오지 않으면(페이지가 멈춤 등) 이만큼 뒤에 다시 뒤로 가기를 받는다 */
+    private static final long BACK_TIMEOUT_MS = 1000;
+    private final Handler backTimeout = new Handler(Looper.getMainLooper());
+    private final Runnable releaseBack = new Runnable() {
+        @Override
+        public void run() {
+            handlingBack = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle state) {
@@ -85,6 +96,8 @@ public final class GameActivity extends Activity {
             return;
         }
         handlingBack = true;
+        backTimeout.removeCallbacks(releaseBack);
+        backTimeout.postDelayed(releaseBack, BACK_TIMEOUT_MS);
         // 웹 쪽(src/ui/nativeBack.ts)이 열린 <dialog> → 장면 처리기 순서로 처리한다. 스크립트가 없거나 오류면 false → 앱 종료.
         game.evaluateJavascript("(function() {" +
                 "try { return !window.dispatchEvent(new Event('randomtd:native-back', { cancelable: true })); }" +
@@ -92,6 +105,7 @@ public final class GameActivity extends Activity {
                 "})()", new ValueCallback<String>() {
             @Override
             public void onReceiveValue(String result) {
+                backTimeout.removeCallbacks(releaseBack);
                 handlingBack = false;
                 if (!"true".equals(result) && !isFinishing()) finish();
             }
@@ -133,6 +147,7 @@ public final class GameActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        backTimeout.removeCallbacks(releaseBack);
         if (Build.VERSION.SDK_INT >= 33 && backCallback != null) {
             getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(backCallback);
             backCallback = null;

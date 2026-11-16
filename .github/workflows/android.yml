@@ -1,13 +1,18 @@
 name: Android APK
 
-# 웹 검사(npm test·check·build) → 서명 전 APK → (비밀값이 있으면) v0.1.7과 같은 키로 서명·확인 → main·codex/android-apk-v*면 Release 게시.
+# 작업 순서 (A-1b 검토 반영: 서명을 외부 코드에서 떼어 냄):
+#   build   — npm·SDK로 웹 검사(test·check·build)와 서명 전 APK. 서명 비밀값을 전혀 참조하지 않는다.
+#   sign    — build가 올린 서명 전 APK만 내려받아 apksigner로 서명·확인 (npm을 돌리지 않음). **main에서만** (서명 배포는 main만),
+#             Environment 'android-release'(배포 브랜치 = main)의 비밀값이 있을 때만 (ANDROID_KEY_ALIAS는 없으면 'randomtd').
+#   publish — 서명된 APK를 Release android-v<버전>에 (main만, 태그가 이미 있으면 건너뜀).
+# feat/android 푸시는 build(서명 전 APK)만. 옛 codex/android-apk-v* 갈래는 이제 빌드하지 않는다.
 # 비밀값: ANDROID_KEYSTORE_BASE64 · ANDROID_KEYSTORE_PASSWORD · ANDROID_KEY_ALIAS · ANDROID_KEY_PASSWORD (README '안드로이드 APK').
+# 액션은 커밋 SHA로 고정 (git ls-remote로 확인한 v4 태그의 커밋, 주석 = 태그).
 on:
   push:
     branches:
       - main
       - feat/android
-      - 'codex/android-apk-v*'
   workflow_dispatch:
 
 permissions:
@@ -23,18 +28,15 @@ jobs:
     timeout-minutes: 40
     outputs:
       version: ${{ steps.version.outputs.version }}
-      signed: ${{ steps.sign.outputs.signed }}
-    env:
-      SIGNER_SHA256: 0422434cc6f7026d53e97e8c5aac9a29ff5d5ccf8d2d1228525d8feb2a7cd02a
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
         with:
           distribution: temurin
           java-version: '21'
@@ -75,25 +77,61 @@ jobs:
           [[ "$badging" == *"name='com.woohak.randomtd'"* ]] || { echo "::error::앱 ID가 com.woohak.randomtd가 아니다"; exit 1; }
           [[ "$badging" == *"versionName='$VERSION'"* ]] || { echo "::error::APK versionName이 $VERSION이 아니다"; exit 1; }
 
-      - name: 서명 (비밀값이 있을 때만)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: android-unsigned-v${{ steps.version.outputs.version }}
+          path: android-build/*.apk
+          if-no-files-found: error
+
+  sign:
+    needs: build
+    # 서명 배포는 main에서만 (feat/android는 서명 전 APK만)
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: android-release
+    outputs:
+      signed: ${{ steps.sign.outputs.signed }}
+    env:
+      SIGNER_SHA256: 0422434cc6f7026d53e97e8c5aac9a29ff5d5ccf8d2d1228525d8feb2a7cd02a
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      # 저장소 코드는 받지 않는다 — SDK 받는 스크립트만 build가 쓴 것과 같은 것을 쓰려고 그 파일 하나만 (sparse)
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          sparse-checkout: android/setup-sdk.sh
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: android-unsigned-v${{ needs.build.outputs.version }}
+          path: android-build
+
+      - name: 서명 (비밀값이 모두 있을 때만)
         id: sign
         env:
-          VERSION: ${{ steps.version.outputs.version }}
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           missing=()
-          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+          # ANDROID_KEY_ALIAS는 없으면 v0.1.7 키의 별칭 'randomtd'를 쓴다 (나머지 셋은 꼭 필요)
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_PASSWORD; do
             [[ -n "${!name}" ]] || missing+=("$name")
           done
           if (( ${#missing[@]} > 0 )); then
-            echo "::notice title=서명 안 함::비밀값이 없어 서명 전 APK만 올립니다. 저장소 Settings → Secrets and variables → Actions에 추가하세요: ${missing[*]}"
+            echo "::notice title=서명 안 함::비밀값이 없어 서명 전 APK만 남깁니다. Environment 'android-release'의 secrets에 추가하세요: ${missing[*]}"
             echo "signed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          tools="$RUNNER_TEMP/rtd-android/build-tools/android-15"
+          sdk="$RUNNER_TEMP/rtd-android"
+          bash android/setup-sdk.sh "$sdk"
+          tools="$sdk/build-tools/android-15"
           keydir="$RUNNER_TEMP/rtd-signing"
           mkdir -m 700 -p "$keydir"
           # 키 저장소(PKCS12, v0.1.7의 randomtd.p12)는 작업 폴더가 아닌 RUNNER_TEMP에만 풀고, 값은 출력하지 않는다
@@ -105,7 +143,7 @@ jobs:
             --ks "$keydir/release.p12" \
             --ks-type PKCS12 \
             --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
-            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-key-alias "${ANDROID_KEY_ALIAS:-randomtd}" \
             --key-pass env:ANDROID_KEY_PASSWORD \
             --v1-signing-enabled false \
             --v2-signing-enabled true \
@@ -128,27 +166,22 @@ jobs:
         if: always()
         run: rm -rf -- "$RUNNER_TEMP/rtd-signing"
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android-unsigned-v${{ steps.version.outputs.version }}
-          path: android-build/*.apk
-          if-no-files-found: error
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: steps.sign.outputs.signed == 'true'
         with:
-          name: android-release-v${{ steps.version.outputs.version }}
+          name: android-release-v${{ needs.build.outputs.version }}
           path: android-release/
           if-no-files-found: error
 
   publish:
-    needs: build
-    if: needs.build.outputs.signed == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/codex/android-apk-v'))
+    needs: [build, sign]
+    if: needs.sign.outputs.signed == 'true' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: android-release-v${{ needs.build.outputs.version }}
           path: android-release

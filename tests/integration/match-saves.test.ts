@@ -5,11 +5,11 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { MATCH_SLOT, MATCH_SLOT_DEV, MatchSaves, decodeSave, encodeSave } from '../../src/save/MatchSaves';
-import { MemoryStorage } from '../../src/save/storage';
+import { MATCH_SLOT, MATCH_SLOT_DEV, MAX_SAVED_EXECUTED, MatchSaves, decodeSave, encodeSave, savedCheckpoint } from '../../src/save/MatchSaves';
+import { BrowserStorage, MemoryStorage } from '../../src/save/storage';
 import type { CommandInput } from '../../src/sim/Commands';
 import { createMatch } from '../../src/sim/match';
-import { recordReplay, replayMatchOptions, type ReplayFile } from '../../src/sim/replay';
+import { matchInputs, recordReplay, replayMatchOptions, type ReplayFile } from '../../src/sim/replay';
 import { OPTIONAL_STATE_KEYS } from '../../src/sim/state';
 import { arenaData, command, data, infinite, summonAt } from '../helpers/match';
 
@@ -107,6 +107,36 @@ describe('저장 → 되살리기', () => {
       expect(restoredCount).toBe(2);
     });
   }
+
+  it('실행 기록이 상한을 넘으면 빼고 저장해도 되살린 판의 해시·이어 간 해시가 같다 (실행 기록은 해시 밖)', () => {
+    expect(MAX_SAVED_EXECUTED).toBeGreaterThan(1000);
+    const match = infinite(21);
+    summonAt(match, 2, 2);
+    summonAt(match, 3, 2);
+    match.stepN(200);
+    const cp = savedCheckpoint(match.world.checkpointView(), 1);
+    expect(cp.executed).toEqual([]);
+    expect(savedCheckpoint(match.world.checkpointView()).executed.length).toBe(2);
+    const fresh = createMatch(arenaData, replayMatchOptions(matchInputs(match)));
+    fresh.world.restoreCheckpoint(JSON.parse(JSON.stringify(cp)), OPTIONAL_STATE_KEYS);
+    expect(fresh.hash()).toBe(match.hash());
+    for (const g of [match, fresh]) {
+      command(g, { type: 'summon', x: 4, y: 2 });
+      g.stepN(300);
+    }
+    expect(fresh.hash()).toBe(match.hash());
+  });
+
+  it('기기 저장소에 못 쓰면(용량 초과) persistFailed — 이번 실행은 메모리 사본으로 이어 간다', () => {
+    const full = { getItem: () => null, setItem: () => { throw new Error('QuotaExceededError'); }, removeItem: () => {} };
+    const store = new MatchSaves(arenaData, new BrowserStorage(full), { version: VERSION, dev: false });
+    expect(store.write(infinite(1), 1, null, 'q')).not.toBeNull();
+    expect(store.persistFailed).toBe(true);
+    expect(store.read()?.match.world.seed).toBe(1);
+    const ok = new MatchSaves(arenaData, new BrowserStorage(new MemoryStorage()), { version: VERSION, dev: false });
+    ok.write(infinite(2), 1, null, 'q');
+    expect(ok.persistFailed).toBe(false);
+  });
 
   it('처음엔 없는 판 상태 필드(chanceOv·sells)도 저장·되살린다', () => {
     const fresh = infinite(1);

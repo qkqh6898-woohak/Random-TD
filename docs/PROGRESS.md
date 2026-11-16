@@ -901,3 +901,15 @@
   - 실제 휴대폰에서 확인할 것: v0.1.7 위 업데이트 설치, 하위 폴더 그림(`assets/characters/…`)이 WebView에서 열림, 뒤로 가기(창 닫기 → 일시정지/계속 → 타이틀에서 앱 종료), 백그라운드 → 다시 열기 이어 하기, 효과음.
   - 앱 버전이 바뀌면 진행 중이던 판 저장은 버려진다(안전 쪽 결정). 업데이트 직후 판을 잃지 않게 하려면 sim 상태 형식 번호를 따로 두는 방식으로 바꿀 수 있다.
   - 개발자 판 타이틀에서 [캠페인 1]은 확인 없이 개발자 저장을 덮는다(개발자 전용이라 그대로 둠).
+- **검토 반영 (A-1b, 독립 검토 PASS의 minor·nit)**:
+  - **서명 분리**: 워크플로를 `build`(npm·SDK·서명 전 APK — 서명 비밀값을 전혀 참조하지 않음) → `sign`(서명 전 artifact만 내려받아 `setup-sdk.sh` + `apksigner` 서명·v2/v3·지문 확인, npm 안 돌림, `environment: android-release`, 키는 `always()`로 지움) → `publish`(needs sign)로 나눴다.
+    사용자 결정에 따라 **서명 배포는 `main`에서만**: `sign`·`publish`는 `refs/heads/main`일 때만 돌고 `feat/android`는 서명 전 APK만 남긴다. 옛 `codex/android-apk-v*` 갈래는 푸시 대상에서도 뺐다(옛 코드를 빌드할 이유가 없음).
+    비밀값 넷은 Environment `android-release`(배포 브랜치 규칙 = `main`만)의 Environment secrets로 (저장소 secrets 아님). 비밀값이 없으면 `::notice::` 후 초록. `ANDROID_KEY_ALIAS`는 비밀값으로 두되 비면 `randomtd`.
+    액션은 `git ls-remote`로 확인한 v4 태그의 커밋 SHA로 고정(checkout v4.4.0 · setup-node v4.4.0 · setup-java v4.9.1 · upload-artifact v4.6.2 · download-artifact v4.3.0, 모두 가벼운 태그라 태그 SHA = 커밋). 
+  - **자동 저장 비용**: 주기·명령 저장은 실제 시간 **2.5초**에 한 번까지(×16에서도 초당 여러 번 쓰지 않음). 단계 바뀜·일시정지·페이지 숨김·장면 종료는 바로 저장.
+    기기 저장소에 못 쓰면(용량 초과 등, `BrowserStorage.lastWriteFailed` → `MatchSaves.persistFailed`) 판마다 한 번 '저장 실패 — 저장 공간을 확인해 주세요'.
+    실행 기록: 이어 하기·해시에는 필요 없고(해시 밖) 되살린 판을 0틱부터 다시 기록하는 리플레이 도구에만 쓰인다 → 보통 판은 그대로 담고, **4,000개를 넘으면 통째로 빼고** 저장(일부만 남기면 리플레이가 틀린 판을 재현하므로). 테스트: 실행 기록을 뺀 체크포인트로 되살려도 해시·이어 간 해시가 같다, 리플레이 7개 중간 저장·이어 기록 테스트 그대로 통과.
+  - **뒤로 가기**: 첫 승급 안내 카드를 일시정지보다 먼저 닫는다(✕와 같게 '봤음'). 타이틀 → 전투로 넘어가는 동안(Game 장면이 처리기를 걸기 전) 뒤로 가기는 삼킨다 — 앱이 닫히지 않게. E2E `a1.spec` 'A-1b 뒤로 가기'.
+  - **GameActivity**: 웹 쪽 답(evaluateJavascript 콜백)이 1초 안에 안 오면 다시 뒤로 가기를 받는다(`handlingBack` 풀기). `android:allowBackup="true"`를 명시(자동 저장·기록·설정이 든 WebView localStorage를 백업에 일부러 포함, XML 주석).
+    안드로이드 API 모양 스텁으로 `GameActivity.java`가 컴파일되는지 이 컨테이너에서 확인(스텁은 저장소에 넣지 않음).
+  - 게이트 (A-1b, 한 번에): Vitest **1,246 통과 + 2 건너뜀**, `npm run check`·`npm run build` 통과, E2E **126 통과 · 1 건너뜀 · 실패 0** (48.3분, 새 'A-1b 뒤로 가기' 포함). 리플레이 7개 변경 없음.
