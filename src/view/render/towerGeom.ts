@@ -43,6 +43,17 @@ export function towerFigureSpanTiles(scale = 1): { top: number; bottom: number }
   return { top: FOOT_OFFSET_TILES - HEAD_ABOVE_FOOT_TILES * scale, bottom: FIGURE_BOTTOM_TILES };
 }
 
+/** 소환·승급 주사위가 머리 끝보다 더 올라가 멈추는 높이 (칸 배수) */
+export const DIE_ABOVE_HEAD_TILES = 0.104;
+
+/**
+ * 소환·승급 주사위가 굴러 올라가 멈추는 자리: 칸 중심 기준 칸 배수 (음수 = 위). 크기 1 = −0.94 (A-1 그대로).
+ * B-1: 캐릭터가 2배로 커져 예전 높이(−0.94칸)에서는 주사위가 얼굴을 가렸다 → 지금 그림 크기의 머리 끝 위로.
+ */
+export function dieApexTiles(scale = 1): number {
+  return towerFigureSpanTiles(scale).top - DIE_ABOVE_HEAD_TILES;
+}
+
 /**
  * 타워 칸 (tx, ty)의 그림 중 위 칸으로 삐져나온 머리 영역 (칸 좌표, 칸 (0,0) 왼쪽 위 = (0,0), 1칸 = 1).
  * top < ty 이고 bottom = ty (칸 위쪽 경계)까지.

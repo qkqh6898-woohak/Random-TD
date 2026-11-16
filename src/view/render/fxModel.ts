@@ -155,3 +155,15 @@ export function bigTextSlot(box: TextBox, others: readonly { box: TextBox; big: 
   });
   return { slot, drop };
 }
+
+/** 소환·승급 주사위가 굴러가는 동안 나눠 보이는 눈 수 (마지막 칸은 결과 눈) */
+export const DIE_ROLL_STEPS = 8;
+
+/**
+ * 굴러가는 주사위 눈 (B-1): 트윈 진행도 0~1 → 1~6. 처음 7칸은 결과 눈 다음부터 한 칸씩 돌고, 마지막 칸(과 끝)은 결과 눈.
+ * 화면 전용 (sim과 무관, 난수 없음).
+ */
+export function rollingDieFace(progress: number, revealed: number): number {
+  const turn = Math.floor(Math.min(1, Math.max(0, progress)) * DIE_ROLL_STEPS);
+  return turn < DIE_ROLL_STEPS - 1 ? 1 + ((revealed + turn) % 6) : revealed;
+}

@@ -1,6 +1,8 @@
 /**
  * T-3 E2E: 화면 꽉 차게(빈 띠 없음·HUD/아래 띠 다 보임·넓은 화면 양옆은 흐린 배경) · 2×2 블록 맵에서 소환 ·
- * 타일 숨김(배치 칸은 판 시작·배치할 수 없는 곳을 눌렀을 때·끄는 동안만) + 스크린샷 docs/screens/T2-full-*·T2-map-* (SAVE_SCREENS=1).
+ * 배치 칸 강조(buildHint: 판 시작·배치할 수 없는 곳을 눌렀을 때·끄는 동안만) + 스크린샷 docs/screens/T2-full-*·T2-map-* (SAVE_SCREENS=1).
+ * B-1 사용자 결정: T-3 '타일 숨김'을 뒤집어 소환 바닥(배치 칸)은 늘 구운 바닥 텍스처로 보인다 (MapRenderer.drawSummonPads).
+ *   그래서 buildHint는 이제 '흰색 강조'만 뜻하고, 평소 0이어도 칸은 보인다 — 아래 buildHint 검사는 강조가 켜지고 꺼지는지만 본다.
  * sim은 window.__rtd로 읽기만 한다 (타워 놓기는 개발자 명령).
  */
 import { expect, test, type Page } from '@playwright/test';
@@ -181,11 +183,11 @@ test('2×2 블록 맵에서 소환: 순환의 정원 32칸 · 빈 땅/길을 누
   const errors = collectErrors(page);
   await startGame(page, '/?seed=42');
   await expect(page.getByTestId('hud-towers')).toHaveText('0/32');
-  // 판 시작 때 배치 칸이 잠깐 보였다가 사라진다 → 빈 판 (칸 네모·격자 없이 길만)
+  // 판 시작 때 배치 칸 강조가 잠깐 보였다가 사라진다 (B-1: 소환 바닥 자체는 늘 보임)
   await expect.poll(() => sim(page, (s) => s.buildHint), { timeout: 5000 }).toBe(0);
   await expect.poll(() => sim(page, (s) => s.backgroundKey), { timeout: 20_000 }).toBe('bg-t01-b1');
   await shot(page, 'T2-map-infinite-empty');
-  // 가운데 빈 땅 (3, 5) → 소환 없음, 배치 칸 보임
+  // 가운데 빈 땅 (3, 5) → 소환 없음, 배치 칸 강조
   let p = await tilePoint(page, 3, 5);
   await page.touchscreen.tap(p.x, p.y);
   await expect.poll(() => sim(page, (s) => s.buildHint)).toBeGreaterThan(0);

@@ -1699,7 +1699,11 @@ export class GameScene extends Phaser.Scene {
     this.puddleLayer = new PuddleLayer(this, this.layout);
     this.soldierLayer = new SoldierLayer(this, this.layout, this.match.map.path);
     this.floatingText = new FloatingTextLayer(this, this.layout.tile);
-    this.fx = new FxLayer(this, this.layout);
+    // B-1: 소환·승급 주사위는 커진 캐릭터의 머리 위에서 멈춘다 (예전 높이면 2배 그림의 얼굴을 가림)
+    this.fx = new FxLayer(this, this.layout, undefined, (x, y) => {
+      const t = towerAt(this.match.world, x, y);
+      return t ? this.towerLayer.expectedScale(t, this.match.towers()) : 1;
+    });
     this.selectionLayer = new SelectionLayer(this, this.layout);
     this.guideLayer = new GuideLayer(this, this.layout);
     this.updateToastTop();

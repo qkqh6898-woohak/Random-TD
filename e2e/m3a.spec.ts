@@ -37,7 +37,7 @@ type SceneLike = {
   mergeEffects: number;
   selectedTowerId: number | null;
   dragState: { id: number; drop: { tx: number; ty: number; preview: string } | null } | null;
-  /** 배치 칸 진하기 (T-3 타일 숨김: 끄는 중 1) */
+  /** 배치 칸 강조 진하기 (끄는 중 1; B-1부터 소환 바닥 자체는 늘 보임) */
   buildHint: number;
   renderedTowerCount: number;
   draggingTowerCount: number;
@@ -412,12 +412,17 @@ async function panelVsTower(page: Page, tx: number, ty: number) {
     ([x, y]) => {
       const s = (window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } }).__rtd.game.scene.getScene('Game') as {
         mapLayout: { originY: number; tile: number };
+        match: { towers(): { id: number; tx: number; ty: number }[] };
+        towerLayer: { artScaleOf(id: number): number | null };
       };
       const L = s.mapLayout;
       const st = document.getElementById('stage')!.getBoundingClientRect();
       const k = st.width / 1080;
       const cy = L.originY + (y + 0.5) * L.tile;
-      const fig = { top: st.top + (cy - 0.836 * L.tile) * k, bottom: st.top + (cy + 0.475 * L.tile) * k };
+      // B-1 (사용자 결정: 전투 캐릭터 기본 2배·붙으면 1.4배): 그림 위 끝 = 발밑(+0.3칸) − 1.136칸 × 지금 크기 배수 (예전 고정 0.836칸 = 크기 1)
+      const t = s.match.towers().find((q) => q.tx === x && q.ty === y);
+      const scale = (t && s.towerLayer.artScaleOf(t.id)) || 1;
+      const fig = { top: st.top + (cy + (0.3 - 1.136 * scale) * L.tile) * k, bottom: st.top + (cy + 0.475 * L.tile) * k };
       const el = document.querySelector('[data-testid="tower-panel"]') as HTMLElement;
       const r = el.getBoundingClientRect();
       const toasts = [...document.querySelectorAll('.toast')]

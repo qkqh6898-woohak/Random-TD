@@ -383,6 +383,18 @@ export class TowerLayer {
     return this.sprites.get(id)?.artScale ?? null;
   }
 
+  /**
+   * 그 타워 그림이 쓰는(그림이 아직 없으면 — 소환 직후 — 쓸) 크기 배수 (B-1): 캐릭터 크기 × 기본 2배 / 붙으면 1.4배, HUD 아래까지.
+   * 소환 주사위를 머리 위로 올릴 때 쓴다. sync와 같은 계산.
+   */
+  expectedScale(t: Tower, towers: readonly Tower[]): number {
+    const sprite = this.sprites.get(t.id);
+    if (sprite) return sprite.artScale;
+    const crowded = towers.some((o) => o.id !== t.id && Math.abs(o.tx - t.tx) + Math.abs(o.ty - t.ty) === 1);
+    const footY = tileCenterPx(this.layout, t.tx, t.ty).y + this.layout.tile * FOOT_OFFSET_TILES;
+    return battleFigureScale(lookScale(towerLook(t.tower), this.art.awakened?.(t.tower) ?? false), crowded, (footY - this.topLimit) / this.layout.tile);
+  }
+
   /** 그 타워의 지금 그려진 발밑 위치 (화면 px). */
   footPx(id: number): { x: number; y: number } | null {
     return this.sprites.get(id)?.footPx ?? null;

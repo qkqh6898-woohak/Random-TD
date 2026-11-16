@@ -1,0 +1,422 @@
+/**
+ * B-1 전투 화면 소환 연출 (Codex 패치 확인) E2E — 휴대폰 412×915 · 360×800.
+ * 사용자 결정: 캐릭터는 기본 2배(상하좌우에 타워가 붙으면 1.4배, HUD 아래까지로 줄임), 소환 바닥은 늘 보이는 구운 텍스처, 맵 위아래 여백 없음.
+ * 이 결정 때문에 큰 머리가 위·옆 칸을 덮는다 → 터치 판정이 맞는지 여기서 본다:
+ *  a. 빈 소환 칸(큰 타워 바로 위·옆, 0번 줄 포함)을 누르면 그 칸에 소환 — 큰 이웃의 머리가 탭을 가져가지 않는다.
+ *  b. 타워 몸·커진 머리를 누르면 그 타워를 고르고 정보 패널, 패널은 고른 그림(실제 크기)을 가리지 않는다.
+ *  c. 길게 눌러 끌기 이동·교환이 맞는 칸에 놓인다 (머리를 잡고 끌어도).
+ *  d. 소환·승급 주사위는 눈이 바뀌며 구르고 발밑에 세 가지 색 별, 연출 끄기·동작 줄이기면 주사위·별 없음.
+ *  e. 0번 줄 큰 머리는 HUD 아래까지만 (일시정지·배속 누르기 그대로).
+ *  f. 꽉 찬 판: 모든 칸에 타워 → 스크린샷 + 칸마다 탭이 그 타워.
+ * 스크린샷 (SAVE_SCREENS=1): docs/screens/B1-crowded-412.png · B1-empty-pad-tap.png · B1-info-panel-big.png · B1-summon-fx.png · B1-360.png.
+ */
+import { expect, test, type Page } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import { clickStart } from './title';
+
+const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
+/** towerGeom: 발밑 ~ 머리 끝(대기 동작 여유 포함) = 1.136칸 × 크기 배수, 발밑 = 칸 중심 + 0.3칸, 받침대 아래 = +0.475칸 */
+const HEAD_ABOVE_FOOT = 0.3 + 0.776 + 0.06;
+
+type Tw = { id: number; tx: number; ty: number; tower: string };
+type SceneLike = {
+  match: {
+    tick: number;
+    state: { gold: number; stage: number };
+    map: { buildable: [number, number][]; width: number; height: number };
+    rules: { towerOrder: string[] };
+    towers(): Tw[];
+    world: { enqueue(c: Record<string, unknown>): { ok: boolean } };
+  };
+  mapLayout: { originX: number; originY: number; tile: number };
+  towerLayer: { artScaleOf(id: number): number | null };
+  selectedTowerId: number | null;
+  panelOpen: boolean;
+  dragState: { id: number } | null;
+  diceStats: { active: number; shown: number; peak: number };
+  tweens: { timeScale: number };
+  debugFastForward(n: number): number;
+};
+
+function collectErrors(page: Page): string[] {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(`console: ${msg.text()}`);
+  });
+  return errors;
+}
+
+async function sim<T, A = null>(page: Page, fn: (s: SceneLike, a: A) => T, arg: A = null as A): Promise<T> {
+  return page.evaluate(
+    ([src, a]) => {
+      const s = (window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } }).__rtd.game.scene.getScene('Game');
+      return (0, eval)(src)(s, a);
+    },
+    [`(${fn.toString()})`, arg] as const,
+  ) as Promise<T>;
+}
+
+async function shot(page: Page, name: string): Promise<void> {
+  mkdirSync('test-results/screens', { recursive: true });
+  await page.screenshot({ path: `test-results/screens/${name}.png` });
+  if (SAVE_DOCS) {
+    mkdirSync('docs/screens', { recursive: true });
+    await page.screenshot({ path: `docs/screens/${name}.png` });
+  }
+}
+
+/** 이 파일은 정보 패널을 본다 → '눌러서 바로 승급'을 끄고 시작 (같은 타워 셋을 눌러도 승급되지 않게). */
+async function start(page: Page, query = '?debug=1&seed=42', settings: Record<string, unknown> = {}): Promise<void> {
+  await page.addInitScript((s) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false, ...s })), settings);
+  await page.goto(`/${query}`);
+  await clickStart(page);
+  await expect(page.locator('[data-screen="game"]')).toBeVisible();
+  await expect.poll(() => sim(page, (s) => s.mapLayout.tile)).toBeGreaterThan(0);
+  await sim(page, (s) => s.match.world.enqueue({ type: 'debugAddGold', amount: 1_000_000 }));
+  await page.waitForTimeout(300);
+}
+
+/** 칸 (tx, ty) 가운데에서 (dx, dy)칸 옮긴 자리의 페이지 좌표. */
+async function tilePoint(page: Page, tx: number, ty: number, dx = 0, dy = 0): Promise<{ x: number; y: number }> {
+  return page.evaluate(
+    ([x, y, ddx, ddy]) => {
+      const s = (window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } }).__rtd.game.scene.getScene('Game') as SceneLike;
+      const L = s.mapLayout;
+      const r = document.getElementById('stage')!.getBoundingClientRect();
+      const k = r.width / 1080;
+      return { x: r.left + (L.originX + (x + 0.5 + ddx) * L.tile) * k, y: r.top + (L.originY + (y + 0.5 + ddy) * L.tile) * k };
+    },
+    [tx, ty, dx, dy] as const,
+  );
+}
+
+async function tap(page: Page, tx: number, ty: number, dx = 0, dy = 0): Promise<void> {
+  const p = await tilePoint(page, tx, ty, dx, dy);
+  await page.touchscreen.tap(p.x, p.y);
+  await page.waitForTimeout(140);
+}
+
+async function towers(page: Page): Promise<Tw[]> {
+  return sim(page, (s) => s.match.towers().map((t) => ({ id: t.id, tx: t.tx, ty: t.ty, tower: t.tower })));
+}
+
+/** 개발자 명령으로 [x, y, 타워 id] 놓기 (한 틱). */
+async function place(page: Page, list: [number, number, string][]): Promise<void> {
+  const n0 = (await towers(page)).length;
+  const ok = await sim(
+    page,
+    (s, l) => {
+      let n = 0;
+      for (const [x, y, id] of l) if (s.match.world.enqueue({ type: 'debugTower', x, y, t: s.match.rules.towerOrder.indexOf(id) }).ok) n++;
+      s.debugFastForward(1);
+      return n;
+    },
+    list,
+  );
+  expect(ok).toBe(list.length);
+  await expect.poll(async () => (await towers(page)).length).toBe(n0 + list.length);
+  await page.waitForTimeout(350); // 등장 동작·크기 맞춤
+}
+
+const BIG = ['stonegolem', 'dragoncaller'];
+
+for (const [w, h] of [
+  [412, 915],
+  [360, 800],
+] as const) {
+  test.describe(`B-1 ${w}×${h}`, () => {
+    test.use({ viewport: { width: w, height: h } });
+
+    test('a. 빈 소환 칸(큰 타워 바로 위·옆·0번 줄)을 누르면 그 칸에 소환 — 큰 머리가 탭을 가져가지 않는다', async ({ page }) => {
+      test.slow();
+      const errors = collectErrors(page);
+      await start(page);
+      // 바둑판: (x + y) 짝수 칸에 큰 캐릭터 → 서로 붙지 않아 모두 기본 2배(돌 골렘 2.5배), 빈 칸은 위·아래·옆이 큰 타워
+      const cells = await sim(page, (s) => s.match.map.buildable.map(([x, y]) => [x, y] as [number, number]));
+      const filled = cells.filter(([x, y]) => (x + y) % 2 === 0);
+      await place(page, filled.map(([x, y], i) => [x, y, BIG[i % 2]!] as [number, number, string]));
+      const scales = await sim(page, (s) => s.match.towers().map((t) => s.towerLayer.artScaleOf(t.id) ?? 0));
+      expect(Math.max(...scales), '혼자인 큰 캐릭터는 2배 이상').toBeGreaterThanOrEqual(2);
+      const empty = cells.filter(([x, y]) => (x + y) % 2 !== 0);
+      // 바로 아래에 큰 타워가 있는 빈 칸·0번 줄 빈 칸이 있어야 의미가 있다
+      const has = (x: number, y: number) => filled.some(([fx, fy]) => fx === x && fy === y);
+      expect(empty.some(([x, y]) => has(x, y + 1))).toBe(true);
+      expect(empty.some(([, y]) => y === Math.min(...cells.map((c) => c[1])))).toBe(true);
+      if (w === 412) await shot(page, 'B1-empty-pad-tap-before');
+      // 칸 안 여러 자리: 가운데 · 위쪽 · 아래쪽 좌우(아래 타워 머리 옆) · 아래쪽 가운데 바로 위(크기 1 머리 영역 위)
+      const offsets: [number, number][] = [
+        [0, 0],
+        [0, -0.38],
+        [-0.4, 0.3],
+        [0.4, 0.3],
+        [0, 0.12],
+      ];
+      for (let i = 0; i < empty.length; i++) {
+        const [x, y] = empty[i]!;
+        const [dx, dy] = offsets[i % offsets.length]!;
+        await tap(page, x, y, dx, dy);
+        await expect
+          .poll(async () => (await towers(page)).some((t) => t.tx === x && t.ty === y), { message: `(${x},${y}) +(${dx},${dy}) 탭 → 그 칸에 소환` })
+          .toBe(true);
+        expect(await sim(page, (s) => s.selectedTowerId)).toBeNull();
+      }
+      expect((await towers(page)).length).toBe(cells.length);
+      if (w === 412) await shot(page, 'B1-empty-pad-tap');
+      expect(errors).toEqual([]);
+    });
+
+    test('b. 타워 몸·커진 머리를 누르면 고르고 정보 패널, 패널이 고른 그림(실제 크기)을 가리지 않는다', async ({ page }) => {
+      test.slow();
+      const errors = collectErrors(page);
+      await start(page);
+      // 줄마다 큰 타워 하나 (혼자 → 2배). 위 칸이 길·장식이면 위 칸까지 올라온 머리를 눌러도 고른다
+      const picks = await sim(page, (s) => {
+        const set = new Set(s.match.map.buildable.map(([x, y]) => `${x},${y}`));
+        const rows = new Map<number, [number, number]>();
+        for (const [x, y] of s.match.map.buildable) {
+          const prev = rows.get(y);
+          // 위 칸이 소환 칸이 아닌 칸을 먼저 (머리 탭 확인용)
+          if (!prev || (set.has(`${prev[0]},${y - 1}`) && !set.has(`${x},${y - 1}`))) rows.set(y, [x, y]);
+        }
+        return [...rows.values()].map(([x, y]) => ({ x, y, openAbove: !set.has(`${x},${y - 1}`) && y > 0 }));
+      });
+      expect(picks.length).toBeGreaterThanOrEqual(8);
+      let headTaps = 0;
+      for (const [i, c] of picks.entries()) {
+        await place(page, [[c.x, c.y, BIG[i % 2]!]]);
+        const t = (await towers(page)).find((k) => k.tx === c.x && k.ty === c.y)!;
+        const scale = (await sim(page, (s, id) => s.towerLayer.artScaleOf(id), t.id))!;
+        // 몸 (칸 가운데 조금 아래)
+        await tap(page, c.x, c.y, 0, 0.1);
+        await expect.poll(() => sim(page, (s) => s.selectedTowerId), { message: `${c.y}줄 몸` }).toBe(t.id);
+        await expect(page.getByTestId('tower-panel')).toBeVisible();
+        await page.waitForTimeout(300);
+        // 패널 vs 그림 (실제 크기 배수로)
+        const m = await page.evaluate(
+          ([x, y, k, head]) => {
+            const s = (window as unknown as { __rtd: { game: { scene: { getScene(n: string): unknown } } } }).__rtd.game.scene.getScene('Game') as SceneLike;
+            const L = s.mapLayout;
+            const st = document.getElementById('stage')!.getBoundingClientRect();
+            const kk = st.width / 1080;
+            const cy = L.originY + (y + 0.5) * L.tile;
+            const fig = { top: st.top + (cy + (0.3 - head * k) * L.tile) * kk, bottom: st.top + (cy + 0.475 * L.tile) * kk };
+            const r = document.querySelector('[data-testid="tower-panel"]')!.getBoundingClientRect();
+            return { x, fig, panel: { top: r.top, bottom: r.bottom }, overlap: Math.max(0, Math.min(r.bottom, fig.bottom) - Math.max(r.top, fig.top)) };
+          },
+          [c.x, c.y, scale, HEAD_ABOVE_FOOT] as const,
+        );
+        expect(m.overlap, `${c.y}줄 (×${scale.toFixed(2)}) 패널이 그림을 가림: ${JSON.stringify(m)}`).toBeLessThanOrEqual(0.5);
+        if (w === 412 && i === Math.floor(picks.length / 2)) await shot(page, 'B1-info-panel-big');
+        await page.locator('[data-action="panel-close"]').click();
+        await expect(page.getByTestId('tower-panel')).toHaveCount(0);
+        // 커진 머리 (위 칸까지 올라온 부분): 위 칸이 길·장식이면 0.8칸 위, 위 칸이 빈 소환 칸이면 크기 1 머리 높이(0.62칸 위)
+        const headDy = c.openAbove ? -0.8 : -0.62;
+        if (c.openAbove) headTaps++;
+        await tap(page, c.x, c.y, 0.15, headDy);
+        await expect.poll(() => sim(page, (s) => s.selectedTowerId), { message: `${c.y}줄 머리 (${headDy})` }).toBe(t.id);
+        expect((await towers(page)).length).toBe(i + 1);
+        await page.locator('[data-action="panel-close"]').click();
+        await expect(page.getByTestId('tower-panel')).toHaveCount(0);
+      }
+      expect(headTaps, '위 칸이 길인 줄에서 큰 머리 탭을 한 번 이상 확인').toBeGreaterThan(0);
+      expect(errors).toEqual([]);
+    });
+
+    test('c+e. 큰 타워를 길게 눌러(머리를 잡아도) 끌면 맞는 칸으로 이동·교환, 0번 줄 머리는 HUD 아래까지', async ({ page }) => {
+      test.slow();
+      const errors = collectErrors(page);
+      await start(page);
+      const cells = await sim(page, (s) => s.match.map.buildable.map(([x, y]) => [x, y] as [number, number]));
+      const top = Math.min(...cells.map((c) => c[1]));
+      const row0 = cells.filter(([, y]) => y === top);
+      // 0번 줄을 큰 캐릭터로 채운다 (붙어 있으면 1.4배)
+      await place(page, row0.map(([x, y], i) => [x, y, BIG[i % 2]!] as [number, number, string]));
+      // e: 머리 끝(실제 크기)이 HUD 띠 아래 · 일시정지·배속 버튼 가운데·양끝을 누르면 그 버튼
+      const heads = await page.evaluate((head) => {
+        const s = (window as unknown as { __rtd: { game: { scene: { getScene(n: string): unknown } } } }).__rtd.game.scene.getScene('Game') as SceneLike;
+        const L = s.mapLayout;
+        const st = document.getElementById('stage')!.getBoundingClientRect();
+        const k = st.width / 1080;
+        const band = document.querySelector('.hud-root > .hud')!.getBoundingClientRect().bottom;
+        return s.match.towers().map((t) => {
+          const foot = L.originY + (t.ty + 0.8) * L.tile;
+          const sc = s.towerLayer.artScaleOf(t.id) ?? 1;
+          return { head: st.top + (foot - head * sc * L.tile) * k, band, sc };
+        });
+      }, HEAD_ABOVE_FOOT);
+      for (const hd of heads) expect(hd.head, JSON.stringify(hd)).toBeGreaterThanOrEqual(hd.band - 1);
+      for (const action of ['pause', 'speed']) {
+        const hit = await page.evaluate((a) => {
+          const b = document.querySelector(`[data-action="${a}"]`)!.getBoundingClientRect();
+          return [0.15, 0.5, 0.85].every((f) => document.elementFromPoint(b.x + b.width * f, b.y + b.height * 0.8)?.closest(`[data-action="${a}"]`) != null);
+        }, action);
+        expect(hit, `${action} 버튼 누르기`).toBe(true);
+      }
+      const speed0 = await page.locator('[data-action="speed"]').textContent();
+      await page.locator('[data-action="speed"]').tap();
+      await expect(page.locator('[data-action="speed"]')).not.toHaveText(speed0 ?? '');
+
+      // c: 1번 줄 이하에서 위 칸이 비어 있지 않은(머리를 잡을 수 있는) 큰 타워를 하나 놓고 빈 칸으로 끌기
+      const free = cells.filter(([x, y]) => y > top + 1 && !row0.some(([a, b]) => a === x && b === y));
+      const [ax, ay] = free[0]!;
+      const dest = free.find(([x, y]) => Math.abs(x - ax) + Math.abs(y - ay) >= 3)!;
+      await place(page, [[ax, ay, 'stonegolem']]);
+      const a = (await towers(page)).find((t) => t.tx === ax && t.ty === ay)!;
+      // 머리(0.55칸 위) 를 잡고 0.5초 → 끌기
+      const from = await tilePoint(page, ax, ay, 0, -0.55);
+      const to = await tilePoint(page, dest[0], dest[1], 0, -0.55);
+      await page.mouse.move(from.x, from.y);
+      await page.mouse.down();
+      await expect.poll(() => sim(page, (s) => s.dragState?.id ?? null), { timeout: 5000 }).toBe(a.id);
+      await page.mouse.move(to.x, to.y, { steps: 8 });
+      await page.waitForTimeout(200);
+      await page.mouse.up();
+      await expect.poll(async () => (await towers(page)).find((t) => t.id === a.id)).toMatchObject({ tx: dest[0], ty: dest[1] });
+      // 교환: 0번 줄 첫 타워를 끌어 a 위에 놓으면 서로 바뀐다
+      const b = (await towers(page)).find((t) => t.tx === row0[0]![0] && t.ty === row0[0]![1])!;
+      await page.waitForTimeout(400);
+      const bp = await tilePoint(page, b.tx, b.ty, 0, 0.1);
+      const ap = await tilePoint(page, dest[0], dest[1], 0, 0.1);
+      await page.mouse.move(bp.x, bp.y);
+      await page.mouse.down();
+      await expect.poll(() => sim(page, (s) => s.dragState?.id ?? null), { timeout: 5000 }).toBe(b.id);
+      await page.mouse.move(ap.x, ap.y, { steps: 8 });
+      await page.waitForTimeout(200);
+      await page.mouse.up();
+      await expect.poll(async () => (await towers(page)).find((t) => t.id === b.id)).toMatchObject({ tx: dest[0], ty: dest[1] });
+      expect((await towers(page)).find((t) => t.id === a.id)).toMatchObject({ tx: b.tx, ty: b.ty });
+      if (w === 360) await shot(page, 'B1-360');
+      expect(errors).toEqual([]);
+    });
+
+    test('f. 꽉 찬 판: 모든 칸에 타워(1.4배) → 칸마다 몸·위쪽을 누르면 그 타워', async ({ page }) => {
+      test.slow();
+      const errors = collectErrors(page);
+      await start(page, '?debug=1&seed=5');
+      const cells = await sim(page, (s) => s.match.map.buildable.map(([x, y]) => [x, y] as [number, number]));
+      const order = await sim(page, (s) => s.match.rules.towerOrder.slice(0, 40));
+      await place(page, cells.map(([x, y], i) => [x, y, order[(i * 7) % order.length]!] as [number, number, string]));
+      await sim(page, (s) => s.debugFastForward(600));
+      await page.waitForTimeout(400);
+      await shot(page, w === 412 ? 'B1-crowded-412' : 'B1-crowded-360');
+      // 칸 절반(맨 위·맨 아래 줄은 모두)을 몸(+0.1칸)·위쪽(−0.3칸, 위 타워 발밑·아래 타워 머리가 겹치는 자리)으로 번갈아 누른다
+      const all = await towers(page);
+      const rows = all.map((t) => t.ty);
+      const list = all.filter((t, i) => i % 2 === 0 || t.ty === Math.min(...rows) || t.ty === Math.max(...rows));
+      for (const [i, t] of list.entries()) {
+        const dy = i % 2 === 0 ? 0.1 : -0.3;
+        await tap(page, t.tx, t.ty, 0, dy);
+        await expect.poll(() => sim(page, (s) => s.selectedTowerId), { message: `(${t.tx},${t.ty}) +${dy}` }).toBe(t.id);
+        // 열린 패널(DOM)이 다음 칸을 덮을 수 있으니 닫고 다음 칸 (패널 위 탭은 캔버스로 가지 않는다)
+        await page.locator('[data-action="panel-close"]').click();
+        await expect(page.getByTestId('tower-panel')).toHaveCount(0);
+      }
+      expect((await towers(page)).length).toBe(cells.length);
+      expect(errors).toEqual([]);
+    });
+  });
+}
+
+test('d. 소환·승급 주사위는 눈이 바뀌며 구르고 발밑에 세 가지 색 별 · 연출 끄기·동작 줄이기면 주사위·별 없음', async ({ page }) => {
+  test.slow();
+  const errors = collectErrors(page);
+  await start(page);
+  // 트윈을 10배 느리게 → 0.24초 굴림을 헤드리스(초당 몇 프레임)에서도 여러 프레임 본다
+  await page.evaluate(() => {
+    const w = window as unknown as { fx: { faces: Record<string, string[]>; stars: number[]; minY: Record<string, number> }; __rtd: { game: { scene: { getScene(k: string): unknown } } } };
+    const s = w.__rtd.game.scene.getScene('Game') as {
+      tweens: { timeScale: number };
+      events: { on(e: string, f: () => void): void };
+      children: { list: { name: string; type: string; depth: number; y: number; texture?: { key: string }; commandBuffer?: number[] }[] };
+    };
+    s.tweens.timeScale = 0.1;
+    w.fx = { faces: {}, stars: [], minY: {} };
+    s.events.on('postupdate', () => {
+      for (const c of s.children.list) {
+        if (c.name.endsWith('-die') && c.texture) {
+          const f = (w.fx.faces[c.name] ??= []);
+          if (f[f.length - 1] !== c.texture.key) f.push(c.texture.key);
+          w.fx.minY[c.name] = Math.min(w.fx.minY[c.name] ?? Infinity, c.y);
+        }
+        if (c.type === 'Graphics' && c.depth === 5501 && c.commandBuffer) {
+          for (const col of [0xffedb1, 0xffaed0, 0xb7f9cb]) if (c.commandBuffer.includes(col) && !w.fx.stars.includes(col)) w.fx.stars.push(col);
+        }
+      }
+    });
+  });
+  const fx = () => page.evaluate(() => (window as unknown as { fx: { faces: Record<string, string[]>; stars: number[]; minY: Record<string, number> } }).fx);
+  const [x, y] = (await sim(page, (s) => s.match.map.buildable[5]!)) as [number, number];
+  await tap(page, x, y);
+  await expect.poll(async () => (await fx()).faces['summon-die']?.length ?? 0, { message: '소환 주사위 눈이 바뀜' }).toBeGreaterThanOrEqual(3);
+  await expect.poll(async () => (await fx()).stars.length, { message: '금색·분홍·민트 별' }).toBe(3);
+  // 주사위는 커진 캐릭터의 머리 끝 위에서 멈춘다 (예전 −0.94칸이면 2배 그림의 얼굴을 가림)
+  await page.waitForTimeout(3000); // 굴림 끝 (0.24초 × 10)
+  const apex = await sim(
+    page,
+    (s, [tx, ty, head]) => {
+      const t = s.match.towers().find((k) => k.tx === tx && k.ty === ty)!;
+      const L = s.mapLayout;
+      const sc = s.towerLayer.artScaleOf(t.id) ?? 1;
+      const headTop = L.originY + (ty + 0.8) * L.tile - head * sc * L.tile;
+      return { sc, headTop, die: (window as unknown as { fx: { minY: Record<string, number> } }).fx.minY['summon-die']! };
+    },
+    [x, y, HEAD_ABOVE_FOOT] as [number, number, number],
+  );
+  expect(apex.sc).toBeGreaterThan(1.3);
+  expect(apex.die, JSON.stringify(apex)).toBeLessThan(apex.headTop);
+  await sim(page, (s) => {
+    s.tweens.timeScale = 0.1;
+    return null;
+  });
+  // 주사위가 떠 있는 순간 스크린샷 (트윈 멈춤)
+  const [x2, y2] = (await sim(page, (s) => s.match.map.buildable[14]!)) as [number, number];
+  await tap(page, x2, y2);
+  await expect.poll(() => sim(page, (s) => s.diceStats.active)).toBeGreaterThan(0);
+  await page.waitForTimeout(1500); // 소환진·별이 퍼진 뒤 (트윈 0.1배속)
+  await sim(page, (s) => {
+    (s.tweens as unknown as { pauseAll(): void }).pauseAll();
+    return null;
+  });
+  await shot(page, 'B1-summon-fx');
+  await sim(page, (s) => {
+    (s.tweens as unknown as { resumeAll(): void }).resumeAll();
+    return null;
+  });
+  // 승급: 같은 타워 셋 → 결과 칸 큰 주사위도 눈이 바뀐다
+  const tri = await sim(page, (s) => {
+    const used = new Set(s.match.towers().map((t) => `${t.tx},${t.ty}`));
+    return s.match.map.buildable.filter(([a, b]) => !used.has(`${a},${b}`)).slice(0, 3);
+  });
+  await place(page, tri.map(([a, b]) => [a, b, 'goblin'] as [number, number, string]));
+  await sim(page, (s, c) => s.match.world.enqueue({ type: 'merge', x: c[0], y: c[1] }), tri[0]!);
+  await expect.poll(async () => (await fx()).faces['merge-die']?.length ?? 0, { message: '승급 주사위 눈이 바뀜' }).toBeGreaterThanOrEqual(3);
+  expect(errors).toEqual([]);
+});
+
+for (const mode of ['effectsOff', 'reducedMotion'] as const) {
+  test(`d. ${mode === 'effectsOff' ? '연출 끄기' : '동작 줄이기'}: 소환·승급에 주사위·별 없음`, async ({ page }) => {
+    const errors = collectErrors(page);
+    if (mode === 'reducedMotion') await page.emulateMedia({ reducedMotion: 'reduce' });
+    await start(page, mode === 'effectsOff' ? '?dev=1&seed=42' : '?debug=1&seed=42', mode === 'effectsOff' ? { effectsOff: true } : {});
+    await page.evaluate(() => {
+      const w = window as unknown as { stars: number; __rtd: { game: { scene: { getScene(k: string): unknown } } } };
+      const s = w.__rtd.game.scene.getScene('Game') as { events: { on(e: string, f: () => void): void }; children: { list: { type: string; depth: number; commandBuffer?: number[] }[] } };
+      w.stars = 0;
+      s.events.on('postupdate', () => {
+        for (const c of s.children.list) if (c.type === 'Graphics' && c.depth === 5501 && c.commandBuffer?.includes(0xffaed0)) w.stars++;
+      });
+    });
+    const [x, y] = (await sim(page, (s) => s.match.map.buildable[5]!)) as [number, number];
+    await tap(page, x, y);
+    await expect.poll(async () => (await towers(page)).length).toBe(1);
+    const tri = await sim(page, (s) => s.match.map.buildable.slice(10, 13));
+    await place(page, tri.map(([a, b]) => [a, b, 'goblin'] as [number, number, string]));
+    await sim(page, (s, c) => s.match.world.enqueue({ type: 'merge', x: c[0], y: c[1] }), tri[0]!);
+    await expect.poll(async () => (await towers(page)).length).toBe(2);
+    await page.waitForTimeout(600);
+    expect((await sim(page, (s) => s.diceStats)).shown).toBe(0);
+    expect(await page.evaluate(() => (window as unknown as { stars: number }).stars)).toBe(0);
+    expect(errors).toEqual([]);
+  });
+}

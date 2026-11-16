@@ -18,7 +18,8 @@ import { TEX_COIN, TEX_ORB, TEX_PILLAR, TEX_SPARK, ensureFxTextures } from '../.
 import { diceKey, ensureStatusTextures } from '../../art/status';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { prefersReducedMotion } from '../../ui/motion';
-import { COIN_FLY_MS, coinPath } from './fxModel';
+import { COIN_FLY_MS, coinPath, rollingDieFace } from './fxModel';
+import { dieApexTiles } from './towerGeom';
 
 export const FX_DEPTH = 5500;
 export const COIN_DEPTH = 7000;
@@ -50,6 +51,8 @@ export class FxLayer {
     private readonly scene: Phaser.Scene,
     private readonly layout: MapLayout,
     private readonly reducedMotion: () => boolean = () => prefersReducedMotion(),
+    /** 칸 (tx, ty) 타워 그림의 크기 배수 (B-1 전투 확대) — 주사위를 머리 위로 올린다. 타워가 없으면 1 */
+    private readonly figureScaleAt: (tx: number, ty: number) => number = () => 1,
   ) {
     ensureFxTextures(scene);
   }
@@ -90,15 +93,14 @@ export class FxLayer {
     const size = tile * (merge ? 0.62 : 0.5);
     this.scene.tweens.add({
       targets: die,
-      y: y - tile * 0.94,
+      y: y + tile * dieApexTiles(this.figureScaleAt(tx, ty)),
       angle: 150,
       displayWidth: size,
       displayHeight: size,
       duration: 240,
       ease: 'Back.easeOut',
       onUpdate: (tween) => {
-        const turn = Math.floor(tween.progress * 8);
-        const face = turn < 7 ? 1 + (revealedFace + turn) % 6 : revealedFace;
+        const face = rollingDieFace(tween.progress, revealedFace);
         if (face === lastFace) return;
         lastFace = face;
         die.setTexture(diceKey(face));
