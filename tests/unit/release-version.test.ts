@@ -123,9 +123,20 @@ describe('파일 쓰기 (CI 작업 폴더에서만)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'rtd-relver-'));
     mkdirSync(join(dir, 'android'));
     mkdirSync(join(dir, 'tools'));
-    cpSync(join(ROOT, 'package.json'), join(dir, 'package.json'));
-    cpSync(join(ROOT, 'package-lock.json'), join(dir, 'package-lock.json'));
-    cpSync(join(ROOT, 'android/AndroidManifest.xml'), join(dir, 'android/AndroidManifest.xml'));
+    // 저장소 파일을 복사하되 버전은 0.1.9 / versionCode 10으로 고정한다 — CI는 테스트 전에 작업 폴더의 버전을 이미
+    // 다음 릴리스(예: 0.1.10 / 1010)로 바꿔 두므로, 저장소의 지금 버전에 기대면 CI에서만 깨진다 (v0.1.10 첫 실행 실패)
+    const pin = (text: string, count: number): string => {
+      let n = 0;
+      return text.replace(/"version": "[^"]*"/g, (m) => (n++ < count ? '"version": "0.1.9"' : m));
+    };
+    writeFileSync(join(dir, 'package.json'), pin(readFileSync(join(ROOT, 'package.json'), 'utf8'), 1));
+    writeFileSync(join(dir, 'package-lock.json'), pin(readFileSync(join(ROOT, 'package-lock.json'), 'utf8'), 2));
+    writeFileSync(
+      join(dir, 'android/AndroidManifest.xml'),
+      readFileSync(join(ROOT, 'android/AndroidManifest.xml'), 'utf8')
+        .replace(/android:versionName="[^"]*"/, 'android:versionName="0.1.9"')
+        .replace(/android:versionCode="[^"]*"/, 'android:versionCode="10"'),
+    );
     cpSync(SCRIPT, join(dir, 'tools/release-version.mjs'));
     return dir;
   }
@@ -158,8 +169,6 @@ describe('파일 쓰기 (CI 작업 폴더에서만)', () => {
       const tags = join(dir, 'tags.txt');
       writeFileSync(tags, 'android-v0.1.7\nandroid-v0.1.8\nandroid-v0.1.9\n');
       const out = execFileSync('node', [join(dir, 'tools/release-version.mjs'), '--tags-file', tags, '--write'], { encoding: 'utf8' });
-      const pkgVersion = (JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string }).version;
-      expect(pkgVersion).toBe('0.1.9');
       expect(out).toBe('version=0.1.10\nversionCode=1010\npreviousTag=android-v0.1.9\n');
       expect((JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { version: string }).version).toBe('0.1.10');
       expect(readFileSync(join(dir, 'android/AndroidManifest.xml'), 'utf8')).toContain('android:versionCode="1010"');
