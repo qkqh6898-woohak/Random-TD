@@ -13,6 +13,7 @@
  * - ENEMIES.md 4장 표의 '기본 단계'(10 킹 슬라임 …)는 표 이름표다. 실제 순서는 무한 = 4.1 순환, 캠페인 = 테마 배치표를 따른다
  *   (M1 기록의 '문서끼리 다른 점' 결정).
  */
+import { BP_ONE } from '../Fixed';
 import { isBossStage, type BossStats, type MatchRules } from '../rules';
 
 /** 순환표에서 그 단계의 보스 id (데이터가 없을 수도 있다: grax·zephira·nox …). 보스 단계가 아니면 ''. */
@@ -55,4 +56,13 @@ export function bossForStage(rules: MatchRules, mode: string, theme: number, sta
   if (!isBossStage(rules, stage)) return null;
   const id = scheduledBossId(rules, mode, theme, stage);
   return rules.bosses.get(id) ?? fallbackBoss(rules, stage);
+}
+
+/**
+ * F10-2 첫 보스 밸런스: 무한 모드 그 단계에 나오는 보스만 곱하는 체력 배율 (bp, enemies.json bossCycle.stageHpMul).
+ * 단계 번호로 정하므로 10단계 박쥐 여왕만 바뀌고, 순환으로 다시 나오는 박쥐 여왕(70·80단계 …)은 원래 식 그대로. 캠페인은 늘 ×1.
+ */
+export function stageBossHpMulBp(rules: Pick<MatchRules, 'bossCycle'>, mode: string, stage: number): number {
+  if (mode === 'campaign') return BP_ONE;
+  return rules.bossCycle.stageHpMulBp.get(stage) ?? BP_ONE;
 }

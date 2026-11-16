@@ -94,6 +94,8 @@ export interface BossStats {
   readonly speed: number;
   readonly ccResistBp: number;
   readonly invisible: boolean;
+  /** F10-2: 대응 한 줄 (보스 예고·패배 화면 글자, sim 규칙에는 안 씀) */
+  readonly counter: string;
   readonly params: Readonly<Record<string, unknown>>;
 }
 
@@ -351,7 +353,16 @@ export interface MatchRules {
   /** 보스 이름 → id (캠페인 bossSchedule은 이름으로 적혀 있다) */
   readonly bossByName: ReadonlyMap<string, string>;
   /** 무한 모드 보스 순환 (enemies.json bossCycle) */
-  readonly bossCycle: Readonly<{ every: number; captains: readonly string[]; commanderEvery: number; commanders: readonly string[]; lordEvery: number; lord: string }>;
+  readonly bossCycle: Readonly<{
+    every: number;
+    captains: readonly string[];
+    commanderEvery: number;
+    commanders: readonly string[];
+    lordEvery: number;
+    lord: string;
+    /** F10-2: 무한 모드 그 단계에 나오는 보스만 체력 배율 (bp, 단계 → bp; 없으면 BP_ONE) */
+    stageHpMulBp: ReadonlyMap<number, number>;
+  }>;
   /** 캠페인 테마별 보스 배치 (테마 → 단계 → 보스 이름) */
   readonly bossSchedules: ReadonlyMap<number, Readonly<Record<string, string>>>;
   /** 보스 처치 보상 (원)·제한 시간 (틱) */
@@ -486,6 +497,7 @@ export function buildBossStats(b: BossData): BossStats {
     speed: tiles(b.speed),
     ccResistBp: bp(b.ccResist),
     invisible: b.invisible,
+    counter: b.counter,
     params: Object.freeze({ ...b.params }),
   });
 }
@@ -710,6 +722,7 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
       commanders: Object.freeze([...cyc.commanders]),
       lordEvery: cyc.lordEvery,
       lord: cyc.lord,
+      stageHpMulBp: new Map(Object.entries(cyc.stageHpMul ?? {}).map(([k, v]) => [Number(k), bp(v)] as [number, number])),
     }),
     bossSchedules: new Map(campaign.themes.map((t) => [t.theme, Object.freeze({ ...t.bossSchedule })])),
     bossReward: game.boss.reward,

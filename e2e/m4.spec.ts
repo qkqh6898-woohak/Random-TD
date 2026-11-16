@@ -276,12 +276,12 @@ test('보스: 10단계 박쥐 여왕 — 보스 막대(이름표·체력·남은
   expect(errors).toEqual([]);
 });
 
-test('보스 제한 시간: 10단계 보스를 60초 안에 못 잡으면 패배 화면 "10단계 보스를 제한 시간 안에 잡지 못했어요"', async ({ page }) => {
+test('보스 제한 시간: 10단계 보스를 60초 안에 못 잡으면 패배 화면 "박쥐 여왕을 60초 안에 잡지 못했어요 · 남은 체력 100%" (F10-2)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
   await skipTo(page, 10);
   await ff(page, 1250);
-  await expect(page.getByText('10단계 보스를 제한 시간 안에 잡지 못했어요')).toBeVisible();
+  await expect(page.locator('.gameover-reason')).toHaveText('박쥐 여왕을 60초 안에 잡지 못했어요 · 남은 체력 100%');
   expect(await inScene(page, (s) => [s.match.state.phase, s.match.state.defeatReason, s.match.state.stage], null)).toEqual(['defeat', 'bossTime', 10]);
   // 패배 화면 위에 알림·배너가 남지 않는다 (알림 층이 화면 층보다 위라 '패배' 제목을 가리던 것, 검토 반영)
   await expect(page.locator('.layer-toast > *')).toHaveCount(0);

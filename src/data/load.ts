@@ -188,6 +188,8 @@ export interface BossData {
   ccResist: number;
   invisible: boolean;
   pattern: string;
+  /** F10-2: 보스 예고·패배 화면에 띄우는 대응 한 줄 (예: '날 때는 사거리 2칸 이하 타워가 못 때려요 · 원거리 물리 타워를 길목에') */
+  counter: string;
   legion: string;
   rank: string;
   /** 패턴 수치 (M4-5, 보스마다 다름 — enemies.json bossNote). 보스 모듈(src/sim/bosses)이 정수로 바꾸고 검사한다 */
@@ -252,6 +254,9 @@ export interface BossCycleData {
   commanders: string[];
   lordEvery: number;
   lord: string;
+  stageHpMulNote?: string;
+  /** F10-2: 무한 모드 그 단계(키 = 단계 번호)에 나오는 보스만 체력 × 값 (없으면 ×1) */
+  stageHpMul?: Record<string, number>;
 }
 
 /** 단계별 성장 수치 (ENEMIES.md 2장). curves.json의 원본. */
@@ -901,6 +906,7 @@ const bossSchema = s.obj({
   ccResist: s.num({ min: 0, max: 1 }),
   invisible: s.bool(),
   pattern: s.str(),
+  counter: s.str({ nonEmpty: true }),
   legion: s.str({ nonEmpty: true }),
   rank: s.str({ nonEmpty: true }),
   params: s.rec(s.any()),
@@ -971,6 +977,8 @@ export const enemiesSchema: Schema = s.obj({
     commanders: s.arr(s.str({ nonEmpty: true }), { minLength: 1 }),
     lordEvery: s.int({ min: 1 }),
     lord: s.str({ nonEmpty: true }),
+    stageHpMulNote: s.opt(s.str()),
+    stageHpMul: s.opt(s.rec(s.num({ min: 0.01, max: 10 }), /^[1-9][0-9]*$/)),
   }),
   traitsNote: s.opt(s.str()),
   bossNote: s.opt(s.str()),
@@ -1702,6 +1710,10 @@ function crossCheckM4(data: GameData, issues: Issue[]): void {
   for (const [path, id] of cycIds) if (!known.has(id)) issues.push({ file: 'enemies.json', path, message: `보스 데이터·군단 체계에 없는 id: ${id}` });
   if (cyc.every !== game.match.bossEvery) {
     issues.push({ file: 'enemies.json', path: 'bossCycle.every', message: `보스 주기(game.json match.bossEvery = ${game.match.bossEvery})와 다르다` });
+  }
+  // F10-2: 단계별 보스 체력 배율은 보스 단계(every의 배수)에만
+  for (const key of Object.keys(cyc.stageHpMul ?? {})) {
+    if (Number(key) % cyc.every !== 0) issues.push({ file: 'enemies.json', path: `bossCycle.stageHpMul.${key}`, message: `${key}단계는 보스 단계(${cyc.every}의 배수)가 아니다` });
   }
   for (const [key, v] of [['commanderEvery', cyc.commanderEvery], ['lordEvery', cyc.lordEvery]] as const) {
     if (v % cyc.every !== 0) issues.push({ file: 'enemies.json', path: `bossCycle.${key}`, message: `${v}가 every(${cyc.every})의 배수가 아니다` });

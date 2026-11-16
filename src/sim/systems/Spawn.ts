@@ -17,12 +17,12 @@
 import type { Rng } from '../Rng';
 import type { System, World } from '../World';
 import { STREAM_WORLD } from '../World';
-import { mulBp } from '../Fixed';
+import { BP_ONE, mulBp } from '../Fixed';
 import { MOB_KIND, emptyMobStatus, emptyMobTraits, type Mob } from '../entities/Mob';
 import { isTower } from '../entities/Tower';
 import { compositionFor, isBossStage, spawnStats, stageArmor, stageHp, type BossStats, type MatchRules } from '../rules';
 import type { MatchContext } from '../state';
-import { bossForStage } from './BossSchedule';
+import { bossForStage, stageBossHpMulBp } from './BossSchedule';
 import { chooseFormation, formationById, formationSlots } from './Formation';
 import { bossSpawned } from '../bosses';
 import { chanceValue } from '../chances';
@@ -207,9 +207,17 @@ export function spawnSlot(ctx: MatchContext, world: World, mobId: string, queue 
   return out;
 }
 
-/** 보스의 실제 스탯 (단계 s, 테마 보정): 체력 = HP(s) × 보스 배율 × 테마 배율, 방어·마저 = 단계 성장 + 테마 추가. */
-export function bossSpawnStats(ctx: Pick<MatchContext, 'rules' | 'theme'>, boss: BossStats, stage: number): { hp: number; armor: number; magicRes: number } {
-  const hp = mulBp(mulBp(stageHp(ctx.rules, stage), boss.hpMulBp), ctx.theme.hpMulBp);
+/**
+ * 보스의 실제 스탯 (단계 s, 테마 보정): 체력 = HP(s) × 보스 배율 × 테마 배율 × 단계 배율, 방어·마저 = 단계 성장 + 테마 추가.
+ * 단계 배율(F10-2) = stageBossHpMulBp — 무한 모드 10단계 첫 보스만 (생략하면 ×1).
+ */
+export function bossSpawnStats(
+  ctx: Pick<MatchContext, 'rules' | 'theme'>,
+  boss: BossStats,
+  stage: number,
+  stageMulBp: number = BP_ONE,
+): { hp: number; armor: number; magicRes: number } {
+  const hp = mulBp(mulBp(mulBp(stageHp(ctx.rules, stage), boss.hpMulBp), ctx.theme.hpMulBp), stageMulBp);
   return {
     hp: hp < 1 ? 1 : hp,
     armor: stageArmor(ctx.rules, boss.armor, stage) + ctx.theme.armorOffset,
@@ -223,7 +231,7 @@ export function bossSpawnStats(ctx: Pick<MatchContext, 'rules' | 'theme'>, boss:
  */
 export function spawnBoss(ctx: MatchContext, world: World, boss: BossStats, stage: number): Mob {
   const { state, rules } = ctx;
-  const s = bossSpawnStats(ctx, boss, stage);
+  const s = bossSpawnStats(ctx, boss, stage, stageBossHpMulBp(rules, state.mode, stage));
   const mob = world.entities.add({
     kind: MOB_KIND,
     mob: boss.id,

@@ -43,6 +43,7 @@ import Phaser from 'phaser';
 import { GRADE_COLORS, hexToInt } from '../../art/palette';
 import type { Grade } from '../../data/load';
 import { TICK_HZ, TickClock, type SimEvent } from '../../sim/World';
+import { bossForStage } from '../../sim/systems/BossSchedule';
 import { TickCostMeter, capTicks, simBudgetMs } from '../tickBudget';
 import type { Projectile } from '../../sim/entities/Projectile';
 import { towerAt, type Tower } from '../../sim/entities/Tower';
@@ -98,7 +99,9 @@ import {
   INVISIBLE_WARN,
   LUCKY_SUMMON,
   bossArrivalText,
+  bossCounterTip,
   bossKillText,
+  bossPreviewText,
   bossTag,
   cardPickedText,
   formationBanner,
@@ -132,7 +135,7 @@ import { buildTowerPanelModel, type TowerPanelModel } from '../../ui/panels/towe
 import { createCharacterCard } from '../../ui/panels/CharacterCard';
 import { characterCardModel } from '../../ui/panels/characterCardModel';
 import { createHud, type HudView } from '../../ui/hud/Hud';
-import { bossHudInput, buildHudModel, deckDetectNames, defeatText, formatStage, legionNameMap, stageToastText } from '../../ui/hud/hudModel';
+import { bossHudInput, buildHudModel, deckDetectNames, defeatText, formatStage, legionNameMap, stageToastText, type DefeatBossInfo } from '../../ui/hud/hudModel';
 import { availableSpeeds, nextSpeed } from '../../ui/hud/speed';
 import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
 import { createPauseMenu } from '../../ui/screens/PauseMenu';
@@ -189,6 +192,8 @@ const MAX_HEAL_TEXTS_PER_FRAME = 16;
 const MAX_METEOR_FX = 8;
 /** '{타워} 승급 가능!' 알림은 판당 처음 몇 번만 (UI.md 8장) */
 const MERGE_READY_TOASTS_PER_MATCH = 3;
+/** 보스 예고 배너 (F10-2) 보이는 시간 — 대응 한 줄을 읽을 만큼 (편대 예고 4.2초보다 조금 길게) */
+const BOSS_PREVIEW_MS = 5200;
 /** 끌어 놓은 뒤 이동 명령이 실행될 때까지 그 자리에 붙잡아 두는 최대 시간 (ms) */
 const DROP_HOLD_MS = 400;
 /** 로컬 플레이어 (2인 판은 M13) */
@@ -313,6 +318,8 @@ export class GameScene extends Phaser.Scene {
   private mergeReadyKinds = new Set<string>();
   private mergeReadyToasts = 0;
   private mergeReadyCount = 0;
+  /** 보스 예고를 띄운 보스 단계 (F10-2, 같은 단계는 한 번) */
+  private bossPreviewStage = 0;
   /** 타워 종류 → 초상화 이미지 주소 */
   private portraits = new Map<string, string | null>();
   /** 타워 id → 이름 (패널 승급 결과 미리 보기) */
@@ -396,6 +403,7 @@ export class GameScene extends Phaser.Scene {
     this.inputLockUntil = null;
     this.mergeReadyKinds = new Set();
     this.mergeReadyToasts = 0;
+    this.bossPreviewStage = 0;
     this.mergeReadyCount = 0;
     this.panelPlaceKey = '';
     this.choice = null;
@@ -1861,6 +1869,7 @@ export class GameScene extends Phaser.Scene {
       const { mode, theme } = this.match.state;
       this.ctx.ui.toast(stageToastText({ mode, theme, stage: lastStage.stage, bossStage: lastStage.boss }));
     }
+    if (lastStage) this.previewBoss(lastStage.stage);
     this.checkMergeReady();
     if (defeated) this.showGameOver();
   }
@@ -1892,6 +1901,27 @@ export class GameScene extends Phaser.Scene {
     return type === 'magic' || type === 'hybrid' ? 0x8fd3ff : type === 'true' ? 0xffe066 : 0xffa94d;
   }
 
+  /**
+   * 보스 예고 (F10-2): 다음 단계가 보스 단계면 그 단계가 시작될 때 '⚠ 다음 단계 보스: 박쥐 여왕' + 대응 한 줄 배너.
+   * 글자 알림이라 연출 끄기여도 띄운다 (배너 등장 애니메이션만 .fx-off가 끈다). 판마다 단계당 한 번.
+   */
+  private previewBoss(stage: number): void {
+    const { mode, theme } = this.match.state;
+    const next = bossForStage(this.match.rules, mode, theme, stage + 1);
+    if (!next || this.bossPreviewStage === stage + 1) return;
+    this.bossPreviewStage = stage + 1;
+    this.ctx.ui.banner(bossPreviewText(next.name), bossCounterTip(next.counter), BOSS_PREVIEW_MS, 'boss');
+  }
+
+  /** 보스 제한 시간 패배 때 패배 화면에 쓸 보스 정보 (이름·남은 체력·제한 초·대응). 보스가 없으면 null. */
+  private defeatBossInfo(): DefeatBossInfo | null {
+    const m = this.match;
+    const live = bossHudInput(m.rules, this.legionNames, m.state, m.mobs(), m.tick);
+    const b = m.rules.bosses.get(m.state.bossId);
+    if (!live || !b) return null;
+    return { name: b.name, hp: live.hp, maxHp: live.maxHp, seconds: Math.round(m.rules.bossTimeTicks / TICK_HZ), counter: b.counter };
+  }
+
   private showGameOver(): void {
     if (this.gameOver) return;
     this.gameOver = true;
@@ -1906,7 +1936,7 @@ export class GameScene extends Phaser.Scene {
     this.ctx.ui.clearToasts();
     if (this.paused) this.paused = false;
     this.clock.speed = 0;
-    const text = defeatText(this.match.state);
+    const text = defeatText(this.match.state, this.defeatBossInfo());
     this.ctx.ui.show(
       'screen',
       createGameOverScreen({

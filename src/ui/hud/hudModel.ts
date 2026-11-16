@@ -8,13 +8,14 @@
  * M5: 도전 보스 막대 (UI.md 4.1 '보스·도전 보스가 있을 때만', 9장 '보스 단계와 도전이 겹치면 체력바 2줄' — 같은 자리를 반씩 나눈다),
  *   하단 메뉴 배지 '⚔ 도전 1 가능' · '⬆ 강화 Lv 5' · '📋 미션 2 받기' (UI.md 4.1, sheets/sheetModels.menuBadges).
  */
-import { BOSS_CLEARED, bossNameplate, bossTag, challengeNameplate, withCommas } from '../messages';
+import { BOSS_CLEARED, bossCounterTip, bossFlyLabel, bossHpLeftPct, bossNameplate, bossTag, bossTimeoutText, challengeNameplate, withCommas } from '../messages';
 import type { HudConfig } from '../../data/load';
 import type { Mob } from '../../sim/entities/Mob';
 import type { Deck, MatchRules } from '../../sim/rules';
 import { DECK_GRADES } from '../../data/deck';
 import type { MatchState } from '../../sim/state';
 import { TICK_HZ } from '../../sim/World';
+import { TILE } from '../../sim/Fixed';
 
 export interface HudInput {
   state: Readonly<MatchState>;
@@ -35,7 +36,7 @@ export interface HudInput {
   workerMax?: number;
   workerCost?: number;
   /** 살아 있는 보스 (이름·이름표 앞부분·조각 체력 합·처음 체력, 남은 제한 틱). 없으면 null */
-  boss?: { name: string; tag: string; hp: number; maxHp: number; ticksLeft: number } | null;
+  boss?: { name: string; tag: string; hp: number; maxHp: number; ticksLeft: number; flyRange?: number } | null;
   /** 진행 중인 도전 보스 (단계·이름·체력·처음 체력·남은 제한 틱, M5-2). 없으면 null */
   challenge?: { lv: number; name: string; hp: number; maxHp: number; ticksLeft: number } | null;
   /** 하단 메뉴 배지 (M5-7). 생략하면 빈 배지 */
@@ -67,6 +68,8 @@ export interface HudModel {
   bossTime: string;
   /** 보스 남은 10초 이하 (빨간 깜빡, ENEMIES.md 8장) */
   bossTimeWarn: boolean;
+  /** 보스 막대 아래 짧은 표시 (F10-2): 박쥐 여왕이 날 때 '🦇 비행 중 · 사거리 2칸 이하 공격 불가', 아니면 '' */
+  bossNote: string;
   /** 일꾼 '3/10' */
   workers: string;
   /** 일꾼 최대 (금색) */
@@ -215,22 +218,32 @@ export function bossHudInput(
   rules: Pick<MatchRules, 'bosses'>,
   legionNames: Readonly<Record<string, string>>,
   state: Pick<MatchState, 'bossId' | 'bossMaxHp' | 'bossDeadline'>,
-  mobs: readonly Pick<Mob, 'boss' | 'hp' | 'challenge'>[],
+  mobs: readonly (Pick<Mob, 'boss' | 'hp' | 'challenge'> & Partial<Pick<Mob, 'flyUntil' | 'flyBlock'>>)[],
   tick: number,
 ): HudInput['boss'] {
   if (state.bossId === '') return null;
   const b = rules.bosses.get(state.bossId);
   let hp = 0;
   let alive = false;
+  let fly = 0;
   for (const m of mobs) {
     // 도전 보스(M5-2)도 boss 취급이지만 판의 보스 막대에는 넣지 않는다 (자기 막대가 따로 — M5 검토 반영)
     if (!m.boss || m.challenge) continue;
     alive = true;
     hp += m.hp > 0 ? m.hp : 0;
+    // F10-2: 날아오른 동안 (박쥐 여왕) — 막는 사거리(단위)를 칸으로
+    if ((m.flyUntil ?? 0) > tick && (m.flyBlock ?? 0) > fly) fly = m.flyBlock ?? 0;
   }
   if (!alive || !b) return null;
   const legion = legionNames[b.legion] ?? b.legion;
-  return { name: b.name, tag: bossTag(legion, b.rank), hp, maxHp: state.bossMaxHp, ticksLeft: state.bossDeadline - tick };
+  return {
+    name: b.name,
+    tag: bossTag(legion, b.rank),
+    hp,
+    maxHp: state.bossMaxHp,
+    ticksLeft: state.bossDeadline - tick,
+    ...(fly > 0 ? { flyRange: fly / TILE } : {}),
+  };
 }
 
 /** 보스 막대 (UI.md 4.1): 살아 있는 보스 = 이름표 + 체력 천분율 + 남은 초, 보스 단계인데 보스가 없으면 '처치!', 아니면 없음. */
@@ -238,14 +251,20 @@ export function bossBar(
   bossStage: boolean,
   boss: HudInput['boss'],
   cfg: Pick<HudConfig, 'timerWarnSeconds'>,
-): Pick<HudModel, 'bossBanner' | 'bossHp' | 'bossTime' | 'bossTimeWarn'> {
+): Pick<HudModel, 'bossBanner' | 'bossHp' | 'bossTime' | 'bossTimeWarn' | 'bossNote'> {
   if (boss) {
     const sec = boss.ticksLeft <= 0 ? 0 : Math.ceil(boss.ticksLeft / TICK_HZ);
     const permille = boss.maxHp > 0 ? Math.max(0, Math.min(1000, Math.ceil((boss.hp * 1000) / boss.maxHp))) : 0;
-    return { bossBanner: bossNameplate(boss.tag, boss.name), bossHp: permille, bossTime: `${sec}초`, bossTimeWarn: sec <= cfg.timerWarnSeconds };
+    return {
+      bossBanner: bossNameplate(boss.tag, boss.name),
+      bossHp: permille,
+      bossTime: `${sec}초`,
+      bossTimeWarn: sec <= cfg.timerWarnSeconds,
+      bossNote: boss.flyRange && boss.flyRange > 0 ? bossFlyLabel(boss.flyRange) : '',
+    };
   }
-  if (bossStage) return { bossBanner: BOSS_CLEARED, bossHp: -1, bossTime: '', bossTimeWarn: false };
-  return { bossBanner: null, bossHp: -1, bossTime: '', bossTimeWarn: false };
+  if (bossStage) return { bossBanner: BOSS_CLEARED, bossHp: -1, bossTime: '', bossTimeWarn: false, bossNote: '' };
+  return { bossBanner: null, bossHp: -1, bossTime: '', bossTimeWarn: false, bossNote: '' };
 }
 
 /** 아래 띠 승급 버튼 글자 (UI.md 4.1 '[⬆ 승급 가능 2]'). 0이면 빈 글자. */
@@ -283,10 +302,26 @@ export function livesDropped(prev: Partial<Pick<HudModel, 'countKind' | 'count'>
   return Number(next.count) < Number(prev.count);
 }
 
-/** 패배 화면 글자. */
-export function defeatText(state: Pick<MatchState, 'mode' | 'theme' | 'stage' | 'defeatReason' | 'mobLimit'>): {
+/** 보스 제한 시간 패배 때 패배 화면이 쓰는 보스 정보 (F10-2): 이름·남은 체력·처음 체력·제한 초·대응 한 줄. */
+export interface DefeatBossInfo {
+  name: string;
+  hp: number;
+  maxHp: number;
+  seconds: number;
+  counter: string;
+}
+
+/**
+ * 패배 화면 글자. 보스 제한 시간 패배에 보스 정보가 있으면 (F10-2, 사용자 결정 1)
+ * reason = '박쥐 여왕을 60초 안에 잡지 못했어요 · 남은 체력 34%', tip = '💡 (보스 대응 한 줄)'.
+ */
+export function defeatText(
+  state: Pick<MatchState, 'mode' | 'theme' | 'stage' | 'defeatReason' | 'mobLimit'>,
+  boss: DefeatBossInfo | null = null,
+): {
   reason: string;
   record: string;
+  tip: string;
 } {
   const where = formatStage(state);
   const reason =
@@ -295,12 +330,15 @@ export function defeatText(state: Pick<MatchState, 'mode' | 'theme' | 'stage' | 
       : state.defeatReason === 'lives'
         ? `${where}에서 목숨을 모두 잃었어요`
         : state.defeatReason === 'bossTime'
-          ? `${where} 보스를 제한 시간 안에 잡지 못했어요`
+          ? boss
+            ? bossTimeoutText(boss.name, boss.seconds, bossHpLeftPct(boss.hp, boss.maxHp))
+            : `${where} 보스를 제한 시간 안에 잡지 못했어요`
           : state.defeatReason === 'bossLeak'
             ? `${where} 보스가 성문에 닿았어요`
             : `${where}에서 판이 끝났어요`;
   const record = state.mode === 'campaign' ? `테마 ${state.theme} · ${state.stage}단계까지` : `${state.stage}단계까지 버텼어요`;
-  return { reason, record };
+  const tip = boss && (state.defeatReason === 'bossTime' || state.defeatReason === 'bossLeak') && boss.counter ? bossCounterTip(boss.counter) : '';
+  return { reason, record, tip };
 }
 
 /** 단계 시작 알림 글자 (토스트). */

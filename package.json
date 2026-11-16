@@ -21,7 +21,8 @@
     "screens": "SAVE_SCREENS=1 playwright test --trace off",
     "sim": "node tools/sim.mjs",
     "replays": "UPDATE_REPLAYS=1 vitest run tests/integration/replay.test.ts",
-    "bot": "BOT_CHECK=1 vitest run tests/integration/botCheck.test.ts"
+    "bot": "BOT_CHECK=1 vitest run tests/integration/botCheck.test.ts",
+    "bot:first-boss": "FIRST_BOSS=1 vitest run tests/integration/firstBoss.test.ts"
   },
   "dependencies": {
     "phaser": "3.90.0"

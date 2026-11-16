@@ -112,6 +112,13 @@ for k, v in H["legions"].items():
         if c not in capids: errors.append(f"{v['name']} 대장 {c} 정의 없음")
 for t in C["themes"]:
     if len(t.get("bossSchedule", {})) != 5: errors.append(f"테마 {t['theme']} 보스 배치 누락")
+# F10-2 첫 보스: 무한 모드 단계별 보스 체력 배율은 보스 단계(every의 배수)에만, 0 < 값 ≤ 10
+_cyc = E["bossCycle"]
+for _k, _v in _cyc.get("stageHpMul", {}).items():
+    if not _k.isdigit() or int(_k) % _cyc["every"] != 0: errors.append(f"bossCycle.stageHpMul {_k}: 보스 단계({_cyc['every']}의 배수)가 아님")
+    if not (0 < _v <= 10): errors.append(f"bossCycle.stageHpMul {_k}: 배율 {_v} (0 초과 10 이하)")
+for b in E["bosses"]:
+    if not b.get("counter"): errors.append(f"보스 {b['name']} 대응 한 줄(counter) 없음")
 # 판 안 미션 (GDD 8장): 일반 30 + 히든 11, 일반 보상 합계 17,000원 (GDD 3장 경제 표)
 normal_m = [m for m in MS if not m["hidden"]]; hidden_m = [m for m in MS if m["hidden"]]
 if len(normal_m) != 30: errors.append(f"일반 미션 {len(normal_m)}개 (30개여야 함)")
@@ -236,9 +243,13 @@ def comp_table():
     return "\n".join(rows)
 
 def boss_table():
-    rows = ["| 기본 단계 | 보스 | 계급 · 군단 | 외형 | 체력 배율 | 방어력 | 마법 저항 | 속도 | 상태이상 저항 | 투명 | 패턴 |", "|------|------|------|------|------|------|------|------|------|------|------|"]
+    rows = ["| 기본 단계 | 보스 | 계급 · 군단 | 외형 | 체력 배율 | 방어력 | 마법 저항 | 속도 | 상태이상 저항 | 투명 | 패턴 | 대응 (예고·패배 화면) |", "|------|------|------|------|------|------|------|------|------|------|------|------|"]
     for b in E["bosses"]:
-        rows.append(f"| {b['stage']} | **{b['name']}** | {b['rank']} · {LEG[b['legion']]} | {b['look']} | ×{b['hpMul']} | {b['armor']} | {b['magicRes']} | {b['speed']:g} | {pct(b['ccResist'])} | {'👁 필요' if b['invisible'] else '—'} | {b['pattern']} |")
+        rows.append(f"| {b['stage']} | **{b['name']}** | {b['rank']} · {LEG[b['legion']]} | {b['look']} | ×{b['hpMul']} | {b['armor']} | {b['magicRes']} | {b['speed']:g} | {pct(b['ccResist'])} | {'👁 필요' if b['invisible'] else '—'} | {b['pattern']} | {b['counter']} |")
+    cyc = E["bossCycle"]
+    for k, v in sorted(cyc.get("stageHpMul", {}).items(), key=lambda kv: int(kv[0])):
+        rows.append("")
+        rows.append(f"- 무한 모드 **{k}단계** 보스만 체력 ×{v:g} (`bossCycle.stageHpMul`, F10-2 첫 보스 밸런스). 순환으로 다시 나오는 같은 보스는 원래 식.")
     return "\n".join(rows)
 
 def challenge_table():

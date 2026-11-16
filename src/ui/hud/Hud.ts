@@ -168,7 +168,9 @@ export function createHud(opts: HudOptions): HudView {
   const chalText = h('span', { class: 'hud-banner-text', attrs: { 'data-testid': 'hud-challenge-name' }, text: ' ' });
   const chalTime = h('span', { class: 'hud-banner-time', attrs: { 'data-testid': 'hud-challenge-time', role: 'timer', 'aria-live': 'off' }, text: '' });
   const chalEl = h('div', { class: 'hud-banner hud-banner-challenge has-hp', attrs: { 'data-testid': 'hud-challenge', hidden: '' } }, chalFill, chalText, chalTime);
-  const bannerSlot = h('div', { class: 'hud-banner-slot', attrs: { 'data-testid': 'hud-banner-slot' } }, bannerEl, chalEl);
+  // F10-2: 보스 막대 아래 짧은 표시 (박쥐 여왕 비행 중). 자리를 차지하지 않게 막대 자리 밑에 겹쳐 띄운다 (HUD 높이·맵 위치 그대로)
+  const bossNoteEl = h('div', { class: 'hud-boss-note', attrs: { 'data-testid': 'hud-boss-note', role: 'status', hidden: '' }, text: '' });
+  const bannerSlot = h('div', { class: 'hud-banner-slot', attrs: { 'data-testid': 'hud-banner-slot' } }, bannerEl, chalEl, bossNoteEl);
   // 화면 가장자리 붉은 테두리 (몹 120 이상, 무한)
   const edgeEl = h('div', { class: 'hud-edge', attrs: { 'aria-hidden': 'true', 'data-testid': 'hud-edge' } });
   // 돈 '+n원' (돈 글자 옆에서 떠오름)
@@ -400,6 +402,10 @@ export function createHud(opts: HudOptions): HudView {
       }
       setText(bannerTime, 'bossTime', m.bossTime);
       if (last.bossTimeWarn !== m.bossTimeWarn) bannerTime.classList.toggle('is-warn', m.bossTimeWarn);
+      if (last.bossNote !== m.bossNote) {
+        bossNoteEl.textContent = m.bossNote;
+        bossNoteEl.hidden = m.bossNote === '';
+      }
       setText(workersEl, 'workers', m.workers);
       if (last.workersFull !== m.workersFull) workersItem.classList.toggle('is-full', m.workersFull);
       if (last.hireLabel !== m.hireLabel) {
