@@ -134,7 +134,7 @@ describe('HUD 값 = sim 값', () => {
     jumpToStage(match, 10);
     const legions = { gale: '질풍 군단' };
     const queen = match.mobs().find((x) => x.boss)!;
-    queen.hp = 4781; // 최대 체력의 약 25%
+    queen.hp = Math.floor(match.state.bossMaxHp / 4); // 최대 체력의 약 25% (F10-2: 10단계 체력은 배율에 따라 다름)
     for (const lv of [3, 4]) {
       match.state.challengeOpen = lv;
       match.state.challengeReady = match.state.challengeReady.map(() => 0);
@@ -196,6 +196,7 @@ describe('HUD 값 = sim 값', () => {
     expect(defeatText({ mode: 'infinite', theme: 0, stage: 8, defeatReason: 'mobLimit', mobLimit: 150 })).toEqual({
       reason: '8단계에서 몹이 150마리를 넘었어요',
       record: '8단계까지 버텼어요',
+      tip: '',
     });
     expect(defeatText({ mode: 'campaign', theme: 1, stage: 2, defeatReason: 'lives', mobLimit: 0 }).reason).toBe('1-2에서 목숨을 모두 잃었어요');
     expect(stageToastText({ mode: 'infinite', theme: 0, stage: 3, bossStage: false })).toBe('3단계 시작!');

@@ -514,6 +514,7 @@
    "ccResist": 0.7,
    "invisible": false,
    "pattern": "체력 50%에서 둘로 분열 (각각 남은 체력의 50%). 둘 다 잡아야 처치",
+   "counter": "체력 절반에서 둘로 나뉘어요 · 광역 타워로 한꺼번에",
    "legion": "plague",
    "rank": "대장",
    "params": {
@@ -534,6 +535,7 @@
    "ccResist": 0.7,
    "invisible": false,
    "pattern": "10초마다 박쥐 5마리 소환. 15초마다 3초간 날아올라 사거리 2 이하 타워의 공격을 받지 않음",
+   "counter": "날 때는 사거리 2칸 이하 타워가 못 때려요 · 원거리 물리 타워를 길목에",
    "legion": "gale",
    "rank": "대장",
    "params": {
@@ -557,6 +559,7 @@
    "ccResist": 0.7,
    "invisible": false,
    "pattern": "체력 30% 이하에서 이동속도 2배, 방어력 0",
+   "counter": "방어력이 아주 높아요 · 마법 타워나 물리 관통 강화로",
    "legion": "earth",
    "rank": "대장",
    "params": {
@@ -577,6 +580,7 @@
    "ccResist": 0.7,
    "invisible": true,
    "pattern": "**항상 투명** — 감지 범위 안에서만 피해를 받음. 12초마다 주변 몹 체력 10% 회복 + 투명 유령 3마리 소환",
+   "counter": "늘 투명해요 · 감지 타워가 없으면 못 때려요",
    "legion": "shadow",
    "rank": "대장",
    "params": {
@@ -601,6 +605,7 @@
    "ccResist": 0.7,
    "invisible": false,
    "pattern": "15초마다 무작위 타워 3개 5초 기절. 체력 66%·33%에서 5초간 받는 피해 -50%",
+   "counter": "15초마다 타워 3개를 기절시켜요 · 타워를 넓게 펼쳐 두세요",
    "legion": "lord",
    "rank": "군주 직속 대장",
    "params": {
@@ -1169,6 +1174,10 @@
    "gordam"
   ],
   "lordEvery": 250,
-  "lord": "nox"
+  "lord": "nox",
+  "stageHpMulNote": "F10-2 첫 보스 밸런스: 무한 모드에서 그 단계(키)에 나오는 보스만 체력 × 값 (보스 배율·테마 배율 위에 곱함). 순환으로 다시 나오는 같은 보스(70·80단계 박쥐 여왕 …)는 원래 식 그대로. 봇 측정: docs/balance/first-boss-tuned.md",
+  "stageHpMul": {
+   "10": 0.1
+  }
  }
 }

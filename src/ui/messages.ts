@@ -101,6 +101,45 @@ export function bossKillText(name: string, reward: number): string {
   return `👑 ${name} 처치! +${withCommas(reward)}원`;
 }
 
+// ---- F10-2 첫 보스: 예고·비행·실패 사유 ----
+
+/** 받침 있는 글자로 끝나면 true (한글 음절만 본다, 아니면 false). 을/를·이/가 고르기. */
+export function hasBatchim(word: string): boolean {
+  const c = word.trim().charCodeAt(word.trim().length - 1);
+  if (!(c >= 0xac00 && c <= 0xd7a3)) return false;
+  return (c - 0xac00) % 28 !== 0;
+}
+
+/** 보스 예고 배너 제목 (보스 단계 바로 앞 단계 시작 때): '⚠ 다음 단계 보스: 박쥐 여왕' */
+export function bossPreviewText(name: string): string {
+  return `⚠ 다음 단계 보스: ${name}`;
+}
+
+/** 보스 예고 둘째 줄 = 보스 대응 한 줄 (enemies.json bosses[].counter) */
+export function bossCounterTip(counter: string): string {
+  return `💡 ${counter}`;
+}
+
+/** 박쥐 여왕이 날아오른 동안 보스 막대 아래 짧은 표시: '🦇 비행 중 · 사거리 2칸 이하 공격 불가' (칸 = flyBlockRange) */
+export function bossFlyLabel(rangeTiles: number): string {
+  const n = Number.isInteger(rangeTiles) ? String(rangeTiles) : rangeTiles.toFixed(1);
+  return `🦇 비행 중 · 사거리 ${n}칸 이하 공격 불가`;
+}
+
+/**
+ * 보스 제한 시간 패배 사유 (사용자 결정: 시간 초과는 패배 그대로, 남은 체력·사유를 보여 줌):
+ * '박쥐 여왕을 60초 안에 잡지 못했어요 · 남은 체력 34%'. 남은 체력은 올림 정수 % (살아 있으면 1% 이상).
+ */
+export function bossTimeoutText(name: string, seconds: number, hpLeftPct: number): string {
+  return `${name}${hasBatchim(name) ? '을' : '를'} ${seconds}초 안에 잡지 못했어요 · 남은 체력 ${hpLeftPct}%`;
+}
+
+/** 남은 보스 체력 % (올림 정수, 0~100). 조금이라도 남으면 1% 이상 → '남은 체력 0%'로 지는 일이 없다. */
+export function bossHpLeftPct(hp: number, maxHp: number): number {
+  if (maxHp <= 0 || hp <= 0) return 0;
+  return Math.min(100, Math.ceil((hp * 100) / maxHp));
+}
+
 /** 보스를 잡은 뒤 남은 보스 단계 (휴식) */
 export const BOSS_CLEARED = '👑 보스 처치! 남은 시간은 휴식';
 
