@@ -205,8 +205,10 @@ export function spawnSlot(ctx: MatchContext, world: World, mobId: string, queue 
 }
 
 /** 보스의 실제 스탯 (단계 s, 테마 보정): 체력 = HP(s) × 보스 배율 × 테마 배율, 방어·마저 = 단계 성장 + 테마 추가. */
-export function bossSpawnStats(ctx: Pick<MatchContext, 'rules' | 'theme'>, boss: BossStats, stage: number): { hp: number; armor: number; magicRes: number } {
-  const hp = mulBp(mulBp(stageHp(ctx.rules, stage), boss.hpMulBp), ctx.theme.hpMulBp);
+export function bossSpawnStats(ctx: Pick<MatchContext, 'rules' | 'theme' | 'state'>, boss: BossStats, stage: number): { hp: number; armor: number; magicRes: number } {
+  const firstInfiniteBoss = ctx.state.mode === 'infinite' && stage === ctx.rules.bossEvery;
+  const hpMulBp = firstInfiniteBoss ? boss.firstInfiniteHpMulBp ?? boss.hpMulBp : boss.hpMulBp;
+  const hp = mulBp(mulBp(stageHp(ctx.rules, stage), hpMulBp), ctx.theme.hpMulBp);
   return {
     hp: hp < 1 ? 1 : hp,
     armor: stageArmor(ctx.rules, boss.armor, stage) + ctx.theme.armorOffset,

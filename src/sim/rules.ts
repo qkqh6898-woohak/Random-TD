@@ -89,6 +89,7 @@ export interface BossStats {
   readonly legion: string;
   readonly rank: string;
   readonly hpMulBp: number;
+  readonly firstInfiniteHpMulBp?: number;
   readonly armor: number;
   readonly magicRes: number;
   readonly speed: number;
@@ -467,6 +468,7 @@ export function buildBossStats(b: BossData): BossStats {
     legion: b.legion,
     rank: b.rank,
     hpMulBp: bp(b.hpMul),
+    firstInfiniteHpMulBp: b.firstInfiniteHpMul === undefined ? undefined : bp(b.firstInfiniteHpMul),
     armor: int(`${b.id}.armor`, b.armor),
     magicRes: int(`${b.id}.magicRes`, b.magicRes),
     speed: tiles(b.speed),

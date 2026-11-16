@@ -10,6 +10,7 @@ export interface GameOverOptions {
   reason: string;
   /** 기록 (예: '최고 8단계') */
   record: string;
+  detail?: string;
   onRetry: () => void;
   onExit: () => void;
 }
@@ -42,6 +43,7 @@ export function createGameOverScreen(opts: GameOverOptions): UiView {
       { class: 'pause-panel gameover-panel' },
       h('h2', { class: 'gameover-title', text: '패배', attrs: { id: 'gameover-title' } }),
       h('p', { class: 'gameover-reason', text: opts.reason }),
+      opts.detail ? h('p', { class: 'gameover-record', attrs: { 'data-testid': 'gameover-boss-hp' }, text: opts.detail }) : null,
       h('p', { class: 'gameover-record', text: opts.record }),
       retry,
       exit,

@@ -27,6 +27,8 @@ const AURA_COLOR = 0x5ee05e;
 const AURA_GLOW_COLOR = 0xd8ffcf;
 
 export interface SelectionView {
+  suggested?: readonly { tx: number; ty: number }[];
+  mergePreview?: { tx: number; ty: number; consumed: readonly { tx: number; ty: number }[] };
   /** 고른 타워 칸 (없으면 null). auraRadius = 지원 효과 칸 거리 (주변 8칸 = 1, 24칸 = 2, 없거나 '전체'면 0) */
   selected: { tx: number; ty: number; range: number; detectRange: number; auraRadius?: number } | null;
   /** 고른 오라 타워의 효과를 받는 타워 칸 */
@@ -64,6 +66,7 @@ export class SelectionLayer {
     const L = this.layout;
     const line = Math.max(2, L.tile * 0.035);
     this.drawPassiveAuras(g, view.auras ?? [], timeMs, line);
+    for (const cell of view.suggested ?? []) this.guideTile(g, cell, 0xafffed, line);
     if (view.selected) {
       const c = tileCenterPx(L, view.selected.tx, view.selected.ty);
       const r = this.px(view.selected.range);
@@ -89,6 +92,10 @@ export class SelectionLayer {
       const c = tileCenterPx(L, t.tx, t.ty);
       g.lineStyle(line * 1.4, SAME_KIND_COLOR, pulse).strokeEllipse(c.x, c.y + L.tile * FOOT_OFFSET_TILES, L.tile * 0.86, L.tile * 0.4);
     }
+    if (view.mergePreview) {
+      this.guideTile(o, view.mergePreview, 0x85f5d2, line);
+      for (const cell of view.mergePreview.consumed) this.guideTile(o, cell, 0xffad74, line);
+    }
     if (view.drop && view.drop.preview !== 'none') {
       const c = tileCenterPx(L, view.drop.tx, view.drop.ty);
       const color = DROP_COLORS[view.drop.preview];
@@ -100,6 +107,17 @@ export class SelectionLayer {
         if (r < L.tile * 40) g.lineStyle(line, color, 0.6).strokeCircle(c.x, c.y, r);
       }
     }
+  }
+
+  private guideTile(g: Phaser.GameObjects.Graphics, cell: { tx: number; ty: number }, color: number, line: number): void {
+    const c = tileCenterPx(this.layout, cell.tx, cell.ty);
+    const size = this.layout.tile * 0.91;
+    const x = c.x - size / 2;
+    const y = c.y - size / 2;
+    const r = size * 0.14;
+    g.fillStyle(color, 0.14).fillRoundedRect(x, y, size, size, r);
+    g.lineStyle(line * 2, 0x172d32, 0.9).strokeRoundedRect(x, y, size, size, r);
+    g.lineStyle(line, color, 1).strokeRoundedRect(x, y, size, size, r);
   }
 
   /** 평소 오라 빛: 효과 칸 네모를 아주 옅게 칠하고 테두리도 옅게 (2.4초 주기로 숨 쉼). 전체 오라는 발밑 타원만. */

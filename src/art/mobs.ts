@@ -1,5 +1,5 @@
 /**
- * 임시 몹 그림 (절차 생성, DEV_PLAN M1-7). M11에서 정식 몹 그래픽으로 바뀐다.
+ * 몹과 보스 그림 (절차 생성, DEV_PLAN M1-7).
  *
  * - 몹마다 128×128 텍스처를 한 번 그려 굽는다 (WebGL에서 Graphics를 매 프레임 다시 쪼개지 않게).
  * - 모양은 ENEMIES.md 3장 '외형'을 따라 아주 단순하게: 젤리·박쥐·돌덩이·거북·천 유령·두건·버섯·해골·늑대·고블린.
@@ -9,7 +9,7 @@
 import Phaser from 'phaser';
 import { COLORS, hexToInt, shade } from './palette';
 
-export type MobShape = 'blob' | 'bat' | 'rock' | 'shell' | 'ghost' | 'hood' | 'mushroom' | 'skull' | 'wolf' | 'goblin' | 'dragon';
+export type MobShape = 'blob' | 'bat' | 'rock' | 'shell' | 'ghost' | 'hood' | 'mushroom' | 'skull' | 'wolf' | 'goblin' | 'dragon' | 'flame' | 'rider';
 
 export interface MobLook {
   shape: MobShape;
@@ -22,9 +22,9 @@ export interface MobLook {
 
 /** 몹 id → 모양·색. 없는 몹은 기본 젤리. */
 export const MOB_LOOKS: Readonly<Record<string, MobLook>> = {
-  slime: { shape: 'blob', body: 0x7ed957, accent: 0xc8f5a8 },
-  bat: { shape: 'bat', body: 0x8e5ec7, accent: 0xc9a6f0 },
-  golem: { shape: 'rock', body: 0x6d6875, accent: 0xb072ff },
+  slime: { shape: 'blob', body: 0x8fc24e, accent: 0xe5ff86 },
+  bat: { shape: 'bat', body: 0x8e55c9, accent: 0xff82ce },
+  golem: { shape: 'rock', body: 0x657184, accent: 0xb072ff },
   turtle: { shape: 'shell', body: 0x4f9d8a, accent: 0x9fe3ff },
   ghost: { shape: 'ghost', body: 0xf1f1f6, accent: 0xc7c7dd },
   splitter: { shape: 'blob', body: 0x4aa3df, accent: 0xb7e2ff },
@@ -37,10 +37,21 @@ export const MOB_LOOKS: Readonly<Record<string, MobLook>> = {
   minigolem: { shape: 'rock', body: 0x7a7290, accent: 0xf08ae0 },
   // M4 기본 대장 (ENEMIES.md 4장 '외형'): 같은 모양 문법 + 왕관
   kingslime: { shape: 'blob', body: 0x5cc64a, accent: 0xd8ffb8, crown: true },
-  batqueen: { shape: 'bat', body: 0x6a3d9a, accent: 0xd29bff, crown: true },
+  batqueen: { shape: 'bat', body: 0x8359c7, accent: 0xeb6dd3, crown: true },
   ancientgolem: { shape: 'rock', body: 0x5e5a66, accent: 0x5ff0ff, crown: true },
   wraithlord: { shape: 'ghost', body: 0x4b3f6b, accent: 0x9f8fd0, crown: true },
-  chaosdragon: { shape: 'dragon', body: 0x8c1f2a, accent: 0x2a0d12, crown: true },
+  chaosdragon: { shape: 'dragon', body: 0xbf3c58, accent: 0xf78e68, crown: true },
+  // 도전 보스는 재질과 실루엣으로 일반 몹과 구별한다.
+  goldslime: { shape: 'blob', body: 0xf3b338, accent: 0xffffac },
+  thiefgoblin: { shape: 'goblin', body: 0xb79550, accent: 0xe4ae66 },
+  stoneturtle: { shape: 'shell', body: 0x7e798e, accent: 0xb8b2bc },
+  twinbats: { shape: 'bat', body: 0x5954a9, accent: 0x73d8ff },
+  irongolem: { shape: 'rock', body: 0x747f9a, accent: 0xe9f4ff },
+  shadowfang: { shape: 'wolf', body: 0x383250, accent: 0xbb6cf2 },
+  frostgiant: { shape: 'rock', body: 0x548fab, accent: 0xb2ffff },
+  flamelord: { shape: 'flame', body: 0xf56943, accent: 0xffd96e },
+  wraithknight: { shape: 'rider', body: 0x555891, accent: 0x99f4f2 },
+  ancientdragon: { shape: 'dragon', body: 0xb38032, accent: 0xffda76 },
 };
 
 export const DEFAULT_LOOK: MobLook = { shape: 'blob', body: 0x9aa0a6, accent: 0xdddddd };
@@ -50,7 +61,7 @@ export const SIZE_SCALE: Readonly<Record<string, number>> = { 소형: 0.62, 중�
 
 export const MOB_TEX_SIZE = 128;
 const OUTLINE = hexToInt(COLORS.outline);
-const EYE = 0xb36bff; // 녹스 군단 보라 눈
+const EYE = 0xcc77ff; // 녹스 군단 보라 눈
 
 export function mobTextureKey(mobId: string): string {
   return `mob-${mobId}`;
@@ -73,12 +84,14 @@ function fillPoly(g: Phaser.GameObjects.Graphics, pts: number[], color: number, 
 }
 
 function eyes(g: Phaser.GameObjects.Graphics, cx: number, cy: number, gap: number, r: number): void {
-  g.fillStyle(0xffffff, 1);
-  g.fillCircle(cx - gap, cy, r);
-  g.fillCircle(cx + gap, cy, r);
+  g.fillStyle(OUTLINE, 1).fillEllipse(cx - gap, cy, r * 2.4, r * 1.9).fillEllipse(cx + gap, cy, r * 2.4, r * 1.9);
+  g.fillStyle(0xffedf8, 1).fillEllipse(cx - gap, cy, r * 1.95, r * 1.4).fillEllipse(cx + gap, cy, r * 1.95, r * 1.4);
   g.fillStyle(EYE, 1);
   g.fillCircle(cx - gap + r * 0.2, cy + r * 0.1, r * 0.62);
   g.fillCircle(cx + gap + r * 0.2, cy + r * 0.1, r * 0.62);
+  g.lineStyle(Math.max(1.7, r * 0.32), OUTLINE, 1);
+  g.lineBetween(cx - gap - r, cy - r * 0.77, cx - gap + r, cy - r * 0.32);
+  g.lineBetween(cx + gap + r, cy - r * 0.77, cx + gap - r, cy - r * 0.32);
   g.fillStyle(0xffffff, 1);
   g.fillCircle(cx - gap + r * 0.45, cy - r * 0.25, r * 0.22);
   g.fillCircle(cx + gap + r * 0.45, cy - r * 0.25, r * 0.22);
@@ -91,18 +104,22 @@ function sigil(g: Phaser.GameObjects.Graphics, cx: number, cy: number, r: number
   g.fillPoints(p, true);
   g.lineStyle(2.5, OUTLINE, 1);
   g.strokePoints(p, true);
+  g.fillStyle(shade(legion, 0.65), 0.95).fillTriangle(cx, cy - r * 0.65, cx - r * 0.47, cy, cx, cy + r * 0.11);
 }
 
 function blob(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void {
-  g.fillStyle(l.body, 1);
+  g.fillStyle(shade(l.body, -0.32), 1);
   g.lineStyle(4, OUTLINE, 1);
   g.fillEllipse(64, 76, 96, 76);
   g.strokeEllipse(64, 76, 96, 76);
+  g.fillStyle(l.body, 1).fillEllipse(62, 70, 86, 61);
   g.fillStyle(shade(l.body, 0.35), 0.9);
   g.fillEllipse(48, 58, 30, 16);
   g.fillStyle(l.accent, 0.8);
-  g.fillCircle(84, 92, 5);
+  g.fillCircle(84, 92, 5).fillEllipse(43, 55, 16, 7).fillCircle(37, 62, 3);
   eyes(g, 64, 76, 16, 9);
+  g.fillStyle(OUTLINE, 1).fillEllipse(64, 92, l.crown ? 22 : 14, 10);
+  g.fillStyle(0xff84a3, 1).fillEllipse(64, 94, 9, 4);
   sigil(g, 64, 52, 8, legion);
 }
 
@@ -110,16 +127,23 @@ function bat(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void {
   const wing = shade(l.body, -0.25);
   fillPoly(g, [56, 62, 8, 40, 18, 66, 4, 82, 30, 80, 44, 92], wing);
   fillPoly(g, [72, 62, 120, 40, 110, 66, 124, 82, 98, 80, 84, 92], wing);
+  fillPoly(g, [15, 47, 24, 65, 15, 76, 32, 73, 44, 83, 51, 67], l.accent, false);
+  fillPoly(g, [113, 47, 104, 65, 113, 76, 96, 73, 84, 83, 77, 67], l.accent, false);
   fillPoly(g, [46, 46, 52, 26, 60, 44], l.body);
   fillPoly(g, [82, 46, 76, 26, 68, 44], l.body);
   g.fillStyle(l.body, 1);
   g.lineStyle(4, OUTLINE, 1);
   g.fillCircle(64, 68, 28);
   g.strokeCircle(64, 68, 28);
+  g.fillStyle(shade(l.body, 0.42), 1).fillEllipse(55, 54, 26, 10);
   eyes(g, 64, 66, 11, 7);
   g.fillStyle(0xffffff, 1);
   g.fillTriangle(58, 82, 62, 82, 60, 88);
   g.fillTriangle(66, 82, 70, 82, 68, 88);
+  if (l.crown) {
+    fillPoly(g, [42, 84, 64, 93, 86, 84, 78, 102, 51, 103], 0x582e75);
+    sigil(g, 64, 98, 6, 0xffc45e);
+  }
   sigil(g, 64, 48, 6, legion);
 }
 
@@ -129,6 +153,8 @@ function rock(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number, gem: b
   g.fillTriangle(34, 34, 64, 24, 52, 52);
   g.fillStyle(shade(l.body, -0.25), 1);
   g.fillTriangle(106, 98, 112, 62, 86, 92);
+  g.fillTriangle(22, 99, 28, 79, 55, 96);
+  g.lineStyle(3, shade(l.body, 0.5), 0.85).lineBetween(36, 34, 63, 25).lineBetween(63, 25, 93, 34);
   // 보라 룬 줄
   g.lineStyle(3, l.accent, 0.9);
   g.lineBetween(30, 92, 42, 80);
@@ -152,6 +178,8 @@ function shell(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void
   g.fillStyle(l.body, 1);
   g.fillEllipse(60, 74, 88, 64);
   g.strokeEllipse(60, 74, 88, 64);
+  g.fillStyle(shade(l.body, 0.4), 1).fillEllipse(56, 65, 62, 29);
+  g.lineStyle(3, shade(l.body, -0.4), 0.9).lineBetween(26, 85, 88, 85).lineBetween(39, 76, 35, 89).lineBetween(72, 72, 79, 89);
   fillPoly(g, [48, 58, 58, 30, 68, 58], l.accent);
   fillPoly(g, [30, 70, 34, 48, 44, 68], l.accent);
   fillPoly(g, [70, 66, 80, 44, 86, 68], l.accent);
@@ -166,6 +194,8 @@ function ghost(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void
   fillPoly(g, [24, 108, 24, 60, 34, 32, 64, 18, 94, 32, 104, 60, 104, 108, 90, 96, 78, 110, 64, 96, 50, 110, 38, 96], l.body);
   g.fillStyle(l.accent, 0.6);
   g.fillTriangle(80, 40, 96, 56, 92, 90);
+  g.fillStyle(shade(l.body, 0.48), 0.92).fillTriangle(31, 59, 42, 33, 65, 25);
+  g.fillStyle(shade(l.body, -0.26), 0.65).fillTriangle(73, 77, 79, 103, 88, 94);
   g.fillStyle(0x2b2340, 1);
   g.fillEllipse(50, 58, 14, 18);
   g.fillEllipse(78, 58, 14, 18);
@@ -179,6 +209,7 @@ function ghost(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void
 
 function hood(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void {
   fillPoly(g, [26, 108, 34, 62, 64, 16, 94, 62, 102, 108], l.body);
+  fillPoly(g, [33, 90, 49, 51, 64, 24, 59, 51], l.accent, false);
   g.fillStyle(0x16131f, 1);
   g.fillEllipse(64, 70, 46, 36);
   g.fillStyle(EYE, 1);
@@ -186,6 +217,7 @@ function hood(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void 
   g.fillEllipse(74, 70, 10, 6);
   g.fillStyle(l.accent, 1);
   g.fillRect(40, 92, 48, 6);
+  g.fillStyle(0xc48cd6, 1).fillTriangle(58, 91, 70, 91, 64, 102);
   fillPoly(g, [92, 98, 112, 90, 108, 100], 0xc8ccd6);
   sigil(g, 64, 42, 6, legion);
 }
@@ -201,7 +233,8 @@ function mushroom(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): v
   g.closePath();
   g.fillPath();
   g.strokePath();
-  g.fillStyle(0xffffff, 0.95);
+  g.fillStyle(shade(l.body, -0.28), 1).fillEllipse(64, 61, 82, 14);
+  g.fillStyle(0xffefcc, 0.95);
   g.fillCircle(44, 50, 7);
   g.fillCircle(66, 34, 8);
   g.fillCircle(88, 52, 6);
@@ -218,6 +251,8 @@ function skull(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void
   g.lineStyle(4, OUTLINE, 1);
   g.fillCircle(60, 54, 32);
   g.strokeCircle(60, 54, 32);
+  g.fillStyle(shade(l.body, 0.45), 1).fillEllipse(51, 40, 29, 18);
+  g.fillStyle(l.body, 1);
   g.fillRoundedRect(44, 74, 32, 22, 6);
   g.strokeRoundedRect(44, 74, 32, 22, 6);
   g.fillStyle(0x2b2340, 1);
@@ -232,6 +267,7 @@ function skull(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void
   g.fillStyle(l.accent, 1);
   g.fillRoundedRect(78, 58, 38, 50, 10);
   g.strokeRoundedRect(78, 58, 38, 50, 10);
+  g.lineStyle(3, 0xffd292, 1).strokeRoundedRect(82, 62, 30, 42, 8);
   g.lineStyle(3, shade(l.accent, -0.35), 1);
   g.lineBetween(90, 62, 90, 104);
   g.lineBetween(104, 62, 104, 104);
@@ -243,6 +279,7 @@ function wolf(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void 
   g.fillCircle(30, 90, 18);
   g.fillCircle(100, 92, 14);
   fillPoly(g, [18, 96, 26, 66, 50, 58, 70, 40, 82, 22, 90, 40, 104, 34, 100, 56, 114, 72, 100, 82, 86, 78, 82, 100, 66, 100, 60, 86, 40, 88, 36, 104], l.body);
+  fillPoly(g, [26, 78, 33, 69, 55, 63, 71, 47, 81, 44, 63, 74, 51, 69, 40, 84], l.accent, false);
   g.fillStyle(0xff3b5c, 1);
   g.fillTriangle(88, 56, 98, 56, 94, 61);
   g.fillStyle(0xffffff, 1);
@@ -253,10 +290,13 @@ function wolf(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void 
 function goblin(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void {
   fillPoly(g, [26, 50, 6, 30, 40, 44], l.body);
   fillPoly(g, [102, 50, 122, 30, 88, 44], l.body);
+  fillPoly(g, [13, 34, 34, 44, 28, 48], shade(l.body, 0.55), false);
+  fillPoly(g, [115, 34, 94, 44, 100, 48], shade(l.body, 0.55), false);
   g.fillStyle(l.body, 1);
   g.lineStyle(4, OUTLINE, 1);
   g.fillCircle(64, 56, 30);
   g.strokeCircle(64, 56, 30);
+  g.fillStyle(shade(l.body, 0.43), 1).fillEllipse(52, 46, 22, 10);
   g.fillStyle(0x3a2f4a, 1);
   g.fillRoundedRect(44, 82, 40, 28, 8);
   g.strokeRoundedRect(44, 82, 40, 28, 8);
@@ -274,6 +314,8 @@ function dragon(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): voi
   const wing = shade(l.body, -0.35);
   fillPoly(g, [44, 64, 6, 30, 12, 60, 2, 78, 30, 74, 40, 84], wing);
   fillPoly(g, [84, 64, 122, 30, 116, 60, 126, 78, 98, 74, 88, 84], wing);
+  fillPoly(g, [13, 39, 18, 60, 10, 72, 31, 67, 41, 72, 39, 63], l.accent, false);
+  fillPoly(g, [115, 39, 110, 60, 118, 72, 97, 67, 87, 72, 89, 63], l.accent, false);
   g.fillStyle(l.body, 1);
   g.lineStyle(4, OUTLINE, 1);
   g.fillEllipse(64, 88, 64, 44);
@@ -304,14 +346,29 @@ function dragon(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): voi
   sigil(g, 64, 80, 6, legion);
 }
 
+function flame(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void {
+  fillPoly(g, [35, 107, 20, 84, 28, 53, 43, 67, 42, 33, 66, 9, 60, 42, 74, 58, 92, 34, 92, 62, 108, 80, 96, 107, 64, 117], l.body);
+  fillPoly(g, [42, 102, 36, 78, 49, 84, 57, 52, 70, 68, 86, 64, 93, 93, 74, 109], l.accent, false);
+  eyes(g, 64, 88, 14, 8);
+  sigil(g, 64, 69, 6, legion);
+}
+
+function rider(g: Phaser.GameObjects.Graphics, l: MobLook, legion: number): void {
+  fillPoly(g, [17, 82, 30, 65, 62, 66, 77, 56, 83, 42, 90, 53, 106, 48, 104, 62, 118, 76, 105, 88, 88, 82, 82, 101, 63, 109, 68, 91, 43, 94, 31, 112, 24, 102], l.body);
+  fillPoly(g, [24, 83, 35, 73, 65, 71, 79, 58, 88, 58, 73, 81, 46, 86, 39, 101], l.accent, false);
+  g.fillStyle(0x34334b, 1).fillRoundedRect(40, 30, 39, 40, 8);
+  g.lineStyle(4, OUTLINE, 1).strokeRoundedRect(40, 30, 39, 40, 8);
+  fillPoly(g, [42, 33, 53, 18, 70, 22, 78, 38, 74, 55, 47, 55], 0x929ccf);
+  g.fillStyle(0x322041, 1).fillRoundedRect(47, 40, 28, 9, 4);
+  g.fillStyle(l.accent, 1).fillCircle(53, 44, 3.2).fillCircle(68, 44, 3.2).fillCircle(104, 73, 3.8);
+  sigil(g, 59, 62, 7, legion);
+}
+
 /** 보스 왕관 (금색, 텍스처 위쪽 가운데). */
 function crown(g: Phaser.GameObjects.Graphics, y: number): void {
-  fillPoly(g, [44, y + 12, 46, y - 6, 54, y + 4, 64, y - 10, 74, y + 4, 82, y - 6, 84, y + 12], 0xf5c518);
-  g.fillStyle(0xff4d6d, 1);
-  g.fillCircle(64, y + 4, 3.5);
-  g.fillStyle(0x6fe3ff, 1);
-  g.fillCircle(52, y + 7, 2.5);
-  g.fillCircle(76, y + 7, 2.5);
+  fillPoly(g, [41, y + 12, 42, y - 6, 53, y + 3, 64, y - 10, 75, y + 3, 86, y - 6, 87, y + 12], 0xffc45e);
+  g.fillStyle(0xffebaa, 1).fillRect(47, y + 8, 34, 3);
+  sigil(g, 64, y + 2, 6, 0xfa62aa);
 }
 
 /** 왕관이 놓이는 높이 (모양마다 머리 위). */
@@ -327,6 +384,8 @@ const CROWN_Y: Readonly<Record<MobShape, number>> = {
   wolf: 14,
   goblin: 18,
   dragon: 14,
+  flame: 14,
+  rider: 18,
 };
 
 /** 몹 텍스처를 한 번 그려 굽는다 (이미 있으면 그대로). */
@@ -368,6 +427,12 @@ export function ensureMobTexture(scene: Phaser.Scene, mobId: string, legionColor
       break;
     case 'dragon':
       dragon(g, look, legionColor);
+      break;
+    case 'flame':
+      flame(g, look, legionColor);
+      break;
+    case 'rider':
+      rider(g, look, legionColor);
       break;
   }
   if (look.crown) crown(g, CROWN_Y[look.shape]);

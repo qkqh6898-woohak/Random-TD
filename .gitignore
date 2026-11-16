@@ -9,5 +9,9 @@ playwright-report/
 .env.*
 android/app/build/
 android/.gradle/
+android/.signing/
+android-build/
+android-release/
 *.keystore
 *.jks
+*.p12

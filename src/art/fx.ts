@@ -16,14 +16,15 @@ export const TEX_SPARK = 'fx-spark';
 /** 화살: 오른쪽(+x)을 향한 64×16 */
 function bakeArrow(scene: Phaser.Scene): void {
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  g.lineStyle(4, 0x7a4f2a, 1);
+  g.lineStyle(6, OUTLINE, 1).lineBetween(6, 8, 50, 8);
+  g.lineStyle(3, 0xf0b968, 1);
   g.lineBetween(6, 8, 50, 8);
-  g.fillStyle(0xe8edf2, 1);
+  g.fillStyle(0xc6dcef, 1);
   g.fillTriangle(48, 2, 62, 8, 48, 14);
   g.lineStyle(2, OUTLINE, 1);
   g.strokeTriangle(48, 2, 62, 8, 48, 14);
-  g.fillStyle(0xf5f0e0, 1);
-  g.fillTriangle(2, 2, 12, 8, 2, 14);
+  g.fillStyle(0xffffdf, 1).fillTriangle(49, 4, 60, 8, 49, 8);
+  g.fillStyle(0xff927c, 1).fillTriangle(2, 2, 13, 8, 2, 14);
   g.generateTexture(TEX_ARROW, 64, 16);
   g.destroy();
 }
@@ -36,12 +37,13 @@ function bakeOrb(scene: Phaser.Scene): void {
     g.fillCircle(24, 24, r);
   }
   g.fillStyle(0xffffff, 1);
-  g.fillCircle(24, 24, 7);
+  g.fillTriangle(24, 12, 33, 24, 15, 24).fillTriangle(24, 36, 33, 24, 15, 24);
+  g.lineStyle(2, 0xffffff, 0.8).strokeCircle(24, 24, 13);
   g.generateTexture(TEX_ORB, 48, 48);
   g.destroy();
 }
 
-/** 동전: 금색 원 + 테두리 + '원' 자리 무늬 48×48 */
+/** 동전: 금색 테두리와 주사위 눈 각인. */
 function bakeCoin(scene: Phaser.Scene): void {
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
   g.fillStyle(0xb07d00, 1);
@@ -52,8 +54,8 @@ function bakeCoin(scene: Phaser.Scene): void {
   g.strokeCircle(24, 23, 20);
   g.lineStyle(3, 0xfff1b0, 1);
   g.strokeCircle(24, 23, 13);
-  g.fillStyle(0xfff6cc, 1);
-  g.fillRect(21, 14, 6, 18);
+  g.fillStyle(0xcc7c28, 1).fillRoundedRect(16, 15, 16, 17, 4);
+  g.fillStyle(0xfff6cc, 1).fillCircle(20, 19, 2.3).fillCircle(24, 23, 2.3).fillCircle(28, 27, 2.3);
   g.generateTexture(TEX_COIN, 48, 50);
   g.destroy();
 }
@@ -64,11 +66,11 @@ function bakePillar(scene: Phaser.Scene): void {
   const steps = 32;
   for (let i = 0; i < steps; i++) {
     const a = (i / steps) * 0.85;
-    g.fillStyle(0xffffff, a);
-    g.fillRect(8, 256 - (i + 1) * 8, 48, 8);
+    const y = 256 - (i + 1) * 8;
+    g.fillStyle(0xffffff, a * 0.35).fillRect(6, y, 52, 8);
+    g.fillStyle(0xffffff, a).fillRect(24, y, 16, 8);
   }
-  g.fillStyle(0xffffff, 0.9);
-  g.fillEllipse(32, 248, 64, 16);
+  g.lineStyle(3, 0xffffff, 0.9).strokeEllipse(32, 248, 61, 14);
   g.generateTexture(TEX_PILLAR, 64, 256);
   g.destroy();
 }
@@ -82,6 +84,7 @@ function bakeSpark(scene: Phaser.Scene): void {
   g.fillTriangle(0, 16, 16, 13, 16, 19);
   g.fillTriangle(32, 16, 16, 13, 16, 19);
   g.fillCircle(16, 16, 5);
+  g.fillStyle(0xffffff, 0.75).fillCircle(24, 7, 2.6).fillCircle(7, 25, 2.2);
   g.generateTexture(TEX_SPARK, 32, 32);
   g.destroy();
 }

@@ -179,7 +179,9 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
   });
 
   it('보유 3개 이상이면 승급·모두 승급 켜짐, 7개면 모두 승급 ×2', () => {
-    expect(buildTowerPanelModel(panelInput('archer', { owned: 3 }))).toMatchObject({ mergeEnabled: true, mergeAllEnabled: true, mergeAllTimes: 1, ownedReady: true, note: '' });
+    expect(buildTowerPanelModel(panelInput('archer', { owned: 3 }))).toMatchObject({
+      mergeEnabled: true, mergeAllEnabled: true, mergeAllTimes: 1, ownedReady: true, note: '민트색 칸에 승급 · 주황색 두 칸은 재료',
+    });
     expect(buildTowerPanelModel(panelInput('archer', { owned: 7 }))).toMatchObject({ owned: '7/3', mergeAllTimes: 2 });
   });
 

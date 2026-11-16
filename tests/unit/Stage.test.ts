@@ -7,6 +7,26 @@ import { createMatch } from '../../src/sim/match';
 import { campaign, data, infinite, jumpToStage } from '../helpers/match';
 
 describe('단계 타이머 (GDD 2.2)', () => {
+  it('준비 완료는 일반 무한 모드에서 첫 소환 뒤 한 번만 1단계를 시작한다', () => {
+    const match = infinite(1);
+    match.world.enqueue({ type: 'finishPrep' });
+    match.step();
+    expect(match.state.stage).toBe(0);
+    const [x, y] = match.map.buildable[0]!;
+    match.world.enqueue({ type: 'summon', x, y });
+    match.step();
+    match.world.enqueue({ type: 'finishPrep' });
+    match.world.enqueue({ type: 'finishPrep' });
+    match.step();
+    expect(match.state.stage).toBe(1);
+    expect(match.state.debugUsed).toBe(false);
+    const deadline = match.state.nextStageTick;
+    match.world.enqueue({ type: 'finishPrep' });
+    match.step();
+    expect(match.state.nextStageTick).toBe(deadline);
+    expect(match.world.drainEvents().filter((event) => event.type === 'stageStart')).toHaveLength(1);
+  });
+
   it('0단계 준비 60초(1200틱): 틱 1199까지 0단계, 틱 1200에 1단계', () => {
     const match = infinite(1);
     expect(match.state.stage).toBe(0);

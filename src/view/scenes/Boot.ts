@@ -1,67 +1,77 @@
 /**
- * Boot 장면: 타이틀 배경과 대기 동작하는 타워들을 그리고, 그 위에 DOM 타이틀 화면을 띄운다.
+ * Boot 장면: DOM 타이틀을 띄우고 선택한 모드의 Game 장면을 시작한다.
  * [시작] → Game 장면 (무한 모드, 순환의 정원). ?debug=1 이면 [캠페인 1] → 테마 1 사거리 미로.
  */
 import Phaser from 'phaser';
-import { GRADE_COLORS } from '../../art/palette';
-import { createChibi, type ChibiProp } from '../../art/chibi';
+import minerArt from '../../art/portraits/miner.webp';
+import goblinArt from '../../art/portraits/goblin.webp';
+import archerArt from '../../art/portraits/archer.webp';
+import apprenticeArt from '../../art/portraits/apprentice.webp';
+import warriorArt from '../../art/portraits/warrior.webp';
+import batQueenArt from '../../art/portraits/batqueen.webp';
 import { createTitleScreen } from '../../ui/screens/TitleScreen';
-import { GAME_HEIGHT, GAME_WIDTH, SCENE_BOOT, SCENE_GAME } from '../config';
-import { drawTitleBackdrop } from '../render/TitleBackdrop';
+import { SCENE_BOOT, SCENE_GAME } from '../config';
 import type { GameContext } from '../context';
 import type { MatchMode } from '../../sim/state';
+import { formatStage } from '../../ui/hud/hudModel';
 import { randomSeed, type GameSceneData } from './Game';
-
-interface TitleTower {
-  towerId: string;
-  prop: ChibiProp;
-  x: number;
-  y: number;
-  stars: number;
-  scale: number;
-}
-
-/** 타이틀에 세울 타워 (기본 덱 노말 타워 중 종족이 다른 셋). 색은 데이터에서 읽는다. */
-const TITLE_TOWERS: TitleTower[] = [
-  { towerId: 'archer', prop: 'bow', x: 230, y: 1385, stars: 1, scale: 1 },
-  { towerId: 'miner', prop: 'pickaxe', x: 540, y: 1440, stars: 1, scale: 1.1 },
-  { towerId: 'warrior', prop: 'sword', x: 850, y: 1385, stars: 1, scale: 1 },
-];
 
 export class BootScene extends Phaser.Scene {
   constructor(private readonly ctx: GameContext) {
     super({ key: SCENE_BOOT });
   }
 
+  preload(): void {
+    // 재시작하거나 타이틀로 돌아올 때 이미 읽은 그림은 다시 올리지 않는다.
+    const illustrations = {
+      'art-tower-miner': minerArt,
+      'art-tower-goblin': goblinArt,
+      'art-tower-archer': archerArt,
+      'art-tower-apprentice': apprenticeArt,
+      'art-tower-warrior': warriorArt,
+      'mob-batqueen': batQueenArt,
+    };
+    for (const [key, url] of Object.entries(illustrations)) {
+      if (!this.textures.exists(key)) this.load.image(key, url);
+    }
+  }
+
   create(): void {
-    const { data } = this.ctx;
-    const kingdom = data.towers.factions.kingdom?.color ?? '#2E5AAC';
-    drawTitleBackdrop(this, { kingdomColor: kingdom });
-
-    const towers = new Map(data.towers.towers.map((t) => [t.id, t]));
-    TITLE_TOWERS.forEach((tt, i) => {
-      const t = towers.get(tt.towerId) ?? data.towers.towers[i];
-      if (!t) return;
-      const factionColor = data.towers.factions[t.faction]?.color ?? '#888888';
-      createChibi(this, tt.x, tt.y, {
-        bodyColor: factionColor,
-        pedestalColor: GRADE_COLORS[t.grade],
-        prop: tt.prop,
-        stars: tt.stars,
-        scale: tt.scale,
-        idleDelay: [0, 420, 210][i] ?? 0,
-      });
-    });
-
-    this.cameras.main.setBounds(0, 0, GAME_WIDTH, GAME_HEIGHT);
-    this.cameras.main.fadeIn(250, 13, 18, 32);
-
+    const saved = this.ctx.debug ? null : this.ctx.saves.read();
+    const record = this.ctx.debug ? null : this.ctx.records.read();
+    const { bosses, challenges } = this.ctx.data.enemies;
+    const bossNames = new Map(bosses.map(({ id, name }) => [id, name]));
+    const clearedChallenges = (best: number) => challenges.filter(({ level }) => level <= best);
     this.ctx.ui.clear('hud');
     this.ctx.ui.show(
       'screen',
       createTitleScreen({
-        version: `v${this.ctx.version} · M2`,
+        version: `v${this.ctx.version}`,
         onStart: () => this.startGame('infinite'),
+        saved: saved ? {
+          stage: formatStage(saved.match.state),
+          onResume: () => this.scene.start(SCENE_GAME, {
+            seed: saved.match.world.seed,
+            mode: saved.match.state.mode,
+            theme: saved.match.state.theme,
+            saved,
+          } satisfies GameSceneData),
+        } : undefined,
+        records: record ? {
+          bestStage: record.bestStage,
+          bosses: bosses
+            .filter(({ id }) => Object.hasOwn(record.bossClears, id))
+            .map(({ id, name }) => ({ name, stage: record.bossClears[id]! }))
+            .sort((a, b) => a.stage - b.stage),
+          challenges: clearedChallenges(record.bestChallenge)
+            .map(({ level, name }) => ({ name, stage: level })),
+          recent: record.recent.map((run) => ({
+            stage: run.stage,
+            durationSeconds: run.durationSeconds,
+            bosses: run.bossIds.map((id) => bossNames.get(id) ?? id),
+            challenges: clearedChallenges(run.bestChallenge).map(({ name }) => name),
+          })),
+        } : undefined,
         onCampaign: this.ctx.debug ? () => this.startGame('campaign') : undefined,
       }),
     );

@@ -7,7 +7,11 @@
  */
 import type Phaser from 'phaser';
 import './ui/styles.css';
+import { EffectAudio } from './audio/EffectAudio';
 import { loadGameData } from './data/load';
+import { BattleRecords } from './save/BattleRecords';
+import { MatchSaves } from './save/MatchSaves';
+import { ScreenShake } from './save/ScreenShake';
 import { describeFatal, installFatalHandlers, type FatalPhase } from './ui/fatal';
 import { UiRoot } from './ui/root';
 import { readUrlOptions, type GameContext } from './view/context';
@@ -35,15 +39,24 @@ function boot(): void {
   try {
     const data = loadGameData();
     const url = readUrlOptions(location.search);
+    const storage = () => window.localStorage;
+    const audio = new EffectAudio(storage);
     const ctx: GameContext = {
       data,
       ui,
+      saves: new MatchSaves(data, storage),
+      records: new BattleRecords(storage),
+      screenShake: new ScreenShake(storage, () => window.matchMedia('(prefers-reduced-motion: reduce)').matches),
+      audio,
       debug: url.debug,
       seed: url.seed,
       accountLevel: 1,
       version: __APP_VERSION__,
     };
     game = createGame(must('game'), ctx);
+    const unlockAudio = (event: Event) => { if (event.isTrusted) audio.unlock(); };
+    window.addEventListener('click', unlockAudio, true);
+    window.addEventListener('keydown', unlockAudio, true);
     if (import.meta.env.DEV || url.debug) {
       // 개발·디버그 확인용 (E2E에서 장면 상태를 볼 때도 사용)
       (window as unknown as { __rtd?: unknown }).__rtd = { game, ctx };

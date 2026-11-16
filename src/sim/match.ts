@@ -35,7 +35,7 @@ import { createCombatSystem } from './systems/Combat';
 import { createDefeatSystem } from './systems/Defeat';
 import { createMovementSystem } from './systems/Movement';
 import { createSpawnSystem } from './systems/Spawn';
-import { createStageSystem, skipStage, ticksToNextStage } from './systems/Stage';
+import { canFinishPrep, createStageSystem, skipStage, ticksToNextStage } from './systems/Stage';
 import { merge, mergeAll, pickMerge } from './systems/Merge';
 import { createMobTraitSystem } from './systems/MobTraits';
 import { createDetectionSystem } from './systems/Detection';
@@ -316,6 +316,9 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
   });
   world.setCommandHandler('claimAllMissions', (w) => claimAllMissions(ctx, w));
   world.setCommandHandler('debugSkipStage', (w) => skipStage(ctx, w));
+  world.setCommandHandler('finishPrep', (w, cmd) => {
+    if (cmd.player === 0 && canFinishPrep(state)) state.nextStageTick = w.tick;
+  });
   world.setCommandHandler('hireWorker', (w, cmd) => {
     if (cmd.type === 'hireWorker') hireWorker(ctx, w, cmd.player);
   });

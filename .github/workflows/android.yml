@@ -1,0 +1,111 @@
+name: Android APK
+
+on:
+  push:
+    branches: ['codex/android-apk-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      signed: ${{ steps.verify.outputs.signed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: 버전 확인
+        id: version
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: 웹 빌드
+        run: |
+          npm ci
+          npm run build
+      - name: GitHub에서 APK 빌드
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          sdk="$RUNNER_TEMP/rtd-android"
+          bash android/setup-sdk.sh "$sdk"
+          bash android/build-apk.sh "$sdk" "android-build/Random-TD_Offline_v$VERSION-unsigned.apk"
+      - name: 배포용 APK의 서명과 빌드 내용 검증
+        id: verify
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          apk="downloads/Random-TD_Offline_v$VERSION.apk"
+          if [[ ! -f "$apk" ]]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          tools="$RUNNER_TEMP/rtd-android/build-tools/android-15"
+          "$tools/apksigner" verify --print-certs "$apk" > "$RUNNER_TEMP/rtd-cert.txt"
+          grep -Fx 'Signer #1 certificate SHA-256 digest: 0422434cc6f7026d53e97e8c5aac9a29ff5d5ccf8d2d1228525d8feb2a7cd02a' "$RUNNER_TEMP/rtd-cert.txt"
+          mkdir "$RUNNER_TEMP/rebuilt" "$RUNNER_TEMP/signed" android-release
+          unzip -q "android-build/Random-TD_Offline_v$VERSION-unsigned.apk" -d "$RUNNER_TEMP/rebuilt"
+          unzip -q "$apk" -d "$RUNNER_TEMP/signed"
+          diff -qr -x META-INF "$RUNNER_TEMP/rebuilt" "$RUNNER_TEMP/signed"
+          cp "$apk" android-release/
+          (cd android-release && sha256sum -- *.apk > SHA256SUMS)
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-build-v${{ steps.version.outputs.version }}
+          path: android-build/*.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: steps.verify.outputs.signed == 'true'
+        with:
+          name: android-release-v${{ steps.version.outputs.version }}
+          path: android-release/
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    if: needs.build.outputs.signed == 'true' && github.repository == 'qkqh6898-woohak/Random-TD' && startsWith(github.ref_name, 'codex/android-apk-v')
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-release-v${{ needs.build.outputs.version }}
+          path: android-release
+      - name: GitHub Releases에 APK 게시
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          tag="android-v$VERSION"
+          apk="Random-TD_Offline_v$VERSION.apk"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            mkdir existing
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern "$apk" --dir existing
+            cmp "android-release/$apk" "existing/$apk"
+            exit 0
+          fi
+          gh release create "$tag" "android-release/$apk" android-release/SHA256SUMS \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "운빨 디펜스 Android v$VERSION" \
+            --notes "Assets의 APK를 내려받아 설치 또는 업데이트하세요. 앱은 오프라인에서 동작합니다."

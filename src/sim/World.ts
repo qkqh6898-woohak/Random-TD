@@ -9,7 +9,7 @@
  * - Phaser·DOM·window를 모른다. 화면은 상태를 읽기만 하고, 바꾸려면 `enqueue()`로 명령을 넣는다.
  */
 
-import { COMMAND_TYPES, CommandQueue, type Command, type CommandInput, type CommandType, type EnqueueResult } from './Commands';
+import { COMMAND_TYPES, CommandQueue, validateCommand, type Command, type CommandInput, type CommandType, type EnqueueResult } from './Commands';
 import { hashValue } from './hash';
 import { Rng, type RngSnapshot } from './Rng';
 
@@ -72,6 +72,12 @@ export class EntityStore<T extends Entity = Entity> {
 
   get nextId(): number {
     return this.nextIdValue;
+  }
+
+  /** 삭제된 엔티티가 썼던 번호까지 포함해 다음 ID를 유지한다. */
+  restoreNextId(nextId: number): void {
+    if (!Number.isSafeInteger(nextId) || nextId < this.nextIdValue) throw new Error('저장된 다음 엔티티 ID가 잘못됐다');
+    this.nextIdValue = nextId;
   }
 
   /** ID 오름차순 배열 (읽기 전용으로 쓸 것). */
@@ -137,6 +143,22 @@ export const streamSummon = (player: number): string => `p${player}.summon`;
 export const streamGamble = (player: number): string => `p${player}.gamble`;
 /** 보스 카드 제시 (M4-7): 플레이어별 */
 export const streamCards = (player: number): string => `p${player}.cards`;
+
+interface WorldStateView {
+  tick: number;
+  seed: number;
+  players: number;
+  rng: Record<string, RngSnapshot>;
+  nextId: number;
+  entities: readonly Entity[];
+  state: object;
+}
+
+export interface WorldCheckpoint extends WorldStateView {
+  pending: readonly Command[];
+  nextSeq: readonly number[];
+  executed: readonly Command[];
+}
 
 export class World {
   readonly seed: number;
@@ -271,7 +293,7 @@ export class World {
   }
 
   /** 해시에 들어가는 상태 (대기 중인 명령은 빼고 확정된 상태만). */
-  hashView(): unknown {
+  hashView(): WorldStateView {
     const rng: Record<string, RngSnapshot> = {};
     for (const [name, r] of this.streams) rng[name] = r.snapshot();
     return {
@@ -283,6 +305,49 @@ export class World {
       entities: this.entities.list(),
       state: this.state,
     };
+  }
+
+  /** 즉시 직렬화하기 위한 틱 경계의 읽기 전용 뷰. */
+  checkpointView(): WorldCheckpoint {
+    return {
+      ...this.hashView(),
+      pending: this.queue.pending(),
+      nextSeq: Array.from({ length: this.players }, (_, player) => this.queue.peekNextSeq(player)),
+      executed: this.executed,
+    };
+  }
+
+  /** 동일한 시작 입력으로 구성한 새 판에 확정 상태와 미실행 명령을 복원한다. */
+  restoreCheckpoint(saved: WorldCheckpoint): void {
+    if (this.tick !== 0 || this.entities.size > 0 || this.queue.size > 0 || saved.seed !== this.seed || saved.players !== this.players ||
+        !Number.isSafeInteger(saved.tick) || saved.tick < 0) throw new Error('저장된 판의 시작 정보가 잘못됐다');
+
+    const keys = Object.keys(this.state);
+    if (saved.state === null || typeof saved.state !== 'object' || keys.length !== Object.keys(saved.state).length ||
+        keys.some((key) => !Object.hasOwn(saved.state, key))) throw new Error('저장된 판 상태가 잘못됐다');
+    for (const [name, rng] of this.streams) {
+      const stored = saved.rng[name];
+      if (!stored || stored.seed !== rng.snapshot().seed || !Number.isSafeInteger(stored.state) || stored.state !== (stored.state >>> 0)) {
+        throw new Error('저장된 난수 흐름이 잘못됐다');
+      }
+      this.streams.set(name, Rng.restore(stored));
+    }
+    for (const entity of saved.entities) {
+      if (!Number.isSafeInteger(entity.id) || entity.id < 1 || typeof entity.kind !== 'string') {
+        throw new Error('저장된 엔티티가 잘못됐다');
+      }
+      this.entities.insert(entity);
+    }
+    this.entities.restoreNextId(saved.nextId);
+    this.queue.restore(saved.pending, saved.nextSeq, saved.tick);
+    for (const command of saved.executed) {
+      if (validateCommand(command, this.players) || command.tick >= saved.tick || command.seq >= this.queue.peekNextSeq(command.player)) {
+        throw new Error('저장된 실행 명령이 잘못됐다');
+      }
+      this.executed.push(Object.freeze(command));
+    }
+    Object.assign(this.state, saved.state);
+    this.tick = saved.tick;
   }
 
   /** 현재 상태 해시 (FNV-1a 32비트). */

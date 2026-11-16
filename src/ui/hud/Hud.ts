@@ -22,6 +22,7 @@
  * 루트의 data-tick 속성 = 지금 틱 (E2E가 게임 시간이 흐르는지 볼 때 쓴다, 화면에는 안 보임).
  */
 import { h } from '../dom';
+import type { BattleSheetKind } from '../panels/BattleSheet';
 import type { UiView } from '../root';
 import { livesDropped, withCommas, type HudModel } from './hudModel';
 
@@ -42,6 +43,9 @@ export interface HudOptions {
   onMergeReady?: () => void;
   /** 아래 띠 '👷 300원': 일꾼 고용 (M4) */
   onHire?: () => void;
+  onQuickSummon: () => void;
+  onBattleSheet: (kind: BattleSheetKind) => void;
+  onFinishPrep: () => void;
 }
 
 export interface HudView extends UiView {
@@ -49,7 +53,7 @@ export interface HudView extends UiView {
   readonly band: HTMLElement;
   /** HUD 띠 아래 끝 = 무대 위쪽에서 잰 CSS px */
   bandBottom(): number;
-  /** 아래 띠 (타워 수·소환 안내). 크기가 바뀌면 맵 배치를 다시 한다 */
+  /** 하단 HUD 전체. 크기가 바뀌면 맵 배치를 다시 한다 */
   readonly bottomBand: HTMLElement;
   /** 아래 띠 위쪽 끝 = 무대 위쪽에서 잰 CSS px */
   bottomTop(): number;
@@ -59,6 +63,8 @@ export interface HudView extends UiView {
   goldAnchor(): { x: number; y: number };
   /** 돈이 들어옴: 돈 글자 반짝 + '+n원' (짧은 사이에 여러 번이면 합친다) */
   gainGold(amount: number): void;
+  setBattleSheet(kind: BattleSheetKind | null): void;
+  focusBattleButton(kind: BattleSheetKind): void;
   update(model: HudModel): void;
 }
 
@@ -155,7 +161,7 @@ export function createHud(opts: HudOptions): HudView {
   });
   // 접은 고르기 창의 알약 자리 (display: contents → 알약이 아래 띠의 flex 항목이 된다)
   const choiceSlot = h('span', { class: 'hud-choice-slot', attrs: { 'data-testid': 'hud-choice-slot' } });
-  const bottomBand = h(
+  const bottomRow = h(
     'div',
     { class: 'hud-bottom' },
     h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl),
@@ -163,6 +169,31 @@ export function createHud(opts: HudOptions): HudView {
     hintEl,
     hireBtn,
     mergeReadyBtn,
+  );
+  const battleButton = (kind: BattleSheetKind, text: string, badge?: HTMLElement) => h('button', {
+    class: 'btn btn-chip hud-menu-button',
+    attrs: { type: 'button', 'data-testid': `hud-${kind}`, 'aria-expanded': 'false' },
+    on: { click: () => opts.onBattleSheet(kind) },
+  }, text, badge);
+  const missionBadge = h('span', { class: 'hud-mission-badge', attrs: { 'data-testid': 'hud-mission-badge', hidden: '' } });
+  const battleButtons = {
+    upgrade: battleButton('upgrade', '강화'),
+    missions: battleButton('missions', '미션', missionBadge),
+  };
+  const finishPrep = h('button', {
+    class: 'btn btn-chip hud-menu-button hud-prep-ready',
+    text: '준비 완료',
+    attrs: { type: 'button', 'data-testid': 'hud-finish-prep', hidden: '' },
+    on: { click: opts.onFinishPrep },
+  });
+  const quickSummon = h('button', {
+    class: 'btn btn-chip hud-menu-button hud-quick-summon',
+    text: '소환',
+    attrs: { type: 'button', 'data-testid': 'hud-quick-summon', 'aria-label': '빠른 소환' },
+    on: { click: opts.onQuickSummon },
+  });
+  const bottomBand = h('div', { class: 'hud-footer' }, bottomRow,
+    h('div', { class: 'hud-menu', attrs: { role: 'group', 'aria-label': '전투 메뉴' } }, quickSummon, battleButtons.upgrade, battleButtons.missions, finishPrep),
   );
 
   const band = h(
@@ -225,6 +256,16 @@ export function createHud(opts: HudOptions): HudView {
       return bottomBand.getBoundingClientRect().top - el.getBoundingClientRect().top;
     },
     choiceSlot,
+    setBattleSheet(kind) {
+      for (const [key, button] of Object.entries(battleButtons)) {
+        button.setAttribute('aria-expanded', String(key === kind));
+        if (key === kind) button.setAttribute('aria-controls', 'battle-sheet');
+        else button.removeAttribute('aria-controls');
+      }
+    },
+    focusBattleButton(kind) {
+      battleButtons[kind].focus({ preventScroll: true });
+    },
     goldAnchor() {
       const r = goldEl.getBoundingClientRect();
       const root = el.getBoundingClientRect();
@@ -268,7 +309,10 @@ export function createHud(opts: HudOptions): HudView {
       setText(goldEl, 'gold', m.gold);
       setText(towersEl, 'towers', m.towers);
       setText(hintEl, 'summonHint', m.summonHint);
-      if (last.summonAffordable !== m.summonAffordable) hintEl.classList.toggle('is-short', !m.summonAffordable);
+      if (last.summonAffordable !== m.summonAffordable) {
+        hintEl.classList.toggle('is-short', !m.summonAffordable);
+        quickSummon.classList.toggle('is-off', !m.summonAffordable);
+      }
       if (last.mergeReady !== m.mergeReady) {
         mergeReadyBtn.textContent = m.mergeReady;
         mergeReadyBtn.hidden = m.mergeReady === '';
@@ -293,6 +337,12 @@ export function createHud(opts: HudOptions): HudView {
         hireBtn.setAttribute('aria-label', m.workersFull ? '일꾼 최대' : `일꾼 고용 ${m.hireLabel.replace('👷 ', '')}`);
       }
       if (last.hireReady !== m.hireReady) hireBtn.classList.toggle('is-off', !m.hireReady);
+      if (last.missionsReady !== m.missionsReady) {
+        missionBadge.hidden = m.missionsReady === 0;
+        missionBadge.textContent = String(m.missionsReady);
+        battleButtons.missions.setAttribute('aria-label', m.missionsReady > 0 ? `미션 · 보상 ${m.missionsReady}개` : '미션');
+      }
+      if (last.prepReady !== m.prepReady) finishPrep.hidden = !m.prepReady;
       last = { ...m };
       if (dropped) breakHeart();
     },

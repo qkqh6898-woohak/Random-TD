@@ -19,6 +19,7 @@ export type CommandPayload =
   | { type: 'noop' }
   /** 개발용 치트 (?debug=1, CLAUDE.md 4장): 다음 단계로 바로 넘어간다. debug 판에서만 듣고, 쓰면 판 상태에 표시된다. */
   | { type: 'debugSkipStage' }
+  | { type: 'finishPrep' }
   /** 소환 (M2-1, GDD 4.3): 빈 배치 칸 (x, y)에 소환 비용을 내고 덱 노말 5종 중 하나를 놓는다. 실행 때 다시 검사한다 */
   | { type: 'summon'; x: number; y: number }
   /** 개발용 치트: 돈 추가 (debug 판에서만) */
@@ -63,6 +64,7 @@ export type CommandType = CommandPayload['type'];
 export const COMMAND_TYPES: readonly CommandType[] = [
   'noop',
   'debugSkipStage',
+  'finishPrep',
   'summon',
   'debugAddGold',
   'merge',
@@ -90,6 +92,7 @@ export const MAX_DEBUG_GOLD = 1_000_000_000;
 export const PAYLOAD_FIELDS: { readonly [K in CommandType]: readonly string[] } = {
   noop: [],
   debugSkipStage: [],
+  finishPrep: [],
   summon: ['x', 'y'],
   debugAddGold: ['amount'],
   merge: ['x', 'y'],
@@ -164,6 +167,7 @@ export function validatePayload(cmd: unknown): string | null {
   switch (type as CommandType) {
     case 'noop':
     case 'debugSkipStage':
+    case 'finishPrep':
     case 'hireWorker':
     case 'claimAllMissions':
       return null;
@@ -336,5 +340,22 @@ export class CommandQueue {
   /** 다음에 붙일 seq (플레이어별). */
   peekNextSeq(player: number): number {
     return this.nextSeq[player] ?? 0;
+  }
+
+  /** 새 판의 큐에 저장된 미실행 명령과 다음 명령 번호를 복원한다. */
+  restore(pending: readonly Command[], nextSeq: readonly number[], tick: number): void {
+    if (this.size !== 0 || nextSeq.length !== this.players || nextSeq.some((seq) => !Number.isSafeInteger(seq) || seq < 0)) {
+      throw new Error('저장된 명령 큐가 잘못됐다');
+    }
+    for (const cmd of pending) {
+      const result = this.enqueue(cmd, tick);
+      if (!result.ok) throw new Error(result.reason);
+    }
+    for (let player = 0; player < this.players; player++) {
+      const seq = nextSeq[player]!;
+      if (seq < this.peekNextSeq(player)) throw new Error('저장된 다음 명령 번호가 잘못됐다');
+      this.nextSeq[player] = seq;
+    }
+    this.openFrom = tick;
   }
 }

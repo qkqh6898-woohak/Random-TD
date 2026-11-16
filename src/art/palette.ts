@@ -17,7 +17,7 @@ export const GRADE_COLORS: Record<Grade, string> = {
 export const COLORS = {
   gold: '#F5B700',
   danger: '#E53935',
-  outline: '#3B2416', // 진한 갈색 외곽선
+  outline: '#21172D', // 타이틀과 전투 그림에 공통으로 쓰는 진한 자주색
   hiddenRim: '#F1C40F',
   bg: '#0D1220',
 } as const;

@@ -21,6 +21,7 @@ export const COIN_DEPTH = 7000;
 export const MAX_COINS = 24;
 /** 승급 빛 구슬이 결과 칸으로 빨려 드는 시간 (ms) — UI.md 9장 '승급 연출 0.3초' */
 export const MERGE_SUCK_MS = 300;
+const MAX_DICE_REVEALS = 12;
 
 interface Coin {
   img: Phaser.GameObjects.Image;
@@ -33,6 +34,7 @@ export class FxLayer {
   private coins: Coin[] = [];
   private readonly freeCoins: Phaser.GameObjects.Image[] = [];
   private readonly objects = new Set<Phaser.GameObjects.GameObject>();
+  private diceReveals = 0;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -48,7 +50,7 @@ export class FxLayer {
   }
 
   /** 소환 빛 기둥 (등급 색). */
-  summonPillar(tx: number, ty: number, color: number): void {
+  private summonPillar(tx: number, ty: number, color: number): void {
     const L = this.layout;
     const c = tileCenterPx(L, tx, ty);
     const img = this.track(this.scene.add.image(c.x, c.y + L.tile * 0.35, TEX_PILLAR))
@@ -70,32 +72,80 @@ export class FxLayer {
     });
   }
 
+  /** 발밑에 소환진이 퍼지고 주사위가 한 바퀴 굴러 튀어 오른다. */
+  summonDice(tx: number, ty: number, color: number, kind: 'summon' | 'merge' = 'summon'): void {
+    this.summonPillar(tx, ty, color);
+    if (this.diceReveals >= MAX_DICE_REVEALS) return;
+    ensureStatusTextures(this.scene);
+    const { x, y } = tileCenterPx(this.layout, tx, ty);
+    const tile = this.layout.tile;
+    const merge = kind === 'merge';
+    const die = this.track(this.scene.add.image(x, y - tile * 0.46, diceKey(merge ? 5 : 3)))
+      .setName(`${kind}-die`)
+      .setDepth(FX_DEPTH + 12)
+      .setDisplaySize(tile * 0.28, tile * 0.28)
+      .setAngle(-210);
+    this.diceReveals++;
+    die.once(Phaser.GameObjects.Events.DESTROY, () => this.diceReveals--);
+    const scale = tile * (merge ? 0.62 : 0.50);
+    this.scene.tweens.add({
+      targets: die, y: y - tile * 0.94, angle: 150,
+      displayWidth: scale, displayHeight: scale, duration: 240, ease: 'Back.easeOut',
+      onComplete: () => this.scene.tweens.add({
+        targets: die, y: die.y - tile * 0.15, alpha: 0, delay: 120, duration: 170, onComplete: () => die.destroy(),
+      }),
+    });
+
+    const seal = this.track(this.scene.add.graphics({ x, y: y + tile * 0.3 })).setDepth(FX_DEPTH + 1);
+    seal.lineStyle(Math.max(3, tile * 0.038), color, 0.93).strokeEllipse(0, 0, tile * 0.91, tile * 0.43);
+    seal.lineStyle(Math.max(2, tile * 0.032), 0xffe7a0, 0.92).strokeEllipse(0, 0, tile * 0.72, tile * 0.34);
+    seal.fillStyle(0xffedb1, 1);
+    for (let i = 0; i < 6; i++) {
+      const a = i * Math.PI / 3;
+      const sx = Math.cos(a) * tile * 0.5;
+      const sy = Math.sin(a) * tile * 0.25;
+      const s = tile * 0.07;
+      seal.fillTriangle(sx - s, sy, sx + s, sy, sx, sy - s * 1.35);
+      seal.fillTriangle(sx - s, sy, sx + s, sy, sx, sy + s * 1.35);
+    }
+    seal.setScale(0.48);
+    this.scene.tweens.add({
+      targets: seal, scale: merge ? 1.38 : 1.18, alpha: 0, duration: 430, ease: 'Cubic.easeOut', onComplete: () => seal.destroy(),
+    });
+  }
+
   /**
-   * 승급 (UI.md 10장 '3개가 빨려 들어가 합쳐짐'): 사라진 칸들에서 빛 구슬이 결과 칸으로 0.3초 동안 빨려 들어가고,
-   * 도착하면 결과 등급 색의 빛 기둥.
+   * 승급: 재료 칸에서 주사위가 결과 칸에 모인 뒤 결과 등급 색으로 터진다.
    */
   mergeSuck(from: readonly { tx: number; ty: number }[], to: { tx: number; ty: number }, color: number): void {
     const L = this.layout;
     const end = tileCenterPx(L, to.tx, to.ty);
-    for (const f of from) {
+    if (from.length === 0) {
+      this.summonDice(to.tx, to.ty, color, 'merge');
+      return;
+    }
+    ensureStatusTextures(this.scene);
+    for (const [i, f] of from.entries()) {
       const start = tileCenterPx(L, f.tx, f.ty);
-      const orb = this.track(this.scene.add.image(start.x, start.y, TEX_ORB))
-        .setTint(0xfff3c4)
-        .setBlendMode(Phaser.BlendModes.ADD)
+      const die = this.track(this.scene.add.image(start.x, start.y - L.tile * 0.15, diceKey(2 + i % 2)))
+        .setName('merge-material-die')
         .setDepth(FX_DEPTH)
-        .setDisplaySize(L.tile * 0.55, L.tile * 0.55);
+        .setDisplaySize(L.tile * 0.33, L.tile * 0.33);
       this.scene.tweens.add({
-        targets: orb,
+        targets: die,
         x: end.x,
         y: end.y,
-        displayWidth: L.tile * 0.25,
-        displayHeight: L.tile * 0.25,
+        angle: i % 2 === 0 ? 120 : -120,
+        displayWidth: L.tile * 0.15,
+        displayHeight: L.tile * 0.15,
         duration: MERGE_SUCK_MS,
         ease: 'Cubic.easeIn',
-        onComplete: () => orb.destroy(),
+        onComplete: () => {
+          die.destroy();
+          if (i === from.length - 1) this.summonDice(to.tx, to.ty, color, 'merge');
+        },
       });
     }
-    this.scene.time.delayedCall(from.length > 0 ? MERGE_SUCK_MS : 0, () => this.summonPillar(to.tx, to.ty, color));
   }
 
   /** 광역 폭발 고리 (반경 = 단위). */
@@ -212,12 +262,16 @@ export class FxLayer {
   }
 
   /** 돈 부족: 칸이 빨갛게 깜빡이며 흔들림. */
-  shakeTile(tx: number, ty: number): void {
+  shakeTile(tx: number, ty: number, animate: boolean): void {
     const L = this.layout;
     const c = tileCenterPx(L, tx, ty);
     const rect = this.track(this.scene.add.rectangle(c.x, c.y, L.tile * 0.9, L.tile * 0.9, 0xe53935, 0.28))
       .setStrokeStyle(Math.max(2, L.tile * 0.05), 0xff6b5e, 1)
       .setDepth(FX_DEPTH);
+    if (!animate) {
+      this.scene.tweens.add({ targets: rect, alpha: 0, duration: 300, onComplete: () => rect.destroy() });
+      return;
+    }
     this.scene.tweens.add({
       targets: rect,
       x: { from: c.x - L.tile * 0.08, to: c.x + L.tile * 0.08 },

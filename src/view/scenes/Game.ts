@@ -31,32 +31,40 @@
 import Phaser from 'phaser';
 import { GRADE_COLORS, hexToInt } from '../../art/palette';
 import type { Grade } from '../../data/load';
-import { TickClock } from '../../sim/World';
+import { TICK_HZ, TickClock } from '../../sim/World';
+import type { SavedMatch } from '../../save/MatchSaves';
+import { TILE } from '../../sim/Fixed';
 import type { Projectile } from '../../sim/entities/Projectile';
 import { towerAt, type Tower } from '../../sim/entities/Tower';
 import { canMergeGrade, mergeOutcomes } from '../../sim/Deck';
 import { createMatch, type Match } from '../../sim/match';
 import type { MatchMode } from '../../sim/state';
 import { NO_MODS, effectiveStats } from '../../sim/stats';
-import { mergeableGroups, sameKindTowers } from '../../sim/systems/Merge';
+import { mergeableGroups, pickConsumed, sameKindTowers } from '../../sim/systems/Merge';
+import { pathTiles } from '../../sim/map';
+import { canFinishPrep } from '../../sim/systems/Stage';
+import { bossForStage } from '../../sim/systems/BossSchedule';
 import { isPaused, moveCheck } from '../../sim/systems/Move';
 import { auraCovers, auraRadiusOf, auraSpecOf, computeAuras, towerBonus } from '../../sim/systems/Aura';
 import { towerLevel } from '../../sim/abilities';
 import { METEOR_FX } from '../../sim/abilities/archmage';
-import { summonCheck, summonCost, towerCount } from '../../sim/systems/Summon';
+import { nearestFreeTile, summonCheck, summonCost, towerCount } from '../../sim/systems/Summon';
 import { hireCheck } from '../../sim/systems/Economy';
 import { formationById } from '../../sim/systems/Formation';
 import { currentOffer } from '../../sim/systems/Cards';
 import {
   BOARD_FULL,
   EVADE_LABEL,
+  FIRST_SUMMON_HINT,
   EXECUTE_LABEL,
   FORTUNA_DOUBLE,
   FORTUNA_RARE,
   INVISIBLE_WARN,
   LUCKY_SUMMON,
+  batQueenPreview,
   bossArrivalText,
   bossKillText,
+  bossFlightText,
   bossTag,
   cardPickedText,
   formationBanner,
@@ -69,8 +77,9 @@ import {
 import { createChoicePanel, type ChoicePanelView } from '../../ui/panels/ChoicePanel';
 import { cardChoiceModel, mergeChoiceModel } from '../../ui/panels/choiceModel';
 import { createTowerPanel, type TowerPanelView } from '../../ui/panels/TowerPanel';
-import { buildTowerPanelModel } from '../../ui/panels/towerPanelModel';
+import { buildTowerPanelModel, shapeText } from '../../ui/panels/towerPanelModel';
 import { createHud, type HudView } from '../../ui/hud/Hud';
+import { createBattleSheet, type BattleSheetKind, type BattleSheetView } from '../../ui/panels/BattleSheet';
 import { bossHudInput, buildHudModel, deckDetectNames, defeatText, formatStage, legionNameMap, stageToastText } from '../../ui/hud/hudModel';
 import { availableSpeeds, nextSpeed } from '../../ui/hud/speed';
 import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
@@ -154,7 +163,10 @@ export interface GameSceneData {
   mode?: MatchMode;
   /** 캠페인 테마 (기본 1) */
   theme?: number;
+  saved?: SavedMatch;
 }
+
+const AUTOSAVE_TICKS = 5 * TICK_HZ;
 
 /** 무작위 시드 (화면 쪽에서만 만든다. sim 안에서는 Math.random 금지). */
 export function randomSeed(): number {
@@ -204,11 +216,17 @@ export class GameScene extends Phaser.Scene {
   private summonFxCount = 0;
   /** 만든 승급 연출 수 (E2E 확인용) */
   private mergeFxCount = 0;
-  private sceneData: Required<GameSceneData> = { seed: 0, mode: 'infinite', theme: 1 };
+  private sceneData: Required<Omit<GameSceneData, 'saved'>> = { seed: 0, mode: 'infinite', theme: 1 };
+  private runId = '';
+  private saveToken: string | null = null;
+  private lastSaveTick = 0;
+  private lastSaveStage = 0;
+  private lastSaveCommands = 0;
   private selectionLayer!: SelectionLayer;
   /** 고른 타워 (정보 패널) 엔티티 id */
   private selectedId: number | null = null;
   private panel: TowerPanelView | null = null;
+  private battleSheet: BattleSheetView | null = null;
   private press: PressState | null = null;
   /** 끌어 놓고 이동 명령을 기다리는 타워 (그 자리에 붙잡아 둔다) */
   private pendingDrop: { id: number; untilMs: number } | null = null;
@@ -218,6 +236,9 @@ export class GameScene extends Phaser.Scene {
   private mergeReadyKinds = new Set<string>();
   private mergeReadyToasts = 0;
   private mergeReadyCount = 0;
+  private firstMergeTowers: Tower[] = [];
+  private recommendedTiles: { tx: number; ty: number }[] = [];
+  private summonGuideToast: HTMLElement | null = null;
   /** 타워 종류 → 초상화 이미지 주소 */
   private portraits = new Map<string, string | null>();
   /** 타워 id → 이름 (패널 승급 결과 미리 보기) */
@@ -238,15 +259,19 @@ export class GameScene extends Phaser.Scene {
   create(data: GameSceneData): void {
     const { game: config } = this.ctx.data;
     this.sceneData = { seed: data?.seed ?? 0, mode: data?.mode ?? 'infinite', theme: data?.theme ?? 1 };
-    this.match = createMatch(this.ctx.data, {
+    this.match = data?.saved?.match ?? createMatch(this.ctx.data, {
       seed: this.sceneData.seed,
       mode: this.sceneData.mode,
       theme: this.sceneData.theme,
       maxPlayers: config.maxPlayers,
       debug: this.ctx.debug,
     });
-    this.clock = new TickClock({ speed: 1, maxFrameMs: config.maxFrameMs });
     this.speeds = availableSpeeds(config.speeds, this.ctx.accountLevel, this.ctx.debug);
+    const savedSpeed = data?.saved?.speed ?? 1;
+    this.clock = new TickClock({ speed: this.speeds.includes(savedSpeed) ? savedSpeed : 1, maxFrameMs: config.maxFrameMs });
+    this.runId = data?.saved?.runId ?? crypto.getRandomValues(new Uint32Array(4)).join('-');
+    this.saveToken = data?.saved?.token ?? null;
+    if (data?.saved) this.releaseSavedDrags();
     this.paused = false;
     this.gameOver = false;
     this.prevProgress = new Map();
@@ -259,12 +284,20 @@ export class GameScene extends Phaser.Scene {
     this.mergeFxCount = 0;
     this.selectedId = null;
     this.panel = null;
+    this.battleSheet = null;
     this.press = null;
     this.pendingDrop = null;
     this.inputLockUntil = null;
     this.mergeReadyKinds = new Set();
     this.mergeReadyToasts = 0;
     this.mergeReadyCount = 0;
+    this.firstMergeTowers = [];
+    const firstPath = pathTiles(this.match.map).slice(0, 4);
+    this.recommendedTiles = this.match.map.buildable
+      .map(([tx, ty]) => ({ tx, ty, coverage: firstPath.filter(([x, y]) => Math.max(Math.abs(x - tx), Math.abs(y - ty)) <= 1).length }))
+      .filter((tile) => tile.coverage > 0)
+      .sort((a, b) => b.coverage - a.coverage || b.ty - a.ty || a.tx - b.tx)
+      .slice(0, 3);
     this.panelPlaceKey = '';
     this.choice = null;
     this.legionNames = legionNameMap(this.ctx.data.enemies.hierarchy);
@@ -275,6 +308,7 @@ export class GameScene extends Phaser.Scene {
       onSpeed: () => {
         if (this.paused || this.gameOver) return;
         this.clock.speed = nextSpeed(this.clock.speed, this.speeds);
+        this.saveMatch();
         this.refreshHud();
       },
       onPause: () => this.pause(),
@@ -282,14 +316,23 @@ export class GameScene extends Phaser.Scene {
       onAddGold: this.ctx.debug ? () => this.match.world.enqueue({ type: 'debugAddGold', amount: config.debug.addGold }) : undefined,
       onMergeReady: () => this.selectFirstMergeable(),
       onHire: () => this.hire(),
+      onQuickSummon: () => this.quickSummon(),
+      onBattleSheet: (kind) => this.openBattleSheet(kind),
+      onFinishPrep: () => {
+        if (this.paused || this.gameOver || !canFinishPrep(this.match.state)) return;
+        this.closeBattleSheet();
+        this.match.world.enqueue({ type: 'finishPrep' });
+      },
     });
     this.ctx.ui.clear('screen');
     this.ctx.ui.show('hud', this.hud);
+    this.updateFooterHeight();
     this.refreshHud();
 
     this.mapRenderer = null;
     this.applyLayout(this.measureMapArea());
     this.layoutDirty = false;
+    if (!data?.saved && this.match.state.mode === 'infinite' && !this.ctx.debug) this.summonGuideToast = this.ctx.ui.toast(FIRST_SUMMON_HINT, 3400);
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => {
         this.layoutDirty = true;
@@ -307,8 +350,20 @@ export class GameScene extends Phaser.Scene {
     this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onPointerUp, this);
 
     // 앱이 백그라운드로 가면 자동 일시정지 (UI.md 7장: 돌아오면 일시정지 메뉴)
+    const saveOnPageHide = () => this.saveMatch();
+    const pauseFromAndroid = () => this.pause();
+    const backFromAndroid = (event: Event) => {
+      event.preventDefault();
+      this.goBack();
+    };
+    window.addEventListener('pagehide', saveOnPageHide);
+    window.addEventListener('randomtd:native-pause', pauseFromAndroid);
+    window.addEventListener('randomtd:native-back', backFromAndroid);
     this.game.events.on(Phaser.Core.Events.HIDDEN, this.pause, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      window.removeEventListener('pagehide', saveOnPageHide);
+      window.removeEventListener('randomtd:native-pause', pauseFromAndroid);
+      window.removeEventListener('randomtd:native-back', backFromAndroid);
       this.game.events.off(Phaser.Core.Events.HIDDEN, this.pause, this);
       this.resizeObserver?.disconnect();
       this.resizeObserver = null;
@@ -317,18 +372,23 @@ export class GameScene extends Phaser.Scene {
       this.input.off(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
       this.input.off(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onPointerUp, this);
       this.closePanel();
+      this.closeBattleSheet();
       this.closeChoice();
+      this.summonGuideToast?.remove();
+      this.summonGuideToast = null;
       this.press = null;
       this.pendingDrop = null;
       this.destroyLayers();
       this.mapRenderer = null;
       this.ctx.ui.clear('hud');
+      this.ctx.ui.el.style.removeProperty('--hud-footer-height');
       this.ctx.ui.setToastTop(null);
       this.ctx.ui.setToastSingle(false);
       if (this.paused || this.gameOver) this.ctx.ui.clear('screen');
       this.paused = false;
       this.gameOver = false;
     });
+    this.saveMatch();
     this.cameras.main.fadeIn(200, 13, 18, 32);
     this.game.events.emit('rtd:game-ready', { seed: this.match.world.seed, mode: this.sceneData.mode });
   }
@@ -340,11 +400,14 @@ export class GameScene extends Phaser.Scene {
       // 글자 반올림 같은 작은 흔들림으로 맵을 다시 굽지 않게 (기준 px 2 이상 바뀔 때만)
       if (Math.abs(area.y - this.mapArea.y) >= 2 || Math.abs(area.h - this.mapArea.h) >= 2) this.applyLayout(area);
       this.updateToastTop();
+      this.updateFooterHeight();
     }
     this.frameStartTick = this.match.tick;
     if (!this.gameOver) this.runTicks(this.clock.advance(deltaMs));
     this.handleEvents(time);
     this.updatePress(this.time.now);
+    if (!this.gameOver && (this.match.tick - this.lastSaveTick >= AUTOSAVE_TICKS ||
+        this.match.state.stage !== this.lastSaveStage || this.match.world.executed.length !== this.lastSaveCommands)) this.saveMatch();
     // 들려 있어야 할 타워(끄는 중 / 놓고 명령을 기다리는 중) 말고는 내려놓는다 — 끌기를 끝내는 길을 놓쳐도 유령 그림이 남지 않게
     this.towerLayer.releaseDragsExcept(this.press?.dragging ? this.press.id : (this.pendingDrop?.id ?? null), this.time.now);
     const alpha = this.gameOver ? 1 : this.clock.alpha;
@@ -361,11 +424,36 @@ export class GameScene extends Phaser.Scene {
     this.soldierLayer.sync(this.match.soldiers(), this.prevSoldiers, alpha, time);
     this.towerLayer.sync(this.match.towers(), time, tick);
     this.syncChoice();
+    this.battleSheet?.update();
     this.updateSelection(time);
     this.projectileLayer.sync(this.match.projectiles(), this.prevProjectiles, (p) => this.projectileOrigin(p), alpha);
     this.floatingText.update(time);
     this.fx.update(time, () => this.goldAnchorPx());
     this.refreshHud();
+  }
+
+  private saveMatch(): boolean {
+    this.lastSaveTick = this.match.tick;
+    this.lastSaveStage = this.match.state.stage;
+    this.lastSaveCommands = this.match.world.executed.length;
+    const speed = this.paused ? this.resumeSpeed : this.clock.speed;
+    const next = this.ctx.saves.write(this.match, speed, this.saveToken, this.runId);
+    if (next === null) return false;
+    this.saveToken = next;
+    return true;
+  }
+
+  /** 앱을 다시 열었을 때는 이전 손가락의 끌기 동작을 이어 가지 않는다. */
+  private releaseSavedDrags(): void {
+    const { world } = this.match;
+    for (const tower of this.match.towers()) {
+      if (tower.held) world.enqueue({ type: 'hold', x: tower.tx, y: tower.ty, on: 0, player: tower.owner });
+    }
+    for (const cmd of world.queue.pending()) {
+      if (cmd.type === 'hold' && cmd.on === 1) {
+        world.enqueue({ type: 'hold', x: cmd.x, y: cmd.y, on: 0, player: cmd.player, tick: cmd.tick });
+      }
+    }
   }
 
   /** 틱 n번 실행. 마지막 틱 직전의 진행도를 기억해 보간에 쓴다. 패배하면 그 자리에서 멈춘다. */
@@ -570,6 +658,10 @@ export class GameScene extends Phaser.Scene {
    */
   private onPointerDown(pointer: Phaser.Input.Pointer): void {
     if (this.paused || this.gameOver) return;
+    if (this.battleSheet) {
+      this.closeBattleSheet();
+      return;
+    }
     const now = this.time.now;
     // 다른 손가락이 타워를 누르거나 끄는 중이면 이 터치는 받지 않는다 (누르기를 덮어쓰면 끌던 그림이 놓은 자리에 남는다).
     // 앞 누르기의 손가락이 이미 떨어졌는데(사건을 놓침) 남아 있으면 취소하고 새로 받는다.
@@ -603,6 +695,30 @@ export class GameScene extends Phaser.Scene {
       this.closePanel();
       return;
     }
+    this.summonAtTile(tx, ty, now);
+  }
+
+  /** [소환]은 추천 칸을 먼저 쓰고, 이후에는 추천 자리 근처 빈 칸을 고른다. */
+  private quickSummon(): void {
+    const now = this.time.now;
+    if (this.paused || this.gameOver || this.press || inputLocked(this.inputLockUntil, now)) return;
+    const { ctx, world, map } = this.match;
+    const preferred = this.recommendedTiles.find(({ tx, ty }) => !towerAt(world, tx, ty));
+    const origin = this.recommendedTiles[0];
+    const tile = preferred
+      ? [preferred.tx, preferred.ty] as const
+      : nearestFreeTile(ctx, world, origin?.tx ?? map.spawn[0], origin?.ty ?? map.spawn[1]);
+    if (!tile) {
+      this.ctx.ui.toast(BOARD_FULL);
+      return;
+    }
+    this.closeBattleSheet();
+    this.closePanel();
+    this.choice?.collapse();
+    this.summonAtTile(tile[0], tile[1], now);
+  }
+
+  private summonAtTile(tx: number, ty: number, now: number): void {
     const action = decideTap(summonCheck(this.match.ctx, this.match.world, tx, ty), tx, ty, summonCost(this.match.ctx));
     if (action.kind === 'summon') {
       if (!tapAllowed(this.lastTapMs, now)) return;
@@ -610,7 +726,7 @@ export class GameScene extends Phaser.Scene {
       this.match.world.enqueue({ type: 'summon', x: action.x, y: action.y });
     } else if (action.kind === 'toast') {
       this.ctx.ui.toast(action.text);
-      if (action.shake) this.fx.shakeTile(action.x, action.y);
+      if (action.shake) this.fx.shakeTile(action.x, action.y, this.ctx.screenShake.enabled);
     }
   }
 
@@ -734,6 +850,7 @@ export class GameScene extends Phaser.Scene {
   private selectTower(id: number): void {
     const t = this.match.world.entities.get(id);
     if (!t || t.kind !== 'tower') return;
+    this.closeBattleSheet();
     this.selectedId = id;
     // 바텀 시트는 하나만: 펼친 고르기 창은 알약으로 접는다 (창 뒤에 패널이 열려 ✕가 가려지던 것, 검토 반영)
     if (this.choice && !this.choice.collapsed) this.choice.collapse();
@@ -867,8 +984,16 @@ export class GameScene extends Phaser.Scene {
       (x) => auraSpecOf(this.match.ctx, x)?.area ?? null,
       (area) => auraRadiusOf(rules, area),
     );
+    const same = t && !p ? sameKindTowers(this.match.world, t.tower, t.owner) : this.firstMergeTowers;
+    const mergePreview = t && this.panel && !p && stats && canMergeGrade(stats.grade) && same.length >= rules.mergeCount
+      ? { tx: t.tx, ty: t.ty, consumed: pickConsumed(same, t, rules.mergeCount - 1) }
+      : undefined;
+    const { mode, stage, summons } = this.match.state;
+    const showSummonGuide = mode === 'infinite' && stage === 0 && summons === 0 && !this.ctx.debug;
     this.selectionLayer.draw(
       {
+        suggested: showSummonGuide ? this.recommendedTiles : undefined,
+        mergePreview,
         auras: this.auraGlows,
         selected:
           t && stats && !p
@@ -881,7 +1006,7 @@ export class GameScene extends Phaser.Scene {
               }
             : null,
         buffed,
-        sameKind: t && !p ? sameKindTowers(this.match.world, t.tower, t.owner).map((x) => ({ tx: x.tx, ty: x.ty })) : [],
+        sameKind: p || this.battleSheet || mergePreview ? [] : same,
         drop: p && p.drop && stats ? { ...p.drop, range: stats.range } : null,
       },
       timeMs,
@@ -947,6 +1072,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleEvents(time: number): void {
+    if (this.summonGuideToast && (this.match.state.stage !== 0 || this.match.state.summons > 0)) {
+      this.summonGuideToast.remove();
+      this.summonGuideToast = null;
+    }
     // 한 프레임에 단계가 여러 번 바뀌면(빨리 감기·높은 배속) 마지막 단계 알림 하나만
     let lastStage: { stage: number; boss: boolean } | null = null;
     /** 이번 프레임에 보스 등장 배너를 띄웠다 → 'N단계 보스 단계!' 알림은 생략 (배너가 단계까지 보여 준다) */
@@ -965,6 +1094,9 @@ export class GameScene extends Phaser.Scene {
     for (const ev of this.match.world.drainEvents()) {
       const recent = eventFxVisible('bulk', ev.tick, now, frameStart);
       switch (ev.type) {
+        case 'missionClaim':
+          if (eventFxVisible('action', ev.tick, now, frameStart)) this.hud.gainGold(Number(ev.reward));
+          break;
         case 'stageStart':
           lastStage = { stage: Number(ev.stage), boss: ev.boss === true };
           break;
@@ -977,7 +1109,8 @@ export class GameScene extends Phaser.Scene {
           }
           if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
           this.towerLayer.noteSummoned(Number(ev.id));
-          this.fx.summonPillar(Number(ev.x), Number(ev.y), hexToInt(GRADE_COLORS[(ev.grade as Grade) || 'normal'] ?? GRADE_COLORS.normal));
+          if (ev.player === LOCAL_PLAYER) this.ctx.audio.play('summon');
+          this.fx.summonDice(Number(ev.x), Number(ev.y), hexToInt(GRADE_COLORS[(ev.grade as Grade) || 'normal'] ?? GRADE_COLORS.normal));
           this.summonFxCount++;
           if (ev.rare === true && ev.player === LOCAL_PLAYER) {
             this.ctx.ui.toast(FORTUNA_RARE);
@@ -990,7 +1123,7 @@ export class GameScene extends Phaser.Scene {
           if (!eventFxVisible('action', ev.tick, now, frameStart) || ev.player !== 0) break;
           const text = summonFailText(String(ev.reason), cost);
           if (text) this.ctx.ui.toast(text);
-          if (ev.reason === 'gold') this.fx.shakeTile(Number(ev.x), Number(ev.y));
+          if (ev.reason === 'gold') this.fx.shakeTile(Number(ev.x), Number(ev.y), this.ctx.screenShake.enabled);
           break;
         }
         case 'attack':
@@ -1013,8 +1146,13 @@ export class GameScene extends Phaser.Scene {
               return { tx: Number(a), ty: Number(b) };
             });
           this.fx.mergeSuck(from, { tx: Number(ev.x), ty: Number(ev.y) }, hexToInt(GRADE_COLORS[(ev.grade as Grade) || 'normal'] ?? GRADE_COLORS.normal));
+          this.ctx.audio.play('merge');
           this.mergeFxCount++;
-          if (ev.grade === 'legend' || ev.grade === 'god') this.cameras.main.shake(260, 0.006);
+          if (this.mergeFxCount === 1 && !this.ctx.debug) {
+            const tower = this.ctx.data.towers.towers.find((data) => data.id === ev.tower);
+            if (tower) this.ctx.ui.toast(`${tower.name} 등장 · ${shapeText(tower.shape, tower.shapeValue)}`);
+          }
+          if (ev.grade === 'legend' || ev.grade === 'god') this.shakeCamera(260, 0.006);
           if (ev.double === true) {
             this.ctx.ui.toast(FORTUNA_DOUBLE);
             this.noteFx('fortuna');
@@ -1143,7 +1281,7 @@ export class GameScene extends Phaser.Scene {
             this.ctx.ui.banner(bossArrivalText(label, bossTag(this.legionNames[b.legion] ?? b.legion, b.rank), b.name), null, 2600, 'boss');
             bossArrived = true;
           }
-          this.cameras.main.shake(220, 0.004);
+          this.shakeCamera(220, 0.004);
           this.noteFx('bossSpawn');
           break;
         }
@@ -1157,7 +1295,7 @@ export class GameScene extends Phaser.Scene {
           break;
         }
         case 'bossStun':
-          if (eventFxVisible('action', ev.tick, now, frameStart)) this.cameras.main.shake(160, 0.003);
+          if (eventFxVisible('action', ev.tick, now, frameStart)) this.shakeCamera(160, 0.003);
           this.noteFx('bossStun');
           break;
         case 'bossSplit':
@@ -1165,7 +1303,14 @@ export class GameScene extends Phaser.Scene {
           if (recent && ev.type === 'split') this.fx.missPuff(Number(ev.x), Number(ev.y));
           this.noteFx(ev.type);
           break;
-        case 'bossFly':
+        case 'bossFly': {
+          const mob = this.match.mobs().find((candidate) => candidate.id === ev.id);
+          if (mob && eventFxVisible('action', ev.tick, now, frameStart)) {
+            this.ctx.ui.toast(bossFlightText(mob.flyBlock / TILE), 2800);
+          }
+          this.noteFx(ev.type);
+          break;
+        }
         case 'bossGuard':
         case 'bossEnrage':
         case 'bossSummon':
@@ -1190,7 +1335,7 @@ export class GameScene extends Phaser.Scene {
           break;
         }
         case 'quake':
-          if (eventFxVisible('action', ev.tick, now, frameStart)) this.cameras.main.shake(420, 0.01);
+          if (eventFxVisible('action', ev.tick, now, frameStart)) this.shakeCamera(420, 0.01);
           break;
         case 'heal': {
           if (!recent || heals >= MAX_DAMAGE_TEXTS_PER_FRAME) break;
@@ -1211,7 +1356,12 @@ export class GameScene extends Phaser.Scene {
     }
     if (lastStage && !(lastStage.boss && bossArrived)) {
       const { mode, theme } = this.match.state;
-      this.ctx.ui.toast(stageToastText({ mode, theme, stage: lastStage.stage, bossStage: lastStage.boss }));
+      const nextStage = lastStage.stage + 1;
+      const firstBoss = mode === 'infinite' && nextStage === this.match.rules.bossEvery
+        ? bossForStage(this.match.rules, mode, theme, nextStage)
+        : null;
+      if (firstBoss?.id === 'batqueen') this.ctx.ui.toast(batQueenPreview(firstBoss.name), 4200);
+      else this.ctx.ui.toast(stageToastText({ mode, theme, stage: lastStage.stage, bossStage: lastStage.boss }));
     }
     this.checkMergeReady();
     if (defeated) this.showGameOver();
@@ -1224,6 +1374,9 @@ export class GameScene extends Phaser.Scene {
   private checkMergeReady(): void {
     const groups = mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
     this.mergeReadyCount = groups.length;
+    this.firstMergeTowers = !this.ctx.debug && this.match.state.merges === 0 && groups[0]
+      ? sameKindTowers(this.match.world, groups[0].tower, LOCAL_PLAYER)
+      : [];
     const now = new Set(groups.map((g) => g.tower));
     const fresh = groups.filter((g) => !this.mergeReadyKinds.has(g.tower));
     this.mergeReadyKinds = now;
@@ -1242,18 +1395,27 @@ export class GameScene extends Phaser.Scene {
   private showGameOver(): void {
     if (this.gameOver) return;
     this.gameOver = true;
+    const best = this.ctx.records.complete(this.match, this.runId);
+    if (this.saveToken !== null) this.ctx.saves.clear(this.saveToken);
+    this.saveToken = null;
     this.cancelPress(this.time.now);
     this.closePanel();
+    this.closeBattleSheet();
     this.closeChoice();
     // 알림 층은 패배 화면보다 위라, 남아 있는 배너·알림이 '패배' 제목을 가렸다 (검토 반영)
     this.ctx.ui.clearToasts();
     if (this.paused) this.paused = false;
     this.clock.speed = 0;
     const text = defeatText(this.match.state);
+    const boss = this.match.state.defeatReason === 'bossTime'
+      ? bossHudInput(this.match.rules, this.legionNames, this.match.state, this.match.mobs(), this.match.tick)
+      : null;
     this.ctx.ui.show(
       'screen',
       createGameOverScreen({
         ...text,
+        record: best?.newBest ? `${text.record} · 새 최고 기록` : text.record,
+        detail: boss && boss.maxHp > 0 ? `남은 보스 체력 ${Math.ceil(boss.hp * 100 / boss.maxHp)}%` : undefined,
         onRetry: () => this.scene.restart({ ...this.sceneData, seed: this.ctx.seed ?? randomSeed() }),
         onExit: () => this.scene.start(SCENE_BOOT),
       }),
@@ -1261,19 +1423,50 @@ export class GameScene extends Phaser.Scene {
     this.game.events.emit('rtd:game-over', { stage: this.match.state.stage, reason: this.match.state.defeatReason });
   }
 
+  private shakeCamera(duration: number, intensity: number): void {
+    if (this.ctx.screenShake.enabled) this.cameras.main.shake(duration, intensity);
+  }
+
+  /** Android 뒤로 가기: 가장 위의 메뉴부터 닫고, 전투 중이면 일시정지한다. */
+  private goBack(): void {
+    if (this.gameOver) this.scene.start(SCENE_BOOT);
+    else if (this.paused) this.resume();
+    else if (this.battleSheet) {
+      const { kind } = this.battleSheet;
+      this.closeBattleSheet();
+      this.hud.focusBattleButton(kind);
+    } else if (this.panel) this.closePanel();
+    else if (this.choice && !this.choice.collapsed) this.choice.collapse();
+    else this.pause();
+  }
+
   /** 일시정지 메뉴 열기: 게임 시간을 멈춘다 (배속 0). */
   private pause(): void {
     if (this.paused || this.gameOver) return;
     this.paused = true;
     this.cancelPress(this.time.now);
+    this.closeBattleSheet();
     this.resumeSpeed = this.clock.speed;
     this.clock.speed = 0;
+    const saved = this.saveMatch();
     this.ctx.ui.clearToasts();
     this.ctx.ui.show(
       'screen',
       createPauseMenu({
+        saved,
+        effectVolume: this.ctx.audio.volume,
+        onEffectVolume: (value) => { this.ctx.audio.volume = value; },
+        onPreviewAudio: () => this.ctx.audio.play('merge'),
+        screenShake: this.ctx.screenShake.enabled,
+        onScreenShake: (enabled) => {
+          this.ctx.screenShake.enabled = enabled;
+          if (!enabled) this.cameras.main.shakeEffect.reset();
+        },
         onResume: () => this.resume(),
-        onExit: () => this.scene.start(SCENE_BOOT),
+        onExit: () => {
+          this.saveMatch();
+          this.scene.start(SCENE_BOOT);
+        },
       }),
     );
     this.refreshHud();
@@ -1298,6 +1491,41 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.match.world.enqueue({ type: 'hireWorker' });
+  }
+
+  private openBattleSheet(kind: BattleSheetKind): void {
+    if (this.paused || this.gameOver) return;
+    const alreadyOpen = this.battleSheet?.kind === kind;
+    this.closeBattleSheet();
+    if (alreadyOpen) return;
+    this.cancelPress(this.time.now);
+    this.closePanel();
+    this.choice?.collapse();
+    const sheet = createBattleSheet(kind, this.match, LOCAL_PLAYER, {
+      onClose: () => {
+        this.closeBattleSheet();
+        this.hud.focusBattleButton(kind);
+      },
+      onUpgrade: (k) => this.match.world.enqueue({ type: 'upgrade', k }),
+      onClaim: (i) => this.match.world.enqueue({ type: 'claimMission', i }),
+      onClaimAll: () => this.match.world.enqueue({ type: 'claimAllMissions' }),
+    });
+    this.battleSheet = sheet;
+    this.ctx.ui.show('panel', sheet);
+    this.hud.setBattleSheet(kind);
+    sheet.focusClose();
+  }
+
+  private closeBattleSheet(): void {
+    if (!this.battleSheet) return;
+    this.battleSheet = null;
+    this.ctx.ui.clear('panel');
+    this.hud.setBattleSheet(null);
+  }
+
+  private updateFooterHeight(): void {
+    const height = this.hud.bottomBand.getBoundingClientRect().height;
+    this.ctx.ui.el.style.setProperty('--hud-footer-height', `${height}px`);
   }
 
   /**
@@ -1326,7 +1554,14 @@ export class GameScene extends Phaser.Scene {
     // 바텀 시트는 하나만: 고르기 창을 열 때 타워 정보 패널을 닫는다 (승급의 축복을 패널 [승급]으로 쓰면 두 시트가 겹치고
     // 창 아래로 패널의 승급 버튼이 눌리던 것, 검토 반영). 알약으로 다시 펼칠 때도 닫는다
     this.closePanel();
-    this.choice = createChoicePanel(model, onPick, { pillHost: this.hud.choiceSlot, onExpand: () => this.closePanel() });
+    this.closeBattleSheet();
+    this.choice = createChoicePanel(model, onPick, {
+      pillHost: this.hud.choiceSlot,
+      onExpand: () => {
+        this.closePanel();
+        this.closeBattleSheet();
+      },
+    });
     this.ctx.ui.show('modal', this.choice);
   }
 

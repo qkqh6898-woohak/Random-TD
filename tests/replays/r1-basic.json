@@ -10,7 +10,7 @@
   "decks": [{"normal":["miner","goblin","archer","apprentice","warrior"],"rare":["merchant","mudshaman","flamemage","cleaver","duelist"],"unique":["icemage","gambler","blacksmith","sniper","berserker"],"hero":["summoner","scholar","chronomancer","alchemist","swordsaint"],"legend":["dragoncaller","warlord","archmage","assassin","fortuna"]}],
   "levels": [{}],
   "accountLevels": [1],
-  "dataHash": 3576614944,
+  "dataHash": 4184055414,
   "endTick": 13200,
   "commands": [
     {"type":"summon","tick":0,"player":0,"seq":0,"x":0,"y":0},
@@ -114,13 +114,13 @@
     [11600,3116725702],
     [11800,3026900428],
     [12000,4229402514],
-    [12200,451610595],
-    [12400,1141616587],
-    [12600,1369673532],
-    [12800,664748557],
-    [13000,1429079174],
-    [13200,598813824]
+    [12200,2726142824],
+    [12400,1074692654],
+    [12600,764657823],
+    [12800,3685177742],
+    [13000,4007482385],
+    [13200,227681671]
   ],
-  "finalHash": 598813824,
+  "finalHash": 227681671,
   "summary": {"stage":10,"kills":192,"gold":50,"towers":9,"defeated":false}
 }

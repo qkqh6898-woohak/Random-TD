@@ -207,6 +207,7 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
   let note = '';
   if (!input.mergeableGrade) note = data.grade === 'legend' ? '레전드는 승급할 수 없어요 (히든 재료)' : '이 타워는 승급할 수 없어요';
   else if (!ready) note = `같은 타워 ${input.mergeCount}개가 모이면 승급할 수 있어요`;
+  else note = '민트색 칸에 승급 · 주황색 두 칸은 재료';
   const critText = eff.critBp > 0 ? `${fmtPct(eff.critBp)} ×${fmtNum(eff.critMulBp / 10_000)}` : '—';
   return {
     towerId: data.id,

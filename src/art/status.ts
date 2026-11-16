@@ -4,7 +4,7 @@
  * 이모지 글꼴에 기대지 않고 도형으로 그린다 (기기마다 같은 모양). 색·모양은 화면 표현 상수.
  */
 import Phaser from 'phaser';
-import { COLORS, hexToInt } from './palette';
+import { COLORS, hexToInt, shade } from './palette';
 import type { StatusIcon } from '../view/render/statusModel';
 
 const OUTLINE = hexToInt(COLORS.outline);
@@ -21,10 +21,9 @@ export const TEX_PUDDLE = 'fx-puddle';
 
 /** 동그란 바탕 배지 + 그림. */
 function badge(g: Phaser.GameObjects.Graphics, color: number): void {
-  g.fillStyle(OUTLINE, 0.85);
-  g.fillCircle(16, 16, 15);
-  g.fillStyle(color, 1);
-  g.fillCircle(16, 16, 12.5);
+  g.fillStyle(OUTLINE, 1).fillRoundedRect(1, 1, 30, 30, 8);
+  g.fillStyle(shade(color, 0.42), 1).fillRoundedRect(3, 3, 26, 26, 7);
+  g.fillStyle(color, 1).fillRoundedRect(5, 6, 22, 21, 5);
 }
 
 function drawIcon(g: Phaser.GameObjects.Graphics, s: StatusIcon): void {
@@ -109,13 +108,14 @@ function drawIcon(g: Phaser.GameObjects.Graphics, s: StatusIcon): void {
   }
 }
 
-/** 주사위 눈 n (1~6): 흰 둥근 네모 + 검은 점. */
+/** 주사위 눈 n (1~6): 상아색 면, 보라색 모서리, 깊이 있는 눈. */
 function bakeDice(scene: Phaser.Scene, n: number): void {
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
   g.fillStyle(OUTLINE, 1);
   g.fillRoundedRect(2, 2, 44, 44, 9);
-  g.fillStyle(0xffffff, 1);
-  g.fillRoundedRect(4, 4, 40, 40, 8);
+  g.fillStyle(0xaa85c8, 1).fillRoundedRect(4, 4, 40, 40, 8);
+  g.fillStyle(0xffecd8, 1).fillRoundedRect(4, 4, 39, 35, 8);
+  g.fillStyle(0xfffcf4, 1).fillRoundedRect(8, 7, 30, 6, 3);
   const P: Record<number, [number, number][]> = {
     1: [[24, 24]],
     2: [[14, 14], [34, 34]],
@@ -124,8 +124,11 @@ function bakeDice(scene: Phaser.Scene, n: number): void {
     5: [[14, 14], [34, 14], [24, 24], [14, 34], [34, 34]],
     6: [[14, 13], [34, 13], [14, 24], [34, 24], [14, 35], [34, 35]],
   };
-  g.fillStyle(n === 1 ? 0xd62828 : 0x1d1b2a, 1);
-  for (const [x, y] of P[n] ?? []) g.fillCircle(x, y, n === 1 ? 6 : 4.5);
+  for (const [x, y] of P[n] ?? []) {
+    const r = n === 1 ? 7 : 4;
+    g.fillStyle(n === 1 ? 0xe74567 : 0x292143, 1).fillCircle(x, y - 1.5, r);
+    g.fillStyle(0xffffff, 0.5).fillCircle(x - r * 0.28, y - r * 0.55, r * 0.22);
+  }
   g.generateTexture(diceKey(n), 48, 48);
   g.destroy();
 }
@@ -140,6 +143,8 @@ function bakeSoldier(scene: Phaser.Scene): void {
   g.fillRoundedRect(19, 27, 26, 28, 9);
   g.fillStyle(0x5b3a8c, 1);
   g.fillRoundedRect(21, 29, 22, 24, 8);
+  g.fillStyle(0xc091f4, 1).fillTriangle(19, 34, 14, 53, 30, 48);
+  g.fillStyle(0xffd07a, 1).fillCircle(38, 34, 3);
   // 머리
   g.fillStyle(OUTLINE, 1);
   g.fillCircle(32, 20, 13);
@@ -178,6 +183,8 @@ function bakePuddle(scene: Phaser.Scene): void {
     [58, 52, 3],
   ] as const) {
     g.fillCircle(x, y, r);
+    g.fillStyle(0xf6d6a4, 0.8).fillCircle(x - 1, y - 1, r * 0.42);
+    g.fillStyle(0xd2ab82, 0.85);
   }
   g.generateTexture(TEX_PUDDLE, 128, 80);
   g.destroy();

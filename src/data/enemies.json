@@ -528,6 +528,7 @@
    "name": "박쥐 여왕",
    "look": "망토 두른 거대 박쥐",
    "hpMul": 45,
+   "firstInfiniteHpMul": 4.2,
    "armor": 30,
    "magicRes": 50,
    "speed": 1.0,

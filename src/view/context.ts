@@ -1,10 +1,18 @@
 /** 장면들이 함께 쓰는 값. */
 import type { GameData } from '../data/load';
 import type { UiRoot } from '../ui/root';
+import type { BattleRecords } from '../save/BattleRecords';
+import type { MatchSaves } from '../save/MatchSaves';
+import type { ScreenShake } from '../save/ScreenShake';
+import type { EffectAudio } from '../audio/EffectAudio';
 
 export interface GameContext {
   data: GameData;
   ui: UiRoot;
+  saves: MatchSaves;
+  records: BattleRecords;
+  screenShake: ScreenShake;
+  audio: EffectAudio;
   /** URL ?debug=1 — 개발용 치트·×3 배속 (CLAUDE.md 4장) */
   debug: boolean;
   /** URL ?seed=123 — 같은 판 재현용. 없으면 무작위 */

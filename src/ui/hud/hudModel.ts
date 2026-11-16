@@ -14,6 +14,8 @@ import type { Deck, MatchRules } from '../../sim/rules';
 import { DECK_GRADES } from '../../data/deck';
 import type { MatchState } from '../../sim/state';
 import { TICK_HZ } from '../../sim/World';
+import { missionsClaimable } from '../../sim/systems/Mission';
+import { canFinishPrep } from '../../sim/systems/Stage';
 
 export interface HudInput {
   state: Readonly<MatchState>;
@@ -79,6 +81,8 @@ export interface HudModel {
   summonAffordable: boolean;
   /** '⬆ 승급 가능 n' 글자 (승급할 묶음이 없으면 빈 글자 → 버튼 숨김) */
   mergeReady: string;
+  missionsReady: number;
+  prepReady: boolean;
 }
 
 /** 남은 틱 → m:ss (올림: 0.1초 남아도 0:01). */
@@ -144,6 +148,8 @@ export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
     tick: input.tick,
     ...summonInfo(state.gold, input.towerCount ?? 0, input.buildableCount ?? 0, input.summonCost ?? 0, (input.mergeReady ?? 0) > 0),
     mergeReady: mergeReadyText(input.mergeReady ?? 0),
+    missionsReady: missionsClaimable(state),
+    prepReady: canFinishPrep(state),
     workers: `${state.workers}/${workerMax}`,
     workersFull,
     hireLabel: workersFull ? '👷 최대' : `👷 ${withCommas(workerCost)}원`,

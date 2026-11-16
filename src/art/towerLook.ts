@@ -4,8 +4,7 @@
  */
 import type { Grade } from '../data/load';
 
-/** 소품 종류 (chibi.ts ChibiProp과 같은 값) */
-export type TowerProp = 'sword' | 'bow' | 'pickaxe' | 'staff' | 'dagger' | 'none';
+export type TowerProp = 'sword' | 'bow' | 'pickaxe' | 'staff' | 'dagger' | 'spear' | 'rifle' | 'bomb' | 'book' | 'dice' | 'drum' | 'purse' | 'none';
 
 /** 타워 id → 소품 */
 export const TOWER_PROPS: Readonly<Record<string, TowerProp>> = {
@@ -14,11 +13,54 @@ export const TOWER_PROPS: Readonly<Record<string, TowerProp>> = {
   archer: 'bow',
   apprentice: 'staff',
   warrior: 'sword',
+  drummer: 'drum',
+  spearman: 'spear',
+  stonegolem: 'none',
+  ninja: 'dagger',
+  k9: 'rifle',
   duelist: 'dagger',
-  merchant: 'none',
-  sniper: 'bow',
+  merchant: 'purse',
+  scout: 'rifle',
+  gunner: 'rifle',
+  dwarfbomber: 'bomb',
+  gambler: 'dice',
+  banker: 'purse',
+  sniper: 'rifle',
   blacksmith: 'pickaxe',
+  scholar: 'book',
+  chronomancer: 'book',
+  alchemist: 'bomb',
+  artillery: 'rifle',
   assassin: 'dagger',
+  fortuna: 'dice',
+  spearsgod: 'spear',
+  tycoon: 'purse',
+  fate: 'dice',
+  goldking: 'purse',
+  timelord: 'book',
+  goldbattery: 'rifle',
+  fateseer: 'book',
+  festival: 'drum',
+};
+
+/** 마법 계열은 지팡이의 수정 색으로 구분한다. */
+export const STAFF_GEMS: Readonly<Record<string, number>> = {
+  mudshaman: 0xe6a261,
+  flamemage: 0xff9162,
+  windarcher: 0xa9ffad,
+  icemage: 0x8fecff,
+  astrologer: 0xd9a6ff,
+  lightning: 0xffe072,
+  summoner: 0xb983ff,
+  necromancer: 0x76e3ad,
+  prophet: 0xffd978,
+  archmage: 0xff7464,
+  stormlord: 0x79a4ff,
+  saint: 0xfff08a,
+  dimensionist: 0xe986ff,
+  elemental: 0x71ffcc,
+  deathlord: 0xf083d0,
+  stormavatar: 0x8ed1ff,
 };
 
 /** 모자 색: 광부 헬멧(노랑 + 이마 등), 마법 타워 두건(보라 쪽으로 섞음) — 같은 종족 색끼리도 직업이 구별되게 */

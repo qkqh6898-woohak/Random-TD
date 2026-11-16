@@ -241,6 +241,7 @@ test('보스 제한 시간: 10단계 보스를 60초 안에 못 잡으면 패배
   await skipTo(page, 10);
   await ff(page, 1250);
   await expect(page.getByText('10단계 보스를 제한 시간 안에 잡지 못했어요')).toBeVisible();
+  await expect(page.getByTestId('gameover-boss-hp')).toHaveText('남은 보스 체력 100%');
   expect(await inScene(page, (s) => [s.match.state.phase, s.match.state.defeatReason, s.match.state.stage], null)).toEqual(['defeat', 'bossTime', 10]);
   // 패배 화면 위에 알림·배너가 남지 않는다 (알림 층이 화면 층보다 위라 '패배' 제목을 가리던 것, 검토 반영)
   await expect(page.locator('.layer-toast > *')).toHaveCount(0);

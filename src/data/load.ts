@@ -178,6 +178,8 @@ export interface BossData {
   name: string;
   look: string;
   hpMul: number;
+  /** 무한 모드의 첫 보스 단계에서만 쓰는 체력 배율. */
+  firstInfiniteHpMul?: number;
   armor: number;
   magicRes: number;
   speed: number;
@@ -813,6 +815,7 @@ const bossSchema = s.obj({
   name: s.str({ nonEmpty: true }),
   look: s.str(),
   hpMul: s.num({ min: 0 }),
+  firstInfiniteHpMul: s.opt(s.num({ min: 0.01 })),
   armor: s.num({ min: 0 }),
   magicRes: s.num({ min: 0 }),
   speed: s.num({ min: 0 }),

@@ -12,7 +12,8 @@ import { killMob } from '../../src/sim/systems/Kill';
 import { effectiveSpeed } from '../../src/sim/systems/Movement';
 import { applyHardCc } from '../../src/sim/systems/Status';
 import { placeTower } from '../../src/sim/systems/Summon';
-import { spawnBoss } from '../../src/sim/systems/Spawn';
+import { bossSpawnStats, spawnBoss } from '../../src/sim/systems/Spawn';
+import { bp, mulBp } from '../../src/sim/Fixed';
 import { arena, campaign, command, data, eventsOf, infinite, jumpToStage } from '../helpers/match';
 
 const rules = buildMatchRules(data);
@@ -30,6 +31,17 @@ function boss(m: ReturnType<typeof arena>, id: string, stage: number, progress =
 const bosses = (m: ReturnType<typeof arena>) => listMobs(m.world).filter((x) => x.boss);
 
 describe('보스 데이터·모듈 (M4-5)', () => {
+  it('무한 첫 등장만 체력 배율을 적용하고 박쥐 여왕 재등장과 캠페인은 기존 체력을 쓴다', () => {
+    const queen = rules.bosses.get('batqueen')!;
+    const dataQueen = data.enemies.bosses.find((boss) => boss.id === 'batqueen')!;
+    const first = infinite(1);
+    jumpToStage(first, 10);
+    expect(first.state.bossMaxHp).toBe(mulBp(stageHp(rules, 10), bp(dataQueen.firstInfiniteHpMul!)));
+    expect(first.state.bossMaxHp).toBeLessThan(stageHp(rules, 10) * dataQueen.hpMul);
+    expect(bossSpawnStats(infinite(1).ctx, queen, 80).hp).toBe(stageHp(rules, 80) * 45);
+    expect(bossSpawnStats(campaign(1).ctx, queen, 10).hp).toBe(stageHp(rules, 10) * 45);
+  });
+
   it('기본 대장 5종 모두 패턴 모듈이 있고 수치를 정수로 읽는다', () => {
     expect(bossModuleIds().sort()).toEqual([...rules.bossOrder].sort());
     const m = arena(1);

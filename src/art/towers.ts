@@ -1,5 +1,5 @@
 /**
- * 게임 화면의 임시 타워 그림 (DEV_PLAN M2-8). M11에서 파츠 SVG + animations.json으로 바뀐다.
+ * 게임 화면의 타워 그림 (DEV_PLAN M2-8).
  *
  * - 타워 id마다 캐릭터 텍스처(몸 = 종족 색, 소품, 머리 위 별 = 등급)를 한 번 구워 쓰고, 받침대는 등급마다 하나.
  *   (WebGL에서 Graphics는 매 프레임 다시 쪼개지므로 칸마다 Graphics를 두지 않는다.)
@@ -9,9 +9,9 @@
  */
 import Phaser from 'phaser';
 import type { Grade } from '../data/load';
-import { CHIBI_BOUNDS, PEDESTAL_BOUNDS, drawChibiFigure, drawPedestal } from './chibi';
-import { GRADE_COLORS, hexToInt, lerpColor } from './palette';
-import { GRADE_STARS, HELMET_COLOR, MAGIC_HOOD, propFor, type TowerLookInput } from './towerLook';
+import { CHIBI_BOUNDS, PEDESTAL_BOUNDS, drawChibiFigure, drawGradeStars, drawPedestal } from './chibi';
+import { COLORS, GRADE_COLORS, hexToInt, lerpColor } from './palette';
+import { GRADE_STARS, HELMET_COLOR, MAGIC_HOOD, STAFF_GEMS, propFor, type TowerLookInput } from './towerLook';
 
 export { SPECIAL_FACTION_COLORS, type TowerLookInput } from './towerLook';
 
@@ -29,10 +29,26 @@ export function ensureTowerTexture(scene: Phaser.Scene, t: TowerLookInput, facti
   const key = `tower-${t.id}`;
   if (scene.textures.exists(key)) return key;
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
+  const illustration = scene.textures.get(`art-${key}`).getSourceImage();
+  if (scene.textures.exists(`art-${key}`) && illustration instanceof HTMLImageElement) {
+    const texture = scene.textures.createCanvas(key, FIGURE_TEX_W, FIGURE_TEX_H);
+    if (texture) {
+      texture.context.drawImage(illustration, 0, 0);
+      g.translateCanvas(-CHIBI_BOUNDS.left, -CHIBI_BOUNDS.top);
+      drawGradeStars(g, GRADE_STARS[t.grade]);
+      g.generateTexture(texture.canvas, FIGURE_TEX_W, FIGURE_TEX_H);
+      texture.refresh();
+      g.destroy();
+      return key;
+    }
+  }
   const body = hexToInt(factionColor);
   const prop = propFor(t);
   const cap = prop === 'pickaxe' ? HELMET_COLOR : t.damageType === 'magic' ? lerpColor(body, MAGIC_HOOD, 0.65) : undefined;
-  drawChibiFigure(g, { body, prop, stars: GRADE_STARS[t.grade], cap, lamp: prop === 'pickaxe' }, -CHIBI_BOUNDS.left, -CHIBI_BOUNDS.top);
+  drawChibiFigure(g, {
+    job: t.id, faction: t.faction, body, prop, stars: GRADE_STARS[t.grade], cap, gem: STAFF_GEMS[t.id],
+    trim: t.grade === 'hidden' ? hexToInt(COLORS.hiddenRim) : hexToInt(GRADE_COLORS[t.grade]),
+  }, -CHIBI_BOUNDS.left, -CHIBI_BOUNDS.top);
   g.generateTexture(key, FIGURE_TEX_W, FIGURE_TEX_H);
   g.destroy();
   return key;

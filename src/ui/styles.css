@@ -150,155 +150,254 @@ body {
 
 /* ---------- 타이틀 ---------- */
 .title-screen {
-  justify-content: flex-start;
+  background: linear-gradient(170deg, #8d3a2a 0%, #421d42 58%, #25152e 100%);
 }
 
-.title-logo {
-  margin-top: 46cqw;
-  display: flex;
-  align-items: center;
-  gap: 2cqw;
-  animation: logo-float 3s ease-in-out infinite;
+.title-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
 }
 
 .title-name {
-  margin: 0;
-  font-size: 12.4cqw;
+  position: relative;
+  margin: 12cqw 0 0;
+  font-size: 11cqw;
   font-weight: 900;
-  letter-spacing: -0.2cqw;
-  color: #fff7d6;
-  -webkit-text-stroke: 0.5cqw var(--outline);
-  paint-order: stroke fill;
-  text-shadow:
-    0 1.2cqw 0 #7a4a12,
-    0 2.4cqw 4cqw rgba(0, 0, 0, 0.55);
-  white-space: nowrap;
+  text-shadow: 0 0.8cqw #192239;
 }
 
-.title-dice {
-  font-size: 9cqw;
-  filter: drop-shadow(0 1cqw 1.2cqw rgba(0, 0, 0, 0.5));
-  animation: dice-tilt 2.4s ease-in-out infinite;
-  display: inline-block;
-}
-
-.title-dice-right {
-  animation-delay: -1.2s;
-}
-
-.title-sub {
-  margin: 3.2cqw 0 0;
-  padding: 1.2cqw 3.6cqw;
-  font-size: 3.7cqw;
-  font-weight: 700;
-  color: var(--text);
-  background: rgba(13, 18, 32, 0.55);
-  border-radius: 10cqw;
-  text-shadow: 0 0.3cqw 0.6cqw rgba(0, 0, 0, 0.6);
+.has-title-art .title-name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 
 .title-actions {
-  position: relative;
-  margin-top: auto;
-  margin-bottom: 21cqw; /* 아래쪽은 M8 하단 메뉴(상점·타워·덱…) 자리 */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3cqw;
+  position: absolute;
+  bottom: calc(max(13cqw, 50px) + env(safe-area-inset-bottom, 0px));
+  display: grid;
+  justify-items: center;
 }
 
 .btn-start {
-  position: relative;
-  min-width: 52cqw;
-  padding: 3.2cqw 8cqw;
-  font-size: 7cqw;
+  min-width: 62cqw;
+  min-height: max(12.5cqw, 44px);
+  padding: 1.4cqw 6cqw;
+  border: max(2px, 0.8cqw) solid #131827;
+  border-radius: 4.8cqw;
+  color: #fff8e4;
+  background: linear-gradient(#ff694c, #f83c34);
+  box-shadow: inset 0 0 0 0.55cqw #ffe0aa, 0 1cqw 0 #141827, 0 1.8cqw 3cqw #42121980;
+  font-size: 8.5cqw;
   font-weight: 900;
-  border-radius: 4cqw;
-}
-
-/* 눌러 달라는 빛 고리. 버튼 자체는 움직이지 않게(터치 위치 고정) 가상 요소만 맥동한다. */
-.btn-start::after {
-  content: '';
-  position: absolute;
-  inset: -1.6cqw;
-  border-radius: 5.2cqw;
-  border: 0.8cqw solid rgba(255, 236, 160, 0.85);
-  pointer-events: none;
-  animation: start-pulse 1.6s ease-out infinite;
-}
-
-.btn-start .btn-icon {
-  font-size: 5.2cqw;
+  line-height: 1.08;
+  letter-spacing: 0.06em;
+  -webkit-text-stroke: 0.65cqw #191621;
+  paint-order: stroke fill;
 }
 
 .title-version {
   position: absolute;
   right: 3cqw;
-  bottom: 2.4cqw;
-  font-size: 2.8cqw;
+  bottom: calc(2.4cqw + env(safe-area-inset-bottom, 0px));
+  font-size: max(8px, 2.8cqw);
+  color: #fff8e4;
+  text-shadow: 0 1px 3px #190b18;
+}
+
+.title-debug {
+  position: absolute;
+  top: calc(100% + 5px);
+}
+
+.btn-campaign {
+  min-width: 52cqw;
+  min-height: 44px;
+  padding: 0 3cqw;
+  font-size: max(10px, 3.5cqw);
+  white-space: nowrap;
+  background: rgba(24, 32, 52, 0.96);
+}
+
+.btn-resume-match {
+  gap: 2cqw;
+  font-size: 6.4cqw;
+  letter-spacing: 0;
+}
+
+.title-save-stage {
+  font-size: max(11px, 3.6cqw);
+  white-space: nowrap;
+}
+
+.title-confirm {
+  max-width: 92cqw;
+  padding: 4cqw;
+  background: #19283a;
+  border: 1px solid #72d6c0;
+  border-radius: 3cqw;
+  color: var(--text);
+  text-align: center;
+}
+
+.title-confirm h2 {
+  margin: 0;
+  font-size: max(15px, 5cqw);
+}
+
+.title-confirm p {
+  font-size: max(12px, 3.6cqw);
+}
+
+.title-confirm::backdrop {
+  background: #0d1220cc;
+}
+
+.title-confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 2cqw;
+}
+
+.title-confirm-actions .btn {
+  min-height: 44px;
+  font-size: max(12px, 4cqw);
+}
+
+.btn-title-records {
+  position: absolute;
+  left: 3cqw;
+  bottom: calc(2.4cqw + env(safe-area-inset-bottom, 0px));
+  background: #182034;
+  font-size: max(12px, 3.5cqw);
+}
+
+.title-records-panel {
+  width: min(84cqw, 420px);
+  max-height: 84cqh;
+  overflow: hidden;
+}
+
+.title-records-panel[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.title-records-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 2cqw;
+}
+
+.title-records-body {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.title-records-best,
+.title-records-group li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2cqw;
+  text-align: left;
+}
+
+.title-records-best {
+  align-items: center;
+  padding: 3cqw;
+  border-radius: 2cqw;
+  background: #24374e;
+}
+
+.title-records-best strong {
+  color: #ffe293;
+  font-size: max(14px, 5cqw);
+}
+
+.title-records-group {
+  margin: 0 0 4cqw;
+  text-align: left;
+  font-size: max(12px, 3.6cqw);
+}
+
+.title-records-group h3 {
+  font-size: inherit;
+  margin: 0;
+}
+
+.title-records-group ul {
+  margin: 1cqw 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.title-records-group li {
+  border-bottom: 1px solid var(--panel-line);
+  padding: 1.2cqw 0;
+}
+
+.title-records-group strong {
+  white-space: nowrap;
   color: var(--text-dim);
-  opacity: 0.8;
 }
 
-@keyframes logo-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-1.2cqw);
-  }
+.title-records-panel .title-records-note {
+  margin: 1cqw 0 2cqw;
+  font-size: max(11px, 3cqw);
+  color: var(--text-dim);
 }
 
-@keyframes dice-tilt {
-  0%,
-  100% {
-    transform: rotate(-10deg);
-  }
-  50% {
-    transform: rotate(12deg) translateY(-0.8cqw);
-  }
+.title-records-run {
+  border: 1px solid var(--panel-line);
+  border-radius: 2cqw;
+  margin: 1.5cqw 0;
+  background: #24374e;
 }
 
-@keyframes start-pulse {
-  0% {
-    transform: scale(0.96);
-    opacity: 0.9;
-  }
-  100% {
-    transform: scale(1.12);
-    opacity: 0;
-  }
+.title-records-run summary {
+  padding: 0 2.5cqw;
+  min-height: 44px;
+  line-height: 44px;
+  cursor: pointer;
+}
+
+.title-records-run-summary {
+  display: inline-flex;
+  justify-content: space-between;
+  gap: 2cqw;
+  width: calc(100% - 1.3em);
+}
+
+.title-records-run-summary strong {
+  color: var(--text);
+}
+
+.title-records-run-bosses {
+  padding: 0 2.5cqw 1cqw;
+  color: var(--text-dim);
+}
+
+.title-records-run-bosses p {
+  margin: 0 0 1cqw;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .title-logo,
-  .title-dice,
-  .btn-start::after,
   .hud-count.is-blink,
   .hud-edge.is-on,
   .hud-count-icon.is-break,
   .hud-gold.is-gain {
     animation: none;
   }
-}
-
-/* [캠페인 1 (디버그)]: [시작] 아래 여백(하단 메뉴 자리)에 따로 띄운다 → [시작] 위치가 debug와 상관없이 같다 */
-.title-debug {
-  position: absolute;
-  left: 0;
-  right: 0;
-  /* 간격 3cqw, 아주 납작한 무대(가로 화면)에서는 44px 버튼이 무대 밖으로 나가지 않게 간격을 줄인다 (아래 여백 21cqw 안) */
-  top: calc(100% + clamp(0px, 21cqw - max(11cqw, 44px) - 1.6cqw, 3cqw));
-  display: flex;
-  justify-content: center;
-}
-
-.btn-campaign {
-  min-width: 52cqw;
-  min-height: max(11cqw, 44px);
-  font-size: 4.4cqw;
-  background: rgba(43, 53, 80, 0.92);
 }
 
 /* ---------- HUD ---------- */
@@ -517,19 +616,22 @@ body {
   }
 }
 
-/* ---------- 아래 띠 (M2): 타워 수 · 소환 안내. 터치는 통과 ---------- */
-.hud-bottom {
+/* ---------- 하단 HUD: 전투 통계와 강화·미션 ---------- */
+.hud-footer {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: auto 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: 0.3cqw solid var(--panel-line);
+  background: linear-gradient(0deg, #101828 0%, #141d29eb 100%);
+  pointer-events: none;
+}
+
+.hud-bottom {
   display: flex;
   align-items: center;
   gap: 3cqw;
   min-height: max(11cqw, 44px);
-  padding: 2cqw 3cqw calc(2cqw + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(0deg, rgba(13, 18, 32, 0.92) 0%, rgba(13, 18, 32, 0.6) 100%);
-  border-top: 0.3cqw solid var(--panel-line);
+  padding: 1cqw 3cqw;
   font-size: 3.8cqw;
   font-weight: 700;
   pointer-events: none;
@@ -685,7 +787,9 @@ body {
   align-items: stretch;
   gap: 3cqw;
   min-width: 60cqw;
+  max-height: calc(100% - 16px);
   padding: 6cqw 7cqw;
+  overflow-y: auto;
   background: var(--panel);
   border: 0.4cqw solid var(--panel-line);
   border-radius: 4cqw;
@@ -702,6 +806,68 @@ body {
 .pause-panel .btn {
   min-height: max(13cqw, 48px);
   font-size: 5cqw;
+}
+
+.pause-panel .pause-setting {
+  justify-content: space-between;
+  font-size: max(13px, 4.2cqw);
+}
+
+.pause-setting-value {
+  padding: 0.4cqw 1.6cqw;
+  border-radius: 1.4cqw;
+  background: #192235;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.pause-setting[aria-checked='true'] .pause-setting-value {
+  background: #245048;
+  color: #c1ffee;
+}
+
+.pause-audio {
+  padding: 2cqw 2.5cqw 1cqw;
+  border: 1px solid var(--panel-line);
+  border-radius: 2cqw;
+  background: #233148;
+}
+
+.pause-audio-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 2cqw;
+  color: var(--text);
+  font-size: max(13px, 3.7cqw);
+  font-weight: 700;
+}
+
+.pause-audio-label output {
+  color: #ffe4a2;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.pause-audio-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2cqw;
+  align-items: center;
+}
+
+.pause-audio-controls input {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  accent-color: #fbd562;
+  cursor: pointer;
+}
+
+.pause-panel .pause-audio-preview {
+  min-height: 44px;
+  padding: 0 1.4cqw;
+  font-size: max(12px, 3.3cqw);
 }
 
 .pause-note {
@@ -1169,7 +1335,7 @@ body {
   position: absolute;
   left: 3cqw;
   right: 3cqw;
-  bottom: max(15cqw, 60px);
+  bottom: calc(var(--hud-footer-height, 60px) + 2cqw);
   display: flex;
   flex-direction: column;
   gap: 1.6cqw;
@@ -1279,7 +1445,7 @@ body {
 .choice-root > .cp-pill {
   position: absolute;
   right: 3cqw;
-  bottom: max(15cqw, 60px);
+  bottom: calc(var(--hud-footer-height, 60px) + 2cqw);
 }
 
 .choice-panel.is-merge .cp-title {
@@ -1374,4 +1540,191 @@ body {
   line-height: 1.3;
   color: #d6dcef;
   word-break: keep-all;
+}
+
+.hud-menu {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 2cqw;
+  padding: 0 3cqw 1.3cqw;
+}
+
+.hud-menu-button {
+  min-width: 0;
+  padding-inline: 0.85cqw;
+  background: #24364a;
+}
+
+.hud-quick-summon {
+  color: #3f230d;
+  border-color: #ffe6a2;
+  background: linear-gradient(#ffe180, #edaa57);
+}
+
+.hud-quick-summon.is-off {
+  color: var(--text-dim);
+  border-color: var(--panel-line);
+  background: #29364a;
+}
+
+.hud-prep-ready {
+  color: #163b32;
+  border-color: #a4eed6;
+  background: #83dcc2;
+}
+
+.hud-prep-ready[hidden] {
+  display: none;
+}
+
+.hud-menu-button[aria-expanded='true'] {
+  color: #e2ffef;
+  border-color: #70dac1;
+  background: #244c4a;
+}
+
+.hud-mission-badge {
+  padding: 0.2cqw 1.35cqw;
+  border-radius: 5cqw;
+  color: #392500;
+  background: #ffce5a;
+  font-size: max(11px, 3.2cqw);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 게임은 진행되고, 시트 위쪽의 맵은 터치해서 시트를 닫을 수 있다. */
+.battle-sheet {
+  position: absolute;
+  inset: auto 2cqw calc(var(--hud-footer-height, 60px) + 1cqw);
+  display: flex;
+  flex-direction: column;
+  max-height: min(57%, calc(100% - var(--hud-footer-height, 60px) - 3cqw));
+  padding: 2.5cqw;
+  border: 0.4cqw solid #56776f;
+  border-radius: 3.8cqw;
+  background: linear-gradient(#203346, #111a2c 65%);
+  box-shadow: 0 1.8cqw 6cqw #080e1abf;
+  font-size: max(12px, 3.6cqw);
+}
+
+.battle-head,
+.battle-mission-summary {
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+}
+
+.battle-head h2 {
+  margin: 0 auto 0 0;
+  color: #e6fff4;
+  font-size: max(19px, 5.7cqw);
+}
+
+.battle-wallet {
+  color: #ffce5a;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.battle-close {
+  padding: 0;
+  background: #18253a;
+}
+
+.battle-missions {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.battle-mission-summary {
+  justify-content: space-between;
+  padding-block: 1.5cqw;
+}
+
+.battle-list {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.9cqw 0.8cqw 1cqw 0;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.battle-group-title {
+  margin: 2.2cqw 0 0.8cqw;
+  color: #9fe3d2;
+  font-size: max(12px, 3.5cqw);
+}
+
+.battle-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2cqw;
+  padding: 1.6cqw 2cqw;
+  border-bottom: 1px solid #ffffff20;
+}
+
+.battle-entry.is-claimable {
+  border-radius: 2cqw;
+  background: #38534d;
+}
+
+.battle-entry-main {
+  display: grid;
+  gap: 0.55cqw;
+}
+
+.battle-entry-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 1cqw;
+}
+
+.battle-detail {
+  color: #c3d2dc;
+  font-size: max(11px, 3.2cqw);
+}
+
+.battle-detail:empty {
+  display: none;
+}
+
+.battle-level,
+.battle-effect {
+  color: #a5f0de;
+  font-size: max(11px, 3.2cqw);
+  font-variant-numeric: tabular-nums;
+}
+
+.battle-progress {
+  width: min(100%, 44cqw);
+  height: max(5px, 1.7cqw);
+  accent-color: #82d9bd;
+}
+
+.battle-purchase {
+  min-width: max(44px, 15cqw);
+  min-height: 44px;
+  padding: 0.8cqw 1.65cqw;
+  border-color: #f8d675;
+  color: #302100;
+  background: #ffd170;
+  font-size: max(11px, 3.4cqw);
+  white-space: nowrap;
+}
+
+.battle-purchase:disabled {
+  filter: none;
+  border-color: #617184;
+  color: #c7d2db;
+  background: #273548;
+}
+
+.battle-purchase[hidden],
+.battle-progress[hidden] {
+  display: none;
 }

@@ -90,6 +90,9 @@ export function bossKillText(name: string, reward: number): string {
 
 /** 보스를 잡은 뒤 남은 보스 단계 (휴식) */
 export const BOSS_CLEARED = '👑 보스 처치! 남은 시간은 휴식';
+export const batQueenPreview = (name: string): string => `다음 보스 · ${name} · 장거리 타워 추천`;
+export const bossFlightText = (range: number): string => `비행 중 · 사거리 ${range}칸 이하 공격 불가`;
+export const FIRST_SUMMON_HINT = '민트색 칸이나 하단 [소환]을 눌러요.';
 
 /** 투명 몹 첫 등장 + 감지 없음 (ENEMIES.md 5장, UI.md 8장) */
 export const INVISIBLE_WARN = '투명 몹 출현! 감지 타워가 필요해요 👁';

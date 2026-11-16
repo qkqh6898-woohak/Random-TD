@@ -23,6 +23,11 @@ export function ticksToNextStage(ctx: MatchContext, tick: number): number {
   return left > 0 ? left : 0;
 }
 
+/** 준비 완료는 타워를 한 번 이상 소환한 무한 모드의 준비 단계에서만 가능하다. */
+export function canFinishPrep(state: Pick<MatchContext['state'], 'mode' | 'phase' | 'stage' | 'summons'>): boolean {
+  return state.mode === 'infinite' && state.phase === 'playing' && state.stage === 0 && state.summons > 0;
+}
+
 /** n단계가 시작되는 틱 (n ≥ 1). */
 export function stageStartTick(prepTicks: number, stageTicks: number, stage: number): number {
   return prepTicks + (stage - 1) * stageTicks;
