@@ -16,6 +16,7 @@ import type { ProgressionData } from './progressionData';
 import {
   accountSeedFrom,
   buyShopItem,
+  claimAllQuests,
   claimDailyBonus,
   claimMilestone,
   claimQuest,
@@ -200,6 +201,10 @@ export class ProgressStore {
 
   claimDailyBonus(): Grant | null {
     return this.after(claimDailyBonus(this.state, this.pd, this.data, this.today()));
+  }
+
+  claimAllQuests(): Grant | null {
+    return this.after(claimAllQuests(this.state, this.pd, this.data, this.today()));
   }
 
   buy(itemId: string): ReturnType<typeof buyShopItem> {
