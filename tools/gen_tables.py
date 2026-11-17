@@ -472,7 +472,8 @@ SECTIONS = {
 if errors:
     print("❌ 데이터 규칙 위반:"); [print("  -", e) for e in errors]
 else:
-    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 미션 {len(MS)}개, 감지 타워(노말~레전드) {len(detect)}종, 배속 {_sp} · 개발자 {_dev}, 캐릭터 설명·크기 {len(towers)}+{len(look_e)}, 배경 {ART.get('themes',0)}×{ART.get('bands',0)} · 컷인 {len(ART.get('cutins',[]))}, 판 밖 성장 영웅 Lv{_hl['maxLevel']}·상점 {len(PG['shop'])}·퀘스트 {len(_qids)}, 맵 {len(MAPS)}개(2×2 블록 · 배치 칸 {', '.join(f"{k} {m['buildableCount']}" for k, m in MAPS.items())})")
+    _cells = ", ".join(f"{k} {m['buildableCount']}" for k, m in MAPS.items())  # Python 3.11: f-string 안에 같은 따옴표 중첩 불가
+    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 미션 {len(MS)}개, 감지 타워(노말~레전드) {len(detect)}종, 배속 {_sp} · 개발자 {_dev}, 캐릭터 설명·크기 {len(towers)}+{len(look_e)}, 배경 {ART.get('themes',0)}×{ART.get('bands',0)} · 컷인 {len(ART.get('cutins',[]))}, 판 밖 성장 영웅 Lv{_hl['maxLevel']}·상점 {len(PG['shop'])}·퀘스트 {len(_qids)}, 맵 {len(MAPS)}개(2×2 블록 · 배치 칸 {_cells})")
 if "--check" in sys.argv or errors:
     sys.exit(1 if errors else 0)
 for doc, secs in SECTIONS.items():

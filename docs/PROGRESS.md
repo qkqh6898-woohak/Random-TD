@@ -1269,3 +1269,9 @@
   - 보스 WebP는 몸 한 장이라 절차 SD 보스의 종류별 파츠 박자(`bossPose`)는 몸 전체 흔들림으로만 보인다. 보스 컷인 그림(`assets/cutins`)은 예전 그림체 그대로.
   - 인물 WebP는 표정이 하나 → 대화 UI(M11b)에서 표정이 필요하면 절차 그림이나 새 그림.
   - 갤러리 카드 그림 크기는 눈으로 맞춘 값 (타워 = 게임 배율, 적 = 상자 92%/88%).
+
+### 피드백 #4 — `npm run check`가 Python 3.11에서 실패 (fix/feedback-4)
+- 원인: `tools/gen_tables.py` 마지막 '검사 통과' 출력 줄이 f-string 안에 같은 큰따옴표 f-string을 넣음(PEP 701, Python 3.12+ 전용) → 3.11에서는 파일 전체가 `SyntaxError`.
+- 고침: 맵별 배치 칸 문자열을 `_cells` 변수로 먼저 만든 뒤 넣음. 검사 내용·출력 문구는 그대로(3.10·3.11·3.12·3.13 출력 바이트 단위 같음, 3.11로 문서 다시 만들어도 docs 변화 없음). 게임 코드·데이터 변경 없음.
+- 테스트: `tests/unit/gen-tables-python.test.ts` — 설치된 `python3.11`로 `--check` 통과·구문 분석, 설치된 3.11~3.13 출력이 같음(없는 버전은 건너뜀). 고치기 전 3개 실패 확인.
+- 확인: Vitest 1,302 통과 · 3 건너뜀(70파일), `npm run check`(python3 = 3.11.17)·`npm run build` 통과, E2E `smoke.spec` 5 통과(이 컨테이너는 Playwright 기본 headless shell이 없어 `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). 전체 E2E는 도구 스크립트만 바뀌어 돌리지 않음.
