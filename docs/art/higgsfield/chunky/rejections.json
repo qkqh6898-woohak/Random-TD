@@ -1,0 +1,50 @@
+[
+  {
+    "n": 62,
+    "file": "goldbattery",
+    "job_id": "1950fa30-cdba-4d4f-b2f5-dcd8aa96b4bf",
+    "reason": "Raw body almost touches bottom edge (bbox bottom 1016/1024); soft gradient/texture deviates from flat one-tone style. Regenerate with smaller composition and hard flat fills."
+  },
+  {
+    "n": 89,
+    "file": "enemy_ghost",
+    "job_id": "2fb34032-60c7-493b-a236-01699ae946fb",
+    "reason": "Rejected unwanted human costume/weapon from style-reference transfer; preserve plain ghost/slime or quadrupedal wolf anatomy."
+  },
+  {
+    "n": 90,
+    "file": "enemy_splitter",
+    "job_id": "5e7b82d5-bb7b-4493-ae85-ec98576c99d3",
+    "reason": "Rejected unwanted human costume/weapon from style-reference transfer; preserve plain ghost/slime or quadrupedal wolf anatomy."
+  },
+  {
+    "n": 94,
+    "file": "enemy_shadowwolf",
+    "job_id": "6dc9060f-aa6c-4cf1-b4ef-85bf7a01c63f",
+    "reason": "Rejected unwanted human costume/weapon from style-reference transfer; preserve plain ghost/slime or quadrupedal wolf anatomy."
+  },
+  {
+    "n": 112,
+    "file": "warrior_awaken",
+    "job_id": "8543a8ff-e1d1-4c1f-bade-5c9aad93dda7",
+    "reason": "Insufficient clean margin (2–11 pixels at closest edge); regenerate with smaller composition to protect entire outline."
+  },
+  {
+    "n": 113,
+    "file": "spearman_awaken",
+    "job_id": "655b9a36-d877-46a2-a5eb-6d9105483b1d",
+    "reason": "Insufficient clean margin (2–11 pixels at closest edge); regenerate with smaller composition to protect entire outline."
+  },
+  {
+    "n": 115,
+    "file": "ninja_awaken",
+    "job_id": "3de21f1d-42a9-438e-92ff-8875fd4aed95",
+    "reason": "Insufficient clean margin (2–11 pixels at closest edge); regenerate with smaller composition to protect entire outline."
+  },
+  {
+    "n": 116,
+    "file": "k9_awaken",
+    "job_id": "11b17430-5126-451f-b534-6331a904c978",
+    "reason": "Insufficient clean margin (2–11 pixels at closest edge); regenerate with smaller composition to protect entire outline."
+  }
+]

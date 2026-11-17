@@ -1050,3 +1050,15 @@
 - 완료 조건 (합친 상태): Vitest **1,299 통과 · 3 건너뜀**(69파일), check·build·`android/check-java.sh`(AssetPathsTest·UpdateLogicTest) 통과, 전체 E2E **150 통과 · 1 실패 · 1 건너뜀**(43.0분).
   실패 1 = `m4` '10단계 박쥐 여왕': B-2 공격력 ×1.5로 레전드를 놓는 동안 보스가 이미 죽어 보상이 기준 돈(gold0)에 들어가 버린 테스트 순서 문제 → 돈을 놓기 전에 재도록 고침, m4 2회 반복 20/20.
 - 다음 main 푸시 = 자동 v0.1.10 (versionCode 1010). v0.1.9 이하에는 업데이트 기능이 없어 v0.1.10은 직접 한 번 설치.
+
+### ART-1 캐릭터 그림 3행 통통한 캐주얼의 운빨 존망겜 이미지로 교체
+
+- 기준 브랜치 `art/chunky-handoff`, 기준 커밋 `ca86c46`. **캐릭터 WebP 159장**(타워 65·각성 53·적 32·인물 흉상 9)을 같은 파일명으로 교체했다. 코드·manifest·테스트·키는 변경하지 않았다.
+- 사용자 첨부 운빨존망겜 화면을 최우선으로 `queue.json`의 159개 프롬프트를 다시 작성했다. 2등신의 둥근 머리·짧은 몸, 점 눈, 굵은 진갈색 윤곽선, 납작한 색면, 반짝이·입자·군중 없는 단일 유닛. 각성은 큰 장비와 의상으로 구별한다. 참조 6장을 확인하고 miner/icemage를 스타일 참조로 첨부했다.
+- Higgsfield `gpt_image_2_6`, 1:1, medium, 1k PNG. 도구 상한이 6개라 6개×2로 12개 묶음을 구성했다(마지막 3개). **총 167회 생성 → 159장 선택, 8장 재생성**: goldbattery(여백·색면), 유령/분열 슬라임/그림자 늑대(원치 않는 인간 복장·무기), warrior/spearman/ninja/k9 각성(여백). 몬스터 3장 재시도는 단순 슬라임 결과를 참조해 형태 전이를 줄였다.
+- 원본 `tmp/chunky_raw/<file>.png`는 로컬에 보관하며 커밋하지 않는다. 최종 작업은 [jobs.json](art/higgsfield/chunky/jobs.json), 재생성 이유는 [rejections.json](art/higgsfield/chunky/rejections.json), 수정 이유는 [PROMPT_REVISION.md](art/higgsfield/chunky/PROMPT_REVISION.md), 원문/수정 프롬프트 해시는 `prompt-audit.json`에 기록했다.
+- 지정 명령 `python3 -I tools/chunky_build.py tmp/chunky_raw` → **변환 159개 · 없음 0개**. 긴 변 256px·투명 알파 확인, 159개 모두 기준 그림과 SHA-256이 다르고 빌드 복사본과 일치한다. WebP 총 크기 5,265,252 → **2,402,914 bytes**.
+- [159장 밝은/어두운 배경 확인 그림](art/higgsfield/chunky/contact-sheet-159.png)을 만들고 12장씩 확대 검수했다. 눈에 띄는 흰 테두리·잘림 0건. 자동 여백 검사 후보 5장은 윤곽선이 온전히 남아 있음을 별도 확인했다. 실제 새 WebP 기본/각성 53쌍의 변화 비율 최솟값은 41.83%(중앙·발밑 정렬, 불투명도 또는 RGB 차이 기준). 파일별 해시·원본 경계·검수는 `asset-verification.json`과 `review.json`에 있다. [전투 화면 412×915](art/higgsfield/chunky/game-stage1.png)에서도 새 타워 표시를 확인했다.
+- 검사: `npm ci`, `npm test`(**1,299 통과·3 건너뜀 / 69파일**), `npm run check`, `npm run build` 통과. 요청한 E2E 3개 스펙은 사전 설치 Chromium(`/usr/bin/chromium`)으로 **10 통과·4 실패·1 건너뜀(7.2분)**. 실패는 이전 배경 텍스처 제거, 짧은 보스 컷인 관측, 일반 조작 전체 제한 90초, 기본 배속 틱 수 기준 미달(10, 기대 >12). 테스트를 약화하지 않았다. 교체 전 커밋 비교와 세부 실패 위치는 [VALIDATION.md](art/higgsfield/chunky/VALIDATION.md)에 기록한다.
+- **Claude 후속 통합 주의**: 현재 전투 보스 19종은 외부 WebP 대신 절차 SD 그림을 사용한다. 갤러리의 타워·적·인물 및 인물 초상도 절차 그림 경로가 남아 있어 WebP 교체만으로 모든 화면이 바뀌지는 않는다. 이 작업 범위는 에셋과 기록이다. G-1/G-2/G-3 통합 시 외부 그림 연결과 기존 표정·파츠 애니메이션을 함께 검토할 것. `art/chunky-handoff`에만 푸시하고 main은 푸시하지 않는다.
+- **교체 전 비교 결과**: `ca86c46` 별도 작업 폴더에서 실패 4개만 같은 Chromium으로 단독 실행해 **4개 모두 같은 위치에서 재현**했다(조작 `smoke:118`의 90초 초과, 틱 수 `10`도 동일). 이번 비교에서 새 그림 교체로 생긴 실패는 확인되지 않았다. 소프트웨어 렌더링 성능 및 기존 배경/컷인 타이밍 흐름은 후속 점검 대상이다.

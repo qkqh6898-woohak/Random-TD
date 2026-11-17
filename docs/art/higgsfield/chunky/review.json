@@ -1,0 +1,1274 @@
+{
+  "miner": {
+    "n": 1,
+    "job_id": "1599d909-5c19-4fbf-8324-c26adea2146f",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up sheet inspected: one complete unit, dot eyes, broad brown contour, flat colours, white background; no text, sparkle or visible clipping. Alpha-edge inspection follows conversion.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "goblin": {
+    "n": 2,
+    "job_id": "f28906c5-f513-4fb5-a7d2-331925a91d51",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up sheet inspected: one complete unit, dot eyes, broad brown contour, flat colours, white background; no text, sparkle or visible clipping. Alpha-edge inspection follows conversion.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "archer": {
+    "n": 3,
+    "job_id": "c86413f5-d70a-4e88-a523-4f35fd889453",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up sheet inspected: one complete unit, dot eyes, broad brown contour, flat colours, white background; no text, sparkle or visible clipping. Alpha-edge inspection follows conversion.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "warrior": {
+    "n": 4,
+    "job_id": "7aa05909-a9d1-40a6-ad02-7acf5f5b31db",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up sheet inspected: one complete unit, dot eyes, broad brown contour, flat colours, white background; no text, sparkle or visible clipping. Alpha-edge inspection follows conversion.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "ninja": {
+    "n": 5,
+    "job_id": "daf783d9-93e0-4a03-b8a7-b14960d0ad70",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up sheet inspected: one complete unit, dot eyes, broad brown contour, flat colours, white background; no text, sparkle or visible clipping. Alpha-edge inspection follows conversion.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "k9": {
+    "n": 6,
+    "job_id": "7fbc1253-dc7d-4e8b-b60d-ce2bcc46e2f8",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up sheet inspected: one complete unit, dot eyes, broad brown contour, flat colours, white background; no text, sparkle or visible clipping. Alpha-edge inspection follows conversion.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "bard": {
+    "n": 7,
+    "job_id": "4f16fa65-1848-4c5f-81ce-282272645533",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up sheet inspected: one complete unit, dot eyes, broad brown contour, flat colours, white background; no text, sparkle or visible clipping. Alpha-edge inspection follows conversion.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "drummer": {
+    "n": 8,
+    "job_id": "25d45e4d-a941-4c92-9a42-3bb547e830ce",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up sheet inspected: one complete unit, dot eyes, broad brown contour, flat colours, white background; no text, sparkle or visible clipping. Alpha-edge inspection follows conversion.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "apprentice": {
+    "n": 9,
+    "job_id": "616c24dd-2867-44af-8a8e-1941cb5dc6d9",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up sheet inspected: one complete unit, dot eyes, broad brown contour, flat colours, white background; no text, sparkle or visible clipping. Alpha-edge inspection follows conversion.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "spearman": {
+    "n": 10,
+    "job_id": "27ea3369-ca06-4d0a-b0c5-c734f61e4f59",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up sheet inspected: one complete unit, dot eyes, broad brown contour, flat colours, white background; no text, sparkle or visible clipping. Alpha-edge inspection follows conversion.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "stonegolem": {
+    "n": 11,
+    "job_id": "db8500cb-cd71-4381-a46f-9f3ad41066c9",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up sheet inspected: one complete unit, dot eyes, broad brown contour, flat colours, white background; no text, sparkle or visible clipping. Alpha-edge inspection follows conversion.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "merchant": {
+    "n": 12,
+    "job_id": "59a9bb96-5277-4c9d-a1eb-19df27ada78f",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up sheet inspected: one complete unit, dot eyes, broad brown contour, flat colours, white background; no text, sparkle or visible clipping. Alpha-edge inspection follows conversion.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "mudshaman": {
+    "n": 13,
+    "job_id": "5e9764d5-b1c1-42d4-a290-adc0f2bfae37",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected twelve-up raw sheet: distinct equipment, consistent squat proportions and dot eyes, flat opaque colour, white background, full feet and weapon tips, no text/glitter/visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "scout": {
+    "n": 14,
+    "job_id": "1064cd9f-7db2-409e-95bd-13cd56edc4f7",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected twelve-up raw sheet: distinct equipment, consistent squat proportions and dot eyes, flat opaque colour, white background, full feet and weapon tips, no text/glitter/visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "flamemage": {
+    "n": 15,
+    "job_id": "0d677ccb-cb04-44a6-bbf1-d2f25f9872d5",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected twelve-up raw sheet: distinct equipment, consistent squat proportions and dot eyes, flat opaque colour, white background, full feet and weapon tips, no text/glitter/visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "cleaver": {
+    "n": 16,
+    "job_id": "8290cc74-2d5e-4e1f-a254-49a381e95a27",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected twelve-up raw sheet: distinct equipment, consistent squat proportions and dot eyes, flat opaque colour, white background, full feet and weapon tips, no text/glitter/visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "duelist": {
+    "n": 17,
+    "job_id": "422727c7-2768-47af-9f26-f82e54b55478",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected twelve-up raw sheet: distinct equipment, consistent squat proportions and dot eyes, flat opaque colour, white background, full feet and weapon tips, no text/glitter/visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "gunner": {
+    "n": 18,
+    "job_id": "19825e90-2f7d-49d0-b8a5-3c44185b554e",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected twelve-up raw sheet: distinct equipment, consistent squat proportions and dot eyes, flat opaque colour, white background, full feet and weapon tips, no text/glitter/visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "dwarfbomber": {
+    "n": 19,
+    "job_id": "f0577305-50b4-4481-b005-452cc472cd9e",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected twelve-up raw sheet: distinct equipment, consistent squat proportions and dot eyes, flat opaque colour, white background, full feet and weapon tips, no text/glitter/visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "windarcher": {
+    "n": 20,
+    "job_id": "ba540f69-f359-47e1-9a1c-cd4c300ed2f4",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected twelve-up raw sheet: distinct equipment, consistent squat proportions and dot eyes, flat opaque colour, white background, full feet and weapon tips, no text/glitter/visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "icemage": {
+    "n": 21,
+    "job_id": "2376c40a-1097-4143-aedd-7246ec822c5f",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected twelve-up raw sheet: distinct equipment, consistent squat proportions and dot eyes, flat opaque colour, white background, full feet and weapon tips, no text/glitter/visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "gambler": {
+    "n": 22,
+    "job_id": "22d85c1c-2192-4eea-96eb-ba60dfdd176b",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected twelve-up raw sheet: distinct equipment, consistent squat proportions and dot eyes, flat opaque colour, white background, full feet and weapon tips, no text/glitter/visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "blacksmith": {
+    "n": 23,
+    "job_id": "5c53d755-2a4f-4e68-8e5c-d8cb9f4f14ae",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected twelve-up raw sheet: distinct equipment, consistent squat proportions and dot eyes, flat opaque colour, white background, full feet and weapon tips, no text/glitter/visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "goblinchief": {
+    "n": 24,
+    "job_id": "e8fd6fb2-56da-4e9a-a5bd-9843fd73bf43",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected twelve-up raw sheet: distinct equipment, consistent squat proportions and dot eyes, flat opaque colour, white background, full feet and weapon tips, no text/glitter/visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "astrologer": {
+    "n": 25,
+    "job_id": "5d4711a9-fbac-435b-b7d7-986b906d194f",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: full equipment and feet, clean white margins, matching flat chunky style and dark dot eyes; books blank, clock without numerals, no glow/sparkles or extra characters.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "banker": {
+    "n": 26,
+    "job_id": "47fc9182-a37a-48ba-aaa0-7ccee876b44a",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: full equipment and feet, clean white margins, matching flat chunky style and dark dot eyes; books blank, clock without numerals, no glow/sparkles or extra characters.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "sniper": {
+    "n": 27,
+    "job_id": "236bce8e-93e4-4f45-b851-a74b5f43a03d",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: full equipment and feet, clean white margins, matching flat chunky style and dark dot eyes; books blank, clock without numerals, no glow/sparkles or extra characters.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "berserker": {
+    "n": 28,
+    "job_id": "a4e57114-f668-4752-b5ee-1ec11142f2fc",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: full equipment and feet, clean white margins, matching flat chunky style and dark dot eyes; books blank, clock without numerals, no glow/sparkles or extra characters.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "lightning": {
+    "n": 29,
+    "job_id": "845feb60-c11a-4728-95cf-06404bd77eb8",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: full equipment and feet, clean white margins, matching flat chunky style and dark dot eyes; books blank, clock without numerals, no glow/sparkles or extra characters.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "poisonarcher": {
+    "n": 30,
+    "job_id": "849c90c2-1903-4a91-b09a-f6a9cc969be4",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: full equipment and feet, clean white margins, matching flat chunky style and dark dot eyes; books blank, clock without numerals, no glow/sparkles or extra characters.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "summoner": {
+    "n": 31,
+    "job_id": "1939c46d-1660-4f11-a01d-06b7dbd3fea2",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: full equipment and feet, clean white margins, matching flat chunky style and dark dot eyes; books blank, clock without numerals, no glow/sparkles or extra characters.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "scholar": {
+    "n": 32,
+    "job_id": "4d3b35a3-9260-4252-8ea4-d447885c0f6c",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: full equipment and feet, clean white margins, matching flat chunky style and dark dot eyes; books blank, clock without numerals, no glow/sparkles or extra characters.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "chronomancer": {
+    "n": 33,
+    "job_id": "424ad9e1-c1d6-423c-9ea5-525110be0735",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: full equipment and feet, clean white margins, matching flat chunky style and dark dot eyes; books blank, clock without numerals, no glow/sparkles or extra characters.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "alchemist": {
+    "n": 34,
+    "job_id": "aa26fdda-71f8-45ec-a39c-57a772ab6e5a",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: full equipment and feet, clean white margins, matching flat chunky style and dark dot eyes; books blank, clock without numerals, no glow/sparkles or extra characters.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "paladin": {
+    "n": 35,
+    "job_id": "15efe46d-96bf-419b-a76b-e9644d4effc1",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: full equipment and feet, clean white margins, matching flat chunky style and dark dot eyes; books blank, clock without numerals, no glow/sparkles or extra characters.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "necromancer": {
+    "n": 36,
+    "job_id": "ff5a27cf-06fe-4914-b176-12467df6fe8f",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: full equipment and feet, clean white margins, matching flat chunky style and dark dot eyes; books blank, clock without numerals, no glow/sparkles or extra characters.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "artillery": {
+    "n": 37,
+    "job_id": "6219b69c-f988-4c3e-ac09-d9993cb84f60",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: one compact unit each; dragon caller uses hat/staff instead of extra living dragon; flat costume marks and blank/abstract book cover, no lettering or VFX; complete weapons/feet and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "prophet": {
+    "n": 38,
+    "job_id": "8042a01a-5361-4ce5-a026-53b1d613df81",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: one compact unit each; dragon caller uses hat/staff instead of extra living dragon; flat costume marks and blank/abstract book cover, no lettering or VFX; complete weapons/feet and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "swordsaint": {
+    "n": 39,
+    "job_id": "82951001-ef28-4847-8f63-f1c22327232f",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: one compact unit each; dragon caller uses hat/staff instead of extra living dragon; flat costume marks and blank/abstract book cover, no lettering or VFX; complete weapons/feet and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "stormarcher": {
+    "n": 40,
+    "job_id": "0bd34216-229c-4a42-945c-657ff58b00da",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: one compact unit each; dragon caller uses hat/staff instead of extra living dragon; flat costume marks and blank/abstract book cover, no lettering or VFX; complete weapons/feet and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "dragoncaller": {
+    "n": 41,
+    "job_id": "6aec3404-4e5a-4db0-9c6b-58bdda87ec7a",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: one compact unit each; dragon caller uses hat/staff instead of extra living dragon; flat costume marks and blank/abstract book cover, no lettering or VFX; complete weapons/feet and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "warlord": {
+    "n": 42,
+    "job_id": "7bb251d1-9d7c-4d50-a307-b1db83aadc29",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: one compact unit each; dragon caller uses hat/staff instead of extra living dragon; flat costume marks and blank/abstract book cover, no lettering or VFX; complete weapons/feet and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "archmage": {
+    "n": 43,
+    "job_id": "9f6dcb9e-c1f8-4d9f-89c6-3b321ac96f83",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: one compact unit each; dragon caller uses hat/staff instead of extra living dragon; flat costume marks and blank/abstract book cover, no lettering or VFX; complete weapons/feet and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "assassin": {
+    "n": 44,
+    "job_id": "6d4e5fdb-5f51-4e7b-a692-83a1dec5e6dd",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: one compact unit each; dragon caller uses hat/staff instead of extra living dragon; flat costume marks and blank/abstract book cover, no lettering or VFX; complete weapons/feet and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "fortuna": {
+    "n": 45,
+    "job_id": "4100ebd7-de7d-4fa0-a7e3-aafde523a311",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: one compact unit each; dragon caller uses hat/staff instead of extra living dragon; flat costume marks and blank/abstract book cover, no lettering or VFX; complete weapons/feet and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "spearsgod": {
+    "n": 46,
+    "job_id": "1a110f8c-e349-4030-8e23-624c0327bf6e",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: one compact unit each; dragon caller uses hat/staff instead of extra living dragon; flat costume marks and blank/abstract book cover, no lettering or VFX; complete weapons/feet and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "stormlord": {
+    "n": 47,
+    "job_id": "005043d6-9d86-48dd-871d-0f8c020cedb2",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: one compact unit each; dragon caller uses hat/staff instead of extra living dragon; flat costume marks and blank/abstract book cover, no lettering or VFX; complete weapons/feet and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "tycoon": {
+    "n": 48,
+    "job_id": "8f5a7ee7-8d8e-4b6e-b7ad-f40596c8accb",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: one compact unit each; dragon caller uses hat/staff instead of extra living dragon; flat costume marks and blank/abstract book cover, no lettering or VFX; complete weapons/feet and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "saint": {
+    "n": 49,
+    "job_id": "19c171ca-82c0-4e52-b00a-33e440db95ec",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: deity/hidden identities use solid equipment, crowns and attached wings instead of aura; one figure/unit, no glitter/text/ground shadow, all feet/weapon tips inside white canvas.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "dimensionist": {
+    "n": 50,
+    "job_id": "077433b0-6f7b-4216-8ef4-8907fdc48315",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: deity/hidden identities use solid equipment, crowns and attached wings instead of aura; one figure/unit, no glitter/text/ground shadow, all feet/weapon tips inside white canvas.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "fate": {
+    "n": 51,
+    "job_id": "f3357728-4656-451b-8485-2b6d6b39a7ce",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: deity/hidden identities use solid equipment, crowns and attached wings instead of aura; one figure/unit, no glitter/text/ground shadow, all feet/weapon tips inside white canvas.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "plenty": {
+    "n": 52,
+    "job_id": "1cea7c6a-c42d-4940-8280-0a76b85240eb",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: deity/hidden identities use solid equipment, crowns and attached wings instead of aura; one figure/unit, no glitter/text/ground shadow, all feet/weapon tips inside white canvas.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "ruin": {
+    "n": 53,
+    "job_id": "e6cb889c-db63-45aa-993c-b5e50fbe186c",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: deity/hidden identities use solid equipment, crowns and attached wings instead of aura; one figure/unit, no glitter/text/ground shadow, all feet/weapon tips inside white canvas.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "elemental": {
+    "n": 54,
+    "job_id": "c9d44863-4638-4605-b3cc-18609a63f784",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: deity/hidden identities use solid equipment, crowns and attached wings instead of aura; one figure/unit, no glitter/text/ground shadow, all feet/weapon tips inside white canvas.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "goldking": {
+    "n": 55,
+    "job_id": "fa2bf50d-a0c8-4cd8-9565-46321d93a6e8",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: deity/hidden identities use solid equipment, crowns and attached wings instead of aura; one figure/unit, no glitter/text/ground shadow, all feet/weapon tips inside white canvas.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "celestial": {
+    "n": 56,
+    "job_id": "e7aaf402-a6c0-4a78-b899-00a69e88f124",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: deity/hidden identities use solid equipment, crowns and attached wings instead of aura; one figure/unit, no glitter/text/ground shadow, all feet/weapon tips inside white canvas.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "legion": {
+    "n": 57,
+    "job_id": "e5a223f6-0f56-4dc3-af7f-4884e1882318",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: deity/hidden identities use solid equipment, crowns and attached wings instead of aura; one figure/unit, no glitter/text/ground shadow, all feet/weapon tips inside white canvas.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "infiniteblade": {
+    "n": 58,
+    "job_id": "481174d5-7480-4294-9705-58dc1c221629",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: deity/hidden identities use solid equipment, crowns and attached wings instead of aura; one figure/unit, no glitter/text/ground shadow, all feet/weapon tips inside white canvas.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "timelord": {
+    "n": 59,
+    "job_id": "5d9fa597-bf56-44e2-8b68-76f16a778173",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: deity/hidden identities use solid equipment, crowns and attached wings instead of aura; one figure/unit, no glitter/text/ground shadow, all feet/weapon tips inside white canvas.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "goblinking": {
+    "n": 60,
+    "job_id": "bd4578c7-0277-4ff5-ba92-0f379f1b89fe",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: deity/hidden identities use solid equipment, crowns and attached wings instead of aura; one figure/unit, no glitter/text/ground shadow, all feet/weapon tips inside white canvas.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "deathlord": {
+    "n": 61,
+    "job_id": "058cc85f-56dd-4b4e-b025-3c024c28d82b",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw image in twelve-up: one hooded skull unit, full body and held weapon, no VFX/text/crop.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "fateseer": {
+    "n": 63,
+    "job_id": "eae03dfa-ed74-4159-9d00-6c63218ee054",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct single units and monster silhouettes, opaque flat colours, dot eyes, white background and all extremities inside frame. Goldbattery (62) excluded for regeneration.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "festival": {
+    "n": 64,
+    "job_id": "94b04ba4-2a8a-4317-96d8-119fc5905f5f",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct single units and monster silhouettes, opaque flat colours, dot eyes, white background and all extremities inside frame. Goldbattery (62) excluded for regeneration.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "stormavatar": {
+    "n": 65,
+    "job_id": "a71cbfda-1b29-4ac5-941a-d7105523d950",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct single units and monster silhouettes, opaque flat colours, dot eyes, white background and all extremities inside frame. Goldbattery (62) excluded for regeneration.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "enemy_grax": {
+    "n": 66,
+    "job_id": "7f7542a2-a667-423a-bca1-dba84d20d8ca",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct single units and monster silhouettes, opaque flat colours, dot eyes, white background and all extremities inside frame. Goldbattery (62) excluded for regeneration.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "enemy_batqueen": {
+    "n": 67,
+    "job_id": "1f81f431-246c-43e4-83c3-b9a107a546cf",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct single units and monster silhouettes, opaque flat colours, dot eyes, white background and all extremities inside frame. Goldbattery (62) excluded for regeneration.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "enemy_sandqueen": {
+    "n": 68,
+    "job_id": "b881ab67-91c4-4316-8dfb-66cfcc699c1b",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct single units and monster silhouettes, opaque flat colours, dot eyes, white background and all extremities inside frame. Goldbattery (62) excluded for regeneration.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "enemy_frostwyrm": {
+    "n": 69,
+    "job_id": "4a09c42d-eef6-4373-8cd7-459da5bf0744",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct single units and monster silhouettes, opaque flat colours, dot eyes, white background and all extremities inside frame. Goldbattery (62) excluded for regeneration.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "enemy_ancientgolem": {
+    "n": 70,
+    "job_id": "16dc320e-1211-443f-ad65-a720f3f8b9a0",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct single units and monster silhouettes, opaque flat colours, dot eyes, white background and all extremities inside frame. Goldbattery (62) excluded for regeneration.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "enemy_crystaleater": {
+    "n": 71,
+    "job_id": "d2dca85d-7a82-42ac-932d-4899f958d982",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct single units and monster silhouettes, opaque flat colours, dot eyes, white background and all extremities inside frame. Goldbattery (62) excluded for regeneration.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "enemy_steelcolossus": {
+    "n": 72,
+    "job_id": "966fcb5c-e908-40dc-96dc-79477cbd7e3e",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct single units and monster silhouettes, opaque flat colours, dot eyes, white background and all extremities inside frame. Goldbattery (62) excluded for regeneration.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "goldbattery": {
+    "n": 62,
+    "job_id": "a9278e71-6463-439a-9421-2b4910b3d27c",
+    "raw_visual_review": "accepted",
+    "notes": "Regenerated version inspected at full resolution: complete operator/cart with generous white margins on all sides (bbox 264,242,786,824 on 1024 square); broad simplified colour areas, no gloss, text, extra crew or clipped wheels.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; full contour, no visible white fringe or detached white residue."
+  },
+  "enemy_lavagiant": {
+    "n": 73,
+    "job_id": "bf85e261-8ff4-45c5-abe5-5a8f0141f801",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct monster silhouettes, one connected mounted unit for wraith knight, one two-headed dragon body, opaque flat colours, no VFX/text or visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_kingslime": {
+    "n": 74,
+    "job_id": "104da959-0a85-462d-8d62-4f70a0650f2c",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct monster silhouettes, one connected mounted unit for wraith knight, one two-headed dragon body, opaque flat colours, no VFX/text or visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_rotent": {
+    "n": 75,
+    "job_id": "c8ea44ce-b658-49fa-a13f-5ddcd1df7b45",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct monster silhouettes, one connected mounted unit for wraith knight, one two-headed dragon body, opaque flat colours, no VFX/text or visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_abyssjelly": {
+    "n": 76,
+    "job_id": "be08cd27-059a-441d-aae2-aba751fe96e2",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct monster silhouettes, one connected mounted unit for wraith knight, one two-headed dragon body, opaque flat colours, no VFX/text or visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_wraithlord": {
+    "n": 77,
+    "job_id": "6ccdd931-33e7-47a7-ab82-b532901b23a7",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct monster silhouettes, one connected mounted unit for wraith knight, one two-headed dragon body, opaque flat colours, no VFX/text or visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_wraithknight": {
+    "n": 78,
+    "job_id": "bc6b3c1a-cb9a-4282-8e78-6d4d875489b0",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct monster silhouettes, one connected mounted unit for wraith knight, one two-headed dragon body, opaque flat colours, no VFX/text or visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_chaosdragon": {
+    "n": 79,
+    "job_id": "2b6f7f29-d843-481a-b649-077aa142362c",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct monster silhouettes, one connected mounted unit for wraith knight, one two-headed dragon body, opaque flat colours, no VFX/text or visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_zephira": {
+    "n": 80,
+    "job_id": "8273ceb2-6188-48a9-bcf3-38ce7c6fdcfd",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct monster silhouettes, one connected mounted unit for wraith knight, one two-headed dragon body, opaque flat colours, no VFX/text or visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_gordam": {
+    "n": 81,
+    "job_id": "b1fbb33e-32de-4cb0-a4da-b9294f0015db",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct monster silhouettes, one connected mounted unit for wraith knight, one two-headed dragon body, opaque flat colours, no VFX/text or visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_morgath": {
+    "n": 82,
+    "job_id": "e79c222d-0d7c-48d2-88bd-b3fcc67f47f9",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct monster silhouettes, one connected mounted unit for wraith knight, one two-headed dragon body, opaque flat colours, no VFX/text or visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_nocturne": {
+    "n": 83,
+    "job_id": "b9df4075-e792-4142-96ed-cfff161e8421",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct monster silhouettes, one connected mounted unit for wraith knight, one two-headed dragon body, opaque flat colours, no VFX/text or visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_nox": {
+    "n": 84,
+    "job_id": "f7b37bb0-921f-4322-8692-d1bff1df609d",
+    "raw_visual_review": "accepted",
+    "notes": "Raw twelve-up inspected: distinct monster silhouettes, one connected mounted unit for wraith knight, one two-headed dragon body, opaque flat colours, no VFX/text or visible clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_slime": {
+    "n": 85,
+    "job_id": "1a31e832-ecdc-4062-b38c-4797dc891d00",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: slime, bat, golem and turtle preserve distinct nonhuman silhouettes, complete figures, white margins, no letters/glitter.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_bat": {
+    "n": 86,
+    "job_id": "42f3f21c-23cf-496e-ba3a-ffa0cae6f3e4",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: slime, bat, golem and turtle preserve distinct nonhuman silhouettes, complete figures, white margins, no letters/glitter.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_golem": {
+    "n": 87,
+    "job_id": "2f63027f-c54b-4369-b152-2cb20a3861e5",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: slime, bat, golem and turtle preserve distinct nonhuman silhouettes, complete figures, white margins, no letters/glitter.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_turtle": {
+    "n": 88,
+    "job_id": "66bb7d65-8e12-483a-b150-17ceb39904c7",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: slime, bat, golem and turtle preserve distinct nonhuman silhouettes, complete figures, white margins, no letters/glitter.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_thief": {
+    "n": 91,
+    "job_id": "cec80e78-c337-4b51-adcc-c3aa637b6c9f",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: thief, mushroom healer and skeleton guard match intended identities with full body and flat simple equipment, no clipping or text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_healer": {
+    "n": 92,
+    "job_id": "a6f74ad6-52ba-43f8-9e55-df914d3e5c67",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: thief, mushroom healer and skeleton guard match intended identities with full body and flat simple equipment, no clipping or text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_shield": {
+    "n": 93,
+    "job_id": "0799590c-2179-43fb-ace9-9e624190325b",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: thief, mushroom healer and skeleton guard match intended identities with full body and flat simple equipment, no clipping or text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_goblin": {
+    "n": 95,
+    "job_id": "84071ce3-7a0c-4fef-9443-4376884f46dc",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: one dark goblin and gem golem, correct single-unit silhouettes, dot eyes, flat shapes and clean full framing.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_gemgolem": {
+    "n": 96,
+    "job_id": "b309ee1e-41cc-40f0-b3aa-37f803f8ee3f",
+    "raw_visual_review": "accepted",
+    "notes": "Inspected raw twelve-up: one dark goblin and gem golem, correct single-unit silhouettes, dot eyes, flat shapes and clean full framing.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_minigolem": {
+    "n": 97,
+    "job_id": "778d5b99-3b95-42c4-8f9f-5c1ac13c02eb",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete compact minigolem; nine busts with shoulders and props inside frame; two full-body awakened units; flat colors, cocoa outlines, white background, no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; nine complete bust silhouettes and three complete full-body figures, no visible fringe or detached white residue."
+  },
+  "person_lena": {
+    "n": 98,
+    "job_id": "0cfa4893-a219-45a6-8e38-efbe168e8370",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete compact minigolem; nine busts with shoulders and props inside frame; two full-body awakened units; flat colors, cocoa outlines, white background, no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; nine complete bust silhouettes and three complete full-body figures, no visible fringe or detached white residue."
+  },
+  "person_cedric": {
+    "n": 99,
+    "job_id": "91862bdc-7450-482d-bb86-83e422493c64",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete compact minigolem; nine busts with shoulders and props inside frame; two full-body awakened units; flat colors, cocoa outlines, white background, no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; nine complete bust silhouettes and three complete full-body figures, no visible fringe or detached white residue."
+  },
+  "person_bronga": {
+    "n": 100,
+    "job_id": "e0645ff3-8f43-47b1-aab2-5b470c4ed1a5",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete compact minigolem; nine busts with shoulders and props inside frame; two full-body awakened units; flat colors, cocoa outlines, white background, no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; nine complete bust silhouettes and three complete full-body figures, no visible fringe or detached white residue."
+  },
+  "person_silien": {
+    "n": 101,
+    "job_id": "d11821d1-7ed5-4f8b-ada5-da7370956d32",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete compact minigolem; nine busts with shoulders and props inside frame; two full-body awakened units; flat colors, cocoa outlines, white background, no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; nine complete bust silhouettes and three complete full-body figures, no visible fringe or detached white residue."
+  },
+  "person_morwen": {
+    "n": 102,
+    "job_id": "46fb38ad-0ae1-4943-9060-612f2210b791",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete compact minigolem; nine busts with shoulders and props inside frame; two full-body awakened units; flat colors, cocoa outlines, white background, no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; nine complete bust silhouettes and three complete full-body figures, no visible fringe or detached white residue."
+  },
+  "person_urga": {
+    "n": 103,
+    "job_id": "19e101ee-1d02-4080-8448-cecec6370a07",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete compact minigolem; nine busts with shoulders and props inside frame; two full-body awakened units; flat colors, cocoa outlines, white background, no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; nine complete bust silhouettes and three complete full-body figures, no visible fringe or detached white residue."
+  },
+  "person_pio": {
+    "n": 104,
+    "job_id": "49b0bddf-8f5d-4a9e-a96a-4277d88eb5e3",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete compact minigolem; nine busts with shoulders and props inside frame; two full-body awakened units; flat colors, cocoa outlines, white background, no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; nine complete bust silhouettes and three complete full-body figures, no visible fringe or detached white residue."
+  },
+  "person_mio": {
+    "n": 105,
+    "job_id": "64fb731b-b1c6-4dd7-b109-792c7a617d85",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete compact minigolem; nine busts with shoulders and props inside frame; two full-body awakened units; flat colors, cocoa outlines, white background, no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; nine complete bust silhouettes and three complete full-body figures, no visible fringe or detached white residue."
+  },
+  "person_commander": {
+    "n": 106,
+    "job_id": "d2896934-5d71-4821-8042-9012d32ef1dc",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete compact minigolem; nine busts with shoulders and props inside frame; two full-body awakened units; flat colors, cocoa outlines, white background, no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; nine complete bust silhouettes and three complete full-body figures, no visible fringe or detached white residue."
+  },
+  "miner_awaken": {
+    "n": 107,
+    "job_id": "eb1414c8-6a4c-450f-8f07-609b9be6c947",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete compact minigolem; nine busts with shoulders and props inside frame; two full-body awakened units; flat colors, cocoa outlines, white background, no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; nine complete bust silhouettes and three complete full-body figures, no visible fringe or detached white residue."
+  },
+  "drummer_awaken": {
+    "n": 108,
+    "job_id": "4e43c0cf-b055-4f0d-825f-51d4db848aa5",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete compact minigolem; nine busts with shoulders and props inside frame; two full-body awakened units; flat colors, cocoa outlines, white background, no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; nine complete bust silhouettes and three complete full-body figures, no visible fringe or detached white residue."
+  },
+  "enemy_ghost": {
+    "n": 89,
+    "job_id": "be9dc09d-c4bd-4ba9-93b9-534609b22b7f",
+    "raw_visual_review": "accepted",
+    "notes": "Regenerated against accepted slime reference; plain ghost and blue blob, no human costume or weapons; full silhouettes and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_splitter": {
+    "n": 90,
+    "job_id": "5ae22a4f-25ba-4087-bca5-c4477ee0fd10",
+    "raw_visual_review": "accepted",
+    "notes": "Regenerated against accepted slime reference; plain ghost and blue blob, no human costume or weapons; full silhouettes and white margins.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "enemy_shadowwolf": {
+    "n": 94,
+    "job_id": "21843ea7-b1af-474a-a992-df223b61919b",
+    "raw_visual_review": "accepted",
+    "notes": "Regenerated as four-legged compact wolf; no humanoid body, clothes or weapon; complete ears, paws and tail.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete monster silhouettes, no visible white fringe or detached white residue."
+  },
+  "flamemage_awaken": {
+    "n": 121,
+    "job_id": "6d27a2dd-8427-4937-8976-5ef34cf91335",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete awakened units with enlarged physical gear, no glow or detached companions, white margins and no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "cleaver_awaken": {
+    "n": 122,
+    "job_id": "84a199a8-04be-4110-b8da-ec10928afc8a",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete awakened units with enlarged physical gear, no glow or detached companions, white margins and no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "duelist_awaken": {
+    "n": 123,
+    "job_id": "70be6ede-ec4a-4caa-bd1c-0e3132deb948",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete awakened units with enlarged physical gear, no glow or detached companions, white margins and no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "gunner_awaken": {
+    "n": 124,
+    "job_id": "7ea10acd-0e6b-495d-8992-b81908c27966",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete awakened units with enlarged physical gear, no glow or detached companions, white margins and no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "dwarfbomber_awaken": {
+    "n": 125,
+    "job_id": "78f3c12d-55ef-4cb9-b4cf-e29835ae4a8b",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete awakened units with enlarged physical gear, no glow or detached companions, white margins and no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "windarcher_awaken": {
+    "n": 126,
+    "job_id": "ce6f42b7-00ec-4bf0-bbff-bb91fc3c1d2b",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete awakened units with enlarged physical gear, no glow or detached companions, white margins and no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "icemage_awaken": {
+    "n": 127,
+    "job_id": "18d1a055-5d03-46b5-b3fa-5893f7e0cdf7",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete awakened units with enlarged physical gear, no glow or detached companions, white margins and no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "gambler_awaken": {
+    "n": 128,
+    "job_id": "3f02d7d6-bef6-48af-8e7f-66fd3e9bafc9",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete awakened units with enlarged physical gear, no glow or detached companions, white margins and no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "blacksmith_awaken": {
+    "n": 129,
+    "job_id": "ec8c5bfb-2c70-4e74-9688-a2122fec3e44",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete awakened units with enlarged physical gear, no glow or detached companions, white margins and no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "goblinchief_awaken": {
+    "n": 130,
+    "job_id": "db73b17d-97e7-45e2-adb8-01e3dc0c961b",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete awakened units with enlarged physical gear, no glow or detached companions, white margins and no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "astrologer_awaken": {
+    "n": 131,
+    "job_id": "bfd71f6b-1a5a-4607-ae9d-85ae36356f55",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete awakened units with enlarged physical gear, no glow or detached companions, white margins and no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "banker_awaken": {
+    "n": 132,
+    "job_id": "482d0aec-d089-4610-99f1-7be27c6c7da8",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete awakened units with enlarged physical gear, no glow or detached companions, white margins and no text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "goblin_awaken": {
+    "n": 109,
+    "job_id": "fb5e6e8b-c07e-4cae-86f9-97b877713d00",
+    "raw_visual_review": "accepted",
+    "notes": "Raw full-body image reviewed; flat chunky style, white background, no text or clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "archer_awaken": {
+    "n": 110,
+    "job_id": "d9f8a738-b43c-4f1e-b6b8-93f18ca3aa69",
+    "raw_visual_review": "accepted",
+    "notes": "Raw full-body image reviewed; flat chunky style, white background, no text or clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "apprentice_awaken": {
+    "n": 111,
+    "job_id": "d54045ba-ad53-4536-9d5d-5eeb0e93383a",
+    "raw_visual_review": "accepted",
+    "notes": "Raw full-body image reviewed; flat chunky style, white background, no text or clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "stonegolem_awaken": {
+    "n": 114,
+    "job_id": "34329137-664c-47d9-8202-818de3cfe4a7",
+    "raw_visual_review": "accepted",
+    "notes": "Raw full-body image reviewed; flat chunky style, white background, no text or clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "merchant_awaken": {
+    "n": 117,
+    "job_id": "24486d84-0dad-4d72-b073-5007c8079069",
+    "raw_visual_review": "accepted",
+    "notes": "Raw full-body image reviewed; flat chunky style, white background, no text or clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "mudshaman_awaken": {
+    "n": 118,
+    "job_id": "fa3e93b6-5f90-4050-bee2-f7da448a0d85",
+    "raw_visual_review": "accepted",
+    "notes": "Raw full-body image reviewed; flat chunky style, white background, no text or clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "bard_awaken": {
+    "n": 119,
+    "job_id": "f3871c0e-0159-43e7-be98-51ed03fae5ef",
+    "raw_visual_review": "accepted",
+    "notes": "Raw full-body image reviewed; flat chunky style, white background, no text or clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "scout_awaken": {
+    "n": 120,
+    "job_id": "eaa6c695-fa8c-470a-a86f-cec1121c1c0a",
+    "raw_visual_review": "accepted",
+    "notes": "Raw full-body image reviewed; flat chunky style, white background, no text or clipping.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "sniper_awaken": {
+    "n": 133,
+    "job_id": "313da385-64c9-4ae0-9979-f82e721a55cc",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete equipment and silhouettes, flat colors and cocoa outlines; berserker narrow margin flagged automatically but no cropped outline on visual inspection.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "berserker_awaken": {
+    "n": 134,
+    "job_id": "da315c18-c897-489b-b423-3cf9d02fa657",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete equipment and silhouettes, flat colors and cocoa outlines; berserker narrow margin flagged automatically but no cropped outline on visual inspection.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "lightning_awaken": {
+    "n": 135,
+    "job_id": "76785233-cc0f-4b31-9e78-194ff7120b52",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete equipment and silhouettes, flat colors and cocoa outlines; berserker narrow margin flagged automatically but no cropped outline on visual inspection.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "poisonarcher_awaken": {
+    "n": 136,
+    "job_id": "10bac3f0-90a1-41c2-86ee-f4e056da774f",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete equipment and silhouettes, flat colors and cocoa outlines; berserker narrow margin flagged automatically but no cropped outline on visual inspection.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "summoner_awaken": {
+    "n": 137,
+    "job_id": "8cedd6a9-579d-439b-8246-4aebb34d7ed9",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete equipment and silhouettes, flat colors and cocoa outlines; berserker narrow margin flagged automatically but no cropped outline on visual inspection.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "scholar_awaken": {
+    "n": 138,
+    "job_id": "f0fa1194-c0c3-4517-92cb-120bac87057a",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete equipment and silhouettes, flat colors and cocoa outlines; berserker narrow margin flagged automatically but no cropped outline on visual inspection.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "chronomancer_awaken": {
+    "n": 139,
+    "job_id": "4fde9a9d-ae32-41aa-a8e2-6d2c9691c78e",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete equipment and silhouettes, flat colors and cocoa outlines; berserker narrow margin flagged automatically but no cropped outline on visual inspection.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "alchemist_awaken": {
+    "n": 140,
+    "job_id": "d199da0c-ca87-4941-8424-277631c74b61",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete equipment and silhouettes, flat colors and cocoa outlines; berserker narrow margin flagged automatically but no cropped outline on visual inspection.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "paladin_awaken": {
+    "n": 141,
+    "job_id": "04ba8a62-582f-49f0-9c95-4afb1ce77e3f",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete equipment and silhouettes, flat colors and cocoa outlines; berserker narrow margin flagged automatically but no cropped outline on visual inspection.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "necromancer_awaken": {
+    "n": 142,
+    "job_id": "d91d4730-0662-43a3-8b64-8aaa03cb4675",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete equipment and silhouettes, flat colors and cocoa outlines; berserker narrow margin flagged automatically but no cropped outline on visual inspection.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "artillery_awaken": {
+    "n": 143,
+    "job_id": "4aab983e-7336-4bbb-9be8-ee361dfce4e2",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete equipment and silhouettes, flat colors and cocoa outlines; berserker narrow margin flagged automatically but no cropped outline on visual inspection.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "prophet_awaken": {
+    "n": 144,
+    "job_id": "3269b870-208a-4fc8-a071-186a2a5296d1",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete equipment and silhouettes, flat colors and cocoa outlines; berserker narrow margin flagged automatically but no cropped outline on visual inspection.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "swordsaint_awaken": {
+    "n": 145,
+    "job_id": "43cefa1f-86ee-4844-a385-61d408e36a5f",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete figures, readable awakened props and full wings; fortuna narrow margin flagged automatically but entire clover and outline remain inside canvas. No text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "stormarcher_awaken": {
+    "n": 146,
+    "job_id": "bc6626ab-39f8-456b-bfe1-a77399d44591",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete figures, readable awakened props and full wings; fortuna narrow margin flagged automatically but entire clover and outline remain inside canvas. No text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "dragoncaller_awaken": {
+    "n": 147,
+    "job_id": "d520ddb6-e479-492d-aa6b-3816de346d93",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete figures, readable awakened props and full wings; fortuna narrow margin flagged automatically but entire clover and outline remain inside canvas. No text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "warlord_awaken": {
+    "n": 148,
+    "job_id": "37e260ad-183d-4643-8aa9-966ece18d5b1",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete figures, readable awakened props and full wings; fortuna narrow margin flagged automatically but entire clover and outline remain inside canvas. No text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "archmage_awaken": {
+    "n": 149,
+    "job_id": "5a5c9d27-973c-4b3f-ac9a-581c5d260a6d",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete figures, readable awakened props and full wings; fortuna narrow margin flagged automatically but entire clover and outline remain inside canvas. No text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "assassin_awaken": {
+    "n": 150,
+    "job_id": "ef82180b-c9a0-4fc3-a502-5fbff4541eef",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete figures, readable awakened props and full wings; fortuna narrow margin flagged automatically but entire clover and outline remain inside canvas. No text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "fortuna_awaken": {
+    "n": 151,
+    "job_id": "959582dd-4929-4ed5-835f-76acc2410975",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete figures, readable awakened props and full wings; fortuna narrow margin flagged automatically but entire clover and outline remain inside canvas. No text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "spearsgod_awaken": {
+    "n": 152,
+    "job_id": "12bd0370-33b3-4e62-a12c-b96c5ce53721",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete figures, readable awakened props and full wings; fortuna narrow margin flagged automatically but entire clover and outline remain inside canvas. No text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "stormlord_awaken": {
+    "n": 153,
+    "job_id": "67380839-3217-4c07-bc3a-c5d32011fc7d",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete figures, readable awakened props and full wings; fortuna narrow margin flagged automatically but entire clover and outline remain inside canvas. No text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "tycoon_awaken": {
+    "n": 154,
+    "job_id": "2cdd14f2-0600-4c88-9a19-e4a72e884672",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete figures, readable awakened props and full wings; fortuna narrow margin flagged automatically but entire clover and outline remain inside canvas. No text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "saint_awaken": {
+    "n": 155,
+    "job_id": "00abd5bd-37fe-457b-9730-b3ab0e802868",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete figures, readable awakened props and full wings; fortuna narrow margin flagged automatically but entire clover and outline remain inside canvas. No text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "dimensionist_awaken": {
+    "n": 156,
+    "job_id": "ea99b279-403e-4c9b-9daa-e3d3b6004c72",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: twelve complete figures, readable awakened props and full wings; fortuna narrow margin flagged automatically but entire clover and outline remain inside canvas. No text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "fate_awaken": {
+    "n": 157,
+    "job_id": "bc6b61f7-880c-4f87-bfa2-91c4c96e38d4",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete fate/plenty/ruin figures; ruin narrow left margin but full wing outline visible, no clipping; no glow or text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "plenty_awaken": {
+    "n": 158,
+    "job_id": "fa022d52-0097-4272-b74c-cafb2fb3db14",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete fate/plenty/ruin figures; ruin narrow left margin but full wing outline visible, no clipping; no glow or text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "ruin_awaken": {
+    "n": 159,
+    "job_id": "dbdcbc2e-9aee-4e9a-b723-07d5b6cb0c4e",
+    "raw_visual_review": "accepted",
+    "notes": "Raw sheet inspected: complete fate/plenty/ruin figures; ruin narrow left margin but full wing outline visible, no clipping; no glow or text.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete awakened equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "warrior_awaken": {
+    "n": 112,
+    "job_id": "c4bd83c6-94cc-4095-9ca0-a5693d50b3ff",
+    "raw_visual_review": "accepted",
+    "notes": "Regenerated with generous clean margin; complete outlines and props, flat chunky style. Crop-and-scale conversion will normalize unit size.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "spearman_awaken": {
+    "n": 113,
+    "job_id": "702a6516-e7a3-409d-9a85-e628be55ba86",
+    "raw_visual_review": "accepted",
+    "notes": "Regenerated with generous clean margin; complete outlines and props, flat chunky style. Crop-and-scale conversion will normalize unit size.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "ninja_awaken": {
+    "n": 115,
+    "job_id": "95a76ad9-12f8-4d36-a2b7-004075f6e32b",
+    "raw_visual_review": "accepted",
+    "notes": "Regenerated with generous clean margin; complete outlines and props, flat chunky style. Crop-and-scale conversion will normalize unit size.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete equipment silhouettes, no visible fringe or detached white residue."
+  },
+  "k9_awaken": {
+    "n": 116,
+    "job_id": "46f75c3e-6efa-4a3c-9ffe-8b855ad4e473",
+    "raw_visual_review": "accepted",
+    "notes": "Regenerated with generous clean margin; complete outlines and props, flat chunky style. Crop-and-scale conversion will normalize unit size.",
+    "alpha_edge_review": "accepted",
+    "alpha_notes": "Converted WebP inspected on light and dark backgrounds; complete equipment silhouettes, no visible fringe or detached white residue."
+  }
+}
