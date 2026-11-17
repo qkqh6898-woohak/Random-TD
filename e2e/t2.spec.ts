@@ -340,6 +340,14 @@ test('[↔ 이동]: 빈 칸을 누르면 이동, 내 다른 타워를 누르면 
   await page.locator('[data-action="move"]').click();
   await expect.poll(() => inScene(page, (s) => s.moveModeOn, null)).toBe(true);
   await expect(page.locator('.toast', { hasText: '옮길 칸을 누르세요' })).toBeVisible();
+  // 피드백 #7: 안내가 꾹 눌러 끌기도 알려 주고, HUD 아래 알림 한 줄 자리를 넘지 않는다
+  const hint = await page.evaluate(() => {
+    const el = [...document.querySelectorAll<HTMLElement>('.toast')].find((t) => t.textContent?.includes('꾹 눌러 끌어도'));
+    const probe = document.querySelector<HTMLElement>('.toast-probe');
+    return el && probe ? { h: el.offsetHeight, oneLine: probe.offsetHeight } : null;
+  });
+  expect(hint).not.toBeNull();
+  expect(hint!.h).toBeLessThanOrEqual(hint!.oneLine + 1);
   await tapTile(page, empty![0], empty![1]);
   await expect.poll(() => inScene(page, (s, id) => { const t = s.match.towers().find((x) => x.id === id)!; return [t.tx, t.ty]; }, idA)).toEqual(empty);
   // 교환

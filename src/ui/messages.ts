@@ -266,8 +266,8 @@ export function sellText(gold: number): string {
   return `판매 +${withCommas(gold)}원`;
 }
 
-/** 이동 모드 안내 (패널 [↔ 이동]) */
-export const MOVE_PICK_HINT = '옮길 칸을 누르세요';
+/** 이동 모드 안내 (패널 [↔ 이동]) — 피드백 #7: 캐릭터를 꾹 눌러 끌어 옮기는 방법도 알려 준다 */
+export const MOVE_PICK_HINT = '옮길 칸을 누르세요 · 꾹 눌러 끌어도 돼요';
 /** 이동 모드를 그만둠 (같은 타워·맵 밖·Esc) */
 export const MOVE_CANCELED = '이동을 취소했어요';
 
