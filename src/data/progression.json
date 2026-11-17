@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "notes": "G-3 판 밖 성장 (docs/PROGRESSION.md 13장 '로비·영웅 수집'). 판 결과(sim)에 들어가지 않는 메타 수치라 게임 데이터 지문(GameData)과 따로 읽는다 (src/meta/progressionData.ts) — 바꿔도 리플레이·진행 중 판 저장이 깨지지 않는다. 판에 주는 영향은 영웅 레벨(→ MatchOptions.levels, 레벨당 공격력은 game.json towerLevel.atkPerLevel)과 잠긴 히든(→ MatchOptions.lockedHidden)뿐이다. account = 계정 경험치(다음 레벨까지 xpBase + xpStep × (Lv − 1), PROGRESSION 3장)·레벨업 보석(levelUpGems, 10레벨마다 every10Gems 추가)·처음 지급(startGold·startGems). matchRewards = 판이 끝나면(패배) 주는 보상: minStage 단계 미만이면 없음, 경험치·골드 = 단계당 + 보스 처치당 (+ 무한 최고 기록 경신 xpNewBest), 영웅 카드 장수 = cardsByStage에서 도달 단계 이하 가장 큰 행 [단계, 장수], 카드마다 등급을 cardGradeWeights(bp 가중치)로 고르고 그 등급(히든·신 제외)에서 균등 — 판 시드로 굴린다(같은 결과 = 같은 보상). 보스 처치마다 신화 조각 fragmentsPerBoss개(잠긴 히든 중 하나). heroes = 영웅 레벨: maxLevel(≤ game.json towerLevel.max), Lv n → n+1에 카드 cards[n−1] × gradeCardPct[등급]% (올림, 최소 1)와 골드 gold[n−1] × gradeGoldPct[등급]% (내림). 처음 보유 = 기본 덱(decks.json base) 25종 Lv1. 카드가 처음 들어온 영웅은 Lv1로 보유(첫 장은 영입에 씀). hidden = 히든(신화) 영웅은 조각 unlockFragments개로 해방(조각 소비 → Lv1), 그 뒤 조각이 레벨업 카드. waveRoad = 무한 모드 최고 웨이브 길: milestones[웨이브] 첫 도달 보상(한 번만 받기). recruit = 영웅 모집 게이지: 판에서 소환 summonsPerPoint번마다 1칸, goal칸이면 보상(카드 cards장 · weights · 보석 gems), 넘친 칸은 이어진다. quests = 일일(기기 날짜 자정 초기화, 모두 끝내면 dailyAllBonus)과 업적(누적, 한 번). stat: matches 판 수 · summons 소환 · merges 승급 · bossKills 보스 처치 · bestWave 한 판 최고 단계(일일 = 오늘 판 중 최고) · heroLevelSum 영웅 레벨 합계(업적만). 보상 키: gold·gems·cards(무작위 영웅 카드 장수, 기본 matchRewards 가중치)·fragments(신화 조각). shop = 상점(게임 안 화폐만 — 실제 돈·VIP·광고 없음): price는 gold 또는 gems 하나, 내용 cards(+weights)·fragments·gold. modes = 잠긴 모드 탭(unlockLevel 계정 레벨에 열림).",
+  "account": {
+    "xpBase": 100,
+    "xpStep": 50,
+    "levelUpGems": 10,
+    "every10Gems": 50,
+    "startGold": 1000,
+    "startGems": 50
+  },
+  "matchRewards": {
+    "minStage": 1,
+    "xpPerStage": 10,
+    "xpPerBoss": 50,
+    "xpNewBest": 100,
+    "goldPerStage": 20,
+    "goldPerBoss": 100,
+    "fragmentsPerBoss": 1,
+    "cardsByStage": [
+      [1, 2],
+      [5, 3],
+      [10, 5],
+      [20, 8],
+      [30, 11],
+      [40, 14],
+      [50, 18],
+      [70, 24],
+      [100, 30]
+    ],
+    "cardGradeWeights": { "normal": 5000, "rare": 3000, "unique": 1400, "hero": 500, "legend": 100 }
+  },
+  "heroes": {
+    "maxLevel": 15,
+    "cards": [2, 3, 4, 6, 8, 10, 13, 16, 20, 25, 30, 36, 43, 50],
+    "gold": [100, 150, 200, 300, 400, 550, 700, 900, 1150, 1450, 1800, 2200, 2700, 3300],
+    "gradeCardPct": { "normal": 100, "rare": 100, "unique": 80, "hero": 60, "legend": 50, "god": 40, "hidden": 50 },
+    "gradeGoldPct": { "normal": 100, "rare": 150, "unique": 200, "hero": 300, "legend": 400, "god": 500, "hidden": 500 }
+  },
+  "hidden": {
+    "unlockFragments": 20
+  },
+  "waveRoad": {
+    "milestones": [
+      { "wave": 10, "reward": { "gold": 300, "cards": 3 } },
+      { "wave": 20, "reward": { "gems": 30, "fragments": 3 } },
+      { "wave": 30, "reward": { "gold": 600, "cards": 5 } },
+      { "wave": 40, "reward": { "gems": 50, "fragments": 5 } },
+      { "wave": 50, "reward": { "gold": 1000, "gems": 30, "cards": 8 } },
+      { "wave": 60, "reward": { "gems": 80, "fragments": 5 } },
+      { "wave": 70, "reward": { "gold": 1500, "cards": 10 } },
+      { "wave": 80, "reward": { "gems": 100, "fragments": 8 } },
+      { "wave": 90, "reward": { "gold": 2000, "cards": 12 } },
+      { "wave": 100, "reward": { "gems": 200, "fragments": 10 } }
+    ]
+  },
+  "recruit": {
+    "summonsPerPoint": 5,
+    "goal": 30,
+    "reward": { "cards": 5, "gems": 10 },
+    "weights": { "normal": 2000, "rare": 3500, "unique": 3000, "hero": 1200, "legend": 300 }
+  },
+  "quests": {
+    "daily": [
+      { "id": "d-play", "name": "전투 1판 하기", "stat": "matches", "target": 1, "reward": { "gold": 200 } },
+      { "id": "d-wave", "name": "한 판에서 15웨이브 도달", "stat": "bestWave", "target": 15, "reward": { "gems": 10 } },
+      { "id": "d-summon", "name": "영웅 50번 소환", "stat": "summons", "target": 50, "reward": { "cards": 2 } },
+      { "id": "d-merge", "name": "영웅 10번 승급", "stat": "merges", "target": 10, "reward": { "gold": 300 } }
+    ],
+    "dailyAllBonus": { "gems": 20, "fragments": 1 },
+    "achievements": [
+      { "id": "a-play-3", "name": "전투 3판", "stat": "matches", "target": 3, "reward": { "gems": 20 } },
+      { "id": "a-play-10", "name": "전투 10판", "stat": "matches", "target": 10, "reward": { "gems": 40 } },
+      { "id": "a-play-30", "name": "전투 30판", "stat": "matches", "target": 30, "reward": { "gems": 80 } },
+      { "id": "a-play-100", "name": "전투 100판", "stat": "matches", "target": 100, "reward": { "gems": 150 } },
+      { "id": "a-summon-100", "name": "누적 소환 100번", "stat": "summons", "target": 100, "reward": { "cards": 3 } },
+      { "id": "a-summon-500", "name": "누적 소환 500번", "stat": "summons", "target": 500, "reward": { "cards": 5 } },
+      { "id": "a-summon-2000", "name": "누적 소환 2,000번", "stat": "summons", "target": 2000, "reward": { "cards": 10 } },
+      { "id": "a-summon-10000", "name": "누적 소환 10,000번", "stat": "summons", "target": 10000, "reward": { "cards": 20 } },
+      { "id": "a-merge-20", "name": "누적 승급 20번", "stat": "merges", "target": 20, "reward": { "gold": 500 } },
+      { "id": "a-merge-100", "name": "누적 승급 100번", "stat": "merges", "target": 100, "reward": { "gold": 1000 } },
+      { "id": "a-merge-500", "name": "누적 승급 500번", "stat": "merges", "target": 500, "reward": { "gold": 3000 } },
+      { "id": "a-merge-2000", "name": "누적 승급 2,000번", "stat": "merges", "target": 2000, "reward": { "gold": 8000 } },
+      { "id": "a-boss-3", "name": "보스 3마리 처치", "stat": "bossKills", "target": 3, "reward": { "fragments": 2 } },
+      { "id": "a-boss-10", "name": "보스 10마리 처치", "stat": "bossKills", "target": 10, "reward": { "fragments": 4 } },
+      { "id": "a-boss-30", "name": "보스 30마리 처치", "stat": "bossKills", "target": 30, "reward": { "fragments": 8 } },
+      { "id": "a-boss-100", "name": "보스 100마리 처치", "stat": "bossKills", "target": 100, "reward": { "fragments": 15 } },
+      { "id": "a-wave-25", "name": "한 판에서 25웨이브 도달", "stat": "bestWave", "target": 25, "reward": { "gems": 30 } },
+      { "id": "a-wave-50", "name": "한 판에서 50웨이브 도달", "stat": "bestWave", "target": 50, "reward": { "gems": 80 } },
+      { "id": "a-hero-30", "name": "영웅 레벨 합계 30", "stat": "heroLevelSum", "target": 30, "reward": { "gems": 30 } },
+      { "id": "a-hero-60", "name": "영웅 레벨 합계 60", "stat": "heroLevelSum", "target": 60, "reward": { "gems": 60 } },
+      { "id": "a-hero-120", "name": "영웅 레벨 합계 120", "stat": "heroLevelSum", "target": 120, "reward": { "gems": 120 } }
+    ]
+  },
+  "shop": [
+    { "id": "pack-basic", "name": "영웅 카드 묶음", "desc": "무작위 영웅 카드 5장", "icon": "🃏", "price": { "gold": 800 }, "cards": 5, "weights": { "normal": 5000, "rare": 3000, "unique": 1400, "hero": 500, "legend": 100 } },
+    { "id": "pack-fine", "name": "고급 카드 묶음", "desc": "유니크 이상 영웅 카드 6장", "icon": "🎴", "price": { "gems": 60 }, "cards": 6, "weights": { "unique": 6000, "hero": 3000, "legend": 1000 } },
+    { "id": "chest-legend", "name": "전설 상자", "desc": "히어로 이상 영웅 카드 5장 · 드물게 신", "icon": "🎁", "price": { "gems": 150 }, "cards": 5, "weights": { "hero": 6500, "legend": 3400, "god": 100 } },
+    { "id": "fragments", "name": "신화 조각 꾸러미", "desc": "잠긴 신화 영웅 조각 3개", "icon": "🧩", "price": { "gems": 80 }, "fragments": 3 },
+    { "id": "gold-bag", "name": "골드 주머니", "desc": "골드 2,000", "icon": "💰", "price": { "gems": 40 }, "gold": 2000 }
+  ],
+  "modes": [
+    { "id": "campaign", "name": "캠페인", "unlockLevel": 10, "desc": "아트라 대륙의 테마를 차례로 해방해요. 지금은 테마 1을 플레이할 수 있어요." }
+  ]
+}

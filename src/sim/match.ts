@@ -68,6 +68,12 @@ export interface MatchOptions {
   levels?: readonly Readonly<Record<string, number>>[];
   /** 플레이어별 계정 레벨 (도박 테이블 해금, M5-5). 메타(src/meta/account.ts)가 넣고 생략하면 1 */
   accountLevels?: readonly number[];
+  /**
+   * 플레이어별 잠긴 히든(신화) 타워 id (G-3 히든 영웅 해방, src/meta/progress.ts lockedHiddenIds). 잠긴 히든은 판에서 조합할 수 없다
+   * — 조합 규칙(G-1 신화 도감)이 `isHiddenLocked(ctx, player, id)`(sim/unlocks.ts)로 확인한다. 생략·빈 목록 = 모두 열림(예전과 같음).
+   * 판 시작 때 정해진 입력 (해시 밖, 리플레이·판 저장에 기록).
+   */
+  lockedHidden?: readonly (readonly string[])[];
 }
 
 export class Match {
@@ -268,6 +274,15 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     }
     levels.push(Object.freeze(out));
   }
+  const lockedHidden: ReadonlySet<string>[] = [];
+  for (let p = 0; p < players; p++) {
+    const src = opts.lockedHidden?.[p] ?? [];
+    for (const id of src) {
+      const t = rules.towers.get(id);
+      if (!t || t.grade !== 'hidden') throw new Error(`플레이어 ${p} 잠긴 히든: ${id}는 히든 타워가 아니다`);
+    }
+    lockedHidden.push(new Set([...src].sort()));
+  }
   const ctx: MatchContext = {
     rules,
     map,
@@ -277,6 +292,7 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     levels: Object.freeze(levels),
     cache: new Map(),
     accountLevels: Object.freeze(accountLevels),
+    lockedHidden: Object.freeze(lockedHidden),
   };
   // 특색 수치가 잘못되면 판을 만들 때 바로 드러나게 (덱에 있는 타워만이 아니라 모든 능력 모듈)
   checkAllAbilityParams(ctx);

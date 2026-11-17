@@ -121,7 +121,7 @@ test('[시작] → 게임 장면: 고정 틱이 돌고 배속 버튼이 ×1 → 
 
   // ⏸ → [타이틀로] → 타이틀
   await page.getByRole('button', { name: '일시정지' }).click();
-  await page.getByRole('button', { name: '타이틀로' }).click();
+  await page.getByRole('button', { name: '로비로' }).click();
   await expect(page.locator('[data-screen="title"]')).toBeVisible();
   await expect(hud).toHaveCount(0);
   await expect(pause).toHaveCount(0);

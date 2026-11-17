@@ -5,6 +5,7 @@
  * 바깥 그림 매니페스트(public/assets/characters/manifest.json)도 여기서 읽어 둔다 (없거나 비면 절차 그림 그대로).
  * HF-2: 힉스필드 타이틀 그림(키 아트 1~2 중 무작위)도 여기서 받는다. 받았으면 그것을 꽉 차게 깔고 절차 배경·캐릭터는 그리지 않는다.
  * A-1: 자동 저장된 판이 있으면 [▶ 이어 하기]로 그 판을 되살려 Game 장면에 넘긴다. [📜 기록] = 전투 기록 (일반 무한 판).
+ * G-3: DOM 화면은 타이틀 대신 **로비**(src/ui/lobby/Lobby.ts — 웨이브 길·빠른 시작·영웅 수집·상점·도감). 타이틀 그림은 그 뒤에 그대로.
  * U-1: 안드로이드 앱이면 타이틀이 보일 때 업데이트를 한 번 확인한다 (이번 실행에서 처음 한 번, 새 버전이면 타이틀 위 창).
  */
 import Phaser from 'phaser';
@@ -13,6 +14,10 @@ import { createChibi, type ChibiProp } from '../../art/chibi';
 import { TitleCharacter } from '../../art/characters/title';
 import { queueExternalCharacterArt } from '../../art/characters/phaserArt';
 import { createTitleScreen } from '../../ui/screens/TitleScreen';
+import { createLobbyScreen, type LobbyView } from '../../ui/lobby/Lobby';
+import { towerLook } from '../../art/characters/looks';
+import { towerPortraitKey } from '../../art/characters/phaserArt';
+import { externalArtKey, externalArtUrl } from '../../art/characters/external';
 import { setSideBackground } from '../../ui/stage';
 import { assetUrl } from '../../assets';
 import { GAME_HEIGHT, GAME_WIDTH, SCENE_BOOT, SCENE_GAME } from '../config';
@@ -49,6 +54,10 @@ export class BootScene extends Phaser.Scene {
   /** 이번에 고른 타이틀 그림 번호 (무대 밖 띠 배경 주소용) */
   private keyArtN: number | null = null;
   private keyArtView: TitleKeyArtView | null = null;
+  /** 로비 화면 (G-3) */
+  private lobby: LobbyView | null = null;
+  /** 영웅 초상 주소 (종류마다 한 번) */
+  private portraits = new Map<string, string | null>();
 
   constructor(private readonly ctx: GameContext) {
     super({ key: SCENE_BOOT });
@@ -114,13 +123,17 @@ export class BootScene extends Phaser.Scene {
     // 이어 할 판 (맞지 않는 저장은 MatchSaves가 버린다)
     const saved = this.ctx.saves.read();
     const record = this.ctx.records.read();
-    this.ctx.ui.show(
-      'screen',
-      createTitleScreen({
+    const progress = this.ctx.progress;
+    if (progress) {
+      const audio = this.ctx.audio;
+      const lobby = createLobbyScreen({
         version: `v${this.ctx.version}`,
+        data: this.ctx.data,
+        progress,
         keyArt,
+        debug: this.ctx.debug,
         onStart: () => this.startGame('infinite'),
-        onCampaign: this.ctx.debug ? () => this.startGame('campaign') : undefined,
+        onCampaign: () => this.startGame('campaign'),
         saved: saved
           ? {
               stage: formatStage(saved.match.state),
@@ -129,17 +142,58 @@ export class BootScene extends Phaser.Scene {
             }
           : undefined,
         records: buildRecordsView(record, this.ctx.data.enemies.bosses, this.ctx.data.enemies.challenges),
-      }),
-    );
+        settings: {
+          effectVolume: audio.volume,
+          onEffectVolume: (v) => {
+            audio.volume = v;
+          },
+          onPreviewAudio: () => {
+            audio.unlock();
+            audio.play('merge');
+          },
+          screenShake: this.ctx.screenShake.enabled,
+          onScreenShake: (on) => {
+            this.ctx.screenShake.enabled = on;
+          },
+          tapMerge: this.ctx.settings.get().tapMerge,
+          onTapMerge: (on) => this.ctx.settings.set('tapMerge', on),
+        },
+        portraitOf: (id) => this.portraitOf(id),
+        toast: (text, ms) => this.ctx.ui.toast(text, ms),
+      });
+      this.lobby = lobby;
+      this.ctx.ui.show('screen', lobby);
+    } else {
+      // 판 밖 성장 저장소가 없는 문맥(예전 테스트 등): 예전 타이틀
+      this.ctx.ui.show(
+        'screen',
+        createTitleScreen({
+          version: `v${this.ctx.version}`,
+          keyArt,
+          onStart: () => this.startGame('infinite'),
+          onCampaign: this.ctx.debug ? () => this.startGame('campaign') : undefined,
+          saved: saved
+            ? {
+                stage: formatStage(saved.match.state),
+                dev: saved.dev,
+                onResume: () => this.toGame({ seed: saved.match.world.seed, saved }),
+              }
+            : undefined,
+          records: buildRecordsView(record, this.ctx.data.enemies.bosses, this.ctx.data.enemies.challenges),
+        }),
+      );
+    }
     // 업데이트로 진행 중 판을 이어 할 수 없게 됐으면 한 번 알린다 (예전엔 말없이 사라졌다 — B-2 통합 검토)
     if (!saved && this.ctx.saves.discardedByUpdate) {
       this.ctx.ui.toast('업데이트로 진행 중이던 판은 이어 할 수 없어요. 계정·설정·전투 기록은 그대로예요.', 4000);
     }
-    // 타이틀의 뒤로 가기: 열린 창(기록·새 게임 확인)은 nativeBack이 닫고, 그 밖에는 앱이 닫힌다
-    setBackHandler(null);
+    // 로비의 뒤로 가기: 열린 창(기록·새 게임 확인·영웅 상세·퀘스트 …)은 nativeBack이 닫고, 다른 탭이면 [전투] 탭으로,
+    // 전투 탭이면 처리하지 않음 → 앱이 닫힌다 (G-3)
+    setBackHandler(this.lobby ? () => this.lobby?.back() ?? false : null);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.ctx.update?.setTitleVisible(false);
       this.scale.off(Phaser.Scale.Events.RESIZE, this.onResize, this);
+      this.lobby = null;
       this.ctx.ui.clear('screen');
       this.titleChars = [];
       this.keyArtView = null;
@@ -147,6 +201,29 @@ export class BootScene extends Phaser.Scene {
     this.game.events.emit('rtd:title-ready');
     // 앱 안 업데이트 (U-1): 타이틀이 보임 → 이번 실행에서 처음이면 확인 (창은 타이틀에서만)
     this.ctx.update?.setTitleVisible(true);
+  }
+
+  /**
+   * 로비 영웅 카드 초상 (G-3): 바깥 그림(WebP)이 있으면 그 주소(브라우저가 이미 받아 둔 파일), 없으면 절차 그림 텍스처를 한 장으로 구운 data URI.
+   */
+  private portraitOf(towerId: string): string | null {
+    if (!this.portraits.has(towerId)) {
+      let url: string | null = null;
+      try {
+        if (this.textures.exists(externalArtKey('tower', towerId, false))) url = assetUrl(externalArtUrl('tower', towerId, false));
+        else {
+          const look = towerLook(towerId);
+          if (look) {
+            const b64 = this.textures.getBase64(towerPortraitKey(this, look, false));
+            url = typeof b64 === 'string' && b64.startsWith('data:') ? b64 : null;
+          }
+        }
+      } catch {
+        url = null;
+      }
+      this.portraits.set(towerId, url);
+    }
+    return this.portraits.get(towerId) ?? null;
   }
 
   /** 게임 크기가 바뀜 (T-3 가변 높이) */

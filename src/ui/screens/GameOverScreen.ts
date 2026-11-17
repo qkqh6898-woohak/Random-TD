@@ -5,6 +5,7 @@
  */
 import { h } from '../dom';
 import type { UiView } from '../root';
+import type { SettlementView } from '../lobby/lobbyModel';
 
 export interface GameOverOptions {
   /** 큰 제목 아래 한 줄 (예: '8단계에서 몹이 150마리를 넘었어요') */
@@ -15,6 +16,8 @@ export interface GameOverOptions {
   tip?: string;
   /** 개발자 모드만 (F10-4 검토, 결정 6): '이번 판 기록' 줄 — 패배 화면이 🛠를 덮어도 첫 소환·첫 승급·보스 시각·남은 체력을 읽을 수 있게 */
   log?: readonly { label: string; value: string }[];
+  /** G-3 판 정산 (경험치·골드·보석·영웅 카드·신화 조각·최고 웨이브). 없으면 줄 없음 */
+  rewards?: SettlementView;
   onRetry: () => void;
   onExit: () => void;
 }
@@ -33,6 +36,54 @@ function reasonLine(reason: string): HTMLElement {
   return h('p', { class: 'gameover-reason' }, ...kids);
 }
 
+/** 정산 상자 (G-3): 최고 웨이브 · 경험치 바 · 골드/보석 · 카드(등급 색, 새 영웅 NEW) · 조각 */
+function rewardsBox(r: SettlementView): HTMLElement {
+  const chips: HTMLElement[] = [];
+  const chip = (icon: string, text: string, testid: string): HTMLElement =>
+    h('span', { class: 'go-chip', attrs: { 'data-testid': testid } }, h('span', { class: 'go-chip-icon', text: icon, attrs: { 'aria-hidden': 'true' } }), h('span', { text }));
+  chips.push(chip('⭐', `경험치 +${r.xp.toLocaleString('ko-KR')}`, 'go-xp'));
+  chips.push(chip('💰', `+${r.gold.toLocaleString('ko-KR')}`, 'go-gold'));
+  if (r.gems > 0) chips.push(chip('💎', `+${r.gems.toLocaleString('ko-KR')}`, 'go-gems'));
+  const cardTotal = r.cards.reduce((a, c) => a + c.n, 0);
+  const fragTotal = r.fragments.reduce((a, c) => a + c.n, 0);
+  return h(
+    'div',
+    { class: 'go-rewards', attrs: { 'data-testid': 'gameover-rewards' } },
+    h(
+      'div',
+      { class: 'go-best' },
+      h('span', { text: `최고 웨이브 ${r.best}` }),
+      r.newBest ? h('strong', { class: 'go-newbest', text: '새 기록!' }) : null,
+    ),
+    h(
+      'div',
+      { class: 'go-level' },
+      h('span', { class: 'go-level-text', text: `계정 Lv ${r.level}${r.levelUps.length > 0 ? ' ⬆' : ''}` }),
+      h('span', { class: 'go-xpbar', attrs: { 'aria-hidden': 'true' } }, h('span', { class: 'go-xpfill', attrs: { style: `width:${Math.round(r.xpRatio * 100)}%` } })),
+    ),
+    h('div', { class: 'go-chips' }, ...chips),
+    cardTotal > 0
+      ? h(
+          'div',
+          { class: 'go-cards', attrs: { 'data-testid': 'go-cards', 'aria-label': `영웅 카드 ${cardTotal}장` } },
+          ...r.cards.map((c) =>
+            h(
+              'span',
+              { class: 'go-card', attrs: { style: `--grade-color:${c.color}` } },
+              h('span', { class: 'go-card-name', text: c.name }),
+              h('span', { class: 'go-card-n', text: `×${c.n}` }),
+              c.isNew ? h('span', { class: 'go-card-new', text: 'NEW' }) : null,
+            ),
+          ),
+        )
+      : null,
+    fragTotal > 0
+      ? h('div', { class: 'go-frags', attrs: { 'data-testid': 'go-frags' } }, `🧩 신화 조각 ${r.fragments.map((f) => `${f.name} +${f.n}`).join(' · ')}`)
+      : null,
+    r.recruitGain > 0 ? h('div', { class: 'go-recruit', text: `영웅 모집 게이지 +${r.recruitGain}` }) : null,
+  );
+}
+
 export function createGameOverScreen(opts: GameOverOptions): UiView {
   const retry = h(
     'button',
@@ -46,8 +97,8 @@ export function createGameOverScreen(opts: GameOverOptions): UiView {
   );
   const exit = h('button', {
     class: 'btn gameover-exit',
-    attrs: { type: 'button', 'data-action': 'exit', 'aria-label': '타이틀로' },
-    text: '타이틀로',
+    attrs: { type: 'button', 'data-action': 'exit', 'aria-label': '로비로' },
+    text: '로비로',
     on: { click: () => opts.onExit() },
   });
   const el = h(
@@ -62,6 +113,7 @@ export function createGameOverScreen(opts: GameOverOptions): UiView {
       h('h2', { class: 'gameover-title', text: '패배', attrs: { id: 'gameover-title' } }),
       reasonLine(opts.reason),
       h('p', { class: 'gameover-record', text: opts.record }),
+      opts.rewards ? rewardsBox(opts.rewards) : null,
       opts.tip ? h('p', { class: 'gameover-tip', attrs: { 'data-testid': 'gameover-tip' }, text: opts.tip }) : null,
       opts.log && opts.log.length > 0
         ? h(

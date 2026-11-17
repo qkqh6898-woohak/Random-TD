@@ -96,7 +96,7 @@ test.describe('A-1 자동 저장·이어 하기', () => {
     // 앱이 백그라운드로 (안드로이드 GameActivity.onPause → 이 사건)
     await page.evaluate(() => window.dispatchEvent(new Event('randomtd:native-pause')));
     await expect(page.locator('[data-screen="pause"]')).toBeVisible();
-    await expect(page.getByTestId('pause-note')).toHaveText('자동 저장했어요 · 타이틀에서 이어 할 수 있어요');
+    await expect(page.getByTestId('pause-note')).toHaveText('자동 저장했어요 · 로비에서 이어 할 수 있어요');
     const before = await inScene(page, (s) => ({ tick: s.match.tick, gold: s.match.state.gold, workers: s.match.state.workers, up: s.match.state.upgrades[0]![0], towers: s.match.towers().length, hash: s.match.hash(), runId: s.saveState.runId }), null);
     expect(before.up).toBe(1);
     expect(before.workers).toBe(1);
@@ -128,7 +128,7 @@ test.describe('A-1 자동 저장·이어 하기', () => {
 
     // ⏸ → [타이틀로] → [이어 하기] 그대로 → [새 게임] → [새 게임 시작] → 새 판
     await page.getByRole('button', { name: '일시정지' }).click();
-    await page.getByRole('button', { name: '타이틀로' }).click();
+    await page.getByRole('button', { name: '로비로' }).click();
     await expect(page.locator('[data-action="resume-match"]')).toBeVisible();
     await page.locator('[data-action="new-game"]').click();
     await page.getByTestId('new-game-ok').click();
@@ -211,13 +211,13 @@ test('A-1 전투 기록: 빈 기록 → 20단계 패배(박쥐 여왕·도전 1 
   await expect(over).toContainText('🏆 새 최고 기록');
   // 끝난 판의 자동 저장은 지운다
   expect(await page.evaluate(() => localStorage.getItem('rtd.match'))).toBeNull();
-  await over.getByRole('button', { name: '타이틀로' }).click();
+  await over.getByRole('button', { name: '로비로' }).click();
   await page.getByRole('button', { name: '시작' }).click();
   await waitGame(page);
   await inScene(page, (s) => s.debugFastForward(30000), null);
   await expect(over).toBeVisible();
   await expect(over).not.toContainText('새 최고 기록');
-  await over.getByRole('button', { name: '타이틀로' }).click();
+  await over.getByRole('button', { name: '로비로' }).click();
 
   await page.reload();
   await page.getByRole('button', { name: '기록', exact: true }).click();

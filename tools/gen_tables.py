@@ -165,6 +165,23 @@ for cid in ART.get("cutins", []):
 for n in range(1, ART.get("titleArts", 0) + 1):
     if not (_assets / f"title/title_keyart_{n}.webp").exists(): errors.append(f"타이틀 그림 없음: title_keyart_{n}.webp")
 if ART.get("themes", 0) > len(C["themes"]): errors.append(f"art.themes {ART.get('themes')} > 캠페인 테마 수 {len(C['themes'])}")
+# 판 밖 성장 (G-3, progression.json — 화면 쪽 로더 src/meta/progressionData.ts가 같은 규칙을 더 자세히 검사)
+PG = json.load(open(ROOT / "src/data/progression.json", encoding="utf-8"))
+_hl = PG["heroes"]
+if _hl["maxLevel"] > G["towerLevel"]["max"]: errors.append(f"progression.json heroes.maxLevel {_hl['maxLevel']} > game.json towerLevel.max {G['towerLevel']['max']}")
+for _k in ("cards", "gold"):
+    if len(_hl[_k]) != _hl["maxLevel"] - 1: errors.append(f"progression.json heroes.{_k} 길이 {len(_hl[_k])} ≠ maxLevel − 1")
+for _k in ("gradeCardPct", "gradeGoldPct"):
+    for _g in GRADES:
+        if _g not in _hl[_k]: errors.append(f"progression.json heroes.{_k}.{_g} 없음")
+_waves = [m["wave"] for m in PG["waveRoad"]["milestones"]]
+if _waves != sorted(set(_waves)): errors.append(f"progression.json waveRoad 웨이브가 오름차순·중복 없음이 아님 {_waves}")
+_cs = [r[0] for r in PG["matchRewards"]["cardsByStage"]]
+if _cs != sorted(set(_cs)): errors.append(f"progression.json matchRewards.cardsByStage 단계가 오름차순이 아님 {_cs}")
+_qids = [q["id"] for q in PG["quests"]["daily"] + PG["quests"]["achievements"]]
+if len(_qids) != len(set(_qids)): errors.append("progression.json 퀘스트 id가 겹침")
+for _it in PG["shop"]:
+    if len(_it["price"]) != 1 or list(_it["price"])[0] not in ("gold", "gems"): errors.append(f"progression.json 상점 {_it['id']}: 가격은 gold·gems 중 하나만 (게임 안 화폐)")
 
 # ---------- 표 생성 ----------
 def fmt(x):
@@ -453,7 +470,7 @@ SECTIONS = {
 if errors:
     print("❌ 데이터 규칙 위반:"); [print("  -", e) for e in errors]
 else:
-    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 미션 {len(MS)}개, 감지 타워(노말~레전드) {len(detect)}종, 배속 {_sp} · 개발자 {_dev}, 캐릭터 설명·크기 {len(towers)}+{len(look_e)}, 배경 {ART.get('themes',0)}×{ART.get('bands',0)} · 컷인 {len(ART.get('cutins',[]))}, 맵 {len(MAPS)}개(2×2 블록 · 배치 칸 {', '.join(f"{k} {m['buildableCount']}" for k, m in MAPS.items())})")
+    print(f"✅ 검사 통과: 타워 {len(towers)}종, 종족 {len(T['factions'])}개, 몹 {len(E['mobs'])}종, 편대 {len(E['formations'])}개, 테마 {len(C['themes'])}개, 보스 {len(E['bosses'])}종, 도전 보스 {len(E['challenges'])}종, 미션 {len(MS)}개, 감지 타워(노말~레전드) {len(detect)}종, 배속 {_sp} · 개발자 {_dev}, 캐릭터 설명·크기 {len(towers)}+{len(look_e)}, 배경 {ART.get('themes',0)}×{ART.get('bands',0)} · 컷인 {len(ART.get('cutins',[]))}, 판 밖 성장 영웅 Lv{_hl['maxLevel']}·상점 {len(PG['shop'])}·퀘스트 {len(_qids)}, 맵 {len(MAPS)}개(2×2 블록 · 배치 칸 {', '.join(f"{k} {m['buildableCount']}" for k, m in MAPS.items())})")
 if "--check" in sys.argv or errors:
     sys.exit(1 if errors else 0)
 for doc, secs in SECTIONS.items():

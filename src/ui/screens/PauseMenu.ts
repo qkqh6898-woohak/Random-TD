@@ -4,7 +4,7 @@
  * T-2: 설정 한 줄 '눌러서 바로 승급' (켜짐: 승급할 수 있는 타워를 누르면 바로 승급 / 꺼짐: 패널을 연다). 저장은 Game 장면이 한다.
  * F10: [❔ 도움말 다시 보기] — 계정에 기록된 '본 도움말'(첫 승급 안내)을 지워, 다음에 승급할 수 있게 되면 다시 안내한다.
  * A-1 (Codex 갈래 M6-10·M6-11에서 옮김): '효과음 크기' 0~100% (5% 단위, 0 = 음소거) + [미리 듣기], '화면 흔들림' 켜짐/꺼짐 — 둘 다 기기에 저장.
- *   열 때 자동 저장했으면 아래 글을 '자동 저장했어요 · 타이틀에서 이어 할 수 있어요'로.
+ *   열 때 자동 저장했으면 아래 글을 '자동 저장했어요 · 로비에서 이어 할 수 있어요'로.
  * 메뉴가 열려 있는 동안 게임 시간은 멈춘다 (Game 장면이 TickClock 배속을 0으로).
  */
 import { h } from '../dom';
@@ -101,8 +101,8 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
   );
   const exit = h('button', {
     class: 'btn pause-exit',
-    attrs: { type: 'button', 'data-action': 'exit', 'aria-label': '타이틀로' },
-    text: '타이틀로',
+    attrs: { type: 'button', 'data-action': 'exit', 'aria-label': '로비로' },
+    text: '로비로',
     on: { click: () => opts.onExit() },
   });
   const tapRow =
@@ -137,7 +137,7 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
       shakeRow,
       help,
       exit,
-      h('p', { class: 'pause-note', attrs: { 'data-testid': 'pause-note' }, text: opts.saved ? '자동 저장했어요 · 타이틀에서 이어 할 수 있어요' : '타이틀로 나가면 이 판은 끝나요' }),
+      h('p', { class: 'pause-note', attrs: { 'data-testid': 'pause-note' }, text: opts.saved ? '자동 저장했어요 · 로비에서 이어 할 수 있어요' : '로비로 나가면 이 판은 끝나요' }),
     ),
   );
   // 키보드 사용자를 위해 [계속]에 초점 (화면에 붙은 뒤)

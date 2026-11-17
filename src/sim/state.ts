@@ -208,6 +208,11 @@ export interface MatchContext {
    * 메타(src/meta/account.ts)에서 읽고 기본 1. debug 판은 잠긴 테이블도 쓸 수 있다 (debugUsed 표시).
    */
   readonly accountLevels: readonly number[];
+  /**
+   * 플레이어별 잠긴 히든(신화) 타워 id (G-3 히든 영웅 해방). 판 시작 때 정해진 입력 (해시 밖, 리플레이에 기록). 빈 집합 = 모두 열림.
+   * 조합 규칙은 sim/unlocks.ts `isHiddenLocked`로 읽는다.
+   */
+  readonly lockedHidden: readonly ReadonlySet<string>[];
 }
 
 /**

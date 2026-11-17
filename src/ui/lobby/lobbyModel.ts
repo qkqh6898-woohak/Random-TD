@@ -1,0 +1,320 @@
+/**
+ * 로비 화면 모델 (G-3, 순수 — DOM 없음): 영웅 카드 목록·정렬, 웨이브 길, 신화 조각, 상단 바, 정산 요약.
+ * 화면(Lobby.ts·GameOverScreen.ts)은 이 모델을 그리기만 한다. 수치는 progression.json · towers.json에서.
+ */
+import type { GameData, Grade, TowerData } from '../../data/load';
+import { GRADE_COLORS } from '../../art/palette';
+import type { ProgressionData } from '../../meta/progressionData';
+import {
+  checkLevelUp,
+  checkUnlock,
+  heroAtkBonusBp,
+  heroEntry,
+  levelUpCost,
+  milestoneState,
+  xpToNext,
+  type Grant,
+  type LevelUpCheck,
+  type MatchSettlement,
+  type MilestoneState,
+  type ProgressState,
+} from '../../meta/progress';
+
+export const GRADE_KO: Readonly<Record<Grade, string>> = Object.freeze({
+  normal: '노말',
+  rare: '레어',
+  unique: '유니크',
+  hero: '히어로',
+  legend: '레전드',
+  god: '신',
+  hidden: '신화',
+});
+
+/** 등급 순 (높은 등급이 앞) */
+const GRADE_RANK: Readonly<Record<Grade, number>> = Object.freeze({ hidden: 7, god: 6, legend: 5, hero: 4, unique: 3, rare: 2, normal: 1 });
+
+/** 영웅 탭: [영웅] 노말~레전드 / [신화] 히든(신화)·신 */
+export type HeroTab = 'heroes' | 'mythic';
+export type HeroSort = 'grade' | 'level';
+
+export function tabOf(grade: Grade): HeroTab {
+  return grade === 'hidden' || grade === 'god' ? 'mythic' : 'heroes';
+}
+
+export function gradeColor(grade: Grade): string {
+  if (grade === 'hidden') return '#F1C40F';
+  if (grade === 'god') return '#FFF6D6';
+  return GRADE_COLORS[grade];
+}
+
+export interface HeroCardModel {
+  id: string;
+  name: string;
+  grade: Grade;
+  gradeName: string;
+  color: string;
+  level: number;
+  owned: boolean;
+  /** 가진 카드 (히든은 조각) */
+  cards: number;
+  /** 다음 레벨에 필요한 카드 (최대 레벨·미보유면 null). 잠긴 히든이면 해방 조각 수 */
+  need: number | null;
+  /** 레벨업할 카드가 모였다 (골드는 따로) → 위쪽 화살표 */
+  ready: boolean;
+  /** 잠긴 히든 (조각을 모아 해방) */
+  locked: boolean;
+  /** 전투 덱(기본 덱)에 들어 있는가 */
+  inDeck: boolean;
+  max: boolean;
+}
+
+function deckIds(data: Pick<GameData, 'decks'>): Set<string> {
+  const b = data.decks.base;
+  return new Set([...b.normal, ...b.rare, ...b.unique, ...b.hero, ...b.legend]);
+}
+
+export function heroCard(state: ProgressState, pd: ProgressionData, t: TowerData, deck: ReadonlySet<string>): HeroCardModel {
+  const e = heroEntry(state, t.id);
+  const owned = e.level >= 1;
+  const locked = t.grade === 'hidden' && !owned;
+  const cost = owned ? levelUpCost(pd, t.grade, e.level) : null;
+  const need = locked ? pd.hidden.unlockFragments : cost ? cost.cards : null;
+  return {
+    id: t.id,
+    name: t.name,
+    grade: t.grade,
+    gradeName: GRADE_KO[t.grade],
+    color: gradeColor(t.grade),
+    level: e.level,
+    owned,
+    cards: e.cards,
+    need,
+    ready: need !== null && e.cards >= need,
+    locked,
+    inDeck: deck.has(t.id),
+    max: owned && cost === null,
+  };
+}
+
+export interface HeroGridModel {
+  owned: HeroCardModel[];
+  unowned: HeroCardModel[];
+  /** 레벨업 카드가 모인 영웅 수 (탭 빨간 점) */
+  ready: number;
+}
+
+/** 영웅 탭 목록: 보유(정렬) + 보유하지 않음(등급 순). 같은 값이면 데이터 순서 */
+export function heroGrid(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers' | 'decks'>, tab: HeroTab, sort: HeroSort): HeroGridModel {
+  const deck = deckIds(data);
+  const order = new Map(data.towers.towers.map((t, i) => [t.id, i]));
+  const cards = data.towers.towers.filter((t) => tabOf(t.grade) === tab).map((t) => heroCard(state, pd, t, deck));
+  const byGrade = (a: HeroCardModel, b: HeroCardModel): number => GRADE_RANK[b.grade] - GRADE_RANK[a.grade] || (order.get(a.id) as number) - (order.get(b.id) as number);
+  const byLevel = (a: HeroCardModel, b: HeroCardModel): number => b.level - a.level || byGrade(a, b);
+  const owned = cards.filter((c) => c.owned).sort(sort === 'level' ? byLevel : byGrade);
+  const unowned = cards.filter((c) => !c.owned).sort(byGrade);
+  return { owned, unowned, ready: cards.filter((c) => c.ready).length };
+}
+
+/** 영웅 + 신화 탭 모두에서 카드가 모인 영웅 수 */
+export function heroesReady(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers' | 'decks'>): number {
+  return heroGrid(state, pd, data, 'heroes', 'grade').ready + heroGrid(state, pd, data, 'mythic', 'grade').ready;
+}
+
+export interface HeroDetailModel extends HeroCardModel {
+  lore: string;
+  role: string;
+  ability: string;
+  awaken: string;
+  stats: { label: string; value: string }[];
+  /** 지금 레벨의 전투 공격력 보너스 % 글자 ('+8%') · 다음 레벨 */
+  bonus: string;
+  nextBonus: string | null;
+  cost: { cards: number; gold: number } | null;
+  check: LevelUpCheck;
+  /** 잠긴 히든: 해방 가능 */
+  canUnlock: boolean;
+  recipe: string[];
+}
+
+const DAMAGE_KO: Record<string, string> = { physical: '물리', magic: '마법', hybrid: '물리+마법', true: '고정' };
+const SHAPE_KO: Record<string, string> = { single: '단일', melee: '근접', aoe: '범위', melee_aoe: '근접 범위', pierce: '관통', chain: '연쇄', multi: '다중', global: '전체' };
+
+function pctText(bp: number): string {
+  return `+${Math.round(bp / 100)}%`;
+}
+
+export function heroDetail(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers' | 'decks' | 'game'>, id: string): HeroDetailModel | null {
+  const t = data.towers.towers.find((x) => x.id === id);
+  if (!t) return null;
+  const card = heroCard(state, pd, t, deckIds(data));
+  const cost = card.owned ? levelUpCost(pd, t.grade, card.level) : null;
+  const atk = Math.round((t.atk + t.matk + (t.tatk ?? 0)) * 100) / 100;
+  const names = new Map(data.towers.towers.map((x) => [x.id, x.name]));
+  return {
+    ...card,
+    lore: t.lore,
+    role: t.role,
+    ability: t.ability,
+    awaken: t.awaken,
+    stats: [
+      { label: '공격력', value: String(atk) },
+      { label: '공격 속도', value: `${t.aps}회/초` },
+      { label: '사거리', value: t.range >= 50 ? '맵 전체' : `${t.range}칸` },
+      { label: '공격', value: `${DAMAGE_KO[t.damageType] ?? t.damageType} · ${SHAPE_KO[t.shape] ?? t.shape}` },
+    ],
+    bonus: pctText(heroAtkBonusBp(Math.max(1, card.level), data)),
+    nextBonus: cost ? pctText(heroAtkBonusBp(card.level + 1, data)) : null,
+    cost,
+    check: checkLevelUp(state, pd, t),
+    canUnlock: checkUnlock(state, pd, t) === 'ok',
+    recipe: (t.recipe ?? []).map((r) => names.get(r) ?? r),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 상단 바 · 웨이브 길
+// ---------------------------------------------------------------------------
+
+export interface TopBarModel {
+  level: number;
+  xp: number;
+  xpNeed: number;
+  /** 경험치 바 채움 0~1 */
+  xpRatio: number;
+  gold: number;
+  gems: number;
+}
+
+export function topBar(state: ProgressState, pd: ProgressionData): TopBarModel {
+  const need = xpToNext(pd, state.level);
+  return { level: state.level, xp: state.xp, xpNeed: need, xpRatio: Math.min(1, state.xp / need), gold: state.gold, gems: state.gems };
+}
+
+export interface WaveNode {
+  wave: number;
+  state: MilestoneState;
+  /** 보상 글자 ('💰 300 · 🃏 3') */
+  reward: string;
+}
+
+export interface WaveRoadModel {
+  best: number;
+  /** 아래(낮은 웨이브)에서 위로: 이정표들 */
+  nodes: WaveNode[];
+  /** 다음 이정표 (없으면 null) */
+  next: number | null;
+  /** 받을 수 있는 이정표 수 */
+  ready: number;
+}
+
+export function rewardText(r: { gold?: number; gems?: number; cards?: number; fragments?: number }): string {
+  const parts: string[] = [];
+  if (r.gold) parts.push(`💰 ${r.gold.toLocaleString('ko-KR')}`);
+  if (r.gems) parts.push(`💎 ${r.gems.toLocaleString('ko-KR')}`);
+  if (r.cards) parts.push(`🃏 ${r.cards}`);
+  if (r.fragments) parts.push(`🧩 ${r.fragments}`);
+  return parts.join(' · ');
+}
+
+export function waveRoad(state: ProgressState, pd: ProgressionData): WaveRoadModel {
+  const nodes = pd.waveRoad.milestones.map((m) => ({ wave: m.wave, state: milestoneState(state, m.wave), reward: rewardText(m.reward) }));
+  const next = pd.waveRoad.milestones.find((m) => m.wave > state.bestWave)?.wave ?? null;
+  return { best: state.bestWave, nodes, next, ready: nodes.filter((n) => n.state === 'ready').length };
+}
+
+// ---------------------------------------------------------------------------
+// 신화 조각 (도감/카드 탭)
+// ---------------------------------------------------------------------------
+
+export interface FragmentRow {
+  id: string;
+  name: string;
+  have: number;
+  need: number;
+  unlocked: boolean;
+  canUnlock: boolean;
+  recipe: string[];
+}
+
+export function fragmentRows(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers'>): FragmentRow[] {
+  const names = new Map(data.towers.towers.map((x) => [x.id, x.name]));
+  return data.towers.towers
+    .filter((t) => t.grade === 'hidden')
+    .map((t) => {
+      const e = heroEntry(state, t.id);
+      return {
+        id: t.id,
+        name: t.name,
+        have: e.cards,
+        need: pd.hidden.unlockFragments,
+        unlocked: e.level >= 1,
+        canUnlock: e.level < 1 && e.cards >= pd.hidden.unlockFragments,
+        recipe: (t.recipe ?? []).map((r) => names.get(r) ?? r),
+      };
+    });
+}
+
+// ---------------------------------------------------------------------------
+// 받은 것 요약 (정산 화면 · 받기 알림)
+// ---------------------------------------------------------------------------
+
+export interface GrantView {
+  xp: number;
+  gold: number;
+  gems: number;
+  levelUps: number[];
+  cards: { id: string; name: string; n: number; grade: Grade; color: string; isNew: boolean }[];
+  fragments: { id: string; name: string; n: number }[];
+}
+
+export function grantView(g: Grant, data: Pick<GameData, 'towers'>): GrantView {
+  const tower = new Map(data.towers.towers.map((t) => [t.id, t]));
+  return {
+    xp: g.xp,
+    gold: g.gold,
+    gems: g.gems,
+    levelUps: [...g.levelUps],
+    cards: g.cards.map((c) => {
+      const t = tower.get(c.id);
+      const grade = t?.grade ?? 'normal';
+      return { id: c.id, name: t?.name ?? c.id, n: c.n, grade, color: gradeColor(grade), isNew: c.isNew };
+    }),
+    fragments: g.fragments.map((f) => ({ id: f.id, name: tower.get(f.id)?.name ?? f.id, n: f.n })),
+  };
+}
+
+/** 받은 것 한 줄 (알림) */
+export function grantLine(g: GrantView): string {
+  const parts: string[] = [];
+  if (g.gold) parts.push(`💰 ${g.gold.toLocaleString('ko-KR')}`);
+  if (g.gems) parts.push(`💎 ${g.gems.toLocaleString('ko-KR')}`);
+  const cards = g.cards.reduce((a, c) => a + c.n, 0);
+  if (cards) parts.push(`🃏 ${cards}장`);
+  const frags = g.fragments.reduce((a, c) => a + c.n, 0);
+  if (frags) parts.push(`🧩 ${frags}개`);
+  if (g.levelUps.length) parts.push(`계정 Lv ${g.levelUps[g.levelUps.length - 1]}`);
+  return parts.join(' · ');
+}
+
+export interface SettlementView extends GrantView {
+  stage: number;
+  best: number;
+  newBest: boolean;
+  recruitGain: number;
+  /** 정산 뒤 계정 레벨·경험치 */
+  level: number;
+  xpRatio: number;
+}
+
+export function settlementView(s: MatchSettlement, data: Pick<GameData, 'towers'>, state: ProgressState, pd?: ProgressionData): SettlementView {
+  const need = pd ? xpToNext(pd, state.level) : 0;
+  return {
+    ...grantView(s.grant, data),
+    stage: s.stage,
+    best: s.bestWave,
+    newBest: s.newBest,
+    recruitGain: s.recruitGain,
+    level: state.level,
+    xpRatio: need > 0 ? Math.min(1, state.xp / need) : 0,
+  };
+}

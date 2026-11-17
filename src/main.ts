@@ -8,10 +8,13 @@
 import type Phaser from 'phaser';
 import './ui/styles.css';
 import './ui/theme.css';
+import './ui/lobby/lobby.css';
 import { loadGameData } from './data/load';
 import { allLooks } from './art/characters/looks';
 import { createAccountStore } from './meta/account';
 import { createSettingsStore } from './meta/settings';
+import { loadProgression } from './meta/progressionData';
+import { ProgressStore } from './meta/progressStore';
 import { onEffectsChange, setEffectsOff } from './view/effects';
 import { defaultStorage } from './save/storage';
 import { MatchSaves } from './save/MatchSaves';
@@ -63,6 +66,8 @@ function boot(): void {
     const url = readUrlOptions(location.search, import.meta.env.VITE_TEST_BUILD);
     const storage = defaultStorage();
     const account = createAccountStore(storage);
+    // 판 밖 성장 (G-3 로비·영웅 수집): 개발자 모드는 따로 된 계정 슬롯. 계정 레벨도 여기서 (경험치로 오름)
+    const progress = new ProgressStore(storage, loadProgression(data), data, { dev: url.debug });
     const settings = createSettingsStore(storage);
     // 연출 끄기 (개발자 도구, T-2): 개발자 모드에서만 저장값을 쓴다 — 일반 주소는 늘 연출이 켜진 예전 화면
     // (DOM 애니메이션·전환은 UI 루트의 .fx-off 클래스로 한꺼번에 끈다 — styles.css)
@@ -84,8 +89,12 @@ function boot(): void {
       ui,
       debug: url.debug,
       seed: url.seed,
-      accountLevel: account.level(),
+      // 판을 시작할 때마다 지금 레벨을 읽는다 (로비에서 레벨이 오를 수 있음)
+      get accountLevel() {
+        return progress.level();
+      },
       account,
+      progress,
       settings,
       saves: new MatchSaves(data, storage, { version: __APP_VERSION__, dev: url.debug }),
       records: new BattleRecords(storage),

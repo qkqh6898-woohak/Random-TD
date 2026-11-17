@@ -39,6 +39,8 @@ export interface ReplayFile {
   levels: Record<string, number>[];
   /** 플레이어별 계정 레벨 (도박 테이블 해금, M5-5). 없으면 모두 1 (M5 전에 만든 리플레이) */
   accountLevels?: number[];
+  /** 플레이어별 잠긴 히든 타워 id (G-3). 없으면 모두 열림 — 아무도 잠기지 않은 판은 이 필드를 적지 않는다 (예전 파일과 같은 모양) */
+  lockedHidden?: string[][];
   /** 데이터 지문 (fnv1a32, 키 정렬 JSON) — 다르면 수치가 바뀐 것 */
   dataHash: number;
   /** 끝 틱: 0틱부터 이 틱 수만큼 돌린다 */
@@ -68,9 +70,12 @@ export function dataFingerprint(data: GameData): number {
   return fnv1a32(stableJson(data));
 }
 
+type InputKeys = 'seed' | 'mode' | 'theme' | 'players' | 'debug' | 'decks' | 'levels' | 'accountLevels' | 'lockedHidden';
+
 /** 판 → 그 판을 다시 만드는 입력. */
-export function matchInputs(match: Match): Pick<ReplayFile, 'seed' | 'mode' | 'theme' | 'players' | 'debug' | 'decks' | 'levels' | 'accountLevels'> {
-  const { state, decks, levels, accountLevels } = match.ctx;
+export function matchInputs(match: Match): Pick<ReplayFile, InputKeys> {
+  const { state, decks, levels, accountLevels, lockedHidden } = match.ctx;
+  const locked = lockedHidden.map((set) => [...set].sort());
   return {
     seed: match.world.seed,
     mode: state.mode,
@@ -80,11 +85,12 @@ export function matchInputs(match: Match): Pick<ReplayFile, 'seed' | 'mode' | 't
     decks: decks.map((d) => ({ normal: [...d.normal], rare: [...d.rare], unique: [...d.unique], hero: [...d.hero], legend: [...d.legend] })),
     levels: levels.map((l) => ({ ...l })),
     accountLevels: [...accountLevels],
+    ...(locked.some((l) => l.length > 0) ? { lockedHidden: locked } : {}),
   };
 }
 
 /** 리플레이 입력 → createMatch 옵션. */
-export function replayMatchOptions(file: Pick<ReplayFile, 'seed' | 'mode' | 'theme' | 'players' | 'debug' | 'decks' | 'levels' | 'accountLevels'>): MatchOptions {
+export function replayMatchOptions(file: Pick<ReplayFile, InputKeys>): MatchOptions {
   return {
     seed: file.seed,
     mode: file.mode,
@@ -94,6 +100,7 @@ export function replayMatchOptions(file: Pick<ReplayFile, 'seed' | 'mode' | 'the
     decks: file.decks,
     levels: file.levels,
     ...(file.accountLevels ? { accountLevels: file.accountLevels } : {}),
+    ...(file.lockedHidden ? { lockedHidden: file.lockedHidden } : {}),
   };
 }
 
@@ -116,6 +123,10 @@ export function validateReplay(file: unknown): string | null {
   if (f.accountLevels !== undefined) {
     if (!Array.isArray(f.accountLevels) || f.accountLevels.length !== f.players) return 'accountLevels가 플레이어 수만큼 없음';
     if (!f.accountLevels.every((v) => Number.isSafeInteger(v) && v >= 1)) return 'accountLevels에 1 이상 정수가 아닌 값';
+  }
+  if (f.lockedHidden !== undefined) {
+    if (!Array.isArray(f.lockedHidden) || f.lockedHidden.length !== f.players) return 'lockedHidden이 플레이어 수만큼 없음';
+    if (!f.lockedHidden.every((l) => Array.isArray(l) && l.every((id) => typeof id === 'string'))) return 'lockedHidden에 문자열 목록이 아닌 값';
   }
   if (!Array.isArray(f.commands)) return 'commands가 배열이 아님';
   if (!Array.isArray(f.checkpoints)) return 'checkpoints가 배열이 아님';

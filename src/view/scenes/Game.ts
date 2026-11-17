@@ -160,6 +160,8 @@ import { createHud, type HudView } from '../../ui/hud/Hud';
 import { bossHudInput, buildHudModel, deckDetectNames, defeatText, formatStage, legionNameMap, stageToastText, type DefeatBossInfo } from '../../ui/hud/hudModel';
 import { availableSpeeds, nextSpeed } from '../../ui/hud/speed';
 import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
+import { matchResultOf } from '../../meta/matchResult';
+import { settlementView } from '../../ui/lobby/lobbyModel';
 import { createPauseMenu } from '../../ui/screens/PauseMenu';
 import { SCENE_BOOT, SCENE_GAME } from '../config';
 import type { GameContext } from '../context';
@@ -465,6 +467,8 @@ export class GameScene extends Phaser.Scene {
         maxPlayers: config.maxPlayers,
         debug: this.ctx.debug,
         accountLevels: [this.ctx.accountLevel],
+        // G-3 판 밖 성장: 영웅 레벨(→ levels)·잠긴 히든(→ lockedHidden). 판 입력이라 리플레이·저장에 기록된다
+        ...this.ctx.progress?.matchOptions(this.ctx.debug),
       });
     this.tickMeter.reset();
     this.speeds = availableSpeeds(config.speeds, this.ctx.accountLevel, this.ctx.debug, config.devSpeeds);
@@ -2290,6 +2294,8 @@ export class GameScene extends Phaser.Scene {
     const text = defeatText(this.match.state, this.defeatBossInfo());
     // 전투 기록 (A-1, 일반 무한 판만) + 끝난 판의 자동 저장 지우기
     const best = this.ctx.records.complete(this.match, this.runId);
+    // G-3 판 정산 (경험치·골드·영웅 카드·신화 조각·최고 웨이브) — 같은 판은 한 번만
+    const settled = this.ctx.progress?.settle(matchResultOf(this.match, this.runId)) ?? null;
     if (this.saveToken !== null) this.ctx.saves.clear(this.saveToken);
     this.saveToken = null;
     // 개발자 모드: 이번 판 기록을 패배 화면에도 보이고 '지난 판'에 남긴다 (F10-4 검토, 결정 6 — 패배 화면이 🛠를 덮음)
@@ -2301,6 +2307,7 @@ export class GameScene extends Phaser.Scene {
         ...text,
         record: best?.newBest ? `${text.record} · 🏆 새 최고 기록` : text.record,
         log,
+        rewards: settled && this.ctx.progress ? settlementView(settled, this.ctx.data, this.ctx.progress.state, this.ctx.progress.pd) : undefined,
         onRetry: () => this.scene.restart({ ...this.sceneData, seed: this.ctx.seed ?? randomSeed() }),
         onExit: () => this.scene.start(SCENE_BOOT),
       }),

@@ -178,7 +178,7 @@ test('패배: 151마리째에 패배 화면 → [다시 하기]로 새 판 → �
   await expect.poll(async () => (await simView(page)).tick, { timeout: 5000 }).toBeGreaterThan(5);
 
   await page.getByRole('button', { name: '일시정지' }).click();
-  await page.getByRole('button', { name: '타이틀로' }).click();
+  await page.getByRole('button', { name: '로비로' }).click();
   await expect(page.locator('[data-screen="title"]')).toBeVisible();
   expect(errors).toEqual([]);
 });
