@@ -80,9 +80,9 @@ function textOf(content) {
 const RUBRIC = `# 피드백 반영 기준 (시작용)
 - 이슈가 요청한 변경이 저장소 규칙(CLAUDE.md) 안에서 반영됐다. 반영할 수 없으면 그 이유가 /mnt/session/outputs/summary.md 에 있다
 - 변경은 이슈와 관련된 파일만 건드린다 (.github/·서명·저장 형식·타워 ID 변경 없음)
-- 코드를 바꿨다면 \`npm ci && npm test && npm run check && npm run build\`가 통과했고 그 결과가 summary.md 에 적혀 있다
-- 변경이 있으면 ${BRANCH} 브랜치에 커밋됐고 origin 에 푸시됐다 (main 에는 아무것도 푸시하지 않았다)
-- 커밋 메시지는 한국어이고 끝에 "Refs #${ISSUE}"가 있다
+- 코드를 바꿨다면 \`npm ci && npm test && npm run build\`가 통과했다. \`npm run check\`도 돌렸다 (python3.12가 있으면 그것으로 — 기본 python3가 3.11이면 tools/gen_tables.py가 읽히지 않는 것은 알려진 환경 문제라 summary.md 에 적기만 한다)
+- 변경이 있으면 ${BRANCH} 브랜치에 커밋됐고 origin 에 푸시됐다 (main 에는 아무것도 푸시하지 않았다, force push 없음)
+- 커밋 메시지는 한국어다 (이슈 연결은 PR 본문이 맡는다 — 커밋마다 이슈 번호를 넣을 필요 없음)
 - /mnt/session/outputs/summary.md 에 무엇을 왜 바꿨는지, 검증 결과, 남은 위험이 3~10줄로 있다`;
 
 async function main() {
@@ -108,7 +108,7 @@ async function main() {
   console.log(`세션 ${session.id} — Console: https://platform.claude.com/workspaces/default/sessions/${session.id}`);
 
   const task = `저장소 ${REPO}의 이슈 #${ISSUE}(게임 안 피드백)를 반영해라.
-작업 브랜치: ${BRANCH} (main에서 새로 만든다: cd /workspace/repo && git checkout -b ${BRANCH})
+작업 브랜치: ${BRANCH} — origin에 이미 있으면 그것을 받아 이어서 작업하고(git fetch origin ${BRANCH} && git checkout -B ${BRANCH} origin/${BRANCH}), 없으면 main에서 새로 만든다(git checkout -b ${BRANCH}).
 판 기록 JSON이 있으면 src/sim/replay.ts 도구로 재현하는 Vitest 테스트를 먼저 만든다.
 끝나면 git push origin ${BRANCH} 하고, /mnt/session/outputs/summary.md 를 쓴다.
 

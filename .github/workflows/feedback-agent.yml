@@ -75,9 +75,16 @@ jobs:
             body=$(printf 'Refs #%s\n\n%s%s' "$ISSUE_NUMBER" "$summary" "$footer")
             pr=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --json url --jq '.[0].url')
             if [[ -z "$pr" ]]; then
-              pr=$(gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$BRANCH" --title "$title" --body "$body")
+              # 저장소 설정 'Allow GitHub Actions to create and approve pull requests'가 꺼져 있으면 실패한다 → 비교 링크로 대신
+              pr=$(gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$BRANCH" --title "$title" --body "$body" 2>/dev/null) || pr=""
             fi
-            gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$(printf '🤖 피드백을 반영한 PR을 열었어요: %s\n\n%s%s' "$pr" "$summary" "$footer")"
+            if [[ -n "$pr" ]]; then
+              msg=$(printf '🤖 피드백을 반영한 PR을 열었어요: %s' "$pr")
+            else
+              msg=$(printf '🤖 `%s` 브랜치에 반영했어요. PR 자동 생성이 저장소 설정으로 막혀 있어 아래 링크에서 [Create pull request]를 눌러 주세요:\nhttps://github.com/%s/compare/main...%s?expand=1' "$BRANCH" "$GITHUB_REPOSITORY" "$BRANCH")
+              echo "::warning title=PR 자동 생성 막힘::Settings → Actions → General → Workflow permissions → 'Allow GitHub Actions to create and approve pull requests'를 켜면 PR을 자동으로 연다"
+            fi
+            gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$(printf '%s\n\n%s%s' "$msg" "$summary" "$footer")"
           else
             gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$(printf '🤖 이번 실행에서는 브랜치를 만들지 않았어요 (바꿀 코드가 없거나 반영하지 못함).\n\n%s%s' "$summary" "$footer")"
           fi
