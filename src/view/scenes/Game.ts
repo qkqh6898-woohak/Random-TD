@@ -1265,7 +1265,9 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.selectedId === p.id && this.panel) this.closePanel();
     else this.selectTower(p.id);
+    // 더 소환할 수 없는 판이면 알려 준다: 칸이 꽉 참 → '빈 칸이 없어요', 칸은 있지만 인원 한도 → '인원이 가득 찼어요' (G-1)
     if (!hasRoom(this.match.ctx, this.match.world, LOCAL_PLAYER)) this.ctx.ui.toast(BOARD_FULL);
+    else if (unitCount(this.match.world, LOCAL_PLAYER) >= unitCap(this.match.ctx, LOCAL_PLAYER)) this.ctx.ui.toast(UNIT_CAP_FULL);
   }
 
   /** 누르는 중: 0.3초가 지나면 끌기 시작, 끄는 중이면 놓을 칸 미리 보기와 타워 그림 위치 갱신. */

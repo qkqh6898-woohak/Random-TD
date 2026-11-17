@@ -4035,6 +4035,13 @@ body {
 .hud-wave-timer {
   font-size: 3.6cqw;
 }
+/* 글자 높이를 고정: '👑 WAVE 10'처럼 그림 글자가 들어와도 위 HUD 높이(= 맵 자리)가 변하지 않게 */
+.hud-wave .hud-stage,
+.hud-wave-timer {
+  height: 1.25em;
+  line-height: 1.25em;
+  white-space: nowrap;
+}
 .hud-count-row {
   justify-content: center;
 }
@@ -4109,7 +4116,7 @@ body {
 .hud-menu.is-g1 > .is-upgrade {
   grid-column: 2;
   grid-row: 2;
-  min-height: max(8.6cqw, 40px);
+  min-height: max(8.6cqw, 44px);
   flex-direction: row;
   gap: 1.6cqw;
 }
@@ -4226,4 +4233,21 @@ body {
 .hud-bottom.is-g1:has(.cp-pill:not([hidden])):has(.hud-merge-ready:not([hidden])) .hud-hire .hud-worker-art,
 .hud-bottom.is-g1:has(.cp-pill:not([hidden])):has(.hud-merge-ready:not([hidden])) .hud-towers .hud-label {
   display: none;
+}
+
+/* G-1: 첫 승급 안내 카드가 맵 오른쪽 둥근 버튼(도전·미션)을 덮지 않게 오른쪽을 비운다 */
+.guide-card {
+  right: calc(4cqw + max(12cqw, 44px));
+}
+.my-row.is-locked .my-note {
+  color: #ffb4a8;
+}
+/* 위 HUD 양옆 칩은 한 줄 고정 ('💰+'가 두 줄로 꺾이며 위 HUD 높이 = 맵 자리가 변하던 것) */
+.hud-top-row .hud-side-l > .btn-chip,
+.hud-top-row .hud-side-r > .btn-chip {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.hud-top-row .hud-side-l {
+  gap: 1cqw;
 }

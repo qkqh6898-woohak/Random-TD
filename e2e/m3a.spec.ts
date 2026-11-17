@@ -30,7 +30,7 @@ type SceneLike = {
     state: { stage: number; gold: number; merges: number; moves: number };
     towers(): (TowerLite & { held: boolean; attacks: number })[];
     rules: { towers: Map<string, { grade: string }> };
-    map: { buildable: [number, number][] };
+    map: { buildable: [number, number][]; height: number };
     world: { enqueue(c: unknown): { ok: boolean } };
   };
   mapLayout: { originX: number; originY: number; tile: number };
@@ -118,6 +118,8 @@ async function autoSummonMany(page: Page, n: number): Promise<void> {
     page,
     (s, k) => {
       s.match.world.enqueue({ type: 'debugAddGold', amount: 100_000 });
+      // 인원 한도(20)를 넘겨 소환해 볼 수 있게 (카드 '부대 확장'과 같은 자리)
+      (s.match.state as unknown as { unitCapBonus: number[] }).unitCapBonus[0] = 20;
       s.debugFastForward(1);
       for (let i = 0; i < k; i++) {
         s.match.world.enqueue({ type: 'summonAuto' });
@@ -176,7 +178,7 @@ test('타워 탭 → 정보 패널: 이름·스탯·감지·보유 1/3, 승급 �
   await expect(page.getByTestId('tp-owned')).toHaveText('1/3');
   await expect(page.locator('[data-action="merge"]')).toBeDisabled();
   await expect(page.locator('[data-action="merge-all"]')).toBeDisabled();
-  await expect(page.getByTestId('tp-note')).toContainText('3개가 모이면');
+  await expect(page.getByTestId('tp-note')).toContainText('3개가 한 칸에 모이면');
   await expect(page.getByTestId('tp-outcomes')).toContainText('상인');
   expect(await inScene(page, (s) => s.selectedTowerId, null)).toBe(t!.id);
   // 버튼 터치 영역 44px 이상
@@ -462,13 +464,13 @@ test('정보 패널은 어느 줄의 타워를 골라도 그 타워 그림을 �
   await start(page);
   const rows = await inScene(page, (s) => {
     const out: [number, number][] = [];
-    for (let y = 0; y < 11; y++) {
+    for (let y = 0; y < s.match.map.height; y++) {
       const c = s.match.map.buildable.find(([x, yy]) => yy === y && x >= 3) ?? s.match.map.buildable.find(([, yy]) => yy === y);
       if (c) out.push([c[0], c[1]]);
     }
     return out;
   }, null);
-  expect(rows.length).toBe(8); // 순환의 정원 v2: 배치 칸이 있는 줄 0·1·3·4·6·7·9·10
+  expect(rows.length).toBe(6); // 순환의 정원 v4 (G-1 마당 맵): 배치 칸이 있는 줄 1~6
   const seen = new Set<string>();
   for (const [x, y] of rows) {
     await summonMany(page, [[x, y]]);
@@ -502,7 +504,8 @@ test('위쪽 패널 + 알림: 칸이 가득 찬 판에서 아래쪽 타워를 �
   await tapTile(page, lowest[0], lowest[1]);
   await expect(page.getByTestId('tower-panel')).toHaveClass(/is-top/);
   await page.waitForTimeout(250);
-  await expect(page.locator('.toast', { hasText: '빈 칸이 없어요' })).toBeVisible();
+  // G-1: 인원 한도(20) < 칸 24 — 칸을 모두 채운 판(예전 summon 명령)이면 '인원이 가득 찼어요'가 먼저
+  await expect(page.locator('.toast', { hasText: /빈 칸이 없어요|인원이 가득 찼어요/ })).toBeVisible();
   // 알림 자리를 잰 높이(늘 붙어 있는 보이지 않는 알림) = 실제 알림 한 줄 높이 (T-3 병합: 예전엔 21px로 재어 11px 겹침)
   const heights = await page.evaluate(() => ({
     probe: (document.querySelector('.toast-probe') as HTMLElement).offsetHeight,

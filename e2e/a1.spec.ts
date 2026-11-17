@@ -404,15 +404,16 @@ test.describe('A-1 화면 흔들림·주사위', () => {
         const m = s.match;
         m.state.gold += 100000;
         const used = new Set(m.towers().map((k) => `${k.tx},${k.ty}`));
-        // G-1 큰 칸 맵(20칸): 남은 빈 칸 모두 (12칸 이상)
+        // G-1 마당 맵(24칸): 남은 빈 칸 모두 (12칸 이상)
         const free = m.map.buildable.filter(([x, y]) => !used.has(`${x},${y}`));
         for (const [x, y] of free) m.world.enqueue({ type: 'summon', x, y });
-        return free.length;
+        return { free: free.length, pads: m.map.buildable.length };
       },
       null,
     );
-    expect(queued).toBeGreaterThanOrEqual(12);
-    await expect(page.getByTestId('hud-towers')).toHaveText(/^20\//);
+    expect(queued.free).toBeGreaterThanOrEqual(12);
+    // 예전 칸 지정 summon 명령(리플레이용)은 인원 한도를 보지 않아 모든 칸이 찬다
+    await expect(page.getByTestId('hud-towers')).toHaveText(new RegExp(`^${queued.pads}/`));
     expect((await inScene(page, (s) => s.diceStats, null)).peak).toBe(12);
 
     // 뒤로 가기: 열린 타워 패널(승급 결과) → 닫힘, 강화 시트 → 닫힘, 그다음 일시정지 → 계속

@@ -3,6 +3,7 @@
  * 값은 sim 상태를 읽기만 한다 (명령은 Game 장면이 보낸다).
  */
 import type { GachaGrade, TowerData } from '../../data/load';
+import { isHiddenLocked } from '../../sim/unlocks';
 import type { World } from '../../sim/World';
 import { BP_ONE } from '../../sim/Fixed';
 import { GACHA_RANK, type MatchRules } from '../../sim/rules';
@@ -133,8 +134,10 @@ export interface CodexRowModel {
   name: string;
   found: boolean;
   materials: CodexMaterial[];
-  /** [제작] 버튼: 재료가 모두 판 위 + 놓을 칸이 있음 */
+  /** [제작] 버튼: 재료가 모두 판 위 + 놓을 칸이 있음 + 잠기지 않음 */
   craftable: boolean;
+  /** G-3 히든 해방 전 (isHiddenLocked) — '🔒 해방 필요 (조각 n/20)' */
+  locked: boolean;
   /** 재료는 모였지만 칸이 없음 등 — 버튼 아래 짧은 글자 */
   note: string;
 }
@@ -160,7 +163,15 @@ export function newlyDiscovered(rules: Pick<MatchRules, 'recipes'>, owned: Reado
 }
 
 /** [신화] 도감 시트 모델. */
-export function codexSheetModel(ctx: MatchContext, world: World, player: number, towers: readonly TowerData[], found: ReadonlySet<string>): CodexSheetModel {
+export function codexSheetModel(
+  ctx: MatchContext,
+  world: World,
+  player: number,
+  towers: readonly TowerData[],
+  found: ReadonlySet<string>,
+  /** G-3: 신화 조각 (가진 수 / 해방에 드는 수). 없으면 '🔒 해방 필요'만 */
+  fragments?: (towerId: string) => { have: number; need: number } | null,
+): CodexSheetModel {
   const names = new Map(towers.map((t) => [t.id, t.name]));
   const rank = new Map(towers.map((t) => [t.id, t.grade === 'hidden' ? 7 : GACHA_RANK[t.grade]]));
   const owned = ownedCounts(world, player);
@@ -176,10 +187,12 @@ export function codexSheetModel(ctx: MatchContext, world: World, player: number,
       return { id, name: known ? (names.get(id) ?? id) : '???', onBoard: known && n > 0, known };
     });
     const plan = craftPlan(ctx, world, player, r);
+    const locked = isHiddenLocked(ctx, player, rc.id);
     const craftable = isFound && plan.ok;
     if (craftable) ready++;
-    const note = isFound && !plan.ok && plan.reason === 'full' ? '놓을 칸이 없어요' : '';
-    return { r, id: rc.id, name: isFound ? (names.get(rc.id) ?? rc.id) : '???', found: isFound, materials, craftable, note };
+    const frag = locked ? (fragments?.(rc.id) ?? null) : null;
+    const note = locked ? `🔒 해방 필요${frag ? ` (조각 ${frag.have}/${frag.need})` : ''}` : isFound && !plan.ok && plan.reason === 'full' ? '놓을 칸이 없어요' : '';
+    return { r, id: rc.id, name: isFound ? (names.get(rc.id) ?? rc.id) : '???', found: isFound, materials, craftable, locked, note };
   });
   const n = rows.filter((x) => x.found).length;
   return { rows, summary: `발견 ${n}/${rows.length}`, ready };

@@ -247,6 +247,18 @@ test('보스: 10단계 박쥐 여왕 — 보스 막대(이름표·체력·남은
   const drawn = await inScene(page, (s) => ({ sim: s.match.mobs().length, drawn: s.renderedMobCount }), null);
   expect(drawn.drawn).toBe(drawn.sim);
   await page.getByRole('button', { name: '계속' }).click();
+  // G-1 3택 1: 5단계에 받은 강화 선택은 먼저 고른다 (보스 카드 창만 보려고)
+  await inScene(
+    page,
+    (s) => {
+      const st = s.match.state as unknown as { cardOffers: { stage?: number }[] };
+      st.cardOffers.filter((o) => o.stage !== undefined).forEach(() => s.match.world.enqueue({ type: 'pickCard', i: 0 }));
+      s.debugFastForward(1);
+      return null;
+    },
+    null,
+  );
+  await expect.poll(() => inScene(page, (s) => s.match.state.cardOffers.length, null)).toBe(0);
   // 안쪽 블록 레전드 → 보스를 잡는다. 돈은 놓기 전에 잰다 — B-2 공격력 ×1.5로 놓는 동안(debugFastForward 포함) 보스가 이미 죽어
   // 보상이 gold0에 들어가 버리던 흔들림 (돈은 줄지 않으므로 그 전 값과 비교해도 +200 검사가 성립)
   const gold0 = await inScene(page, (s) => s.match.state.gold, null);
@@ -265,13 +277,13 @@ test('보스: 10단계 박쥐 여왕 — 보스 막대(이름표·체력·남은
   await expect(panel).toBeHidden();
   await expect(page.getByTestId('choice-reopen')).toBeVisible();
   expect(await inScene(page, (s) => s.match.state.cardOffers.length, null)).toBe(1);
-  // 알약은 아래 띠 안 (맵 칸을 덮어 소환 탭을 가로채지 않는다 — 검토 반영: 예전엔 맵 맨 아래 줄 오른쪽 칸 위. G-1: 순환의 정원 v3 (3~5, 7))
+  // 알약은 아래 띠 안 (맵 칸을 덮어 소환 탭을 가로채지 않는다 — 검토 반영: 예전엔 맵 맨 아래 줄 오른쪽 칸 위. G-1: 순환의 정원 v4 마당의 맨 아래 배치 줄 (2~4, 6) — 맨 오른쪽 길 칸 위는 둥근 [⚔]·[📋] 버튼 자리)
   const pill = (await page.getByTestId('choice-reopen').boundingBox())!;
   const band = (await page.locator('.hud-bottom').boundingBox())!;
   expect(pill.y).toBeGreaterThanOrEqual(band.y);
   expect(pill.y + pill.height).toBeLessThanOrEqual(band.y + band.height + 0.5);
-  for (const tx of [3, 4, 5]) {
-    const c = await tileCenter(page, tx, 7);
+  for (const tx of [2, 3, 4]) {
+    const c = await tileCenter(page, tx, 6);
     expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.tagName, [c.x, c.y])).toBe('CANVAS');
   }
   await expect(page.getByTestId('hud-hint')).toBeHidden(); // 알약이 있는 동안 소환 안내는 숨김 (아래 띠가 넘치지 않게)
@@ -280,7 +292,7 @@ test('보스: 10단계 박쥐 여왕 — 보스 막대(이름표·체력·남은
   await expect(panel).toBeVisible();
   await page.getByTestId('choice-0').click();
   await expect(panel).toBeHidden();
-  expect(await inScene(page, (s) => s.match.state.cardsPicked, null)).toEqual([first]);
+  expect((await inScene(page, (s) => s.match.state.cardsPicked, null)).at(-1)).toBe(first);
   await expect(page.locator('.toast', { hasText: '🃏' })).toBeVisible();
   expect(errors).toEqual([]);
 });

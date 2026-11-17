@@ -226,8 +226,9 @@ test('도박: 10원·100원 두 테이블이 동시에 돈다, 꾹 누르면 계
   const errors = collectErrors(page);
   await start(page);
   await addGold(page, 100_000);
-  await page.getByTestId('menu-upgrade').click();
-  await page.getByTestId('sheet-tab-gamble').click();
+  // G-1: 돈 도박은 [🎰 도박] 시트의 '💰 돈 도박' 탭 (예전 강화 시트의 도박 탭에서 떼어 냄)
+  await page.getByTestId('menu-gamble').click();
+  await page.getByTestId('sheet-tab-money').click();
   // 두 버튼을 거의 동시에 누른다 (헤드리스는 프레임이 느려 click 두 번 사이에 릴 1초가 지나기도 한다)
   await page.evaluate(() => {
     for (const cost of [10, 100]) {
@@ -416,11 +417,13 @@ test('🛠 개발자 도구: 연출 끄기(피해 숫자 없음·저장), 확률
   await page.getByTestId('sheet-tab-fx').click();
   await page.getByTestId('dev-reveal-hidden').click();
   await expect(page.getByTestId('dev-reveal-hidden')).toHaveAttribute('aria-checked', 'true');
+  // G-1: [📋]는 맵 오른쪽 둥근 버튼이라 열린 시트가 덮는다 → 개발자 시트를 닫고 연다
+  await page.getByTestId('sheet-close').click();
   await page.getByTestId('menu-mission').click();
   await page.getByTestId('sheet-tab-hidden').click();
   await expect(page.locator('[data-pane="hidden"]')).not.toContainText('???');
   // 연출 끄기: 타워를 놓고 몹을 불러 피해 숫자가 뜨는 것을 본 뒤 끈다
-  await page.getByTestId('menu-mission').click();
+  await page.getByTestId('sheet-close').click();
   const cells = await freeCells(page, 6);
   const legends = await idsOfGrade(page, 'legend');
   await place(page, cells.map(([x, y], i) => [x, y, legends[i % legends.length]!] as [number, number, string]));

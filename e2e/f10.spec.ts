@@ -339,10 +339,10 @@ test('안내: ✕로 닫으면 계정에 한 번 기록 → 재시작한 판엔 
     [cells[2]![0], cells[2]![1], 'goblin'],
   ]);
   await expect(page.getByTestId('guide-card')).toBeVisible();
-  // 안내 중에도 HUD 버튼: 미션 시트가 열리고 닫힌다
+  // 안내 중에도 HUD 버튼: 미션 시트가 열리고 닫힌다 (G-1: [📋]는 맵 오른쪽 둥근 버튼이라 열린 시트가 덮는다 → ✕로 닫기)
   await page.getByTestId('menu-mission').click();
   await expect.poll(() => inScene(page, (s) => s.sheetOpen, null)).toBe('mission');
-  await page.getByTestId('menu-mission').click();
+  await page.getByTestId('sheet-close').click();
   await expect.poll(() => inScene(page, (s) => s.sheetOpen, null)).toBe(null);
   // 눌러서 바로 승급 꺼짐: 패널로 고른 타워가 결과 칸 (재료 = sim 재료)
   await tapTile(page, cells[2]![0], cells[2]![1]);
@@ -395,9 +395,9 @@ test('강화·미션 (일반 시작): 준비 단계에서 열기 · 시트는 �
   await expect(row).toContainText('Lv 1/50');
   await expect(row).toContainText('+10% → +20%');
   expect(await inScene(page, (s) => s.match.state.upgrades[0]![0], null)).toBe(1);
-  // 다른 메뉴 → 시트 하나만
-  await page.getByTestId('menu-mission').click();
-  await expect.poll(() => inScene(page, (s) => s.sheetOpen, null)).toBe('mission');
+  // 다른 메뉴 → 시트 하나만 (G-1: 시트 아래에 보이는 하단 묶음 [🎰 도박]으로 바꾸기)
+  await page.getByTestId('menu-gamble').click();
+  await expect.poll(() => inScene(page, (s) => s.sheetOpen, null)).toBe('gamble');
   expect(await page.locator('.layer-sheet > *').count()).toBe(1);
   // ✕로 닫으면 바로 맵 조작 (빈 칸 소환)
   await page.getByTestId('sheet-close').click();
@@ -714,9 +714,14 @@ test('기본 5종: 이름표 없이 나란히 흑백 캡처해도 서로 다르�
   await tapTile(page, ux, uy, 0.35); // 다시 눌러 패널 닫기
   await expect.poll(() => inScene(page, (s) => s.selectedTowerId, null)).toBeNull();
   // F10-4 검토: 빈 위 칸의 가운데를 누르면 (골렘 머리가 그려져 있어도) 그 칸에 소환된다 — 칸 테두리가 숨어 있어 가운데가 소환 자리
+  // G-1 칸 무더기: 노말 5종이 이미 판 위에 있어 새 타워는 같은 캐릭터 칸에 쌓일 수 있다 (사용자 결정) → '하나 늘었고 위 칸 또는 같은 캐릭터 칸'
+  const before = await myTowers(page);
   await tapTile(page, ux, uy, 0.05);
-  await expect.poll(async () => (await myTowers(page)).some((t) => t.tx === ux && t.ty === uy)).toBe(true);
+  await expect.poll(async () => (await myTowers(page)).length).toBe(before.length + 1);
+  const added = (await myTowers(page)).find((t) => !before.some((b) => b.id === t.id))!;
+  expect(added.tx === ux && added.ty === uy ? true : before.some((b) => b.tx === added.tx && b.ty === added.ty && b.tower === added.tower)).toBe(true);
   expect(await inScene(page, (s) => s.selectedTowerId, null)).toBeNull();
+  if (!(await myTowers(page)).some((t) => t.tx === ux && t.ty === uy)) await place(page, [[ux, uy, 'drummer']]);
   // 위 칸에 타워가 있으면 위 칸 가운데(0.0) 누르기 = 위 타워
   const upper = (await myTowers(page)).find((t) => t.tx === ux && t.ty === uy)!;
   await page.waitForTimeout(300);

@@ -217,9 +217,9 @@ test('보스 컷인: 10단계 보스가 나오면 그림·이름·등장!이 미
 test('정보 패널: 캐릭터 설명 두 문장 + [ℹ] 캐릭터 카드 (✕ · 바깥 · Esc로 닫기)', async ({ page }) => {
   const errors = collectErrors(page);
   await startGame(page, '/?dev=1&seed=7');
-  // 위쪽 줄(첫 줄)에 놓으면 패널이 아래에 펼친 그대로 (접지 않음)
+  // 마당 맨 위 줄(y 1)에 놓으면 패널이 아래에 펼친 그대로 (접지 않음)
   await sim(page, (s) => {
-    s.match.world.enqueue({ type: 'debugTower', x: 4, y: 0, t: s.match.rules.towerOrder.indexOf('miner') });
+    s.match.world.enqueue({ type: 'debugTower', x: 4, y: 1, t: s.match.rules.towerOrder.indexOf('miner') });
     s.debugFastForward(1);
     return null;
   });

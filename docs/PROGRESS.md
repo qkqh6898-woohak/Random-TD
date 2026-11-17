@@ -1063,11 +1063,11 @@
   - `systems/Merge.ts`: 승급 핵심을 `mergeCore`로 빼서(결과 칸을 고르는 함수를 받음) 예전 merge·mergeAll과 새 `mergeStack`이 같이 쓴다. `mergeStack` = 가득 찬 칸 승급 + 연쇄(같은 타워 가득 찬 칸 → 이번 연쇄 결과 타워의 가득 찬 칸, `merge.chainMax` 12). 승급마다 `merge` 사건(미션 '승급 n회'가 단계마다 센다), 2번 이상이면 `mergeChain {steps}`. 결과는 같은 타워의 덜 찬 칸에 합류, 없으면 그 칸. `fullStacks`·`mergeableStackGroups`(화면의 [⬆ 승급 가능]·첫 승급 안내).
   - `systems/Move.ts` `moveStack`(통째 이동·교환·같은 타워 3개 이하면 합치기), `hold`는 칸 전체, `Sell` 맨 위 하나, 개발자 변환은 칸 전체, `debugTower`는 같은 타워 덜 찬 칸에도 놓는다.
   - `systems/Gacha.ts` 소환 도박 4종 (`gacha {k, f}`), 천장 종류별, 종족 소환 후보(덱 → 전체 → 한 등급 위).
-  - `systems/Cards.ts` 카드 `pools`(boss·pick) + `offerPickCards`(5·15·25 … 단계, 보스 단계 제외, `cards.json pick`) — 보스 묶음은 예전 12장 그대로라 같은 결과. 새 효과 apsPct·pityCut·ultCharge, 새 카드 5장.
+  - `systems/Cards.ts` 카드 `pools`(boss·pick) + `offerPickCards`(5·15·25 … 단계, 보스 단계 제외, `cards.json pick`) — 보스 묶음은 예전 12장 그대로라 같은 결과. 새 효과 apsPct·pityCut·ultCharge·unitCap, 새 카드 6장(3택 1 전용).
   - `systems/Ultimate.ts` 필살기 (`ult {id}`): 히어로 이상 공격마다 게이지(Tower.ult, 처음 공격할 때 생기는 필드), 폭격·기절·가속(전군 가속은 `towerBonus` 공속%, 끝나면 시스템이 지움).
   - `systems/Craft.ts` 신화 조합 (`craft {r}`): 재료 = 그 종류 가장 나중 것부터, 결과 칸 = 비게 되는 첫 재료 칸 → 같은 신화 무더기 → 자동 빈 칸.
   - 판 상태(해시·저장·리플레이에 들어감): `pity`·`pityCut`·`ultChargeBp`·`rallyBp`·`rallyUntil`·`gachas`·`crafts`·`ults` (늘 있는 필드 — 예전 저장은 데이터 지문이 달라 어차피 무효).
-- **데이터**: `game.json` v12 — `board.stackMax` 3 · `merge.chainMax` 12 · `summon.pity {n:30, grade:rare}` · `summonGamble.kinds` 4종 · `ultimate`(등급별 공격 수·종류 규칙·수치). `cards.json` v2 — `pick {from:5, every:10}`, `pools`, 카드 17장. 스키마·교차 검사(확률 합·0.0001 단위·천장 등급·stackMax = merge.count·묶음별 카드 수). `board.unitCap` 20 + 카드 '부대 확장'(+3). 맵 `circle` v4 = `layout: "field"` 마당 맵(6×8, 가운데 4×6 = 24칸, 둘레 고리 24칸 — 1차 시안 v3 6×8·2×2 블록 20칸은 2차 결정으로 바꿈)·`crossroads` v4(7×10·2×2 블록 24칸·경로 35). `checkMapBlocks`·`gen_tables.py`: 마당 맵은 마당 = 2×2 이상 직사각형 + 길 loop, 블록 맵은 2×2 그대로(블록 하한 6 → 5). `enemies.json bossCycle.stageHpMul["10"]` 0.1 → **0.18**.
+- **데이터**: `game.json` v12 — `board.stackMax` 3 · `merge.chainMax` 12 · `summon.pity {n:30, grade:rare}` · `summonGamble.kinds` 4종 · `ultimate`(등급별 공격 수·종류 규칙·수치). `cards.json` v2 — `pick {from:5, every:10}`, `pools`, 카드 18장. 스키마·교차 검사(확률 합·0.0001 단위·천장 등급·stackMax = merge.count·묶음별 카드 수). `board.unitCap` 20 + 카드 '부대 확장'(+3). 맵 `circle` v4 = `layout: "field"` 마당 맵(6×8, 가운데 4×6 = 24칸, 둘레 고리 24칸 — 1차 시안 v3 6×8·2×2 블록 20칸은 2차 결정으로 바꿈)·`crossroads` v4(7×10·2×2 블록 24칸·경로 35). `checkMapBlocks`·`gen_tables.py`: 마당 맵은 마당 = 2×2 이상 직사각형 + 길 loop, 블록 맵은 2×2 그대로(블록 하한 6 → 5). `enemies.json bossCycle.stageHpMul["10"]` 0.1 → **0.18**.
 - **화면**:
   - 위 HUD: 왼쪽 배속(개발자 ⏭·💰+) · 가운데 'WAVE n'(`hudModel.waveLabel`) + 남은 시간 · 오른쪽 [⚡ n] 필살기 칩(목록·[모두 발동]) · ⏸ / 둘째 줄 몹 수 막대(`countFill`).
   - 아래: 자원 줄 [💰·🗼 인원 n/한도·👷·카드 알약·⬆ n·👷 고용] + 큰 버튼 [💠 신화] [🎲 소환 (천장 n)] [🎰 도박] / 소환 아래 [⬆ 강화] + 맵 오른쪽 둥근 [⚔] [📋] (+ [🛠]) — 둥근 버튼 배지는 숫자만(낱말은 CSS로 숨김, 글자 내용은 그대로).
@@ -1086,3 +1086,18 @@
   - 필살기 목록은 HUD 칩 하나(패널 버튼은 넣지 않음 — 패널 버튼 줄이 이미 꽉 참).
   - 신화 [제작]은 [신화] 시트에만 (패널 버튼 없음) + 재료가 모이면 알림·메뉴 배지 '1 제작'.
   - 리플레이 `r2-abilities` 미리 놓는 특색을 16 → 12종(큰 칸 20칸에 소환·승급 자리 7칸을 남김), `r5-menu`의 '도전 6단계 순간이동' 확인은 뺐다(큰 칸 맵에서 5초 안에 잡혀 순간이동이 안 나옴 — 규칙은 Challenge 단위 테스트). `r3-invisible` 카드 고른 수 3 → 7(3택 1 4번). 새 `r7-g1`(무더기·도박·필살기·신화·3택 1).
+  - 인원 한도는 데이터(`board.unitCap` 20) + 3택 1 카드 '부대 확장'(+3)으로만 올린다 ([⬆ 강화] 시트 항목으로 올리기는 아직 — 남은 문제). 예전 칸 지정 `summon` 명령(리플레이용)은 한도를 보지 않는다.
+  - 맵 오른쪽 둥근 버튼(도전·미션)은 시트가 열리면 시트 아래에 가린다 → 시트를 ✕/뒤로 가기로 닫고 누른다 (하단 묶음 [신화]·[소환]·[도박]·[강화]는 시트 아래에 늘 보임). 첫 승급 안내 카드는 둥근 버튼 자리만큼 오른쪽을 비운다.
+  - 위 HUD 높이 고정: '👑 WAVE 10'이 되며 개발자 칩 '💰+'가 두 줄로 꺾여 맵이 3px 밀리던 것 → 위 줄 칩 한 줄 고정·글자 줄 높이 고정.
+  - 판 위 타워를 눌렀을 때 더 소환할 수 없으면 알림: 칸이 꽉 차면 '빈 칸이 없어요', 칸은 있지만 인원 한도면 '인원이 가득 찼어요'.
+- **G-3 호환 (조정자 전달: G-3 갈래 `feat/g3-lobby`와 나중에 합침)**: `src/sim/unlocks.ts` `isHiddenLocked(ctx, player, towerId)` 자리 표시(이 갈래엔 `MatchContext.lockedHidden`이 없어 늘 false — 합칠 때 G-3 파일로 교체). `Craft.craftPlan`이 재료 검사 전에 확인 → 잠기면 `craftFail {reason:'locked'}`('아직 해방하지 않은 신화예요'). 도감 줄은 잠기면 `🔒 해방 필요 (조각 n/20)`(`codexSheetModel`의 `fragments` 인자 — G-3이 계정 조각 수를 넘긴다, 없으면 '🔒 해방 필요'만) + [제작] 꺼짐. 일시정지 메뉴(PauseMenu.ts)는 '필살기 자동' 줄 하나만 더했다 (G-3의 '로비로' 이름 바꾸기와 겹치는 곳 없음).
+- **밸런스** (docs/BALANCE.md 'G-1' 절, `docs/balance/first-boss-tuned.md`): 첫 보스 봇을 G-1 명령(summonAuto·mergeStack·3택 1)으로 바꿔 시드 7001~7020. B-2 기준 A 18/20·B 19/20 → 마당 맵 v4 ×0.1이면 20/20·20/20(너무 쉬움) → `stageHpMul["10"]` **0.18**에서 A 18/20·B 20/20 (B 처치 평균 약 31초). 1차 시안(v3 블록 맵)에서 잡았던 0.38은 마당 맵에서 A 8·B 13이라 버렸다.
+- **테스트**: Vitest 70파일 1341 통과 · 3 건너뜀 (`tests/unit/G1.test.ts` 40개 — 무더기·인원 한도·연쇄·도박·천장·3택 1·필살기·신화 조합·G-3 잠김 자리·리플레이 왕복·화면 모델·계정 도감). 리플레이 8개 다시 만듦(`npm run replays`, 새 `r7-g1`). `npm run check`·`npm run build` 통과.
+- **E2E (일부만, 전체 45분 묶음은 조정자가 합친 뒤)**: `e2e/g1.spec.ts` 9개 + 영향받는 20개 파일(a1·art·b1·battle-update·characters·devtools·f10·f10-boss·g1·hud-layout·m1·m2·m3a·m3b·m4·m5·map-fill·smoke·t2·t3-screen) 150개를 돌려 실패를 모두 고친 뒤 실패한 것만 다시 돌려 통과. 사용자 결정으로 바뀐 행동을 담던 테스트는 테스트를 고쳤다: 칸 24·마당 맵 좌표(0줄 = 길), 무더기 합류('그 칸 또는 같은 캐릭터 칸'), 인원 한도 20(채우기 테스트는 `unitCapBonus`로 한도를 올림), 5단계 3택 1 창(먼저 [나중에]·고르기), 돈 도박이 [🎰 도박] 시트로, 둥근 [📋]는 시트에 가림(✕로 닫기). 코드를 고친 것: [⬆ 강화] 높이 44px, 안내 카드가 둥근 버튼을 덮던 것, 위 HUD 높이 흔들림, '인원이 가득' 알림. devtools ×16 틱 수(1658 > 1650)는 시간 측정 흔들림이라 다시 돌려 통과.
+- **스크린샷** (412×915, DPR 1): `docs/screens/G1-map.png`(마당 맵·WAVE·몹 막대·조작 묶음) · `G1-stacks.png` · `G1-summon-gamble.png` · `G1-pity.png` · `G1-pick.png` · `G1-ult.png` · `G1-codex.png` · `G1-360.png`.
+- **남은 문제**:
+  - 캠페인 테마 1 맵(사거리 미로 v4, 경로 59 → 35칸)은 캠페인 봇이 없어 난이도를 재지 않았다.
+  - 첫 보스 봇은 필살기·소환 도박을 쓰지 않는다 → 사람이 쓰면 더 쉬울 수 있다.
+  - 인원 한도를 [⬆ 강화] 시트에서 올리는 항목은 아직 없다 (카드 '부대 확장'만). 행운석 자원은 넣지 않았다(사용자 '선택').
+  - 가로 화면처럼 무대가 아주 작으면 둥근 버튼이 맵 오른쪽 칸을 덮는다 (세로 휴대폰 기준 문제 없음).
+  - 맵 가장자리 열 캐릭터 그림이 조금 잘리는 것은 예전부터 있던 문제. 실제 기기 확인 필요.

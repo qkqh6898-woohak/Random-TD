@@ -483,6 +483,8 @@ test('미션: 달성하면 한 줄 배너·배지 "n 받기" → [받기]로 보
   await expect(page.locator('[data-testid="banner-gold"]', { hasText: '히든 미션 발견! 「소환 거부」 +2,000원' })).toBeVisible();
   const debugSaved = await page.evaluate(() => JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { hidden?: string[] });
   expect(debugSaved.hidden ?? []).not.toContain('h08');
+  // G-1 3택 1: 5단계 강화 선택 창이 먼저 뜬다 → [나중에]로 접기
+  await page.getByTestId('choice-later').click();
   await page.getByTestId('menu-mission').click();
   await page.getByTestId('sheet-tab-hidden').click();
   await expect(page.getByTestId('mission-row-h08').locator('.ms-name-text')).toHaveText('소환 거부');

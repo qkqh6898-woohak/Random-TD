@@ -328,6 +328,7 @@ export function craftReadyText(name: string): string {
 
 /** 신화 조합 실패 → 글자 */
 export function craftFailText(reason: string): string | null {
+  if (reason === 'locked') return '아직 해방하지 않은 신화예요';
   if (reason === 'material') return '재료가 모자라요';
   if (reason === 'full') return BOARD_FULL;
   return null;

@@ -493,6 +493,31 @@ describe('신화 조합 (craft)', () => {
     expect([ev.x, ev.y]).toEqual([p[2]![0], p[2]![1]]); // 비게 되는 칸 = 연금술사 칸
     expect(towersAt(m.world, p[0]![0], p[0]![1]).map((t) => t.id)).toEqual([miners[0]!.id, miners[1]!.id]);
   });
+
+  it('G-3 잠긴 신화 (isHiddenLocked): 재료가 모여도 locked로 실패, 도감에 🔒 해방 필요 (조각 n/20) · 기본(목록 없음)은 모두 열림', async () => {
+    const { isHiddenLocked } = await import('../../src/sim/unlocks');
+    const { codexSheetModel } = await import('../../src/ui/sheets/g1Models');
+    const m = arena(51);
+    const r = rules.recipes.findIndex((x) => x.id === 'goldking');
+    const p = m.map.buildable;
+    stack(m, 'miner', p[0]![0], p[0]![1]);
+    stack(m, 'merchant', p[1]![0], p[1]![1]);
+    stack(m, 'alchemist', p[2]![0], p[2]![1]);
+    expect(isHiddenLocked(m.ctx, 0, 'goldking')).toBe(false);
+    expect(craftPlan(m.ctx, m.world, 0, r).ok).toBe(true);
+    // G-3 갈래가 MatchContext.lockedHidden(플레이어별 Set)을 더한다 — 같은 모양으로 넣어 본다
+    (m.ctx as unknown as { lockedHidden: ReadonlySet<string>[] }).lockedHidden = [new Set(['goldking'])];
+    expect(isHiddenLocked(m.ctx, 0, 'goldking')).toBe(true);
+    expect(isHiddenLocked(m.ctx, 1, 'goldking')).toBe(false);
+    expect(craftPlan(m.ctx, m.world, 0, r)).toEqual({ ok: false, reason: 'locked' });
+    command(m, { type: 'craft', r });
+    expect(eventsOf(m, 'craftFail')[0]).toMatchObject({ reason: 'locked' });
+    expect(m.state.crafts).toBe(0);
+    const row = codexSheetModel(m.ctx, m.world, 0, data.towers.towers, new Set(['goldking']), () => ({ have: 7, need: 20 })).rows.find((x) => x.id === 'goldking')!;
+    expect(row).toMatchObject({ locked: true, craftable: false, note: '🔒 해방 필요 (조각 7/20)' });
+    const plain = codexSheetModel(m.ctx, m.world, 0, data.towers.towers, new Set()).rows.find((x) => x.id === 'goldking')!;
+    expect(plain.note).toBe('🔒 해방 필요');
+  });
 });
 
 describe('결정성: 새 명령이 든 판의 리플레이 왕복·저장 복원', () => {

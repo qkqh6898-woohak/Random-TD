@@ -136,6 +136,11 @@ for (const [w, h] of [
       const cells = await sim(page, (s) => s.match.map.buildable.map(([x, y]) => [x, y] as [number, number]));
       const filled = cells.filter(([x, y]) => (x + y) % 2 === 0);
       await place(page, filled.map(([x, y], i) => [x, y, BIG[i % 2]!] as [number, number, string]));
+      // G-1 인원 한도(20)를 넘겨 빈 칸을 모두 눌러 볼 수 있게 (카드 '부대 확장'과 같은 값 자리)
+      await sim(page, (s) => {
+        (s.match.state as unknown as { unitCapBonus: number[] }).unitCapBonus[0] = 20;
+        return null;
+      });
       const scales = await sim(page, (s) => s.match.towers().map((t) => s.towerLayer.artScaleOf(t.id) ?? 0));
       expect(Math.max(...scales), '혼자인 큰 캐릭터는 2배 이상').toBeGreaterThanOrEqual(2);
       const empty = cells.filter(([x, y]) => (x + y) % 2 !== 0);

@@ -8,15 +8,17 @@
  *   (상태·난수를 바꾸지 않는다). 난수는 쓰지 않는다.
  * - 성공: 'craft' 사건 {player, r, id, tower, x, y, removed: "x,y;…"} — 화면이 도감에 '발견'을 남긴다 (계정 저장, src/meta/account.ts).
  *   state.crafts += 1. 실패: 'craftFail' {player, r, reason}.
+ * - G-3 히든 해방: 잠긴 신화는 재료가 모여도 'locked' (src/sim/unlocks.ts isHiddenLocked — 이 갈래에서는 늘 열림).
  */
 import type { World } from '../World';
 import { isTower, type Tower } from '../entities/Tower';
 import type { MatchContext } from '../state';
 import { freePad, joinableStack } from './Board';
 import { placeTower } from './Summon';
+import { isHiddenLocked } from '../unlocks';
 
-/** 조합 실패 이유: 판이 끝남 / 없는 조합 / 재료가 모자람 / 결과를 놓을 칸이 없음 */
-export type CraftFail = 'phase' | 'unknown' | 'material' | 'full';
+/** 조합 실패 이유: 판이 끝남 / 없는 조합 / 아직 해방하지 않은 신화 (G-3) / 재료가 모자람 / 결과를 놓을 칸이 없음 */
+export type CraftFail = 'phase' | 'unknown' | 'locked' | 'material' | 'full';
 
 export type CraftPlan = { ok: true; materials: Tower[]; at: readonly [number, number] } | { ok: false; reason: CraftFail };
 
@@ -40,6 +42,7 @@ export function craftPlan(ctx: MatchContext, world: World, player: number, r: nu
   if (ctx.state.phase !== 'playing') return { ok: false, reason: 'phase' };
   const recipe = ctx.rules.recipes[r];
   if (!recipe) return { ok: false, reason: 'unknown' };
+  if (isHiddenLocked(ctx, player, recipe.id)) return { ok: false, reason: 'locked' };
   const mine: Tower[] = [];
   for (const e of world.entities.list()) if (isTower(e) && e.owner === player) mine.push(e);
   const chosen: Tower[] = [];

@@ -121,6 +121,9 @@ for (const vp of VIEWPORTS) {
     });
     expect(await skipStages(page, 10)).toBe(10);
     await expect(page.getByTestId('hud-boss')).toBeVisible();
+    // G-1 3택 1: 5단계 강화 선택 창이 떠 있다 → [나중에]로 접는다 (가로 화면에선 맵이 작아 창이 맵 전체를 덮는다)
+    await page.getByTestId('choice-later').click();
+    await expect(page.getByTestId('choice-card')).toBeHidden();
     const g = await geometry(page);
     expect(g.originY).toBe(before.originY); // 보스 막대가 보여도 맵이 밀리지 않음
     expect(g.hudBottom).toBeLessThanOrEqual(g.mapTop + 0.5);
@@ -130,9 +133,16 @@ for (const vp of VIEWPORTS) {
     expect(tb.top).toBeGreaterThanOrEqual(g.hudBottom - 0.5);
     expect(tb.bottom).toBeLessThanOrEqual(g.mapTop + 0.5);
 
-    // 0줄 (4, 0) 칸의 위쪽 10% 지점
-    const x = g.stageLeft + (g.originX + 4.5 * g.tile) * g.k;
-    const y = g.row0Top + g.tile * 0.1 * g.k;
+    // 맨 위 배치 줄의 왼쪽 끝 칸 (tx, top) 위쪽 10% 지점 (G-1 마당 맵: 0줄은 둘레 길, 배치는 1줄부터.
+    // 왼쪽 칸 — 오른쪽 끝은 맵 위 둥근 버튼(도전·미션) 자리라, 가로 화면처럼 무대가 아주 작으면 버튼이 칸을 덮는다)
+    const { tx, top } = await page.evaluate(() => {
+      const w = window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } };
+      const s = w.__rtd.game.scene.getScene('Game') as { match: { map: { buildable: [number, number][] } } };
+      const t = Math.min(...s.match.map.buildable.map(([, by]) => by));
+      return { top: t, tx: Math.min(...s.match.map.buildable.filter(([, by]) => by === t).map(([bx]) => bx)) };
+    });
+    const x = g.stageLeft + (g.originX + (tx + 0.5) * g.tile) * g.k;
+    const y = g.row0Top + (top + 0.1) * g.tile * g.k;
     const hit = await page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.tagName ?? '', [x, y] as const);
     expect(hit).toBe('CANVAS');
     // 보스 배너 한가운데도 터치를 통과시킨다 (HUD 띠는 버튼만 터치를 받는다)
@@ -158,8 +168,8 @@ for (const vp of VIEWPORTS) {
       .toBeGreaterThan(0);
     const tap = await page.evaluate(() => (window as unknown as { __taps: number[][] }).__taps[0]!);
     const tile = { tx: Math.floor((tap[0]! - g.originX) / g.tile), ty: Math.floor((tap[1]! - g.originY) / g.tile) };
-    expect(tile).toEqual({ tx: 4, ty: 0 });
-    // M2: 그 탭으로 (4, 0) 배치 칸에 소환된다 (보스 배너 아래 칸도 터치가 통과)
+    expect(tile).toEqual({ tx, ty: top });
+    // M2: 그 탭으로 (tx, top) 배치 칸에 소환된다 (보스 배너 아래 칸도 터치가 통과)
     await expect
       .poll(() =>
         page.evaluate(() => {
@@ -168,7 +178,7 @@ for (const vp of VIEWPORTS) {
           return s.match.towers().map((t) => `${t.tx},${t.ty}`);
         }),
       )
-      .toEqual(['4,0']);
+      .toEqual([`${tx},${top}`]);
     mkdirSync('test-results/screens', { recursive: true });
     await page.screenshot({ path: `test-results/screens/M1r-boss-${vp.width}x${vp.height}.png`, animations: 'disabled' });
     expect(errors).toEqual([]);
