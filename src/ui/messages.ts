@@ -82,6 +82,11 @@ export function hireFailText(reason: string, cost: number, gold: number, max: nu
   return null;
 }
 
+/** 단계 이자 알림 (피드백 #10): '💰 이자 +100원 (100원마다 10원)' */
+export function stageInterestText(amount: number, per: number, each: number): string {
+  return `💰 이자 +${withCommas(amount)}원 (${withCommas(per)}원마다 ${withCommas(each)}원)`;
+}
+
 /** 보스 이름표 앞부분: '질풍 군단 · 대장' (군주 직속은 계급 이름에 이미 들어 있어 '군주 직속 대장'만) */
 export function bossTag(legionName: string, rank: string): string {
   return rank.startsWith(legionName) ? rank : `${legionName} · ${rank}`;

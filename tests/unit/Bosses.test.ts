@@ -13,6 +13,7 @@ import { effectiveSpeed } from '../../src/sim/systems/Movement';
 import { applyHardCc } from '../../src/sim/systems/Status';
 import { placeTower } from '../../src/sim/systems/Summon';
 import { spawnBoss } from '../../src/sim/systems/Spawn';
+import { stageInterest } from '../../src/sim/systems/Stage';
 import { arena, campaign, command, data, eventsOf, infinite, jumpToStage } from '../helpers/match';
 
 const rules = buildMatchRules(data);
@@ -114,7 +115,7 @@ describe('보스 제한 시간 (M4-6, 90초)', () => {
     expect(m.state.stage).toBe(11);
     expect(bosses(m)).toHaveLength(0);
     expect(m.state.bossId).toBe('');
-    expect(m.state.gold).toBe(g0);
+    expect(m.state.gold).toBe(g0 + stageInterest(m.ctx, g0)); // 보스 보상 없음 — 단계를 지난 이자만 (피드백 #10)
     expect(m.state.cardOffers).toHaveLength(0);
   });
 });

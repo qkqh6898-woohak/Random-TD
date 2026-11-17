@@ -413,6 +413,9 @@ export interface MatchRules {
   readonly workerMax: number;
   readonly workerIntervalTicks: number;
   readonly workerIncome: number;
+  /** 단계 이자 (피드백 #10): 단계를 넘어갈 때 가진 돈 interestPer원마다 interestAmount원 */
+  readonly interestPer: number;
+  readonly interestAmount: number;
   /** 감지 오라를 벗어난 투명 몹이 드러난 채로 남는 틱 */
   readonly revealHoldTicks: number;
   /** 조합 편대와 규칙 */
@@ -734,6 +737,8 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
   | 'workerMax'
   | 'workerIntervalTicks'
   | 'workerIncome'
+  | 'interestPer'
+  | 'interestAmount'
   | 'revealHoldTicks'
   | 'formations'
   | 'formationPreviewTicks'
@@ -793,6 +798,8 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
     workerMax: game.worker.max,
     workerIntervalTicks: secondsToTicksExact(game.worker.intervalSeconds),
     workerIncome: game.worker.income,
+    interestPer: game.interest.per,
+    interestAmount: game.interest.amount,
     revealHoldTicks: secondsToTicksExact(game.detection.revealHoldSeconds),
     formations: Object.freeze(
       enemies.formations.map((f) =>

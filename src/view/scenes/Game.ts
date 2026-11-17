@@ -137,6 +137,7 @@ import {
   formationBanner,
   godDescends,
   hireFailText,
+  stageInterestText,
   invisibleTip,
   mergeFailText,
   mergeReadyToast,
@@ -2117,6 +2118,14 @@ export class GameScene extends Phaser.Scene {
           if (eventFxVisible('action', ev.tick, now, frameStart)) this.hud.gainGold(Number(ev.amount));
           this.noteFx('workerIncome');
           break;
+        case 'stageInterest':
+          // 단계 이자 (피드백 #10): 돈 글자 옆 +n원 + 알림
+          if (eventFxVisible('action', ev.tick, now, frameStart)) {
+            this.hud.gainGold(Number(ev.amount));
+            this.ctx.ui.toast(stageInterestText(Number(ev.amount), this.match.rules.interestPer, this.match.rules.interestAmount));
+          }
+          this.noteFx('stageInterest');
+          break;
         case 'bossSpawn': {
           {
             const bb = this.match.rules.bosses.get(String(ev.boss));
@@ -3119,7 +3128,7 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  /** 도전 [시작]: 미리 검사해 안 되면 알림, 되면 명령. 시작하면 시트를 닫아 맵을 보여 준다. */
+  /** 도전 [시작]: 미리 검사해 안 되면 알림, 되면 명령. 시작해도 시트는 열어 둔다 (피드백 #10 '도전 눌러도 계속 도전창 뜨게') — 줄은 '진행 중'으로 바뀐다. */
   private startChallenge(lv: number): void {
     if (this.paused || this.gameOver) return;
     const fail = challengeCheck(this.match.ctx, lv, this.match.tick);
@@ -3128,7 +3137,7 @@ export class GameScene extends Phaser.Scene {
       if (text) this.ctx.ui.toast(text);
       return;
     }
-    if (this.match.world.enqueue({ type: 'startChallenge', lv }).ok) this.closeSheet();
+    this.match.world.enqueue({ type: 'startChallenge', lv });
   }
 
   private claimMission(i: number): void {
