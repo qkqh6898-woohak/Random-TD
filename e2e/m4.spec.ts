@@ -134,12 +134,11 @@ async function ff(page: Page, ticks: number): Promise<void> {
 }
 
 /** 순환의 정원 안쪽 블록 가장자리 칸들 (경로와 맞닿음) */
-/** 순환의 정원 v3(G-1 큰 칸) 길에 닿은 12칸 + 네 귀퉁이 = 16칸 */
+/** 순환의 정원 v4(G-1 마당 맵) 길에 닿은 마당 가장자리 16칸 */
 const INNER: [number, number][] = [
-  [2, 3], [3, 3], [2, 4], [3, 4],
-  [0, 1], [1, 1], [4, 1], [5, 1],
-  [0, 6], [1, 6], [4, 6], [5, 6],
-  [0, 0], [5, 0], [0, 7], [5, 7],
+  [1, 1], [2, 1], [3, 1], [4, 1],
+  [1, 2], [4, 2], [1, 3], [4, 3], [1, 4], [4, 4], [1, 5], [4, 5],
+  [1, 6], [2, 6], [3, 6], [4, 6],
 ];
 
 function innerRing(kinds: string[], skip: [number, number][] = []): [number, number, string][] {
@@ -312,8 +311,8 @@ test('투명 몹: 감지 없이 처음 나오면 경고 배너, 정찰병 감지
   expect(await inScene(page, (s) => s.match.mobs().filter((m) => m.invisible).length, null)).toBeGreaterThan(0);
   // 정찰병 2개 (위·아래 경로)
   await place(page, [
-    [4, 1, 'scout'],
-    [4, 6, 'scout'],
+    [3, 2, 'scout'],
+    [3, 5, 'scout'],
   ]);
   await expect
     .poll(() => inScene(page, (s) => s.match.mobs().filter((m) => m.invisible && s.match.tick < m.revealedUntil).length, null), { timeout: 20_000 })
@@ -359,12 +358,12 @@ test('승급의 축복 카드: 승급하면 "결과 2개 중 선택" 창 → [�
   const idx = await inScene(page, (s) => s.match.rules.cards.findIndex((c) => c.id === 'mergeBless'), null);
   await inScene(page, (s, c) => s.match.world.enqueue({ type: 'debugCard', c }), idx);
   await place(page, [
-    [1, 0, 'goblin'],
-    [0, 0, 'goblin'],
+    [2, 1, 'goblin'],
     [1, 1, 'goblin'],
+    [2, 2, 'goblin'],
   ]);
   // 예전 승급 명령 (아무 칸의 같은 종류 3개 — 리플레이용으로 남은 명령)
-  await inScene(page, (s) => s.match.world.enqueue({ type: 'merge', x: 1, y: 0 }), null);
+  await inScene(page, (s) => s.match.world.enqueue({ type: 'merge', x: 2, y: 1 }), null);
   const panel = page.getByTestId('choice-merge');
   await expect(panel).toBeVisible();
   await expect(panel.locator('.cp-option')).toHaveCount(2);
@@ -386,12 +385,12 @@ test('승급의 축복을 정보 패널 [⬆ 승급]으로: 고르기 창이 뜨
   await inScene(page, (s, c) => s.match.world.enqueue({ type: 'debugCard', c }), idx);
   // G-1 칸 무더기: 같은 칸에 3개
   await place(page, [
-    [1, 0, 'goblin'],
-    [1, 0, 'goblin'],
-    [1, 0, 'goblin'],
-    [5, 0, 'archer'],
+    [2, 1, 'goblin'],
+    [2, 1, 'goblin'],
+    [2, 1, 'goblin'],
+    [4, 1, 'archer'],
   ]);
-  await tapTile(page, 1, 0);
+  await tapTile(page, 2, 1);
   await expect(page.getByTestId('tower-panel')).toBeVisible();
   await page.locator('.tp-merge').click();
   const choice = page.getByTestId('choice-merge');
@@ -401,7 +400,7 @@ test('승급의 축복을 정보 패널 [⬆ 승급]으로: 고르기 창이 뜨
   expect(await inScene(page, (s) => s.panelOpen, null)).toBe(false);
   await shot(page, 'M4-merge-pick-panel');
   // 창이 펼쳐진 동안 위쪽 타워 탭 → 창은 알약으로, 패널만 보인다
-  await tapTile(page, 5, 0);
+  await tapTile(page, 4, 1);
   await expect(page.getByTestId('tower-panel')).toBeVisible();
   await expect(choice).toBeHidden();
   expect(await inScene(page, (s) => s.choiceCollapsed, null)).toBe(true);
@@ -455,11 +454,11 @@ test('혼돈의 용(60단계): 15초마다 타워 3개 기절 → 기절한 타�
   const errors = collectErrors(page);
   await start(page);
   await place(page, [
-    [1, 0, 'archer'],
-    [0, 0, 'archer'],
-    [4, 0, 'archer'],
-    [5, 0, 'archer'],
+    [2, 1, 'archer'],
     [1, 1, 'archer'],
+    [3, 1, 'archer'],
+    [4, 1, 'archer'],
+    [2, 2, 'archer'],
   ]);
   await skipTo(page, 60);
   expect(await inScene(page, (s) => s.match.state.bossId, null)).toBe('chaosdragon');
@@ -484,13 +483,13 @@ test('M4 스크린샷: 40단계 망령 군주 — 줄어드는 보스 막대 + �
   await place(page, [
     [2, 3, 'scout'],
     [3, 4, 'scout'],
-    [0, 6, 'scout'],
-    [5, 1, 'scout'],
+    [1, 5, 'scout'],
+    [4, 2, 'scout'],
     ...innerRing(['fortuna', 'dragoncaller', 'archmage', 'warlord'], [
       [2, 3],
       [3, 4],
-      [0, 6],
-      [5, 1],
+      [1, 5],
+      [4, 2],
     ]),
   ]);
   await skipTo(page, 40);

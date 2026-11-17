@@ -92,7 +92,7 @@ test.describe('A-1 자동 저장·이어 하기', () => {
     await page.getByRole('button', { name: '배속' }).click();
     await expect(page.getByRole('button', { name: '배속' })).toHaveText(/2/);
     await page.getByTestId('hud-ready').click();
-    await expect(page.getByTestId('hud-stage')).toHaveText('1단계');
+    await expect(page.getByTestId('hud-stage')).toHaveText('WAVE 1');
 
     // 앱이 백그라운드로 (안드로이드 GameActivity.onPause → 이 사건)
     await page.evaluate(() => window.dispatchEvent(new Event('randomtd:native-pause')));
@@ -124,7 +124,7 @@ test.describe('A-1 자동 저장·이어 하기', () => {
     expect(after.workers).toBe(1);
     expect(after.towers).toBe(before.towers);
     expect(after.tick).toBeGreaterThanOrEqual(before.tick);
-    await expect(page.getByTestId('hud-stage')).toHaveText('1단계');
+    await expect(page.getByTestId('hud-stage')).toHaveText('WAVE 1');
     await expect(page.getByRole('button', { name: '배속' })).toHaveText(/2/);
 
     // ⏸ → [타이틀로] → [이어 하기] 그대로 → [새 게임] → [새 게임 시작] → 새 판

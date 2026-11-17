@@ -347,6 +347,11 @@ export interface MapData {
   lives?: number;
   /** 배치 블록 (T-3: 모두 2×2 — `MAP_BLOCK_SIZE`, checkMapBlocks) */
   blocks: Record<string, { x: number; y: number; w: number; h: number }>;
+  /**
+   * 배치 칸 문법 (G-1): 'blocks' (기본, T-3 — 2×2 블록 + 직각 미로) · 'field' (G-1 사용자 결정 '큰 소환 마당 둘레를 적이 돈다' —
+   * 블록 = 2×2 이상 아무 크기의 직사각형 마당, 길은 마당 바깥을 한 바퀴)
+   */
+  layout?: 'blocks' | 'field';
   buildableCount: number;
   notes: string;
 }
@@ -409,6 +414,8 @@ export interface SummonGambleKind {
 /** 칸 한 개에 쌓는 타워 (G-1 사용자 결정 '한 칸에 같은 캐릭터 최대 3개'). */
 export interface BoardConfig {
   stackMax: number;
+  /** 판 안 내 타워 인원 한도 (G-1 '유닛 n / 최대', 카드 '부대 확장'으로 늘어남) */
+  unitCap: number;
 }
 
 /** 필살기 (G-1): 등급별 공격 몇 번에 가득 차는가, 타워 → 종류 규칙(처음 맞는 것), 종류별 수치. */
@@ -717,6 +724,7 @@ export const CARD_EFFECTS = [
   'apsPct',
   'pityCut',
   'ultCharge',
+  'unitCap',
 ] as const;
 export type CardEffectType = (typeof CARD_EFFECTS)[number];
 
@@ -1223,12 +1231,17 @@ function checkMap(m: MapData, root: string, issues: Issue[]): void {
  * 2×2 블록 문법 (T-3): 블록은 모두 MAP_BLOCK_SIZE×MAP_BLOCK_SIZE이고 블록 칸은 모두 B, 블록끼리 겹치거나 맞닿지 않으며
  * (길·빈 땅으로 떨어져 있음 — 위아래·옆으로 붙은 칸이 없음), 블록 밖에는 B가 없다. 테마 2~10 맵도 이 검사를 통과해야 한다.
  */
-export function checkMapBlocks(m: Pick<MapData, 'tiles' | 'blocks'>, path: string, issues: Issue[]): void {
+export function checkMapBlocks(m: Pick<MapData, 'tiles' | 'blocks'> & Partial<Pick<MapData, 'layout'>>, path: string, issues: Issue[]): void {
   const owner = new Map<string, string>();
   const at = (x: number, y: number): string | undefined => m.tiles[y]?.[x];
+  const field = m.layout === 'field';
   for (const [name, b] of Object.entries(m.blocks)) {
-    if (b.w !== MAP_BLOCK_SIZE || b.h !== MAP_BLOCK_SIZE) {
-      issues.push({ path: `${path}blocks.${name}`, message: `블록은 ${MAP_BLOCK_SIZE}×${MAP_BLOCK_SIZE}이어야 한다 (지금 ${b.w}×${b.h})` });
+    // 'field' 맵 (G-1): 마당은 2×2 이상 아무 크기의 직사각형
+    if (field ? b.w < MAP_BLOCK_SIZE || b.h < MAP_BLOCK_SIZE : b.w !== MAP_BLOCK_SIZE || b.h !== MAP_BLOCK_SIZE) {
+      issues.push({
+        path: `${path}blocks.${name}`,
+        message: field ? `마당은 ${MAP_BLOCK_SIZE}×${MAP_BLOCK_SIZE} 이상이어야 한다 (지금 ${b.w}×${b.h})` : `블록은 ${MAP_BLOCK_SIZE}×${MAP_BLOCK_SIZE}이어야 한다 (지금 ${b.w}×${b.h})`,
+      });
       continue;
     }
     for (let y = b.y; y < b.y + b.h; y++) {
@@ -1284,6 +1297,7 @@ export const mapSchema: Schema = s.withCheck<MapData>(
     mobLimit: s.opt(s.int({ min: 1 })),
     lives: s.opt(s.int({ min: 1 })),
     blocks: s.rec(s.obj({ x: s.int({ min: 0 }), y: s.int({ min: 0 }), w: s.int({ min: 1 }), h: s.int({ min: 1 }) })),
+    layout: s.opt(s.str({ enum: ['blocks', 'field'] })),
     buildableCount: s.int({ min: 0 }),
     notes: s.str(),
   }),
@@ -1341,7 +1355,7 @@ export const gameSchema: Schema = s.obj({
     autoRadius: s.int({ min: 0, max: 10 }),
     pity: pitySchema,
   }),
-  board: s.obj({ stackMax: s.int({ min: 1, max: 6 }) }),
+  board: s.obj({ stackMax: s.int({ min: 1, max: 6 }), unitCap: s.int({ min: 1, max: 1000 }) }),
   summonGamble: s.obj({
     kinds: s.arr(
       s.withCheck<SummonGambleKind>(
@@ -1888,6 +1902,7 @@ function crossCheckM4(data: GameData, issues: Issue[]): void {
     apsPct: [{ key: 'value' }],
     pityCut: [{ key: 'value', int: true }],
     ultCharge: [{ key: 'value' }],
+    unitCap: [{ key: 'value', int: true }],
   };
   // G-1: 묶음마다 보여 줄 카드가 넉넉한지 (같은 묶음 안 카드는 서로 다르다)
   for (const pool of CARD_POOLS) {

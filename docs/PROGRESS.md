@@ -1055,6 +1055,7 @@
 
 > 사용자 결정 (한국어 요청 정리): ① 연쇄 승급 ② 소환 도박 4종 ③ 천장 ④ 3택 1 강화 선택 ⑤ 캐릭터 필살기 ⑥ 신화 조합 도감 ⑦ 소환칸을 줄이고 크게 +
 > 진행 중 추가 결정: **한 칸에 같은 캐릭터 최대 3개(무더기)** · 하단 메뉴를 **[신화] [소환] [도박] [강화]** 탭으로 · 히든 영웅 조각(G-3)은 다음 마일스톤 (도감은 조합마다 잠김/해방 값을 더할 수 있게만).
+> 2차 결정 (인기 2인 랜덤 디펜스 화면 구조를 1인용으로, 그림·이름·글자는 우리 것): **소환 마당 둘레를 적이 도는 맵** · 아래 **[신화] [소환] [도박] + 소환 아래 [강화]** 묶음과 얇은 자원 줄(돈·인원 n/한도) · 도전·미션은 맵 오른쪽 둥근 버튼 · 위 HUD **'WAVE n' + 남은 시간 + 몹 수 막대** · **인원 한도**(데이터) · [도박] 시트에 돈 도박 + 소환 도박 4종·천장 (그래서 1차의 [소환] 탭은 없어짐).
 > 다른 갈래(그림·연출, `/home/user/rtd-g2`)와 같이 진행 — 이 갈래는 Fx.ts·TowerSprite.ts·styles.css를 **덧붙이기만** 했다(맨 끝에 새 클래스, TowerSprite는 무더기 자리 몇 줄).
 
 - **sim (명령 7개 추가 — 예전 `summon`·`merge`·`mergeAll`·`move`는 뜻 그대로라 예전 리플레이가 같은 결과)**
@@ -1066,11 +1067,12 @@
   - `systems/Ultimate.ts` 필살기 (`ult {id}`): 히어로 이상 공격마다 게이지(Tower.ult, 처음 공격할 때 생기는 필드), 폭격·기절·가속(전군 가속은 `towerBonus` 공속%, 끝나면 시스템이 지움).
   - `systems/Craft.ts` 신화 조합 (`craft {r}`): 재료 = 그 종류 가장 나중 것부터, 결과 칸 = 비게 되는 첫 재료 칸 → 같은 신화 무더기 → 자동 빈 칸.
   - 판 상태(해시·저장·리플레이에 들어감): `pity`·`pityCut`·`ultChargeBp`·`rallyBp`·`rallyUntil`·`gachas`·`crafts`·`ults` (늘 있는 필드 — 예전 저장은 데이터 지문이 달라 어차피 무효).
-- **데이터**: `game.json` v12 — `board.stackMax` 3 · `merge.chainMax` 12 · `summon.pity {n:30, grade:rare}` · `summonGamble.kinds` 4종 · `ultimate`(등급별 공격 수·종류 규칙·수치). `cards.json` v2 — `pick {from:5, every:10}`, `pools`, 카드 17장. 스키마·교차 검사(확률 합·0.0001 단위·천장 등급·stackMax = merge.count·묶음별 카드 수). 맵 `circle` v3(6×8·20칸)·`crossroads` v4(7×10·24칸·경로 35). `enemies.json bossCycle.stageHpMul["10"]` 0.1 → **0.38**. `gen_tables.py` 블록 하한 6 → 5 (큰 칸 6×8 맵은 2×2 블록 5개가 한계).
+- **데이터**: `game.json` v12 — `board.stackMax` 3 · `merge.chainMax` 12 · `summon.pity {n:30, grade:rare}` · `summonGamble.kinds` 4종 · `ultimate`(등급별 공격 수·종류 규칙·수치). `cards.json` v2 — `pick {from:5, every:10}`, `pools`, 카드 17장. 스키마·교차 검사(확률 합·0.0001 단위·천장 등급·stackMax = merge.count·묶음별 카드 수). `board.unitCap` 20 + 카드 '부대 확장'(+3). 맵 `circle` v4 = `layout: "field"` 마당 맵(6×8, 가운데 4×6 = 24칸, 둘레 고리 24칸 — 1차 시안 v3 6×8·2×2 블록 20칸은 2차 결정으로 바꿈)·`crossroads` v4(7×10·2×2 블록 24칸·경로 35). `checkMapBlocks`·`gen_tables.py`: 마당 맵은 마당 = 2×2 이상 직사각형 + 길 loop, 블록 맵은 2×2 그대로(블록 하한 6 → 5). `enemies.json bossCycle.stageHpMul["10"]` 0.1 → **0.18**.
 - **화면**:
-  - 하단 메뉴 [💠 신화] [✨ 소환] [🎰 도박] [⬆ 강화] + 작은 [⚔] [📋] (+ [🛠]) — 좁은 칸 배지는 숫자만 보인다(낱말은 CSS로 숨김, 글자 내용은 그대로).
-  - `ui/sheets/SummonSheet.ts`(일반 소환·도박 4종·확률·천장·종족 칩·마지막 결과), `MythicSheet.ts`(도감 12줄·실루엣·힌트·[제작]), `UpgradeSheet.ts`의 도박 탭을 `createGambleSheet`로 떼어 냄(testid 그대로), `g1Models.ts`(순수 모델).
-  - HUD 1줄 [⚡ n] 필살기 칩 + 목록·[모두 발동], 일시정지 '필살기 자동'(`rtd.settings.ultAuto`).
+  - 위 HUD: 왼쪽 배속(개발자 ⏭·💰+) · 가운데 'WAVE n'(`hudModel.waveLabel`) + 남은 시간 · 오른쪽 [⚡ n] 필살기 칩(목록·[모두 발동]) · ⏸ / 둘째 줄 몹 수 막대(`countFill`).
+  - 아래: 자원 줄 [💰·🗼 인원 n/한도·👷·카드 알약·⬆ n·👷 고용] + 큰 버튼 [💠 신화] [🎲 소환 (천장 n)] [🎰 도박] / 소환 아래 [⬆ 강화] + 맵 오른쪽 둥근 [⚔] [📋] (+ [🛠]) — 둥근 버튼 배지는 숫자만(낱말은 CSS로 숨김, 글자 내용은 그대로).
+  - `ui/sheets/SummonSheet.ts`(`createSummonPane` — 일반 소환·도박 4종·확률·천장·종족 칩·마지막 결과), `MythicSheet.ts`(도감 12줄·실루엣·힌트·[제작]), `UpgradeSheet.ts`의 도박 탭을 `createGambleSheet`(탭 💰 돈 도박 · ✨ 소환 도박)로 떼어 냄(testid 그대로), `g1Models.ts`(순수 모델).
+  - 일시정지 '필살기 자동'(`rtd.settings.ultAuto`).
   - Game 장면: 맵 탭 = `summonPad`, [🎲 소환]·빈 땅 꾹 = `summonAuto`, 가득 찬 칸 탭·패널 [승급]·[모두 승급] = `mergeStack`, 끌기·[↔ 이동] = `moveStack`, 승급 가능·첫 승급 안내·미리 보기는 무더기 기준. 사건 알림: 연쇄 승급 ×n · 소환 도박 결과(레전드·신은 배너) · 신화 탄생 · 필살기.
   - 무더기 그림 `view/render/stackGeom.ts`(1 가운데·2 좌우·3 삼각형, 크기 0.78/0.68) + TowerSprite `setSlot`(받침대도 같이 작게, 끄는 동안 같은 칸 그림이 손가락을 따라옴). 패널 이름 '궁수 ×3'.
   - 신화 도감 기록: 계정 `rtd.account`에 `codex: { 조합 id: { found: true } }` (예전 저장도 읽음, 모르는 필드는 남김 → G-3 잠김/해방 값 자리). 만들었을 때 + 재료를 한꺼번에 가졌을 때(10틱마다 확인). 개발자 판은 기록하지 않는다(히든 미션과 같은 규칙).

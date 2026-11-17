@@ -17,14 +17,13 @@ const rules = buildMatchRules(data);
 const t = (id: string): number => rules.towerOrder.indexOf(id);
 
 /**
- * 순환의 정원 v3(G-1 큰 칸)의 경로와 맞닿은 칸 12개(고리 안 블록 4 + 위·아래 블록의 고리 쪽 줄 8) + 네 귀퉁이 4칸 = 16칸에
- * 타워를 돌려 가며 놓는다 (debug, skip 칸 제외). 나머지 4칸은 봇 소환용.
+ * 순환의 정원 v4(G-1 마당 맵)의 길에 닿은 칸 = 마당 가장자리 16칸 (x 1~4 · y 1~6의 둘레)에 타워를 돌려 가며 놓는다
+ * (debug, skip 칸 제외). 가운데 8칸은 봇 소환용.
  */
 const RING16: readonly [number, number][] = [
-  [2, 3], [3, 3], [2, 4], [3, 4],
-  [0, 1], [1, 1], [4, 1], [5, 1],
-  [0, 6], [1, 6], [4, 6], [5, 6],
-  [0, 0], [5, 0], [0, 7], [5, 7],
+  [1, 1], [2, 1], [3, 1], [4, 1],
+  [1, 2], [4, 2], [1, 3], [4, 3], [1, 4], [4, 4], [1, 5], [4, 5],
+  [1, 6], [2, 6], [3, 6], [4, 6],
 ];
 function innerRing(kinds: string[], skip: readonly [number, number][] = []): [number, number, number][] {
   const out: [number, number, number][] = [];
@@ -54,29 +53,30 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
   },
   {
     name: 'r2-abilities',
-    note: '무한 모드 debug: 특색 12종 + 화염 마법사를 먼저 놓고 (G-1 큰 칸 20칸 — 소환·승급 자리 7칸을 남김) 소환·모두 승급·이동·교환 15단계 (상태 이상·오라·웅덩이·병사·운석·행운의 여신)',
+    note: '무한 모드 debug: 특색 12종 + 화염 마법사를 먼저 놓고 (G-1 마당 24칸 — 소환·승급 자리를 남김) 소환·모두 승급·이동·교환 15단계 (상태 이상·오라·웅덩이·병사·운석·행운의 여신)',
     match: { seed: 7, mode: 'infinite', debug: true },
     bot: {
       endTick: 1200 + 15 * 1200,
       allMerge: true,
       moveEvery: 900,
-      // G-1: 순환의 정원 v3 (6×8, 큰 칸 20칸) 칸으로 옮김
+      // G-1: 순환의 정원 v4 (6×8 마당 맵, 24칸) 칸으로 옮김
       debugTowers: [
         // 몹은 (0,2)에서 나와 윗줄 길을 먼저 지난다 → 맞아야 일하는 특색(웅덩이·빙결·병사·운석·시간 정지·주사위)을 윗줄 쪽에.
         // 큰 칸 맵은 길이 짧아 몹이 고리 끝((0,5) 쪽)까지 거의 오지 않는다
-        [0, 1, t('mudshaman')],
+        // 첫 타워는 봇의 '교환'에 끌려다닌다 → 몹 없이도 일하는 연금술사를 먼저
+        [4, 1, t('alchemist')],
+        [1, 2, t('mudshaman')],
         [1, 1, t('icemage')],
-        [4, 1, t('summoner')],
-        [5, 1, t('flamemage')],
+        [3, 2, t('summoner')],
+        [4, 2, t('flamemage')],
         [2, 3, t('archmage')],
         [3, 3, t('chronomancer')],
         [2, 4, t('blacksmith')],
         [3, 4, t('scholar')],
-        [0, 0, t('gambler')],
-        [4, 0, t('fortuna')],
-        [5, 0, t('alchemist')],
-        [1, 6, t('dragoncaller')],
-        [4, 6, t('assassin')],
+        [2, 2, t('gambler')],
+        [3, 1, t('fortuna')],
+        [2, 5, t('dragoncaller')],
+        [3, 5, t('assassin')],
       ],
     },
   },
@@ -108,13 +108,13 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       pickCard: 1,
       workers: 3,
       debugTowers: [
-        [0, 1, t('mudshaman')],
-        [5, 1, t('mudshaman')],
-        [0, 6, t('flamemage')],
-        [5, 6, t('flamemage')],
+        [1, 2, t('mudshaman')],
+        [4, 2, t('mudshaman')],
+        [1, 5, t('flamemage')],
+        [4, 5, t('flamemage')],
         [2, 3, t('scout')],
         [3, 4, t('scout')],
-        ...innerRing(['dragoncaller', 'archmage', 'warlord', 'fortuna'], [[0, 1], [5, 1], [0, 6], [5, 6], [2, 3], [3, 4]]),
+        ...innerRing(['dragoncaller', 'archmage', 'warlord', 'fortuna'], [[1, 2], [4, 2], [1, 5], [4, 5], [2, 3], [3, 4]]),
       ],
     },
   },
@@ -154,7 +154,7 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       ],
       gamble: { t: 1, every: 100 },
       pickCard: 0,
-      debugTowers: [[1, 0, t('celestial')], [4, 7, t('celestial')], ...innerRing(['infiniteblade', 'warlord', 'goldking', 'archmage', 'fortuna'])],
+      debugTowers: [[2, 1, t('celestial')], [3, 6, t('celestial')], ...innerRing(['infiniteblade', 'warlord', 'goldking', 'archmage', 'fortuna'])],
     },
   },
   {
@@ -172,11 +172,11 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       debugTowers: [
         [2, 3, t('swordsaint')],
         [3, 4, t('chronomancer')],
-        [1, 1, t('scholar')],
+        [2, 2, t('scholar')],
         // 신화 '황금 왕' 재료 (광부·상인·연금술사)
-        [4, 6, t('miner')],
-        [5, 6, t('merchant')],
-        [5, 7, t('alchemist')],
+        [3, 5, t('miner')],
+        [4, 5, t('merchant')],
+        [4, 6, t('alchemist')],
       ],
     },
   },
@@ -300,7 +300,7 @@ describe('M4 리플레이', () => {
 describe('기록 → 재생', () => {
   it('짧은 판을 기록해 JSON으로 저장·읽기 → 재생하면 같은 해시, 두 번 재생해도 같다', () => {
     const m = createMatch(data, { seed: 99, mode: 'infinite', debug: true });
-    runBot(m, { endTick: 3000, moveEvery: 700, debugTowers: [[2, 3, t('icemage')], [4, 7, t('summoner')]] });
+    runBot(m, { endTick: 3000, moveEvery: 700, debugTowers: [[2, 3, t('icemage')], [3, 6, t('summoner')]] });
     const file = recordReplay(data, m, { name: 'short', checkpointTicks: 100 });
     expect(file.finalHash).toBe(m.hash());
     const loaded = JSON.parse(replayToJson(file)) as ReplayFile;

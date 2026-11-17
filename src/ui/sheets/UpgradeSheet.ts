@@ -19,6 +19,8 @@ import { attachHoldRepeat, gambleHoldDelay, type HoldHandle } from '../hold';
 import { createBottomSheet, type BottomSheetView } from './BottomSheet';
 import type { GambleSheetModel, GambleTableModel, UpgradeRowModel, UpgradeSheetModel, UpgradeTab } from './sheetModels';
 import type { SlotFrame } from './slot';
+import { createSummonPane, type SummonSheetOptions } from './SummonSheet';
+import type { SummonSheetModel } from './g1Models';
 
 export interface UpgradeSheetOptions {
   onUpgrade: (k: number) => boolean;
@@ -39,9 +41,12 @@ export interface UpgradeSheetView extends BottomSheetView<UpgradeTab> {
   update(model: UpgradeSheetModel): void;
 }
 
-export interface GambleSheetView extends BottomSheetView<never> {
+/** G-1 [🎰 도박] 시트 탭: 돈 도박 · 소환 도박 */
+export type GambleTab = 'money' | 'summon';
+
+export interface GambleSheetView extends BottomSheetView<GambleTab> {
   /** slots: 테이블 번호 → 그 테이블 릴 (돌린 적 없으면 없음) */
-  update(gamble: GambleSheetModel, slots: ReadonlyMap<number, GambleSlotView>): void;
+  update(gamble: GambleSheetModel, slots: ReadonlyMap<number, GambleSlotView>, summon?: SummonSheetModel, summonResult?: string): void;
   /** 그 테이블 버튼을 꾹 누르는 중(자동 연속)인가 — E2E·테스트 */
   gambleAuto(t: number): boolean;
 }
@@ -49,6 +54,10 @@ export interface GambleSheetView extends BottomSheetView<never> {
 export interface GambleSheetOptions {
   onGamble: (t: number) => GambleFire;
   onClose: () => void;
+  /** G-1 '✨ 소환 도박' 탭 (일반 소환 + 소환 도박 4종 + 천장) */
+  summon?: { opts: Omit<SummonSheetOptions, 'onClose'>; first: SummonSheetModel };
+  tab?: GambleTab;
+  onTab?: (tab: GambleTab) => void;
 }
 
 interface RowEls {
@@ -173,9 +182,33 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
  * 테이블마다 한 줄 [버튼 · 릴 · 결과 · 자동], 잭팟 게이지, 배율표·기대값, 최근 결과.
  */
 export function createGambleSheet(opts: GambleSheetOptions, firstGamble: GambleSheetModel): GambleSheetView {
-  const sheet = createBottomSheet<never>({ kind: 'gamble', title: '🎰 도박', onClose: opts.onClose });
+  const summon = opts.summon ? createSummonPane(opts.summon.opts, opts.summon.first) : null;
   const pane = h('div', { class: 'up-pane gb-pane', attrs: { 'data-pane': 'gamble' } });
+  const show = (t: GambleTab): void => {
+    pane.hidden = t !== 'money';
+    if (summon) summon.el.hidden = t !== 'summon';
+  };
+  const sheet = createBottomSheet<GambleTab>({
+    kind: 'gamble',
+    title: '🎰 도박',
+    ...(summon
+      ? {
+          tabs: [
+            { id: 'money', label: '💰 돈 도박' },
+            { id: 'summon', label: '✨ 소환 도박' },
+          ],
+          tab: opts.tab ?? 'money',
+          onTab: (t: GambleTab) => {
+            show(t);
+            opts.onTab?.(t);
+          },
+        }
+      : {}),
+    onClose: opts.onClose,
+  });
   sheet.body.append(pane);
+  if (summon) sheet.body.append(summon.el);
+  show(sheet.tab ?? 'money');
   // ---- 도박 (T-2): 테이블마다 한 줄 [버튼 · 릴 · 결과 · 자동]
   const gaugeCells = Array.from({ length: firstGamble.gaugeMax }, () => h('span', { class: 'gb-cell' }));
   const gaugeText = h('span', { class: 'gb-gauge-text', attrs: { 'data-testid': 'gamble-gauge' } });
@@ -248,7 +281,8 @@ export function createGambleSheet(opts: GambleSheetOptions, firstGamble: GambleS
     get tab() {
       return sheet.tab;
     },
-    update(gb, slots) {
+    update(gb, slots, sm, smResult) {
+      if (summon && sm) summon.update(sm, smResult ?? '');
       // 도박: 테이블마다 버튼 상태 · 릴 · 결과 · 자동 표시
       for (const tb of gb.tables) {
         const e = tableEls.get(tb.t);
@@ -298,6 +332,7 @@ export function createGambleSheet(opts: GambleSheetOptions, firstGamble: GambleS
     },
     destroy() {
       for (const e of tableEls.values()) e.hold.detach();
+      summon?.destroy();
       sheet.destroy?.();
     },
   };

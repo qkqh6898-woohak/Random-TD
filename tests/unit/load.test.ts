@@ -44,10 +44,11 @@ describe('번들 데이터 로드', () => {
     expect(data.game.speeds.map((x) => x.mul)).toEqual([1, 2, 4, 8, 16]);
   });
 
-  it('맵 파일을 자동으로 모두 읽는다 (G-1 큰 칸 2×2 블록: circle 20칸, crossroads 24칸)', () => {
+  it('맵 파일을 자동으로 모두 읽는다 (G-1: circle 마당 24칸, crossroads 2×2 블록 24칸)', () => {
     const { maps } = loadGameData();
     expect(Object.keys(maps).sort()).toEqual(['circle', 'crossroads']);
-    expect(maps.circle?.buildableCount).toBe(20);
+    expect(maps.circle?.buildableCount).toBe(24);
+    expect(maps.circle?.layout).toBe('field');
     expect(maps.circle?.mode).toBe('infinite');
     expect(maps.crossroads?.buildableCount).toBe(24);
     expect(maps.crossroads?.lives).toBe(20);
@@ -96,11 +97,11 @@ describe('데이터 로더 에러 메시지 (필드 경로)', () => {
     const raw = rawCopy();
     const circle = raw.maps.circle as Json;
     const tiles = circle.tiles as string[];
-    tiles[0] = tiles[0]!.slice(0, -2); // 'BBXX' (B 두 개가 빠짐)
+    tiles[1] = tiles[1]!.slice(0, -2); // 'PBBB' (B 하나와 P가 빠짐)
     (circle.waypoints as number[][])[1] = [5, 3];
     const issues = issuesOf(() => buildGameData(raw));
     const paths = issues.map((i) => `${i.file}|${i.path}`);
-    expect(paths).toContain('maps/circle.json|tiles[0]');
+    expect(paths).toContain('maps/circle.json|tiles[1]');
     expect(paths).toContain('maps/circle.json|buildableCount');
     expect(paths).toContain('maps/circle.json|waypoints[1]');
   });
@@ -141,13 +142,13 @@ describe('데이터 로더 에러 메시지 (필드 경로)', () => {
     const raw = rawCopy();
     const circle = raw.maps.circle as Json;
     const wps = circle.waypoints as number[][];
-    wps[wps.length - 1] = [0, 7];
+    wps[wps.length - 1] = [0, 6];
     const issues = issuesOf(() => buildGameData(raw));
     expect(issues.some((i) => i.file === 'maps/circle.json' && i.path === 'waypoints' && i.message.includes('loop'))).toBe(true);
 
     const raw2 = rawCopy();
     const wps2 = (raw2.maps.circle as Json).waypoints as number[][];
-    wps2.splice(1, 0, [0, 2]);
+    wps2.splice(1, 0, [0, 0]);
     const issues2 = issuesOf(() => buildGameData(raw2));
     expect(issues2.some((i) => i.path === 'waypoints[1]' && i.message.includes('길이 0'))).toBe(true);
   });
@@ -320,25 +321,30 @@ describe('M1 데이터: 곡선 표·등장 규칙·판 설정', () => {
     const raw = rawCopy();
     const circle = raw.maps.circle as Json;
     const tiles = circle.tiles as string[];
-    tiles[2] = 'PPPXPP'; // (3,2)는 경로인데 X
-    tiles[3] = 'PPBBXP'; // (1,3)은 P인데 경로가 아님
+    tiles[0] = 'PPPXPP'; // (3,0)은 경로인데 X
+    tiles[3] = 'PPBBBP'; // (1,3)은 P인데 경로가 아님
     const issues = issuesOf(() => buildGameData(raw));
     const msgs = issues.filter((i) => i.path === 'tiles').map((i) => i.message);
-    expect(msgs).toContain('경로가 지나는데 P가 아닌 칸: [3,2]');
+    expect(msgs).toContain('경로가 지나는데 P가 아닌 칸: [3,0]');
     expect(msgs).toContain('경로가 지나지 않는 P 칸: [1,3]');
   });
 
-  it('맵 2×2 블록 문법 (T-3): 3×3 블록·블록 밖 배치 칸은 로드할 때 잡는다', () => {
+  it('맵 2×2 블록 문법 (T-3): 3×3 블록·블록 밖 배치 칸은 로드할 때 잡는다 · 마당 맵(G-1)은 2×2 이상 직사각형', () => {
     const raw = rawCopy();
-    const circle = raw.maps.circle as Json;
-    (circle.blocks as Record<string, Json>)['안1'] = { x: 1, y: 3, w: 3, h: 2 };
-    const tiles = circle.tiles as string[];
-    tiles[5] = 'PXXBXXP'; // 블록 밖 B
-    circle.buildableCount = 33;
+    const cross = raw.maps.crossroads as Json;
+    (cross.blocks as Record<string, Json>)['A'] = { x: 1, y: 1, w: 3, h: 2 };
+    const tiles = cross.tiles as string[];
+    tiles[0] = 'PXBPXXX'; // 블록 밖 B
+    cross.buildableCount = 25;
     const issues = issuesOf(() => buildGameData(raw));
-    const msgs = issues.filter((i) => i.file === 'maps/circle.json').map((i) => `${i.path}|${i.message}`);
-    expect(msgs).toContain('blocks.안1|블록은 2×2이어야 한다 (지금 3×2)');
-    expect(msgs.some((m) => m.startsWith('tiles|블록 밖 배치 칸(B)') && m.includes('[3,5]'))).toBe(true);
+    const msgs = issues.filter((i) => i.file === 'maps/crossroads.json').map((i) => `${i.path}|${i.message}`);
+    expect(msgs).toContain('blocks.A|블록은 2×2이어야 한다 (지금 3×2)');
+    expect(msgs.some((m) => m.startsWith('tiles|블록 밖 배치 칸(B)') && m.includes('[2,0]'))).toBe(true);
+    // 마당 맵: 4×6 마당은 통과, 1칸짜리 마당은 걸린다
+    const raw2 = rawCopy();
+    ((raw2.maps.circle as Json).blocks as Record<string, Json>)['마당'] = { x: 1, y: 1, w: 1, h: 6 };
+    const msgs2 = issuesOf(() => buildGameData(raw2)).filter((i) => i.file === 'maps/circle.json').map((i) => i.message);
+    expect(msgs2.some((m) => m.includes('마당은 2×2 이상'))).toBe(true);
   });
 });
 
@@ -393,7 +399,7 @@ describe('M4 데이터: 몹 특성·보스·편대·카드', () => {
 
   it('cards.json도 함께 읽는다 (보스 12장 + G-1 강화 선택 5장, 3장 묶음)', () => {
     const data = loadGameData();
-    expect(data.cards.cards).toHaveLength(17);
+    expect(data.cards.cards).toHaveLength(18);
     expect(data.cards.pick).toEqual({ from: 5, every: 10 });
     expect(data.cards.offerSize).toBe(3);
   });

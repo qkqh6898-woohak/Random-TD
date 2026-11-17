@@ -493,7 +493,7 @@ test('일반 주소: 개발자 UI 없음 ([🛠 개발]·[🛠 변환]·⏭), �
   expect(errors).toEqual([]);
 });
 
-test('아래 띠: [🗼]·[🎲 소환]·[👷]·[⬆ 승급 가능]·접은 카드 알약이 함께 보여도 412·360·320px에서 한 줄 안에 (넘침 없음)', async ({ page }) => {
+test('아래 자원 줄 (G-1): [💰 돈]·[🗼 인원]·[👷]·[⬆ 승급 가능]·[👷 고용]·접은 카드 알약이 함께 보여도 412·360·320px에서 한 줄 안에 (넘침 없음)', async ({ page }) => {
   for (const w of [412, 360, 320]) {
     await page.setViewportSize({ width: w, height: 915 });
     await start(page, '?seed=42');
@@ -510,6 +510,7 @@ test('아래 띠: [🗼]·[🎲 소환]·[👷]·[⬆ 승급 가능]·접은 카
           .concat(band.scrollWidth > band.clientWidth ? [`${label}: band`] : []);
       };
       (document.querySelector('[data-testid=hud-towers]') as HTMLElement).textContent = '96/96';
+      (document.querySelector('[data-testid=hud-gold]') as HTMLElement).textContent = '9.9억원';
       const out = check('base');
       const mr = document.querySelector('.hud-merge-ready') as HTMLButtonElement;
       mr.replaceChildren('⬆', Object.assign(document.createElement('span'), { className: 'hud-mr-word', textContent: ' 승급 가능' }), ' 12');

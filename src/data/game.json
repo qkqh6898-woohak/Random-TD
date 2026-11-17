@@ -42,7 +42,8 @@
     "pity": { "n": 30, "grade": "rare" }
   },
   "board": {
-    "stackMax": 3
+    "stackMax": 3,
+    "unitCap": 20
   },
   "summonGamble": {
     "kinds": [

@@ -46,7 +46,7 @@ import { TICK_HZ, TickClock, type SimEvent } from '../../sim/World';
 import { bossForStage } from '../../sim/systems/BossSchedule';
 import { TickCostMeter, capTicks, simBudgetMs } from '../tickBudget';
 import type { Projectile } from '../../sim/entities/Projectile';
-import { towerAt, towerStacks, towersAt, type Tower } from '../../sim/entities/Tower';
+import { towerAt, towersAt, type Tower } from '../../sim/entities/Tower';
 import { canMergeGrade, mergeOutcomes } from '../../sim/Deck';
 import { createMatch, type Match } from '../../sim/match';
 import type { SavedMatch } from '../../save/MatchSaves';
@@ -97,14 +97,14 @@ import { claimCheck, missionsClaimable } from '../../sim/systems/Mission';
 import { ensureMobTexture } from '../../art/mobs';
 import { enemyCharacterTexture } from '../../art/characters/phaserArt';
 import { createChallengeSheet, type ChallengeSheetView } from '../../ui/sheets/ChallengeSheet';
-import { createGambleSheet, createUpgradeSheet, type GambleFire, type GambleSheetView, type GambleSlotView, type UpgradeSheetView } from '../../ui/sheets/UpgradeSheet';
+import { createGambleSheet, createUpgradeSheet, type GambleFire, type GambleSheetView, type GambleSlotView, type GambleTab, type UpgradeSheetView } from '../../ui/sheets/UpgradeSheet';
 import { createSummonSheet, type SummonSheetView } from '../../ui/sheets/SummonSheet';
 import { createMythicSheet, type MythicSheetView } from '../../ui/sheets/MythicSheet';
 import { codexSheetModel, newlyDiscovered, summonSheetModel, GACHA_GRADE_NAMES, type CodexSheetModel, type SummonSheetModel } from '../../ui/sheets/g1Models';
 import { gachaCheck } from '../../sim/systems/Gacha';
 import { craftPlan, ownedCounts } from '../../sim/systems/Craft';
 import { readyUlts, ultCheck, ultKindOf } from '../../sim/systems/Ultimate';
-import { pityLeft } from '../../sim/systems/Board';
+import { pityLeft, unitCap, unitCount } from '../../sim/systems/Board';
 import { createMissionSheet, type MissionSheetView } from '../../ui/sheets/MissionSheet';
 import {
   challengeHudInput,
@@ -165,6 +165,7 @@ import {
   gachaResultText,
   ultText,
   SUMMON_NO_FIT,
+  UNIT_CAP_FULL,
 } from '../../ui/messages';
 import { createChoicePanel, type ChoicePanelView } from '../../ui/panels/ChoicePanel';
 import { cardChoiceModel, mergeChoiceModel } from '../../ui/panels/choiceModel';
@@ -401,6 +402,8 @@ export class GameScene extends Phaser.Scene {
   // ---- M5 ----
   /** 열린 바텀 시트 (하나만) */
   private sheet: ChallengeSheetView | UpgradeSheetView | MissionSheetView | DevSheetView | GambleSheetView | SummonSheetView | MythicSheetView | null = null;
+  /** G-1 [🎰 도박] 시트 탭 */
+  private gambleTab: GambleTab = 'money';
   /** G-1 종족 소환에서 고른 종족 번호 (판 동안 기억) */
   private gachaFaction = 0;
   /** G-1 마지막 소환 도박 결과 글자 (소환 시트 맨 아래) */
@@ -1116,7 +1119,9 @@ export class GameScene extends Phaser.Scene {
       this.closePanel();
       return;
     }
-    const fail = summonCheck(this.match.ctx, this.match.world, tx, ty);
+    let fail = summonCheck(this.match.ctx, this.match.world, tx, ty);
+    // G-1 인원 한도: 빈 칸이어도 내 타워가 한도만큼이면 소환하지 않는다
+    if (fail === null && summonStackCheck(this.match.ctx, this.match.world, LOCAL_PLAYER) === 'cap') fail = 'cap';
     // 빈 땅 (T-2): 누르고 있으면 0.3초 뒤부터 자동 칸에 연속 소환 (맵 안이면 배치 칸이 아니어도)
     const inMap = tx >= 0 && ty >= 0 && tx < this.match.map.width && ty < this.match.map.height;
     const hint = fail === 'notBuildable';
@@ -1154,6 +1159,10 @@ export class GameScene extends Phaser.Scene {
     }
     if (fail === 'gold') {
       this.ctx.ui.toast(needGoldForSummon(summonCost(ctx)));
+      return 'stop';
+    }
+    if (fail === 'cap') {
+      this.ctx.ui.toast(UNIT_CAP_FULL);
       return 'stop';
     }
     if (fail) return 'stop';
@@ -2728,9 +2737,9 @@ export class GameScene extends Phaser.Scene {
           mobCount: this.match.mobCount(),
           tick: this.match.tick,
           speed,
-          // G-1 칸 무더기: 🗼 = 차지한 칸 수 / 배치 칸 수 (타워 수는 칸의 3배까지)
-          towerCount: towerStacks(this.match.world).size,
-          buildableCount: this.match.map.buildable.length,
+          // G-1 사용자 결정: 🗼 = 내 타워 인원 / 인원 한도 (game.json board.unitCap + 카드)
+          towerCount: unitCount(this.match.world, LOCAL_PLAYER),
+          buildableCount: unitCap(this.match.ctx, LOCAL_PLAYER),
           summonCost: summonCost(this.match.ctx),
           mergeReady: this.mergeReadyCount,
           workerMax: this.match.rules.workerMax,
@@ -2764,7 +2773,28 @@ export class GameScene extends Phaser.Scene {
     const close = (): void => this.closeSheet();
     let view: ChallengeSheetView | UpgradeSheetView | MissionSheetView | DevSheetView | GambleSheetView | SummonSheetView | MythicSheetView;
     if (kind === 'gamble') {
-      view = createGambleSheet({ onGamble: (t) => this.playGamble(t), onClose: close }, gambleSheetModel(ctx, this.match.world, LOCAL_PLAYER));
+      // G-1 사용자 결정: [🎰 도박] 시트 = 돈 도박 + 소환 도박 4종(천장) 두 탭
+      view = createGambleSheet(
+        {
+          onGamble: (t) => this.playGamble(t),
+          onClose: close,
+          tab: this.gambleTab,
+          onTab: (t) => {
+            this.gambleTab = t;
+          },
+          summon: {
+            opts: {
+              onSummon: () => this.autoSummonOnce() !== 'stop',
+              onGacha: (k) => this.playGacha(k),
+              onFaction: (f) => {
+                this.gachaFaction = f;
+              },
+            },
+            first: this.summonModel(),
+          },
+        },
+        gambleSheetModel(ctx, this.match.world, LOCAL_PLAYER),
+      );
     } else if (kind === 'summon') {
       view = createSummonSheet(
         {
@@ -2885,7 +2915,7 @@ export class GameScene extends Phaser.Scene {
     const ctx = this.match.ctx;
     if (this.sheetKind === 'challenge') (view as ChallengeSheetView).update(challengeSheetModel(ctx, this.match.tick, this.challengeAbilities));
     else if (this.sheetKind === 'upgrade') (view as UpgradeSheetView).update(upgradeSheetModel(ctx, LOCAL_PLAYER));
-    else if (this.sheetKind === 'gamble') (view as GambleSheetView).update(gambleSheetModel(ctx, this.match.world, LOCAL_PLAYER), slotView);
+    else if (this.sheetKind === 'gamble') (view as GambleSheetView).update(gambleSheetModel(ctx, this.match.world, LOCAL_PLAYER), slotView, this.summonModel(), this.gachaResult);
     else if (this.sheetKind === 'summon') (view as SummonSheetView).update(this.summonModel(), this.gachaResult);
     else if (this.sheetKind === 'mythic') (view as MythicSheetView).update(this.codexModel());
     else if (this.sheetKind === 'mission') {
@@ -3040,7 +3070,7 @@ export class GameScene extends Phaser.Scene {
       this.hud.setG1Badges({
         mythic: codex.ready > 0 ? `${codex.ready} 제작` : codex.summary.replace('발견 ', ''),
         mythicAlert: codex.ready > 0,
-        summon: pity <= 0 ? '천장!' : `천장 ${pity}`,
+        summon: pity <= 0 ? '레어 확정!' : `천장 ${pity}`,
         summonAlert: pity <= 0,
         gamble: `잭팟 ${Math.min(g?.gauge ?? 0, this.match.rules.jackpotGauge)}/${this.match.rules.jackpotGauge}`,
       });

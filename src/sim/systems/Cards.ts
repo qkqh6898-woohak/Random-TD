@@ -157,6 +157,9 @@ export function applyCard(ctx: MatchContext, world: World, player: number, card:
     case 'ultCharge':
       if (state.ultChargeBp[player] !== undefined) state.ultChargeBp[player] += card.value;
       break;
+    case 'unitCap':
+      if (state.unitCapBonus[player] !== undefined) state.unitCapBonus[player] += card.value;
+      break;
   }
 }
 

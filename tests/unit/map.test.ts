@@ -1,5 +1,5 @@
 /**
- * M1-2 맵 로더 + 위치 계산. G-1 큰 칸: crossroads v4 7×10·배치 24칸·경로 41, circle v3 6×8·배치 20칸·고리 16 (T-3 2×2 블록 문법 그대로).
+ * M1-2 맵 로더 + 위치 계산. G-1: crossroads v4 7×10·2×2 블록 배치 24칸·경로 35, circle v4 6×8 마당 맵(가운데 4×6 = 24칸, 둘레 고리 24칸).
  */
 import { describe, expect, it } from 'vitest';
 import { checkMapBlocks, loadGameData, MAP_BLOCK_SIZE, type MapData } from '../../src/data/load';
@@ -28,22 +28,23 @@ describe('맵 칸 수와 경로 길이 (MAPS.md 1.1·2.1, G-1 큰 칸 2×2 블�
     expect(crossroads.crossings).toEqual([[3, 3]]);
   });
 
-  it('순환의 정원 v3: 6×8, 2×2 블록 5개 = 배치 20칸 (고리 안 4 + 위·아래 바깥 16, v2 32칸), 고리 16칸, 몹 한도 150', () => {
+  it('순환의 정원 v4 (G-1 마당 맵): 6×8, 가운데 4×6 마당 = 배치 24칸, 마당 둘레 고리 24칸, 몹 한도 150', () => {
     expect([circle.width, circle.height]).toEqual([6, 8]);
-    expect(circle.buildable).toHaveLength(20);
-    expect(Object.keys(data.maps.circle!.blocks)).toHaveLength(5);
-    expect(circle.pathLengthTiles).toBe(16);
+    expect(data.maps.circle!.layout).toBe('field');
+    expect(circle.buildable).toHaveLength(24);
+    expect(data.maps.circle!.blocks).toEqual({ 마당: { x: 1, y: 1, w: 4, h: 6 } });
+    expect(circle.pathLengthTiles).toBe(24);
     expect(circle.path.loop).toBe(true);
     expect(circle.mobLimit).toBe(150);
     expect(circle.lives).toBeNull();
     expect(circle.exit).toBeNull();
-    const inner = circle.buildable.filter(([, y]) => y >= 3 && y <= 4);
-    expect(inner).toHaveLength(4);
+    // 모든 배치 칸은 길 안쪽 (x 1~4, y 1~6)
+    expect(circle.buildable.every(([x, y]) => x >= 1 && x <= 4 && y >= 1 && y <= 6)).toBe(true);
   });
 
   it('칸 종류: 배치 + 경로 + 빈 땅 = 전체, 경로 칸 수 = 맵 안 경로 길이 (교차점은 한 번)', () => {
-    expect(pathTiles(circle)).toHaveLength(16);
-    expect(circle.kinds.filter((k) => k === 'decor')).toHaveLength(48 - 20 - 16);
+    expect(pathTiles(circle)).toHaveLength(24);
+    expect(circle.kinds.filter((k) => k === 'decor')).toHaveLength(0);
     // 사거리 미로: 경로 35걸음 = 지나는 칸 36개 (화면 밖 등장·퇴장 2칸 + 맵 안 34칸, 교차점 1곳은 두 번) → 맵 안 P 칸 = 34 − 1 = 33
     expect(pathTiles(crossroads)).toHaveLength(33);
     expect(crossroads.buildable.length + pathTiles(crossroads).length + crossroads.kinds.filter((k) => k === 'decor').length).toBe(70);
@@ -52,17 +53,17 @@ describe('맵 칸 수와 경로 길이 (MAPS.md 1.1·2.1, G-1 큰 칸 2×2 블�
   it('배치 칸 목록은 (y, x) 순서', () => {
     const sorted = [...circle.buildable].sort((a, b) => a[1] - b[1] || a[0] - b[0]);
     expect(circle.buildable).toEqual(sorted);
-    expect(circle.buildable[0]).toEqual([0, 0]);
-    expect(circle.buildable[4]).toEqual([0, 1]);
+    expect(circle.buildable[0]).toEqual([1, 1]);
+    expect(circle.buildable[4]).toEqual([1, 2]);
   });
 
   it('tileAt·isBuildable: 맵 밖은 null/false, 빈 땅(블록 사이 틈)은 배치 불가', () => {
     expect(tileAt(circle, 0, 2)).toBe('path');
     expect(tileAt(circle, 2, 3)).toBe('build');
-    expect(tileAt(circle, 1, 3)).toBe('decor');
+    expect(tileAt(circle, 5, 3)).toBe('path');
     expect(tileAt(circle, -1, 0)).toBeNull();
     expect(tileAt(circle, 6, 0)).toBeNull();
-    expect(isBuildable(circle, 5, 7)).toBe(true);
+    expect(isBuildable(circle, 4, 6)).toBe(true);
     expect(isBuildable(circle, 2, 0)).toBe(false);
     expect(isBuildable(circle, 0, 2)).toBe(false);
     expect(isBuildable(crossroads, 0, -1)).toBe(false);
@@ -107,25 +108,25 @@ describe('경로 위치 (진행도 → 좌표)', () => {
     expect(tileCenter(1, -1)).toEqual({ x: 1500, y: -500 });
   });
 
-  it('순환의 정원 v3: (0,2)에서 시작해 시계 방향 → 오른쪽 5칸, 아래 3칸, 왼쪽 5칸, 위 3칸', () => {
+  it('순환의 정원 v4: (0,0)에서 시작해 마당 둘레를 시계 방향 → 오른쪽 5칸, 아래 7칸, 왼쪽 5칸, 위 7칸', () => {
     const p = circle.path;
-    expect(positionAt(p, 0)).toEqual(tileCenter(0, 2));
-    expect(positionAt(p, 5000)).toEqual(tileCenter(5, 2));
-    expect(positionAt(p, 8000)).toEqual(tileCenter(5, 5));
-    expect(positionAt(p, 13000)).toEqual(tileCenter(0, 5));
-    expect(positionAt(p, 15999)).toEqual({ x: 500, y: 2501 });
+    expect(positionAt(p, 0)).toEqual(tileCenter(0, 0));
+    expect(positionAt(p, 5000)).toEqual(tileCenter(5, 0));
+    expect(positionAt(p, 12000)).toEqual(tileCenter(5, 7));
+    expect(positionAt(p, 17000)).toEqual(tileCenter(0, 7));
+    expect(positionAt(p, 23999)).toEqual({ x: 500, y: 501 });
     expect(directionAt(p, 0)).toEqual({ dx: 1, dy: 0 });
     expect(directionAt(p, 6000)).toEqual({ dx: 0, dy: 1 });
-    expect(directionAt(p, 9000)).toEqual({ dx: -1, dy: 0 });
-    expect(directionAt(p, 14000)).toEqual({ dx: 0, dy: -1 });
+    expect(directionAt(p, 13000)).toEqual({ dx: -1, dy: 0 });
+    expect(directionAt(p, 18000)).toEqual({ dx: 0, dy: -1 });
   });
 
-  it('loop: 한 바퀴(16000)를 넘으면 처음부터, 음수도 감아서', () => {
+  it('loop: 한 바퀴(24000)를 넘으면 처음부터, 음수도 감아서', () => {
     const p = circle.path;
-    expect(positionAt(p, 16000)).toEqual(positionAt(p, 0));
-    expect(positionAt(p, 16000 * 3 + 6500)).toEqual(positionAt(p, 6500));
-    expect(positionAt(p, -1000)).toEqual(positionAt(p, 15000));
-    expect(directionAt(p, 16000 + 6000)).toEqual({ dx: 0, dy: 1 });
+    expect(positionAt(p, 24000)).toEqual(positionAt(p, 0));
+    expect(positionAt(p, 24000 * 3 + 6500)).toEqual(positionAt(p, 6500));
+    expect(positionAt(p, -1000)).toEqual(positionAt(p, 23000));
+    expect(directionAt(p, 24000 + 6000)).toEqual({ dx: 0, dy: 1 });
   });
 
   it('사거리 미로 v4: 화면 밖 (0,-1)에서 등장 → (0,3) → … → 출구 (3,-1), 끝은 붙잡는다', () => {

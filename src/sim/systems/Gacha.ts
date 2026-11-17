@@ -22,10 +22,10 @@ import type { GachaGrade, Grade } from '../../data/load';
 import { GACHA_RANK, type GachaKindStats, type MatchRules } from '../rules';
 import type { MatchContext } from '../state';
 import { canAfford, spendGold } from './Economy';
-import { hasRoom, notePity, pityCount, pityLimit, placementFor, stackSize } from './Board';
+import { hasRoom, notePity, pityCount, pityLimit, placementFor, stackSize, unitCap, unitCount } from './Board';
 
 /** 소환 도박 실패 이유: 판이 끝남 / 없는 종류·종족 / 자리 없음 / 돈 부족 */
-export type GachaFail = 'phase' | 'unknown' | 'full' | 'gold';
+export type GachaFail = 'phase' | 'unknown' | 'cap' | 'full' | 'gold';
 
 /** 소환 도박 검사 (굴리기 전, 화면 버튼과 명령이 같이 쓴다). 되면 null. */
 export function gachaCheck(ctx: MatchContext, world: World, player: number, k: number, f = 0): GachaFail | null {
@@ -34,6 +34,7 @@ export function gachaCheck(ctx: MatchContext, world: World, player: number, k: n
   const kind = rules.gachaKinds[k];
   if (!kind) return 'unknown';
   if (kind.faction && rules.factionOrder[f] === undefined) return 'unknown';
+  if (unitCount(world, player) >= unitCap(ctx, player)) return 'cap';
   if (!hasRoom(ctx, world, player)) return 'full';
   if (!canAfford(state, kind.cost)) return 'gold';
   return null;

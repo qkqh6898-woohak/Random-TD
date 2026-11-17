@@ -201,6 +201,8 @@ export interface MatchState {
   /** 플레이어별 필살기 '전군 가속' 공속% (bp, 0 = 없음)와 끝나는 틱 */
   rallyBp: number[];
   rallyUntil: number[];
+  /** 플레이어별 카드 '부대 확장' 인원 한도 증가 합 */
+  unitCapBonus: number[];
   /** 지금까지 한 소환 도박 수 (꽝 포함, 모든 플레이어) */
   gachas: number;
   /** 지금까지 만든 신화(히든) 수 */

@@ -118,9 +118,9 @@ test('상태 이상 표시: 얼음·진흙·화염 타워가 맞힌 몹에 색·
   const errors = collectErrors(page);
   await start(page);
   await place(page, [
-    [1, 1, 'icemage'],
-    [0, 1, 'mudshaman'],
-    [5, 1, 'flamemage'],
+    [2, 2, 'icemage'],
+    [1, 2, 'mudshaman'],
+    [4, 2, 'flamemage'],
   ]);
   await fastForwardTo(page, 1200 + 400);
   await expect.poll(() => inScene(page, (s) => s.statusIconCount, null), { timeout: 15_000 }).toBeGreaterThan(0);
@@ -151,8 +151,8 @@ test('진흙 웅덩이·소환 병사: 화면 수 = sim 수, 병사는 경로를
   // 진흙 주술사는 몹이 처음 지나는 윗줄 옆(사거리 3 안에 등장 칸), 소환사는 고리 아래쪽 — 병사가 몹을 등장 칸에서 다 잡아
   // 주술사 사거리에 몹이 들어오지 않던 것 (T-3 작은 맵)
   await place(page, [
-    [1, 1, 'mudshaman'],
-    [5, 6, 'summoner'],
+    [2, 2, 'mudshaman'],
+    [4, 5, 'summoner'],
   ]);
   await fastForwardTo(page, 1200 + 150);
   await expect.poll(() => inScene(page, (s) => s.match.soldiers().length, null), { timeout: 15_000 }).toBeGreaterThan(0);
@@ -177,12 +177,12 @@ test('진흙 웅덩이·소환 병사: 화면 수 = sim 수, 병사는 경로를
 test('오라: 대장장이를 고르면 3×3 범위와 효과 받는 타워, 옆 궁수 패널 공격력은 초록 16.5 (기본 15)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
-  // 순환의 정원 v3 (G-1): 대장장이 (2,3)의 주변 8칸 안 배치 칸 = (3,3)·(2,4)·(3,4)
+  // 순환의 정원 v4 (G-1 마당 맵): 대장장이 (2,3)의 주변 8칸 중 (3,3)·(2,4)에 타워
   await place(page, [
     [2, 3, 'blacksmith'],
     [3, 3, 'archer'],
     [2, 4, 'apprentice'],
-    [0, 7, 'warrior'],
+    [4, 6, 'warrior'],
   ]);
   await tapTile(page, 3, 3);
   const panel = page.getByTestId('tower-panel');
@@ -202,18 +202,18 @@ test('평소 오라 빛: 고르지 않아도 대장장이(3×3)·학자(자기 �
   await start(page);
   await place(page, [
     [2, 3, 'blacksmith'],
-    [1, 6, 'scholar'],
-    [0, 0, 'archer'],
+    [2, 6, 'scholar'],
+    [4, 1, 'archer'],
   ]);
   await expect
     .poll(() => inScene(page, (s) => s.passiveAuras, null))
     .toEqual([
       { tx: 2, ty: 3, radius: 1 },
-      { tx: 1, ty: 6, radius: 0 },
+      { tx: 2, ty: 6, radius: 0 },
     ]);
   await tapTile(page, 2, 3);
   await expect.poll(() => inScene(page, (s) => s.selectedAura, null)).toEqual({ area: 'around8', radius: 1, buffed: 0 });
-  await expect.poll(() => inScene(page, (s) => s.passiveAuras, null)).toEqual([{ tx: 1, ty: 6, radius: 0 }]);
+  await expect.poll(() => inScene(page, (s) => s.passiveAuras, null)).toEqual([{ tx: 2, ty: 6, radius: 0 }]);
   expect(errors).toEqual([]);
 });
 
@@ -221,7 +221,8 @@ test('정보 패널: 맵 가운데 줄(4·6·7줄) 타워를 골라도 특색 �
   const errors = collectErrors(page);
   await start(page);
   // 순환의 정원 v2(7×11): 가운데 5줄은 빈 땅 → 그 위아래 배치 칸 줄
-  const cells = await inScene(page, (s) => [4, 6, 7].map((y) => s.match.map.buildable.find(([, yy]) => yy === y)!), null);
+  // 순환의 정원 v4 (G-1 마당 맵): 마당 가운데·아래쪽 줄
+  const cells = await inScene(page, (s) => [3, 4, 5].map((y) => s.match.map.buildable.find(([, yy]) => yy === y)!), null);
   for (const id of ['scholar', 'archmage']) {
     for (const [x, y] of cells) {
       await inScene(
@@ -256,10 +257,10 @@ test('특색 연출: 연금술사 10초 +20원, 운석·시간 정지·주사위
   const errors = collectErrors(page);
   await start(page);
   await place(page, [
-    [5, 0, 'alchemist'],
-    [4, 1, 'archmage'],
-    [5, 1, 'chronomancer'],
-    [1, 1, 'gambler'],
+    [4, 1, 'alchemist'],
+    [3, 2, 'archmage'],
+    [4, 2, 'chronomancer'],
+    [2, 2, 'gambler'],
   ]);
   // 몹이 나오기 직전으로 → 첫 몹이 나오자마자 운석·시간 정지 (주기는 이미 찼다)
   await fastForwardTo(page, 1190);
@@ -280,10 +281,10 @@ test('M3b 스크린샷: 상태 이상 아이콘·진흙 웅덩이·소환 병사
   // 화력이 약한 조합 → 몹이 오래 살아 상태 이상이 여러 마리에 보인다
   // 패널이 아래 절반을 덮으므로 특색 타워는 위쪽 경로(몹이 처음 지나는 줄) 둘레에
   await place(page, [
-    [0, 1, 'mudshaman'],
-    [4, 1, 'icemage'],
-    [1, 1, 'mudshaman'],
-    [5, 1, 'summoner'],
+    [1, 2, 'mudshaman'],
+    [3, 2, 'icemage'],
+    [2, 2, 'mudshaman'],
+    [4, 2, 'summoner'],
     [2, 3, 'blacksmith'],
     [3, 3, 'archer'],
     [2, 4, 'warrior'],
@@ -314,8 +315,8 @@ test('M3b 스크린샷: 상태 이상 아이콘·진흙 웅덩이·소환 병사
         scene: { pause(): void };
       };
       const t = s.match.tick;
-      // 순환의 정원 v3 (G-1): 고리 16칸, 윗줄 = 진행도 0~5000
-      const top = (p: number): boolean => ((p % 16000) + 16000) % 16000 < 5000;
+      // 순환의 정원 v4 (G-1 마당 맵): 고리 24칸, 윗줄 = 진행도 0~5000
+      const top = (p: number): boolean => ((p % 24000) + 24000) % 24000 < 5000;
       const ok =
         s.match.mobs().some((m) => t + 3 < m.freezeUntil && top(m.progress)) &&
         s.match.soldiers().some((x) => top(x.progress)) &&

@@ -24,8 +24,36 @@ export interface SummonSheetView extends BottomSheetView<never> {
   update(model: SummonSheetModel, lastResult: string): void;
 }
 
+/** 소환 도박 판 (G-1): [🎰 도박] 시트의 '✨ 소환 도박' 탭이 쓴다. */
+export interface SummonPane {
+  readonly el: HTMLElement;
+  update(model: SummonSheetModel, lastResult: string): void;
+  destroy(): void;
+}
+
 export function createSummonSheet(opts: SummonSheetOptions, first: SummonSheetModel): SummonSheetView {
   const sheet = createBottomSheet<never>({ kind: 'summon', title: '✨ 소환', onClose: opts.onClose });
+  const pane = createSummonPane(opts, first);
+  sheet.body.append(pane.el);
+  const view: SummonSheetView = {
+    ...sheet,
+    get size() {
+      return sheet.size;
+    },
+    get tab() {
+      return sheet.tab;
+    },
+    update: (m, r) => pane.update(m, r),
+    destroy() {
+      pane.destroy();
+      sheet.destroy?.();
+    },
+  };
+  return view;
+}
+
+export function createSummonPane(opts: Omit<SummonSheetOptions, 'onClose'>, first: SummonSheetModel): SummonPane {
+  const root = h('div', { class: 'up-pane sm-pane', attrs: { 'data-pane': 'summon' } });
   const holds: HoldHandle[] = [];
   const note = h('div', { class: 'bs-note', text: '같은 캐릭터는 한 칸에 3개까지 쌓여요 · 3개가 된 칸을 누르면 승급 · 꾹 누르면 계속' });
 
@@ -91,19 +119,13 @@ export function createSummonSheet(opts: SummonSheetOptions, first: SummonSheetMo
     return root;
   });
   const result = h('div', { class: 'bs-note sm-result', attrs: { 'data-testid': 'gacha-result', 'aria-live': 'polite' } });
-  sheet.body.append(note, nRow, h('div', { class: 'sm-sep', text: '소환 도박' }), ...rowEls, result);
+  root.append(note, nRow, h('div', { class: 'sm-sep', text: '소환 도박' }), ...rowEls, result);
 
   let lastN = '';
   let lastFaction = -1;
   let lastResult = '';
-  const view: SummonSheetView = {
-    ...sheet,
-    get size() {
-      return sheet.size;
-    },
-    get tab() {
-      return sheet.tab;
-    },
+  const view: SummonPane = {
+    el: root,
     update(m, res) {
       const nKey = `${m.normal.costText}|${m.normal.pity}|${m.normal.state}`;
       if (nKey !== lastN) {
@@ -137,7 +159,6 @@ export function createSummonSheet(opts: SummonSheetOptions, first: SummonSheetMo
     },
     destroy() {
       for (const hd of holds) hd.detach();
-      sheet.destroy?.();
     },
   };
   view.update(first, '');

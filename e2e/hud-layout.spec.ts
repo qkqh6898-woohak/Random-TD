@@ -213,7 +213,7 @@ for (const vp of [
     await page.setViewportSize(vp);
     await startInfinite(page, '?debug=1&seed=9');
     expect(await skipStages(page, 100, 400)).toBe(100);
-    await expect(page.getByTestId('hud-stage')).toHaveText('👑 100단계');
+    await expect(page.getByTestId('hud-stage')).toHaveText('👑 WAVE 100');
     await expect(page.getByTestId('hud-count')).toHaveText(/^\d{3}\/150$/);
     const m = await page.evaluate(() => {
       const stage = document.getElementById('stage')!.getBoundingClientRect();
@@ -227,8 +227,8 @@ for (const vp of [
     });
     expect(m.rows.every((d) => d <= 0)).toBe(true);
     expect(m.btns.every(Boolean)).toBe(true);
-    // ⏭는 2줄(배속 옆)
-    await expect(page.locator('.hud-row').nth(1).getByRole('button', { name: '다음 단계로 즉시 이동' })).toHaveCount(1);
+    // ⏭는 배속 옆 (G-1: 위 줄 왼쪽 묶음 — 가운데 WAVE·오른쪽 ⏸와 겹치지 않음)
+    await expect(page.locator('.hud-side-l').getByRole('button', { name: '다음 단계로 즉시 이동' })).toHaveCount(1);
     await page.getByRole('button', { name: '일시정지' }).click();
     await page.getByRole('button', { name: '계속' }).click();
     const shift = await page.evaluate(() => {

@@ -150,7 +150,10 @@ export function createHud(opts: HudOptions): HudView {
     attrs: { 'aria-hidden': 'true', 'data-testid': 'hud-count-icon' },
   });
   const countEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-count', ...off }, text: '0' });
-  const countItem = h('span', { class: 'hud-item hud-count' }, countIcon, countEl);
+  // G-1: 몹 수 막대 (n / 한도) — 위 HUD 가운데 아래 한 줄
+  const countFill = h('span', { class: 'hud-count-fill', attrs: { 'data-testid': 'hud-count-fill', 'aria-hidden': 'true' } });
+  const countBar = h('span', { class: 'hud-count-bar', attrs: { 'aria-hidden': 'true' } }, countFill);
+  const countItem = h('span', { class: 'hud-item hud-count' }, countIcon, countBar, countEl);
   const goldEl = h('span', { class: 'hud-value hud-gold', attrs: { 'data-testid': 'hud-gold', ...off }, text: '0원' });
   const speedBtn = h('button', {
     class: 'btn btn-chip hud-speed',
@@ -247,6 +250,8 @@ export function createHud(opts: HudOptions): HudView {
   const hintEl = h('span', { class: 'hud-hint', attrs: { 'data-testid': 'hud-hint', ...off }, text: '' });
   // [🎲 소환 100원] (T-2): 짧게 = 자동 칸에 하나, 꾹 = 계속 (초당 약 4번). 승급 가능 버튼이 보이면 '소환' 글자는 숨긴다 (CSS)
   const summonCost = h('span', { class: 'hud-summon-cost', text: '' });
+  // G-1: 소환 버튼 아래 줄 '천장 27' (setG1Badges가 채운다)
+  const summonPity = h('span', { class: 'hud-summon-pity', attrs: { 'data-testid': 'hud-summon-pity' }, text: '' });
   const summonBtn = h(
     'button',
     {
@@ -256,6 +261,7 @@ export function createHud(opts: HudOptions): HudView {
     h('span', { class: 'hud-summon-die', attrs: { 'aria-hidden': 'true' }, text: '🎲' }),
     h('span', { class: 'hud-summon-word', text: '소환' }),
     summonCost,
+    summonPity,
   );
   const summonHold: HoldHandle | null = opts.onSummon
     ? attachHoldRepeat(summonBtn, () => opts.onSummon?.() ?? false, {
@@ -278,16 +284,17 @@ export function createHud(opts: HudOptions): HudView {
   }, hireArt, hireLabel);
   // 접은 고르기 창의 알약 자리 (display: contents → 알약이 아래 띠의 flex 항목이 된다)
   const choiceSlot = h('span', { class: 'hud-choice-slot', attrs: { 'data-testid': 'hud-choice-slot' } });
+  // G-1 사용자 결정 (아래 조작 묶음): 얇은 자원 줄 [💰 돈 · 🗼 인원 n/최대 · 👷 일꾼 · (카드 알약) · ⬆ 승급 가능 · 👷 고용]
+  // + 큰 버튼 묶음 [💠 신화] [🎲 소환] [🎰 도박] / 소환 아래 넓은 [⬆ 강화] — 도전·미션은 맵 오른쪽 둥근 버튼
   const bottomBand = h(
     'div',
-    { class: 'hud-bottom' },
+    { class: 'hud-bottom is-g1' },
+    goldItem,
     h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl),
+    workersItem,
     choiceSlot,
     hintEl,
-    // [⬆ 승급 가능]은 소환 앞(왼쪽)에: 나타나거나 사라져도 [🎲 소환]·[👷 일꾼]의 오른쪽 끝 자리는 그대로 (F10-4 검토 —
-    // 예전엔 맨 오른쪽에 붙어 소환·일꾼이 왼쪽으로 밀려, 소환을 연타하던 손가락이 300원 일꾼을 샀다)
     mergeReadyBtn,
-    summonBtn,
     hireBtn,
   );
 
@@ -297,26 +304,15 @@ export function createHud(opts: HudOptions): HudView {
     h(
       'div',
       { class: 'hud-bar' },
+      // G-1 위 HUD: 왼쪽 배속(개발자 ⏭·💰+) · 가운데 'WAVE n' + 남은 시간 · 오른쪽 필살기·⏸ / 둘째 줄 몹 수 막대 (n / 한도)
       h(
         'div',
-        { class: 'hud-row' },
-        stageEl,
-        h('span', { class: 'hud-item' }, h('span', { class: 'hud-label', text: '⏱', attrs: { 'aria-hidden': 'true' } }), timerEl),
-        countItem,
-        h('span', { class: 'hud-spacer' }),
-        ultChip,
-        pauseBtn,
+        { class: 'hud-row hud-top-row' },
+        h('span', { class: 'hud-side-l' }, speedBtn, skipBtn, addGoldBtn),
+        h('span', { class: 'hud-wave' }, stageEl, h('span', { class: 'hud-item hud-wave-timer' }, h('span', { class: 'hud-label', text: '⏱', attrs: { 'aria-hidden': 'true' } }), timerEl)),
+        h('span', { class: 'hud-side-r' }, ultChip, pauseBtn),
       ),
-      h(
-        'div',
-        { class: 'hud-row' },
-        goldItem,
-        workersItem,
-        h('span', { class: 'hud-spacer' }),
-        addGoldBtn,
-        skipBtn,
-        speedBtn,
-      ),
+      h('div', { class: 'hud-row hud-count-row' }, countItem),
     ),
     bannerSlot,
     ultList,
@@ -341,16 +337,21 @@ export function createHud(opts: HudOptions): HudView {
   // G-1 사용자 결정: [신화] [소환] [도박] [강화] 탭 + 도전·미션(·개발)은 작은 아이콘 버튼
   const menuBar = h(
     'div',
-    { class: `hud-menu is-g1${opts.devMenu ? ' has-dev' : ''}`, attrs: { role: 'toolbar', 'aria-label': '하단 메뉴' } },
+    { class: 'hud-menu is-g1', attrs: { role: 'toolbar', 'aria-label': '조작 버튼' } },
     menuItem('mythic', '💠', '신화'),
-    menuItem('summon', '✨', '소환'),
+    summonBtn,
     menuItem('gamble', '🎰', '도박'),
     menuItem('upgrade', '⬆', '강화'),
+  );
+  // 맵 오른쪽 아래 둥근 버튼 (도전·미션·개발자) — 아래 묶음 바로 위에 떠 있다
+  const sideBar = h(
+    'div',
+    { class: 'hud-side-btns', attrs: { role: 'toolbar', 'aria-label': '도전·미션' } },
     menuItem('challenge', '⚔', '도전', true),
     menuItem('mission', '📋', '미션', true),
     opts.devMenu ? menuItem('dev', '🛠', '개발', true) : null,
   );
-  const dock = h('div', { class: 'hud-dock' }, bottomBand, menuBar);
+  const dock = h('div', { class: 'hud-dock' }, sideBar, bottomBand, menuBar);
   const el = h('div', { class: 'hud-root', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band, dock);
 
   let last: Partial<HudModel> = {};
@@ -428,13 +429,14 @@ export function createHud(opts: HudOptions): HudView {
         pendingGain = 0;
       }
       if (last.tick !== m.tick) el.dataset.tick = String(m.tick);
-      if (last.stage !== m.stage || last.boss !== m.boss) {
-        stageEl.textContent = m.boss ? `👑 ${m.stage}` : m.stage;
+      if (last.wave !== m.wave || last.boss !== m.boss) {
+        stageEl.textContent = m.boss ? `👑 ${m.wave}` : m.wave;
         stageEl.classList.toggle('is-boss', m.boss);
       }
       setText(timerEl, 'timer', m.timer);
       if (last.timerWarn !== m.timerWarn) timerEl.classList.toggle('is-warn', m.timerWarn);
       const dropped = livesDropped(last, m);
+      if (last.countFill !== m.countFill) countFill.style.width = `${m.countFill / 10}%`;
       if (last.countKind !== m.countKind) {
         countIcon.textContent = m.countKind === 'lives' ? '❤' : '👾';
         countIcon.classList.toggle('hud-heart', m.countKind === 'lives');
@@ -521,6 +523,8 @@ export function createHud(opts: HudOptions): HudView {
       bannerSlot.classList.toggle('is-split', split);
     },
     setG1Badges(b) {
+      if (summonPity.textContent !== b.summon) summonPity.textContent = b.summon;
+      summonBtn.classList.toggle('is-pity', b.summonAlert);
       const set = (k: SheetKind, text: string, alert: boolean): void => {
         const e = menuBtns.get(k);
         if (!e) return;
@@ -528,7 +532,6 @@ export function createHud(opts: HudOptions): HudView {
         if (e.btn.classList.contains('is-alert') !== alert) e.btn.classList.toggle('is-alert', alert);
       };
       set('mythic', b.mythic, b.mythicAlert);
-      set('summon', b.summon, b.summonAlert);
       set('gamble', b.gamble, false);
     },
     setUlts(list) {

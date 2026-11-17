@@ -194,7 +194,7 @@ test('새 플레이어 (디버그 없이): 추천 칸 소환 → 준비 완료 �
   expect(st.start).toBeLessThan(1200);
   expect(st.next - st.start).toBe(st.per);
   await expect(ready).toBeHidden();
-  await expect(page.getByTestId('hud-stage')).toHaveText('1단계');
+  await expect(page.getByTestId('hud-stage')).toHaveText('WAVE 1');
   // 첫 전투: 1단계 몹이 나온다
   await expect.poll(() => inScene(page, (s) => s.match.mobCount(), null)).toBeGreaterThan(0);
   // 소환 1번 더 → 같은 타워 2개 → '2/3' 배지 2개

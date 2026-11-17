@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "notes": "보스 효과 카드 (GDD.md 3.1, M4-7). 보스를 처치하면 offerSize장을 보여주고 1장을 고른다. 제시되는 카드 1장마다 rareChance 확률로 희귀 카드 (한 번에 보여주는 카드는 서로 다르다). 같은 판에서 같은 카드를 다시 고를 수 있다. effect.type: atkPct 공격력% / goldPerBoss 즉시 value × 보스 번호(단계 ÷ 10) / rareSummons 다음 소환 value회 레어 / workerMul 일꾼 수입 배율 +value (×2 → ×3 → ×4) / quake 맵 위 몹(보스 제외, 드러난 몹) 지금 체력 −value / summonDiscount 소환 비용 −value원 (최소 min) / mobSlow 몹 이동속도 −value (합 최대 max) / freeWorkers 일꾼 +value (최대 무시) / mergeChoice 다음 승급 value회 결과 2개 중 선택 / twinSummon seconds초 동안 소환하면 같은 타워 하나 더 / godMul 신 타워 확률 ×value (다시 고르면 배율이 value − 1씩 더해짐: ×3 → ×5) / goldPct 돈 획득 +value. G-1 (3택 1 강화 선택): pools = 이 카드가 나오는 묶음(boss 보스 처치 보상 · pick 강화 선택, 없으면 boss). pick = 강화 선택 일정 — from단계부터 every단계마다(보스 단계는 건너뜀) offerSize장 중 1장. 새 효과: apsPct 공격속도% / pityCut 천장까지 필요한 횟수 −value회(모든 소환·소환 도박, 최소 1회) / ultCharge 필살기 충전 속도 +value.",
+  "notes": "보스 효과 카드 (GDD.md 3.1, M4-7). 보스를 처치하면 offerSize장을 보여주고 1장을 고른다. 제시되는 카드 1장마다 rareChance 확률로 희귀 카드 (한 번에 보여주는 카드는 서로 다르다). 같은 판에서 같은 카드를 다시 고를 수 있다. effect.type: atkPct 공격력% / goldPerBoss 즉시 value × 보스 번호(단계 ÷ 10) / rareSummons 다음 소환 value회 레어 / workerMul 일꾼 수입 배율 +value (×2 → ×3 → ×4) / quake 맵 위 몹(보스 제외, 드러난 몹) 지금 체력 −value / summonDiscount 소환 비용 −value원 (최소 min) / mobSlow 몹 이동속도 −value (합 최대 max) / freeWorkers 일꾼 +value (최대 무시) / mergeChoice 다음 승급 value회 결과 2개 중 선택 / twinSummon seconds초 동안 소환하면 같은 타워 하나 더 / godMul 신 타워 확률 ×value (다시 고르면 배율이 value − 1씩 더해짐: ×3 → ×5) / goldPct 돈 획득 +value. G-1 (3택 1 강화 선택): pools = 이 카드가 나오는 묶음(boss 보스 처치 보상 · pick 강화 선택, 없으면 boss). pick = 강화 선택 일정 — from단계부터 every단계마다(보스 단계는 건너뜀) offerSize장 중 1장. 새 효과: apsPct 공격속도% / pityCut 천장까지 필요한 횟수 −value회(모든 소환·소환 도박, 최소 1회) / ultCharge 필살기 충전 속도 +value. unitCap 내 타워 인원 한도 +value (G-1 판 안 인원 n / 최대).",
   "offerSize": 3,
   "rareChance": 0.15,
   "cards": [
@@ -228,6 +228,19 @@
       "effect": {
         "type": "ultCharge",
         "value": 0.25
+      },
+      "pools": [
+        "pick"
+      ]
+    },
+    {
+      "id": "pickCap",
+      "name": "부대 확장",
+      "grade": "common",
+      "desc": "타워 인원 한도 +3 (이번 판 영구)",
+      "effect": {
+        "type": "unitCap",
+        "value": 3
       },
       "pools": [
         "pick"

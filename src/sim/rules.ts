@@ -476,6 +476,8 @@ export interface MatchRules {
   // ---- G-1 ----
   /** 칸 하나에 쌓는 같은 타워 수 (3) */
   readonly stackMax: number;
+  /** 판 안 내 타워 인원 한도 기본값 (game.json board.unitCap) */
+  readonly unitCap: number;
   /** 연쇄 승급 한 번에 최대 승급 수 */
   readonly mergeChainMax: number;
   /** 일반 소환 천장: n번 연속 rank 이상이 없으면 다음 소환은 rank 이상 (레어 직행) */
@@ -1016,7 +1018,7 @@ export function ultKindFor(rules: GameData['game']['ultimate']['rules'], t: Pick
 /** G-1 규칙 (칸 쌓기·연쇄 승급·천장·소환 도박·신화 조합·3택 1·필살기). */
 function buildG1Rules(data: GameData): Pick<
   MatchRules,
-  'stackMax' | 'mergeChainMax' | 'summonPityN' | 'summonPityRank' | 'gachaKinds' | 'factionOrder' | 'recipes' | 'pickFrom' | 'pickEvery' | 'ult'
+  'stackMax' | 'unitCap' | 'mergeChainMax' | 'summonPityN' | 'summonPityRank' | 'gachaKinds' | 'factionOrder' | 'recipes' | 'pickFrom' | 'pickEvery' | 'ult'
 > {
   const { game, towers, cards } = data;
   const u = game.ultimate;
@@ -1026,6 +1028,7 @@ function buildG1Rules(data: GameData): Pick<
   for (const t of towers.towers) if (chargeBp.has(t.grade)) kindOf.set(t.id, ultKindFor(u.rules, t));
   return {
     stackMax: int('game.json board.stackMax', game.board.stackMax),
+    unitCap: int('game.json board.unitCap', game.board.unitCap),
     mergeChainMax: int('game.json merge.chainMax', game.merge.chainMax),
     summonPityN: game.summon.pity.n,
     summonPityRank: gradeRank(game.summon.pity.grade),

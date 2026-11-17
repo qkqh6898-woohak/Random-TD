@@ -13,7 +13,7 @@
  *   (위 타워를 누르기 쉽게, F10 · 빈 위 칸 가운데를 누르면 소환되게, F10-4 검토).
  */
 import type { SummonFail } from '../../sim/systems/Summon';
-import { BOARD_FULL, needGoldForSummon } from '../../ui/messages';
+import { BOARD_FULL, UNIT_CAP_FULL, needGoldForSummon } from '../../ui/messages';
 import { pxToTile, type MapLayout } from '../layout';
 import { towerHeadZone } from '../render/towerGeom';
 
@@ -34,6 +34,8 @@ export function decideTap(fail: SummonFail | null, x: number, y: number, cost: n
       return { kind: 'toast', text: needGoldForSummon(cost), shake: true, x, y };
     case 'full':
       return { kind: 'toast', text: BOARD_FULL, shake: false, x, y };
+    case 'cap':
+      return { kind: 'toast', text: UNIT_CAP_FULL, shake: false, x, y };
     case 'occupied':
     case 'notBuildable':
     case 'phase':
@@ -45,6 +47,7 @@ export function decideTap(fail: SummonFail | null, x: number, y: number, cost: n
 export function summonFailText(reason: string, cost: number): string | null {
   if (reason === 'gold') return needGoldForSummon(cost);
   if (reason === 'full') return BOARD_FULL;
+  if (reason === 'cap') return UNIT_CAP_FULL;
   return null;
 }
 

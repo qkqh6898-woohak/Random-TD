@@ -1,6 +1,7 @@
 /**
- * G-1 게임 시스템 E2E (휴대폰 412×915): 큰 칸 맵 · 칸 무더기(한 칸 같은 캐릭터 3개)·연쇄 승급 · [소환] 시트(소환 도박 4종·천장) ·
- * [도박] 시트 · 3택 1 강화 선택 · 필살기 [⚡] 목록·자동 설정 · [신화] 도감·제작 · 하단 메뉴가 412/360/320에서 넘치지 않음.
+ * G-1 게임 시스템 E2E (휴대폰 412×915): 마당 맵(소환 칸 마당 둘레를 적이 돈다) · 위 HUD 'WAVE n'·몹 막대 · 아래 조작 묶음
+ * [신화] [소환] [도박] / [강화] + 자원 줄(돈·인원 n/한도) + 맵 오른쪽 도전·미션 · 칸 무더기(한 칸 같은 캐릭터 3개)·연쇄 승급 ·
+ * [도박] 시트 두 탭(돈 도박 · 소환 도박 4종·천장) · 3택 1 강화 선택 · 필살기 [⚡] · [신화] 도감·제작 · 412/360/320 넘침 없음.
  * sim은 window.__rtd로 읽고(개발자 명령으로 판을 차리기만), 버튼·맵은 화면에서 누른다. SAVE_SCREENS=1이면 docs/screens/G1-*.png.
  */
 import { expect, test, type Page } from '@playwright/test';
@@ -119,7 +120,7 @@ async function shot(page: Page, name: string): Promise<void> {
 async function expectDockFits(page: Page): Promise<void> {
   const r = await page.evaluate(() => {
     const stage = document.getElementById('stage')!.getBoundingClientRect();
-    const btns = [...document.querySelectorAll<HTMLElement>('.hud-menu .hud-menu-btn, .hud-bottom > .btn:not([hidden]), .hud-bottom > .hud-item')];
+    const btns = [...document.querySelectorAll<HTMLElement>('.hud-menu > .btn, .hud-side-btns .hud-menu-btn, .hud-bottom > .btn:not([hidden]), .hud-bottom > .hud-item')];
     const rects = btns.filter((b) => b.offsetParent !== null).map((b) => ({ id: b.dataset.testid ?? b.className, r: b.getBoundingClientRect(), sw: b.scrollWidth, cw: b.clientWidth }));
     const out = rects.filter((x) => x.r.left < stage.left - 0.5 || x.r.right > stage.right + 0.5).map((x) => x.id);
     const clipped = rects.filter((x) => x.sw > x.cw + 1 && /menu/.test(x.id)).map((x) => x.id);
@@ -128,18 +129,38 @@ async function expectDockFits(page: Page): Promise<void> {
   expect(r.out).toEqual([]);
   expect(r.clipped).toEqual([]);
   expect(r.docW).toBeLessThanOrEqual(r.winW);
-  expect(r.menus).toBeGreaterThanOrEqual(6);
+  expect(r.menus).toBeGreaterThanOrEqual(5);
 }
 
-test('큰 칸 맵: 순환의 정원 6×8·20칸, 칸이 예전(135)보다 1.3배 이상 · 하단 메뉴 [신화][소환][도박][강화] + 작은 도전·미션', async ({ page }) => {
+test('마당 맵: 6×8 가운데 4×6 마당 24칸 + 둘레 고리, 칸이 예전(135)보다 1.3배 이상 · 위 HUD WAVE·몹 막대 · 아래 [신화][소환][도박]/[강화] · 오른쪽 도전·미션', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=42');
   const L = await inScene(page, (s) => ({ ...s.mapLayout, pads: s.match.map.buildable.length, w: s.match.map.width, h: s.match.map.height }), null);
-  expect([L.w, L.h, L.pads]).toEqual([6, 8, 20]);
+  expect([L.w, L.h, L.pads]).toEqual([6, 8, 24]);
+  await expect(page.getByTestId('hud-stage')).toHaveText('준비');
   expect(L.tile).toBeGreaterThanOrEqual(Math.round(135 * 1.3));
-  for (const id of ['menu-mythic', 'menu-summon', 'menu-gamble', 'menu-upgrade', 'menu-challenge', 'menu-mission']) await expect(page.getByTestId(id)).toBeVisible();
+  for (const id of ['menu-mythic', 'hud-summon', 'menu-gamble', 'menu-upgrade', 'menu-challenge', 'menu-mission']) await expect(page.getByTestId(id)).toBeVisible();
   await expect(page.getByTestId('menu-mythic')).toContainText('신화');
-  await expect(page.getByTestId('menu-summon')).toContainText('천장 30');
+  await expect(page.getByTestId('hud-summon')).toContainText('100원');
+  await expect(page.getByTestId('hud-summon-pity')).toHaveText('천장 30');
+  await expect(page.getByTestId('hud-towers')).toHaveText('0/20'); // 인원 n / 한도 (game.json board.unitCap)
+  // 소환 버튼이 가운데, 신화 왼쪽·도박 오른쪽, 강화는 소환 바로 아래
+  const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
+  const [my, su, ga, up] = [await box('menu-mythic'), await box('hud-summon'), await box('menu-gamble'), await box('menu-upgrade')];
+  expect(my.x + my.width).toBeLessThanOrEqual(su.x + 1);
+  expect(su.x + su.width).toBeLessThanOrEqual(ga.x + 1);
+  expect(up.y).toBeGreaterThanOrEqual(su.y + su.height - 1);
+  expect(Math.abs(up.x + up.width / 2 - (su.x + su.width / 2))).toBeLessThan(3);
+  // 도전·미션은 맵 오른쪽 둥근 버튼 (아래 묶음 위)
+  const ch = await box('menu-challenge');
+  const band = (await page.locator('.hud-bottom').boundingBox())!;
+  expect(ch.y + ch.height).toBeLessThanOrEqual(band.y);
+  expect(ch.x).toBeGreaterThan(412 * 0.7);
+  // 위 HUD: WAVE n · 몹 막대 (준비 '준비'는 판 시작 때 확인)
+  await inScene(page, (s) => s.debugFastForward(Math.max(0, 1300 - s.match.tick)), null);
+  await expect(page.getByTestId('hud-stage')).toHaveText(/^WAVE \d+$/);
+  await expect(page.getByTestId('hud-count')).toHaveText(/^\d+\/150$/);
+  await expect.poll(() => page.getByTestId('hud-count-fill').evaluate((el) => parseFloat((el as HTMLElement).style.width))).toBeGreaterThan(0);
   await expectDockFits(page);
   // 맵 위·아래 끝이 HUD·아래 띠와 겹치지 않는다
   const edges = await page.evaluate(() => {
@@ -233,8 +254,10 @@ test('[소환] 시트: 일반 소환 + 소환 도박 4종 확률·천장 · 종�
   const errors = collectErrors(page);
   await start(page);
   await addGold(page, 20_000);
-  await page.getByTestId('menu-summon').click();
-  await expect(page.getByTestId('sheet-summon')).toBeVisible();
+  // G-1: 소환 도박은 [🎰 도박] 시트의 '✨ 소환 도박' 탭
+  await page.getByTestId('menu-gamble').click();
+  await expect(page.getByTestId('sheet-gamble')).toBeVisible();
+  await page.getByTestId('sheet-tab-summon').click();
   await expect(page.getByTestId('summon-pity-normal')).toHaveText('천장까지 30회 (레어)');
   await expect(page.getByTestId('gacha-odds-lucky')).toHaveText('노말 55% · 레어 35% · 유니크 10%');
   await expect(page.getByTestId('gacha-odds-challenge')).toContainText('꽝');
@@ -273,11 +296,13 @@ test('[소환] 시트: 일반 소환 + 소환 도박 4종 확률·천장 · 종�
   expect(errors).toEqual([]);
 });
 
-test('[도박] 시트는 따로: 돈 도박 테이블·잭팟 그대로 · [강화] 시트에는 등급·능력치 탭만', async ({ page }) => {
+test('[도박] 시트: 💰 돈 도박(테이블·잭팟 그대로) · ✨ 소환 도박 두 탭 · [강화] 시트에는 등급·능력치 탭만', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
   await page.getByTestId('menu-gamble').click();
   await expect(page.getByTestId('sheet-gamble')).toBeVisible();
+  await expect(page.getByTestId('sheet-tab-money')).toHaveClass(/is-on/);
+  await expect(page.getByTestId('sheet-tab-summon')).toBeVisible();
   await expect(page.getByTestId('gamble-odds')).toContainText('기대값');
   await page.getByTestId('gamble-table-10').click();
   await expect.poll(() => inScene(page, (s) => (s.match.state as unknown as { gambles: number }).gambles, null)).toBe(1);

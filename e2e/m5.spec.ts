@@ -227,7 +227,7 @@ test('바텀 시트: 하단 메뉴 → 55%, 손잡이를 끌어 85%, 게임은 �
   // 맵 터치로 닫기: 시트 위쪽 맵 칸을 눌러도 소환되지 않고 시트만 닫힌다
   await page.getByTestId('menu-challenge').click();
   await expect(sheet).toBeVisible();
-  await tapTile(page, 4, 0);
+  await tapTile(page, 3, 1);
   await expect(sheet).toHaveCount(0);
   expect(await inScene(page, (s) => s.match.towers().length, null)).toBe(0);
   await expect(page.getByTestId('menu-challenge')).not.toHaveClass(/is-on/);
@@ -287,7 +287,7 @@ test('도전 처치: 보상 +20원·2단계 열림·✅, 10단계 보스와 겹�
   await place(page, [
     [1, 1, 'archer'],
     [2, 1, 'archer'],
-    [4, 1, 'archer'],
+    [3, 1, 'archer'],
   ]);
   await inScene(
     page,
@@ -519,14 +519,14 @@ test('미션: 달성하면 한 줄 배너·배지 "n 받기" → [받기]로 보
 test('[⬆ 승급 가능 n]: 누를 때마다 다음 묶음의 패널을 열고 그 타워들에 금색 고리 강조', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
-  // G-1 칸 무더기: 같은 캐릭터 3개가 한 칸에 (궁수 (2,3), 광부 (0,6))
+  // G-1 칸 무더기: 같은 캐릭터 3개가 한 칸에 (궁수 (2,3), 광부 (1,5))
   await place(page, [
     [2, 3, 'archer'],
     [2, 3, 'archer'],
     [2, 3, 'archer'],
-    [0, 6, 'miner'],
-    [0, 6, 'miner'],
-    [0, 6, 'miner'],
+    [1, 5, 'miner'],
+    [1, 5, 'miner'],
+    [1, 5, 'miner'],
   ]);
   const btn = page.getByTestId('hud-merge-ready');
   await expect(btn).toHaveText('⬆ 승급 가능 2');
@@ -563,15 +563,15 @@ test('바텀 시트는 하나만: 시트를 열면 정보 패널이 닫히고, �
   const errors = collectErrors(page);
   await start(page);
   // 아래쪽 줄 타워 → 정보 패널은 위에 붙어 하단 메뉴가 보인다
-  await place(page, [[1, 7, 'archer']]);
-  await tapTile(page, 1, 7);
+  await place(page, [[2, 6, 'archer']]);
+  await tapTile(page, 2, 6);
   await expect(page.getByTestId('tower-panel')).toHaveClass(/is-top/);
   await page.getByTestId('menu-upgrade').click();
   await expect(page.getByTestId('sheet-upgrade')).toBeVisible();
   await expect(page.getByTestId('tower-panel')).toHaveCount(0);
   // 시트가 열린 동안 (시트 위쪽) 타워를 누르면 시트만 닫힌다 (패널 안 열림)
-  await place(page, [[1, 1, 'archer']]);
-  await tapTile(page, 1, 1);
+  await place(page, [[2, 1, 'archer']]);
+  await tapTile(page, 2, 1);
   await expect(page.getByTestId('sheet-upgrade')).toHaveCount(0);
   expect(await inScene(page, (s) => s.panelOpen, null)).toBe(false);
   // 시트를 쓰는 중 보스 카드가 생기면 창은 알약으로 접혀 뜬다
@@ -604,13 +604,13 @@ test('M5 스크린샷: 10단계 보스 + 도전 3단계 (체력바 2줄) · 강�
   await place(page, [
     [1, 3, 'archer'],
     [2, 3, 'archer'],
-    [4, 3, 'warrior'],
-    [5, 3, 'miner'],
+    [3, 3, 'warrior'],
+    [4, 3, 'miner'],
     [1, 1, 'apprentice'],
     [1, 4, 'spearman'],
-    [5, 4, 'goblin'],
+    [4, 4, 'goblin'],
     [2, 4, 'drummer'],
-    [4, 4, 'archer'],
+    [3, 4, 'archer'],
   ]);
   await addGold(page, 30000);
   // 강화부터 (버튼을 화면에서 누른다)

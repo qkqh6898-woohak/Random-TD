@@ -239,6 +239,7 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     dangerStage: 0,
     pity: [],
     pityCut: [],
+    unitCapBonus: [],
     ultChargeBp: [],
     rallyBp: [],
     rallyUntil: [],
@@ -254,6 +255,7 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     state.gamble.push(newGambleState());
     state.pity.push(new Array<number>(1 + rules.gachaKinds.length).fill(0));
     state.pityCut.push(0);
+    state.unitCapBonus.push(0);
     state.ultChargeBp.push(0);
     state.rallyBp.push(0);
     state.rallyUntil.push(0);

@@ -304,8 +304,12 @@ export function gachaResultText(kindName: string, gradeName: string, towerName: 
 export function gachaFailText(reason: string, short: number): string | null {
   if (reason === 'gold') return `${withCommas(short)}원이 더 필요해요`;
   if (reason === 'full') return BOARD_FULL;
+  if (reason === 'cap') return UNIT_CAP_FULL;
   return null;
 }
+
+/** G-1 인원 한도 */
+export const UNIT_CAP_FULL = '인원이 가득 찼어요 — 승급으로 줄여 보세요';
 
 /** 필살기 알림 */
 export function ultText(towerName: string, ultName: string, count: number): string {

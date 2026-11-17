@@ -187,8 +187,8 @@ test('2×2 블록 맵에서 소환: 순환의 정원 32칸 · 빈 땅/길을 누
   await expect.poll(() => sim(page, (s) => s.buildHint), { timeout: 5000 }).toBe(0);
   await expect.poll(() => sim(page, (s) => s.backgroundKey), { timeout: 20_000 }).toBe('bg-t01-b1');
   await shot(page, 'T2-map-infinite-empty');
-  // 빈 땅 (1, 3) (G-1 순환의 정원 v3) → 소환 없음, 배치 칸 강조
-  let p = await tilePoint(page, 1, 3);
+  // 길 (0, 3) (G-1 마당 맵에는 빈 땅이 없다) → 소환 없음, 배치 칸 강조
+  let p = await tilePoint(page, 0, 3);
   await page.touchscreen.tap(p.x, p.y);
   await expect.poll(() => sim(page, (s) => s.buildHint)).toBeGreaterThan(0);
   expect(await sim(page, (s) => s.match.towers().length)).toBe(0);
@@ -206,11 +206,11 @@ test('캠페인 1 사거리 미로(7×10·24칸, G-1)에서 소환되고, 개발
   test.slow();
   const errors = collectErrors(page);
   await startGame(page, '/?dev=1&seed=11', 'campaign');
-  await expect(page.getByTestId('hud-towers')).toHaveText('0/24');
+  await expect(page.getByTestId('hud-towers')).toHaveText('0/20');
   await expect.poll(() => sim(page, (s) => s.buildHint), { timeout: 5000 }).toBe(0);
   const p = await tilePoint(page, 4, 4);
   await page.touchscreen.tap(p.x, p.y);
-  await expect(page.getByTestId('hud-towers')).toHaveText('1/24');
+  await expect(page.getByTestId('hud-towers')).toHaveText('1/20');
   await sim(page, (s) => s.debugFastForward(200));
   await expect.poll(() => sim(page, (s) => s.backgroundKey), { timeout: 20_000 }).toBe('bg-t01-b1');
   await shot(page, 'T2-map-campaign1');
@@ -261,8 +261,8 @@ test('병합 확인 (HF-4): 빈 땅을 짧게 누르면 배치 칸만 보이고,
   await startGame(page, '/?debug=1&seed=42');
   await expect.poll(() => sim(page, (s) => s.buildHint), { timeout: 5000 }).toBe(0);
   await sim(page, (s) => s.match.world.enqueue({ type: 'debugAddGold', amount: 100_000 }));
-  // 빈 땅 (1, 3)을 꾹 → 자동 칸에 연속 소환, 뗀 뒤에도 배치 칸 잠깐 보이기는 없음
-  const p = await tilePoint(page, 1, 3);
+  // 길 (0, 3)을 꾹 → 자동 칸에 연속 소환, 뗀 뒤에도 배치 칸 잠깐 보이기는 없음
+  const p = await tilePoint(page, 0, 3);
   await page.mouse.move(p.x, p.y);
   await page.mouse.down();
   await expect.poll(() => sim(page, (s) => s.match.towers().length), { timeout: 8000 }).toBeGreaterThanOrEqual(3);

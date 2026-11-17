@@ -241,7 +241,7 @@ describe('맵 화면 배치 (MAPS.md 0장: HUD와 아래 띠 사이에 가장 �
     const map = buildSimMap(circle);
     const p = positionAt(map.path, 6000);
     const t = pxToTile(L, unitsToPx(L, p.x, p.y).x, unitsToPx(L, p.x, p.y).y);
-    expect(t).toEqual({ tx: 5, ty: 3 });
+    expect(t).toEqual({ tx: 5, ty: 1 }); // G-1 마당 맵: (0,0) → 오른쪽 5칸 → 아래로 1칸
   });
 
   it('맵 영역 = 실제 HUD 아래 (검토 반영: 보스 막대·44px 버튼 때문에 커진 HUD가 맵 윗줄을 덮지 않게)', () => {
@@ -270,8 +270,8 @@ describe('맵 화면 배치 (MAPS.md 0장: HUD와 아래 띠 사이에 가장 �
     expect(gameToCssPx(cssToGamePx(123, 412), 412)).toBeCloseTo(123, 9);
   });
 
-  it('경로 칸 목록: 순환 16칸, 사거리 미로는 맵 안 33칸 + 화면 밖 2칸 (G-1)', () => {
-    expect(pathCells(buildSimMap(circle))).toHaveLength(16);
+  it('경로 칸 목록: 순환 24칸(마당 둘레), 사거리 미로는 맵 안 33칸 + 화면 밖 2칸 (G-1)', () => {
+    expect(pathCells(buildSimMap(circle))).toHaveLength(24);
     const cells = pathCells(buildSimMap(crossroads));
     expect(cells).toHaveLength(35);
     expect(cells[0]).toMatchObject({ x: 0, y: -1, dx: 0, dy: 1 });

@@ -96,7 +96,7 @@ test('?dev=1: ⏭ 누를 때마다 다음 단계가 바로 시작 — HUD·sim, 
   // ×1: 누를 때마다 HUD 단계가 바로 하나 오른다 — 명령은 누른 뒤 첫 틱에 실행되고 그 틱이 새 단계의 시작 틱
   for (let s = 1; s <= 3; s++) {
     await skip.click();
-    await expect(stage).toHaveText(`${s}단계`, { timeout: 3000 });
+    await expect(stage).toHaveText(`WAVE ${s}`, { timeout: 3000 });
     const v = await lastSkip();
     expect(v.stage).toBe(s);
     expect(v.started).toBe(v.cmdTick);
@@ -107,18 +107,18 @@ test('?dev=1: ⏭ 누를 때마다 다음 단계가 바로 시작 — HUD·sim, 
     const b = document.querySelector<HTMLButtonElement>('[data-action="skip-stage"]')!;
     for (let i = 0; i < 5; i++) b.click();
   });
-  await expect(stage).toHaveText('8단계', { timeout: 3000 });
+  await expect(stage).toHaveText('WAVE 8', { timeout: 3000 });
   // Playwright 클릭으로 빠르게 2번
   await skip.click();
   await skip.click();
-  await expect(stage).toHaveText('👑 10단계', { timeout: 3000 });
+  await expect(stage).toHaveText('👑 WAVE 10', { timeout: 3000 });
   await expect(page.getByTestId('hud-boss')).toBeVisible();
   expect(await sim(page, (x) => x.match.state.bossId)).not.toBe('');
 
   // 보스 단계에서 ⏭: 보스를 보상 없이 지우고 바로 11단계, 보스 막대 숨김
   const gold = await sim(page, (x) => x.match.state.gold);
   await skip.click();
-  await expect(stage).toHaveText('11단계', { timeout: 3000 });
+  await expect(stage).toHaveText('WAVE 11', { timeout: 3000 });
   await expect(page.getByTestId('hud-boss')).toBeHidden();
   expect(await sim(page, (x) => ({ boss: x.match.state.bossId, gold: x.match.state.gold, stageBoss: x.match.state.bossStage }))).toEqual({ boss: '', gold, stageBoss: false });
 
@@ -133,7 +133,7 @@ test('?dev=1: ⏭ 누를 때마다 다음 단계가 바로 시작 — HUD·sim, 
   // ×16에서도 누른 뒤 첫 틱이 새 단계의 시작 틱 (그 사이 원래 60초가 다 차서 넘어가는 일은 없다)
   expect(v16.started).toBe(v16.cmdTick);
   expect(v16.stage).toBeGreaterThanOrEqual(before + 1);
-  await expect(stage).toHaveText(`${v16.stage}단계`);
+  await expect(stage).toHaveText(`WAVE ${v16.stage}`);
   // 원래 보스 제한 시각이 지나도 (×16 약 4초) 패배하지 않는다
   await page.waitForTimeout(5000);
   expect(await sim(page, (x) => x.match.defeated)).toBe(false);
@@ -160,7 +160,7 @@ test('?dev=1: ⏭를 길게 누르면 초당 약 4번 계속 넘어간다', asyn
   // 손을 떼면 멈춘다
   await page.waitForTimeout(800);
   expect(await skips()).toEqual(a);
-  await expect(page.getByTestId('hud-stage')).toHaveText(`${a.stage}단계`);
+  await expect(page.getByTestId('hud-stage')).toHaveText(`WAVE ${a.stage}`);
   expect(errors).toEqual([]);
 });
 
@@ -248,7 +248,7 @@ test.describe('한 파일 빌드 (npm run build:single → release/운빨디펜�
     const skip = page.getByRole('button', { name: '다음 단계로 즉시 이동' });
     await expect(skip).toBeVisible();
     await skip.click();
-    await expect(page.getByTestId('hud-stage')).toHaveText('1단계', { timeout: 3000 });
+    await expect(page.getByTestId('hud-stage')).toHaveText('WAVE 1', { timeout: 3000 });
     expect(await setSpeed(page, '×16')).toEqual(['×2', '×4', '×8', '×16']);
     await shot(page, 'T1-single-file');
     expect(errors).toEqual([]);
