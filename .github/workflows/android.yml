@@ -18,9 +18,11 @@ on:
       - main
       - feat/android
     # 문서만 바뀐 푸시는 새 APK를 만들지 않는다 (수동 실행은 그대로)
+    # .github/** (워크플로·이슈 양식)만 바뀐 푸시도 새 APK를 만들지 않는다 (FB-1) — 이 파일을 고친 뒤 빌드가 필요하면 수동 실행
     paths-ignore:
       - 'docs/**'
       - '**/*.md'
+      - '.github/**'
   workflow_dispatch:
 
 permissions:
