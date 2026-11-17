@@ -18,6 +18,7 @@ type SceneLike = {
     tick: number;
     defeated: boolean;
     state: { stage: number; stageStartTick: number; bossStage: boolean; bossId: string; gold: number; debugUsed: boolean };
+    rules: { interestPer: number; interestAmount: number; interestMax: number };
     towers(): unknown[];
     mobCount(): number;
     world: { executed: { type: string; tick: number }[] };
@@ -116,11 +117,20 @@ test('?dev=1: ⏭ 누를 때마다 다음 단계가 바로 시작 — HUD·sim, 
   expect(await sim(page, (x) => x.match.state.bossId)).not.toBe('');
 
   // 보스 단계에서 ⏭: 보스를 보상 없이 지우고 바로 11단계, 보스 막대 숨김
-  const gold = await sim(page, (x) => x.match.state.gold);
+  // 돈 = 그대로 + 단계 이자만 (피드백 #10 — ⏭도 '단계를 지남'이라 이자 min(⌊돈÷100⌋×10, 100)원, 보스 보상은 없음)
+  const { gold0, interest } = await sim(page, (x) => {
+    const g = x.match.state.gold;
+    const r = x.match.rules;
+    return { gold0: g, interest: Math.min(Math.floor(g / r.interestPer) * r.interestAmount, r.interestMax) };
+  });
   await skip.click();
   await expect(stage).toHaveText('WAVE 11', { timeout: 3000 });
   await expect(page.getByTestId('hud-boss')).toBeHidden();
-  expect(await sim(page, (x) => ({ boss: x.match.state.bossId, gold: x.match.state.gold, stageBoss: x.match.state.bossStage }))).toEqual({ boss: '', gold, stageBoss: false });
+  expect(await sim(page, (x) => ({ boss: x.match.state.bossId, gold: x.match.state.gold, stageBoss: x.match.state.bossStage }))).toEqual({
+    boss: '',
+    gold: gold0 + interest,
+    stageBoss: false,
+  });
 
   // ×16에서도 누를 때마다 하나씩
   const seen = await setSpeed(page, '×16');
