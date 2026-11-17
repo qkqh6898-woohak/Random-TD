@@ -2,7 +2,7 @@
  * M1-5 단계 타이머: 0단계 60초 준비, 이후 60초마다 다음 단계, 단계 전환 사건, 보스 단계 표시.
  */
 import { describe, expect, it } from 'vitest';
-import { stageStartTick } from '../../src/sim/systems/Stage';
+import { stageInterest, stageStartTick } from '../../src/sim/systems/Stage';
 import { createMatch } from '../../src/sim/match';
 import { campaign, data, infinite, jumpToStage } from '../helpers/match';
 
@@ -159,7 +159,7 @@ describe('개발용 단계 건너뛰기 (debugSkipStage 명령)', () => {
     expect(match.state.bossStage).toBe(false);
     expect(match.state.bossId).toBe('');
     expect(match.state.bossDeadline).toBe(0);
-    expect(match.state.gold).toBe(gold);
+    expect(match.state.gold).toBe(gold + stageInterest(match.ctx, gold)); // 보스 보상 없음 — 단계를 지난 이자만 (피드백 #10)
     expect(match.state.cardOffers).toHaveLength(0);
     expect(match.world.drainEvents().map((e) => e.type)).toEqual(expect.arrayContaining(['bossSkip', 'stageStart']));
     expect(chal()).toBe(1);

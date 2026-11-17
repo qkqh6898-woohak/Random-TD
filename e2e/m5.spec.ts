@@ -234,7 +234,7 @@ test('바텀 시트: 하단 메뉴 → 55%, 손잡이를 끌어 85%, 게임은 �
   expect(errors).toEqual([]);
 });
 
-test('도전: 1단계 [시작] → 시트가 닫히고 도전 보스 막대·진행 중 배지, 30초가 지나면 실패(패배 없음) + 5분 쿨타임', async ({ page }) => {
+test('도전: 1단계 [시작] → 시트는 열린 채 (피드백 #10) 도전 보스 막대·진행 중 배지, 30초가 지나면 실패(패배 없음) + 5분 쿨타임', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
   await page.getByTestId('menu-challenge').click();
@@ -242,7 +242,9 @@ test('도전: 1단계 [시작] → 시트가 닫히고 도전 보스 막대·진
   await expect(page.getByTestId('challenge-start-2')).toHaveText('🔒');
   await expect(page.getByTestId('challenge-start-2')).toBeDisabled();
   await page.getByTestId('challenge-start-1').click();
-  await expect(page.getByTestId('sheet-challenge')).toHaveCount(0);
+  // 피드백 #10: 시작해도 도전 시트는 닫히지 않고, 그 줄이 '진행 중'으로 바뀐다
+  await expect(page.getByTestId('sheet-challenge')).toBeVisible();
+  await expect(page.getByTestId('challenge-start-1')).toHaveText('진행 중');
   await expect.poll(() => inScene(page, (s) => s.match.state.challengeLevel, null)).toBe(1);
   // 배너는 실제 시간 3.2초 — 느린 헤드리스 화면(T-3: 캔버스가 화면 높이만큼 커짐)에서도 놓치지 않게 시작하자마자 본다
   await expect(page.locator('[data-testid="banner-challenge"]', { hasText: '도전 1단계' })).toBeVisible();
@@ -254,8 +256,7 @@ test('도전: 1단계 [시작] → 시트가 닫히고 도전 보스 막대·진
   // 도전 보스 그림 (몹 수 한도에 넣지 않음 — HUD 👾는 0)
   await expect.poll(() => inScene(page, (s) => s.renderedMobCount, null)).toBe(1);
   await expect(page.getByTestId('hud-count')).toHaveText('0/150');
-  // 시트 맨 위 '진행 중' 줄
-  await page.getByTestId('menu-challenge').click();
+  // 시트 맨 위 '진행 중' 줄 (시트는 시작한 뒤로 계속 열려 있다)
   await expect(page.getByTestId('challenge-active')).toHaveText(/진행 중 · 1단계 황금 슬라임 · \d+초/);
   await expect(page.getByTestId('challenge-start-1')).toHaveText('진행 중');
   await page.getByTestId('sheet-close').click();
@@ -283,6 +284,7 @@ test('도전 처치: 보상 +20원·2단계 열림·✅, 10단계 보스와 겹�
   await page.getByTestId('menu-challenge').click();
   await page.getByTestId('challenge-start-1').click();
   await expect.poll(() => inScene(page, (s) => s.match.state.challengeLevel, null)).toBe(1);
+  await expect(page.getByTestId('sheet-challenge')).toBeVisible(); // 피드백 #10: 시트는 열린 채
   // 경로 시작점 옆에 궁수 여럿 + 보스 체력을 조금만 남긴다
   await place(page, [
     [1, 1, 'archer'],
@@ -301,7 +303,6 @@ test('도전 처치: 보상 +20원·2단계 열림·✅, 10단계 보스와 겹�
   await expect.poll(() => inScene(page, (s) => s.match.state.challengeBest, null), { timeout: 15000 }).toBe(1);
   expect(await inScene(page, (s) => s.match.state.gold, null)).toBeGreaterThanOrEqual(gold0 + 20);
   await expect(page.locator('[data-testid="banner-gold"]', { hasText: '도전 1단계 클리어! +20원 · 2단계 열림' })).toBeVisible();
-  await page.getByTestId('menu-challenge').click();
   await expect(page.getByTestId('challenge-start-2')).toHaveText('시작');
   await expect(page.getByTestId('challenge-row-1').locator('.ch-done')).toBeVisible();
   // 10단계 보스 + 도전 2단계 → 막대 두 줄 (같은 자리, 높이 그대로)

@@ -10,7 +10,7 @@
   "decks": [{"normal":["miner","goblin","archer","apprentice","warrior"],"rare":["merchant","mudshaman","flamemage","cleaver","duelist"],"unique":["icemage","gambler","blacksmith","sniper","berserker"],"hero":["summoner","scholar","chronomancer","alchemist","swordsaint"],"legend":["dragoncaller","warlord","archmage","assassin","fortuna"]}],
   "levels": [{"alchemist":15,"apprentice":15,"archer":15,"archmage":15,"assassin":15,"bard":15,"berserker":15,"blacksmith":15,"chronomancer":15,"cleaver":15,"dragoncaller":15,"drummer":15,"duelist":15,"flamemage":15,"fortuna":15,"gambler":15,"goblin":15,"gunner":15,"icemage":15,"merchant":15,"miner":15,"mudshaman":15,"scholar":15,"sniper":15,"summoner":15,"swordsaint":15,"warlord":15,"warrior":15}],
   "accountLevels": [1],
-  "dataHash": 1497730454,
+  "dataHash": 1348926021,
   "endTick": 2421,
   "commands": [
     {"type":"debugTower","tick":0,"player":0,"seq":0,"x":2,"y":4,"t":17},
@@ -163,19 +163,19 @@
     {"type":"summon","tick":2420,"player":0,"seq":147,"x":4,"y":5}
   ],
   "checkpoints": [
-    [200,3887645191],
-    [400,1401574698],
-    [600,3923616021],
-    [800,1068960403],
-    [1000,3261840475],
-    [1200,2167324824],
-    [1400,3660509328],
-    [1600,3043669668],
-    [1800,2076041966],
-    [2000,301264724],
-    [2200,436847293],
-    [2400,3696405072]
+    [200,3751264704],
+    [400,1585494904],
+    [600,2674138418],
+    [800,2567888404],
+    [1000,2315637962],
+    [1200,2692518791],
+    [1400,1370841700],
+    [1600,1048231957],
+    [1800,3127625503],
+    [2000,732410795],
+    [2200,4154284485],
+    [2400,1287154310]
   ],
-  "finalHash": 2698975590,
-  "summary": {"stage":23,"kills":58,"gold":118194,"towers":16,"defeated":false}
+  "finalHash": 2453936852,
+  "summary": {"stage":23,"kills":58,"gold":1535324,"towers":16,"defeated":false}
 }

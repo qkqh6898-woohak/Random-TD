@@ -8,6 +8,8 @@
  *   다음 단계로 넘어가기 전에 본다 → 패배 단계 = 그 보스 단계. 보스를 일찍 잡으면 남은 시간은 휴식 (다음 단계는 원래 시각).
  * - 편대 예고 (M4-3b): 다음 단계 시작 10초 전, 다음 단계가 편대 단계면 편대를 정하고 'formationPreview' { stage, id }.
  * - 캠페인은 마지막 단계(50) 다음으로 넘어가지 않는다 (테마 클리어 판정은 M6).
+ * - 단계 이자 (피드백 #10): 한 단계를 마치고 다음 단계로 넘어갈 때 가진 돈 100원마다 10원 (game.json interest, 내림) → 'stageInterest' { stage, amount }.
+ *   준비 단계(0단계) → 1단계는 이자 없음. 카드 '황금 손' 보너스는 붙이지 않는다 (도박 당첨금과 같은 규칙).
  * - 준비 완료 (F10, readyNow 명령): 준비 단계에서 누르면 1단계를 바로 시작 (`readyNow`). 60초를 기다리는 길도 그대로.
  */
 import type { System, World } from '../World';
@@ -31,9 +33,23 @@ export function stageStartTick(prepTicks: number, stageTicks: number, stage: num
   return prepTicks + (stage - 1) * stageTicks + bossesBefore * Math.max(0, bossTicks - stageTicks);
 }
 
-/** 다음 단계 시작: 단계 +1, 시작 틱 = 지금, 다음 단계 = 지금 + 단계 길이 (보스 단계는 max(단계 길이, 보스 시간)), 'stageStart' 사건. (단계 시스템·단계 건너뛰기 공용) */
+/** 가진 돈 gold에 붙는 단계 이자 (원): ⌊gold ÷ per⌋ × amount. */
+export function stageInterest(ctx: Pick<MatchContext, 'rules'>, gold: number): number {
+  const { interestPer, interestAmount } = ctx.rules;
+  return Math.floor(gold / interestPer) * interestAmount;
+}
+
+/** 다음 단계 시작: (1단계 이상을 마쳤으면 단계 이자) 단계 +1, 시작 틱 = 지금, 다음 단계 = 지금 + 단계 길이 (보스 단계는 max(단계 길이, 보스 시간)), 'stageStart' 사건. (단계 시스템·단계 건너뛰기 공용) */
 function beginNextStage(ctx: MatchContext, world: World): void {
   const { state, rules } = ctx;
+  if (state.stage >= 1) {
+    const amount = stageInterest(ctx, state.gold);
+    if (amount > 0) {
+      state.gold += amount;
+      state.goldEarned += amount;
+      world.emit('stageInterest', { stage: state.stage, amount });
+    }
+  }
   state.stage += 1;
   state.stageStartTick = world.tick;
   state.bossStage = isBossStage(rules, state.stage);

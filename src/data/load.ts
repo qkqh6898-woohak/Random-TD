@@ -561,6 +561,12 @@ export interface WorkerConfig {
   income: number;
 }
 
+/** 단계 이자 (피드백 #10): 단계를 넘어갈 때 가진 돈 per원마다 amount원 */
+export interface InterestConfig {
+  per: number;
+  amount: number;
+}
+
 /** 기본 보스 (ENEMIES.md 4장, M4-5·M4-6). */
 export interface BossConfig {
   /** 처치 보상 (원) */
@@ -674,6 +680,7 @@ export interface GameConfig {
   aura: AuraConfig;
   towerLevel: TowerLevelConfig;
   worker: WorkerConfig;
+  interest: InterestConfig;
   boss: BossConfig;
   detection: DetectionConfig;
   formation: FormationConfig;
@@ -1482,6 +1489,10 @@ export const gameSchema: Schema = s.obj({
     max: s.int({ min: 0, max: 1000 }),
     intervalSeconds: tickSeconds(0.05, 600),
     income: s.int({ min: 0 }),
+  }),
+  interest: s.obj({
+    per: s.int({ min: 1 }),
+    amount: s.int({ min: 0 }),
   }),
   boss: s.obj({
     reward: s.int({ min: 0 }),
