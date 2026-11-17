@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import type { GameScene } from '../src/view/scenes/Game';
 import type { GameContext } from '../src/view/context';
 import { mkdirSync } from 'node:fs';
+import { clickStart } from './title';
 
 async function scene<T>(page: Page, fn: (s: GameScene, ctx: GameContext) => T): Promise<T> {
   return page.evaluate((src) => {
@@ -12,7 +13,7 @@ async function scene<T>(page: Page, fn: (s: GameScene, ctx: GameContext) => T): 
 
 async function start(page: Page): Promise<void> {
   await page.goto('/?seed=7001');
-  await page.getByRole('button', { name: '시작', exact: true }).click();
+  await clickStart(page);
   await expect(page.getByTestId('hud-stage')).toHaveText('준비');
 }
 

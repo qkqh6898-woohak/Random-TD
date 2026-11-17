@@ -459,6 +459,19 @@
 .lobby-screen .lobby-below {
   position: static;
   gap: 2cqw;
+  align-items: center;
+  min-height: max(11cqw, 44px);
+}
+
+.lobby-next {
+  margin: 0;
+  padding: 1cqw 3cqw;
+  font-size: 3.3cqw;
+  font-weight: 800;
+  color: var(--frame-gold-hi, #ffe7a3);
+  background: rgba(23, 15, 10, 0.72);
+  border-radius: 4cqw;
+  text-align: center;
 }
 
 .lobby-screen .lobby-below .btn-campaign {

@@ -303,6 +303,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     startButtons.push(b);
   }
 
+  const nextHint = h('p', { class: 'lobby-next', attrs: { 'data-testid': 'wave-next' } });
   const road = h('div', { class: 'wave-road', attrs: { 'data-testid': 'wave-road', role: 'list', 'aria-label': '웨이브 길' } });
   const bestLabel = h('div', { class: 'wave-best', attrs: { 'data-testid': 'wave-best' } });
   const side = h('div', { class: 'lobby-side lobby-side-left' });
@@ -311,6 +312,8 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   function renderRoad(): void {
     const m = waveRoad(progress.state, pd);
     bestLabel.replaceChildren(h('span', { class: 'wave-best-label', text: '최고 웨이브' }), h('strong', { text: String(m.best) }));
+    const nextNode = m.nodes.find((n) => n.wave === m.next);
+    nextHint.textContent = m.ready > 0 ? `받을 웨이브 보상 ${m.ready}개!` : nextNode ? `다음 보상 ${nextNode.wave}웨이브 · ${nextNode.reward}` : '웨이브 길 보상을 모두 받았어요';
     const nodes = [...m.nodes].reverse();
     const out: HTMLElement[] = [];
     for (const n of nodes) {
@@ -414,7 +417,8 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       h('span', { class: 'title-crest title-crest-right', attrs: { 'aria-hidden': 'true' } }),
     ),
     h('div', { class: 'lobby-middle' }, side, h('div', { class: 'wave-column' }, bestLabel, road), sideR),
-    h('div', { class: 'title-actions lobby-actions' }, start, below.length > 0 ? h('div', { class: `title-debug lobby-below${below.length > 1 ? ' is-pair' : ''}` }, ...below) : null),
+    // [빠른 시작] 아래 한 줄은 늘 같은 높이 → [새 게임]·[캠페인 1(디버그)]이 있어도 [빠른 시작] 자리가 같다 (없으면 다음 웨이브 보상 안내)
+    h('div', { class: 'title-actions lobby-actions' }, start, h('div', { class: `title-debug lobby-below${below.length > 1 ? ' is-pair' : ''}` }, ...(below.length > 0 ? below : [nextHint]))),
   );
 
   // ---------- 영웅 탭 ----------

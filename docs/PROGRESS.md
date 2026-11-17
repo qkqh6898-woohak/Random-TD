@@ -1098,3 +1098,41 @@
   - styles.css의 `.hud-summon-die`·`.title-dice` 규칙은 쓰이지 않지만 다른 갈래와 겹치지 않게 지우지 않았다 (합친 뒤 정리).
   - 다른 갈래(rtd-g1)와 합칠 때 겹칠 곳: `Hud.ts` 소환 버튼 한 줄, `TitleScreen.ts` 로고 두 줄, `Game.ts` summon/merge 사건 두 곳 + FxLayer 생성 + `summonFxStats`, `styles.css` `.btn` 3줄. 'hidden' 등급 이름이 '신화'로 바뀌어도 받침대·별 배지는 등급 id(`hidden`)로 그리므로 그대로.
   - 실제 안드로이드 기기 확인은 아직.
+
+## G-3 로비·영웅 수집·성장 (상태: 완료 — 갈래 `feat/g3-lobby`, `feat/g2-look` ef693a6에서)
+
+> 사용자 요청: 인기 2인 랜덤 디펜스의 **흐름·구조**를 1인 오프라인 게임으로 — 로비(웨이브 길·빠른 시작·퀘스트·모집)·영웅 수집/성장·정산·신화 해방.
+> 그 게임의 캐릭터·이름·그림·아이콘·문구·모양은 쓰지 않았다 (우리 towers.json 캐릭터 + G-2 「금테 성채」 테마 + 한국어 해요체). 실제 돈·VIP·유료 상품·체력 제한 없음.
+> 같은 때 G-1(`/home/user/rtd-g1`)이 전투(3칸 쌓기·고리 길 맵·신화/소환/도박/강화 묶음·천장·카드·궁극기·신화 도감)를 바꾼다 → 이 갈래는 **판 밖 화면·메타만**. sim은 판 입력 한 가지(잠긴 히든)만 더했다.
+
+- **데이터** `src/data/progression.json` (수치 전부, PROGRESSION.md 13장): 계정 경험치·판 정산 표·영웅 레벨 비용·히든 해방 조각·웨이브 길·모집·퀘스트·상점·잠긴 모드.
+  - **GameData에 넣지 않았다**: GameData 전체가 리플레이·판 저장의 데이터 지문이라, 메타 수치를 바꿀 때마다 진행 중 판이 버려지지 않게 `src/meta/progressionData.ts`가 따로 읽고 검사(스키마 + 교차 검사: 영웅 최대 Lv ≤ game.json towerLevel.max, 비용 표 길이, 등급 가중치, 퀘스트 id, 상점 가격은 gold·gems 하나). `tools/gen_tables.py --check`에도 같은 규칙.
+- **규칙** `src/meta/progress.ts` (순수, Date·저장소 없음): 계정 레벨(100 + 50×(Lv−1), 레벨업 💎10·10레벨 +50), `settleMatch`(경험치 단계×10 + 보스×50 + 새 기록 100 · 골드 단계×20 + 보스×100 · 카드 장수 표 · 보스마다 신화 조각 1 · 최고 웨이브 · 누적/오늘 기록 · 모집 게이지(소환 5번 = 1칸) · runId로 한 번만),
+  영웅 레벨업(Lv1~15, 카드·골드 표 × 등급%), 히든 해방(조각 20), 웨이브 길, 모집(30칸), 일일(날짜 초기화·시계 역행 시 멈춤)·업적 퀘스트, 상점. 무작위는 `Math.random` 없이 판 보상 = 판 시드 + 결과, 그 밖 = 계정 시드 + 굴림 번호.
+- **저장** `src/meta/progressStore.ts`: 키 `rtd.progress` `{v:1}` (개발자 모드 `rtd.progress.dev` — 치트 보상이 섞이지 않게, 개발자 로비 [🛠 +재화]). 처음엔 `rtd.account` 레벨·`rtd.records` 최고 단계를 옮기고 예전 키(전투 기록·효과음·화면 흔들림·설정·판 저장)는 건드리지 않는다.
+  계정 레벨은 이제 여기서 — `GameContext.accountLevel`은 getter라 판을 시작할 때마다 지금 레벨(도박 테이블 Lv7·Lv20이 경험치로 열림). `rtd.account`는 히든 미션·도움말 기록용으로 그대로.
+- **전투 연결 지점 (G-1이 그대로 쓰면 됨)**:
+  1. 영웅 레벨 → **기존** `MatchOptions.levels` (sim이 이미 레벨당 공격력 +4% · 특색 Lv1→Lv15 보간, 리플레이·저장 입력에 기록). 메타 함수 `heroMatchLevels(state, pd, data)` (Lv2 이상만, 키 정렬 → 모두 Lv1이면 `{}` = 예전 판). 표시용 `heroAtkBonusBp(level, data)` · `heroAtkBonuses(...)` (bp 정수).
+  2. 잠긴 히든 → **새** `MatchOptions.lockedHidden?: string[][]` → `MatchContext.lockedHidden: ReadonlySet<string>[]` (해시 밖) → 조합 규칙이 **`isHiddenLocked(ctx, player, towerId)`** (`src/sim/unlocks.ts`)로 확인. 생략·빈 목록 = 모두 열림. `matchInputs`는 잠긴 게 있을 때만 `lockedHidden`을 적어 예전 리플레이·저장 모양 그대로, `validateReplay`·`replayMatchOptions` 지원. 메타 `lockedHiddenIds(state, data)`·`isHiddenUnlocked(state, id, data)`. **개발자 판은 잠그지 않는다.** 지금 sim에는 히든 조합 명령이 없어(M6-4 미구현) 잠금은 G-1 신화 도감이 확인할 때 효력이 생긴다.
+  3. Game 장면: `createMatch({... , ...this.ctx.progress?.matchOptions(this.ctx.debug)})` 한 줄, 패배 때 `this.ctx.progress?.settle(matchResultOf(match, runId))` → `createGameOverScreen({ rewards: settlementView(...) })` 두 줄. (`src/meta/matchResult.ts`)
+- **화면**:
+  - `src/ui/lobby/Lobby.ts` + `lobby.css` (UI.md 12장): Boot 장면이 타이틀 대신 로비를 띄운다 (타이틀 그림은 뒤에 그대로). 위 띠(문장·Lv·경험치·💰·💎), [전투] 탭 = 로고 · 세로 웨이브 길(10웨이브마다 받기) · [퀘스트]·[영웅 모집 17/30]·[🏆 기록]·[⚙ 설정] · [▶ 빠른 시작](저장 판이 있으면 [이어 하기] + [새 게임] 확인 창, 업데이트로 버린 판 알림 그대로),
+    [영웅] 격자(탭 영웅/신화, 등급 순/레벨 순, 카드 n/m · ▲, 보유하지 않음 흐림) + 상세 창(능력치·특색·각성·조합·전투 공격력 +n%·[레벨업 🃏·💰]), [상점](게임 안 화폐), [도감](신화 12종 조각 n/20 · [해방]), [캠페인](Lv10 잠김 → 테마 1). 아래 메뉴 5칸 + 빨간 숫자.
+    초상은 Boot가 바깥 WebP 주소(이미 받아 둔 파일) 또는 절차 텍스처 data URI를 준다(`portraitOf`). 창은 모두 `<dialog>`라 nativeBack이 먼저 닫고, 그다음 로비 `back()`이 [전투] 탭으로, 그다음 앱 종료.
+  - 화면 모델 `src/ui/lobby/lobbyModel.ts` (순수): 격자·정렬·상세·웨이브 길·조각·정산 요약.
+  - 패배 화면: 정산 상자(최고 웨이브·새 기록·계정 Lv 바·⭐💰💎 칩·카드(등급 색·NEW)·조각·모집 +n). 버튼 '타이틀로' → **'로비로'** (일시정지 메뉴도, 안내 '로비에서 이어 할 수 있어요').
+  - 선택자 호환: 로비 뿌리 `data-screen="title"` (+ `data-lobby`·`data-tab`), 버튼 `data-action="start"`(빠른 시작)·`resume-match`·`new-game`·`campaign`·`records` 그대로 → 기존 스펙은 거의 그대로. `e2e/title.ts clickStart`가 [전투] 탭으로 돌아가 [빠른 시작]을 누르는 한 곳.
+- **테스트**: Vitest `tests/unit/g3-progress.test.ts` 23개(데이터 검사, 레벨, 정산 표·결정성·한 번만, 모집, 카드 굴림, 레벨업 비용·실행·영입, `heroMatchLevels` → sim 공격력 +8%, 히든 해방·조각 대상, `lockedHidden` sim·리플레이·해시 동일·검사, 웨이브 길, 일일 날짜·역행·보너스, 업적, 상점, 마이그레이션·개발자 슬롯·망가진 값·저장소) · `tests/unit/g3-lobby.test.ts` 7개(격자·정렬·ready·상세·웨이브 길·조각·정산 요약).
+  E2E `e2e/g3.spec.ts` 9개: a 로비·웨이브 길 받기·빠른 시작 / b 영웅 격자 25+25·신화 15·정렬·상점 / c 레벨업(카드·골드) → 다음 판 `levels {miner:3}` / d 패배 정산(경험치 350·골드 500·카드 8·조각 1·Lv3) → 로비 갱신 → 일일 4 + 보너스 → 새로고침해도 한 번만 / e 조각 20 → 해방 → 다음 판 잠긴 히든 12 → 11 / f 412·360·320 메뉴 한 줄·44px·넘침 없음 / g 뒤로 가기.
+  고친 스펙: `e2e/title.ts`(로비), `m1`·`a1`·`smoke`의 '타이틀로' → '로비로', a1 일시정지 안내 글, `battle-update`(정확히 '시작' 버튼 → `clickStart`).
+  hud-layout '[캠페인 1]이 있어도 [시작] 자리가 같다' 규칙을 지키려고 [빠른 시작] 아래 한 줄은 늘 같은 높이(버튼이 없으면 '다음 보상 30웨이브 · 💰600 · 🃏5' 안내).
+- **확인 (이 컨테이너, 포트 5194)**: Vitest **1,344 통과 + 3 건너뜀**(72파일, +30), `npm run check`·`npm run build` 통과.
+  E2E(관련 스펙만 — 전체 45분 실행은 하지 않음): `g3` 9/9 · `smoke`+`a1`+`update`+`m1` **30/30** · `art`·`g2`·`map-fill`의 타이틀·테마·넓은 화면·맵 9 통과 + `battle-update` 1 실패('시작' 정확 일치) → 고침 →
+  `battle-update`·`hud-layout` 타이틀 3뷰포트·`t3-screen` 타이틀·`f10` 재시작 안내·`g3` 재실행 **15/15**.
+- **스크린샷** (412×915, dsf 1): `docs/screens/G3-lobby.png`(최고 40웨이브·받기 4) · `G3-heroes.png`(레벨 순) · `G3-hero-detail.png`(광부 레벨업 전) · `G3-gameover-rewards.png`(20단계 정산) · `G3-codex-fragments.png`(황금 왕 20/20).
+- **결정**: 개발자 모드 = 따로 된 계정 슬롯 + 히든 잠금 없음 · 정산은 개발자/치트 판에도 준다(개발자 슬롯이라 일반 계정과 무관) · 첫 카드는 영입에 씀 · 미보유 영웅도 카드는 쌓임(전투 덱은 아직 기본 덱 25종 — 덱 편성 M7 전까지 덱 밖 영웅 레벨은 전투에 안 쓰임, 상세에 '⚔ 전투 덱' 표시) · 캠페인 탭은 Lv10에 테마 1 시작(월드맵 M6).
+- **남은 문제 / 다음 작업자에게**:
+  - G-1과 합칠 때 겹칠 곳: `src/sim/match.ts`(MatchOptions·ctx에 lockedHidden 몇 줄), `state.ts`(MatchContext 필드), `replay.ts`(입력 키), `Game.ts`(createMatch 한 줄 + 패배 화면 세 줄), `GameOverScreen.ts`·`PauseMenu.ts`(로비로). G-1 신화 도감은 조합 직전에 `isHiddenLocked`를 부르고, 화면에서 잠긴 히든을 보여 줄 때 `ctx.lockedHidden`을 읽으면 된다. 'hidden' 등급 이름을 '신화'로 바꿔도 메타는 등급 id로 판단한다 (로비는 이미 '신화'로 표시).
+  - 히든 조합이 sim에 생기면 E2E로 '잠긴 히든은 조합 버튼이 안 뜸'을 추가할 것.
+  - 영웅 레벨 Lv15 특색 보간은 원래 기획(7장) 값이라 경제형(광부 1% → 20%) 등이 꽤 세다 — 밸런스 봇으로 확인 필요. 비용 표가 느려서 당분간 Lv5 안쪽이 보통일 것.
+  - 출석·특성·계정 상점 영구 효과(PROGRESSION 4·5·11장)는 아직. 전체 E2E 45분 실행은 하지 않았다(관련 스펙만).
