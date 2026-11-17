@@ -5,10 +5,12 @@
  * F10: [❔ 도움말 다시 보기] — 계정에 기록된 '본 도움말'(첫 승급 안내)을 지워, 다음에 승급할 수 있게 되면 다시 안내한다.
  * A-1 (Codex 갈래 M6-10·M6-11에서 옮김): '효과음 크기' 0~100% (5% 단위, 0 = 음소거) + [미리 듣기], '화면 흔들림' 켜짐/꺼짐 — 둘 다 기기에 저장.
  *   열 때 자동 저장했으면 아래 글을 '자동 저장했어요 · 로비에서 이어 할 수 있어요'로.
+ * FB-1: [💬 피드백 보내기] — 피드백 창(<dialog>, 판 기록 첨부 기본 켜짐)은 메뉴 화면에 붙는다.
  * 메뉴가 열려 있는 동안 게임 시간은 멈춘다 (Game 장면이 TickClock 배속을 0으로).
  */
 import { h } from '../dom';
 import type { UiView } from '../root';
+import { feedbackButton, type FeedbackDialogView } from './FeedbackDialog';
 
 export interface PauseMenuOptions {
   onResume: () => void;
@@ -27,6 +29,8 @@ export interface PauseMenuOptions {
   effectVolume?: number;
   onEffectVolume?: (volume: number) => void;
   onPreviewAudio?: () => void;
+  /** 💬 피드백 보내기 창 (FB-1). 없으면 버튼도 없다 */
+  feedback?: FeedbackDialogView;
 }
 
 /** 볼륨 글자 ('음소거' · '40%') */
@@ -136,9 +140,12 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
       volume,
       shakeRow,
       help,
+      opts.feedback ? feedbackButton(opts.feedback, 'pause-feedback') : null,
       exit,
       h('p', { class: 'pause-note', attrs: { 'data-testid': 'pause-note' }, text: opts.saved ? '자동 저장했어요 · 로비에서 이어 할 수 있어요' : '로비로 나가면 이 판은 끝나요' }),
     ),
+    // 창은 패널 밖에 붙인다 (.pause-panel .btn 크기 규칙이 창 버튼에 번지지 않게)
+    opts.feedback?.el ?? null,
   );
   // 키보드 사용자를 위해 [계속]에 초점 (화면에 붙은 뒤)
   queueMicrotask(() => resume.focus({ preventScroll: true }));

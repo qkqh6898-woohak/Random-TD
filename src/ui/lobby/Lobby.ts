@@ -23,6 +23,7 @@ import type { GameData } from '../../data/load';
 import type { ProgressStore } from '../../meta/progressStore';
 import { achievementQuests, claimableQuests, dailyBonusReady, dailyQuests, modeUnlocked, type Grant, type QuestView } from '../../meta/progress';
 import { createRecordsDialog, type BattleRecordsView } from '../screens/BattleRecordsDialog';
+import { feedbackButton, type FeedbackDialogView } from '../screens/FeedbackDialog';
 import {
   fragmentRows,
   grantLine,
@@ -56,6 +57,8 @@ export interface LobbySettings {
   onScreenShake: (on: boolean) => void;
   tapMerge: boolean;
   onTapMerge: (on: boolean) => void;
+  /** 💬 피드백 보내기 창 (FB-1) — 설정 창에 [💬 피드백 보내기] 버튼, 창은 로비 끝에 붙인다 */
+  feedback?: FeedbackDialogView;
 }
 
 export interface LobbyOptions {
@@ -809,6 +812,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       h('div', { class: 'lobby-setting' }, h('span', {}, '효과음 크기 ', volText), vol),
       toggle('화면 흔들림', st.screenShake, 'lobby-shake', st.onScreenShake),
       toggle('눌러서 바로 승급', st.tapMerge, 'lobby-tap-merge', st.onTapMerge),
+      ...(st.feedback ? [feedbackButton(st.feedback, 'lobby-feedback')] : []),
       h('p', { class: 'lobby-note', text: `버전 ${opts.version} · 저장은 이 기기에만 있어요.` }),
     );
   }
@@ -874,6 +878,8 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     questDlg.dialog,
     recruitDlg.dialog,
     settingsDlg?.dialog ?? null,
+    // 설정 창 위에 여는 창 → 문서 순서도 맨 끝 (nativeBack이 마지막 열린 창부터 닫는다)
+    opts.settings?.feedback?.el ?? null,
   );
 
   function renderAll(): void {

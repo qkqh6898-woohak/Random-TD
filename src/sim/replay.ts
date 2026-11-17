@@ -188,18 +188,16 @@ export function playReplay(data: GameData, file: ReplayFile, opts: { onStep?: (m
 }
 
 /**
- * 판 하나의 기록 → 리플레이 파일. 판을 처음부터 다시 돌려 주기 해시를 만들고, 끝 해시가 원래 판과 같은지 확인한다
- * (기록하는 것만으로 결정성 검사가 한 번 된다). 원래 판과 다르면 에러.
+ * 지금 판 → 주기 해시 없는 리플레이 파일 (판을 다시 돌리지 않음 — 빠름). playReplay로 그대로 재생할 수 있다
+ * (끝 해시 = 지금 해시로 비교). recordReplay의 초안이자 FB-1 피드백 '판 기록'.
  */
-export function recordReplay(data: GameData, match: Match, info: { name: string; note?: string; checkpointTicks?: number }): ReplayFile {
-  const every = info.checkpointTicks ?? DEFAULT_CHECKPOINT_TICKS;
-  const inputs = matchInputs(match);
-  const draft: ReplayFile = {
+export function replaySnapshot(match: Match, info: { name: string; note?: string; dataHash: number }): ReplayFile {
+  return {
     version: REPLAY_VERSION,
     name: info.name,
     note: info.note ?? '',
-    ...inputs,
-    dataHash: dataFingerprint(data),
+    ...matchInputs(match),
+    dataHash: info.dataHash,
     endTick: match.tick,
     commands: match.world.executed.map(commandRecord),
     checkpoints: [],
@@ -212,6 +210,15 @@ export function recordReplay(data: GameData, match: Match, info: { name: string;
       defeated: match.defeated,
     },
   };
+}
+
+/**
+ * 판 하나의 기록 → 리플레이 파일. 판을 처음부터 다시 돌려 주기 해시를 만들고, 끝 해시가 원래 판과 같은지 확인한다
+ * (기록하는 것만으로 결정성 검사가 한 번 된다). 원래 판과 다르면 에러.
+ */
+export function recordReplay(data: GameData, match: Match, info: { name: string; note?: string; checkpointTicks?: number }): ReplayFile {
+  const every = info.checkpointTicks ?? DEFAULT_CHECKPOINT_TICKS;
+  const draft = replaySnapshot(match, { name: info.name, note: info.note, dataHash: dataFingerprint(data) });
   // 다시 돌리며 주기 해시를 모은다
   const again = createMatch(data, replayMatchOptions(draft));
   for (const c of draft.commands) {

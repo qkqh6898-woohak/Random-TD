@@ -1,0 +1,152 @@
+/* ---------------------------------------------------------------- FB-1 💬 피드백 보내기 창 */
+/* 로비 창·일시정지 화면 안에 붙지만 UI 루트(#ui-root)가 pointer-events: none이라 창에서 다시 켠다 */
+.feedback-dialog {
+  pointer-events: auto;
+}
+
+.feedback-dialog .feedback-body {
+  gap: 2.6cqw;
+}
+
+.feedback-dialog .feedback-intro,
+.feedback-dialog .feedback-foot,
+.feedback-dialog .feedback-hint {
+  margin: 0;
+  font-size: 3.4cqw;
+  line-height: 1.45;
+  color: var(--text-dim);
+  word-break: keep-all;
+}
+
+.feedback-dialog .feedback-foot {
+  font-size: 3.1cqw;
+}
+
+.feedback-dialog .feedback-cats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.6cqw;
+}
+
+.feedback-dialog .feedback-cat {
+  min-height: max(11cqw, 44px);
+  padding: 1cqw;
+  font-size: 3.8cqw;
+  white-space: nowrap;
+}
+
+.feedback-dialog .feedback-cat.is-on {
+  color: #3b2416;
+  background: linear-gradient(180deg, #ffd85a 0%, var(--gold) 55%, var(--gold-deep) 100%);
+  border-color: #fff3c4;
+}
+
+.feedback-dialog .feedback-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 3.8cqw;
+  font-weight: 800;
+}
+
+.feedback-dialog .feedback-count {
+  font-size: 3.2cqw;
+  font-weight: 700;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.feedback-dialog .feedback-text {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: max(30cqw, 96px);
+  max-height: 30vh;
+  padding: 2.4cqw 3cqw;
+  resize: vertical;
+  font: inherit;
+  /* 16px 아래면 iOS가 확대한다 */
+  font-size: max(3.8cqw, 16px);
+  line-height: 1.45;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.32);
+  border: 0.4cqw solid var(--panel-line);
+  border-radius: 2.4cqw;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.feedback-dialog .feedback-text:focus-visible {
+  outline: 0.6cqw solid var(--gold);
+  outline-offset: 0.2cqw;
+}
+
+.feedback-dialog .feedback-error {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 3.4cqw;
+  font-weight: 800;
+  color: #ff8a80;
+}
+
+.feedback-dialog .feedback-error:empty {
+  min-height: 0;
+}
+
+.feedback-dialog .feedback-attach-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2cqw;
+  flex-wrap: wrap;
+}
+
+.feedback-dialog .feedback-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 2cqw;
+  min-height: 44px;
+  font-size: 3.8cqw;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.feedback-dialog .feedback-attach {
+  width: max(5.6cqw, 22px);
+  height: max(5.6cqw, 22px);
+  margin: 0;
+  accent-color: var(--gold);
+}
+
+.feedback-dialog .feedback-attach:disabled + span {
+  color: var(--text-dim);
+}
+
+.feedback-dialog .feedback-copy {
+  min-height: max(11cqw, 44px);
+  font-size: 3.6cqw;
+}
+
+.feedback-dialog .feedback-copy[hidden] {
+  display: none;
+}
+
+.feedback-dialog .feedback-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 2.4cqw;
+}
+
+.feedback-dialog .feedback-actions .btn {
+  min-height: max(12cqw, 48px);
+  font-size: 4.4cqw;
+}
+
+/* 여는 버튼: 로비 설정 창 · 일시정지 메뉴 */
+.lobby-feedback {
+  min-height: max(11cqw, 44px);
+  font-size: 3.8cqw;
+}
+
+.pause-feedback {
+  width: 100%;
+}

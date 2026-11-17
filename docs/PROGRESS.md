@@ -1136,3 +1136,45 @@
   - 히든 조합이 sim에 생기면 E2E로 '잠긴 히든은 조합 버튼이 안 뜸'을 추가할 것.
   - 영웅 레벨 Lv15 특색 보간은 원래 기획(7장) 값이라 경제형(광부 1% → 20%) 등이 꽤 세다 — 밸런스 봇으로 확인 필요. 비용 표가 느려서 당분간 Lv5 안쪽이 보통일 것.
   - 출석·특성·계정 상점 영구 효과(PROGRESSION 4·5·11장)는 아직. 전체 E2E 45분 실행은 하지 않았다(관련 스펙만).
+
+## FB-1 게임 안 피드백 → GitHub 이슈 (상태: 완료 — 갈래 `feat/feedback`, `feat/g3-lobby` 4d1b8de에서)
+
+> 사용자 요청: 플레이어가 게임 안에서 [💬 피드백 보내기]로 버그·밸런스·제안을 남기면 GitHub 이슈가 되게. **앱은 아무것도 보내지 않는다** — 미리 채운 GitHub 새 이슈 화면(이슈 폼)을 휴대폰 브라우저로 열 뿐 (웹 쪽 네트워크 코드·토큰·키 없음).
+> 이슈 폼 `.github/ISSUE_TEMPLATE/feedback.yml`·`config.yml`은 기본 갈래(main)에 있어야 동작해서 **사람이 main에 직접 넣는다** (이 갈래에는 없음). 워크플로 파일도 건드리지 않았다.
+
+- **주소** (`src/feedback/feedbackModel.ts`, 순수):
+  `https://github.com/qkqh6898-woohak/Random-TD/issues/new?template=feedback.yml&title=…&category=…&body_text=…&game_info=…&replay=…` (이 순서, `encodeURIComponent` — 공백 %20·줄바꿈 %0A, 결과는 보이는 ASCII만).
+  이슈 폼 칸 id: `category`(드롭다운 버그·밸런스·제안·기타) · `body_text` · `game_info` · `replay`. 제목 `[피드백] <분류>: <글 앞 40자>`(줄바꿈은 한 칸, 코드 포인트 단위라 이모지 반쪽 없음, 길면 …).
+  - `game_info` = `키: 값` 줄: app(`__APP_VERSION__`)·platform(`android-app`/`pwa`/`browser`)·where(로비/전투)·dev·screen(`412x915 @1x`)·time(지역 ISO + ±hh:mm)·data(데이터 지문 16진수)·account(Lv)
+    + 전투면 mode·map·theme·seed·stage·tick·speed·gold·mobs·towers·resumed.
+  - `replay` = **기존 리플레이 파일 모양 그대로** — 새 `replaySnapshot(match, {name, note, dataHash})`(src/sim/replay.ts, 판을 다시 돌리지 않는 초안. `recordReplay`도 이것으로 초안을 만들게 바꿈)를 공백 없는 JSON으로.
+    잘리지 않았으면 `playReplay`로 지금 틱까지 그대로 재생되고 끝 해시(`finalHash`)로 결정성까지 확인된다 (주기 해시는 비움).
+  - **주소 ≤ 7500자**: 기록이 넘치면 입력(시드·덱·레벨…) + **마지막** 명령을 들어가는 만큼(이분 탐색) + `"truncated": true, "fromTick": <남긴 첫 명령 틱>`. 명령 0개도 안 들어가면 기록 칸을 뺀다.
+    한글 글은 글자당 9자로 인코딩돼 1000자면 혼자서도 넘친다 → 글 끝을 잘라 맞추고 '…(글이 길어 뒷부분이 잘렸어요)'.
+  - [기록 복사]를 썼으면 글 끝에 '전체 기록은 클립보드에 복사됨 — [판 기록] 칸에 붙여 넣어 주세요.'
+- **창** (`src/ui/screens/FeedbackDialog.ts` + `feedback.css`, G-2/G-3 `title-dialog lobby-dialog` 모양): 분류 4칸(라디오, 44px), 글(필수·1000자·글자 수), '판 기록 첨부'(전투 기본 켜짐 · 로비는 판이 없어 꺼짐+막힘), [📋 기록 복사](navigator.clipboard → 안 되면 textarea + execCommand),
+  [취소]/[보내기], 'GitHub 계정이 필요해요 · … · 앱이 직접 보내지 않아요'. 빈 글이면 '내용을 적어 주세요.'(role=alert). `<dialog>`라 뒤로 가기(nativeBack, 맨 위 창부터)·Esc가 닫는다.
+  창이 맨 위 층이라 [기록 복사] 결과는 알림 대신 버튼 글자('✓ 복사했어요'). 보낸 뒤 알림 'GitHub에서 [Submit new issue]를 눌러 주세요'.
+  - 로비: ⚙ 설정 창에 [💬 피드백 보내기] (`LobbySettings.feedback`, 창은 로비 끝에 붙임 → 설정 창 위). 전투: 일시정지 메뉴 [💬 피드백 보내기] (`PauseMenuOptions.feedback`, 창은 패널 밖 — `.pause-panel .btn` 크기 규칙이 번지지 않게).
+    일시정지 중이라 틱이 멈춰 있어 열 때 찍은 정보·기록 = 지금 틱. 장면 쪽 정보 모으기는 `src/view/feedbackInfo.ts`(데이터 지문은 데이터마다 한 번 계산해 둠).
+  - 이어 한 긴 판은 저장에서 실행 기록이 빠질 수 있다(MatchSaves `MAX_SAVED_EXECUTED`) → 그때는 기록 note에 '재생 불가'를 적는다.
+- **열기** (`src/feedback/openFeedback.ts`): 자바 다리에 `openFeedback`이 있으면 그것(안드로이드 앱), 다리는 있는데 없으면(v0.1.10 이전 앱) WebView의 window.open이 아무것도 못 여니 주소를 클립보드에 복사하고 '앱을 업데이트하면 바로 열려요' 알림,
+  다리가 없으면 `window.open(url, '_blank', 'noopener')`. 허용된 앞부분이 아니면 열지 않는다.
+- **안드로이드** (`android/src/com/woohak/randomtd/`): `FeedbackLinks.isAllowed(url)`(순수, JVM 검사 `FeedbackLinksTest` — `check-java.sh`에 추가): **정확히** `https://github.com/qkqh6898-woohak/Random-TD/issues/new?`로 시작, 길이 ≤ 8000, 글자는 0x21~0x7E만(공백·줄바꿈·제어·C1·U+2028·인코딩 안 된 한글 거절).
+  `NativeBridge.openFeedback(String url)` — 인자를 받는 유일한 다리 메서드, 기존 `run()`으로 UI 스레드 + `onGamePage()`일 때만 → 다시 `isAllowed` → `ACTION_VIEW` + `CATEGORY_BROWSABLE` + `FLAG_ACTIVITY_NEW_TASK`, `ActivityNotFoundException`이면 `window.__rtdToast('브라우저를 열지 못했어요')`(main.ts가 받는 고정 글자 알림). 람다 없음.
+  WebView 자체 이동 막기(GameAssets)는 그대로. scratchpad SDK의 ecj + android-35 android.jar로 `android/src` 전체 컴파일 확인.
+- **테스트**: Vitest `tests/unit/feedback.test.ts` 18개 — 글 검사·제목(40자·이모지)·지역 시간·game_info 줄·칸 순서·%20 인코딩·특수 문자(& = # % 따옴표)·결정성·짧은 판 전체 기록 → `playReplay` 해시 일치·긴 판 자르기(≤ 7500, 마지막 명령, fromTick, 하나 더 넣으면 넘침)·
+  한글 1000자 글 자르기·복사 안내·첨부 끔·자바 다리/예전 앱/브라우저/PWA·허용 안 된 주소·TS 앞부분 = 자바 PREFIX·웹 주소는 보이는 ASCII·피드백 코드에 fetch/XMLHttpRequest/토큰 없음.
+  E2E `e2e/feedback.spec.ts` 7개 (가짜 `window.RandomTDNative.openFeedback`·가짜 `window.open`을 addInitScript로).
+  a 로비 ⚙ 설정 → 창 · 빈 글/공백 거절 · 분류 · 다리로 받은 주소(앞부분·template·칸·제목·game_info·replay 없음·≤ 7500) · 설정 창은 남음 /
+  b 일시정지 → 첨부 기본 켜짐 · [기록 복사] = 클립보드 전체 JSON(시드·endTick = 지금 틱·명령 수) · 주소 칸 순서·replay(지금 틱·명령 수)·글 끝 복사 안내 / c 다리 없음 → `window.open(url,'_blank','noopener')`·첨부 끔 = replay 없음 /
+  d 뒤로 가기: 피드백 창 → 설정 창, Esc, 전투에서는 피드백 창만 닫고 일시정지 유지 / e 412×915·360×780·320×640 창이 화면 안·가로 넘침 없음·버튼 44px 이상(로비·일시정지).
+- **확인 (이 컨테이너, 포트 5194)**: Vitest **1,362 통과 + 3 건너뜀**(73파일, +18), `npm run check`·`npm run build` 통과, `bash android/check-java.sh`(AssetPathsTest·UpdateLogicTest·**FeedbackLinksTest**) 통과.
+  E2E(관련 스펙만 — 전체 45분 실행은 하지 않음): `feedback` 7 + `g3` 9 + `smoke` + `a1` **29/29 통과** (14.9분). 첫 실행에서 feedback a의 글자 수 기대값(31 → 29, 테스트 쪽 오타) 하나를 고침.
+- **스크린샷** (412×915, dsf 1): `docs/screens/FB-dialog.png` (전투 일시정지에서 연 창 — 밸런스 · 두 줄 글 · 판 기록 첨부 · 명령 3개).
+- **남은 문제 / 다음 작업자에게**:
+  - **main에 이슈 폼이 들어가야 동작한다** (`.github/ISSUE_TEMPLATE/feedback.yml` — 칸 id `category`(옵션 정확히 버그·밸런스·제안·기타)·`body_text`·`game_info`·`replay`). 폼이 없으면 GitHub는 `template=`을 무시하고 빈 이슈 화면(제목만 채움)을 연다.
+  - 안드로이드 `openFeedback`은 이번 APK부터. 예전 앱(v0.1.10 등)은 주소를 클립보드에 복사하고 업데이트를 권한다. 실제 기기에서 ACTION_VIEW → 브라우저(GitHub 앱이 있으면 앱이 가로챌 수 있음)는 확인하지 못했다 (에뮬레이터 없음).
+  - GitHub 로그인이 안 된 브라우저면 로그인 화면을 거친다 — 로그인 뒤 미리 채운 값이 유지되는지는 GitHub 동작에 달렸다.
+  - 판 기록은 보통 마지막 수십 개 명령만 주소에 들어간다(명령 하나 ≈ 인코딩 100자). 전체가 필요하면 [기록 복사] → 이슈의 [판 기록] 칸에 붙여 넣기. 잘린 기록은 처음부터 재생할 수 없다(`truncated`·`fromTick`으로 표시).
+  - 판 기록·game_info에는 개인 정보가 없다(시드·덱·명령·화면 크기·시간·앱 버전). 글은 플레이어가 쓴 그대로 공개 이슈가 된다 — 창 아래 안내 문구.

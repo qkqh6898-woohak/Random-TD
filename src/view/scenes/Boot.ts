@@ -30,6 +30,7 @@ import { randomSeed, type GameSceneData } from './Game';
 import { formatStage } from '../../ui/hud/hudModel';
 import { buildRecordsView } from '../../ui/screens/BattleRecordsDialog';
 import { setBackHandler } from '../../ui/nativeBack';
+import { baseFeedbackInfo, createSceneFeedback } from '../feedbackInfo';
 
 interface TitleTower {
   towerId: string;
@@ -157,6 +158,8 @@ export class BootScene extends Phaser.Scene {
           },
           tapMerge: this.ctx.settings.get().tapMerge,
           onTapMerge: (on) => this.ctx.settings.set('tapMerge', on),
+          // FB-1: 로비에는 진행 중인 판이 없다 → 판 기록 없이 게임 정보만
+          feedback: createSceneFeedback(this.ctx, () => ({ info: baseFeedbackInfo(this.ctx, '로비') }), false),
         },
         portraitOf: (id) => this.portraitOf(id),
         toast: (text, ms) => this.ctx.ui.toast(text, ms),

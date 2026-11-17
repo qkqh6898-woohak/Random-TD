@@ -1,6 +1,8 @@
 package com.woohak.randomtd;
 
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Insets;
 import android.net.Uri;
@@ -34,6 +36,7 @@ import java.util.Collections;
  * - 앱 안 업데이트 (U-1): JS 다리 window.RandomTDNative (checkUpdate·startUpdate·openInstallSettings·cancelUpdate, 인자 없음)
  *   → Updater(자바 HTTPS·PackageInstaller) → 결과는 window.__rtdUpdate(JSON). 게임 주소 페이지에서만 받고 보낸다.
  *   WebView 자체는 여전히 APK 안 파일만 연다 (GameAssets가 다른 주소를 모두 404·이동 막음).
+ * - 게임 안 피드백 (FB-1): openFeedback(url) — FeedbackLinks가 허용한 GitHub 새 이슈 주소만 바깥 브라우저(ACTION_VIEW)로 연다. 앱은 아무것도 보내지 않는다.
  * applicationId·서명은 v0.1.7과 같다 (업데이트 설치).
  */
 public final class GameActivity extends Activity {
@@ -210,6 +213,20 @@ public final class GameActivity extends Activity {
             });
         }
 
+        /**
+         * 게임 안 피드백 (FB-1): GitHub 새 이슈 화면(미리 채운 이슈 폼)을 바깥 브라우저로 연다.
+         * 인자를 받는 유일한 메서드 — UI 스레드에서 FeedbackLinks.isAllowed(정확한 앞부분·길이 ≤ 8000·보이는 ASCII만)로 다시 확인한다.
+         */
+        @JavascriptInterface
+        public void openFeedback(final String url) {
+            run(new Runnable() {
+                @Override
+                public void run() {
+                    openFeedbackLink(url);
+                }
+            });
+        }
+
         private void run(final Runnable action) {
             ui.post(new Runnable() {
                 @Override
@@ -217,6 +234,22 @@ public final class GameActivity extends Activity {
                     if (updater != null && !isFinishing() && onGamePage()) action.run();
                 }
             });
+        }
+    }
+
+    /** 피드백 주소를 바깥 브라우저로 (UI 스레드, 게임 주소 페이지에서만 — NativeBridge.run이 확인) */
+    private void openFeedbackLink(String url) {
+        if (!FeedbackLinks.isAllowed(url)) return;
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        intent.addCategory(Intent.CATEGORY_BROWSABLE);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            // 브라우저가 없음 — 웹에 짧은 알림 (고정 글자라 이스케이프 필요 없음)
+            if (onGamePage()) {
+                game.evaluateJavascript("window.__rtdToast && window.__rtdToast('브라우저를 열지 못했어요')", null);
+            }
         }
     }
 

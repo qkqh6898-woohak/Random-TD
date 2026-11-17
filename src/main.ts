@@ -9,6 +9,7 @@ import type Phaser from 'phaser';
 import './ui/styles.css';
 import './ui/theme.css';
 import './ui/lobby/lobby.css';
+import './ui/screens/feedback.css';
 import { loadGameData } from './data/load';
 import { allLooks } from './art/characters/looks';
 import { createAccountStore } from './meta/account';
@@ -81,6 +82,10 @@ function boot(): void {
     for (const type of ['click', 'touchend', 'keydown']) window.addEventListener(type, unlockAudio, true);
     // 안드로이드 뒤로 가기 (A-1): 열린 창 → 장면 처리기
     installNativeBack(window, document);
+    // 자바가 보내는 짧은 알림 (FB-1 — 브라우저를 열지 못함 등). 글자로만 보인다 (textContent)
+    window.__rtdToast = (text: unknown) => {
+      if (typeof text === 'string' && text.length > 0) ui.toast(text.slice(0, 80), 2400);
+    };
     // 앱 안 업데이트 (U-1): 다리가 없으면(브라우저·PWA) null → 아무것도 하지 않음. 실패해도 게임은 그대로
     const update = UpdateService.fromWindow(window);
     if (update) mountUpdateDialog(update, ui);

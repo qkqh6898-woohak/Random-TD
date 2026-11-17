@@ -12,4 +12,6 @@ interface ImportMetaEnv {
 interface Window {
   RandomTDNative?: unknown;
   __rtdUpdate?: (payload: unknown) => void;
+  /** 자바가 보내는 짧은 알림 (FB-1: 피드백 주소를 열 브라우저가 없을 때) */
+  __rtdToast?: (text: unknown) => void;
 }

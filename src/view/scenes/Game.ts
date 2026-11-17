@@ -163,6 +163,7 @@ import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
 import { matchResultOf } from '../../meta/matchResult';
 import { settlementView } from '../../ui/lobby/lobbyModel';
 import { createPauseMenu } from '../../ui/screens/PauseMenu';
+import { createSceneFeedback, matchFeedbackSnapshot } from '../feedbackInfo';
 import { SCENE_BOOT, SCENE_GAME } from '../config';
 import type { GameContext } from '../context';
 import {
@@ -2350,6 +2351,8 @@ export class GameScene extends Phaser.Scene {
           this.ctx.account.resetGuides();
           this.guideDone = false;
         },
+        // FB-1: 💬 피드백 보내기 — 일시정지 중이라 틱이 멈춰 있다 (판 기록 = 지금 틱까지, 첨부 기본 켜짐)
+        feedback: createSceneFeedback(this.ctx, () => matchFeedbackSnapshot(this.ctx, this.match, this.resumeSpeed > 0 ? this.resumeSpeed : 1, this.resumed), true),
       }),
     );
     this.refreshHud();
