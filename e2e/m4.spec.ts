@@ -134,8 +134,13 @@ async function ff(page: Page, ticks: number): Promise<void> {
 }
 
 /** 순환의 정원 안쪽 블록 가장자리 칸들 (경로와 맞닿음) */
-/** 순환의 정원 v2(T-3 2×2 블록) 고리 안쪽 블록 4개 = 16칸 (모두 경로와 맞닿음) */
-const INNER: [number, number][] = [3, 4, 6, 7].flatMap((y) => [1, 2, 4, 5].map((x) => [x, y] as [number, number]));
+/** 순환의 정원 v3(G-1 큰 칸) 길에 닿은 12칸 + 네 귀퉁이 = 16칸 */
+const INNER: [number, number][] = [
+  [2, 3], [3, 3], [2, 4], [3, 4],
+  [0, 1], [1, 1], [4, 1], [5, 1],
+  [0, 6], [1, 6], [4, 6], [5, 6],
+  [0, 0], [5, 0], [0, 7], [5, 7],
+];
 
 function innerRing(kinds: string[], skip: [number, number][] = []): [number, number, string][] {
   const out: [number, number, string][] = [];
@@ -261,13 +266,13 @@ test('보스: 10단계 박쥐 여왕 — 보스 막대(이름표·체력·남은
   await expect(panel).toBeHidden();
   await expect(page.getByTestId('choice-reopen')).toBeVisible();
   expect(await inScene(page, (s) => s.match.state.cardOffers.length, null)).toBe(1);
-  // 알약은 아래 띠 안 (맵 칸을 덮어 소환 탭을 가로채지 않는다 — 검토 반영: 예전엔 맵 맨 아래 줄 오른쪽 칸 위. T-3: 순환의 정원 v2 (4~6, 10))
+  // 알약은 아래 띠 안 (맵 칸을 덮어 소환 탭을 가로채지 않는다 — 검토 반영: 예전엔 맵 맨 아래 줄 오른쪽 칸 위. G-1: 순환의 정원 v3 (3~5, 7))
   const pill = (await page.getByTestId('choice-reopen').boundingBox())!;
   const band = (await page.locator('.hud-bottom').boundingBox())!;
   expect(pill.y).toBeGreaterThanOrEqual(band.y);
   expect(pill.y + pill.height).toBeLessThanOrEqual(band.y + band.height + 0.5);
-  for (const tx of [4, 5, 6]) {
-    const c = await tileCenter(page, tx, 10);
+  for (const tx of [3, 4, 5]) {
+    const c = await tileCenter(page, tx, 7);
     expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.tagName, [c.x, c.y])).toBe('CANVAS');
   }
   await expect(page.getByTestId('hud-hint')).toBeHidden(); // 알약이 있는 동안 소환 안내는 숨김 (아래 띠가 넘치지 않게)
@@ -307,8 +312,8 @@ test('투명 몹: 감지 없이 처음 나오면 경고 배너, 정찰병 감지
   expect(await inScene(page, (s) => s.match.mobs().filter((m) => m.invisible).length, null)).toBeGreaterThan(0);
   // 정찰병 2개 (위·아래 경로)
   await place(page, [
-    [4, 3, 'scout'],
-    [4, 7, 'scout'],
+    [4, 1, 'scout'],
+    [4, 6, 'scout'],
   ]);
   await expect
     .poll(() => inScene(page, (s) => s.match.mobs().filter((m) => m.invisible && s.match.tick < m.revealedUntil).length, null), { timeout: 20_000 })
@@ -355,9 +360,10 @@ test('승급의 축복 카드: 승급하면 "결과 2개 중 선택" 창 → [�
   await inScene(page, (s, c) => s.match.world.enqueue({ type: 'debugCard', c }), idx);
   await place(page, [
     [1, 0, 'goblin'],
-    [2, 0, 'goblin'],
+    [0, 0, 'goblin'],
     [1, 1, 'goblin'],
   ]);
+  // 예전 승급 명령 (아무 칸의 같은 종류 3개 — 리플레이용으로 남은 명령)
   await inScene(page, (s) => s.match.world.enqueue({ type: 'merge', x: 1, y: 0 }), null);
   const panel = page.getByTestId('choice-merge');
   await expect(panel).toBeVisible();
@@ -378,10 +384,11 @@ test('승급의 축복을 정보 패널 [⬆ 승급]으로: 고르기 창이 뜨
   await start(page);
   const idx = await inScene(page, (s) => s.match.rules.cards.findIndex((c) => c.id === 'mergeBless'), null);
   await inScene(page, (s, c) => s.match.world.enqueue({ type: 'debugCard', c }), idx);
+  // G-1 칸 무더기: 같은 칸에 3개
   await place(page, [
     [1, 0, 'goblin'],
-    [2, 0, 'goblin'],
-    [1, 1, 'goblin'],
+    [1, 0, 'goblin'],
+    [1, 0, 'goblin'],
     [5, 0, 'archer'],
   ]);
   await tapTile(page, 1, 0);
@@ -449,7 +456,7 @@ test('혼돈의 용(60단계): 15초마다 타워 3개 기절 → 기절한 타�
   await start(page);
   await place(page, [
     [1, 0, 'archer'],
-    [2, 0, 'archer'],
+    [0, 0, 'archer'],
     [4, 0, 'archer'],
     [5, 0, 'archer'],
     [1, 1, 'archer'],
@@ -475,15 +482,15 @@ test('M4 스크린샷: 40단계 망령 군주 — 줄어드는 보스 막대 + �
   await expect(page.getByTestId('hud-workers')).toHaveText('3/10');
   // 안쪽 블록 네 귀퉁이에 정찰병(감지 오라 r3) + 나머지 가장자리에 레전드: 드러난 보스의 체력 막대가 줄어드는 모습 (패널·고르기 창은 열지 않음)
   await place(page, [
-    [1, 3, 'scout'],
-    [5, 3, 'scout'],
-    [1, 7, 'scout'],
-    [5, 7, 'scout'],
+    [2, 3, 'scout'],
+    [3, 4, 'scout'],
+    [0, 6, 'scout'],
+    [5, 1, 'scout'],
     ...innerRing(['fortuna', 'dragoncaller', 'archmage', 'warlord'], [
-      [1, 3],
-      [5, 3],
-      [1, 7],
-      [5, 7],
+      [2, 3],
+      [3, 4],
+      [0, 6],
+      [5, 1],
     ]),
   ]);
   await skipTo(page, 40);

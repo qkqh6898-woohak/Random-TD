@@ -28,6 +28,9 @@ export function needMoreGold(n: number): string {
 /** 배치 칸이 가득 참 */
 export const BOARD_FULL = '빈 칸이 없어요 — 승급으로 칸을 비워 보세요';
 
+/** G-1: 굴린 타워가 들어갈 칸이 없어 돈을 돌려받음 */
+export const SUMMON_NO_FIT = '들어갈 칸이 없어 소환을 취소했어요 (돈은 그대로)';
+
 /** 신 타워 강림 (전체 화면 연출 자리, 지금은 토스트) */
 export function godDescends(name: string): string {
   return `👑 ${name} 강림!`;
@@ -46,7 +49,8 @@ export function mergeReadyToast(names: string | readonly string[]): string {
 /** 승급 실패 (sim이 거절한 merge·mergeAll) → 글자. 보여줄 것이 없으면 null. */
 export function mergeFailText(reason: string, count: number): string | null {
   if (reason === 'count') return `같은 타워가 ${count}개 있어야 승급할 수 있어요`;
-  if (reason === 'maxGrade') return '레전드는 승급할 수 없어요 (히든 재료)';
+  if (reason === 'stack') return `같은 타워 ${count}개가 한 칸에 모여야 승급해요`;
+  if (reason === 'maxGrade') return '레전드는 승급할 수 없어요 (신화 재료)';
   return null;
 }
 
@@ -270,4 +274,57 @@ export const MOVE_CANCELED = '이동을 취소했어요';
 /** 변환 알림 (개발자) '🛠 용 소환사 → 대마법사' */
 export function convertText(from: string, to: string): string {
   return `🛠 ${from} → ${to}`;
+}
+
+// ---------------------------------------------------------------- G-1 게임 시스템
+
+/** 연쇄 승급 알림 (두 번 이상일 때) */
+export function chainMergeText(steps: number): string {
+  return `연쇄 승급 ×${steps}!`;
+}
+
+/** 3택 1 강화 선택 제목·부제 */
+export const PICK_CARD_TITLE = '✨ 강화 카드 1장을 고르세요';
+export function pickCardSub(stage: number): string {
+  return `${stage}단계 보너스 · 고르는 동안에도 시간이 흘러요`;
+}
+
+/** 천장까지 남은 횟수 ('천장까지 7회' · 0이면 '다음 1회 확정!') */
+export function pityText(left: number, gradeName: string): string {
+  return left <= 0 ? `다음 1회 ${gradeName} 확정!` : `천장까지 ${left}회`;
+}
+
+/** 소환 도박 결과 알림 */
+export function gachaResultText(kindName: string, gradeName: string, towerName: string, pity: boolean): string {
+  if (!towerName) return `${kindName} — 꽝!`;
+  return `${kindName} — ${gradeName} ${towerName}${pity ? ' (천장)' : ''}!`;
+}
+
+/** 소환 도박 실패 → 글자 (없으면 null) */
+export function gachaFailText(reason: string, short: number): string | null {
+  if (reason === 'gold') return `${withCommas(short)}원이 더 필요해요`;
+  if (reason === 'full') return BOARD_FULL;
+  return null;
+}
+
+/** 필살기 알림 */
+export function ultText(towerName: string, ultName: string, count: number): string {
+  return count > 0 ? `${towerName}의 ${ultName}! (${count})` : `${towerName}의 ${ultName}!`;
+}
+
+/** 신화 조합 알림 */
+export function craftText(name: string, first: boolean): string {
+  return first ? `💠 신화 ${name} 탄생! 도감에 기록했어요` : `💠 신화 ${name} 탄생!`;
+}
+
+/** 신화 재료가 모두 모였을 때 */
+export function craftReadyText(name: string): string {
+  return `💠 ${name} 재료가 모였어요 — [신화]에서 만들어요`;
+}
+
+/** 신화 조합 실패 → 글자 */
+export function craftFailText(reason: string): string | null {
+  if (reason === 'material') return '재료가 모자라요';
+  if (reason === 'full') return BOARD_FULL;
+  return null;
 }

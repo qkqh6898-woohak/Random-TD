@@ -112,6 +112,34 @@ async function summonMany(page: Page, cells: readonly (readonly [number, number]
   await expect.poll(async () => (await towers(page)).length).toBe(cells.length);
 }
 
+/** G-1: [🎲 소환]과 같은 무더기 소환 명령 n번 (한 틱에 하나씩). */
+async function autoSummonMany(page: Page, n: number): Promise<void> {
+  await inScene(
+    page,
+    (s, k) => {
+      s.match.world.enqueue({ type: 'debugAddGold', amount: 100_000 });
+      s.debugFastForward(1);
+      for (let i = 0; i < k; i++) {
+        s.match.world.enqueue({ type: 'summonAuto' });
+        s.debugFastForward(1);
+      }
+      return null;
+    },
+    n,
+  );
+  await expect.poll(async () => (await towers(page)).length).toBe(n);
+}
+
+/** 칸마다 묶은 무더기 중 3개 찬 것 (바닥 ID 순). */
+function fullStacks(list: TowerLite[]): TowerLite[][] {
+  const by = new Map<string, TowerLite[]>();
+  for (const t of list) by.set(`${t.tx},${t.ty}`, [...(by.get(`${t.tx},${t.ty}`) ?? []), t]);
+  return [...by.values()].filter((l) => l.length >= 3).sort((a, b) => a[0]!.id - b[0]!.id);
+}
+function fullStack(list: TowerLite[]): TowerLite[] {
+  return fullStacks(list)[0] ?? [];
+}
+
 /** 종류별로 묶어 가장 많은 종류. */
 function biggestGroup(list: TowerLite[]): TowerLite[] {
   const by = new Map<string, TowerLite[]>();
@@ -119,10 +147,6 @@ function biggestGroup(list: TowerLite[]): TowerLite[] {
   return [...by.values()].sort((a, b) => b.length - a.length || a[0]!.id - b[0]!.id)[0] ?? [];
 }
 
-/** 순환의 정원 배치 칸 중 앞에서 n개 (y, x 순) */
-async function cells(page: Page, n: number): Promise<[number, number][]> {
-  return inScene(page, (s, k) => s.match.map.buildable.slice(0, k), n);
-}
 
 async function shot(page: Page, name: string, docsName?: string): Promise<void> {
   mkdirSync('test-results/screens', { recursive: true });
@@ -136,7 +160,7 @@ async function shot(page: Page, name: string, docsName?: string): Promise<void> 
 test('타워 탭 → 정보 패널: 이름·스탯·감지·보유 1/3, 승급 버튼 꺼짐 / ✕·빈 곳 탭으로 닫힘 (소환되지 않음)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=42');
-  await tapTile(page, 4, 4);
+  await tapTile(page, 2, 4); // G-1 순환의 정원 v3 배치 칸
   const [t] = await towers(page);
   expect(t).toBeDefined();
   await tapTile(page, t!.tx, t!.ty);
@@ -165,7 +189,7 @@ test('타워 탭 → 정보 패널: 이름·스탯·감지·보유 1/3, 승급 �
   await tapTile(page, t!.tx, t!.ty);
   await expect(panel).toBeVisible();
   const gold = await inScene(page, (s) => s.match.state.gold, null);
-  await tapTile(page, 1, 3);
+  await tapTile(page, 0, 1);
   await expect(panel).toHaveCount(0);
   expect((await towers(page)).length).toBe(1);
   expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(gold);
@@ -177,85 +201,75 @@ test('타워 탭 → 정보 패널: 이름·스탯·감지·보유 1/3, 승급 �
   expect(errors).toEqual([]);
 });
 
-test('승급: 같은 종류 3개 이상 → 패널 [⬆ 승급] → 터치한 칸에 레어, 같은 종류 2개가 사라짐 (가장 나중 2개), 패널이 결과를 따라감', async ({ page }) => {
+test('승급 (G-1 칸 무더기): 같은 타워 3개가 쌓인 칸 → 패널 [⬆ 승급] → 레어 (그 칸 또는 같은 레어 무더기), 그 칸 3개가 사라짐, 패널이 결과를 따라감', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
-  await summonMany(page, await cells(page, 14));
+  // G-1 사용자 결정: 소환은 같은 캐릭터의 덜 찬 칸에 쌓이고, 3개가 쌓인 칸이 승급한다 (예전: 아무 칸의 같은 종류 3개)
+  await autoSummonMany(page, 14);
   const before = await towers(page);
-  const group = biggestGroup(before);
-  expect(group.length).toBeGreaterThanOrEqual(3); // 14개 / 5종 → 비둘기집
-  const anchor = group[0]!; // 가장 먼저 소환된 것을 터치
+  const stack = fullStack(before);
+  expect(stack.length).toBe(3); // 14개 / 5종 → 비둘기집
+  const anchor = stack[0]!;
   await tapTile(page, anchor.tx, anchor.ty);
-  await expect(page.getByTestId('tp-owned')).toHaveText(`${group.length}/3`);
+  await expect(page.getByTestId('tp-owned')).toHaveText('3/3');
+  await expect(page.getByTestId('tp-name')).toContainText('×3');
   await expect(page.locator('[data-action="merge"]')).toBeEnabled();
   await expect(page.locator('[data-testid="hud-merge-ready"]')).toBeVisible();
   await page.locator('[data-action="merge"]').click();
-  await expect.poll(async () => inScene(page, (s) => s.match.state.merges, null)).toBe(1);
+  await expect.poll(async () => inScene(page, (s) => s.match.state.merges, null)).toBeGreaterThanOrEqual(1);
   const after = await towers(page);
-  expect(after.length).toBe(before.length - 2);
-  const result = after.find((t) => t.tx === anchor.tx && t.ty === anchor.ty)!;
-  expect(result.id).not.toBe(anchor.id);
+  // 그 칸 3개는 모두 사라짐
+  for (const t of stack) expect(after.some((a) => a.id === t.id)).toBe(false);
+  const fresh = after.filter((t) => !before.some((b) => b.id === t.id));
+  expect(fresh.length).toBeGreaterThanOrEqual(1);
+  const result = fresh[0]!;
   expect(await inScene(page, (s, id) => s.match.rules.towers.get(s.match.towers().find((t) => t.id === id)!.tower)!.grade, result.id)).toBe('rare');
-  // 사라진 2개 = 같은 종류 중 가장 나중에 소환된 2개
-  const gone = before.filter((t) => !after.some((a) => a.id === t.id) && t.id !== anchor.id).map((t) => t.id);
-  expect(gone.sort((a, b) => a - b)).toEqual(group.slice(-2).map((t) => t.id));
-  await expect.poll(async () => inScene(page, (s) => s.mergeEffects, null)).toBe(1);
+  await expect.poll(async () => inScene(page, (s) => s.mergeEffects, null)).toBeGreaterThanOrEqual(1);
   // 패널은 결과 타워를 보여준다 (★★)
   await expect(page.getByTestId('tp-stars')).toHaveText('★★');
-  expect(await inScene(page, (s) => s.selectedTowerId, null)).toBe(result.id);
   await expect.poll(async () => inScene(page, (s) => s.renderedTowerCount, null)).toBe(after.length);
   expect(errors).toEqual([]);
 });
 
-test('모두 승급: 같은 종류 n개 → ⌊n/3⌋번 승급, 아래 띠 [⬆ 승급 가능 n] 버튼이 승급할 타워를 고른다', async ({ page }) => {
+test('모두 승급 (G-1 연쇄): 가득 찬 칸이 여럿이면 한 번에 이어서 승급, 아래 띠 [⬆ 승급 가능 n] 버튼이 승급할 칸을 고른다', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
   const layout0 = await inScene(page, (s) => ({ ...s.mapLayout }), null);
   await expect(page.getByTestId('hud-merge-ready')).toBeHidden();
-  await summonMany(page, await cells(page, 40));
+  await autoSummonMany(page, 30);
   const before = await towers(page);
-  const group = biggestGroup(before);
-  expect(group.length).toBeGreaterThanOrEqual(6);
+  const fulls = fullStacks(before);
+  expect(fulls.length).toBeGreaterThanOrEqual(2);
   const readyBtn = page.getByTestId('hud-merge-ready');
   await expect(readyBtn).toBeVisible();
-  // 한꺼번에 여러 종류가 승급 가능해져도 '승급 가능' 알림은 하나 (쌓여서 맵 위쪽 줄을 가리지 않게, 검토 반영)
   await expect(page.locator('.toast', { hasText: '승급 가능' })).toHaveCount(1);
-  // 버튼이 보이면 소환 안내는 비운다 (M4: 고용 버튼까지 같은 줄 — 잘린 글자를 보이지 않게). 아래 띠 버튼은 무대 안
   await expect(page.getByTestId('hud-hint')).toHaveText('');
   const stageBox = (await page.locator('#stage').boundingBox())!;
   for (const id of ['hud-hire', 'hud-merge-ready']) {
     const b = (await page.getByTestId(id).boundingBox())!;
     expect(b.x + b.width).toBeLessThanOrEqual(stageBox.x + stageBox.width + 0.5);
   }
-  // 버튼이 나타나도 아래 띠 높이가 그대로라 맵이 다시 배치되지 않는다
   await page.waitForTimeout(200);
   expect(await inScene(page, (s) => ({ ...s.mapLayout }), null)).toEqual(layout0);
   await expect(readyBtn).toHaveText(/⬆ 승급 가능 \d/);
   await readyBtn.click();
   await expect(page.getByTestId('tower-panel')).toBeVisible();
   const selected = await inScene(page, (s) => s.selectedTowerId, null);
-  expect(before.some((t) => t.id === selected)).toBe(true);
-  // 가장 많은 종류의 타워를 직접 골라 모두 승급
-  await tapTile(page, group[0]!.tx, group[0]!.ty);
-  await page.waitForTimeout(100);
-  if ((await inScene(page, (s) => s.selectedTowerId, null)) !== group[0]!.id) await tapTile(page, group[0]!.tx, group[0]!.ty);
-  await expect(page.getByTestId('tp-owned')).toHaveText(`${group.length}/3`);
-  const times = Math.floor(group.length / 3);
+  expect(fulls.some((st) => st.some((t) => t.id === selected))).toBe(true);
   await page.locator('[data-action="merge-all"]').click();
-  await expect.poll(async () => inScene(page, (s) => s.match.state.merges, null)).toBe(times);
+  await expect.poll(async () => inScene(page, (s) => s.match.state.merges, null)).toBeGreaterThanOrEqual(1);
   const after = await towers(page);
-  expect(after.filter((t) => t.tower === group[0]!.tower).length).toBe(group.length % 3);
-  expect(after.length).toBe(before.length - 2 * times);
+  expect(after.length).toBe(before.length - 2 * (await inScene(page, (s) => s.match.state.merges, null)));
   expect(errors).toEqual([]);
 });
 
 test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 타워 위에 놓으면 교환(파랑), 짧게 누르면 패널만 + 끄는 동안 배치 칸 보임 (T-3)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
-  // 순환의 정원 v2: 고리 안쪽 위 블록 (1,3)·(5,3), 옮길 빈 칸 (2,3), 경로 칸 (3,2)
+  // 순환의 정원 v3 (G-1 큰 칸): 고리 위 블록 (0,1)·(5,1), 옮길 빈 칸 (1,1), 경로 칸 (2,2)
   await summonMany(page, [
-    [1, 3],
-    [5, 3],
+    [0, 1],
+    [5, 1],
   ]);
   const [a, b] = await towers(page);
   // 판 시작 때 잠깐 보인 배치 칸이 사라진 뒤 (평소에는 칸을 그리지 않는다)
@@ -267,10 +281,10 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   await page.waitForTimeout(450); // 0.3초 넘게 누르기
   // 끄는 동안 그 타워는 공격하지 않는다 (hold 명령, GDD 4.5)
   await expect.poll(async () => inScene(page, (s, id) => s.match.towers().find((t) => t.id === id)!.held, a!.id)).toBe(true);
-  const to = await tilePoint(page, 2, 3);
+  const to = await tilePoint(page, 1, 1);
   await page.mouse.move(to.x, to.y, { steps: 6 });
   await expect.poll(async () => inScene(page, (s) => s.dragState?.drop?.preview ?? null, null)).toBe('move');
-  expect(await inScene(page, (s) => s.dragState?.drop, null)).toMatchObject({ tx: 2, ty: 3 });
+  expect(await inScene(page, (s) => s.dragState?.drop, null)).toMatchObject({ tx: 1, ty: 1 });
   // 끄는 동안 배치 칸이 옅게 보인다 (T-3 타일 숨김)
   expect(await inScene(page, (s) => s.buildHint, null)).toBe(1);
   await shot(page, 'M3a-drag');
@@ -278,12 +292,12 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   await expect.poll(async () => inScene(page, (s) => s.match.state.moves, null)).toBe(1);
   expect(await inScene(page, (s) => s.buildHint, null)).toBe(0);
   let list = await towers(page);
-  expect(list.find((t) => t.id === a!.id)).toMatchObject({ tx: 2, ty: 3 });
+  expect(list.find((t) => t.id === a!.id)).toMatchObject({ tx: 1, ty: 1 });
   expect(await inScene(page, (s, id) => s.match.towers().find((t) => t.id === id)!.held, a!.id)).toBe(false);
   await expect(page.getByTestId('tower-panel')).toHaveCount(0);
 
-  // 교환: a(2,3)를 b(5,3) 위로
-  const from2 = await tilePoint(page, 2, 3);
+  // 교환: a(1,1)를 b(5,1) 위로
+  const from2 = await tilePoint(page, 1, 1);
   await page.mouse.move(from2.x, from2.y);
   await page.mouse.down();
   await page.waitForTimeout(450);
@@ -294,14 +308,14 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   await expect.poll(async () => inScene(page, (s) => s.match.state.moves, null)).toBe(2);
   list = await towers(page);
   expect(list.find((t) => t.id === a!.id)).toMatchObject({ tx: b!.tx, ty: b!.ty });
-  expect(list.find((t) => t.id === b!.id)).toMatchObject({ tx: 2, ty: 3 });
+  expect(list.find((t) => t.id === b!.id)).toMatchObject({ tx: 1, ty: 1 });
 
   // 경로 칸 위에 놓으면 빨강 미리 보기 → 그대로
-  const from3 = await tilePoint(page, 2, 3);
+  const from3 = await tilePoint(page, 1, 1);
   await page.mouse.move(from3.x, from3.y);
   await page.mouse.down();
   await page.waitForTimeout(450);
-  const to3 = await tilePoint(page, 3, 2);
+  const to3 = await tilePoint(page, 2, 2);
   await page.mouse.move(to3.x, to3.y, { steps: 6 });
   await expect.poll(async () => inScene(page, (s) => s.dragState?.drop?.preview ?? null, null)).toBe('invalid');
   await page.mouse.up();
@@ -309,7 +323,7 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   expect(await inScene(page, (s) => s.match.state.moves, null)).toBe(2);
 
   // HUD 버튼(DOM) 위에서 손을 떼도 끌기가 끝난다 (Phaser 'pointerupoutside'), 이동하지 않고 배속도 그대로
-  const from4 = await tilePoint(page, 2, 3);
+  const from4 = await tilePoint(page, 1, 1);
   await page.mouse.move(from4.x, from4.y);
   await page.mouse.down();
   await page.waitForTimeout(450);
@@ -322,7 +336,7 @@ test('길게 눌러 끌기: 빈 칸으로 이동(초록 미리 보기), 다른 �
   await expect(page.locator('[data-action="speed"]')).toHaveText('×1');
 
   // 짧게 누르면(0.3초 전) 끌기 없이 패널
-  await tapTile(page, 2, 3);
+  await tapTile(page, 1, 1);
   await expect(page.getByTestId('tower-panel')).toBeVisible();
   expect(await inScene(page, (s) => s.dragState, null)).toBeNull();
   expect(await inScene(page, (s) => s.draggingTowerCount, null)).toBe(0);
@@ -333,8 +347,8 @@ test('느린 탭: 캐릭터 얼굴·머리를 0.4초 누르고 움직이지 않�
   const errors = collectErrors(page);
   await start(page);
   await summonMany(page, [
-    [1, 4],
-    [1, 3],
+    [2, 4],
+    [2, 3],
   ]);
   const before = await towers(page);
   const lower = before.find((t) => t.ty === 4)!;
@@ -364,8 +378,8 @@ test('두 손가락: 끄는 중에 다른 손가락이 다른 타워를 눌러�
   const errors = collectErrors(page);
   await start(page);
   await summonMany(page, [
-    [1, 3],
-    [5, 3],
+    [0, 1],
+    [5, 1],
   ]);
   const [a, b] = await towers(page);
   const cdp = await page.context().newCDPSession(page);
@@ -373,12 +387,12 @@ test('두 손가락: 끄는 중에 다른 손가락이 다른 타워를 눌러�
   const pa = await tilePoint(page, a!.tx, a!.ty);
   await touch('touchStart', [{ ...pa, id: 1 }]);
   await page.waitForTimeout(450);
-  const to = await tilePoint(page, 2, 4);
+  const to = await tilePoint(page, 4, 0);
   for (let i = 1; i <= 6; i++) {
     await touch('touchMove', [{ x: pa.x + ((to.x - pa.x) * i) / 6, y: pa.y + ((to.y - pa.y) * i) / 6, id: 1 }]);
     await page.waitForTimeout(30);
   }
-  await expect.poll(async () => inScene(page, (s) => s.dragState?.drop ?? null, null)).toMatchObject({ tx: 2, ty: 4, preview: 'move' });
+  await expect.poll(async () => inScene(page, (s) => s.dragState?.drop ?? null, null)).toMatchObject({ tx: 4, ty: 0, preview: 'move' });
   // 둘째 손가락이 타워 b를 눌렀다 뗀다 → 무시 (끌기는 a 그대로)
   const pb = await tilePoint(page, b!.tx, b!.ty);
   await touch('touchStart', [
@@ -394,7 +408,7 @@ test('두 손가락: 끄는 중에 다른 손가락이 다른 타워를 눌러�
   await page.waitForTimeout(600);
   const list = await towers(page);
   const ma = list.find((t) => t.id === a!.id)!;
-  expect(ma).toMatchObject({ tx: 2, ty: 4 });
+  expect(ma).toMatchObject({ tx: 4, ty: 0 });
   // 그림 발밑 = 실제 칸 (칸 중심 + 0.3칸) — 끌던 자리에 유령 그림이 남지 않는다
   const foot = await inScene(page, (s, id) => s.towerFootPx(id), a!.id);
   const want = await inScene(page, (s, xy) => ({ x: s.mapLayout.originX + (xy[0] + 0.5) * s.mapLayout.tile, y: s.mapLayout.originY + (xy[1] + 0.8) * s.mapLayout.tile }), [ma.tx, ma.ty] as const);
@@ -518,9 +532,9 @@ test('위쪽 패널 + 알림: 칸이 가득 찬 판에서 아래쪽 타워를 �
 test('M3a 스크린샷: 정보 패널(스탯·보유 n/3·승급 버튼) + 사거리 원 + 같은 종류 강조, 8단계 전투 중', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
-  // 고리 안팎에 고르게 12개 (순환의 정원 v2)
+  // 고리 안팎에 고르게 12개 (순환의 정원 v3 — 길에 닿은 칸)
   const ring: [number, number][] = [
-    [1, 3], [5, 3], [1, 7], [5, 7], [4, 1], [2, 1], [1, 9], [5, 9], [2, 3], [4, 7], [2, 6], [4, 4],
+    [0, 1], [1, 1], [4, 1], [5, 1], [2, 3], [3, 3], [2, 4], [3, 4], [0, 6], [1, 6], [4, 6], [5, 6],
   ];
   await summonMany(page, ring);
   // 가장 많은 종류가 3개 이상이면 한 번 승급해 레어를 만든다

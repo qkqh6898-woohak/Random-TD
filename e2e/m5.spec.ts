@@ -393,8 +393,8 @@ test('강화: [비용]을 누르면 Lv·효과·공속 배율 ⚡ 갱신, 길게
 test('도박: debug 판은 잠긴 테이블도 "디버그", 10원 도박 → 슬롯 1초 → 결과·최근 결과, 잭팟 게이지 10칸이면 "다음 ×3 이상!"', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
-  await page.getByTestId('menu-upgrade').click();
-  await page.getByTestId('sheet-tab-gamble').click();
+  // G-1: 돈 도박은 하단 메뉴 [🎰 도박] 시트로 옮겼다 (예전: 강화 시트의 도박 탭)
+  await page.getByTestId('menu-gamble').click();
   await expect(page.getByTestId('gamble-table-1000')).toContainText('디버그');
   // 기대값은 잭팟 게이지까지 넣은 실제 값 (M5 검토 반영), '기대값 91%'는 한 줄로 붙어 있다
   await expect(page.getByTestId('gamble-odds')).toHaveText('×0 40% · ×0.5 20% · ×1 21% · ×2 11% · ×3 6% · ×5 2% — 기대값 91% (잭팟 포함)');
@@ -425,8 +425,8 @@ test('도박: debug 판은 잠긴 테이블도 "디버그", 10원 도박 → 슬
 test('도박 해금: 계정 Lv1이면 1000원·10000원 🔒 + 누르면 "계정 Lv7에 열려요", 저장된 계정 Lv7이면 1000원 열림', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=42');
-  await page.getByTestId('menu-upgrade').click();
-  await page.getByTestId('sheet-tab-gamble').click();
+  // G-1: 돈 도박은 하단 메뉴 [🎰 도박] 시트로 옮겼다 (예전: 강화 시트의 도박 탭)
+  await page.getByTestId('menu-gamble').click();
   await expect(page.getByTestId('gamble-table-1000')).toContainText('🔒 계정 Lv7');
   await expect(page.getByTestId('gamble-table-10000')).toContainText('🔒 계정 Lv20');
   await page.getByTestId('gamble-table-1000').click();
@@ -435,8 +435,8 @@ test('도박 해금: 계정 Lv1이면 1000원·10000원 🔒 + 누르면 "계정
   // 계정 레벨 7 (메타 저장소) → 다음 판부터 1000원 열림
   await page.evaluate(() => localStorage.setItem('rtd.account', JSON.stringify({ v: 1, level: 7, hidden: [] })));
   await start(page, '?seed=42');
-  await page.getByTestId('menu-upgrade').click();
-  await page.getByTestId('sheet-tab-gamble').click();
+  // G-1: 돈 도박은 하단 메뉴 [🎰 도박] 시트로 옮겼다 (예전: 강화 시트의 도박 탭)
+  await page.getByTestId('menu-gamble').click();
   await expect(page.getByTestId('gamble-table-1000')).not.toContainText('🔒');
   await expect(page.getByTestId('gamble-table-10000')).toContainText('🔒 계정 Lv20');
   await page.getByTestId('gamble-table-1000').click();
@@ -519,13 +519,14 @@ test('미션: 달성하면 한 줄 배너·배지 "n 받기" → [받기]로 보
 test('[⬆ 승급 가능 n]: 누를 때마다 다음 묶음의 패널을 열고 그 타워들에 금색 고리 강조', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
+  // G-1 칸 무더기: 같은 캐릭터 3개가 한 칸에 (궁수 (2,3), 광부 (0,6))
   await place(page, [
-    [1, 3, 'archer'],
     [2, 3, 'archer'],
-    [1, 4, 'archer'],
-    [1, 7, 'miner'],
-    [2, 7, 'miner'],
-    [1, 6, 'miner'],
+    [2, 3, 'archer'],
+    [2, 3, 'archer'],
+    [0, 6, 'miner'],
+    [0, 6, 'miner'],
+    [0, 6, 'miner'],
   ]);
   const btn = page.getByTestId('hud-merge-ready');
   await expect(btn).toHaveText('⬆ 승급 가능 2');
@@ -533,25 +534,25 @@ test('[⬆ 승급 가능 n]: 누를 때마다 다음 묶음의 패널을 열고 
   await btn.click();
   expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
   await expect(page.getByTestId('tower-panel')).toBeVisible();
-  await expect(page.getByTestId('tp-name')).toHaveText('궁수');
+  await expect(page.getByTestId('tp-name')).toHaveText('궁수 ×3');
   // 아래에 붙은 패널이 [⬆ 승급 가능 n]을 덮어도 패널 안 [다음 묶음 ▶]으로 이어서 넘긴다 (M5 검토 반영)
   const next = page.locator('[data-action="merge-next"]');
   await expect(next).toHaveText('다음 묶음 ▶ 1/2');
   await next.click();
   expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
-  await expect(page.getByTestId('tp-name')).toHaveText('광부');
+  await expect(page.getByTestId('tp-name')).toHaveText('광부 ×3');
   await expect(next).toHaveText('다음 묶음 ▶ 2/2');
   await next.click();
-  await expect(page.getByTestId('tp-name')).toHaveText('궁수');
+  await expect(page.getByTestId('tp-name')).toHaveText('궁수 ×3');
   // 패널을 닫고 버튼을 눌러도 다음 묶음
   await page.locator('[data-action="panel-close"]').click();
   await btn.click();
   expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
-  await expect(page.getByTestId('tp-name')).toHaveText('광부');
+  await expect(page.getByTestId('tp-name')).toHaveText('광부 ×3');
   // 타워를 직접 눌러 연 패널에는 [다음 묶음 ▶]이 없다
   await page.locator('[data-action="panel-close"]').click();
   await tapTile(page, 2, 3);
-  await expect(page.getByTestId('tp-name')).toHaveText('궁수');
+  await expect(page.getByTestId('tp-name')).toHaveText('궁수 ×3');
   await expect(next).toBeHidden();
   // 1.5초 뒤 강조 끝
   await expect.poll(() => inScene(page, (s) => s.mergeHighlightCount, null), { timeout: 4000 }).toBe(0);
@@ -562,15 +563,15 @@ test('바텀 시트는 하나만: 시트를 열면 정보 패널이 닫히고, �
   const errors = collectErrors(page);
   await start(page);
   // 아래쪽 줄 타워 → 정보 패널은 위에 붙어 하단 메뉴가 보인다
-  await place(page, [[2, 9, 'archer']]);
-  await tapTile(page, 2, 9);
+  await place(page, [[1, 7, 'archer']]);
+  await tapTile(page, 1, 7);
   await expect(page.getByTestId('tower-panel')).toHaveClass(/is-top/);
   await page.getByTestId('menu-upgrade').click();
   await expect(page.getByTestId('sheet-upgrade')).toBeVisible();
   await expect(page.getByTestId('tower-panel')).toHaveCount(0);
   // 시트가 열린 동안 (시트 위쪽) 타워를 누르면 시트만 닫힌다 (패널 안 열림)
-  await place(page, [[2, 1, 'archer']]);
-  await tapTile(page, 2, 1);
+  await place(page, [[1, 1, 'archer']]);
+  await tapTile(page, 1, 1);
   await expect(page.getByTestId('sheet-upgrade')).toHaveCount(0);
   expect(await inScene(page, (s) => s.panelOpen, null)).toBe(false);
   // 시트를 쓰는 중 보스 카드가 생기면 창은 알약으로 접혀 뜬다

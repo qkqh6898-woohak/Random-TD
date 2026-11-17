@@ -227,7 +227,7 @@ test('게임 화면: 타워·몹이 새 캐릭터 그림(파츠 텍스처)으로
   const placed = await inScene(
     page,
     (s, ids) => {
-      // 순환의 정원 배치 칸 모두 (T-3 v2: 32칸) — 타워 종류는 돌려 가며
+      // 순환의 정원 배치 칸 모두 (G-1 v3: 20칸) — 타워 종류는 돌려 가며
       const cells = s.match.map.buildable;
       let n = 0;
       cells.forEach(([x, y], i) => {
@@ -239,13 +239,13 @@ test('게임 화면: 타워·몹이 새 캐릭터 그림(파츠 텍스처)으로
     },
     INGAME_TOWERS,
   );
-  expect(placed).toBe(32);
+  expect(placed).toBe(20);
   // 다음 프레임에 그림이 생긴다: 모든 타워가 새 파츠 텍스처, 종류마다 한 장
-  await expect.poll(() => inScene(page, (s) => s.towerLayer.characterKeys.length, null)).toBe(32);
+  await expect.poll(() => inScene(page, (s) => s.towerLayer.characterKeys.length, null)).toBe(20);
   const keys = await inScene(page, (s) => s.towerLayer.characterKeys, null);
   // 힉스필드 그림이 있으면 그것(ext-char-tower-…, HF-1), 없으면 절차 파츠 텍스처(char-tower-…)
   expect(keys.every((k) => k.startsWith('char-tower-') || k.startsWith('ext-char-tower-'))).toBe(true);
-  expect(new Set(keys).size).toBe(Math.min(32, INGAME_TOWERS.length));
+  expect(new Set(keys).size).toBe(Math.min(20, INGAME_TOWERS.length));
   expect(
     await inScene(
       page,

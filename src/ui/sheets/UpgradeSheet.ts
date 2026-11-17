@@ -22,7 +22,6 @@ import type { SlotFrame } from './slot';
 
 export interface UpgradeSheetOptions {
   onUpgrade: (k: number) => boolean;
-  onGamble: (t: number) => GambleFire;
   onClose: () => void;
   onTab?: (tab: UpgradeTab) => void;
   tab?: UpgradeTab;
@@ -37,10 +36,19 @@ export type GambleFire = 'spun' | 'wait' | 'stop';
 export type GambleSlotView = SlotFrame & { result: string };
 
 export interface UpgradeSheetView extends BottomSheetView<UpgradeTab> {
+  update(model: UpgradeSheetModel): void;
+}
+
+export interface GambleSheetView extends BottomSheetView<never> {
   /** slots: 테이블 번호 → 그 테이블 릴 (돌린 적 없으면 없음) */
-  update(model: UpgradeSheetModel, gamble: GambleSheetModel, slots: ReadonlyMap<number, GambleSlotView>): void;
+  update(gamble: GambleSheetModel, slots: ReadonlyMap<number, GambleSlotView>): void;
   /** 그 테이블 버튼을 꾹 누르는 중(자동 연속)인가 — E2E·테스트 */
   gambleAuto(t: number): boolean;
+}
+
+export interface GambleSheetOptions {
+  onGamble: (t: number) => GambleFire;
+  onClose: () => void;
 }
 
 interface RowEls {
@@ -55,14 +63,12 @@ interface RowEls {
 const TABS = [
   { id: 'grade', label: '등급 강화' },
   { id: 'stat', label: '능력치 강화' },
-  { id: 'gamble', label: '🎰 도박' },
 ] as const;
 
-export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeSheetModel, firstGamble: GambleSheetModel): UpgradeSheetView {
-  const panes: Record<UpgradeTab, HTMLElement> = {
+export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeSheetModel): UpgradeSheetView {
+  const panes: Record<Exclude<UpgradeTab, 'gamble'>, HTMLElement> = {
     grade: h('div', { class: 'up-pane', attrs: { 'data-pane': 'grade' } }),
     stat: h('div', { class: 'up-pane', attrs: { 'data-pane': 'stat' } }),
-    gamble: h('div', { class: 'up-pane gb-pane', attrs: { 'data-pane': 'gamble' } }),
   };
   const showPane = (tab: UpgradeTab): void => {
     for (const [id, p] of Object.entries(panes)) p.hidden = id !== tab;
@@ -71,7 +77,7 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
     kind: 'upgrade',
     title: '⬆ 강화',
     tabs: TABS,
-    tab: opts.tab ?? 'grade',
+    tab: opts.tab === 'gamble' ? 'grade' : (opts.tab ?? 'grade'),
     onTab: (t) => {
       showPane(t);
       opts.onTab?.(t);
@@ -82,7 +88,7 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
   sheet.extra.append(aps);
   panes.grade.append(h('div', { class: 'bs-note', text: '등급군의 지금·앞으로 나올 타워 모두 · 길게 누르면 연속 강화' }));
   panes.stat.append(h('div', { class: 'bs-note', attrs: { 'data-testid': 'upgrade-stat-note' }, text: first.statNote }));
-  sheet.body.append(panes.grade, panes.stat, panes.gamble);
+  sheet.body.append(panes.grade, panes.stat);
   showPane(sheet.tab ?? 'grade');
 
   const rows = new Map<number, RowEls>();
@@ -116,6 +122,60 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
   const transcendHost = h('div', { class: 'up-transcend' });
   panes.stat.append(transcendHost);
 
+  let lastAps = '';
+  let transcendBuilt = false;
+  const updateRow = (r: UpgradeRowModel): void => {
+    const e = rows.get(r.k);
+    if (!e) return;
+    if (e.last.levelText !== r.levelText) e.lv.textContent = r.levelText;
+    if (e.last.effect !== r.effect) e.effect.textContent = r.effect;
+    if (e.last.costText !== r.costText) e.btn.textContent = r.costText;
+    if (e.last.state !== r.state) {
+      e.root.dataset.state = r.state;
+      e.btn.classList.toggle('is-off', r.state !== 'ok');
+      e.btn.disabled = r.state === 'max' || r.state === 'locked';
+      if (r.state === 'max') e.hold.stop();
+    }
+    e.last = r;
+  };
+
+  const view: UpgradeSheetView = {
+    ...sheet,
+    get size() {
+      return sheet.size;
+    },
+    get tab() {
+      return sheet.tab;
+    },
+    update(model) {
+      if (model.apsMul !== lastAps) aps.textContent = lastAps = model.apsMul;
+      for (const r of model.grade) updateRow(r);
+      for (const r of model.stat) updateRow(r);
+      if (model.transcend) {
+        if (!transcendBuilt) {
+          transcendBuilt = true;
+          makeRow(model.transcend, transcendHost);
+        }
+        updateRow(model.transcend);
+      }
+    },
+    destroy() {
+      for (const e of rows.values()) e.hold.detach();
+      sheet.destroy?.();
+    },
+  };
+  view.update(first);
+  return view;
+}
+
+/**
+ * 🎰 도박 시트 (G-1 하단 메뉴 [도박] — 예전 강화 시트의 도박 탭을 그대로 옮김, data-testid 그대로).
+ * 테이블마다 한 줄 [버튼 · 릴 · 결과 · 자동], 잭팟 게이지, 배율표·기대값, 최근 결과.
+ */
+export function createGambleSheet(opts: GambleSheetOptions, firstGamble: GambleSheetModel): GambleSheetView {
+  const sheet = createBottomSheet<never>({ kind: 'gamble', title: '🎰 도박', onClose: opts.onClose });
+  const pane = h('div', { class: 'up-pane gb-pane', attrs: { 'data-pane': 'gamble' } });
+  sheet.body.append(pane);
   // ---- 도박 (T-2): 테이블마다 한 줄 [버튼 · 릴 · 결과 · 자동]
   const gaugeCells = Array.from({ length: firstGamble.gaugeMax }, () => h('span', { class: 'gb-cell' }));
   const gaugeText = h('span', { class: 'gb-gauge-text', attrs: { 'data-testid': 'gamble-gauge' } });
@@ -167,7 +227,7 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
   const oddsEv = h('span', { class: 'gb-odds-ev', attrs: { 'data-testid': 'gamble-ev' } });
   const odds = h('div', { class: 'gb-odds', attrs: { 'data-testid': 'gamble-odds' } }, oddsList, oddsEv);
   const recent = h('div', { class: 'gb-recent', attrs: { 'data-testid': 'gamble-recent' } });
-  panes.gamble.append(
+  pane.append(
     h('div', { class: 'bs-note', text: '테이블마다 따로 돌아요 · 꾹 누르면 계속 돌아가요' }),
     tables,
     gauge,
@@ -175,29 +235,12 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
     recent,
   );
 
-  let lastAps = '';
   let lastOdds = '';
   let lastEv = '';
   let lastRecent = '';
   let lastGauge = -1;
   let lastReady = false;
-  let transcendBuilt = false;
-  const updateRow = (r: UpgradeRowModel): void => {
-    const e = rows.get(r.k);
-    if (!e) return;
-    if (e.last.levelText !== r.levelText) e.lv.textContent = r.levelText;
-    if (e.last.effect !== r.effect) e.effect.textContent = r.effect;
-    if (e.last.costText !== r.costText) e.btn.textContent = r.costText;
-    if (e.last.state !== r.state) {
-      e.root.dataset.state = r.state;
-      e.btn.classList.toggle('is-off', r.state !== 'ok');
-      e.btn.disabled = r.state === 'max' || r.state === 'locked';
-      if (r.state === 'max') e.hold.stop();
-    }
-    e.last = r;
-  };
-
-  const view: UpgradeSheetView = {
+  const view: GambleSheetView = {
     ...sheet,
     get size() {
       return sheet.size;
@@ -205,17 +248,7 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
     get tab() {
       return sheet.tab;
     },
-    update(model, gb, slots) {
-      if (model.apsMul !== lastAps) aps.textContent = lastAps = model.apsMul;
-      for (const r of model.grade) updateRow(r);
-      for (const r of model.stat) updateRow(r);
-      if (model.transcend) {
-        if (!transcendBuilt) {
-          transcendBuilt = true;
-          makeRow(model.transcend, transcendHost);
-        }
-        updateRow(model.transcend);
-      }
+    update(gb, slots) {
       // 도박: 테이블마다 버튼 상태 · 릴 · 결과 · 자동 표시
       for (const tb of gb.tables) {
         const e = tableEls.get(tb.t);
@@ -264,11 +297,10 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
       return tableEls.get(t)?.hold.repeating === true;
     },
     destroy() {
-      for (const e of rows.values()) e.hold.detach();
       for (const e of tableEls.values()) e.hold.detach();
       sheet.destroy?.();
     },
   };
-  view.update(first, firstGamble, new Map());
+  view.update(firstGamble, new Map());
   return view;
 }

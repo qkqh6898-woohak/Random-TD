@@ -163,7 +163,7 @@ test('제한 시간 패배: "박쥐 여왕을 90초 안에 잡지 못했어요 �
   // 노말 타워 몇 개로 조금만 깎는다 → 남은 체력이 100% 아래
   await inScene(
     page,
-    (s) => [[1, 3], [2, 3], [4, 3]].every(([x, y]) => s.match.world.enqueue({ type: 'debugTower', x, y, t: 0 }).ok),
+    (s) => [[0, 1], [1, 1], [4, 1]].every(([x, y]) => s.match.world.enqueue({ type: 'debugTower', x, y, t: 0 }).ok),
     null,
   );
   await ff(page, 1850);

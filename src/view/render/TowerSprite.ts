@@ -35,7 +35,8 @@ import type { Tower } from '../../sim/entities/Tower';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { MOB_DEPTH_BASE } from './MobSprite';
 import { attackAnimMs, towerPose } from './towerPose';
-import { battleFigureScale, FIGURE_TILES, FOOT_OFFSET_TILES, fillOccupancy, isCrowded, PEDESTAL_WIDTH_TILES } from './towerGeom';
+import { battleFigureScale, FIGURE_TILES, FOOT_OFFSET_TILES, fillOccupancy, isCrowded, occupancyKey, PEDESTAL_WIDTH_TILES } from './towerGeom';
+import { stackSlot, type StackSlot } from './stackGeom';
 
 /** 이동·교환 뒤 새 칸으로 미끄러지는 시간 (ms) */
 const SLIDE_MS = 140;
@@ -87,6 +88,12 @@ export class TowerSprite {
   private lungeDy = 0;
   /** 혼돈의 용에게 기절 중 (M4-5): 잿빛 + 떨림 */
   private stunned = false;
+  /** 받침대 (G-1 무더기면 그림과 같이 작게) */
+  private pedestal: Phaser.GameObjects.Image | null = null;
+  /** G-1 칸 무더기: 같은 칸 안 자리 (칸 배수)와 크기 배수 — 1개면 0·0·1 */
+  private slot: StackSlot = { dx: 0, dy: 0, scale: 1 };
+  /** G-1: 같은 칸 다른 타워를 끄는 중이면 그 손가락 위치 (무더기를 통째로 든다) */
+  private groupDragAt: { x: number; y: number } | null = null;
 
   constructor(scene: Phaser.Scene, tower: Tower, layout: MapLayout, art: TowerArt) {
     this.id = tower.id;
@@ -107,6 +114,7 @@ export class TowerSprite {
     this.baseY = c.y + layout.tile * FOOT_OFFSET_TILES;
     const pedestal = scene.add.image(0, 0, pedKey).setOrigin(0.5, PEDESTAL_ORIGIN_Y);
     pedestal.setScale((layout.tile * PEDESTAL_WIDTH_TILES) / PEDESTAL_TEX_W);
+    this.pedestal = pedestal;
     if (charLook) {
       const tex = towerCharacterTexture(scene, charLook, awakened);
       this.character = new CharacterFigure(scene, tex);
@@ -179,28 +187,40 @@ export class TowerSprite {
     return this.stunned;
   }
 
+  /** G-1 칸 무더기: 자리·크기 (매 프레임 TowerLayer가 정한다). */
+  setSlot(slot: StackSlot, groupDrag: { x: number; y: number } | null): void {
+    if (slot.scale !== this.slot.scale) this.pedestal?.setScale(((this.tile * PEDESTAL_WIDTH_TILES) / PEDESTAL_TEX_W) * slot.scale);
+    this.slot = slot;
+    if (groupDrag === null && this.groupDragAt !== null) this.slideFrom = { x: this.root.x, y: this.root.y, at: 0 };
+    this.groupDragAt = groupDrag;
+  }
+
   update(timeMs: number, crowded: boolean, topLimit: number): void {
     // 연출 끄기 (T-2): 대기 동작·공격 몸짓·미끄러짐 없이 고정 자세
     const still = effectsOff();
     if (still) this.slideFrom = null;
-    // 위치: 끄는 중 = 손가락 위, 이동 직후 = 미끄러짐(SLIDE_MS), 그 밖 = 칸
-    let rx = this.baseX;
-    let ry = this.baseY;
-    if (this.dragAt) {
-      rx = this.dragAt.x;
-      ry = this.dragAt.y;
+    if (this.slideFrom && this.slideFrom.at === 0) this.slideFrom.at = timeMs;
+    // 위치: 끄는 중 = 손가락 위, 이동 직후 = 미끄러짐(SLIDE_MS), 그 밖 = 칸 (+ G-1 무더기 안 자리)
+    const ox = this.slot.dx * this.tile;
+    const oy = this.slot.dy * this.tile;
+    let rx = this.baseX + ox;
+    let ry = this.baseY + oy;
+    const held = this.dragAt ?? this.groupDragAt;
+    if (held) {
+      rx = held.x + (this.dragAt ? 0 : ox);
+      ry = held.y + (this.dragAt ? 0 : oy);
     } else if (this.slideFrom) {
       const k = (timeMs - this.slideFrom.at) / SLIDE_MS;
       if (k >= 1) this.slideFrom = null;
       else {
         const e = 1 - (1 - k) * (1 - k);
-        rx = this.slideFrom.x + (this.baseX - this.slideFrom.x) * e;
-        ry = this.slideFrom.y + (this.baseY - this.slideFrom.y) * e;
+        rx = this.slideFrom.x + (this.baseX + ox - this.slideFrom.x) * e;
+        ry = this.slideFrom.y + (this.baseY + oy - this.slideFrom.y) * e;
       }
     }
     this.root.setPosition(rx, ry);
-    this.root.setDepth(this.dragAt ? DRAG_DEPTH : MOB_DEPTH_BASE + ry);
-    this.root.setAlpha(this.dragAt ? 0.88 : 1);
+    this.root.setDepth(held ? DRAG_DEPTH + (this.dragAt ? 0 : -1) : MOB_DEPTH_BASE + ry);
+    this.root.setAlpha(held ? 0.88 : 1);
     const preset = this.preset;
     const pose = still
       ? STILL_POSE
@@ -213,7 +233,7 @@ export class TowerSprite {
       gesture: preset?.gesture,
       gestureMs: preset?.gestureMs,
     });
-    this.artScale = battleFigureScale(this.lookScale, crowded, (this.baseY - topLimit) / this.tile);
+    this.artScale = battleFigureScale(this.lookScale, crowded, (this.baseY - topLimit) / this.tile) * this.slot.scale;
     const s = this.scale * this.artScale;
     this.figure.setPosition(this.lungeDx * pose.lunge * this.tile + pose.dx * this.tile, pose.bob * this.tile + this.lungeDy * pose.lunge * this.tile);
     this.figure.setScale(s * pose.sx * this.facing, s * pose.sy);
@@ -305,6 +325,16 @@ export class TowerLayer {
     const seen = new Set<number>();
     const cols = this.layout.cols;
     fillOccupancy(this.occupied, towers, cols);
+    // G-1 칸 무더기: 칸마다 타워 수·끄는 그림 (ID 순이라 칸 안 순서 = 쌓인 순서)
+    const perTile = new Map<number, number>();
+    const dragOf = new Map<number, { x: number; y: number }>();
+    for (const t of towers) {
+      const k = occupancyKey(t.tx, t.ty, cols);
+      perTile.set(k, (perTile.get(k) ?? 0) + 1);
+      const d = this.sprites.get(t.id)?.dragPos;
+      if (d && !dragOf.has(k)) dragOf.set(k, d);
+    }
+    const nth = new Map<number, number>();
     for (const t of towers) {
       seen.add(t.id);
       let sprite = this.sprites.get(t.id);
@@ -323,6 +353,10 @@ export class TowerLayer {
         if (this.pendingAppear.delete(t.id)) sprite.appear(timeMs);
       } else sprite.follow(t, timeMs);
       sprite.setStunned(tick !== undefined && tick < (t.stunUntil ?? 0));
+      const key = occupancyKey(t.tx, t.ty, cols);
+      const i = nth.get(key) ?? 0;
+      nth.set(key, i + 1);
+      sprite.setSlot(stackSlot(i, perTile.get(key) ?? 1), sprite.dragging ? null : (dragOf.get(key) ?? null));
       sprite.update(timeMs, isCrowded(this.occupied, t.tx, t.ty, cols), this.topLimit);
     }
     for (const [id, s] of this.sprites) {

@@ -144,7 +144,7 @@ function simMaterials(list: TowerLite[], anchorId: number): Tile[] {
     .map((t) => ({ tx: t.tx, ty: t.ty }));
 }
 
-test('새 플레이어 (디버그 없이): 추천 칸 소환 → 준비 완료 → 첫 전투 → 2/3 → 첫 승급 안내 → 다른 칸 고르기 → 승급 → 이름·역할', async ({ page }) => {
+test('새 플레이어 (디버그 없이): 추천 칸 소환 → 준비 완료 → 첫 전투 → 2/3 → 첫 승급 안내 (G-1: 한 칸 3개) → 승급 → 이름·역할', async ({ page }) => {
   const errors = collectErrors(page);
   // 알림 글자 기록 (2.6초 알림이 바쁜 컴퓨터에서 확인 전에 사라지지 않게)
   await page.addInitScript(() => {
@@ -226,16 +226,10 @@ test('새 플레이어 (디버그 없이): 추천 칸 소환 → 준비 완료 �
   // 마지막 단계: [다음] 대신 [확인] (F10-4 검토 — 예전엔 눌러도 아무 일 없는 [다음]이 남아 있었다)
   await expect(page.getByTestId('guide-next')).toBeVisible();
   await expect(page.getByTestId('guide-next')).toHaveText('확인');
-  // 다른 칸 고르기: 재료로 표시된 타워를 누르면 그 칸이 새 결과 칸 (승급하지 않음), 재료도 다시 계산
-  const other = list.find((t) => t.tower === anchor.tower && t.id !== anchor.id)!;
-  await tapTile(page, other.tx, other.ty);
-  await expect.poll(async () => (await guide(page)).guide?.anchorId).toBe(other.id);
-  g = await guide(page);
-  list = await myTowers(page);
-  expect(await inScene(page, (s) => s.match.state.merges, null)).toBe(0);
-  expect(g.preview!.result).toEqual({ tx: other.tx, ty: other.ty });
-  const shownMaterials = g.preview!.materials;
-  expect(shownMaterials).toEqual(simMaterials(list, other.id));
+  // G-1 칸 무더기: 같은 캐릭터 3개가 한 칸에 쌓여 있다 (결과·재료 칸이 같은 칸 — 예전 '다른 칸 고르기'는 없다)
+  expect(list.filter((t) => t.tx === anchor.tx && t.ty === anchor.ty)).toHaveLength(3);
+  const other = anchor;
+  const stackIds = list.filter((t) => t.tx === anchor.tx && t.ty === anchor.ty).map((t) => t.id);
   // 결과 알림은 2.6초 뒤 사라진다 → 생길 때 글자를 기록해 둔다 (바쁜 컴퓨터에서 확인 전에 사라지지 않게)
   await page.evaluate(() => {
     const w = window as unknown as { __mergeBanners: string[][] };
@@ -248,13 +242,13 @@ test('새 플레이어 (디버그 없이): 추천 칸 소환 → 준비 완료 �
         }
     }).observe(document.querySelector('.layer-toast')!, { childList: true });
   });
-  // 금색 결과 칸을 누르면 승급 → 표시한 재료 두 칸이 비고, 고른 칸에 결과
+  // 3개 쌓인 칸을 누르면 승급 → 그 칸 3개가 모두 사라지고 다음 등급 하나 (그 칸, 같은 캐릭터 칸이 있으면 그 칸)
   await tapTile(page, other.tx, other.ty);
   await expect.poll(() => inScene(page, (s) => s.match.state.merges, null)).toBe(1);
   const after = await myTowers(page);
-  const result = after.find((t) => t.tx === other.tx && t.ty === other.ty)!;
+  for (const id of stackIds) expect(after.some((t) => t.id === id)).toBe(false);
+  const result = after.find((t) => !list.some((b) => b.id === t.id))!;
   expect(result.tower).not.toBe(anchor.tower);
-  for (const m of shownMaterials) expect(after.some((t) => t.tx === m.tx && t.ty === m.ty)).toBe(false);
   // 결과 타워 이름·역할 알림
   await shot(page, 'F10-ui-result');
   await expect.poll(() => page.evaluate(() => (window as unknown as { __mergeBanners: string[][] }).__mergeBanners.length)).toBe(1);
@@ -284,9 +278,10 @@ test('두 묶음이 함께 준비되면: 다른 묶음 타워를 누르면 안�
   const s0 = (await summon.boundingBox())!;
   const h0 = (await hire.boundingBox())!;
   const cells = await inScene(page, (s) => s.match.map.buildable.slice(0, 6), null);
+  // G-1 칸 무더기: 같은 캐릭터 3개가 한 칸에 쌓여야 승급 묶음이 된다
   await place(page, [
-    ...cells.slice(0, 3).map(([x, y]) => [x, y, 'goblin'] as [number, number, string]),
-    ...cells.slice(3, 6).map(([x, y]) => [x, y, 'archer'] as [number, number, string]),
+    ...[0, 1, 2].map(() => [cells[0]![0], cells[0]![1], 'goblin'] as [number, number, string]),
+    ...[0, 1, 2].map(() => [cells[3]![0], cells[3]![1], 'archer'] as [number, number, string]),
   ]);
   await expect(page.getByTestId('guide-card')).toBeVisible();
   await expect(page.getByTestId('hud-merge-ready')).toBeVisible();
@@ -337,9 +332,10 @@ test('안내: ✕로 닫으면 계정에 한 번 기록 → 재시작한 판엔 
   const errors = collectErrors(page);
   await start(page, '?debug=1&seed=7');
   const cells = await inScene(page, (s) => s.match.map.buildable.slice(0, 4), null);
+  // G-1 칸 무더기: 한 칸에 3개
   await place(page, [
-    [cells[0]![0], cells[0]![1], 'goblin'],
-    [cells[1]![0], cells[1]![1], 'goblin'],
+    [cells[2]![0], cells[2]![1], 'goblin'],
+    [cells[2]![0], cells[2]![1], 'goblin'],
     [cells[2]![0], cells[2]![1], 'goblin'],
   ]);
   await expect(page.getByTestId('guide-card')).toBeVisible();
@@ -364,7 +360,7 @@ test('안내: ✕로 닫으면 계정에 한 번 기록 → 재시작한 판엔 
   await page.locator('[data-action="exit"]').click();
   await start(page, '?debug=1&seed=7');
   const cells2 = await inScene(page, (s) => s.match.map.buildable.slice(0, 3), null);
-  await place(page, cells2.map(([x, y]) => [x, y, 'archer'] as [number, number, string]));
+  await place(page, cells2.map(() => [cells2[0]![0], cells2[0]![1], 'archer'] as [number, number, string]));
   await page.waitForTimeout(500);
   expect((await guide(page)).guide).toBeNull();
   await expect(page.getByTestId('guide-card')).toBeHidden();

@@ -304,3 +304,11 @@ export function mergeStack(ctx: MatchContext, world: World, player: number, x: n
   if (out.length > 1) world.emit('mergeChain', { player, steps: out.length, x, y });
   return out;
 }
+
+/**
+ * 승급할 수 있는 무더기 묶음 (G-1 화면용 — 예전 mergeableGroups 자리): 가득 찬 내 무더기마다 하나, 바닥 ID 순.
+ * first = 무더기 바닥 타워 (그 칸을 누르면 mergeStack), count = 그 칸 타워 수.
+ */
+export function mergeableStackGroups(ctx: MatchContext, world: World, player: number): MergeGroup[] {
+  return fullStacks(ctx, world, player).map((st) => ({ tower: (st[0] as Tower).tower, count: st.length, first: st[0] as Tower }));
+}

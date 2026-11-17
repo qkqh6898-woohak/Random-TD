@@ -123,7 +123,7 @@ export function summonStack(ctx: MatchContext, world: World, player: number, pre
   });
   const at = placementFor(ctx, world, player, roll.tower, prefer);
   if (!at) {
-    world.emit('summonFail', { player, x: fx, y: fy, reason: 'full' });
+    world.emit('summonFail', { player, x: fx, y: fy, reason: 'full', rolled: true });
     return null;
   }
   spendGold(state, summonCost(ctx));

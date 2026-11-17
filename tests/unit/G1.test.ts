@@ -504,3 +504,92 @@ describe('결정성: 새 명령이 든 판의 리플레이 왕복·저장 복원
     expect(createMatch(data, { seed: 1, mode: 'infinite' }).towers().filter((t) => isTower(t))).toHaveLength(0);
   });
 });
+
+describe('G-1 화면 모델 (순수)', () => {
+  it('칸 무더기 그리기 자리: 1개 가운데·크기 1, 2개 좌우, 3개 삼각형 (뒤 가운데 + 앞 둘)', async () => {
+    const { stackSlot } = await import('../../src/view/render/stackGeom');
+    expect(stackSlot(0, 1)).toEqual({ dx: 0, dy: 0, scale: 1 });
+    expect(stackSlot(0, 2).dx).toBeLessThan(0);
+    expect(stackSlot(1, 2).dx).toBeGreaterThan(0);
+    const three = [0, 1, 2].map((i) => stackSlot(i, 3));
+    expect(three[0]!.dy).toBeLessThan(three[1]!.dy);
+    expect(three.every((s) => s.scale < stackSlot(0, 2).scale)).toBe(true);
+  });
+
+  it('소환 시트: 확률 줄·천장 글자·버튼 상태', async () => {
+    const { summonSheetModel, oddsLine } = await import('../../src/ui/sheets/g1Models');
+    const m = realInfinite(61);
+    const factions = rules.factionOrder.map((id) => ({ id, name: id, color: '#fff' }));
+    const model = summonSheetModel(m.ctx, m.world, 0, factions, 2, data.game.summonGamble.kinds);
+    expect(model.normal.pity).toBe('천장까지 30회 (레어)');
+    expect(model.rows.map((r) => r.odds)).toEqual([
+      '노말 55% · 레어 35% · 유니크 10%',
+      '노말 70% · 레어 30%',
+      '꽝 75% · 유니크 22% · 히어로 3%',
+      '노말\u00a091.6% · 레전드\u00a08% · 신\u00a00.4%',
+    ]);
+    expect(model.rows[3]!.state).toBe('ok');
+    m.state.pity[0]![4] = 25;
+    const hot = summonSheetModel(m.ctx, m.world, 0, factions, 2, data.game.summonGamble.kinds);
+    expect(hot.rows[3]!.pity).toBe('다음 1회 레전드 확정!');
+    expect(hot.rows[3]!.odds).toBe('레전드 95.23% · 신 4.77%');
+    m.state.gold = 0;
+    expect(summonSheetModel(m.ctx, m.world, 0, factions, 2, data.game.summonGamble.kinds).normal.state).toBe('gold');
+    expect(oddsLine([{ grade: 'none', bp: 0 }, { grade: 'rare', bp: 10000 }])).toBe('레어 100%');
+  });
+
+  it('신화 도감: 발견 전 ??? + 힌트 재료 하나, 발견하면 이름·재료·[제작], 재료가 모이면 새로 발견', async () => {
+    const { codexSheetModel, hintMaterial, newlyDiscovered } = await import('../../src/ui/sheets/g1Models');
+    const m = arena(63);
+    const towers = data.towers.towers;
+    const none = codexSheetModel(m.ctx, m.world, 0, towers, new Set());
+    expect(none.summary).toBe('발견 0/12');
+    const gk = none.rows.find((r) => r.id === 'goldking')!;
+    expect(gk.name).toBe('???');
+    expect(gk.materials.map((x) => x.name)).toEqual(['???', '???', '연금술사']); // 힌트 = 등급이 가장 높은 재료 (히어로 연금술사)
+    expect(gk.craftable).toBe(false);
+    expect(hintMaterial(['a', 'b', 'c'], (id) => ({ a: 1, b: 3, c: 3 })[id] ?? 0)).toBe(1);
+    const p = m.map.buildable;
+    stack(m, 'miner', p[0]![0], p[0]![1]);
+    stack(m, 'merchant', p[1]![0], p[1]![1]);
+    stack(m, 'alchemist', p[2]![0], p[2]![1]);
+    expect(newlyDiscovered(m.rules, ownedCounts(m.world, 0), new Set())).toEqual(['goldking']);
+    const found = codexSheetModel(m.ctx, m.world, 0, towers, new Set(['goldking']));
+    const row = found.rows.find((r) => r.id === 'goldking')!;
+    expect(row.name).toBe('황금 왕');
+    expect(row.materials.every((x) => x.onBoard)).toBe(true);
+    expect(row.craftable).toBe(true);
+    expect(found.ready).toBe(1);
+  });
+
+  it('계정 도감 기록: 예전 저장(도감 없음)도 읽고, 새로 기록하면 칸 객체로 남는다 (G-3 잠김/해방 필드를 더할 수 있게)', async () => {
+    const { createAccountStore, ACCOUNT_KEY } = await import('../../src/meta/account');
+    const { MemoryStorage } = await import('../../src/save/storage');
+    const st = new MemoryStorage();
+    st.setItem(ACCOUNT_KEY, JSON.stringify({ v: 1, level: 3, hidden: ['h01'], guides: ['firstMerge'] }));
+    const a = createAccountStore(st);
+    expect(a.level()).toBe(3);
+    expect(a.codexFound().size).toBe(0);
+    expect(a.recordCodex('goldking')).toBe(true);
+    expect(a.recordCodex('goldking')).toBe(false);
+    const saved = JSON.parse(st.getItem(ACCOUNT_KEY)!);
+    expect(saved).toMatchObject({ level: 3, hidden: ['h01'], guides: ['firstMerge'], codex: { goldking: { found: true } } });
+    // 모르는 필드는 그대로 둔다 (나중 버전이 더한 값)
+    st.setItem(ACCOUNT_KEY, JSON.stringify({ ...saved, codex: { goldking: { found: true, unlocked: 2 } } }));
+    const b = createAccountStore(st);
+    b.recordCodex('festival');
+    expect(JSON.parse(st.getItem(ACCOUNT_KEY)!).codex).toEqual({ festival: { found: true }, goldking: { found: true, unlocked: 2 } });
+  });
+
+  it('3택 1 고르기 창 제목·부제, 연쇄 승급·천장 글자', async () => {
+    const { cardChoiceModel } = await import('../../src/ui/panels/choiceModel');
+    const { chainMergeText, pityText } = await import('../../src/ui/messages');
+    const pick = cardChoiceModel(rules, { player: 0, boss: 1, cards: ['pickAtk', 'pickAps', 'pickUlt'], stage: 15 });
+    expect(pick.title).toBe('✨ 강화 카드 1장을 고르세요');
+    expect(pick.sub).toContain('15단계');
+    expect(pick.key).not.toBe(cardChoiceModel(rules, { player: 0, boss: 1, cards: ['pickAtk', 'pickAps', 'pickUlt'] }).key);
+    expect(chainMergeText(3)).toBe('연쇄 승급 ×3!');
+    expect(pityText(7, '레어')).toBe('천장까지 7회');
+    expect(pityText(0, '레어')).toBe('다음 1회 레어 확정!');
+  });
+});

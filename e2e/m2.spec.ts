@@ -35,6 +35,7 @@ type SceneLike = {
     towers(): { id: number; tx: number; ty: number; tower: string }[];
     mobCount(): number;
     map: { buildable: [number, number][] };
+    rules: { towerOrder: string[] };
     world: { enqueue(c: unknown): { ok: boolean } };
   };
   renderedTowerCount: number;
@@ -120,12 +121,12 @@ async function shot(page: Page, name: string, docsName?: string): Promise<void> 
   }
 }
 
-/** 순환의 정원 v2(T-3 2×2 블록) 고리 안쪽 블록 칸 (경로와 맞닿음) */
+/** 순환의 정원 v3(G-1 큰 칸) 배치 칸 — 길에 닿은 칸부터 */
 const RING: [number, number][] = [
-  [1, 3], [5, 3], [1, 7], [5, 7], [2, 3], [4, 3], [2, 7], [4, 7], [1, 4], [5, 4], [1, 6], [5, 6], [2, 4], [4, 6],
+  [0, 1], [1, 1], [4, 1], [5, 1], [2, 3], [3, 3], [2, 4], [3, 4], [0, 6], [1, 6], [4, 6], [5, 6], [0, 0], [1, 0],
 ];
-/** 배치 칸 수 (순환의 정원 v2) */
-const CELLS = 32;
+/** 배치 칸 수 (순환의 정원 v3) */
+const CELLS = 20;
 
 test('빈 배치 칸 탭 → 소환: 타워가 보이고 돈 1,000 → 900원, 🗼 1/32 / 경로·타워 칸 탭은 아무 일 없음', async ({ page }) => {
   const errors = collectErrors(page);
@@ -134,7 +135,7 @@ test('빈 배치 칸 탭 → 소환: 타워가 보이고 돈 1,000 → 900원, �
   // T-2: 비용은 [🎲 소환 100원] 버튼이 보여 준다 (안내 글자는 칸이 가득 찼을 때만)
   await expect(page.getByTestId('hud-summon')).toContainText('100원');
   await expect(page.getByTestId('hud-hint')).toHaveText('');
-  await tapTile(page, 1, 3);
+  await tapTile(page, 0, 1);
   await expect(page.getByTestId('hud-gold')).toHaveText('900원');
   await expect(page.getByTestId('hud-towers')).toHaveText(`1/${CELLS}`);
   let v = await view(page);
@@ -145,12 +146,12 @@ test('빈 배치 칸 탭 → 소환: 타워가 보이고 돈 1,000 → 900원, �
     const s = (window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } }).__rtd.game.scene.getScene('Game') as SceneLike;
     return s.match.towers()[0]!;
   });
-  expect([t.tx, t.ty]).toEqual([1, 3]);
+  expect([t.tx, t.ty]).toEqual([0, 1]);
   expect(['miner', 'goblin', 'archer', 'apprentice', 'warrior']).toContain(t.tower);
 
   // 경로 칸 (0, 2)과 이미 타워가 있는 칸 → 아무 일 없음
   await tapTile(page, 0, 2);
-  await tapTile(page, 1, 3);
+  await tapTile(page, 0, 1);
   await page.waitForTimeout(200);
   v = await view(page);
   expect(v.towers).toBe(1);
@@ -164,7 +165,9 @@ test('돈 부족: 10번 소환해 0원 → 11번째 탭은 "100원이 필요해�
   await start(page);
   for (const [x, y] of RING.slice(0, 10)) await tapTile(page, x, y);
   await expect(page.getByTestId('hud-gold')).toHaveText('0원');
-  await expect(page.getByTestId('hud-towers')).toHaveText(`10/${CELLS}`);
+  // G-1 칸 무더기: 🗼 = 차지한 칸 수 (같은 캐릭터는 같은 칸에 쌓인다)
+  await expect(page.getByTestId('hud-towers')).toHaveText(new RegExp(`^([1-9]|10)/${CELLS}$`));
+  expect((await view(page)).towers).toBe(10);
   await expect(page.getByTestId('hud-hint')).toHaveClass(/is-short/);
   await expect(page.getByTestId('hud-summon')).toHaveClass(/is-off/);
   await tapTile(page, 4, 4);
@@ -188,16 +191,19 @@ test('배치 칸이 가득 차면 타워 칸 탭 → "빈 칸이 없어요 — �
   await page.evaluate(() => {
     const s = (window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } }).__rtd.game.scene.getScene('Game') as SceneLike;
     s.match.world.enqueue({ type: 'debugAddGold', amount: 10_000 });
-    for (const [x, y] of s.match.map.buildable) s.match.world.enqueue({ type: 'summon', x, y });
+    // G-1 칸 무더기: 모든 칸에 같은 캐릭터 3개씩 (두 종류 번갈아) → 빈 칸도 들어갈 무더기도 없음
+    s.match.map.buildable.forEach(([x, y], i) => {
+      for (let k = 0; k < 3; k++) s.match.world.enqueue({ type: 'debugTower', x, y, t: s.match.rules.towerOrder.indexOf(i % 2 ? 'goblin' : 'archer') });
+    });
   });
   await expect(page.getByTestId('hud-towers')).toHaveText(`${CELLS}/${CELLS}`);
   // 승급 버튼이 보이면 안내는 비고(잘리지 않게, M4 검토 반영), 없으면 '빈 칸이 없어요' — 어느 쪽이든 글자가 잘리지 않는다
   await expect(page.getByTestId('hud-merge-ready')).toBeVisible();
   await expect(page.getByTestId('hud-hint')).toHaveText('');
-  await expect.poll(async () => (await view(page)).renderedTowers).toBe(CELLS);
-  await tapTile(page, 4, 4);
+  await expect.poll(async () => (await view(page)).renderedTowers).toBe(CELLS * 3);
+  await tapTile(page, 2, 4);
   await expect(page.locator('.toast', { hasText: '빈 칸이 없어요 — 승급으로 칸을 비워 보세요' })).toBeVisible();
-  expect((await view(page)).towers).toBe(CELLS);
+  expect((await view(page)).towers).toBe(CELLS * 3);
   await shot(page, 'M2-full');
   expect(errors).toEqual([]);
 });
@@ -333,7 +339,7 @@ test('검토 반영: 느린 프레임(한 번에 5틱)에도 소환 연출과 "1
   const r = await page.evaluate(() => {
     const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
     const before = { fx: s.summonEffects, tick: s.match.tick };
-    s.match.world.enqueue({ type: 'summon', x: 1, y: 3 });
+    s.match.world.enqueue({ type: 'summon', x: 0, y: 1 });
     s.update(s.time.now, 300);
     return { fx: s.summonEffects - before.fx, ticks: s.match.tick - before.tick, towers: s.match.towers().length };
   });
@@ -343,7 +349,7 @@ test('검토 반영: 느린 프레임(한 번에 5틱)에도 소환 연출과 "1
   // 돈을 다 쓴 뒤, 화면 검사 없이 들어간 소환(sim이 거절) → 느린 프레임에도 알림
   await page.evaluate(() => {
     const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
-    const cells: [number, number][] = [[5, 3], [1, 7], [5, 7], [2, 3], [4, 3], [2, 7], [4, 7], [1, 4], [5, 4]];
+    const cells: [number, number][] = [[1, 1], [4, 1], [5, 1], [2, 3], [3, 3], [2, 4], [3, 4], [0, 6], [1, 6]];
     for (const [x, y] of cells) s.match.world.enqueue({ type: 'summon', x, y });
     s.debugFastForward(1);
   });
@@ -351,7 +357,7 @@ test('검토 반영: 느린 프레임(한 번에 5틱)에도 소환 연출과 "1
   await expect(page.locator('.toast')).toHaveCount(0);
   await page.evaluate(() => {
     const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
-    s.match.world.enqueue({ type: 'summon', x: 4, y: 4 });
+    s.match.world.enqueue({ type: 'summon', x: 5, y: 7 });
     s.update(s.time.now, 300);
   });
   await expect(page.locator('.toast', { hasText: '100원이 필요해요' })).toBeVisible();
@@ -383,7 +389,7 @@ test('검토 반영: 한꺼번에 뜬 피해 숫자가 겹치지 않는다 (타�
     const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
     s.match.world.enqueue({ type: 'debugAddGold', amount: 1000 });
     // 경로 바로 안쪽·바깥쪽 칸 20개 (몹이 지나갈 때 여러 타워가 같이 때린다)
-    const near = s.match.map.buildable.filter(([x, y]) => x <= 2 || x >= 6 || y <= 2 || y >= 8).slice(0, 20);
+    const near = s.match.map.buildable.slice(0, 20); // G-1 큰 칸: 20칸 모두 길 둘레
     for (const [x, y] of near) s.match.world.enqueue({ type: 'summon', x, y });
     s.debugFastForward(1);
   });

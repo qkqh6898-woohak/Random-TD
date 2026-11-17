@@ -29,6 +29,20 @@ export interface AccountStore {
   markGuide(id: string): boolean;
   /** 본 도움말 기록을 모두 지운다 ([도움말 다시 보기]) */
   resetGuides(): void;
+  /** G-1 신화 도감: 발견한 조합(결과 타워 id) */
+  codexFound(): ReadonlySet<string>;
+  /** 조합 발견 기록. 새로 기록했으면 true */
+  recordCodex(id: string): boolean;
+}
+
+/**
+ * 신화 도감 한 칸 (G-1). 조합마다 객체로 두어 나중에 값을 더할 수 있게 한다
+ * (G-3 '조각 모아 히든 영웅 해방'의 잠김/해방 표시 등 — 모르는 필드는 읽을 때 그대로 둔다).
+ */
+export interface CodexEntry {
+  /** 발견함 (만들었거나 재료를 한꺼번에 가졌다) */
+  found?: boolean;
+  [extra: string]: unknown;
 }
 
 interface AccountSave {
@@ -36,17 +50,23 @@ interface AccountSave {
   level: number;
   hidden: string[];
   guides: string[];
+  /** G-1 신화 도감 (조합 id → 칸). 예전 저장에는 없다 → 빈 객체 */
+  codex: Record<string, CodexEntry>;
 }
 
 function parse(raw: string | null): AccountSave {
-  const empty: AccountSave = { v: VERSION, level: 1, hidden: [], guides: [] };
+  const empty: AccountSave = { v: VERSION, level: 1, hidden: [], guides: [], codex: {} };
   if (!raw) return empty;
   try {
     const o = JSON.parse(raw) as Partial<AccountSave>;
     const level = typeof o.level === 'number' && Number.isSafeInteger(o.level) && o.level >= 1 ? o.level : 1;
     const hidden = Array.isArray(o.hidden) ? o.hidden.filter((x): x is string => typeof x === 'string') : [];
     const guides = Array.isArray(o.guides) ? o.guides.filter((x): x is string => typeof x === 'string') : [];
-    return { v: VERSION, level, hidden, guides };
+    const codex: Record<string, CodexEntry> = {};
+    if (o.codex && typeof o.codex === 'object' && !Array.isArray(o.codex)) {
+      for (const [id, e] of Object.entries(o.codex)) if (e && typeof e === 'object' && !Array.isArray(e)) codex[id] = { ...(e as CodexEntry) };
+    }
+    return { v: VERSION, level, hidden, guides, codex };
   } catch {
     return empty;
   }
@@ -56,8 +76,11 @@ export function createAccountStore(storage: KeyValueStorage): AccountStore {
   const save = parse(storage.getItem(ACCOUNT_KEY));
   const found = new Set(save.hidden);
   const guides = new Set(save.guides);
+  const codexFound = new Set(Object.entries(save.codex).filter(([, e]) => e.found === true).map(([id]) => id));
   const write = (): void => {
-    storage.setItem(ACCOUNT_KEY, JSON.stringify({ v: VERSION, level: save.level, hidden: [...found].sort(), guides: [...guides].sort() }));
+    const codex: Record<string, CodexEntry> = {};
+    for (const id of Object.keys(save.codex).sort()) codex[id] = save.codex[id] as CodexEntry;
+    storage.setItem(ACCOUNT_KEY, JSON.stringify({ v: VERSION, level: save.level, hidden: [...found].sort(), guides: [...guides].sort(), codex }));
   };
   return {
     level: () => save.level,
@@ -79,6 +102,14 @@ export function createAccountStore(storage: KeyValueStorage): AccountStore {
       if (guides.size === 0) return;
       guides.clear();
       write();
+    },
+    codexFound: () => codexFound,
+    recordCodex(id) {
+      if (codexFound.has(id)) return false;
+      codexFound.add(id);
+      save.codex[id] = { ...(save.codex[id] ?? {}), found: true };
+      write();
+      return true;
     },
   };
 }

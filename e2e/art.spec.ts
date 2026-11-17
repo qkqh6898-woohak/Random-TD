@@ -62,7 +62,7 @@ async function startGame(page: Page, url: string): Promise<void> {
 }
 
 /**
- * 개발자 debugTower로 타워를 순환의 정원 배치 칸마다 하나씩 놓는다 (T-3: 칸이 32개라 65종 중 등급을 고르게 32종 —
+ * 개발자 debugTower로 타워를 순환의 정원 배치 칸마다 하나씩 놓는다 (G-1 큰 칸: 칸이 20개라 65종 중 등급을 고르게 20종 —
  * 크기 비교용 음유시인·궁수·운명의 여신은 꼭 넣는다). 놓은 수를 돌려준다.
  */
 async function placeAllTowers(page: Page): Promise<number> {
@@ -126,12 +126,12 @@ test('전투 배경: 1단계 낮 → ⏭로 11단계가 되면 노을 밴드, �
   const errors = collectErrors(page);
   await startGame(page, '/?dev=1&seed=7');
   await expect.poll(() => sim(page, (s) => s.backgroundKey), { timeout: 20_000 }).toBe('bg-t01-b1');
-  // 캐릭터별 크기: 등급을 고르게 32종을 놓으면 그림 배수가 여러 가지 (요정은 작고 신은 크다)
-  expect(await placeAllTowers(page)).toBe(32);
-  await expect.poll(() => sim(page, (s) => s.towerLayer.count)).toBe(32);
+  // 캐릭터별 크기: 등급을 고르게 20종(G-1 큰 칸 20칸)을 놓으면 그림 배수가 여러 가지 (요정은 작고 신은 크다)
+  expect(await placeAllTowers(page)).toBe(20);
+  await expect.poll(() => sim(page, (s) => s.towerLayer.count)).toBe(20);
   const scales = await sim(page, (s) => s.match.towers().map((t) => ({ id: t.tower, k: s.towerLayer.artScaleOf(t.id) })));
   const byId = new Map(scales.map((x) => [x.id, x.k ?? 0]));
-  expect(new Set(scales.map((x) => x.k)).size).toBeGreaterThan(12);
+  expect(new Set(scales.map((x) => x.k)).size).toBeGreaterThan(8);
   expect(byId.get('bard')!).toBeLessThan(byId.get('archer')!);
   expect(byId.get('archer')!).toBeLessThan(byId.get('fate')!);
   if (SAVE_DOCS) await settle(page);

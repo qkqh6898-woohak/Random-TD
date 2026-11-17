@@ -142,17 +142,20 @@ test('눌러서 바로 승급: 승급 가능한 타워를 누르면 패널 없�
   const normals = await idsOfGrade(page, 'normal');
   const cells = await freeCells(page, 4);
   const [a, b, c, d] = cells as [[number, number], [number, number], [number, number], [number, number]];
+  // G-1 칸 무더기: 같은 타워 3개가 한 칸(b)에 쌓여야 승급한다 (사용자 결정 — 예전엔 아무 칸이나 3개)
+  void a;
+  void c;
   await place(page, [
-    [a[0], a[1], normals[0]!],
     [b[0], b[1], normals[0]!],
-    [c[0], c[1], normals[0]!],
+    [b[0], b[1], normals[0]!],
+    [b[0], b[1], normals[0]!],
     [d[0], d[1], normals[1]!],
   ]);
   // 승급할 수 없는 타워(같은 종류 1개) → 패널
   await tapTile(page, d[0], d[1]);
   await expect.poll(() => inScene(page, (s) => s.panelOpen, null)).toBe(true);
   await page.locator('[data-action="panel-close"]').click();
-  // 승급 가능한 타워 → 패널 없이 승급, 결과는 누른 칸 (레어)
+  // 승급 가능한 칸(3개) → 패널 없이 승급, 결과는 누른 칸 (레어)
   await tapTile(page, b[0], b[1]);
   await expect.poll(() => towerCount(page)).toBe(2);
   const atB = await inScene(page, (s, p) => s.match.towers().find((t) => t.tx === p[0] && t.ty === p[1])?.tower ?? null, b);
@@ -162,10 +165,9 @@ test('눌러서 바로 승급: 승급 가능한 타워를 누르면 패널 없�
   // 설정 끄기 (일시정지 메뉴) → 승급 가능한 타워를 누르면 패널
   await place(page, [
     [a[0], a[1], normals[2]!],
-    [c[0], c[1], normals[2]!],
+    [a[0], a[1], normals[2]!],
+    [a[0], a[1], normals[2]!],
   ]);
-  const extra = (await freeCells(page, 1))[0]!;
-  await place(page, [[extra[0], extra[1], normals[2]!]]);
   await page.getByRole('button', { name: '일시정지' }).click();
   const sw = page.getByTestId('pause-tap-merge');
   await expect(sw).toHaveAttribute('aria-checked', 'true');

@@ -67,8 +67,9 @@ async function placeThreeMiners(page: Page): Promise<void> {
       m.state.debug = true;
       const t = m.rules.towerOrder.indexOf('miner');
       const used = new Set(m.towers().map((k) => `${k.tx},${k.ty}`));
-      const free = m.map.buildable.filter(([x, y]) => !used.has(`${x},${y}`)).slice(0, 3);
-      for (const [x, y] of free) m.world.enqueue({ type: 'debugTower', x, y, t });
+      // G-1 칸 무더기: 빈 칸 하나에 광부 3개 (3개가 쌓인 칸이 승급한다)
+      const free = m.map.buildable.filter(([x, y]) => !used.has(`${x},${y}`)).slice(0, 1);
+      for (const [x, y] of [...free, ...free, ...free]) m.world.enqueue({ type: 'debugTower', x, y, t });
       s.debugFastForward(1);
       m.state.debug = was;
     },
@@ -403,14 +404,15 @@ test.describe('A-1 화면 흔들림·주사위', () => {
         const m = s.match;
         m.state.gold += 100000;
         const used = new Set(m.towers().map((k) => `${k.tx},${k.ty}`));
-        const free = m.map.buildable.filter(([x, y]) => !used.has(`${x},${y}`)).slice(0, 20);
+        // G-1 큰 칸 맵(20칸): 남은 빈 칸 모두 (12칸 이상)
+        const free = m.map.buildable.filter(([x, y]) => !used.has(`${x},${y}`));
         for (const [x, y] of free) m.world.enqueue({ type: 'summon', x, y });
         return free.length;
       },
       null,
     );
-    expect(queued).toBe(20);
-    await expect(page.getByTestId('hud-towers')).toHaveText(/^23\//);
+    expect(queued).toBeGreaterThanOrEqual(12);
+    await expect(page.getByTestId('hud-towers')).toHaveText(/^20\//);
     expect((await inScene(page, (s) => s.diceStats, null)).peak).toBe(12);
 
     // 뒤로 가기: 열린 타워 패널(승급 결과) → 닫힘, 강화 시트 → 닫힘, 그다음 일시정지 → 계속
