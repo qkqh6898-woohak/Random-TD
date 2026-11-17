@@ -1050,3 +1050,9 @@
 - 완료 조건 (합친 상태): Vitest **1,299 통과 · 3 건너뜀**(69파일), check·build·`android/check-java.sh`(AssetPathsTest·UpdateLogicTest) 통과, 전체 E2E **150 통과 · 1 실패 · 1 건너뜀**(43.0분).
   실패 1 = `m4` '10단계 박쥐 여왕': B-2 공격력 ×1.5로 레전드를 놓는 동안 보스가 이미 죽어 보상이 기준 돈(gold0)에 들어가 버린 테스트 순서 문제 → 돈을 놓기 전에 재도록 고침, m4 2회 반복 20/20.
 - 다음 main 푸시 = 자동 v0.1.10 (versionCode 1010). v0.1.9 이하에는 업데이트 기능이 없어 v0.1.10은 직접 한 번 설치.
+
+### 피드백 #4 — `npm run check`가 Python 3.11에서 실패 (fix/feedback-4)
+- 원인: `tools/gen_tables.py` 마지막 '검사 통과' 출력 줄이 f-string 안에 같은 큰따옴표 f-string을 넣음(PEP 701, Python 3.12+ 전용) → 3.11에서는 파일 전체가 `SyntaxError`.
+- 고침: 맵별 배치 칸 문자열을 `_cells` 변수로 먼저 만든 뒤 넣음. 검사 내용·출력 문구는 그대로(3.10·3.11·3.12·3.13 출력 바이트 단위 같음, 3.11로 문서 다시 만들어도 docs 변화 없음). 게임 코드·데이터 변경 없음.
+- 테스트: `tests/unit/gen-tables-python.test.ts` — 설치된 `python3.11`로 `--check` 통과·구문 분석, 설치된 3.11~3.13 출력이 같음(없는 버전은 건너뜀). 고치기 전 3개 실패 확인.
+- 확인: Vitest 1,302 통과 · 3 건너뜀(70파일), `npm run check`(python3 = 3.11.17)·`npm run build` 통과, E2E `smoke.spec` 5 통과(이 컨테이너는 Playwright 기본 headless shell이 없어 `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). 전체 E2E는 도구 스크립트만 바뀌어 돌리지 않음.
