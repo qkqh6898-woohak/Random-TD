@@ -48,6 +48,9 @@ npm start           # 게임 실행 (= npm run dev) → 브라우저에서 http:
 SHA-256을 확인하고 안드로이드 설치 확인 창을 연다(같은 앱 ID·같은 서명 → 업데이트, 저장한 판·기록 그대로). [나중에]는 다음에 켤 때까지 묻지 않는다. 처음 한 번은 '출처를 알 수 없는 앱 설치'를 허용해야 한다.
 네트워크는 자바(`android/src/…/Updater.java`)만 쓰고 WebView는 여전히 APK 안 파일만 연다. 브라우저·PWA에서는 아무것도 하지 않는다. v0.1.9 이하에는 이 기능이 없어 v0.1.10은 한 번 직접 설치해야 한다.
 
+**게임 안 피드백 (FB-1)**: 게임 안 [💬 피드백 보내기]로 GitHub 이슈(양식 `feedback`)를 올리면, Claude가 고칠 브랜치 `fix/feedback-<이슈 번호>`를 만들고 PR이 열린다(저장소 주인이 올리고 `feedback` 라벨을 붙인 이슈만).
+`main`에는 직접 올리지 않으며, PR을 합치는 것은 사람이 한다.
+
 ### GitHub에서 빌드·서명·게시
 
 `.github/workflows/android.yml` (**Android APK**)이 `main`·`feat/android`에 푸시할 때와 수동 실행(workflow_dispatch) 때 돈다. 작업은 셋 (A-1b: 서명을 외부 코드에서 떼어 냄):
