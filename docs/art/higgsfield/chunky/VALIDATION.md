@@ -5,11 +5,11 @@
 ## 생성 및 파일 검수
 
 - 타워 65 + 각성 53 + 적 32 + 인물 흉상 9 = 159장. Higgsfield `gpt_image_2_6`, 1:1, medium, 1k PNG.
-- 첨부한 운빨존망겜 화면을 우선해 159개 프롬프트를 다시 작성했다. 최종 프롬프트는 `queue.json`, 원문/수정문 해시는 `prompt-audit.json`.
+- 통통한 캐주얼 모바일 디펜스 그림체(chunky casual mobile defense style)를 우선해 159개 프롬프트를 다시 작성했다. 최종 프롬프트는 `queue.json`, 원문/수정문 해시는 `prompt-audit.json`.
 - 총 167회 생성, 최종 159장 선택, 8장 재생성. 최종 작업 ID는 `jobs.json`, 제외한 작업과 이유는 `rejections.json`, 참조 설정은 `generation-config.json`.
 - PNG 원본은 로컬 `tmp/chunky_raw/<file>.png`. 원본·임시 스크립트·키는 커밋하지 않는다. 원본 SHA-256은 `asset-verification.json`에 기록했다.
 - `python3 -I tools/chunky_build.py tmp/chunky_raw` → **변환 159개 · 없음 0개**. 기존 이름의 WebP 159개가 모두 바뀌었다. manifest·코드·테스트는 변경하지 않았다.
-- [159장 확인 그림](contact-sheet-159.png): 각 캐릭터를 밝은 배경과 어두운 배경에 나란히 배치했다. 전체를 12장씩 확대 검수해 눈에 띄는 흰 테두리·잘림 0건. 흰색 부분은 캐릭터 내부 색을 유지한다.
+- [159장 확인 그림](contact-sheet-159.webp): 각 캐릭터를 밝은 배경과 어두운 배경에 나란히 배치했다. 전체를 12장씩 확대 검수해 눈에 띄는 흰 테두리·잘림 0건. 흰색 부분은 캐릭터 내부 색을 유지한다. (저장소 크기 때문에 G 통합에서 1536×8960 PNG 7.4MB → 1024×5973 WebP 품질 72, 약 0.9MB로 줄였다.)
 - 자동 여백 검사의 12px 기준에 걸린 5장(person_cedric, person_commander, berserker_awaken, fortuna_awaken, ruin_awaken)은 원본과 변환본에서 윤곽선이 온전히 닫혀 있음을 별도로 확인했다. 실제 캔버스 절단은 없다.
 - 긴 변 256px·알파 채널 확인. 빌드에 복사된 파일 159개가 public 원본과 바이트 단위로 일치한다.
 - 실제 새 WebP의 기본/각성 53쌍도 비교했다. 투명 캔버스에서 중앙·발밑 정렬 후 불투명도 변화 또는 RGB 차이 합계 120 초과 픽셀 비율의 최솟값은 **41.83%**. 장비·의상 변화는 육안으로도 확인했다. 세부값은 `asset-verification.json`.

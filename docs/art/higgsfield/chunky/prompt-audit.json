@@ -1,6 +1,7 @@
 {
   "base_commit": "ca86c46d437de7aaeae82c9ba561c1a252442f29",
-  "reason": "User-supplied Lucky Defense screenshots take priority over old prompt wording; originals are traceable to the base commit.",
+  "reason": "The chunky casual mobile defense style brief takes priority over old prompt wording; originals are traceable to the base commit.",
+  "note": "queue.json prompt wording was neutralized after generation (style reference phrasing only); prompt_sha256 is the hash of the wording used at generation time.",
   "prompts": [
     {
       "file": "miner",
