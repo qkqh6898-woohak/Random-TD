@@ -104,8 +104,10 @@ body {
 .btn {
   font: inherit;
   color: var(--text);
-  background: #2b3550;
-  border: 0.4cqw solid var(--panel-line);
+  /* G-2: 테마(theme.css)가 변수로 바꾼다 — 값이 없으면 예전 색 */
+  background: var(--btn-bg, #2b3550);
+  border: 0.4cqw solid var(--btn-line, var(--panel-line));
+  box-shadow: var(--btn-shadow, none);
   border-radius: 2.4cqw;
   padding: 2cqw 4cqw;
   font-size: 4cqw;

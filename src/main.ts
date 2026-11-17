@@ -7,6 +7,7 @@
  */
 import type Phaser from 'phaser';
 import './ui/styles.css';
+import './ui/theme.css';
 import { loadGameData } from './data/load';
 import { allLooks } from './art/characters/looks';
 import { createAccountStore } from './meta/account';
@@ -23,6 +24,7 @@ import { UpdateService } from './update/UpdateService';
 import { mountUpdateDialog } from './ui/screens/UpdateDialog';
 import { describeFatal, installFatalHandlers, type FatalPhase } from './ui/fatal';
 import { UiRoot } from './ui/root';
+import { applyTheme } from './ui/theme';
 import { fitStageToWindow, watchViewport } from './ui/stage';
 import { readUrlOptions, type GameContext } from './view/context';
 import { createGame, resizeGame } from './view/game';
@@ -34,6 +36,8 @@ function must<T extends HTMLElement>(id: string): T {
 }
 
 function boot(): void {
+  // G-2 테두리 테마 「금테 성채」: data-theme + 코드로 그린 장식 SVG 변수 (theme.css)
+  applyTheme();
   const ui = new UiRoot(must('ui-root'));
   let game: Phaser.Game | null = null;
 

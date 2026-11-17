@@ -5,7 +5,8 @@
  *  a. 빈 소환 칸(큰 타워 바로 위·옆, 0번 줄 포함)을 누르면 그 칸에 소환 — 큰 이웃의 머리가 탭을 가져가지 않는다.
  *  b. 타워 몸·커진 머리를 누르면 그 타워를 고르고 정보 패널, 패널은 고른 그림(실제 크기)을 가리지 않는다.
  *  c. 길게 눌러 끌기 이동·교환이 맞는 칸에 놓인다 (머리를 잡고 끌어도).
- *  d. 소환·승급 주사위는 눈이 바뀌며 구르고 발밑에 세 가지 색 별, 연출 끄기·동작 줄이기면 주사위·별 없음.
+ *  d. (G-2: 주사위 → 캐릭터 초상 카드) 소환·승급 카드는 뒷면 → 앞면으로 뒤집히며 커진 머리 끝 위에 멈추고, 발밑 소환문·승급 등급 별,
+ *     연출 끄기·동작 줄이기면 카드·소환문·별 없음.
  *  e. 0번 줄 큰 머리는 HUD 아래까지만 (일시정지·배속 누르기 그대로).
  *  f. 꽉 찬 판: 모든 칸에 타워 → 스크린샷 + 칸마다 탭이 그 타워.
  * 스크린샷 (SAVE_SCREENS=1): docs/screens/B1-crowded-412.png · B1-empty-pad-tap.png · B1-info-panel-big.png · B1-summon-fx.png · B1-360.png.
@@ -33,7 +34,7 @@ type SceneLike = {
   selectedTowerId: number | null;
   panelOpen: boolean;
   dragState: { id: number } | null;
-  diceStats: { active: number; shown: number; peak: number };
+  summonFxStats: { active: number; shown: number; peak: number; portals: number; silhouettes: number; stars: number };
   tweens: { timeScale: number };
   debugFastForward(n: number): number;
 };
@@ -318,40 +319,40 @@ for (const [w, h] of [
   });
 }
 
-test('d. 소환·승급 주사위는 눈이 바뀌며 구르고 발밑에 세 가지 색 별 · 연출 끄기·동작 줄이기면 주사위·별 없음', async ({ page }) => {
+test('d. 소환·승급 초상 카드는 뒷면 → 앞면으로 뒤집히며 얼굴을 가리지 않는 자리(머리 위, 윗줄은 머리 옆)에 멈추고 발밑 소환문 · 승급은 등급 별 (주사위 없음)', async ({ page }) => {
   test.slow();
   const errors = collectErrors(page);
   await start(page);
-  // 트윈을 10배 느리게 → 0.24초 굴림을 헤드리스(초당 몇 프레임)에서도 여러 프레임 본다
+  // 트윈을 10배 느리게 → 0.34초 뒤집기를 헤드리스(초당 몇 프레임)에서도 여러 프레임 본다
   await page.evaluate(() => {
-    const w = window as unknown as { fx: { faces: Record<string, string[]>; stars: number[]; minY: Record<string, number> }; __rtd: { game: { scene: { getScene(k: string): unknown } } } };
-    const s = w.__rtd.game.scene.getScene('Game') as {
-      tweens: { timeScale: number };
-      events: { on(e: string, f: () => void): void };
-      children: { list: { name: string; type: string; depth: number; y: number; texture?: { key: string }; commandBuffer?: number[] }[] };
-    };
+    type Obj = { name: string; x: number; y: number; visible: boolean; list?: Obj[]; texture?: { key: string } };
+    const w = window as unknown as { fx: { faces: Record<string, string[]>; minY: Record<string, number>; lastX: Record<string, number>; names: string[]; dieTex: number }; __rtd: { game: { scene: { getScene(k: string): unknown } } } };
+    const s = w.__rtd.game.scene.getScene('Game') as { tweens: { timeScale: number }; events: { on(e: string, f: () => void): void }; children: { list: Obj[] } };
     s.tweens.timeScale = 0.1;
-    w.fx = { faces: {}, stars: [], minY: {} };
+    w.fx = { faces: {}, minY: {}, lastX: {}, names: [], dieTex: 0 };
     s.events.on('postupdate', () => {
       for (const c of s.children.list) {
-        if (c.name.endsWith('-die') && c.texture) {
+        if (/^(summon|merge)-/.test(c.name) && !w.fx.names.includes(c.name)) w.fx.names.push(c.name);
+        if (c.texture?.key.startsWith('fx-dice-')) w.fx.dieTex++;
+        if (c.name.endsWith('-card') && c.list) {
+          // 카드 컨테이너 [뒷면, 앞면 바탕, (초상), 테]: 지금 보이는 면
+          const face = c.list[0]?.visible ? 'back' : 'front';
           const f = (w.fx.faces[c.name] ??= []);
-          if (f[f.length - 1] !== c.texture.key) f.push(c.texture.key);
+          if (f[f.length - 1] !== face) f.push(face);
           w.fx.minY[c.name] = Math.min(w.fx.minY[c.name] ?? Infinity, c.y);
-        }
-        if (c.type === 'Graphics' && c.depth === 5501 && c.commandBuffer) {
-          for (const col of [0xffedb1, 0xffaed0, 0xb7f9cb]) if (c.commandBuffer.includes(col) && !w.fx.stars.includes(col)) w.fx.stars.push(col);
+          w.fx.lastX[c.name] = c.x;
         }
       }
     });
   });
-  const fx = () => page.evaluate(() => (window as unknown as { fx: { faces: Record<string, string[]>; stars: number[]; minY: Record<string, number> } }).fx);
+  const fx = () => page.evaluate(() => (window as unknown as { fx: { faces: Record<string, string[]>; minY: Record<string, number>; names: string[]; dieTex: number } }).fx);
   const [x, y] = (await sim(page, (s) => s.match.map.buildable[5]!)) as [number, number];
   await tap(page, x, y);
-  await expect.poll(async () => (await fx()).faces['summon-die']?.length ?? 0, { message: '소환 주사위 눈이 바뀜' }).toBeGreaterThanOrEqual(3);
-  await expect.poll(async () => (await fx()).stars.length, { message: '금색·분홍·민트 별' }).toBe(3);
-  // 주사위는 커진 캐릭터의 머리 끝 위에서 멈춘다 (예전 −0.94칸이면 2배 그림의 얼굴을 가림)
-  await page.waitForTimeout(3000); // 굴림 끝 (0.24초 × 10)
+  await expect.poll(async () => (await fx()).faces['summon-card']?.join(',') ?? '', { message: '소환 카드가 뒷면 → 앞면' }).toBe('back,front');
+  expect((await fx()).names).toEqual(expect.arrayContaining(['summon-portal', 'summon-burst', 'summon-silhouette']));
+  // 카드는 커진 캐릭터의 얼굴을 가리지 않는다 (예전 −0.94칸이면 2배 그림의 얼굴을 가림): 머리 끝 위에서 멈추거나,
+  // HUD 아래 끝에 막히면(윗줄) 머리 옆(화면 가운데 쪽)으로 비켜 선다
+  await page.waitForTimeout(3500); // 떠오름·뒤집기 끝 (0.34초 × 10)
   const apex = await sim(
     page,
     (s, [tx, ty, head]) => {
@@ -359,21 +360,24 @@ test('d. 소환·승급 주사위는 눈이 바뀌며 구르고 발밑에 세 �
       const L = s.mapLayout;
       const sc = s.towerLayer.artScaleOf(t.id) ?? 1;
       const headTop = L.originY + (ty + 0.8) * L.tile - head * sc * L.tile;
-      return { sc, headTop, die: (window as unknown as { fx: { minY: Record<string, number> } }).fx.minY['summon-die']! };
+      const fxw = (window as unknown as { fx: { minY: Record<string, number>; lastX: Record<string, number> } }).fx;
+      return { sc, headTop, card: fxw.minY['summon-card']!, dx: Math.abs(fxw.lastX['summon-card']! - (L.originX + (tx + 0.5) * L.tile)) / L.tile };
     },
     [x, y, HEAD_ABOVE_FOOT] as [number, number, number],
   );
   expect(apex.sc).toBeGreaterThan(1.3);
-  expect(apex.die, JSON.stringify(apex)).toBeLessThan(apex.headTop);
+  // 위로: 카드 가운데가 머리 끝 위 / 옆으로: 카드 가운데가 머리 반폭(0.34칸 × 크기) + 카드 반폭(0.39칸)만큼 비킴
+  if (apex.card >= apex.headTop) expect(apex.dx, JSON.stringify(apex)).toBeGreaterThan(0.34 * apex.sc + 0.3);
+  else expect(apex.card, JSON.stringify(apex)).toBeLessThan(apex.headTop);
   await sim(page, (s) => {
     s.tweens.timeScale = 0.1;
     return null;
   });
-  // 주사위가 떠 있는 순간 스크린샷 (트윈 멈춤)
+  // 카드가 떠 있는 순간 스크린샷 (트윈 멈춤)
   const [x2, y2] = (await sim(page, (s) => s.match.map.buildable[14]!)) as [number, number];
   await tap(page, x2, y2);
-  await expect.poll(() => sim(page, (s) => s.diceStats.active)).toBeGreaterThan(0);
-  await page.waitForTimeout(1500); // 소환진·별이 퍼진 뒤 (트윈 0.1배속)
+  await expect.poll(() => sim(page, (s) => s.summonFxStats.active)).toBeGreaterThan(0);
+  await page.waitForTimeout(3000); // 카드가 앞면으로 뒤집힌 뒤 (트윈 0.1배속)
   await sim(page, (s) => {
     (s.tweens as unknown as { pauseAll(): void }).pauseAll();
     return null;
@@ -383,28 +387,31 @@ test('d. 소환·승급 주사위는 눈이 바뀌며 구르고 발밑에 세 �
     (s.tweens as unknown as { resumeAll(): void }).resumeAll();
     return null;
   });
-  // 승급: 같은 타워 셋 → 결과 칸 큰 주사위도 눈이 바뀐다
+  // 승급: 같은 타워 셋 → 결과 칸 큰 카드도 뒤집히고 등급 별이 튀어 오른다
   const tri = await sim(page, (s) => {
     const used = new Set(s.match.towers().map((t) => `${t.tx},${t.ty}`));
     return s.match.map.buildable.filter(([a, b]) => !used.has(`${a},${b}`)).slice(0, 3);
   });
   await place(page, tri.map(([a, b]) => [a, b, 'goblin'] as [number, number, string]));
   await sim(page, (s, c) => s.match.world.enqueue({ type: 'merge', x: c[0], y: c[1] }), tri[0]!);
-  await expect.poll(async () => (await fx()).faces['merge-die']?.length ?? 0, { message: '승급 주사위 눈이 바뀜' }).toBeGreaterThanOrEqual(3);
+  await expect.poll(async () => (await fx()).faces['merge-card']?.join(',') ?? '', { message: '승급 카드가 뒷면 → 앞면' }).toBe('back,front');
+  await expect.poll(() => sim(page, (s) => s.summonFxStats.stars), { message: '승급 등급 별' }).toBeGreaterThan(0);
+  expect((await fx()).names).toEqual(expect.arrayContaining(['merge-material-orb', 'merge-portal', 'merge-star']));
+  expect((await fx()).dieTex).toBe(0);
   expect(errors).toEqual([]);
 });
 
 for (const mode of ['effectsOff', 'reducedMotion'] as const) {
-  test(`d. ${mode === 'effectsOff' ? '연출 끄기' : '동작 줄이기'}: 소환·승급에 주사위·별 없음`, async ({ page }) => {
+  test(`d. ${mode === 'effectsOff' ? '연출 끄기' : '동작 줄이기'}: 소환·승급에 초상 카드·소환문·별 없음`, async ({ page }) => {
     const errors = collectErrors(page);
     if (mode === 'reducedMotion') await page.emulateMedia({ reducedMotion: 'reduce' });
     await start(page, mode === 'effectsOff' ? '?dev=1&seed=42' : '?debug=1&seed=42', mode === 'effectsOff' ? { effectsOff: true } : {});
     await page.evaluate(() => {
-      const w = window as unknown as { stars: number; __rtd: { game: { scene: { getScene(k: string): unknown } } } };
-      const s = w.__rtd.game.scene.getScene('Game') as { events: { on(e: string, f: () => void): void }; children: { list: { type: string; depth: number; commandBuffer?: number[] }[] } };
-      w.stars = 0;
+      const w = window as unknown as { named: number; __rtd: { game: { scene: { getScene(k: string): unknown } } } };
+      const s = w.__rtd.game.scene.getScene('Game') as { events: { on(e: string, f: () => void): void }; children: { list: { name: string }[] } };
+      w.named = 0;
       s.events.on('postupdate', () => {
-        for (const c of s.children.list) if (c.type === 'Graphics' && c.depth === 5501 && c.commandBuffer?.includes(0xffaed0)) w.stars++;
+        for (const c of s.children.list) if (/^(summon|merge)-(card|portal|burst|silhouette|star)/.test(c.name)) w.named++;
       });
     });
     const [x, y] = (await sim(page, (s) => s.match.map.buildable[5]!)) as [number, number];
@@ -415,8 +422,10 @@ for (const mode of ['effectsOff', 'reducedMotion'] as const) {
     await sim(page, (s, c) => s.match.world.enqueue({ type: 'merge', x: c[0], y: c[1] }), tri[0]!);
     await expect.poll(async () => (await towers(page)).length).toBe(2);
     await page.waitForTimeout(600);
-    expect((await sim(page, (s) => s.diceStats)).shown).toBe(0);
-    expect(await page.evaluate(() => (window as unknown as { stars: number }).stars)).toBe(0);
+    const st = await sim(page, (s) => s.summonFxStats);
+    expect(st.shown).toBe(0);
+    expect(st.portals + st.silhouettes + st.stars).toBe(0);
+    expect(await page.evaluate(() => (window as unknown as { named: number }).named)).toBe(0);
     expect(errors).toEqual([]);
   });
 }

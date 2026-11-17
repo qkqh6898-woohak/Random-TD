@@ -1050,3 +1050,51 @@
 - 완료 조건 (합친 상태): Vitest **1,299 통과 · 3 건너뜀**(69파일), check·build·`android/check-java.sh`(AssetPathsTest·UpdateLogicTest) 통과, 전체 E2E **150 통과 · 1 실패 · 1 건너뜀**(43.0분).
   실패 1 = `m4` '10단계 박쥐 여왕': B-2 공격력 ×1.5로 레전드를 놓는 동안 보스가 이미 죽어 보상이 기준 돈(gold0)에 들어가 버린 테스트 순서 문제 → 돈을 놓기 전에 재도록 고침, m4 2회 반복 20/20.
 - 다음 main 푸시 = 자동 v0.1.10 (versionCode 1010). v0.1.9 이하에는 업데이트 기능이 없어 v0.1.10은 직접 한 번 설치.
+
+## G-2 화면·캐릭터 디자인 (상태: 완료 — 갈래 `feat/g2-look`, main 27ead85에서)
+
+> 사용자 요청: ① 게임 테두리 테마 업데이트 ② 너무 주사위에 의존하지 말고 캐릭터 위주로 ③ 현재 캐릭터들도 전반적으로 디자인 수정.
+> 같은 때 다른 에이전트가 `/home/user/rtd-g1`에서 게임 시스템(연쇄 합성·소환 도박·천장·카드·궁극기·신화 도감·맵)을 바꾼다 →
+> 이 갈래는 **그림·연출·테마만** (src/sim·src/data 수치·맵·규칙 변경 없음). 공용 UI 파일(styles.css·Hud.ts·TitleScreen.ts·Game.ts)은 몇 줄만 고치고 새 파일에 담았다.
+
+- **1) 테두리 테마 「금테 성채」** (UI.md 11장): 따뜻한 호두나무 판 + 금테 + 루비·사파이어 보석.
+  - `src/ui/theme.ts`: 색 표(`THEME`)와 **코드로 그린 SVG**(모서리 금장식 4방향·보석·금줄·양옆 격자·타이틀 문장 2종·소환 아이콘) → `applyTheme()`가 `<html data-theme="gilded">` + `--orn-*` data URI 변수. 바깥 그림 없음.
+  - `src/ui/theme.css`(styles.css 뒤에 import): `--frame-*` 변수 + HUD 위 띠·아래 띠·하단 메뉴·바텀 시트·정보 패널·일시정지·타이틀 창·맵 테두리(`#game::after`)·넓은 화면 양옆(`#app` 격자 + `#stage[data-full='0']` 금테 액자).
+    모든 규칙이 `:where([data-theme='gilded'])` 아래라 원래 규칙과 우선순위가 같고, 색 있는 버튼(.hud-summon·.hud-ready·.btn-primary·.is-on)은 그대로 이긴다.
+    **크기 속성은 하나도 바꾸지 않는다** (장식은 `position:absolute; pointer-events:none` 가상 요소) → HUD 높이 재기·아래 띠 한 줄·맵 영역 그대로.
+  - styles.css 변경은 `.btn`의 배경·테두리·그림자를 변수(`--btn-bg`·`--btn-line`·`--btn-shadow`, 없으면 예전 값)로 읽게 한 3줄뿐 (처음엔 theme.css에서 `.btn`을 덮었더니 뒤에 와서 금색 [소환]·[준비 완료]까지 나무색이 됐다 — 스크린샷으로 발견해 변수로 바꿈).
+- **2) 주사위 → 캐릭터 위주 연출** (ART.md 2.4.1): `FxLayer.summonDice`(굴러가는 주사위)를 `summonFx`로 바꿈 —
+  빛 기둥 + 발밑 **소환문**(눕힌 룬 고리 둘이 반대로 돎) + **빛 터짐**(등급 색) + 나타나는 캐릭터의 **하얀 실루엣 번쩍임** + 몸에서 머리 위로 떠오르며 **뒤집히는 초상 카드**(뒷면 금테 소환문 → 앞면 그 캐릭터 초상 + 등급 테·별).
+  승급은 재료 칸 빛 구슬(주사위 대신)이 빨려 든 뒤 더 큰 카드 + **등급 별**(노말 1 ~ 레전드 5, 신·신화 5)이 카드 둘레에 부채꼴로.
+  - 높이: B-1 `dieApexTiles` → `cardApexTiles`(머리 끝 + 0.42칸). 맨 윗줄처럼 HUD 아래 끝에 막혀 얼굴을 가리게 되면 **머리 옆(화면 가운데 쪽)으로** 비켜 띄운다(b1 d 첫 실행에서 2배 윗줄 캐릭터 얼굴 위 카드로 발견 → 규칙 추가, 검사도 '위 또는 옆').
+  - 한도 `MAX_SUMMON_CARDS` = 12 (예전 MAX_DICE), 연출 끄기 = 아무것도, 동작 줄이기 = 빛 기둥·빛 구슬만 (예전 규칙 그대로).
+  - 순수 함수 `fxModel.cardFlip`(뒤집기 가로 배율·면), `mergeStarCount`. `rollingDieFace`·`DIE_ROLL_STEPS`는 지움.
+  - E2E 카운터 `Game.summonFxStats` {active, shown, peak, portals, silhouettes, stars}. `diceStats`는 카드 수 별칭(@deprecated)으로 남겨 다른 갈래의 옛 스펙이 깨지지 않게.
+  - [🎲 소환] 아이콘 → 금빛 소환문 + SD 캐릭터 실루엣(`.hud-summon-icon`, data-testid·aria-label·비용 글자 그대로), 타이틀 로고 🎲🎲 → 기사·마법사 문장(`.title-crest`). 도박 시트·도박꾼 특색 주사위는 실제 주사위라 그대로.
+- **3) 캐릭터 겉모습 통일** (ART.md 0.3.1, 타워 id·능력치·원본 그림 그대로): `src/art/presentation.ts`(Phaser 없는 2D 캔버스 그리기, 갤러리도 같은 함수)
+  - 등급 받침대 7종(장식이 모두 다름 + 유니크 이상 빛 고리 + 부드러운 땅 그림자 + 윗면 밝은 테), 경계는 예전 `PEDESTAL_BOUNDS` 그대로.
+    2배 캐릭터 발에 가려 안 보이던 것 → 그림 크기를 조금 따라 0.85~1.22배(`towerGeom.pedestalScaleFor`).
+  - 별 배지(받침대 앞 알약 + 등급 별), 종족 문장 배지(받침대 왼쪽 앞, 종족 9개 모두 다른 문양), 발밑 접지 그림자(뛰면 작고 옅게).
+  - 바깥 그림 테두리: 진한 외곽선 바깥에 따뜻한 흰빛 테(halo) + 그림 안 왼쪽 위 은은한 테두리 빛.
+  - 대기 동작: 기존 숨쉬기·흔들림·고유 동작 + 살랑 흔들림(±0.016rad, `sway` — `angle`과 따로라 '공격 직후 angle 0' 규칙 그대로) + 가끔 무기·장신구 쪽 반짝임(`glint`).
+    공격: 준비(18% 뒤로 당김) → 펀치(최대 0.16칸, 세로로 늘어남) + 앞쪽 타격 빛(`punch`). 연출 끄기 = 고정 자세, 동작 줄이기 = 반짝임·타격 빛 없음. `prefersReducedMotion`은 TowerLayer가 프레임에 한 번만 읽는다.
+- **테스트**: 새 `tests/unit/g2.test.ts` 16개(SVG 장식 바깥 주소 없음·4방향 다름·data URI, 글자 대비 ≥ 4.5:1, theme.css 변수 = theme.ts 색, 테마 규칙에 크기 속성 없음·가상 요소 누르기 통과, 카드 뒤집기, 등급 별 수, 받침대 7종 다름·경계 안, 별 배지 별 수, 종족 문장 9종, 받침대 배수, 살랑·반짝임·펀치).
+  `tests/unit/b1.test.ts` 주사위 굴림 테스트 → 카드 높이(`cardApexTiles`) 테스트로.
+  새 `e2e/g2.spec.ts` 9개: 412·360·320 테마·장식·🎲 없음·**테마를 뗐을 때와 HUD·아래 띠·하단 메뉴 높이가 같음**·가로 넘침 없음·맵 위 끝 ≥ HUD 아래 끝 / 시트 금테 / 넓은 화면 격자·액자 /
+  소환 = 소환문·실루엣·그 캐릭터 초상 텍스처가 카드에 · 승급 = 카드·별 · 주사위 텍스처(`fx-dice-*`) 0 / 연출 끄기·동작 줄이기 = 카운터 모두 0 / 등급 7종 받침대·별 배지·종족 문장 텍스처.
+  `e2e/b1.spec.ts` d(주사위 눈 3번 이상 → 카드 뒷면→앞면, 얼굴 안 가림, 소환문·별), `e2e/a1.spec.ts`(물체 이름 `summon-card`·`merge-card`·`merge-star`…, 동시 12개 한도, 주사위 텍스처 0) 의도 그대로 고침.
+  `e2e/g2-shots.spec.ts`: `G2_SHOT=before|after`일 때만 도는 전후 스크린샷 (평소 건너뜀).
+- **확인 (이 컨테이너, 포트 5194)**: Vitest **1,314 통과 + 3 건너뜀**(70파일, +16 g2 · b1 주사위 1 → 카드 1), `npm run check`·`npm run build` 통과.
+  관련 E2E만 (전체 45분 실행은 하지 않음): `b1`+`a1` 18 통과 + 고친 b1 d 3/3 · `smoke`·`hud-layout`·`t2`·`t3-screen`·`m3b`·`m4`·`art`·`characters`·`m3a`·`map-fill` **75 통과 · 1 건너뜀 · 실패 0** (25.6분) ·
+  `g2`+`f10`+`update` 29 통과 · 실패 1 → 고침 → f10 그 테스트 + g2 테마 6/6.
+  실패 1 = f10 '아래 띠 소환 자리 그대로': [소환] 가운데 `elementFromPoint().closest('[data-testid]')`가 새 아이콘 span에 붙인 testid를 집었다 → 아이콘·문장의 testid를 빼고(장식은 aria-hidden 클래스만) g2에 '아이콘을 눌러도 hud-summon' 검사 추가.
+- **스크린샷** (412×915, deviceScaleFactor 1, `e2e/g2-shots.spec.ts`): 전 `docs/screens/G2-before-{title,battle,summon,merge,sheet}.png`(main 27ead85 그대로) ·
+  후 `G2-after-{title,battle,summon,merge,sheet}.png` (타이틀 문장 · 등급 섞인 타워 12개 + 받침대·배지 · 소환 카드(윗줄이라 머리 옆) · 승급 카드 + 등급 별 · 강화 시트 금테 판).
+  (전 소환·승급 장면은 예전 주사위 시간에 맞춰 찍었고, 후 장면은 카드가 뒤집힌 뒤에 찍었다.)
+- **남은 문제 / 다음 작업자에게**:
+  - 바깥 그림(WebP 한 장)은 눈 자리를 몰라 **깜빡임은 없다** (파츠 절차 캐릭터는 지금 바깥 그림에 가려 쓰이지 않음). 대신 살랑·반짝임·펀치.
+  - 받침대를 1.22배까지 키워 아래 끝이 칸 아래 경계보다 최대 0.01칸 아래(약 0.5px) — 정보 패널 배치 기준(`FIGURE_BOTTOM_TILES` 0.475칸)은 그대로 두었다 (겹쳐도 받침대 가장자리 몇 px).
+  - 맨 윗줄 소환 카드는 머리 옆으로 비키므로 옆 칸 캐릭터를 잠깐(약 0.8초) 덮을 수 있다.
+  - styles.css의 `.hud-summon-die`·`.title-dice` 규칙은 쓰이지 않지만 다른 갈래와 겹치지 않게 지우지 않았다 (합친 뒤 정리).
+  - 다른 갈래(rtd-g1)와 합칠 때 겹칠 곳: `Hud.ts` 소환 버튼 한 줄, `TitleScreen.ts` 로고 두 줄, `Game.ts` summon/merge 사건 두 곳 + FxLayer 생성 + `summonFxStats`, `styles.css` `.btn` 3줄. 'hidden' 등급 이름이 '신화'로 바뀌어도 받침대·별 배지는 등급 id(`hidden`)로 그리므로 그대로.
+  - 실제 안드로이드 기기 확인은 아직.

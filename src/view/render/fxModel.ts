@@ -155,16 +155,23 @@ export function bigTextSlot(box: TextBox, others: readonly { box: TextBox; big: 
   return { slot, drop };
 }
 
-/** 소환·승급 주사위가 굴러가는 동안 나눠 보이는 눈 수 (마지막 칸은 결과 눈) */
-export const DIE_ROLL_STEPS = 8;
-
 /**
- * 굴러가는 주사위 눈 (B-1): 트윈 진행도 0~1 → 1~6. 처음 7칸은 결과 눈 다음부터 한 칸씩 돌고, 마지막 칸(과 끝)은 결과 눈.
+ * G-2 초상 카드 뒤집기 (주사위 굴림 대신): 진행도 0~1 → 가로 배율(0~1)과 보이는 면.
+ * 앞 절반은 뒷면(금테 소환문)이 1 → 0으로 좁아지고, 뒤 절반은 앞면(캐릭터 초상)이 0 → 1로 넓어진다. 끝(≥1)은 앞면 1.
  * 화면 전용 (sim과 무관, 난수 없음).
  */
-export function rollingDieFace(progress: number, revealed: number): number {
-  const turn = Math.floor(Math.min(1, Math.max(0, progress)) * DIE_ROLL_STEPS);
-  return turn < DIE_ROLL_STEPS - 1 ? 1 + ((revealed + turn) % 6) : revealed;
+export function cardFlip(progress: number): { scaleX: number; front: boolean } {
+  const p = Math.min(1, Math.max(0, progress));
+  const front = p >= 0.5;
+  const k = front ? (p - 0.5) * 2 : 1 - p * 2;
+  // 가장자리에서도 아주 얇게 보이게 (0이면 한 프레임 사라져 깜빡임)
+  return { scaleX: Math.max(0.04, Math.sin((k * Math.PI) / 2)), front };
+}
+
+/** 승급 연출에서 튀어 오르는 등급 별 수: 노말 1 ~ 레전드 5, 신·신화 5 (가장 화려하게) */
+export function mergeStarCount(grade: string): number {
+  const n: Record<string, number> = { normal: 1, rare: 2, unique: 3, hero: 4, legend: 5, god: 5, hidden: 5 };
+  return n[grade] ?? 1;
 }
 
 /**

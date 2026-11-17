@@ -786,9 +786,16 @@ export class GameScene extends Phaser.Scene {
     return { runId: this.runId, saved: this.saveToken !== null, resumed: this.resumed, lastTick: this.lastSave.tick };
   }
 
-  /** E2E: 주사위 연출 (지금 도는 수 · 지금까지 띄운 수) */
+  /** E2E (G-2): 소환·승급 캐릭터 연출 — 초상 카드(지금 떠 있는 수 · 지금까지 · 동시 최대) + 소환문·실루엣·등급 별 수 */
+  get summonFxStats(): { active: number; shown: number; peak: number; portals: number; silhouettes: number; stars: number } {
+    const f = this.fx;
+    return { active: f?.cardActive ?? 0, shown: f?.cardShown ?? 0, peak: f?.cardPeak ?? 0, portals: f?.portalShown ?? 0, silhouettes: f?.silhouetteShown ?? 0, stars: f?.starShown ?? 0 };
+  }
+
+  /** @deprecated G-2에서 주사위 연출이 초상 카드로 바뀜 — 예전 E2E 이름 호환 (summonFxStats의 카드 수) */
   get diceStats(): { active: number; shown: number; peak: number } {
-    return { active: this.fx?.diceActive ?? 0, shown: this.fx?.diceShown ?? 0, peak: this.fx?.dicePeak ?? 0 };
+    const f = this.summonFxStats;
+    return { active: f.active, shown: f.shown, peak: f.peak };
   }
 
   /** 전투 배경: 지금 단계의 테마·밴드 그림 + 밴드 끝 무렵 다음 그림 미리 받기 (HF-2, game.json art) */
@@ -1704,10 +1711,23 @@ export class GameScene extends Phaser.Scene {
     this.soldierLayer = new SoldierLayer(this, this.layout, this.match.map.path);
     this.floatingText = new FloatingTextLayer(this, this.layout.tile);
     // B-1: 소환·승급 주사위는 커진 캐릭터의 머리 위에서 멈춘다 (예전 높이면 2배 그림의 얼굴을 가림)
-    this.fx = new FxLayer(this, this.layout, undefined, (x, y) => {
-      const t = towerAt(this.match.world, x, y);
-      return t ? this.towerLayer.expectedScale(t, this.match.towers()) : 1;
-    });
+    this.fx = new FxLayer(
+      this,
+      this.layout,
+      undefined,
+      (x, y) => {
+        const t = towerAt(this.match.world, x, y);
+        return t ? this.towerLayer.expectedScale(t, this.match.towers()) : 1;
+      },
+      // G-2 소환·승급 실루엣·초상 카드: 정보 패널과 같은 캐릭터 한 장 그림
+      (towerId) => {
+        try {
+          return this.towerLayer.textureKey(towerId);
+        } catch {
+          return null;
+        }
+      },
+    );
     this.selectionLayer = new SelectionLayer(this, this.layout);
     this.guideLayer = new GuideLayer(this, this.layout);
     this.updateToastTop();
@@ -1798,7 +1818,10 @@ export class GameScene extends Phaser.Scene {
           }
           if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
           this.towerLayer.noteSummoned(Number(ev.id));
-          this.fx.summonDice(Number(ev.x), Number(ev.y), hexToInt(GRADE_COLORS[(ev.grade as Grade) || 'normal'] ?? GRADE_COLORS.normal));
+          {
+            const grade = ((ev.grade as Grade) || 'normal') as Grade;
+            this.fx.summonFx({ tx: Number(ev.x), ty: Number(ev.y), color: hexToInt(GRADE_COLORS[grade] ?? GRADE_COLORS.normal), grade, towerId: String(ev.tower) });
+          }
           this.summonFxCount++;
           if (ev.player === LOCAL_PLAYER) this.ctx.audio.play('summon');
           if (ev.rare === true && ev.player === LOCAL_PLAYER) {
@@ -1847,7 +1870,10 @@ export class GameScene extends Phaser.Scene {
               const [a, b] = xy.split(',');
               return { tx: Number(a), ty: Number(b) };
             });
-          this.fx.mergeSuck(from, { tx: Number(ev.x), ty: Number(ev.y) }, hexToInt(GRADE_COLORS[(ev.grade as Grade) || 'normal'] ?? GRADE_COLORS.normal));
+          {
+            const grade = ((ev.grade as Grade) || 'normal') as Grade;
+            this.fx.mergeSuck(from, { tx: Number(ev.x), ty: Number(ev.y), color: hexToInt(GRADE_COLORS[grade] ?? GRADE_COLORS.normal), grade, towerId: String(ev.tower) });
+          }
           this.mergeFxCount++;
           this.ctx.audio.play('merge');
           if (ev.grade === 'legend' || ev.grade === 'god') this.shake(260, 0.006);

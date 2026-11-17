@@ -4,7 +4,7 @@
  *   → 돈·타워·강화·배속·단계 그대로, [새 게임]은 확인 창 → 새 판. 망가진 저장은 버려진다. 개발자 판은 따로 표시된다.
  * - 전투 기록·최근 5판: 빈 기록 → 20단계 패배(박쥐 여왕·도전 1 처치) → '새 최고 기록' → [📜 기록]에 최고 20단계·보스·최근 판.
  * - 효과음: 사람 입력 전 AudioContext 없음, 볼륨 기본 40%·5 단위·음소거·미리 듣기·기기 저장, 소환·승급 소리.
- * - 화면 흔들림·주사위: 동작 줄이기면 기본 꺼짐·켜면 흔들림·저장, 소환·승급 주사위, 동작 줄이기·연출 끄기면 주사위 없음.
+ * - 화면 흔들림·소환 연출: 동작 줄이기면 기본 꺼짐·켜면 흔들림·저장, 소환·승급 연출(G-2: 주사위 → 초상 카드·소환문·등급 별), 동작 줄이기·연출 끄기면 카드 없음.
  * - 안드로이드 뒤로 가기: 열린 시트·패널 → 일시정지 ↔ 계속, 타이틀의 [기록] 창 닫기, 타이틀에서는 처리 안 함(앱 종료).
  * 스크린샷 (SAVE_SCREENS=1): docs/screens/A1-title.png · A1-records.png · A1-pause.png · A1-dice.png (412×915, deviceScaleFactor 1).
  */
@@ -29,7 +29,7 @@ interface SceneLike {
     ctx: unknown;
   };
   saveState: { runId: string; saved: boolean; resumed: boolean; lastTick: number };
-  diceStats: { active: number; shown: number; peak: number };
+  summonFxStats: { active: number; shown: number; peak: number; portals: number; silhouettes: number; stars: number };
   sheetOpen: string | null;
   panelOpen: boolean;
   debugFastForward(n: number): number;
@@ -321,8 +321,8 @@ test('A-1 효과음: 사람 입력 전 무음, 볼륨 기본 40%·5 단위·음�
   await expect.poll(async () => (await probe()).notes.slice(n)).toEqual([392, 523.25, 783.99]);
 });
 
-test.describe('A-1 화면 흔들림·주사위', () => {
-  test('동작 줄이기면 흔들림 기본 꺼짐·주사위 없음, 켜면 흔들고 기기에 저장', async ({ page }) => {
+test.describe('A-1 화면 흔들림·소환 연출', () => {
+  test('동작 줄이기면 흔들림 기본 꺼짐·초상 카드 없음, 켜면 흔들고 기기에 저장', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await openTitle(page, '?seed=42');
     await page.getByRole('button', { name: '시작' }).click();
@@ -342,11 +342,11 @@ test.describe('A-1 화면 흔들림·주사위', () => {
     const shakes = () => page.evaluate(() => (window as unknown as { shakes: number }).shakes);
     await inScene(page, (s) => s.match.world.emit('quake'), null);
     await expect.poll(shakes).toBe(1);
-    // 동작 줄이기: 소환해도 주사위 없음 (빛 기둥만)
+    // 동작 줄이기: 소환해도 초상 카드 없음 (빛 기둥만)
     await page.getByTestId('hud-summon').click();
     await expect(page.getByTestId('hud-towers')).toHaveText(/^1\//);
     await page.waitForTimeout(300);
-    expect((await inScene(page, (s) => s.diceStats, null)).shown).toBe(0);
+    expect((await inScene(page, (s) => s.summonFxStats, null)).shown).toBe(0);
 
     await page.getByRole('button', { name: '일시정지' }).click();
     await sw.click();
@@ -369,25 +369,30 @@ test.describe('A-1 화면 흔들림·주사위', () => {
     expect(await shakes()).toBe(0);
   });
 
-  test('소환·승급 주사위 (동시 12개까지), 안드로이드 뒤로 가기: 시트 닫기 → 일시정지 → 계속', async ({ page }) => {
+  test('소환·승급 초상 카드 (동시 12개까지, 주사위 없음), 안드로이드 뒤로 가기: 시트 닫기 → 일시정지 → 계속', async ({ page }) => {
     test.slow();
     await openTitle(page, '?seed=42');
     await page.getByRole('button', { name: '시작' }).click();
     await waitGame(page);
     await page.evaluate(() => {
-      const w = window as unknown as { diceSeen: string[]; __rtd: { game: { scene: { getScene(k: string): { events: { on(e: string, f: () => void): void }; children: { list: { name: string }[] } } } } } };
+      const w = window as unknown as { diceSeen: string[]; dieTex: number; __rtd: { game: { scene: { getScene(k: string): { events: { on(e: string, f: () => void): void }; children: { list: { name: string; texture?: { key: string } }[] } } } } } };
       const s = w.__rtd.game.scene.getScene('Game');
       w.diceSeen = [];
+      w.dieTex = 0;
+      // G-2: 소환·승급 연출 이름 (초상 카드·소환문·실루엣·빛 구슬) + 주사위 텍스처(fx-dice-*)를 쓰는 물체가 없는지 (이 판엔 도박꾼 없음)
       s.events.on('postupdate', () => {
-        for (const c of s.children.list) if (c.name.endsWith('-die') && !w.diceSeen.includes(c.name)) w.diceSeen.push(c.name);
+        for (const c of s.children.list) {
+          if (/^(summon|merge)-/.test(c.name) && !w.diceSeen.includes(c.name)) w.diceSeen.push(c.name);
+          if (c.texture?.key.startsWith('fx-dice-')) w.dieTex++;
+        }
       });
     });
     const seen = () => page.evaluate(() => (window as unknown as { diceSeen: string[] }).diceSeen);
     await page.getByTestId('hud-summon').click();
-    await expect.poll(seen).toContain('summon-die');
-    // 주사위가 떠 있는 순간 (트윈을 잠깐 멈추고 찍음)
+    await expect.poll(seen).toContain('summon-card');
+    // 초상 카드가 떠 있는 순간 (트윈을 잠깐 멈추고 찍음)
     await page.getByTestId('hud-summon').click();
-    await expect.poll(() => inScene(page, (s) => s.diceStats.active, null)).toBeGreaterThan(0);
+    await expect.poll(() => inScene(page, (s) => s.summonFxStats.active, null)).toBeGreaterThan(0);
     await inScene(page, (s) => s.tweens.pauseAll(), null);
     await shot(page, 'A1-dice');
     await inScene(page, (s) => s.tweens.resumeAll(), null);
@@ -395,8 +400,9 @@ test.describe('A-1 화면 흔들림·주사위', () => {
     await placeThreeMiners(page);
     await page.getByTestId('hud-merge-ready').click();
     await page.locator('[data-action="merge"]').click();
-    await expect.poll(seen).toEqual(expect.arrayContaining(['summon-die', 'merge-material-die', 'merge-die']));
-    // 한도: 한 프레임에 소환 20번이어도 동시에 도는 주사위는 12개까지
+    await expect.poll(seen).toEqual(expect.arrayContaining(['summon-card', 'summon-portal', 'merge-material-orb', 'merge-card', 'merge-star']));
+    expect(await page.evaluate(() => (window as unknown as { dieTex: number }).dieTex)).toBe(0);
+    // 한도: 한 프레임에 소환 20번이어도 동시에 떠 있는 초상 카드는 12개까지 (A-1 주사위 한도 그대로)
     const queued = await inScene(
       page,
       (s) => {
@@ -411,7 +417,7 @@ test.describe('A-1 화면 흔들림·주사위', () => {
     );
     expect(queued).toBe(20);
     await expect(page.getByTestId('hud-towers')).toHaveText(/^23\//);
-    expect((await inScene(page, (s) => s.diceStats, null)).peak).toBe(12);
+    expect((await inScene(page, (s) => s.summonFxStats, null)).peak).toBe(12);
 
     // 뒤로 가기: 열린 타워 패널(승급 결과) → 닫힘, 강화 시트 → 닫힘, 그다음 일시정지 → 계속
     const back = () => page.evaluate(() => !window.dispatchEvent(new Event('randomtd:native-back', { cancelable: true })));
@@ -430,7 +436,7 @@ test.describe('A-1 화면 흔들림·주사위', () => {
     await expect(page.locator('[data-screen="pause"]')).toHaveCount(0);
   });
 
-  test('?dev=1 연출 끄기면 주사위도 없다', async ({ page }) => {
+  test('?dev=1 연출 끄기면 초상 카드도 없다', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: true, effectsOff: true, revealHidden: false })));
     await openTitle(page, '?dev=1&seed=42');
     await page.getByRole('button', { name: '시작' }).click();
@@ -438,7 +444,7 @@ test.describe('A-1 화면 흔들림·주사위', () => {
     await page.getByTestId('hud-summon').click();
     await expect(page.getByTestId('hud-towers')).toHaveText(/^1\//);
     await page.waitForTimeout(300);
-    expect((await inScene(page, (s) => s.diceStats, null)).shown).toBe(0);
+    expect((await inScene(page, (s) => s.summonFxStats, null)).shown).toBe(0);
   });
 });
 

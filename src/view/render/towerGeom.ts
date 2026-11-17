@@ -22,6 +22,15 @@ export const PEDESTAL_WIDTH_TILES = 0.78;
 /** 받침대 맨 아래: 칸 중심 기준 칸 배수 (발밑 + 받침대 아래 두께). ≈ +0.475 */
 export const FIGURE_BOTTOM_TILES = FOOT_OFFSET_TILES + (PEDESTAL_WIDTH_TILES * PEDESTAL_BOUNDS.bottom) / (PEDESTAL_BOUNDS.right - PEDESTAL_BOUNDS.left);
 
+/**
+ * G-2 받침대 너비 배수: 2배 캐릭터 발밑에 가려 등급 받침대가 안 보이던 것 → 그림 크기를 조금 따라 키운다 (붙어 있으면 작게).
+ * 0.85~1.22배 × 0.78칸 — 2배 그림이면 약 0.94칸(칸 안), 1.4배(붙음)면 약 0.66칸.
+ * 받침대 아래 끝은 1.22배여도 칸 중심 +0.51칸(칸 아래 경계 +0.5에서 0.01칸) — 탭 판정은 칸 그대로라 영향 없음.
+ */
+export function pedestalScaleFor(artScale: number): number {
+  return Math.min(1.22, Math.max(0.85, artScale * 0.6));
+}
+
 /** 대기 동작(위아래 흔들림·숨쉬기·고유 동작 뜀·등장 넘침)으로 더 올라가는 여유 (칸 배수) */
 export const FIGURE_MOTION_MARGIN_TILES = 0.06;
 const HEAD_ABOVE_FOOT_TILES = FOOT_OFFSET_TILES - FIGURE_TOP_TILES + FIGURE_MOTION_MARGIN_TILES;
@@ -64,15 +73,15 @@ export function isCrowded(occupied: ReadonlySet<number>, tx: number, ty: number,
   return occupied.has(key - 1) || occupied.has(key + 1) || occupied.has(key - stride) || occupied.has(key + stride);
 }
 
-/** 소환·승급 주사위가 머리 끝보다 더 올라가 멈추는 높이 (칸 배수) */
-export const DIE_ABOVE_HEAD_TILES = 0.104;
+/** 소환·승급 초상 카드 가운데가 머리 끝보다 더 올라가 멈추는 높이 (칸 배수, G-2 — 소환 카드 절반 높이 ≈ 0.52칸이라 아래 끝이 머리 끝에 살짝 걸친다) */
+export const CARD_ABOVE_HEAD_TILES = 0.42;
 
 /**
- * 소환·승급 주사위가 굴러 올라가 멈추는 자리: 칸 중심 기준 칸 배수 (음수 = 위). 크기 1 = −0.94 (A-1 그대로).
- * B-1: 캐릭터가 2배로 커져 예전 높이(−0.94칸)에서는 주사위가 얼굴을 가렸다 → 지금 그림 크기의 머리 끝 위로.
+ * 소환·승급 초상 카드가 떠올라 멈추는 자리: 칸 중심 기준 칸 배수 (음수 = 위).
+ * B-1: 캐릭터가 2배로 커져 예전 높이(−0.94칸)에서는 머리 위 연출이 얼굴을 가렸다 → 지금 그림 크기의 머리 끝 위로 (G-2: 주사위 → 카드).
  */
-export function dieApexTiles(scale = 1): number {
-  return towerFigureSpanTiles(scale).top - DIE_ABOVE_HEAD_TILES;
+export function cardApexTiles(scale = 1): number {
+  return towerFigureSpanTiles(scale).top - CARD_ABOVE_HEAD_TILES;
 }
 
 /**

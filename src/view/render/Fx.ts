@@ -7,19 +7,39 @@
  * - 동전: 처치 자리에서 살짝 튀어 오른 뒤 HUD 돈 쪽으로 날아간다 (도착하면 콜백 → HUD 돈 반짝 + '+n원').
  * - M3: 승급(빛 구슬이 빨려 들어간 뒤 빛 기둥), 광역 폭발 고리, 연쇄 번개.
  * - M3b 특색: 운석(불덩이가 떨어져 폭발), 진흙 웅덩이 튐, 도박꾼 주사위 눈, 시간 정지(화면 흑백 0.2초 + 시계 고리, TOWERS.md 11장).
- * - A-1 (Codex 갈래 M6-10에서 옮김) 주사위: 소환하면 빛 기둥과 함께 발밑에 등급 색 소환진이 퍼지고 주사위가 굴러 튀어 오른다.
- *   승급하면 재료 칸의 주사위가 결과 칸으로 굴러 모인 뒤 결과 칸에서 큰 주사위 + 소환진. 동시에 도는 주사위는 MAX_DICE개까지.
- *   연출 끄기(T-2)면 아무것도, 기기 '동작 줄이기'(prefers-reduced-motion)면 주사위 없이 예전 빛 기둥·빛 구슬만.
+ * - G-2 (사용자 요청 '너무 주사위에 의존하지 말고 캐릭터 위주로'): 소환하면 빛 기둥과 함께 발밑에 등급 색 **소환문**이 돌며 퍼지고,
+ *   **빛 터짐** + 나타나는 캐릭터의 **하얀 실루엣 번쩍임**, 그리고 머리 위로 떠오르며 **뒤집히는 초상 카드**(뒷면 금테 소환문 → 앞면 캐릭터 초상 + 등급 테·별).
+ *   승급하면 재료 칸의 빛 구슬이 결과 칸으로 빨려 든 뒤 결과 칸에서 더 큰 소환문·빛 터짐·실루엣·카드 + **등급 별**이 부채꼴로 튀어 오른다.
+ *   동시에 떠 있는 카드는 MAX_SUMMON_CARDS개까지 (넘치면 빛 기둥만). 연출 끄기(T-2)면 아무것도,
+ *   기기 '동작 줄이기'(prefers-reduced-motion)면 카드·소환문·실루엣·별 없이 예전 빛 기둥·빛 구슬만.
+ *   (A-1·B-1의 굴러가는 주사위는 G-2에서 뺐다. 도박꾼 특색 주사위 눈(dicePop)은 실제 주사위라 그대로.)
  * 동전은 매 프레임 시각으로 위치를 계산하고(fxModel.coinPath), 나머지는 Phaser 트윈을 쓴다 (화면 전용, sim과 무관).
  */
 import Phaser from 'phaser';
 import { effectsOff } from '../effects';
-import { TEX_COIN, TEX_ORB, TEX_PILLAR, TEX_SPARK, ensureFxTextures } from '../../art/fx';
+import {
+  CARD_TEX,
+  CARD_WINDOW,
+  TEX_BURST,
+  TEX_CARD_BACK,
+  TEX_COIN,
+  TEX_GRADE_STAR,
+  TEX_ORB,
+  TEX_PILLAR,
+  TEX_PORTAL,
+  TEX_SPARK,
+  cardFaceKey,
+  cardRimKey,
+  ensureFxTextures,
+  ensureSummonFxTextures,
+} from '../../art/fx';
 import { diceKey, ensureStatusTextures } from '../../art/status';
+import { GRADE_STARS } from '../../art/towerLook';
+import type { Grade } from '../../data/load';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { prefersReducedMotion } from '../../ui/motion';
-import { COIN_FLY_MS, coinPath, rollingDieFace } from './fxModel';
-import { dieApexTiles } from './towerGeom';
+import { COIN_FLY_MS, cardFlip, coinPath, mergeStarCount } from './fxModel';
+import { FOOT_OFFSET_TILES, cardApexTiles, towerFigureSpanTiles } from './towerGeom';
 
 export const FX_DEPTH = 5500;
 export const COIN_DEPTH = 7000;
@@ -27,8 +47,22 @@ export const COIN_DEPTH = 7000;
 export const MAX_COINS = 24;
 /** 승급 빛 구슬이 결과 칸으로 빨려 드는 시간 (ms) — UI.md 9장 '승급 연출 0.3초' */
 export const MERGE_SUCK_MS = 300;
-/** 동시에 도는 주사위 연출 최대 수 (A-1 — 꾹 눌러 연속 소환·모두 승급에도 화면이 덮이지 않게) */
-export const MAX_DICE = 12;
+/** 동시에 떠 있는 초상 카드 연출 최대 수 (A-1 주사위 한도 그대로 — 꾹 눌러 연속 소환·모두 승급에도 화면이 덮이지 않게) */
+export const MAX_SUMMON_CARDS = 12;
+/** 카드 너비 (칸 배수): 소환 · 승급 */
+const CARD_W_TILES = { summon: 0.78, merge: 0.96 } as const;
+
+/** 소환·승급 연출 한 번의 입력 (G-2) */
+export interface SummonFxInput {
+  tx: number;
+  ty: number;
+  /** 등급 색 (0xRRGGBB) */
+  color: number;
+  grade: Grade;
+  /** 나타난 타워 종류 (초상·실루엣). 모르면 소환문·빛만 */
+  towerId?: string;
+  kind?: 'summon' | 'merge';
+}
 
 interface Coin {
   img: Phaser.GameObjects.Image;
@@ -41,104 +75,209 @@ export class FxLayer {
   private coins: Coin[] = [];
   private readonly freeCoins: Phaser.GameObjects.Image[] = [];
   private readonly objects = new Set<Phaser.GameObjects.GameObject>();
-  /** 지금 도는 주사위 수 · 지금까지 띄운 주사위 수 (E2E 확인용) */
-  private diceLive = 0;
-  diceShown = 0;
-  /** 동시에 돈 주사위 최대 수 (E2E: MAX_DICE를 넘지 않음) */
-  dicePeak = 0;
+  /** 지금 떠 있는 초상 카드 수 · 지금까지 띄운 카드 수 (E2E 확인용) */
+  private cardLive = 0;
+  cardShown = 0;
+  /** 동시에 떠 있던 카드 최대 수 (E2E: MAX_SUMMON_CARDS를 넘지 않음) */
+  cardPeak = 0;
+  /** 지금까지 띄운 소환문 · 실루엣 번쩍임 · 등급 별 수 (E2E) */
+  portalShown = 0;
+  silhouetteShown = 0;
+  starShown = 0;
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly layout: MapLayout,
     private readonly reducedMotion: () => boolean = () => prefersReducedMotion(),
-    /** 칸 (tx, ty) 타워 그림의 크기 배수 (B-1 전투 확대) — 주사위를 머리 위로 올린다. 타워가 없으면 1 */
+    /** 칸 (tx, ty) 타워 그림의 크기 배수 (B-1 전투 확대) — 초상 카드를 머리 위로 올리고 실루엣 크기를 맞춘다. 타워가 없으면 1 */
     private readonly figureScaleAt: (tx: number, ty: number) => number = () => 1,
+    /** 타워 종류 → 캐릭터 한 장 그림 텍스처 키 (정보 패널 초상과 같은 것, G-2 실루엣·카드). 없으면 null */
+    private readonly portraitOf: (towerId: string) => string | null = () => null,
   ) {
     ensureFxTextures(scene);
   }
 
-  /** HUD 띠 아래 끝 (게임 px): 소환·승급 주사위가 그보다 위로 올라가 HUD 밑에 숨지 않게 (검토 반영) */
+  /** HUD 띠 아래 끝 (게임 px): 소환·승급 카드가 그보다 위로 올라가 HUD 밑에 숨지 않게 (검토 반영) */
   private topLimit = Number.NEGATIVE_INFINITY;
   setTopLimit(topLimit: number): void {
     this.topLimit = topLimit;
   }
 
-  /** 주사위를 띄울 수 있는가 (연출 켜짐 + 동작 줄이기 아님 + 한도 안) */
-  private diceAllowed(): boolean {
-    return !effectsOff() && !this.reducedMotion() && this.diceLive < MAX_DICE;
-  }
-
-  /** 주사위 하나 만들기 (한도 셈 포함). */
-  private die(name: string, x: number, y: number, face: number, depth: number, size: number): Phaser.GameObjects.Image {
-    ensureStatusTextures(this.scene);
-    const img = this.track(this.scene.add.image(x, y, diceKey(face)))
-      .setName(name)
-      .setDepth(depth)
-      .setDisplaySize(size, size);
-    this.diceLive++;
-    this.diceShown++;
-    if (this.diceLive > this.dicePeak) this.dicePeak = this.diceLive;
-    img.once(Phaser.GameObjects.Events.DESTROY, () => this.diceLive--);
-    return img;
+  /** 캐릭터 연출(카드·소환문·실루엣·별)을 띄울 수 있는가 (연출 켜짐 + 동작 줄이기 아님 + 한도 안) */
+  private cardAllowed(): boolean {
+    return !effectsOff() && !this.reducedMotion() && this.cardLive < MAX_SUMMON_CARDS;
   }
 
   /**
-   * 소환·승급 결과 칸 (A-1): 빛 기둥 + 등급 색 소환진 + 굴러 튀어 오르는 주사위.
-   * 주사위를 못 띄우면(연출 끄기·동작 줄이기·한도) 빛 기둥만 (연출 끄기면 그것도 없음).
+   * 소환·승급 결과 칸 (G-2): 빛 기둥 + 등급 색 소환문 + 빛 터짐 + 캐릭터 실루엣 번쩍임 + 뒤집히는 초상 카드 (+ 승급이면 등급 별).
+   * 캐릭터 연출을 못 띄우면(연출 끄기·동작 줄이기·한도) 빛 기둥만 (연출 끄기면 그것도 없음).
    */
-  summonDice(tx: number, ty: number, color: number, kind: 'summon' | 'merge' = 'summon'): void {
+  summonFx(input: SummonFxInput): void {
+    const { tx, ty, color, grade } = input;
+    const merge = input.kind === 'merge';
     this.summonPillar(tx, ty, color);
-    if (!this.diceAllowed()) return;
+    if (!this.cardAllowed()) return;
+    ensureSummonFxTextures(this.scene, grade, GRADE_STARS[grade] ?? 1);
     const L = this.layout;
     const { x, y } = tileCenterPx(L, tx, ty);
     const tile = L.tile;
-    const merge = kind === 'merge';
-    const revealedFace = merge ? 5 : 3;
-    // 첫 프레임부터 굴러가는 면으로 시작 (예전엔 결과 면으로 만들었다가 바로 다른 면으로 튐, 검토 반영)
-    const firstFace = rollingDieFace(0, revealedFace);
-    const die = this.die(`${kind}-die`, x, y - tile * 0.46, firstFace, FX_DEPTH + 12, tile * 0.28).setAngle(-210);
-    let lastFace = firstFace;
-    const size = tile * (merge ? 0.62 : 0.5);
+    const footY = y + tile * FOOT_OFFSET_TILES;
+    const scale = this.figureScaleAt(tx, ty);
+    const portrait = input.towerId ? this.portraitOf(input.towerId) : null;
+    const name = merge ? 'merge' : 'summon';
+
+    // 1) 발밑 소환문: 눕힌 고리(컨테이너 세로 0.42배) 안에서 고리가 돌며 커졌다 사라진다
+    const ringImg = this.scene.add.image(0, 0, TEX_PORTAL).setTint(color).setBlendMode(Phaser.BlendModes.ADD);
+    const inner = this.scene.add.image(0, 0, TEX_PORTAL).setTint(0xffe7a0).setBlendMode(Phaser.BlendModes.ADD).setScale(0.72).setAlpha(0.85);
+    const portal = this.track(this.scene.add.container(x, footY, [ringImg, inner]))
+      .setName(`${name}-portal`)
+      .setDepth(FX_DEPTH + 1);
+    const ringPx = (tile * (merge ? 1.25 : 1.05)) / 256;
+    portal.setScale(ringPx * 0.4, ringPx * 0.4 * 0.42);
+    this.portalShown++;
+    this.scene.tweens.add({ targets: ringImg, angle: 120, duration: 620 });
+    this.scene.tweens.add({ targets: inner, angle: -150, duration: 620 });
     this.scene.tweens.add({
-      targets: die,
-      // 머리 위, 단 HUD 띠 아래 (맨 윗줄은 그림이 HUD 아래로 줄어 있어 주사위가 HUD 밑으로 들어가던 것)
-      y: Math.max(y + tile * dieApexTiles(this.figureScaleAt(tx, ty)), this.topLimit + size / 2),
-      angle: 150,
-      displayWidth: size,
-      displayHeight: size,
-      duration: 240,
+      targets: portal,
+      scaleX: ringPx,
+      scaleY: ringPx * 0.42,
+      duration: 260,
       ease: 'Back.easeOut',
-      onUpdate: (tween) => {
-        const face = rollingDieFace(tween.progress, revealedFace);
-        if (face === lastFace) return;
-        lastFace = face;
-        die.setTexture(diceKey(face));
-      },
-      onComplete: () =>
-        this.scene.tweens.add({ targets: die, y: die.y - tile * 0.15, alpha: 0, delay: 120, duration: 170, onComplete: () => die.destroy() }),
+      onComplete: () => this.scene.tweens.add({ targets: portal, alpha: 0, delay: 160, duration: 200, onComplete: () => portal.destroy() }),
     });
-    // 발밑 소환진과 솜사탕 빛 별: 같은 그래픽으로 함께 퍼지게 한다.
-    const seal = this.track(this.scene.add.graphics({ x, y: y + tile * 0.3 })).setDepth(FX_DEPTH + 1);
-    seal.lineStyle(Math.max(3, tile * 0.038), color, 0.93).strokeEllipse(0, 0, tile * 0.91, tile * 0.43);
-    seal.lineStyle(Math.max(2, tile * 0.032), 0xffe7a0, 0.92).strokeEllipse(0, 0, tile * 0.72, tile * 0.34);
-    const sparkColors = [0xffedb1, 0xffaed0, 0xb7f9cb] as const;
-    for (let i = 0; i < 6; i++) {
-      const a = (i * Math.PI) / 3;
-      const sx = Math.cos(a) * tile * (0.53 + (i % 2) * 0.12);
-      const sy = Math.sin(a) * tile * (0.28 + (i % 2) * 0.15);
-      const st = tile * (merge ? 0.088 : 0.065);
-      seal.fillStyle(sparkColors[i % sparkColors.length] ?? sparkColors[0], 1);
-      seal.fillTriangle(sx - st, sy, sx + st, sy, sx, sy - st * 1.5);
-      seal.fillTriangle(sx - st, sy, sx + st, sy, sx, sy + st * 1.5);
-      seal.fillCircle(sx * 0.77, sy * 0.77, st * 0.29);
+
+    // 2) 빛 터짐 (등급 색, 몸 가운데)
+    const bodyY = footY - tile * 0.45 * scale;
+    const burst = this.track(this.scene.add.image(x, bodyY, TEX_BURST))
+      .setName(`${name}-burst`)
+      .setTint(color)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setDepth(FX_DEPTH + 2)
+      .setDisplaySize(tile * 0.4, tile * 0.4)
+      .setAlpha(0.95);
+    const burstTo = tile * (merge ? 1.9 : 1.45) * Math.min(1.6, Math.max(1, scale * 0.8));
+    this.scene.tweens.add({ targets: burst, displayWidth: burstTo, displayHeight: burstTo, angle: 25, alpha: 0, duration: merge ? 480 : 380, ease: 'Cubic.easeOut', onComplete: () => burst.destroy() });
+
+    // 3) 캐릭터 실루엣 번쩍임: 나타나는 캐릭터 모양 그대로 하얗게 빛났다 사라진다 (그림 위에 겹침)
+    if (portrait && this.scene.textures.exists(portrait)) {
+      const src = this.scene.textures.get(portrait).getSourceImage() as { width: number; height: number };
+      const figH = tile * (FOOT_OFFSET_TILES - towerFigureSpanTiles(scale).top - 0.12);
+      const k = figH / Math.max(1, src.height);
+      const sil = this.track(this.scene.add.image(x, footY, portrait))
+        .setName(`${name}-silhouette`)
+        .setOrigin(0.5, 1)
+        .setTintFill(0xfff1c0)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDepth(FX_DEPTH + 3)
+        .setScale(k * 0.92)
+        .setAlpha(0.75);
+      this.silhouetteShown++;
+      this.scene.tweens.add({ targets: sil, scaleX: k * 1.1, scaleY: k * 1.1, alpha: 0, delay: 40, duration: 380, ease: 'Quad.easeOut', onComplete: () => sil.destroy() });
     }
-    seal.setScale(0.48);
-    this.scene.tweens.add({ targets: seal, scale: merge ? 1.38 : 1.18, alpha: 0, duration: 430, ease: 'Cubic.easeOut', onComplete: () => seal.destroy() });
+
+    // 4) 초상 카드: 몸 가운데에서 머리 위로 떠오르며 뒤집힌다 (뒷면 금테 소환문 → 앞면 캐릭터 초상 + 등급 테·별)
+    const cardW = tile * CARD_W_TILES[merge ? 'merge' : 'summon'];
+    const cardScale = cardW / CARD_TEX.w;
+    const cardH = CARD_TEX.h * cardScale;
+    const back = this.scene.add.image(0, 0, TEX_CARD_BACK);
+    const faceBg = this.scene.add.image(0, 0, cardFaceKey(grade)).setVisible(false);
+    const rim = this.scene.add.image(0, 0, cardRimKey(grade)).setVisible(false);
+    const parts: Phaser.GameObjects.GameObject[] = [back, faceBg];
+    let face: Phaser.GameObjects.Image | null = null;
+    if (portrait && this.scene.textures.exists(portrait)) {
+      // 초상: 그림 위쪽(머리·어깨)을 카드 창에 맞춰 자른다
+      const src = this.scene.textures.get(portrait).getSourceImage() as { width: number; height: number };
+      const win = CARD_WINDOW;
+      const cropW = src.width * 0.86;
+      const cropH = Math.min(src.height * 0.62, (cropW * win.h) / win.w);
+      const k = Math.max(win.w / cropW, win.h / cropH);
+      const cx = (src.width - win.w / k) / 2;
+      const cy = src.height * 0.02;
+      face = this.scene.add
+        .image(0, 0, portrait)
+        .setOrigin(0, 0)
+        .setCrop(cx, cy, win.w / k, win.h / k)
+        .setScale(k)
+        .setPosition(-CARD_TEX.w / 2 + win.x - cx * k, -CARD_TEX.h / 2 + win.y - cy * k)
+        .setVisible(false);
+      parts.push(face);
+    }
+    parts.push(rim);
+    const startY = bodyY;
+    // 머리 위 (B-1 높이 규칙). 맨 윗줄처럼 HUD 아래 끝에 막혀 얼굴을 가리게 되면 머리 옆(맵 가운데 쪽)으로 비켜 띄운다
+    const wantY = y + tile * cardApexTiles(scale);
+    const floorY = this.topLimit + cardH / 2;
+    const blocked = wantY < floorY - tile * 0.1;
+    const apexY = blocked ? Math.max(floorY, wantY + cardH * 0.7) : Math.max(wantY, floorY);
+    const mapMidX = this.scene.scale.width / 2;
+    const cardX = blocked ? x + (x <= mapMidX ? 1 : -1) * (tile * 0.38 * scale + cardW * 0.6) : x;
+    const card = this.track(this.scene.add.container(x, startY, parts))
+      .setName(`${name}-card`)
+      .setDepth(FX_DEPTH + 12)
+      .setScale(cardScale * 0.35);
+    this.cardLive++;
+    this.cardShown++;
+    if (this.cardLive > this.cardPeak) this.cardPeak = this.cardLive;
+    card.once(Phaser.GameObjects.Events.DESTROY, () => this.cardLive--);
+    const flip = { p: 0, s: 0.35 };
+    const applyFlip = (): void => {
+      const f = cardFlip(flip.p);
+      back.setVisible(!f.front);
+      faceBg.setVisible(f.front);
+      rim.setVisible(f.front);
+      face?.setVisible(f.front);
+      card.setScale(cardScale * flip.s * f.scaleX, cardScale * flip.s);
+    };
+    applyFlip();
+    this.scene.tweens.add({ targets: card, x: cardX, y: apexY, duration: 280, ease: 'Back.easeOut' });
+    this.scene.tweens.add({
+      targets: flip,
+      p: 1,
+      s: 1,
+      duration: 340,
+      ease: 'Sine.easeInOut',
+      onUpdate: applyFlip,
+      onComplete: () => {
+        applyFlip();
+        this.scene.tweens.add({ targets: card, y: apexY - tile * 0.15, alpha: 0, delay: merge ? 360 : 260, duration: 200, onComplete: () => card.destroy() });
+      },
+    });
+
+    // 5) 승급: 등급 별이 카드 위로 부채꼴로 튀어 오른다
+    if (merge) {
+      const n = mergeStarCount(grade);
+      const starSize = tile * 0.3;
+      // 카드 둘레 위쪽 반원에 부채꼴로 (맨 윗줄이면 HUD 밑으로 숨지 않게 HUD 아래 끝 아래로)
+      const minY = this.topLimit + starSize / 2;
+      for (let i = 0; i < n; i++) {
+        const a = n === 1 ? -Math.PI / 2 : -Math.PI + ((i + 0.5) * Math.PI) / n;
+        const st = this.track(this.scene.add.image(cardX, apexY, TEX_GRADE_STAR))
+          .setName('merge-star')
+          .setDepth(FX_DEPTH + 13)
+          .setDisplaySize(starSize * 0.3, starSize * 0.3)
+          .setAlpha(0);
+        this.starShown++;
+        const ty2 = Math.max(minY, apexY + Math.sin(a) * cardH * 0.62);
+        this.scene.tweens.add({
+          targets: st,
+          x: cardX + Math.cos(a) * cardW * 0.9,
+          y: ty2,
+          displayWidth: starSize,
+          displayHeight: starSize,
+          alpha: 1,
+          angle: 180,
+          delay: 240 + i * 50,
+          duration: 260,
+          ease: 'Back.easeOut',
+          onComplete: () => this.scene.tweens.add({ targets: st, alpha: 0, scale: st.scale * 1.3, delay: 220, duration: 220, onComplete: () => st.destroy() }),
+        });
+      }
+    }
   }
 
-  /** 지금 도는 주사위 수 (E2E) */
-  get diceActive(): number {
-    return this.diceLive;
+  /** 지금 떠 있는 초상 카드 수 (E2E) */
+  get cardActive(): number {
+    return this.cardLive;
   }
 
   private track<T extends Phaser.GameObjects.GameObject>(obj: T): T {
@@ -172,38 +311,34 @@ export class FxLayer {
   }
 
   /**
-   * 승급 (UI.md 10장 '3개가 빨려 들어가 합쳐짐'): 사라진 칸들에서 0.3초 동안 결과 칸으로 빨려 들어간 뒤 결과 칸 연출.
-   * A-1: 주사위를 띄울 수 있으면 재료 칸의 주사위가 굴러 모이고 결과 칸에 큰 주사위 + 소환진(summonDice 'merge'),
-   * 아니면 예전처럼 빛 구슬 → 결과 등급 색 빛 기둥.
+   * 승급 (UI.md 10장 '3개가 빨려 들어가 합쳐짐'): 사라진 칸들의 빛 구슬이 0.3초 동안 결과 칸으로 빨려 들어간 뒤 결과 칸 연출
+   * (G-2: 새 캐릭터의 소환문·빛 터짐·실루엣·초상 카드 + 등급 별 — summonFx 'merge'. 동작 줄이기·한도면 결과 등급 색 빛 기둥만).
    */
-  mergeSuck(from: readonly { tx: number; ty: number }[], to: { tx: number; ty: number }, color: number): void {
+  mergeSuck(from: readonly { tx: number; ty: number }[], to: SummonFxInput): void {
     if (effectsOff()) return; // 연출 끄기 (T-2)
     const L = this.layout;
     const end = tileCenterPx(L, to.tx, to.ty);
-    const dice = this.diceAllowed();
-    from.forEach((f, i) => {
+    const glow = this.cardAllowed();
+    from.forEach((f) => {
       const start = tileCenterPx(L, f.tx, f.ty);
-      const useDie = dice && this.diceLive < MAX_DICE;
-      const obj = useDie
-        ? this.die('merge-material-die', start.x, start.y - L.tile * 0.15, 2 + (i % 2), FX_DEPTH, L.tile * 0.33)
-        : this.track(this.scene.add.image(start.x, start.y, TEX_ORB))
-            .setTint(0xfff3c4)
-            .setBlendMode(Phaser.BlendModes.ADD)
-            .setDepth(FX_DEPTH)
-            .setDisplaySize(L.tile * 0.55, L.tile * 0.55);
+      const obj = this.track(this.scene.add.image(start.x, start.y - L.tile * 0.15, TEX_ORB))
+        .setName('merge-material-orb')
+        .setTint(glow ? to.color : 0xfff3c4)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDepth(FX_DEPTH)
+        .setDisplaySize(L.tile * 0.55, L.tile * 0.55);
       this.scene.tweens.add({
         targets: obj,
         x: end.x,
         y: end.y,
-        ...(useDie ? { angle: i % 2 === 0 ? 120 : -120 } : {}),
-        displayWidth: L.tile * (useDie ? 0.15 : 0.25),
-        displayHeight: L.tile * (useDie ? 0.15 : 0.25),
+        displayWidth: L.tile * 0.25,
+        displayHeight: L.tile * 0.25,
         duration: MERGE_SUCK_MS,
         ease: 'Cubic.easeIn',
         onComplete: () => obj.destroy(),
       });
     });
-    this.scene.time.delayedCall(from.length > 0 ? MERGE_SUCK_MS : 0, () => this.summonDice(to.tx, to.ty, color, 'merge'));
+    this.scene.time.delayedCall(from.length > 0 ? MERGE_SUCK_MS : 0, () => this.summonFx({ ...to, kind: 'merge' }));
   }
 
   /** 광역 폭발 고리 (반경 = 단위). */

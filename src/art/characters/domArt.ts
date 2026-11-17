@@ -7,7 +7,9 @@ import { auraColorOf } from './draw';
 import type { Composition } from './compose';
 import { PARTICLE_BOX } from './fxArt';
 import type { Ctx } from './cv';
-import { P, glow, paint, rainbow, shade, type PathFn } from './cv';
+import { P, paint, shade, type PathFn } from './cv';
+import { GRADE_STYLE, drawGradePedestal } from '../presentation';
+import type { Grade } from '../../data/load';
 import type { HumanLook } from './looks';
 import { drawPortrait, type Expression } from './portraits';
 import { PORTRAIT_BOX } from './rig';
@@ -106,25 +108,18 @@ export function drawComposition(c: CanvasRenderingContext2D, store: DomTextureSt
   c.restore();
 }
 
-/** 등급 받침대 (art/chibi.ts drawPedestal과 같은 모양, 2D 캔버스판). 신 = 무지개, 히든 = 검정 + 금 테. */
+/** 등급 받침대 (G-2: 게임 맵과 같은 art/presentation.ts drawGradePedestal). 등급을 모르면 예전 단색 받침대. */
 export function drawPedestal2D(c: Ctx, color: string, grade?: string): void {
+  if (grade && grade in GRADE_STYLE) {
+    drawGradePedestal(c, grade as Grade);
+    return;
+  }
   const el = (x: number, y: number, rx: number, ry: number): PathFn => P.ellipse(x, y, rx, ry);
   c.save();
   c.fillStyle = 'rgba(0,0,0,0.25)';
   el(0, 14, 95, 27)(c);
   c.fill();
   c.restore();
-  if (grade === 'god') {
-    glow(c, 0, 0, 110, '#FFFFFF', 0.5);
-    paint(c, el(0, 8, 85, 25), '#B9A3FF', { lw: 0 });
-    paint(c, el(0, 0, 85, 23), rainbow(c, -85, 0, 85, 0), { lw: 4 });
-    return;
-  }
-  if (grade === 'hidden') {
-    paint(c, el(0, 8, 85, 25), '#0E0E16', { lw: 0 });
-    paint(c, el(0, 0, 85, 23), '#1E1E2A', { lw: 5, stroke: '#F1C40F' });
-    return;
-  }
   paint(c, el(0, 8, 85, 25), shade(color, -0.35), { lw: 0 });
   paint(c, el(0, 0, 85, 23), color, { lw: 4 });
 }

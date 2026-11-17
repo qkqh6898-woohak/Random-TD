@@ -1,12 +1,11 @@
 /**
  * B-1 전투 화면 (Codex 패치 확인): 캐릭터 기본 2배·붙으면 1.4배·HUD 아래까지(battleFigureScale), 커진 머리 탭 판정(tapTile),
- * 굴러가는 주사위 눈(rollingDieFace). 화면 전용 순수 함수.
+ * 머리 위 연출 높이(G-2: 주사위 → 초상 카드 cardApexTiles, 뒤집기 cardFlip은 tests/unit/g2.test.ts). 화면 전용 순수 함수.
  */
 import { describe, expect, it } from 'vitest';
 import { tapTile } from '../../src/view/input/tap';
 import type { MapLayout } from '../../src/view/layout';
-import { DIE_ROLL_STEPS, rollingDieFace } from '../../src/view/render/fxModel';
-import { battleFigureScale, dieApexTiles, fillOccupancy, FOOT_OFFSET_TILES, isCrowded, towerFigureSpanTiles } from '../../src/view/render/towerGeom';
+import { battleFigureScale, CARD_ABOVE_HEAD_TILES, cardApexTiles, fillOccupancy, FOOT_OFFSET_TILES, isCrowded, towerFigureSpanTiles } from '../../src/view/render/towerGeom';
 
 // 1칸 100px, 칸 (0, 0) 왼쪽 위 = (0, 0)
 const L: MapLayout = { tile: 100, originX: 0, originY: 0, minCol: 0, minRow: 0, cols: 9, rows: 11 };
@@ -64,32 +63,14 @@ describe('B-1 전투 확대 배수', () => {
   });
 });
 
-describe('B-1 주사위가 멈추는 높이', () => {
-  it('크기 1은 예전(A-1) 그대로 칸 중심 0.94칸 위, 커지면 커진 머리 끝보다 위 (얼굴을 가리지 않음)', () => {
-    expect(dieApexTiles(1)).toBeCloseTo(-0.94, 2);
+describe('B-1 머리 위 연출이 멈추는 높이 (G-2: 초상 카드)', () => {
+  it('카드 가운데는 늘 지금 그림 크기의 머리 끝보다 일정하게 위 (커진 캐릭터의 얼굴을 가리지 않음)', () => {
+    expect(cardApexTiles(1)).toBeCloseTo(towerFigureSpanTiles(1).top - CARD_ABOVE_HEAD_TILES, 6);
+    expect(cardApexTiles(1)).toBeLessThan(-0.94); // 예전 주사위(−0.94칸)보다 위 — 카드가 주사위보다 크다
     for (const s of [1.4, 2, 2.5]) {
-      expect(dieApexTiles(s)).toBeLessThan(towerFigureSpanTiles(s).top);
-      expect(towerFigureSpanTiles(s).top - dieApexTiles(s)).toBeCloseTo(towerFigureSpanTiles(1).top - dieApexTiles(1), 6);
+      expect(cardApexTiles(s)).toBeLessThan(towerFigureSpanTiles(s).top);
+      expect(towerFigureSpanTiles(s).top - cardApexTiles(s)).toBeCloseTo(CARD_ABOVE_HEAD_TILES, 6);
     }
-  });
-});
-
-describe('B-1 굴러가는 주사위 눈', () => {
-  it('진행도 0~1 동안 1~6 사이로 바뀌다가 결과 눈으로 끝난다', () => {
-    for (const revealed of [3, 5]) {
-      const faces: number[] = [];
-      for (let i = 0; i <= 100; i++) faces.push(rollingDieFace(i / 100, revealed));
-      expect(faces.every((f) => f >= 1 && f <= 6)).toBe(true);
-      expect(new Set(faces).size).toBe(6);
-      expect(faces[faces.length - 1]).toBe(revealed);
-      expect(rollingDieFace((DIE_ROLL_STEPS - 1) / DIE_ROLL_STEPS, revealed)).toBe(revealed);
-      // 한 칸씩 바뀐다 (같은 눈이 이어서 두 칸 나오지 않음, 마지막 결과 칸 전까지)
-      const steps = [...Array(DIE_ROLL_STEPS - 1).keys()].map((t) => rollingDieFace((t + 0.5) / DIE_ROLL_STEPS, revealed));
-      for (let t = 1; t < steps.length; t++) expect(steps[t]).not.toBe(steps[t - 1]);
-    }
-    // 진행도가 범위를 넘어도 (Back.easeOut이 아니라 progress라 0~1이지만) 안전
-    expect(rollingDieFace(1.2, 3)).toBe(3);
-    expect(rollingDieFace(-0.1, 3)).toBe(4);
   });
 });
 

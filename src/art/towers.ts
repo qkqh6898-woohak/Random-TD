@@ -11,6 +11,7 @@ import Phaser from 'phaser';
 import type { Grade } from '../data/load';
 import { CHIBI_BOUNDS, PEDESTAL_BOUNDS, drawChibiFigure, drawPedestal } from './chibi';
 import { GRADE_COLORS, hexToInt, lerpColor } from './palette';
+import { EMBLEM_SIZE, STAR_BADGE, drawFactionEmblem, drawGradePedestal, drawStarBadge } from './presentation';
 import { GRADE_STARS, HELMET_COLOR, MAGIC_HOOD, propFor, type TowerLookInput } from './towerLook';
 
 export { SPECIAL_FACTION_COLORS, type TowerLookInput } from './towerLook';
@@ -38,13 +39,70 @@ export function ensureTowerTexture(scene: Phaser.Scene, t: TowerLookInput, facti
   return key;
 }
 
-/** 받침대 텍스처 (등급마다 한 번). */
+/** 텍스처 굽는 배율 (그림 단위 → 텍스처 px). 맵에서는 줄여 그리므로 1이면 충분 */
+const BADGE_RES = 1;
+
+/** 캔버스 텍스처 하나 굽기 (draw는 원점이 (ox, oy)로 옮겨진 컨텍스트에 그린다). 캔버스를 못 쓰면 false */
+function bakeCanvas(scene: Phaser.Scene, key: string, w: number, h: number, ox: number, oy: number, draw: (c: CanvasRenderingContext2D) => void): boolean {
+  const tex = scene.textures.createCanvas(key, Math.ceil(w * BADGE_RES), Math.ceil(h * BADGE_RES));
+  const c = tex?.getContext();
+  if (!tex || !c) {
+    if (tex) scene.textures.remove(key);
+    return false;
+  }
+  c.save();
+  c.scale(BADGE_RES, BADGE_RES);
+  c.translate(ox, oy);
+  draw(c);
+  c.restore();
+  tex.refresh();
+  return true;
+}
+
+/**
+ * 받침대 텍스처 (등급마다 한 번). G-2: 등급마다 다른 장식 + 부드러운 땅 그림자 + 유니크 이상 빛 고리 (art/presentation.ts).
+ * 크기·원점은 예전 그대로(PEDESTAL_BOUNDS) → 탭 판정·패널 배치 그대로. 캔버스를 못 쓰면 예전 Graphics 받침대.
+ */
 export function ensurePedestalTexture(scene: Phaser.Scene, grade: Grade): string {
   const key = `pedestal-${grade}`;
   if (scene.textures.exists(key)) return key;
+  if (bakeCanvas(scene, key, PEDESTAL_TEX_W, PEDESTAL_TEX_H, -PEDESTAL_BOUNDS.left, -PEDESTAL_BOUNDS.top, (c) => drawGradePedestal(c, grade))) return key;
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
   drawPedestal(g, hexToInt(GRADE_COLORS[grade]), -PEDESTAL_BOUNDS.left, -PEDESTAL_BOUNDS.top);
   g.generateTexture(key, PEDESTAL_TEX_W, PEDESTAL_TEX_H);
   g.destroy();
   return key;
+}
+
+/** 별 배지 텍스처 (등급마다 한 번, 원점 가운데). G-2 */
+export function ensureStarBadgeTexture(scene: Phaser.Scene, grade: Grade): string {
+  const key = `badge-stars-${grade}`;
+  if (!scene.textures.exists(key)) bakeCanvas(scene, key, STAR_BADGE.w, STAR_BADGE.h, STAR_BADGE.w / 2, STAR_BADGE.h / 2, (c) => drawStarBadge(c, grade));
+  return key;
+}
+
+/** 종족 문장 배지 텍스처 (종족마다 한 번, 원점 가운데). G-2 */
+export function ensureFactionEmblemTexture(scene: Phaser.Scene, faction: string, color: string): string {
+  const key = `badge-faction-${faction}`;
+  if (!scene.textures.exists(key)) bakeCanvas(scene, key, EMBLEM_SIZE, EMBLEM_SIZE, EMBLEM_SIZE / 2, EMBLEM_SIZE / 2, (c) => drawFactionEmblem(c, faction, color));
+  return key;
+}
+
+/** 발밑 접지 그림자 (부드러운 타원, 한 번). 캐릭터가 뛰면 작아지고 옅어진다 (TowerSprite). G-2 */
+export const CONTACT_SHADOW_KEY = 'fig-contact-shadow';
+export function ensureContactShadowTexture(scene: Phaser.Scene): string {
+  if (!scene.textures.exists(CONTACT_SHADOW_KEY)) {
+    bakeCanvas(scene, CONTACT_SHADOW_KEY, 128, 40, 64, 20, (c) => {
+      c.scale(1, 20 / 64);
+      const g = c.createRadialGradient(0, 0, 4, 0, 0, 64);
+      g.addColorStop(0, 'rgba(20,10,4,0.5)');
+      g.addColorStop(0.6, 'rgba(20,10,4,0.22)');
+      g.addColorStop(1, 'rgba(20,10,4,0)');
+      c.fillStyle = g;
+      c.beginPath();
+      c.arc(0, 0, 64, 0, Math.PI * 2);
+      c.fill();
+    });
+  }
+  return CONTACT_SHADOW_KEY;
 }

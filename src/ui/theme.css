@@ -1,0 +1,273 @@
+/*
+ * G-2 테두리 테마 「금테 성채」 — 따뜻한 호두나무 판 + 금테 + 작은 보석 (src/ui/theme.ts가 장식 SVG를 --orn-* 변수로 넣는다).
+ *
+ * 규칙:
+ *  - styles.css 뒤에 불러온다. 모든 규칙은 `:where([data-theme='gilded'])` 아래 → 원래 규칙과 우선순위가 같아 뒤에 온 이쪽이 이기고,
+ *    더 구체적인 상태 규칙(.is-on·.is-off·.btn-primary·.hud-summon …)은 그대로 이긴다. data-theme가 없으면 예전 모습.
+ *  - **크기는 바꾸지 않는다**: 테두리 두께·여백·글자 크기는 styles.css 그대로(색·배경·그림자만). 장식은 position:absolute 가상 요소
+ *    (pointer-events: none)라 HUD 높이 재기·아래 띠 한 줄(412/360/320)·맵 영역 재기에 영향이 없다.
+ *  - 글자 대비 ≥ 4.5:1 (tests/unit/g2.test.ts가 변수 색으로 확인). 움직이는 장식 없음.
+ */
+:root {
+  --frame-wood-hi: #5a3822;
+  --frame-wood: #3d2416;
+  --frame-wood-lo: #24150c;
+  --frame-ink: #170f0a;
+  --frame-gold: #e8b64a;
+  --frame-gold-hi: #ffe7a3;
+  --frame-gold-lo: #8a5a1c;
+  --frame-ruby: #d6334a;
+  --frame-sapphire: #3d7bfd;
+  --frame-emerald: #2fae6a;
+  /* 판 배경 (위 밝은 호두 → 아래 짙은 호두) · 띠 배경 · 금테 선 */
+  --frame-panel: linear-gradient(180deg, rgba(74, 46, 28, 0.97) 0%, rgba(38, 23, 14, 0.97) 100%);
+  --frame-band-top: linear-gradient(180deg, rgba(36, 22, 13, 0.95) 0%, rgba(52, 32, 19, 0.82) 100%);
+  --frame-band-bottom: linear-gradient(0deg, rgba(30, 18, 11, 0.96) 0%, rgba(54, 34, 20, 0.86) 100%);
+  --frame-line: rgba(232, 182, 74, 0.85);
+  --frame-line-soft: rgba(232, 182, 74, 0.42);
+  --frame-btn: linear-gradient(180deg, #5a3822 0%, #3a2214 100%);
+  --frame-btn-on: linear-gradient(180deg, #ffe08a 0%, #e8b64a 60%, #b98222 100%);
+  /* 모서리 장식 크기 */
+  --orn-size: 6.4cqw;
+  --orn-size-s: 4.6cqw;
+}
+
+/* 공통 색 바꾸기: 판·선·흐린 글자 (styles.css의 --panel·--panel-line을 쓰는 곳이 모두 따라온다) */
+:where([data-theme='gilded']) {
+  --panel: rgba(42, 26, 16, 0.86);
+  --panel-line: rgba(232, 182, 74, 0.38);
+  --text-dim: #d9cfbb;
+}
+
+/* ---------- 바깥 (넓은 화면 양옆 띠) ---------- */
+:where([data-theme='gilded']) #app {
+  background:
+    radial-gradient(70% 55% at 50% 40%, rgba(90, 56, 34, 0.55) 0%, rgba(23, 15, 10, 0) 70%),
+    var(--orn-lattice, none) center / 60px 60px repeat,
+    var(--frame-wood-lo);
+}
+
+/* 무대가 화면보다 좁으면(넓은 화면) 금테 + 나무 액자 + 그림자. 무대 밖(box-shadow)이라 무대 크기는 그대로 */
+:where([data-theme='gilded']) #stage[data-full='0'] {
+  box-shadow:
+    0 0 0 3px var(--frame-gold),
+    0 0 0 5px var(--frame-ink),
+    0 0 0 11px var(--frame-wood),
+    0 0 0 13px var(--frame-gold-lo),
+    0 18px 60px rgba(0, 0, 0, 0.7);
+}
+
+/* ---------- 맵 테두리: 캔버스 위 얇은 금테 + 가장자리 어둠 (누르기는 통과, #game은 이미 position:absolute) ---------- */
+:where([data-theme='gilded']) #game::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow:
+    inset 0.5cqw 0 0 rgba(232, 182, 74, 0.55),
+    inset -0.5cqw 0 0 rgba(232, 182, 74, 0.55),
+    inset 1cqw 0 0 rgba(23, 15, 10, 0.75),
+    inset -1cqw 0 0 rgba(23, 15, 10, 0.75),
+    inset 0 0 6cqw rgba(23, 15, 10, 0.55);
+}
+
+/* ---------- 버튼 (기본): styles.css .btn이 읽는 변수만 바꾼다 → .hud-summon·.hud-ready 같은 색 있는 버튼은 그대로 ---------- */
+:where([data-theme='gilded']) {
+  --btn-bg: var(--frame-btn);
+  --btn-line: var(--frame-line-soft);
+  --btn-shadow: inset 0 0.3cqw 0 rgba(255, 231, 163, 0.16), 0 0.5cqw 0 rgba(0, 0, 0, 0.35);
+}
+
+:where([data-theme='gilded']) .btn-campaign {
+  background: var(--frame-btn);
+}
+
+/* ---------- HUD 위 띠: 호두나무 + 아래 금테 + 양 끝 모서리 장식 + 가운데 보석 ---------- */
+:where([data-theme='gilded']) .hud-bar {
+  position: relative;
+  background: var(--frame-band-top);
+  border-bottom-color: var(--frame-line);
+  box-shadow: 0 0.6cqw 1.6cqw rgba(0, 0, 0, 0.45);
+}
+
+:where([data-theme='gilded']) .hud-bar::before {
+  content: '';
+  position: absolute;
+  inset: auto 0 -0.3cqw 0;
+  height: var(--orn-size);
+  pointer-events: none;
+  background:
+    var(--orn-corner-bl, none) left bottom / var(--orn-size) var(--orn-size) no-repeat,
+    var(--orn-corner-br, none) right bottom / var(--orn-size) var(--orn-size) no-repeat;
+}
+
+:where([data-theme='gilded']) .hud-bar::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: calc(-0.15cqw - var(--orn-size-s) / 2);
+  width: var(--orn-size-s);
+  height: var(--orn-size-s);
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: var(--orn-gem-ruby, none) center / contain no-repeat;
+}
+
+:where([data-theme='gilded']) .hud-stage {
+  background: rgba(23, 15, 10, 0.6);
+  box-shadow: inset 0 0 0 0.3cqw var(--frame-line-soft);
+}
+
+:where([data-theme='gilded']) .hud-banner {
+  border-color: var(--frame-line-soft);
+}
+
+/* ---------- 아래 띠 + 하단 메뉴 ---------- */
+:where([data-theme='gilded']) .hud-bottom {
+  background: var(--frame-band-bottom);
+  border-top-color: var(--frame-line);
+  box-shadow: 0 -0.6cqw 1.6cqw rgba(0, 0, 0, 0.4);
+}
+
+:where([data-theme='gilded']) .hud-bottom::before {
+  content: '';
+  position: absolute;
+  inset: -0.3cqw 0 auto 0;
+  height: var(--orn-size);
+  pointer-events: none;
+  background:
+    var(--orn-corner-tl, none) left top / var(--orn-size) var(--orn-size) no-repeat,
+    var(--orn-corner-tr, none) right top / var(--orn-size) var(--orn-size) no-repeat;
+}
+
+:where([data-theme='gilded']) .hud-bottom::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: calc(-0.15cqw - var(--orn-size-s) / 2);
+  width: var(--orn-size-s);
+  height: var(--orn-size-s);
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: var(--orn-gem-sapphire, none) center / contain no-repeat;
+}
+
+:where([data-theme='gilded']) .hud-towers {
+  background: rgba(23, 15, 10, 0.55);
+  box-shadow: inset 0 0 0 0.3cqw var(--frame-line-soft);
+}
+
+:where([data-theme='gilded']) .hud-menu {
+  background:
+    var(--orn-trim, none) left top / 3.6cqw 0.8cqw repeat-x,
+    linear-gradient(180deg, #2c1a0f 0%, #1c110a 100%);
+  border-top-color: var(--frame-ink);
+}
+
+:where([data-theme='gilded']) .hud-menu-btn {
+  background: var(--frame-btn);
+  border-color: var(--frame-line-soft);
+}
+
+:where([data-theme='gilded']) .hud-menu-btn.is-on {
+  background: var(--frame-btn-on);
+  border-color: var(--frame-gold-hi);
+}
+
+/* ---------- [소환] 버튼: 주사위 🎲 대신 금빛 소환문 + 캐릭터 실루엣 아이콘 (theme.ts summonIconSvg) ---------- */
+.hud-summon-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 1.2em;
+  height: 1.2em;
+  background: var(--orn-summon, none) center / contain no-repeat;
+  filter: drop-shadow(0 0.2cqw 0 rgba(255, 251, 237, 0.7));
+}
+
+.hud-summon.is-off .hud-summon-icon {
+  filter: grayscale(0.6) brightness(1.2);
+}
+
+/* ---------- 바텀 시트 · 타워 정보 패널 · 일시정지 · 타이틀 창 ---------- */
+:where([data-theme='gilded']) .bsheet {
+  background:
+    var(--orn-corner-tl, none) left 0.6cqw top 0.6cqw / var(--orn-size) var(--orn-size) no-repeat,
+    var(--orn-corner-tr, none) right 0.6cqw top 0.6cqw / var(--orn-size) var(--orn-size) no-repeat,
+    var(--frame-panel);
+  border-top-color: var(--frame-gold);
+  box-shadow:
+    0 -2cqw 6cqw rgba(0, 0, 0, 0.55),
+    inset 0 0.4cqw 0 rgba(255, 231, 163, 0.18);
+}
+
+:where([data-theme='gilded']) .bs-grip-bar {
+  background: var(--frame-gold);
+  opacity: 0.7;
+}
+
+:where([data-theme='gilded']) .bs-tab.is-on {
+  background: linear-gradient(180deg, #8a5a1c 0%, #5a3822 100%);
+  border-color: var(--frame-gold-hi);
+  color: #fff7e0;
+}
+
+:where([data-theme='gilded']) .tower-panel,
+:where([data-theme='gilded']) .pause-panel,
+:where([data-theme='gilded']) .title-dialog {
+  background:
+    var(--orn-corner-tl, none) left 0.4cqw top 0.4cqw / var(--orn-size-s) var(--orn-size-s) no-repeat,
+    var(--orn-corner-tr, none) right 0.4cqw top 0.4cqw / var(--orn-size-s) var(--orn-size-s) no-repeat,
+    var(--orn-corner-bl, none) left 0.4cqw bottom 0.4cqw / var(--orn-size-s) var(--orn-size-s) no-repeat,
+    var(--orn-corner-br, none) right 0.4cqw bottom 0.4cqw / var(--orn-size-s) var(--orn-size-s) no-repeat,
+    var(--frame-panel);
+  border-color: var(--frame-line);
+  box-shadow:
+    0 2.4cqw 6cqw rgba(0, 0, 0, 0.6),
+    inset 0 0 0 0.3cqw rgba(23, 15, 10, 0.8),
+    inset 0 0 0 0.6cqw rgba(232, 182, 74, 0.22);
+}
+
+:where([data-theme='gilded']) .pause-screen,
+:where([data-theme='gilded']) .title-dialog::backdrop {
+  background: rgba(16, 10, 6, 0.72);
+}
+
+/* ---------- 타이틀: 주사위 장식 대신 캐릭터 문장 (theme.ts crestSvg) ---------- */
+.title-crest {
+  display: inline-block;
+  width: 11.5cqw;
+  height: 13cqw;
+  background: var(--orn-crest-knight, none) center / contain no-repeat;
+  filter: drop-shadow(0 1cqw 1.2cqw rgba(0, 0, 0, 0.5));
+  animation: crest-bob 2.8s ease-in-out infinite;
+}
+
+.title-crest-right {
+  background-image: var(--orn-crest-mage, none);
+  animation-delay: -1.4s;
+}
+
+@keyframes crest-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-0.8cqw) rotate(4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-crest {
+    animation: none;
+  }
+}
+
+:where([data-theme='gilded']) .title-sub {
+  background: rgba(30, 18, 11, 0.7);
+  box-shadow: inset 0 0 0 0.3cqw var(--frame-line-soft);
+}
+
+:where([data-theme='gilded']) .title-records-btn {
+  background: rgba(36, 22, 13, 0.85);
+}

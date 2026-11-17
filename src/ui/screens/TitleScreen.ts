@@ -152,9 +152,10 @@ export function createTitleScreen(opts: TitleScreenOptions): UiView {
     h(
       'div',
       { class: 'title-logo' },
-      h('span', { class: 'title-dice', text: '🎲', attrs: { 'aria-hidden': 'true' } }),
+      // G-2: 주사위 장식 대신 캐릭터 문장 (기사·마법사 방패, theme.ts crestSvg)
+      h('span', { class: 'title-crest', attrs: { 'aria-hidden': 'true' } }),
       h('h1', { class: 'title-name', text: '운빨 디펜스' }),
-      h('span', { class: 'title-dice title-dice-right', text: '🎲', attrs: { 'aria-hidden': 'true' } }),
+      h('span', { class: 'title-crest title-crest-right', attrs: { 'aria-hidden': 'true' } }),
     ),
     h('p', { class: 'title-sub', text: '아트라 연합군이여, 녹스 군단을 막아라!' }),
     // debug 버튼·[새 게임]은 따로 띄워 [시작] 자리가 debug 여부와 상관없이 같게 (가운데 캐릭터를 덮지 않게)

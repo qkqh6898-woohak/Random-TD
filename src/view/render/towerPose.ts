@@ -33,6 +33,14 @@ export const ATTACK_ANIM_MS = 250;
 export const ATTACK_CALM_MS = 300;
 /** 등장 동작 길이 (ms) */
 export const APPEAR_MS = 400;
+/** G-2 몸 흔들림(살랑) 주기 (ms)·크기 (rad, 0.02 아래 — '갸웃'과 구별되는 아주 작은 흔들림) */
+export const SWAY_PERIOD_MS = 3400;
+export const SWAY_RAD = 0.016;
+/** G-2 공격: 처음 이만큼(공격 동작 비율) 뒤로 당겼다가(준비) 앞으로 찌른다 */
+export const ATTACK_WINDUP = 0.18;
+/** G-2 반짝임(무기·장신구 빛) 주기 (ms)·길이 (ms) — 타워마다 위상이 다르다 */
+export const GLINT_PERIOD_MS = 5200;
+export const GLINT_MS = 420;
 
 const TAU = Math.PI * 2;
 
@@ -51,6 +59,14 @@ export interface TowerPose {
   gesture: number;
   /** 공격 진행 (0~1~0, sin 반 주기), 공격 중이 아니면 0 */
   attackK: number;
+  /** G-2 살랑 흔들림 (rad, |값| < SWAY_RAD) — angle과 따로 더한다 (공격 직후 angle = 0 규칙은 그대로) */
+  sway: number;
+  /** G-2 공격 타격 빛 (0~1): 찌르는 순간 가장 밝다 */
+  punch: number;
+  /** G-2 반짝임 (0~1, 창 밖 0)과 자리 (그림 너비·높이 비율, 발밑 기준) */
+  glint: number;
+  glintX: number;
+  glintY: number;
 }
 
 /** 0~1 의사 난수 (seed, n) → 같은 입력이면 같은 값. 화면 연출용 (sim 난수 아님). */
@@ -104,15 +120,27 @@ export function towerPose(input: PoseInput): TowerPose {
   let dx = 0;
   let gesture = -1;
   let attackK = 0;
+  let punch = 0;
+  const sway = SWAY_RAD * Math.sin((TAU * timeMs) / SWAY_PERIOD_MS + seed * 11.3);
 
   const sinceAttack = input.attackAtMs === null ? Infinity : timeMs - input.attackAtMs;
   if (sinceAttack >= 0 && sinceAttack < input.attackMs && input.attackMs > 0) {
-    // 공격: 앞으로 내밀었다 돌아옴 (sin 반 주기), 내밀 때 살짝 눌림
-    const k = Math.sin((Math.PI * sinceAttack) / input.attackMs);
-    attackK = k;
-    lunge = 0.12 * k;
-    sx *= 1 + 0.06 * k;
-    sy *= 1 - 0.05 * k;
+    // 공격 (G-2 펀치): 처음 18%는 살짝 뒤로 당기며 웅크리고(준비), 그다음 앞으로 세게 찔렀다 돌아온다. 찌를 때 늘어나고 빛난다
+    const p = sinceAttack / input.attackMs;
+    attackK = Math.sin(Math.PI * p);
+    if (p < ATTACK_WINDUP) {
+      const w = p / ATTACK_WINDUP;
+      lunge = -0.035 * w;
+      sx *= 1 + 0.05 * w;
+      sy *= 1 - 0.06 * w;
+    } else {
+      const q = (p - ATTACK_WINDUP) / (1 - ATTACK_WINDUP);
+      const k = Math.sin(Math.PI * q);
+      lunge = 0.16 * k;
+      sx *= 1 - 0.04 * k;
+      sy *= 1 + 0.06 * k;
+      punch = q < 0.5 ? 1 - q * 2 : 0;
+    }
   } else if (!(sinceAttack >= 0 && sinceAttack < ATTACK_CALM_MS)) {
     // 고유 동작 자리: 주기마다 0~1초 늦게 시작해 (기본 0.6초) 동안 프리셋 몸 동작
     const len = Math.min(input.gestureMs ?? GESTURE_MS, GESTURE_PERIOD_MS - GESTURE_JITTER_MS);
@@ -184,5 +212,13 @@ export function towerPose(input: PoseInput): TowerPose {
       sy *= s;
     }
   }
-  return { bob, sx, sy, angle, lunge, dx, gesture, attackK };
+  // 반짝임: 주기마다 한 번, 타워마다 다른 때·자리 (무기·장신구 쪽: 몸 위 절반의 좌우 끝)
+  const gt = timeMs + seed * GLINT_PERIOD_MS * 3.7;
+  const gc = Math.floor(gt / GLINT_PERIOD_MS);
+  const gStart = hash01(Math.floor(seed * 1e6) + 17, gc) * (GLINT_PERIOD_MS - GLINT_MS);
+  const gp = (gt - gc * GLINT_PERIOD_MS - gStart) / GLINT_MS;
+  const glint = gp >= 0 && gp < 1 ? Math.sin(Math.PI * gp) : 0;
+  const glintX = (hash01(gc, 31) < 0.5 ? -1 : 1) * (0.22 + 0.12 * hash01(gc, 37));
+  const glintY = 0.5 + 0.25 * hash01(gc, 41);
+  return { bob, sx, sy, angle, lunge, dx, gesture, attackK, sway, punch, glint, glintX, glintY };
 }

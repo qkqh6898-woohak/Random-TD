@@ -22,10 +22,16 @@ import {
   PEDESTAL_ORIGIN_Y,
   PEDESTAL_TEX_W,
   SPECIAL_FACTION_COLORS,
+  ensureContactShadowTexture,
+  ensureFactionEmblemTexture,
   ensurePedestalTexture,
+  ensureStarBadgeTexture,
   ensureTowerTexture,
   type TowerLookInput,
 } from '../../art/towers';
+import { TEX_SPARK, ensureFxTextures } from '../../art/fx';
+import { EMBLEM_SIZE, STAR_BADGE } from '../../art/presentation';
+import { prefersReducedMotion } from '../../ui/motion';
 import { compose } from '../../art/characters/compose';
 import { fxOf } from '../../art/characters/draw';
 import { IDLE_PRESETS, idleParts, type IdlePreset } from '../../art/characters/idle';
@@ -35,7 +41,7 @@ import type { Tower } from '../../sim/entities/Tower';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { MOB_DEPTH_BASE } from './MobSprite';
 import { attackAnimMs, towerPose } from './towerPose';
-import { battleFigureScale, FIGURE_TILES, FOOT_OFFSET_TILES, fillOccupancy, isCrowded, PEDESTAL_WIDTH_TILES } from './towerGeom';
+import { battleFigureScale, FIGURE_TILES, FOOT_OFFSET_TILES, fillOccupancy, isCrowded, PEDESTAL_WIDTH_TILES, pedestalScaleFor } from './towerGeom';
 
 /** 이동·교환 뒤 새 칸으로 미끄러지는 시간 (ms) */
 const SLIDE_MS = 140;
@@ -52,7 +58,19 @@ export interface TowerArt {
 }
 
 /** 연출 끄기 (T-2) 때의 고정 자세 */
-const STILL_POSE = Object.freeze({ bob: 0, sx: 1, sy: 1, angle: 0, lunge: 0, dx: 0, gesture: -1, attackK: 0 });
+const STILL_POSE = Object.freeze({ bob: 0, sx: 1, sy: 1, angle: 0, lunge: 0, dx: 0, gesture: -1, attackK: 0, sway: 0, punch: 0, glint: 0, glintX: 0, glintY: 0 });
+
+/**
+ * G-2 캐릭터 겉모습 (칸 배수, 발밑 기준): 별 배지는 받침대 앞(칸 안), 종족 문장은 받침대 왼쪽 앞, 접지 그림자는 발밑.
+ * 모두 칸 아래 끝(+0.5칸 = 발밑 +0.2칸) 안 → 탭 판정·정보 패널 배치(받침대 아래 +0.475칸)와 겹치지 않는다.
+ */
+export const STAR_BADGE_Y_TILES = 0.15;
+export const STAR_BADGE_W_TILES = 0.56;
+export const EMBLEM_X_TILES = -0.36;
+export const EMBLEM_Y_TILES = 0.05;
+export const EMBLEM_D_TILES = 0.25;
+/** 접지 그림자 너비 (칸 배수 × 그림 크기 배수, 상한 0.8칸) */
+const CONTACT_SHADOW_TILES = 0.22;
 
 export class TowerSprite {
   readonly id: number;
@@ -87,6 +105,14 @@ export class TowerSprite {
   private lungeDy = 0;
   /** 혼돈의 용에게 기절 중 (M4-5): 잿빛 + 떨림 */
   private stunned = false;
+  /** G-2: 발밑 접지 그림자 · 반짝임 · 공격 타격 빛 · 별 배지 · 종족 문장 */
+  private readonly contactShadow: Phaser.GameObjects.Image;
+  private readonly pedestal: Phaser.GameObjects.Image;
+  private readonly pedestalBase: number;
+  private readonly glintImg: Phaser.GameObjects.Image;
+  private readonly punchImg: Phaser.GameObjects.Image;
+  readonly starBadge: Phaser.GameObjects.Image;
+  readonly emblem: Phaser.GameObjects.Image;
 
   constructor(scene: Phaser.Scene, tower: Tower, layout: MapLayout, art: TowerArt) {
     this.id = tower.id;
@@ -106,7 +132,9 @@ export class TowerSprite {
     this.baseX = c.x;
     this.baseY = c.y + layout.tile * FOOT_OFFSET_TILES;
     const pedestal = scene.add.image(0, 0, pedKey).setOrigin(0.5, PEDESTAL_ORIGIN_Y);
-    pedestal.setScale((layout.tile * PEDESTAL_WIDTH_TILES) / PEDESTAL_TEX_W);
+    this.pedestalBase = (layout.tile * PEDESTAL_WIDTH_TILES) / PEDESTAL_TEX_W;
+    pedestal.setScale(this.pedestalBase * pedestalScaleFor(this.artScale));
+    this.pedestal = pedestal;
     if (charLook) {
       const tex = towerCharacterTexture(scene, charLook, awakened);
       this.character = new CharacterFigure(scene, tex);
@@ -119,7 +147,18 @@ export class TowerSprite {
       this.preset = null;
       this.figure = scene.add.image(0, 0, figKey).setOrigin(FIGURE_ORIGIN_X, FIGURE_ORIGIN_Y).setScale(this.scale);
     }
-    this.root = scene.add.container(this.baseX, this.baseY, [pedestal, this.figure]);
+    // G-2 겉모습: 접지 그림자(받침대 위·캐릭터 아래), 반짝임·타격 빛(캐릭터 위, 더하기 섞기), 별 배지·종족 문장(맨 앞)
+    ensureFxTextures(scene);
+    const t = layout.tile;
+    this.contactShadow = scene.add.image(0, 0, ensureContactShadowTexture(scene));
+    this.glintImg = scene.add.image(0, 0, TEX_SPARK).setBlendMode(Phaser.BlendModes.ADD).setTint(0xfff3c4).setVisible(false);
+    this.punchImg = scene.add.image(0, 0, TEX_SPARK).setBlendMode(Phaser.BlendModes.ADD).setTint(0xffe6a0).setVisible(false);
+    this.starBadge = scene.add.image(0, t * STAR_BADGE_Y_TILES, ensureStarBadgeTexture(scene, look.grade)).setScale((t * STAR_BADGE_W_TILES) / STAR_BADGE.w);
+    const factionColor = art.factionColor(look.faction) ?? SPECIAL_FACTION_COLORS[look.faction] ?? '#888888';
+    this.emblem = scene.add
+      .image(t * EMBLEM_X_TILES, t * EMBLEM_Y_TILES, ensureFactionEmblemTexture(scene, look.faction, factionColor))
+      .setScale((t * EMBLEM_D_TILES) / EMBLEM_SIZE);
+    this.root = scene.add.container(this.baseX, this.baseY, [pedestal, this.contactShadow, this.figure, this.glintImg, this.punchImg, this.emblem, this.starBadge]);
     this.root.setDepth(MOB_DEPTH_BASE + this.baseY);
     this.seed = Math.random();
     this.attackMs = attackAnimMs(art.attackIntervalMs(tower.tower));
@@ -179,7 +218,8 @@ export class TowerSprite {
     return this.stunned;
   }
 
-  update(timeMs: number, crowded: boolean, topLimit: number): void {
+  /** @param reduced 기기 '동작 줄이기' (TowerLayer가 프레임마다 한 번 읽어 넘긴다) — 반짝임·타격 빛을 끈다 */
+  update(timeMs: number, crowded: boolean, topLimit: number, reduced = false): void {
     // 연출 끄기 (T-2): 대기 동작·공격 몸짓·미끄러짐 없이 고정 자세
     const still = effectsOff();
     if (still) this.slideFrom = null;
@@ -215,10 +255,37 @@ export class TowerSprite {
     });
     this.artScale = battleFigureScale(this.lookScale, crowded, (this.baseY - topLimit) / this.tile);
     const s = this.scale * this.artScale;
-    this.figure.setPosition(this.lungeDx * pose.lunge * this.tile + pose.dx * this.tile, pose.bob * this.tile + this.lungeDy * pose.lunge * this.tile);
+    this.pedestal.setScale(this.pedestalBase * pedestalScaleFor(this.artScale));
+    const fx = this.lungeDx * pose.lunge * this.tile + pose.dx * this.tile;
+    const fy = pose.bob * this.tile + this.lungeDy * pose.lunge * this.tile;
+    this.figure.setPosition(fx, fy);
     this.figure.setScale(s * pose.sx * this.facing, s * pose.sy);
-    // 기절: 좌우로 작게 떨린다
-    this.figure.setRotation(this.stunned ? Math.sin(timeMs * 0.03) * 0.06 : pose.angle);
+    // 기절: 좌우로 작게 떨린다. G-2: 평소에는 아주 작은 살랑 흔들림을 더한다
+    this.figure.setRotation(this.stunned ? Math.sin(timeMs * 0.03) * 0.06 : pose.angle + pose.sway);
+    // 접지 그림자: 뛰면(bob 위) 작고 옅게 → 몸이 떠오른 게 보인다
+    const lift = Math.max(0, -fy / this.tile);
+    const shadowW = Math.min(0.8, CONTACT_SHADOW_TILES * this.artScale) * this.tile * Math.max(0.55, 1 - lift * 3);
+    this.contactShadow.setDisplaySize(shadowW, shadowW * 0.31).setPosition(fx * 0.5, 0).setAlpha(Math.max(0.35, 1 - lift * 4));
+    // 반짝임·타격 빛 (연출 끄기·동작 줄이기면 없음)
+    const quiet = still || this.stunned || reduced;
+    const figH = this.tile * FIGURE_TILES * this.artScale;
+    if (!quiet && pose.glint > 0.02) {
+      const gs = this.tile * 0.22 * pose.glint;
+      this.glintImg
+        .setVisible(true)
+        .setPosition(fx + pose.glintX * figH * 0.5 * this.facing, fy - pose.glintY * figH)
+        .setDisplaySize(gs, gs)
+        .setRotation(pose.glint * 1.2)
+        .setAlpha(pose.glint);
+    } else this.glintImg.setVisible(false);
+    if (!quiet && pose.punch > 0.02) {
+      const ps = this.tile * (0.25 + 0.2 * pose.punch);
+      this.punchImg
+        .setVisible(true)
+        .setPosition(fx + this.lungeDx * this.tile * 0.42, fy - figH * 0.42 + this.lungeDy * this.tile * 0.3)
+        .setDisplaySize(ps, ps)
+        .setAlpha(pose.punch * 0.9);
+    } else this.punchImg.setVisible(false);
     if (this.character && preset) {
       // 파츠 대기 동작: 기절 중에는 멈춘다
       const r = this.character.tex.render;
@@ -239,6 +306,17 @@ export class TowerSprite {
       });
       this.character.apply(compose(r, idle, still ? 0 : timeMs, this.seed, !this.character.external));
     }
+  }
+
+  /** G-2 겉모습 텍스처 키 (E2E): 받침대 · 별 배지 · 종족 문장 · 접지 그림자 */
+  get presentation(): { pedestal: string; stars: string; emblem: string; shadow: string; pedestalScale: number } {
+    return {
+      pedestal: this.pedestal.texture.key,
+      stars: this.starBadge.texture.key,
+      emblem: this.emblem.texture.key,
+      shadow: this.contactShadow.texture.key,
+      pedestalScale: this.pedestal.scaleX / this.pedestalBase,
+    };
   }
 
   /** 파츠 그림 텍스처 키 (외형 데이터가 없으면 null) — E2E가 새 그림인지 확인 */
@@ -305,6 +383,7 @@ export class TowerLayer {
     const seen = new Set<number>();
     const cols = this.layout.cols;
     fillOccupancy(this.occupied, towers, cols);
+    const reduced = prefersReducedMotion();
     for (const t of towers) {
       seen.add(t.id);
       let sprite = this.sprites.get(t.id);
@@ -323,7 +402,7 @@ export class TowerLayer {
         if (this.pendingAppear.delete(t.id)) sprite.appear(timeMs);
       } else sprite.follow(t, timeMs);
       sprite.setStunned(tick !== undefined && tick < (t.stunUntil ?? 0));
-      sprite.update(timeMs, isCrowded(this.occupied, t.tx, t.ty, cols), this.topLimit);
+      sprite.update(timeMs, isCrowded(this.occupied, t.tx, t.ty, cols), this.topLimit, reduced);
     }
     for (const [id, s] of this.sprites) {
       if (!seen.has(id)) {
@@ -404,6 +483,11 @@ export class TowerLayer {
 
   figureTransform(id: number): { y: number; scaleY: number; angle: number } | null {
     return this.sprites.get(id)?.figureTransform ?? null;
+  }
+
+  /** G-2 겉모습 텍스처 키 (E2E). 그림이 없으면 null */
+  presentationOf(id: number): TowerSprite['presentation'] | null {
+    return this.sprites.get(id)?.presentation ?? null;
   }
 
   /** 그 타워 그림의 파츠 텍스처 키 (E2E: 새 캐릭터 그림인지). 예전 한 장 그림이면 null */

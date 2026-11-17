@@ -199,7 +199,8 @@ export function createHud(opts: HudOptions): HudView {
   // 아래 띠: 타워 수 · 소환 안내
   const towersEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-towers', 'aria-label': '놓인 타워 수', ...off }, text: '0/0' });
   const hintEl = h('span', { class: 'hud-hint', attrs: { 'data-testid': 'hud-hint', ...off }, text: '' });
-  // [🎲 소환 100원] (T-2): 짧게 = 자동 칸에 하나, 꾹 = 계속 (초당 약 4번). 승급 가능 버튼이 보이면 '소환' 글자는 숨긴다 (CSS)
+  // [소환 100원] (T-2): 짧게 = 자동 칸에 하나, 꾹 = 계속 (초당 약 4번). 승급 가능 버튼이 보이면 '소환' 글자는 숨긴다 (CSS)
+  // G-2: 주사위 🎲 대신 소환문 + 캐릭터 실루엣 아이콘 (theme.ts summonIconSvg → theme.css .hud-summon-icon)
   const summonCost = h('span', { class: 'hud-summon-cost', text: '' });
   const summonBtn = h(
     'button',
@@ -207,7 +208,7 @@ export function createHud(opts: HudOptions): HudView {
       class: 'btn btn-chip hud-summon',
       attrs: { type: 'button', 'data-action': 'summon', 'data-testid': 'hud-summon', 'aria-label': '소환 (꾹 누르면 연속)' },
     },
-    h('span', { class: 'hud-summon-die', attrs: { 'aria-hidden': 'true' }, text: '🎲' }),
+    h('span', { class: 'hud-summon-icon', attrs: { 'aria-hidden': 'true' } }),
     h('span', { class: 'hud-summon-word', text: '소환' }),
     summonCost,
   );
