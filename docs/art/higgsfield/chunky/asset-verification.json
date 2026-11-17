@@ -1,0 +1,4059 @@
+{
+  "base_commit": "ca86c46d437de7aaeae82c9ba561c1a252442f29",
+  "count": 159,
+  "changed": 159,
+  "characters_manifest_modified": false,
+  "records": [
+    {
+      "n": 1,
+      "file": "miner",
+      "job_id": "1599d909-5c19-4fbf-8324-c26adea2146f",
+      "webp_sha256": "4604c21626d8468686820e62d194e6e754391f6ccf071c941d166ecd40959697",
+      "width": 237,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        102,
+        48,
+        958,
+        974
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "209011404a8ecd2cf1937c77238c69345d98d88f9b3c11a54b244a749c81ca39",
+      "raw_png_sha256": "44e7fceec0c1f649631df4d934bcefd7e347db4aaccd174eaae93d5fea1962dd",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 2,
+      "file": "goblin",
+      "job_id": "f28906c5-f513-4fb5-a7d2-331925a91d51",
+      "webp_sha256": "1672598ecc70523e397b81799e0e7567de981ccfc9f3b8a7880495ae163b474d",
+      "width": 255,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        63,
+        73,
+        956,
+        971
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "00b111d73db76c30be964e18b56cd2c446995b2c9e7dad6be017a8c43c0de448",
+      "raw_png_sha256": "a05d557bb8a73f90f87648729d2248259f22df2b12725122910182499c324b15",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 3,
+      "file": "archer",
+      "job_id": "c86413f5-d70a-4e88-a523-4f35fd889453",
+      "webp_sha256": "ffd8f8820128d17e720db7bdbd64980421867fa44f8455289ad1e63f4663773c",
+      "width": 245,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        85,
+        80,
+        926,
+        960
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "bce89bd686f9a96f0dfb8e02a6fc466dde9ecd1bcfe9fb75983cf64e09a33c42",
+      "raw_png_sha256": "a2834e5d78373ccb1ea7b86779c66d097f69abe776cfadeb7761316731e320bf",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 4,
+      "file": "warrior",
+      "job_id": "7aa05909-a9d1-40a6-ad02-7acf5f5b31db",
+      "webp_sha256": "2fe009008a8721fe7788d3ce9625a2677ed27a4ba436c4b641dfe3f761e13db9",
+      "width": 233,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        88,
+        45,
+        949,
+        991
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "dc065af3f3f4314b64fa8bfdfc593c32bf6c7663c07e6701a569ababbfe16a77",
+      "raw_png_sha256": "a6ccac8d3272e0bddd2b7b7be4e45bfd87d572ffc94f4a8372ae792bf7575dac",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 5,
+      "file": "ninja",
+      "job_id": "daf783d9-93e0-4a03-b8a7-b14960d0ad70",
+      "webp_sha256": "c2efff022ff99e20ceb8f69fb1b8fc89878e093264e65335c39c9c33f5411173",
+      "width": 256,
+      "height": 254,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        61,
+        85,
+        969,
+        986
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "a9cda3a3f5ea27393c5bf4ab81343aebea6f77c9f8c55048a68c65798de73d27",
+      "raw_png_sha256": "6ba14b6d937794ffd095b968a61332c2e7336baa57108d8a887b8afd809ddb44",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 6,
+      "file": "k9",
+      "job_id": "7fbc1253-dc7d-4e8b-b60d-ce2bcc46e2f8",
+      "webp_sha256": "d473513087af9a96222f214de38fb35542114e9c8572181e0d653f79ed426e61",
+      "width": 210,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        136,
+        67,
+        871,
+        963
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "a80761fda6ca8fd28fd6fbe474c1eeb3972b6402019c3becc4782efb92cad062",
+      "raw_png_sha256": "8eb0e8cc5898b2ad6d4d8988116a648275506878ed3cd12dc99623353d4acf23",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 7,
+      "file": "bard",
+      "job_id": "4f16fa65-1848-4c5f-81ce-282272645533",
+      "webp_sha256": "83ecc5eedad8b4861e32ab6249ca2843da6fbab944088d53108d7dbea0654599",
+      "width": 233,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        114,
+        87,
+        909,
+        960
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "79215dc0bab1cadfb0af61620590ce20cb1d337e5ebd56fece0c207f7fae8de0",
+      "raw_png_sha256": "03a01152ab6938001e53ac29639342e3c1d358a3a7e48871402f5c2844008418",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 8,
+      "file": "drummer",
+      "job_id": "25d45e4d-a941-4c92-9a42-3bb547e830ce",
+      "webp_sha256": "f5e8d22dcdab84031c0fc8ca61098f9a76e01971e5544f530fd116f58bf14cad",
+      "width": 214,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        95,
+        56,
+        875,
+        988
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "63041fc94bc8d8f8b934d7fa2225fc3212bb4ddb48d4e55224005a508d8eb7f2",
+      "raw_png_sha256": "eaf97e68cb7a8e8dd3518d774474721ffe1d6f581b00d1945d29d83c0228a673",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 9,
+      "file": "apprentice",
+      "job_id": "616c24dd-2867-44af-8a8e-1941cb5dc6d9",
+      "webp_sha256": "fc8bf5202cef33a06e3a7a4dedc0704e1abf8c772022400cc05acfd936422e90",
+      "width": 230,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        119,
+        88,
+        902,
+        961
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "4469e008fd20bd6bcc13a5fb48fffcd0ae1bf3683efbd2992c212f8aa6cde924",
+      "raw_png_sha256": "2c2102712664a1edf7ad8f33c667cd516eff217303fc709acd3a997d14f84c04",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 10,
+      "file": "spearman",
+      "job_id": "27ea3369-ca06-4d0a-b0c5-c734f61e4f59",
+      "webp_sha256": "7e9bdd3d58ce77c0ab267af9cf51a645c13d4fd5b4234f99f64d62f9e004b825",
+      "width": 247,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        116,
+        88,
+        934,
+        935
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "d6664ab20729518fe3f5f3f9b79f1aa02ca830b7424c26b9aa70844e1b64a063",
+      "raw_png_sha256": "7da9ffd2c004e47203322d86a60f07568cd19c7b1512df113ad0b36a1110410e",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 11,
+      "file": "stonegolem",
+      "job_id": "db8500cb-cd71-4381-a46f-9f3ad41066c9",
+      "webp_sha256": "2ab290dd169f8ba1ca63715a0d0f0ec356a1cc5231a22d8d9a9ad8c2d0b14ff5",
+      "width": 214,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        119,
+        55,
+        893,
+        981
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "a972e17b38d5cb78784027be4fbea917527b82a3b23fda29e3c81e4fbcec88bb",
+      "raw_png_sha256": "8145b9a5c045422c4b67614bdc1bf631d4ecf4da95c2de79196e26846d525cd5",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 12,
+      "file": "merchant",
+      "job_id": "59a9bb96-5277-4c9d-a1eb-19df27ada78f",
+      "webp_sha256": "32204ba8b641646faa6d3c1c0511d4644305fbc41cc3d94b8834f401c9d807db",
+      "width": 244,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        54,
+        57,
+        945,
+        992
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "4f645372a8c7b1d9d52d01c9e38e09a4b5aff0719f2c76ec17f66d24ddf3c6dd",
+      "raw_png_sha256": "1d0eba10d2f7cf6861282a4d07de8f8823145ad6dbc1c5b7578a669b2eb1396b",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 13,
+      "file": "mudshaman",
+      "job_id": "5e9764d5-b1c1-42d4-a290-adc0f2bfae37",
+      "webp_sha256": "36fcf1174ff73a65016b6c3c2a4a614a52a0d27c997345bd53aeb230c5a711b2",
+      "width": 249,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        81,
+        60,
+        981,
+        984
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "4281a96526865af34954065139d55d4226a54937ab540cee42e63d956bdb6dd4",
+      "raw_png_sha256": "cbdc225699ec4e81826742e7252d1d7881634deec6f43f479549cdae0b0f527e",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 14,
+      "file": "scout",
+      "job_id": "1064cd9f-7db2-409e-95bd-13cd56edc4f7",
+      "webp_sha256": "009577f65c7dd6ce88d136f050941492427ecafa282d6b2ce62a6c50a66727a5",
+      "width": 215,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        92,
+        55,
+        881,
+        993
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "05132af3ba1ec844bd8589e8e86c3106a222c9adf5fb9ad3b10d7bad5044c347",
+      "raw_png_sha256": "c8761aae33916677b7bb699b0090a8f25c7ae54de53401f294b79ae2d5f27030",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 15,
+      "file": "flamemage",
+      "job_id": "0d677ccb-cb04-44a6-bbf1-d2f25f9872d5",
+      "webp_sha256": "b2d33716cfc4dbd0ff67f8173f3d5a9b3c14e5e317736d0436cbbe6630798373",
+      "width": 246,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        77,
+        81,
+        943,
+        982
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "a9502d4afee3142b8fc822359ba2b7237d57605dc52286f9b51045af54c80401",
+      "raw_png_sha256": "cb0a871ab106b0fe527317a0123834edd0e3250be55feba5892173360fc47b3e",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 16,
+      "file": "cleaver",
+      "job_id": "8290cc74-2d5e-4e1f-a254-49a381e95a27",
+      "webp_sha256": "fb9907a63cd52100c877e0a64d216265ea158264f1669208afd5a4d2040b137f",
+      "width": 232,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        75,
+        30,
+        948,
+        995
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "bf1e620e26d1d02c71baf60de8d928533098d30863b4242e816a188c76e041c0",
+      "raw_png_sha256": "2008097db60f171c48d5903775ada63c4f88a5102d5ea6a75f3edf160b5d8bb6",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 17,
+      "file": "duelist",
+      "job_id": "422727c7-2768-47af-9f26-f82e54b55478",
+      "webp_sha256": "2260807c37182f7443c1a87a7d31d019d0d5a0a495005d7dc2493fff03a7934c",
+      "width": 214,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        140,
+        64,
+        898,
+        971
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "b181b5b6c51031101801f004896f5517c085bed9c178a98378657c43bccf7fdf",
+      "raw_png_sha256": "839a6aa411b596eadedff9329d82500af9ef8a8f0cfb614f76769ac6733661b3",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 18,
+      "file": "gunner",
+      "job_id": "19825e90-2f7d-49d0-b8a5-3c44185b554e",
+      "webp_sha256": "32c084e662f98216d780e0f5b9fdbc6319cf87a108645d9b2acc84ba8dbc20e3",
+      "width": 218,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        154,
+        51,
+        955,
+        989
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "9cf076ccfd788811fc55b832df9f3e19cf8b5c29727637a58acc775565cc09cd",
+      "raw_png_sha256": "dc91e7585392c3e64c016fc22fa9b94f813325ac575026f479bac477e2d4e7e5",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 19,
+      "file": "dwarfbomber",
+      "job_id": "f0577305-50b4-4481-b005-452cc472cd9e",
+      "webp_sha256": "5a1df4a950028204c4d86142298a644f8d3405e446a5609ef80d35317156ee93",
+      "width": 212,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        113,
+        39,
+        894,
+        981
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "4c94d7e107ab7bcf6dc5200fb3a1c263541456bb275a899e0dabe066f6930eda",
+      "raw_png_sha256": "f69a1599e0453e067919ffd5b3d7a689c94b5664bd891b827a000f951645d491",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 20,
+      "file": "windarcher",
+      "job_id": "ba540f69-f359-47e1-9a1c-cd4c300ed2f4",
+      "webp_sha256": "646726a27f7eac5a8f21e1e684050c728aebb2291496367cd73593edab56e97a",
+      "width": 253,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        99,
+        92,
+        941,
+        943
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "ec356256fd50baf96674c78f3943fcaa5e50190f85035cf220de111584e556c2",
+      "raw_png_sha256": "f4e46059954ba7fb5978bb4d7409a66729c8a21a77bddeec48dd23ee332eb007",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 21,
+      "file": "icemage",
+      "job_id": "2376c40a-1097-4143-aedd-7246ec822c5f",
+      "webp_sha256": "726137ccc5cde8ca56075a17fbf58e17c675bf324a01ee6aeed3c70aa2e3108a",
+      "width": 240,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        127,
+        87,
+        946,
+        960
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "05084f116dbf7d7dfe79aea91fef93f5354b8cfbab660195c05d5e418c23002f",
+      "raw_png_sha256": "94dea974ae453626f6a3cf4515c6a5872f407e5c8e222416a4b44b438fda2f85",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 22,
+      "file": "gambler",
+      "job_id": "22d85c1c-2192-4eea-96eb-ba60dfdd176b",
+      "webp_sha256": "45ea721100387b6076c96b1e7c70d397bf36701a43c8c43fa02fb896e996ed3d",
+      "width": 223,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        83,
+        39,
+        913,
+        991
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "06284e58350ddbbb361527c055f24acf57712fc6f1b08ad271c19275d09972cd",
+      "raw_png_sha256": "416bd791185402b39943324ff57f42d4883407e33e0eaa19d2ad699546fb7ee2",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 23,
+      "file": "blacksmith",
+      "job_id": "5c53d755-2a4f-4e68-8e5c-d8cb9f4f14ae",
+      "webp_sha256": "29603ee4e6a8480508a6ac928a781456fdb2b238068325e297f2ca7f8c4e8ede",
+      "width": 253,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        57,
+        49,
+        980,
+        982
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "2506d354f773c5a3c56e150891bffa44f38ca2b72097e2cba686b44f5923ba0b",
+      "raw_png_sha256": "61d9b8b28b5fe478f9cac2848623de4432a8c1a123de9d47223be27bbb97b8b9",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 24,
+      "file": "goblinchief",
+      "job_id": "e8fd6fb2-56da-4e9a-a5bd-9843fd73bf43",
+      "webp_sha256": "40aa97dd1427834b32251dff3b0ce088c8f97d24e9a84033f67b430026eadfbb",
+      "width": 227,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        113,
+        39,
+        960,
+        995
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "6639f3ec70b66ef1b05d309b43124820dcb04b795182f3368a5418d2273644ac",
+      "raw_png_sha256": "2ea1081953499c81196ce6e05a578b8fbfe5489d4e1f8f01dae25aa55e84f92e",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 25,
+      "file": "astrologer",
+      "job_id": "5d4711a9-fbac-435b-b7d7-986b906d194f",
+      "webp_sha256": "67b9698bc96498ca055ed980ab1ee8a00955fe78491553076150b53a6b8b6151",
+      "width": 207,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        126,
+        44,
+        880,
+        976
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "ddb8c613ab118cf5df19a91d71dc1f5222e2f4aa67d1aeda4328c788b4cfb775",
+      "raw_png_sha256": "c853c0330dfb62c0f218cea97a680ae11934645e5ed3976c9432454a2c8202d9",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 26,
+      "file": "banker",
+      "job_id": "47fc9182-a37a-48ba-aaa0-7ccee876b44a",
+      "webp_sha256": "5e04a3fae59d09967ac0b9d8c01300840433fecdafbbd402359a230b56df218d",
+      "width": 197,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        137,
+        32,
+        878,
+        997
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "eacc718e1dcf531a4905d1fb7f0030261986d255626d04e42c236f172cae64d0",
+      "raw_png_sha256": "e88a03d7f9030788732658e5168bc4c3434dbe9ea87499259c374fa660667e05",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 27,
+      "file": "sniper",
+      "job_id": "236bce8e-93e4-4f45-b851-a74b5f43a03d",
+      "webp_sha256": "684593930b68147c5452d6f2e7c70f21b540d0516a2916e56943f1afd58b6aae",
+      "width": 243,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        91,
+        58,
+        964,
+        977
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "c7e1eacd8ccb67b13d014199aacc10df846bead5accc9cd4cd299e2a948702e0",
+      "raw_png_sha256": "8646940199db45244a3b80e024aa7120575aeef84bb15f806de37269c137d53a",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 28,
+      "file": "berserker",
+      "job_id": "a4e57114-f668-4752-b5ee-1ec11142f2fc",
+      "webp_sha256": "c1af8c78b653e9dfc75062e1e70c583323e3917c08122d0e20c03675a6fe4270",
+      "width": 256,
+      "height": 225,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        26,
+        88,
+        999,
+        944
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "3cdc484d2925ce5673441fc03b3f39b9522a53dcdc48afb07b3e36f6074e5925",
+      "raw_png_sha256": "5e8653a2705b919aa76902f5945560f74ff2144cb049bf6bf04d8563ab6e894e",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 29,
+      "file": "lightning",
+      "job_id": "845feb60-c11a-4728-95cf-06404bd77eb8",
+      "webp_sha256": "f4e296154c2b2aabd1c63dbbe9c073a31e3fb6c4da83398c3e0780cde744868d",
+      "width": 215,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        145,
+        68,
+        894,
+        961
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "11dbcf770e22d5f62333254ae5bcb2d2798b7f80988ba3deb64b383f736ee892",
+      "raw_png_sha256": "63ff6e9527a742038d6a267ecc2c3ac42bee8eead38a9507d9292b9a8f4ac443",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 30,
+      "file": "poisonarcher",
+      "job_id": "849c90c2-1903-4a91-b09a-f6a9cc969be4",
+      "webp_sha256": "a5b741346a95782aba042bcbda914aefc25423e27937e6ce4e5ab2710af16f4d",
+      "width": 252,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        80,
+        68,
+        976,
+        976
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "f3d35ae34f6beec5d788110ce153c0d501d7183a3f9360a6e6997c90c8b9873c",
+      "raw_png_sha256": "a9c9c2c117fe28121c4d03a15978265601393624f00f93d98d5b8c8456e34478",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 31,
+      "file": "summoner",
+      "job_id": "1939c46d-1660-4f11-a01d-06b7dbd3fea2",
+      "webp_sha256": "4b7519aceff7d98f29b1e251055fa736925a32951e15b39990c860dcdd237d1b",
+      "width": 219,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        145,
+        58,
+        939,
+        988
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "4f0bcf128b800ab3a35256e165efcb43faebaecb7d585b44c88a32d1ff8b7477",
+      "raw_png_sha256": "19c8d2c67b69ffc3ea3c57dcdad453cf55eb793b507945137c8f2941a4ec4bae",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 32,
+      "file": "scholar",
+      "job_id": "4d3b35a3-9260-4252-8ea4-d447885c0f6c",
+      "webp_sha256": "435fbda9d32fa8423222bf4366bf9ae51befce9a8a2f05a94cf4b49dcb603c6f",
+      "width": 203,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        112,
+        33,
+        874,
+        992
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "241a7605ef73ad3187bf520d5cfc580a65de424191cf05f486319dc3dc107eb0",
+      "raw_png_sha256": "64591d5d9399c0100a483fc26d93be5a12ccf21f5761ac74df214a1c4c2ce558",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 33,
+      "file": "chronomancer",
+      "job_id": "424ad9e1-c1d6-423c-9ea5-525110be0735",
+      "webp_sha256": "429647e75113b217c67d87a4bbb909517a6ad7c87161535373f5ee0f00b62d9f",
+      "width": 227,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        104,
+        62,
+        913,
+        975
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "5a145458d874bbecbb3b997f061082a2cbe3898ca3db8723d3b9631fa9843825",
+      "raw_png_sha256": "4682f8fb92c605c6d2a0d80f5a7f05cfcfa40fedb97e2b6fef36cb6debde0444",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 34,
+      "file": "alchemist",
+      "job_id": "aa26fdda-71f8-45ec-a39c-57a772ab6e5a",
+      "webp_sha256": "e66a594f74b680573537f93c8f9e78d8d55830e9551eae67d21e037c655258dc",
+      "width": 232,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        72,
+        47,
+        921,
+        981
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "a5b29aaf59d570d0e0690bdb2bf8ceea051c3312b7abffaa5ee912ecac4157d7",
+      "raw_png_sha256": "1f277e5c6452c4bdbec7803fd36093d2063426062d839bc1dd9d5b8ae8f2b816",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 35,
+      "file": "paladin",
+      "job_id": "15efe46d-96bf-419b-a76b-e9644d4effc1",
+      "webp_sha256": "d3810054de14787d53908daae86cac09bd93a261280e7a8e1c17606a5479e8fd",
+      "width": 232,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        95,
+        47,
+        941,
+        980
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "5643ecf7c6bcbc3d7ac76703523050ed04a90a2fa0ba664c4ad918fc1b6f822e",
+      "raw_png_sha256": "daf0aee244cb5d0c4e639ee45443aff6c9ace05f25d3cfe7c17b638ebb91022d",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 36,
+      "file": "necromancer",
+      "job_id": "ff5a27cf-06fe-4914-b176-12467df6fe8f",
+      "webp_sha256": "7c12a6d2558789af0afec9f2186a7816a289f31ec351d4233a4bb64901e2da04",
+      "width": 244,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        82,
+        61,
+        959,
+        981
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "e652a273dfaae6d7de0204823ba204ec9383444dcd2f73b00b5fd0dc98c48737",
+      "raw_png_sha256": "f86ef039be6c3808a46e4cab0e1e8247f2de0d2ee58fbd5eaac214ca5a253558",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 37,
+      "file": "artillery",
+      "job_id": "6219b69c-f988-4c3e-ac09-d9993cb84f60",
+      "webp_sha256": "12b65babb65edf295d318a3a328bde0aa408426954a5484abf0324f05853bac7",
+      "width": 220,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        104,
+        26,
+        948,
+        1006
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "d3b500cb29b61917d0d92e2a0ef104fdc2c1b1cfea8ca83d76d096bb3fae6fd3",
+      "raw_png_sha256": "73824cc4f7115d82feed8d32e6ed12200e464f125b06e7fa58aec20d8d8f5def",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 38,
+      "file": "prophet",
+      "job_id": "8042a01a-5361-4ce5-a026-53b1d613df81",
+      "webp_sha256": "db4940ce11f6d58771bba372fd80ae0900df2acc0efaa55b6090dbd242a16923",
+      "width": 230,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        99,
+        51,
+        933,
+        980
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "390ea175049412970395ad5c645654aaf29457608d794ef092ab708931563428",
+      "raw_png_sha256": "be42f80f6014c401ab2a24ec82cd598b5abda17dc93e78a07d4ce7e7ac8468cb",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 39,
+      "file": "swordsaint",
+      "job_id": "82951001-ef28-4847-8f63-f1c22327232f",
+      "webp_sha256": "d9fa963061b14f698194be1dde8578a4f591dbf33bab672c3ec9db696d4e4ddf",
+      "width": 211,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        106,
+        64,
+        868,
+        989
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "fd39bbf6248d99c765fe514887dab4d5de33fc30d6b920f24a3fded21e0708cd",
+      "raw_png_sha256": "30a58873ba583e053b43715634e3b4be773c74e8a9d37ca94736ef3b4ddeda02",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 40,
+      "file": "stormarcher",
+      "job_id": "0bd34216-229c-4a42-945c-657ff58b00da",
+      "webp_sha256": "e51940b760239c781c5371431e18ad3ece263eb39d1b93ef8a8a2865e5e71fc4",
+      "width": 224,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        103,
+        43,
+        923,
+        981
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "d556977a4cc66ca35dbe16491f0501b5b7fe0c22d68858350d9f21f9f411a317",
+      "raw_png_sha256": "0516f2e51c3d7b65c05259a144d130cdc8d5e3338f11e2bd322e29f962a1dd16",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 41,
+      "file": "dragoncaller",
+      "job_id": "6aec3404-4e5a-4db0-9c6b-58bdda87ec7a",
+      "webp_sha256": "7dfcdc4467027e1d2f4b6eba79467943de1788ee82220343b5a194a1993aee38",
+      "width": 254,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        72,
+        63,
+        982,
+        980
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "d3752234388dda21b2797c66fb16a97255003df4f52bf2f14cd5899e6ff3d265",
+      "raw_png_sha256": "68910ba6daa889a8aca4e23c761c22039451a1a2160bc072b9573f96e16fa3f4",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 42,
+      "file": "warlord",
+      "job_id": "7bb251d1-9d7c-4d50-a307-b1db83aadc29",
+      "webp_sha256": "a9a7bc981171966fe20d21caa0a5f12726c309f30a0bb552754f20b7652b5397",
+      "width": 250,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        44,
+        36,
+        988,
+        1001
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "863da8b4a8df2bac1f708b2948a3a1fb09ceda93dbd01f5db200fd5cfb3ec267",
+      "raw_png_sha256": "a0b6df2f591aacd47ea243bcae359e9a7952cc38d80dfd230bf5349073453dd0",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 43,
+      "file": "archmage",
+      "job_id": "9f6dcb9e-c1f8-4d9f-89c6-3b321ac96f83",
+      "webp_sha256": "40c727d0f316a5481c0540a25c79c62f04e5f25102fcdc35c85c0009c238a45c",
+      "width": 231,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        100,
+        40,
+        966,
+        998
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "cb6c02b11a465ff52d82c0a00f5fb73dbfb1e035be0307ef669ddad09ccbf2ae",
+      "raw_png_sha256": "079e3ef3f47b9db9df0be3b87d32918ed3ec338ae71ea4c8c61307d0181271a4",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 44,
+      "file": "assassin",
+      "job_id": "6d4e5fdb-5f51-4e7b-a692-83a1dec5e6dd",
+      "webp_sha256": "03f19752fa68e4b23eb0e39723c6047f26a792581daf9a34889f8728a52875c7",
+      "width": 209,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        160,
+        62,
+        906,
+        978
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "58ae8cfd5413a6154fe39c62bafccce31d6fa3a7a3e8dfe066674098ab82b2cb",
+      "raw_png_sha256": "189acebecf363d9fc002c14df108b19291876d1579464350259b4d8f93ab4d7c",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 45,
+      "file": "fortuna",
+      "job_id": "4100ebd7-de7d-4fa0-a7e3-aafde523a311",
+      "webp_sha256": "8fc99250a9c2f03401b01bb2e8992d8dd5f688890463d44e700cb7a49e762658",
+      "width": 256,
+      "height": 249,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        65,
+        73,
+        981,
+        963
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "7997d611c06ccb94b98d1ab7c9c4426bf7ec32a1f2c122bb0ba3b4fcb64c6c59",
+      "raw_png_sha256": "05cb36d6db30838b09f81860f9fbe30858418cedde1f7790b6d761a0bbf1d4b9",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 46,
+      "file": "spearsgod",
+      "job_id": "1a110f8c-e349-4030-8e23-624c0327bf6e",
+      "webp_sha256": "35460509b37c227304d73fd4478ee2dc12fc193c37439be16ba3c5b965d957e9",
+      "width": 242,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        95,
+        70,
+        954,
+        979
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "740676c87841adcfa6d3af0f80b77d0d7ee766d03d6f4bcfc3aa1fc1d1a51ceb",
+      "raw_png_sha256": "c72654c2bd2d2ffb6708dde356940d9ac834ca2c05c6f8ecef020a923ace85d9",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 47,
+      "file": "stormlord",
+      "job_id": "005043d6-9d86-48dd-871d-0f8c020cedb2",
+      "webp_sha256": "76e30a08809d24d206b5367ab10cc3811df2eed174b1fe567ffe58f408727cbe",
+      "width": 244,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        111,
+        86,
+        957,
+        972
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "2b1ae7699cee133d287edb6535cd16986e78fa5815b0f68081b5bcd92e17accc",
+      "raw_png_sha256": "290a0299f9ab3cc049b224104d940b1075fdec975e5bcef29267db135e3ec46e",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 48,
+      "file": "tycoon",
+      "job_id": "8f5a7ee7-8d8e-4b6e-b7ad-f40596c8accb",
+      "webp_sha256": "9055b082ea53a27ba0d6db14ff95a7cb8961fc488bacd9dc693cacee6c038a24",
+      "width": 234,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        110,
+        75,
+        936,
+        979
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "d4657d45e4b8e75cb71f9a396f25533bf56d130cd41087b04950b7e610228d9a",
+      "raw_png_sha256": "c9bfe66f480128debd01a7c5adb59a8f7cafa70a31ba517d51e143d85a32b90a",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 49,
+      "file": "saint",
+      "job_id": "19c171ca-82c0-4e52-b00a-33e440db95ec",
+      "webp_sha256": "fc2c7a3b0d8dc9f89d64783b1c6d7b9ac95dc55787c79e073f24e5fd119b0478",
+      "width": 188,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        164,
+        26,
+        879,
+        1001
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "f6dced1eaee01cd8ad72aac53c5d9d26e95625d4051002942a274487055af711",
+      "raw_png_sha256": "1c8649fe42774f130aee081a7941bca2987af80f25f7eceacfd613d9d08b5d42",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 50,
+      "file": "dimensionist",
+      "job_id": "077433b0-6f7b-4216-8ef4-8907fdc48315",
+      "webp_sha256": "1ad2e7d0425e5992f6cc9accb739617be8d4f35a997f17517f1e38d3cc131c1d",
+      "width": 256,
+      "height": 248,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        42,
+        59,
+        987,
+        975
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "394a185d23c6a2acd207844f2c89000e03b5ff2aef31fbdac1812a8db93d8ba2",
+      "raw_png_sha256": "3a55638593568d320841f3c316fa0494fd2bc84427080b3c3099bed57a180b25",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 51,
+      "file": "fate",
+      "job_id": "f3357728-4656-451b-8485-2b6d6b39a7ce",
+      "webp_sha256": "4e3212d8b799b55924940ceac978ba4de04d1f24ede8dae8cba443639c88816e",
+      "width": 256,
+      "height": 244,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        52,
+        88,
+        976,
+        969
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "cf4cbbd99ba1c32a10dd8a37629c4631de623a8e22b57009c6819ea0038bac56",
+      "raw_png_sha256": "4ea4fa0c47b8ea4c338bd4f8b50a8e0cd757cb155cdfa8d3a9e4f674306c6ae7",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 52,
+      "file": "plenty",
+      "job_id": "1cea7c6a-c42d-4940-8280-0a76b85240eb",
+      "webp_sha256": "053e96c5875687fa43a999ffe13a4954eca4ae96e6056c0408e87ecf8267e92f",
+      "width": 239,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        79,
+        49,
+        944,
+        975
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "5a5e19d06aa85f46fa5d019cc58032cedcf523fc5dda3cd08b69ddde656c847b",
+      "raw_png_sha256": "d4abd02dd25073ef8cfd1d97ceac8d45dbd6bc4983d34179ee2b2153fa139f41",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 53,
+      "file": "ruin",
+      "job_id": "e6cb889c-db63-45aa-993c-b5e50fbe186c",
+      "webp_sha256": "cf7a6915f66c99289b0bec2d111bc921f6abfe7462cb7fef70f662388ee5ca2e",
+      "width": 256,
+      "height": 229,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        34,
+        87,
+        999,
+        951
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "076add8b8e768294f0a1e5cd93e1204278242b0508a5aba86253354b7be7a3f9",
+      "raw_png_sha256": "999856945290ae5328eb4b26810bc38df3a04a6bce4bcea0c593ec07ffa0385f",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 54,
+      "file": "elemental",
+      "job_id": "c9d44863-4638-4605-b3cc-18609a63f784",
+      "webp_sha256": "2c1026805538ec0a849b7e090204d5f467cf0ad1a0db624bde56389e8db88003",
+      "width": 253,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        78,
+        77,
+        960,
+        969
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "2b1f52b33f5197d971209408026b01040d4f3c6d882d1f8d330e6de0c14d1cb2",
+      "raw_png_sha256": "d227f3b46e3efcdd7b108b0605a61ad2f88a5c4ec47fe7042f6dd5eb8b279a47",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 55,
+      "file": "goldking",
+      "job_id": "fa2bf50d-a0c8-4cd8-9565-46321d93a6e8",
+      "webp_sha256": "d061866f8ab8b6e7b085b281df04d3606a16d2dd231e61c924ea5c94cf7d54b2",
+      "width": 256,
+      "height": 244,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        72,
+        77,
+        977,
+        938
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "6faa28189c9d6b4cea165a504d28c23e3d0bf4013c046b7115782be343a54aae",
+      "raw_png_sha256": "e228886e984478460419baf975ba9d98aae06a9732e89de622944a97106196c0",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 56,
+      "file": "celestial",
+      "job_id": "e7aaf402-a6c0-4a78-b899-00a69e88f124",
+      "webp_sha256": "31ca44b4fb6f8ea833d7162ebc5a1329643ea4e9a7611f9d8dbfe120c3771ad3",
+      "width": 254,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        59,
+        58,
+        963,
+        967
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "b17c2c6f3f2f5820824d9408ca1133960e1f40539fb031a096ee95138cae2e7d",
+      "raw_png_sha256": "5b68e5f20752c902380685b08e23c73ac71bcc52cc8d3f96ceef03885ff2ef70",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 57,
+      "file": "legion",
+      "job_id": "e5a223f6-0f56-4dc3-af7f-4884e1882318",
+      "webp_sha256": "df29a0b47d6abf9125175a035a6038a91491295dc61d4a79b3a8fab47a301a7e",
+      "width": 256,
+      "height": 250,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        31,
+        55,
+        981,
+        984
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "6e7ef295e7eec48ac6aef4c7ea410dcb70b6e036ac788960325d2cca6f576ee6",
+      "raw_png_sha256": "20a39cadd0173adab47313054e01bd858391024ef94db2c53c41c996357b5ce5",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 58,
+      "file": "infiniteblade",
+      "job_id": "481174d5-7480-4294-9705-58dc1c221629",
+      "webp_sha256": "ec38824a690a4b3908e4f7d276522f6d24b092c66543d6736508071872170026",
+      "width": 256,
+      "height": 229,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        37,
+        103,
+        992,
+        958
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "bee9ea9ab31df2c4e18370bd96a343c2894be084865cd1d71e895dde55089b2e",
+      "raw_png_sha256": "db09a60a85f6f7b76c46247e3ace639a1e64600f8d3c0171cb68dd75dc0524ce",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 59,
+      "file": "timelord",
+      "job_id": "5d9fa597-bf56-44e2-8b68-76f16a778173",
+      "webp_sha256": "f748ca88b9b1aeb6a86bf9e23b3884b8feeda7232f2479d130cb857944b32d45",
+      "width": 256,
+      "height": 246,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        55,
+        85,
+        967,
+        963
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "23caed92d9e43d4f2cbd3dfad08d91dc771247eeb1ac09c4d28045e2433e3556",
+      "raw_png_sha256": "c5cc450cb7c3a05361e75bed3d3fabeb8e750ed9d235be1790b7b46caa57c7b5",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 60,
+      "file": "goblinking",
+      "job_id": "bd4578c7-0277-4ff5-ba92-0f379f1b89fe",
+      "webp_sha256": "95354166d4934d8e4a42220888c16275aa509be9bfd86b559f935c0f1efde5df",
+      "width": 249,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        62,
+        50,
+        969,
+        981
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "32408d797e3ca3d1ebf3880144684433707b2fab64734631f48c52fd251edc7c",
+      "raw_png_sha256": "19f90ba0b0c857d7628e1bd23514a9859e885e5f265c2fa416c7ad54bc4e75a1",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 61,
+      "file": "deathlord",
+      "job_id": "058cc85f-56dd-4b4e-b025-3c024c28d82b",
+      "webp_sha256": "da68893134e8affd608a524f51acf583c6cfc20ae432d190b2d036beff78870c",
+      "width": 256,
+      "height": 240,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        81,
+        101,
+        990,
+        953
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "89c855b6d97bc57b53b10f20e2e3c24652e12ccefec8f70a2a5767bd7cd3a65c",
+      "raw_png_sha256": "52ac49cd28c343c481edcfae79b2490333c62a00a0d1a105449eded0c565cf2c",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 62,
+      "file": "goldbattery",
+      "job_id": "a9278e71-6463-439a-9421-2b4910b3d27c",
+      "webp_sha256": "4dc2cdb08d972e5dd424066a6b1e29cd3635701f42d180bacf57a490fa2a2bc1",
+      "width": 230,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        264,
+        242,
+        786,
+        824
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "e916da8ef41c5ab66c2d6220742a04a38ae272bb838a6113fe9aa1a9daab2f71",
+      "raw_png_sha256": "7d7ddcbca9a43d84bd96981db33b7fda7cf506ddcf7f26b166cf83025c81b40b",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 63,
+      "file": "fateseer",
+      "job_id": "eae03dfa-ed74-4159-9d00-6c63218ee054",
+      "webp_sha256": "10ac0ec09275ac75789856fc2485c553ba76aca0b256c33912eb0ea79c4cd446",
+      "width": 197,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        147,
+        47,
+        881,
+        1001
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "4b7bcd7eac5455bceb843ade81be11eeda58b645607dec26b237e92d6bcc63df",
+      "raw_png_sha256": "b8b621e821ed70e7955fee6a4608c3d7a7e6941e430fc5357f9ad4364cc2c987",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 64,
+      "file": "festival",
+      "job_id": "94b04ba4-2a8a-4317-96d8-119fc5905f5f",
+      "webp_sha256": "a858075b7264d3ff45dd6383470fc677edbce325dea71167250c847084ee5856",
+      "width": 212,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        93,
+        24,
+        900,
+        997
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "4b620dc19872b453f1788caa05f6a6bb782c565d188d2ff61e3ca33b084a7f25",
+      "raw_png_sha256": "3405609699f9ae2bfc2ffac496011d52e86ff773e96a603890b7fc6bd29a5089",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 65,
+      "file": "stormavatar",
+      "job_id": "a71cbfda-1b29-4ac5-941a-d7105523d950",
+      "webp_sha256": "01cd569752b78e815d928632027ae44f32fdbe08c0ad3a2c0fa046a257f8acd5",
+      "width": 251,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        76,
+        59,
+        965,
+        965
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "5989e6bbd9e91ead6d88b97d6a16eff1c3060684cd35e15fa7f90ad51b24bbf1",
+      "raw_png_sha256": "c03b2519544f1bd820f4b7b6a56c4f52288f0be5aee6441d871bd8e7ac0e0ed6",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 66,
+      "file": "enemy_grax",
+      "job_id": "7f7542a2-a667-423a-bca1-dba84d20d8ca",
+      "webp_sha256": "ab4ca08742c4f630fa45b80bbec8d53347140502519560e858d378ee6a0233c8",
+      "width": 256,
+      "height": 245,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        56,
+        96,
+        961,
+        961
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "6aac176b3d488908b39f548c5483607c3642fadd69fe631d712bd312c3cd2967",
+      "raw_png_sha256": "9a3ae0a0bedc0b953dddc9d2fbbb30d4c398362b1c1ec0b1de6845bca49b786f",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 67,
+      "file": "enemy_batqueen",
+      "job_id": "1f81f431-246c-43e4-83c3-b9a107a546cf",
+      "webp_sha256": "f4f2c0943aa458d0035ba7b50eff7be23c993929a4b85ebdd7c67443b84f440f",
+      "width": 256,
+      "height": 225,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        16,
+        91,
+        1000,
+        955
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "bd0f59e58b25823cffab6ddb6a21737749de2acc779f537bdbe0794988d20d93",
+      "raw_png_sha256": "de46fa5db8469de5811e767bb87bcf77e5ef636e656a2905e6dc0110a67a82c3",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 68,
+      "file": "enemy_sandqueen",
+      "job_id": "b881ab67-91c4-4316-8dfb-66cfcc699c1b",
+      "webp_sha256": "1da152b153a7c7dddb7208d0aaeaa5fa48dff4bafaefa245f8d67aad514b6fb8",
+      "width": 248,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        99,
+        67,
+        976,
+        971
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "43bade1267c6e20ef4ec427e85f5eb7ee5f58425ab6e97a720cbdf1f2209773d",
+      "raw_png_sha256": "61e11871ea44b0e16ee8a94252193530ee404f386204b164cd5bd600ba3a973a",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 69,
+      "file": "enemy_frostwyrm",
+      "job_id": "4a09c42d-eef6-4373-8cd7-459da5bf0744",
+      "webp_sha256": "68e108e4cbc1a1d40b2c478629bf9eb4bcdf3c19c350394d31c8dbdb53058d9f",
+      "width": 256,
+      "height": 237,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        24,
+        77,
+        994,
+        974
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "46811b88cd1b77cbbde0b23da643252594b10a6fe026cebf92f957afe5d598cc",
+      "raw_png_sha256": "665526a17d5bdcb42b7792fe81f3a7dec69db9ddb869b860373acbadbe770d63",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 70,
+      "file": "enemy_ancientgolem",
+      "job_id": "16dc320e-1211-443f-ad65-a720f3f8b9a0",
+      "webp_sha256": "d01eda82beb359957f3af608c0f60a163f789ef8769879b3755739a32354eceb",
+      "width": 256,
+      "height": 222,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        47,
+        149,
+        970,
+        948
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "f7d5f7fecd7116dc5cd01e79f544c160dc962ee7a7459011fe8695abba076222",
+      "raw_png_sha256": "08b619e4ce89e2035382bcdcc47a101d2540c4a1458043519909fefeba3fd382",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 71,
+      "file": "enemy_crystaleater",
+      "job_id": "d2dca85d-7a82-42ac-932d-4899f958d982",
+      "webp_sha256": "969598bb2fa20fc796f7d9190cc65564e7782dbf8587f071ba4bf404b3a20981",
+      "width": 244,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        65,
+        60,
+        941,
+        979
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "53e85371f0f3dd7b1e47a2cbcddb1133a2b92cf36b11e1aad0431f4dc496cb5d",
+      "raw_png_sha256": "f8ed517ac630b6ab0c03e966b96c2700e4fabaa81be21dc5de569f9b70ed36c6",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 72,
+      "file": "enemy_steelcolossus",
+      "job_id": "966fcb5c-e908-40dc-96dc-79477cbd7e3e",
+      "webp_sha256": "d51f85782d00c8d66706415c9265597213798bf8064a857015acf7d31924b061",
+      "width": 256,
+      "height": 247,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        52,
+        90,
+        972,
+        979
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "217afc2c9992319ab1b4a4c13fb32789150ba0e11dc1d54453b1d22a7b04aafc",
+      "raw_png_sha256": "defc2ad34519eb81d6d4984675c2b090561fb80c93dad3310141239054ebb61f",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 73,
+      "file": "enemy_lavagiant",
+      "job_id": "bf85e261-8ff4-45c5-abe5-5a8f0141f801",
+      "webp_sha256": "dfd58f73ab963d477a3764aafab1a5b6ef1170b9482e5c71145d6de1d994a4f6",
+      "width": 256,
+      "height": 213,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        44,
+        133,
+        972,
+        904
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "46089890dd9e65c19cf6c5c41a3d1149aca4d6c82002897c5394840862584ad9",
+      "raw_png_sha256": "1dbcd48cf67c2de3dfd9f886288c37dde40b943e53c649bd517b13fbb6a66e03",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 74,
+      "file": "enemy_kingslime",
+      "job_id": "104da959-0a85-462d-8d62-4f70a0650f2c",
+      "webp_sha256": "1dfbf652e1566c257014045254d21a7983cf3fbc26b49748b29e6a5fc0da8745",
+      "width": 256,
+      "height": 240,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        31,
+        86,
+        980,
+        977
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "94ddf2e336cf31716d26e5db85db3c249409b21205244198deb99b1ee45ea940",
+      "raw_png_sha256": "73e7719ea198205ec638330d6ff0de66f56d9cc801d97218df9a3589b04fff1d",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 75,
+      "file": "enemy_rotent",
+      "job_id": "c8ea44ce-b658-49fa-a13f-5ddcd1df7b45",
+      "webp_sha256": "df0dcb478def938744a53307469fed46b66ba7d61261c6fa689add5d9b159b2a",
+      "width": 242,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        79,
+        55,
+        976,
+        1002
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "c9e12bd93663720c38297e578ec7204c0ff508c971a2240e1625e7bad1816d90",
+      "raw_png_sha256": "a865f92da667894822225deca10a1dc8a9cb03dfc5af2e8c972a101836c29bd2",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 76,
+      "file": "enemy_abyssjelly",
+      "job_id": "be08cd27-059a-441d-aae2-aba751fe96e2",
+      "webp_sha256": "8da1bc6742166a8f77441168bba5bb0588a1d142c7228c75d0048a37a3df5a6e",
+      "width": 256,
+      "height": 213,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        49,
+        139,
+        1003,
+        933
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "a700bd5783c7d8ecd47533f04bfaddd36ad8a8e48e7d12b6b20ccbd80fd79d37",
+      "raw_png_sha256": "25f295100b1f535efee9a9dca207858bcd855557183ee3c1d09a7628ef3f7173",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 77,
+      "file": "enemy_wraithlord",
+      "job_id": "6ccdd931-33e7-47a7-ab82-b532901b23a7",
+      "webp_sha256": "bac2a3bda7f860e602f04fde4be9d88959cab5c21dfce549267283f4009643fb",
+      "width": 256,
+      "height": 248,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        44,
+        53,
+        995,
+        974
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "e1d614cdd9e7b577f1066888680c0c7857c5f978bfd974a5dcdf086b788954ab",
+      "raw_png_sha256": "1a8cdb0029452732455c5baeee936182410bdc64844c0bccb850738a1c4fecaa",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 78,
+      "file": "enemy_wraithknight",
+      "job_id": "bc6b3c1a-cb9a-4282-8e78-6d4d875489b0",
+      "webp_sha256": "b30df12301069ddd75b5ca45221f4d9a0cd03c6737827287b4bc03982cf753ca",
+      "width": 232,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        98,
+        48,
+        957,
+        995
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "20249cfe4a02c0a27b53ee01f091d5dd8eee925b2b488426a7a87c11477bf031",
+      "raw_png_sha256": "c055aa2d72d6ac3b2fba493fed53bd13b874a62d2466a9e959c57caa45db4c7c",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 79,
+      "file": "enemy_chaosdragon",
+      "job_id": "2b6f7f29-d843-481a-b649-077aa142362c",
+      "webp_sha256": "708c6e136dda94457b928f8e4081073d6ce6e2c0c0d8760c2e1adab8cb701c18",
+      "width": 256,
+      "height": 218,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        13,
+        102,
+        1009,
+        949
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "e0a18ed9a5f1718b82a15710e21a19b326a19e0c415a664d781df9ae2a548383",
+      "raw_png_sha256": "4ce255df9b4e9c80dcafd9a5310e3dac6572b79727eb0059aceca929b5fddef4",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 80,
+      "file": "enemy_zephira",
+      "job_id": "8273ceb2-6188-48a9-bcf3-38ce7c6fdcfd",
+      "webp_sha256": "0c24811b8da680df0cf0b4de1d3bd094733467b2a7e6b6253ebe8760c4596c2c",
+      "width": 256,
+      "height": 247,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        39,
+        46,
+        1001,
+        975
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "74f1150c3c46c9f81621a3f29d49408607811b0764107a4ba03e3e3c43c515c0",
+      "raw_png_sha256": "588f95c59376496a4f35b52964447487c93bd08d66d532853f84bb3c6f3233cb",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 81,
+      "file": "enemy_gordam",
+      "job_id": "b1fbb33e-32de-4cb0-a4da-b9294f0015db",
+      "webp_sha256": "14a0557f1b74d910dd258a22e18b2eb64282db6b957a43840181519e4387f25d",
+      "width": 256,
+      "height": 236,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        39,
+        90,
+        996,
+        973
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "559723fdffead0477090f5724531216e6d6f0f950cc2005de81fff1222be249f",
+      "raw_png_sha256": "163ef86d71f6bfa8486c12ec0956225a47935ee3b1c8eb4cf14586c00b9c3886",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 82,
+      "file": "enemy_morgath",
+      "job_id": "e79c222d-0d7c-48d2-88bd-b3fcc67f47f9",
+      "webp_sha256": "18f0d893643ecbf83e3f24cddd726c638c10bef34f3f403310a56088e9bde36b",
+      "width": 256,
+      "height": 241,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        39,
+        72,
+        991,
+        967
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "498714f03c126eb5523f4debaa3e90e072f65566e053c0104ccbbcc70dbd63ec",
+      "raw_png_sha256": "1d229869a0cea7081e4e7df39758a9b1542443545e2ecee58c6ba90f7fceb47f",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 83,
+      "file": "enemy_nocturne",
+      "job_id": "b9df4075-e792-4142-96ed-cfff161e8421",
+      "webp_sha256": "cdb257dfe71c3895febe6b154611b69796b152bae480322a3bc8d0a519518ab9",
+      "width": 249,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        72,
+        80,
+        948,
+        980
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "328ec5635d9a1399bcf9d5b3abdcc0d9fd24fb236514017756cda451529b251e",
+      "raw_png_sha256": "68ef8cc8806a87d12fb0e0ab1310c2b9036087962bca499f0daee6e758eeae6e",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 84,
+      "file": "enemy_nox",
+      "job_id": "f7b37bb0-921f-4322-8692-d1bff1df609d",
+      "webp_sha256": "8d5ab14e8637e6ef172ef36f7468312628694bfc218f3079cc884fe58e830ec9",
+      "width": 256,
+      "height": 252,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        72,
+        81,
+        984,
+        977
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "b19af094017254b51251eab66215c1507d14ebda40e4c0cba1bdc89c16c034a4",
+      "raw_png_sha256": "e50353734831ef5b7f76c1783749a21131857c5d0be9ff3bb977b40394ba878d",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 85,
+      "file": "enemy_slime",
+      "job_id": "1a31e832-ecdc-4062-b38c-4797dc891d00",
+      "webp_sha256": "dc976f813dd59b4439a3e7716c1db863590153f41ef33660ed258be9983dd7dc",
+      "width": 256,
+      "height": 204,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        76,
+        211,
+        940,
+        898
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "5228b5ae9bfce822063f37bb81e7bdf08b28d3631a7c8e4285c3c16a8ffc3f3b",
+      "raw_png_sha256": "1905371db8eda8261a7abb5a9af5f856701bdaa89e866703fdcb41a200d05a23",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 86,
+      "file": "enemy_bat",
+      "job_id": "42f3f21c-23cf-496e-ba3a-ffa0cae6f3e4",
+      "webp_sha256": "87ee7cff9815c87e2325c3d5addba80801f1c08fb52bdba706c0b7ca6ad5ef31",
+      "width": 256,
+      "height": 221,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        36,
+        129,
+        982,
+        946
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "c66b5a3876697e2dac90c0e097ee361c79c7c965ce6927e73f6d5af83de392be",
+      "raw_png_sha256": "4c757efe0cedd73a0f4a1212872cfc2fbb89342b950deb626871f9f581809f66",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 87,
+      "file": "enemy_golem",
+      "job_id": "2f63027f-c54b-4369-b152-2cb20a3861e5",
+      "webp_sha256": "48b3406c531e1502f48a29272a4eb1c1bcd36b635101abbd695c67677d03e3b2",
+      "width": 256,
+      "height": 232,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        63,
+        117,
+        985,
+        952
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "addb6aad43b5a4b65e01442733bd47d7ebf3df900e93e45258c4d6e501650715",
+      "raw_png_sha256": "c290546512c2617956f247b42ab9ad888ddae71ca4ac49dea983b0960f731758",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 88,
+      "file": "enemy_turtle",
+      "job_id": "66bb7d65-8e12-483a-b150-17ceb39904c7",
+      "webp_sha256": "d8eb9b6121b224b2e47b1e7ae2f3f6b4d2854da2a3cebb7d321a3e4333ecd06a",
+      "width": 228,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        83,
+        44,
+        922,
+        988
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "056ad05b19312c6a830d9509ad9ded263b2eec82794424c7d6eaf541b667c44f",
+      "raw_png_sha256": "96883166acdb5b09d09c513c8c4f7db26038e699a09391ac3d36ea827250cfe3",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 89,
+      "file": "enemy_ghost",
+      "job_id": "be9dc09d-c4bd-4ba9-93b9-534609b22b7f",
+      "webp_sha256": "61c292ec6183ce91c230f8ffd9217028a637e01d2971deaf9bf8b813bc7df7d4",
+      "width": 256,
+      "height": 237,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        91,
+        152,
+        924,
+        922
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "c86f12481de741bfddbbcff75eadb04fc51c57427ddc7f8d0bf90f256286e96e",
+      "raw_png_sha256": "098db7a9b5bd29ae2ac24fb98408a766b17736fa9a00db00bfec05e2e6e5f6c2",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 90,
+      "file": "enemy_splitter",
+      "job_id": "5ae22a4f-25ba-4087-bca5-c4477ee0fd10",
+      "webp_sha256": "6f5e1c04a2b0a0e9a37c3978b3f5e7d1b5b0ed6c00df9751f685925d55b1f457",
+      "width": 256,
+      "height": 199,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        70,
+        206,
+        952,
+        892
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "13c69e90c1292168747a43056b570d321b0e5dacd74b3c98098b987cd1e8e6f9",
+      "raw_png_sha256": "6e0fd33aa4a5b00fc23794d2b9fdd28de0e9ed69736c74f04dfcf70db7a99573",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 91,
+      "file": "enemy_thief",
+      "job_id": "cec80e78-c337-4b51-adcc-c3aa637b6c9f",
+      "webp_sha256": "109189528449a41e5bc40b9dda114401be8ae10da7b60b7ebce043d65ff8111e",
+      "width": 237,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        120,
+        109,
+        921,
+        975
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "b193f9fb8854af8ed4560526bed9f4edf3c4a5c93db06dc2d7187addc2096bc1",
+      "raw_png_sha256": "506817abc74ce3d2904cd1923d32fd14143e2ebc8dc0dd994d627b7c392d4202",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 92,
+      "file": "enemy_healer",
+      "job_id": "a6f74ad6-52ba-43f8-9e55-df914d3e5c67",
+      "webp_sha256": "fa079a71e06a526c091c6c59651ef42df84ee98de943cd59beb3e570f4f6b635",
+      "width": 256,
+      "height": 255,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        73,
+        84,
+        978,
+        984
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "f0b92211d519d6f529187b9335e0f7559214e4bdcddf17c96d012cd1711fc854",
+      "raw_png_sha256": "4b6b5e90929674d97f2526c6f68e0eeb5920ef2665e20fce4d392ba408c68575",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 93,
+      "file": "enemy_shield",
+      "job_id": "0799590c-2179-43fb-ace9-9e624190325b",
+      "webp_sha256": "06201c5fc771d9208bd99749fcdc0d77199a342bec8389296a5734df703c3112",
+      "width": 220,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        126,
+        57,
+        918,
+        980
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "9547e3ed990229890e6ff8f7a39d82fa838a79c53df88b79e96a20f2c43fc251",
+      "raw_png_sha256": "024b28b21d53884e441d19c44209976e5c5b7c204ee9898c3b31b131428037d9",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 94,
+      "file": "enemy_shadowwolf",
+      "job_id": "21843ea7-b1af-474a-a992-df223b61919b",
+      "webp_sha256": "6ecd2330be06e5f5631f19e54318587b14c83226d99db83b94ecfdfdd5e9efb9",
+      "width": 256,
+      "height": 204,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        32,
+        149,
+        997,
+        917
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "4c402720cc119392d19197d2976a5092e8bb6776a5ad20079d7e52fa9804adb9",
+      "raw_png_sha256": "9a6835e4f72577b872e06649ad4d4f9be4cf63241b1857c8c34961185059fb04",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 95,
+      "file": "enemy_goblin",
+      "job_id": "84071ce3-7a0c-4fef-9443-4376884f46dc",
+      "webp_sha256": "be91af3b906a9b422b5b668f59804bf68556191b25ea22c93aff8c589faf4842",
+      "width": 256,
+      "height": 237,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        54,
+        100,
+        994,
+        972
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "92a59a77fe9f42d3fb39573081f42e7119fb1d1817b24d5144f0dbd40fa4e4c1",
+      "raw_png_sha256": "a1a2f69ba2f6790f07c5c5511303483e9bb1b51575dbc0ea1d77107f11ff967e",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 96,
+      "file": "enemy_gemgolem",
+      "job_id": "b309ee1e-41cc-40f0-b3aa-37f803f8ee3f",
+      "webp_sha256": "4045ad2388e3add51240bd7ad9fd5cc3dd82160572037265811f6b55a1c0bc86",
+      "width": 254,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        82,
+        83,
+        941,
+        950
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "a9a8fcdc2c29499acebe5441c8fe7dc3818ef00e0172f569be06e1fd2f42e0d3",
+      "raw_png_sha256": "e70a8fd5eb1c35183d3dc1f95290b6eaa87b5b19d4a984d654bd8563f3ccb0a9",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 97,
+      "file": "enemy_minigolem",
+      "job_id": "778d5b99-3b95-42c4-8f9f-5c1ac13c02eb",
+      "webp_sha256": "cddd0a33865dad19df0cf949f9433004082750467540e321229125788142ab44",
+      "width": 256,
+      "height": 229,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        110,
+        153,
+        961,
+        915
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "5d88d0031430447e2ab9c7d73ae86672f1080d1e915e6d800eb3455c4195a0ac",
+      "raw_png_sha256": "ff77d2b5a6b4692b757c37cd6d23344e90024a0c467a9cdc2c0b718a15f4ae7f",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 98,
+      "file": "person_lena",
+      "job_id": "0cfa4893-a219-45a6-8e38-efbe168e8370",
+      "webp_sha256": "845e99b161257a41ece419f6a5951b43f1a2e21024673d4e8947f3a78678a73e",
+      "width": 197,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        128,
+        26,
+        884,
+        1009
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "88b38f6e3ab5a4b7805fde0c97072376aed1c739adc724011abfb8b16be15160",
+      "raw_png_sha256": "81ffcafba3ae8cdf52a05311c62f86b0cbe0d7eeacaa3185bce9690ce3e353c6",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 99,
+      "file": "person_cedric",
+      "job_id": "91862bdc-7450-482d-bb86-83e422493c64",
+      "webp_sha256": "3a78ddbc70cf1d9074de54501892a34a9c08600ce5fb86aac6b79636b867acc1",
+      "width": 235,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        48,
+        9,
+        971,
+        1014
+      ],
+      "raw_edge_touch": true,
+      "light_fringe_pixels": 0,
+      "old_sha256": "ce2793588a2483e6a44703d592c57a01faefd904316a830b697a5e4c18e0b41e",
+      "raw_png_sha256": "e124fbcccd3edcac8a272e4a4fd994f37fef054e30c8a01e06334a2bcba250a8",
+      "visible_clipping": false,
+      "visible_white_fringe": false,
+      "edge_review": "Narrow raw margin (<12px threshold); complete closed silhouette visually confirmed in raw sheet and converted light/dark sheet. Not a clipped canvas edge."
+    },
+    {
+      "n": 100,
+      "file": "person_bronga",
+      "job_id": "e0645ff3-8f43-47b1-aab2-5b470c4ed1a5",
+      "webp_sha256": "b38dff9b178960997320c6effb14ff5804fa5bdf79aa32fa02c007e8ff09c743",
+      "width": 253,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        39,
+        42,
+        991,
+        1004
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "25fc0de07be7391a5f59aeccb0397739c14db23712ce9a7ae1fd7d8b74225c7d",
+      "raw_png_sha256": "7152932293c03d6f4f2ce73132f13a9143fe9eedbe1dce13c81261df9fb9a8fa",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 101,
+      "file": "person_silien",
+      "job_id": "d11821d1-7ed5-4f8b-ada5-da7370956d32",
+      "webp_sha256": "a38bb4d177269b9c74b819d0317bfc540806d28be72e2abfd0797cfd42e4056d",
+      "width": 256,
+      "height": 253,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        33,
+        60,
+        979,
+        995
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "423e9e47ef66604711f7cdcafc9d49f04a51b9ff9329182e854a59bd3e0937d0",
+      "raw_png_sha256": "e75d7ee249a83eee83f8d446a3687661d70c9541e1fef7d497b74b0b173187dc",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 102,
+      "file": "person_morwen",
+      "job_id": "46fb38ad-0ae1-4943-9060-612f2210b791",
+      "webp_sha256": "0b9675e6d8fc684f807b955e22c76fb63a37c6018464f7ce0930a78e782ad311",
+      "width": 230,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        60,
+        26,
+        939,
+        1006
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "c61a970f4d3a3bd2eeb608edb98da1749df30a403102d5aee2fb15269e319d59",
+      "raw_png_sha256": "75f268ca27dcb5b9b66caa5cc05c7d319b8a574f5cded273427c6c0796533b76",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 103,
+      "file": "person_urga",
+      "job_id": "19e101ee-1d02-4080-8448-cecec6370a07",
+      "webp_sha256": "f74b6957babace74b5e281f793ff3391f972ea04a3ed54a3b99c964f478134aa",
+      "width": 248,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        27,
+        43,
+        946,
+        991
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "8c70024e9d79ce20273ac1d72635ad05182d2606e7f6065ce48316dbafe26289",
+      "raw_png_sha256": "552e5459336aa926e1d129f88ab26bf87373b174975a2104efe8535b090ed574",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 104,
+      "file": "person_pio",
+      "job_id": "49b0bddf-8f5d-4a9e-a96a-4277d88eb5e3",
+      "webp_sha256": "99ef5b1fb9e6122111b3059f4a1632ede228303b644a8d7405dcfd3be09e299d",
+      "width": 256,
+      "height": 253,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        32,
+        55,
+        987,
+        1000
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "5cde078a4c93a846210360094fd14919345855307c438d4938d00b371474735e",
+      "raw_png_sha256": "620a918e0d252ef539023e9b88c64c3ddfed2dbbf7ddb54b76b3e0ce6bf0c071",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 105,
+      "file": "person_mio",
+      "job_id": "64fb731b-b1c6-4dd7-b109-792c7a617d85",
+      "webp_sha256": "f9f784872471828e571d44604c73068d6321224fd9bb4a9b62b2e50885ad6369",
+      "width": 212,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        111,
+        30,
+        922,
+        1009
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "d569742977353904ba9b9a9c765dde1def1133cd7c8fb9bf9bb5252026a34c41",
+      "raw_png_sha256": "56c02b944f35f804e0522fe0306c17266f489ed4787294f3f2e281a616ccc649",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 106,
+      "file": "person_commander",
+      "job_id": "d2896934-5d71-4821-8042-9012d32ef1dc",
+      "webp_sha256": "5ab53a0e8b9b190a0378638428ea7945a86db38901dabdb6177a6efc59b55abb",
+      "width": 223,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        71,
+        9,
+        949,
+        1019
+      ],
+      "raw_edge_touch": true,
+      "light_fringe_pixels": 0,
+      "old_sha256": "aefc9e5be982f2b16febc345df1109565298d8b135afc832d869f7919abe3a14",
+      "raw_png_sha256": "6713e587ae235fc9331345b7dbc62a2309ec3a8e2c5d0fa0461f7a3213cebcc6",
+      "visible_clipping": false,
+      "visible_white_fringe": false,
+      "edge_review": "Narrow raw margin (<12px threshold); complete closed silhouette visually confirmed in raw sheet and converted light/dark sheet. Not a clipped canvas edge."
+    },
+    {
+      "n": 107,
+      "file": "miner_awaken",
+      "job_id": "eb1414c8-6a4c-450f-8f07-609b9be6c947",
+      "webp_sha256": "4eb357e268a30ae9fabefc5d425c5dd0ce285357dfe30c8c1d5af0d81014e352",
+      "width": 256,
+      "height": 249,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        50,
+        61,
+        989,
+        974
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "e3dbe61ca50d531e101fd950f60f6bbcdeab3477d5ae736c424e41bbf911af42",
+      "raw_png_sha256": "ec71c3cec150f5122974341a1ef569fa28bd212c1e47e6e6787d6c6619cdec5d",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 108,
+      "file": "drummer_awaken",
+      "job_id": "4e43c0cf-b055-4f0d-825f-51d4db848aa5",
+      "webp_sha256": "2eabec16d9b6dae616a5607bdeac11061ca95f70178ce6301037b732719b6dd8",
+      "width": 233,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        72,
+        37,
+        956,
+        1007
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "feef26db9feec46aaad9d862ebaf76f5f7edc5cdda9a23da516e24c08faffed8",
+      "raw_png_sha256": "a0810030d3cde58e81905da8090c5c885e924056b6443acc0e8ca8705b03b8c0",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 109,
+      "file": "goblin_awaken",
+      "job_id": "fb5e6e8b-c07e-4cae-86f9-97b877713d00",
+      "webp_sha256": "a1964178e483e844d22f909f4a08ff04e8518c833cfe2019fb48389f1d98fda6",
+      "width": 256,
+      "height": 249,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        55,
+        100,
+        956,
+        976
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "941f99ece330ba3e2aa77887d664a75e069ce4d96a54851f97d5bad5a39475a3",
+      "raw_png_sha256": "c88af2e54d3eff346d9ac4f4fc71c245b0bcf38de694d2498660cdbf5bf806dc",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 110,
+      "file": "archer_awaken",
+      "job_id": "d9f8a738-b43c-4f1e-b6b8-93f18ca3aa69",
+      "webp_sha256": "5ce542553252bb6ad23180d6e9338ccab3d95ce09254cb597d0bdac48ee071f6",
+      "width": 233,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        59,
+        41,
+        934,
+        1004
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "28d94fd075349e46da3b35c3b0021f60c4edd935b914cf7ed80f08f137165944",
+      "raw_png_sha256": "0a288c80963c04dca1be6b4b7236e526bbf455dc4b3f35762dfc74c285811dd4",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 111,
+      "file": "apprentice_awaken",
+      "job_id": "d54045ba-ad53-4536-9d5d-5eeb0e93383a",
+      "webp_sha256": "8fa89a68c8b5e1ff878fae67395f9fef14fd166cff505ba17e454f730b6f2336",
+      "width": 252,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        75,
+        82,
+        956,
+        976
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "443f7d48bac352580bb5c7824c2fdb1226c83ed676969b22e32f9a7334ffacd2",
+      "raw_png_sha256": "297a16c31c0698912cb485dd697c3daf6fba7ae57431865d825c1d518dea3ab7",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 112,
+      "file": "warrior_awaken",
+      "job_id": "c4bd83c6-94cc-4095-9ca0-a5693d50b3ff",
+      "webp_sha256": "25cb3acc2d543507a04cbb4250de80585779dbca795cd69c5549326f1ba8d853",
+      "width": 253,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        214,
+        219,
+        821,
+        834
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "fa2b8456e19e995012ba5bfe7894e1f79f85491bed56b18890636547cd3aaa6f",
+      "raw_png_sha256": "c26edef0708b9a4a80ff9ad2781643de3982359b9b8daa0042aff9ecf93101e4",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 113,
+      "file": "spearman_awaken",
+      "job_id": "702a6516-e7a3-409d-9a85-e628be55ba86",
+      "webp_sha256": "7f63666290b20e69607beb1b110934c8112e3262f2d98aafc5d2c23dd1e4035a",
+      "width": 256,
+      "height": 215,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        192,
+        228,
+        875,
+        801
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "281046d73dc92aa56a8497f7ef5175711b8d030fc2b39d6c96714ae341c949cf",
+      "raw_png_sha256": "ff85409c4573e5a183d6e728f75eb86767ead2bccdbbb97fd7aa481e9592d254",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 114,
+      "file": "stonegolem_awaken",
+      "job_id": "34329137-664c-47d9-8202-818de3cfe4a7",
+      "webp_sha256": "945903258b53a450bcf5d846bd1965bad9c2c524c4fbda8cd1fd681aca6d08f0",
+      "width": 253,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        54,
+        69,
+        976,
+        1002
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "515d838230b15907c7317f2a889a15aadc5545b3ac1edaee6a41e90bceef7201",
+      "raw_png_sha256": "7cff428a163ef18eff16be11a94849d16f1382b99caa99eeb714d27afaec64f3",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 115,
+      "file": "ninja_awaken",
+      "job_id": "95a76ad9-12f8-4d36-a2b7-004075f6e32b",
+      "webp_sha256": "1d71a8ef53e83ebf24cacba002d2a4b5aa1161e3872a88c49ac700209ab74300",
+      "width": 256,
+      "height": 209,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        179,
+        247,
+        846,
+        792
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "50398310fa66b9c34e25d8aae097b77a5a62b0a844257b73d2cf83bf19341800",
+      "raw_png_sha256": "bacb11bdbec028b608e1f180488f145bc4da1b0a55b3acd04c1830fa6c9214c4",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 116,
+      "file": "k9_awaken",
+      "job_id": "46f75c3e-6efa-4a3c-9ffe-8b855ad4e473",
+      "webp_sha256": "0fa9768cfe1de374a5f8b22b95110eedc41d00a8123f16c664818889d6b0e03d",
+      "width": 205,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        239,
+        198,
+        778,
+        870
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "a5a2d2d19043dcb7536f68a452fd60011acab3672f8330fc24a3d59d08c0f35f",
+      "raw_png_sha256": "24e5d75b9d6a50d588b046baf6829d296d2609c77c9b3fe6037af02308882793",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 117,
+      "file": "merchant_awaken",
+      "job_id": "24486d84-0dad-4d72-b073-5007c8079069",
+      "webp_sha256": "b177398740d601dae26f4a83a1dbd02e0d1d34ec3734ecf859147f0d80eee2d9",
+      "width": 256,
+      "height": 253,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        12,
+        16,
+        1005,
+        997
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "d3c827991ded700eeeac3665e135526239a0397c60486ba28133201f01439294",
+      "raw_png_sha256": "99e7a9d9fb96be52f1ec205c498f3ad95329a6a58bb15d0ca361a2fd32515254",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 118,
+      "file": "mudshaman_awaken",
+      "job_id": "fa3e93b6-5f90-4050-bee2-f7da448a0d85",
+      "webp_sha256": "6673ef350a900b67d6ee2fde9cca269bb079e4c0855e952ed041c2f0e17d452d",
+      "width": 256,
+      "height": 254,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        72,
+        57,
+        999,
+        975
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "716667fea6b25a6f54deb6f5aaa8de8fa529890c587dd351c5aec97ae2d5f9c7",
+      "raw_png_sha256": "1ffb46e42d947d80a143e5a96186d42c8d49b96acc09fc59332913b452991c5b",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 119,
+      "file": "bard_awaken",
+      "job_id": "f3871c0e-0159-43e7-be98-51ed03fae5ef",
+      "webp_sha256": "b41927fbb08f441c7096215c745020db95973d35ce448717b0cb011da8903663",
+      "width": 252,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        41,
+        57,
+        943,
+        974
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "ec122832b081dcb720503d851d6603ca9769033fa58069812f01f03446a9be6b",
+      "raw_png_sha256": "5864572df6fa334219ac46f65e982917e25e9be9e34f331fe59adf1a4ab95940",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 120,
+      "file": "scout_awaken",
+      "job_id": "eaa6c695-fa8c-470a-a86f-cec1121c1c0a",
+      "webp_sha256": "8c4f26977f28f5d7efb3e15ee62e92797f018c2f5f7ef0621f739222697a2010",
+      "width": 233,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        31,
+        41,
+        904,
+        998
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "38267cbb72eaf7f03970f7f3076188da80e961a58d7e97f36d25007824184303",
+      "raw_png_sha256": "1cbf99c35fe8bc334e564b892180fec973e814d60743f698fa8041e3a0f5ff78",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 121,
+      "file": "flamemage_awaken",
+      "job_id": "6d27a2dd-8427-4937-8976-5ef34cf91335",
+      "webp_sha256": "5f928e8dfdc7cc00381fd025ba074b96e43bc396144ef526bd12dc4b0bdf6bac",
+      "width": 218,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        120,
+        31,
+        946,
+        1002
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "dc03bbf6211187eaded2df63fc4d5fd0b7819673f8bd627877a34ff70571a45a",
+      "raw_png_sha256": "04ef44e44d1fe5e2d1bfc2a9d37e347fb714d309bcceaac3dea0aaf62d8b6122",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 122,
+      "file": "cleaver_awaken",
+      "job_id": "84a199a8-04be-4110-b8da-ec10928afc8a",
+      "webp_sha256": "376c0366d89faccb8c0493f9361f5befc572a4c64e767da686b1381fc49a3c11",
+      "width": 215,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        96,
+        18,
+        925,
+        1007
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "00735ec13c7887f68a77924a6d652d4a03bcdc9f87df37477428fe268e0a5871",
+      "raw_png_sha256": "5b9c4410367a23a16ed9e6818826845ef9642f8be8a9cf735b205b0cdc398936",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 123,
+      "file": "duelist_awaken",
+      "job_id": "70be6ede-ec4a-4caa-bd1c-0e3132deb948",
+      "webp_sha256": "5b8b816b7f5dde172dd526bf486ee67afe48868079cfa63627c0ef65d0fbf18f",
+      "width": 245,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        84,
+        68,
+        949,
+        973
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "2bd58332af318ab3b6dd39f49530a1f390277f489f6d5f95f2762dcde24eb4fd",
+      "raw_png_sha256": "a35eef4b4144e28d595e06abed17dc990da8d8994aa7b8fb1329d437f9202b50",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 124,
+      "file": "gunner_awaken",
+      "job_id": "7ea10acd-0e6b-495d-8992-b81908c27966",
+      "webp_sha256": "e0d0827122d9bb30c4e8e7773aae191fb054aa59d43e95dd966b9bff20478351",
+      "width": 235,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        64,
+        28,
+        963,
+        1008
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "5f37cf9512a755916df967a4744e236aff003ebc449fc7b85690d17a16c238ba",
+      "raw_png_sha256": "00de6e994d6bec32dbde0575c7a911daa86b051384dc97c1278bd51bea911748",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 125,
+      "file": "dwarfbomber_awaken",
+      "job_id": "78f3c12d-55ef-4cb9-b4cf-e29835ae4a8b",
+      "webp_sha256": "ee53861f81434fdae16cc2e319d439319817f1ab097def06dce9a4ecbb98800b",
+      "width": 233,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        80,
+        40,
+        941,
+        987
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "cb4fdaa12b3d7e6eff0b8776e01cfe27fe961d638a365797960f73a726fa906d",
+      "raw_png_sha256": "6992d58c9c8e05a302ac0a5f227fa185ce1f799fe852e2e6bc5c2e08f8687692",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 126,
+      "file": "windarcher_awaken",
+      "job_id": "ce6f42b7-00ec-4bf0-bbff-bb91fc3c1d2b",
+      "webp_sha256": "73bc4018225f796226047266c185562d4def9f38b95fc8d184309db8db2754c0",
+      "width": 256,
+      "height": 250,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        61,
+        92,
+        948,
+        957
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "c791fba6f899b62f2b9ddae4f0252eac11dc747a2067f50b1af58ee73d920281",
+      "raw_png_sha256": "45432d800278c765abc698fb6ad9746d740598b8a1c6bbe81ee8c45158e24349",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 127,
+      "file": "icemage_awaken",
+      "job_id": "18d1a055-5d03-46b5-b3fa-5893f7e0cdf7",
+      "webp_sha256": "975d9d7612daee423ab54a1c6066109345af2bd0d37305345ffcc5d5b2639989",
+      "width": 254,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        39,
+        23,
+        978,
+        968
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "7f6746da2d3193c800a506e75190db2a8576bb83e1d6d43a99e9115b0244c8c6",
+      "raw_png_sha256": "96522c8261629519451e78b0ddf559dd26e97d4cac404631c648bbb28fd11694",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 128,
+      "file": "gambler_awaken",
+      "job_id": "3f02d7d6-bef6-48af-8e7f-66fd3e9bafc9",
+      "webp_sha256": "a34e49258202c285c5c65a7b8da1e8e472926805b41bf96540362fd4e6a863ab",
+      "width": 233,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        61,
+        17,
+        964,
+        1007
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "ee85b68973cfc5390a8860b3f55e57cf6a84dcdb3248b57d524e2fc76dca1545",
+      "raw_png_sha256": "6eab6fa3f2633a4d0d12bcfe5d6eba617cbf58e70302698e2d74a79da18c685d",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 129,
+      "file": "blacksmith_awaken",
+      "job_id": "ec8c5bfb-2c70-4e74-9688-a2122fec3e44",
+      "webp_sha256": "b833aa6236f6bddd0598f4c4d0a7dda3d66c58a33da992d2bf0d69d923656c59",
+      "width": 255,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        43,
+        38,
+        988,
+        985
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "629b142a178dd70fdc5303167c39ec17cd855506db4c71976f0aabe554c81a10",
+      "raw_png_sha256": "0a9193096735c0c1e66b34cde2d7f1492434eb98999860eda4ca114693d2ee8f",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 130,
+      "file": "goblinchief_awaken",
+      "job_id": "db73b17d-97e7-45e2-adb8-01e3dc0c961b",
+      "webp_sha256": "60778b91df83a54cefe95423366c15fddac1b1052c9b28058ac3a0b05057cbc0",
+      "width": 222,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        92,
+        20,
+        948,
+        1005
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "25b8d3ef87ee23c3b6da166cd3e2a58a11d26026be74dc551ce13a381a396f38",
+      "raw_png_sha256": "0f2b50e26cc73cf1b8bfca3d24266d49f881f423ce4d7fa831c21e13a676ce2c",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 131,
+      "file": "astrologer_awaken",
+      "job_id": "bfd71f6b-1a5a-4607-ae9d-85ae36356f55",
+      "webp_sha256": "49a05676b4c292908b6afa8b0722dae190e0d73d5d4305e866950acbdcc036ee",
+      "width": 216,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        85,
+        36,
+        896,
+        997
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "e197a5ce4a726be0064ed0b307a31d78445d70e9eedf61de9bb434578e724462",
+      "raw_png_sha256": "f4edcd3c3839a437bc094d4a6b5cb0f238a7cd1c33c90603f12b129112156790",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 132,
+      "file": "banker_awaken",
+      "job_id": "482d0aec-d089-4610-99f1-7be27c6c7da8",
+      "webp_sha256": "d33f1f9c2e5aeb5f03b78032d589d952e53c5c4baeb38f53a8a334c72df797ab",
+      "width": 218,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        93,
+        34,
+        912,
+        997
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "0a5273d07f366f875aeca6978be47a11272d26f3795076ce2e2f93a8a3c7d271",
+      "raw_png_sha256": "50e8a3b5f5b9e69642258113568d8df6c240c46bd194f557d1a4c41bde4b7ba8",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 133,
+      "file": "sniper_awaken",
+      "job_id": "313da385-64c9-4ae0-9979-f82e721a55cc",
+      "webp_sha256": "07b7d9897c7fb5e99fd278c27f9a3a39f7fd26f2622de781d0f09b5012c4fa20",
+      "width": 256,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        41,
+        60,
+        975,
+        994
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "328b162bd54ef9f9dbc9ecf5ace5fbda4924ded68753e63db6cacdf717359b89",
+      "raw_png_sha256": "24519767c0307b3341598f1503fd189c009c6d73955e8c99c105f2599dc60643",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 134,
+      "file": "berserker_awaken",
+      "job_id": "da315c18-c897-489b-b423-3cf9d02fa657",
+      "webp_sha256": "4a2fbe28971bed6a1367b3d9a47b6e44e36007fc0af8b2144e46dcd2b4da387c",
+      "width": 256,
+      "height": 217,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        6,
+        93,
+        1018,
+        951
+      ],
+      "raw_edge_touch": true,
+      "light_fringe_pixels": 0,
+      "old_sha256": "65c9bd5826fafa424c34f18ecefaffc8c62bc7b0cb149410a2f24d8dbc2d5ce0",
+      "raw_png_sha256": "06e6b15281f66a7174ec27563da1ae77919e4c0fb97491a71a027125e12b19bb",
+      "visible_clipping": false,
+      "visible_white_fringe": false,
+      "edge_review": "Narrow raw margin (<12px threshold); complete closed silhouette visually confirmed in raw sheet and converted light/dark sheet. Not a clipped canvas edge."
+    },
+    {
+      "n": 135,
+      "file": "lightning_awaken",
+      "job_id": "76785233-cc0f-4b31-9e78-194ff7120b52",
+      "webp_sha256": "4105ae7dd568c471766db83fe01c722a5fa149af08e6f2729cf1987574eeeb65",
+      "width": 227,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        91,
+        39,
+        921,
+        978
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "27edb545e45b77be70ea28d78c66001e90d5d7ef9ad2a10f22ee1ed07907f067",
+      "raw_png_sha256": "92d70e8cd202af05622f08064aab0c7fb7811477f62bc93076eb26ebddf0a563",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 136,
+      "file": "poisonarcher_awaken",
+      "job_id": "10bac3f0-90a1-41c2-86ee-f4e056da774f",
+      "webp_sha256": "20dfca4bb01929f9243ac690eabf64669d680b360597df3e48d72a74a0af3250",
+      "width": 256,
+      "height": 237,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        24,
+        75,
+        993,
+        972
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "b639626b9e5cfd131d302828f330c5b51479b106486c40560e665a88c8350508",
+      "raw_png_sha256": "902e6c935a43800a620c9a5fad91a846b04d6f42a4c4ded4c0e7dd02d970ce9e",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 137,
+      "file": "summoner_awaken",
+      "job_id": "8cedd6a9-579d-439b-8246-4aebb34d7ed9",
+      "webp_sha256": "b56566617fad3140e038906aed0269f2ba9c5ecc8abc475155f5162c1ce8ebaf",
+      "width": 247,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        93,
+        65,
+        985,
+        990
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "359172d0d1ea2120ab60e8ea26ed5b987bb4dbdddf3c8f9ac2361922de99ae1b",
+      "raw_png_sha256": "037f956375f0b97f7b397950358bba9e5526bfe800a475ca088c43304febf074",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 138,
+      "file": "scholar_awaken",
+      "job_id": "f0fa1194-c0c3-4517-92cb-120bac87057a",
+      "webp_sha256": "835b07823805ca18610d93af7769ad1564867cd1783ac99899598aeb29b74744",
+      "width": 198,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        96,
+        17,
+        860,
+        1007
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "66e885ee9b4e61d5df197f14ac7de720ed073a7886fe1a3e369f79909d2c3bd9",
+      "raw_png_sha256": "1347391d040084d94260b02777a927cafbde48f6f04036a5049cc89152b483e7",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 139,
+      "file": "chronomancer_awaken",
+      "job_id": "4fde9a9d-ae32-41aa-a8e2-6d2c9691c78e",
+      "webp_sha256": "fe74a011500d9e2e42aa863192e4ced6fc49d1505f01f7b571249153fbdb7cc1",
+      "width": 256,
+      "height": 246,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        35,
+        92,
+        954,
+        976
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "efcabb0cb0217dca8ce4f1a9de5959f4a2435a14c6dd06e53efcf8b199046df4",
+      "raw_png_sha256": "c3f068f127536dbe34f91d7bb67021f28583f06707a97c7b6b91d74050cd76ba",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 140,
+      "file": "alchemist_awaken",
+      "job_id": "d199da0c-ca87-4941-8424-277631c74b61",
+      "webp_sha256": "546187c12d50ffbcfe3d79729e505c220a64d7968bd6783448ab2f03218eefad",
+      "width": 232,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        77,
+        47,
+        934,
+        992
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "3df279c99807b7a261cac48e41263773d7fb061d48ff5bf2f269e2d6818ac7ed",
+      "raw_png_sha256": "476541181a06b409a3393ed06dfa2fb1797afaf7ecc3f9b64d0adf62c2881504",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 141,
+      "file": "paladin_awaken",
+      "job_id": "04ba8a62-582f-49f0-9c95-4afb1ce77e3f",
+      "webp_sha256": "3f3669bdbafce03c4359d422b458cc1e33c2e68f498a6eccbd57ec3ea862ec4a",
+      "width": 256,
+      "height": 249,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        62,
+        66,
+        963,
+        943
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "f0adba36f08e6f579a66182c907d0a630e2aa29750d11db932c5ed03761d2c7b",
+      "raw_png_sha256": "07ddfc50e9fc82fb1f1f92491108bf84dbe28be79daed225a8be6f49970f4493",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 142,
+      "file": "necromancer_awaken",
+      "job_id": "d91d4730-0662-43a3-8b64-8aaa03cb4675",
+      "webp_sha256": "97d4c3dedb66e5d42ef24c068849322dd7e7c846f65e576599f3aba2c46f565a",
+      "width": 256,
+      "height": 247,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        62,
+        80,
+        989,
+        977
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "a133be0fd0c2af776108068a1ac82f39b1c882bf43e1ea150886498ea5501299",
+      "raw_png_sha256": "b09892d7f939ca7de2dd117420da34065f89efbc47e9d3ddfd50ac6d35ccf4ea",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 143,
+      "file": "artillery_awaken",
+      "job_id": "4aab983e-7336-4bbb-9be8-ee361dfce4e2",
+      "webp_sha256": "3aff1ff2450f362056b251cce82cb123276e5e5b06ed53d0c875901a1fba3ec5",
+      "width": 212,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        105,
+        28,
+        919,
+        1012
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "b6d04c342b68bbe6a8836e50f8f033cd914c73907c089d906ee71ff1c93997ef",
+      "raw_png_sha256": "3fba7361e2d959246ab6948d04297493d46132f1e55bc79eae9e639b9ce6df17",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 144,
+      "file": "prophet_awaken",
+      "job_id": "3269b870-208a-4fc8-a071-186a2a5296d1",
+      "webp_sha256": "ecee38f87e1dcfb42414066270f4474ef6942142e323c3589d60eb03077445c3",
+      "width": 183,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        153,
+        46,
+        826,
+        988
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "f679c75a47de30312caf652f806e30a3647b8916c27548d0b3c6ec08843fc64e",
+      "raw_png_sha256": "5cb8df9f8f75e60300bd1d20db5dbc77cfd289cb67b20981569f5290eb263528",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 145,
+      "file": "swordsaint_awaken",
+      "job_id": "43cefa1f-86ee-4844-a385-61d408e36a5f",
+      "webp_sha256": "7018d2cd925b547f8a0a73d7740477d4eef0338c3d749367c6724a131f38e579",
+      "width": 209,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        82,
+        25,
+        884,
+        1006
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "49aebe5476c2ed3d48bf602cfe10793ff4ddab384289840c9d16bacd2dc015e4",
+      "raw_png_sha256": "808bcc6991ca3f431a0bc20d7a8d18bf8582eed014d9ab39535792bd185af76a",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 146,
+      "file": "stormarcher_awaken",
+      "job_id": "bc6626ab-39f8-456b-bfe1-a77399d44591",
+      "webp_sha256": "ff4baa63458a91b0a9be4e2463be2be8582865642e4785addfd5665c3bb79a11",
+      "width": 256,
+      "height": 238,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        21,
+        80,
+        969,
+        961
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "00399585e75b020c268e17eb0538c1612bbc778d3a53dddad6dc017af81b471d",
+      "raw_png_sha256": "ecdc687dae1472b1f4f4d955d2a30898bf571ed94f7eaa68bdfb61c348563308",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 147,
+      "file": "dragoncaller_awaken",
+      "job_id": "d520ddb6-e479-492d-aa6b-3816de346d93",
+      "webp_sha256": "209d6cb70781e5d975d0078b2c98aaaee6b55df4d3d32a811865aa85484a0c42",
+      "width": 256,
+      "height": 254,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        35,
+        23,
+        1008,
+        987
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "6e8b5da2440d6ca710aa6829e7bbac0ff43090da75489b13c9c4612db5fb5d93",
+      "raw_png_sha256": "e2ac15cf91fecb8f7e02225bcf1c3648d9f4f34544c14c7434168b4f09d4341f",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 148,
+      "file": "warlord_awaken",
+      "job_id": "37e260ad-183d-4643-8aa9-966ece18d5b1",
+      "webp_sha256": "2d4a3610ac12bfc28dc1c6aa4f88042cdcf4690a8dd3827a0f8e89b696250d20",
+      "width": 237,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        72,
+        26,
+        983,
+        1009
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "1c2eefbff3e61c1dc1ea7e945d8516b7eae064680a6aaaee6e43fc9d3c383d19",
+      "raw_png_sha256": "6c0cfcbd8e937e489b2003a68839e131ac465548803240bfe02afbba2cc009a7",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 149,
+      "file": "archmage_awaken",
+      "job_id": "5a5c9d27-973c-4b3f-ac9a-581c5d260a6d",
+      "webp_sha256": "24f55e97b78fe251acff7cfca461ff49f7f853920f26bcd6d1b18262f15f5313",
+      "width": 234,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        87,
+        23,
+        971,
+        991
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "8b621fcbbbf4681dad96dadd21df09106302eb72ca5ce2057d620e47a9c89c89",
+      "raw_png_sha256": "2f76f45fbcf7b531816d8062615acfe4bef099a6568c0d17d4db7cc068a2f888",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 150,
+      "file": "assassin_awaken",
+      "job_id": "ef82180b-c9a0-4fc3-a502-5fbff4541eef",
+      "webp_sha256": "41b8c84b31644ed03ca04e425d3ec841b8514ef0d0eea96047116cb3a29b24c1",
+      "width": 255,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        48,
+        57,
+        976,
+        987
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "ed04d2b8e19b1d6736a502690d24d68e6582b814baa1d79994eee5e066b105ff",
+      "raw_png_sha256": "02957f2e571cf75ba01deb20fed0abb93a1459936e894111d93f0eceb6b95f1d",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 151,
+      "file": "fortuna_awaken",
+      "job_id": "959582dd-4929-4ed5-835f-76acc2410975",
+      "webp_sha256": "7beb47a88ec9821ae83c090582cb50893cde1115c499cfd93cc5bc664632f454",
+      "width": 256,
+      "height": 231,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        21,
+        64,
+        1015,
+        959
+      ],
+      "raw_edge_touch": true,
+      "light_fringe_pixels": 0,
+      "old_sha256": "a29a19b987d1167d288e4199352f4b2e53f0aaf17aa9b184da2a119bf2b3527a",
+      "raw_png_sha256": "009342e39078a0f0ecd1994f9f0d62cb990d509cb535ad2bae4c2e36b28d8264",
+      "visible_clipping": false,
+      "visible_white_fringe": false,
+      "edge_review": "Narrow raw margin (<12px threshold); complete closed silhouette visually confirmed in raw sheet and converted light/dark sheet. Not a clipped canvas edge."
+    },
+    {
+      "n": 152,
+      "file": "spearsgod_awaken",
+      "job_id": "12bd0370-33b3-4e62-a12c-b96c5ce53721",
+      "webp_sha256": "a74d4325e5e87b2b48fa0299bd31e64659df34d178d4506736ab86b93c710c1f",
+      "width": 244,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        90,
+        46,
+        982,
+        980
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "cd467ab3281f7cac5eb694c0b4442fd893d40f0478a4b00f73b33637a47d9ce7",
+      "raw_png_sha256": "168474205e58f31e3551ef4442091de64e3c848b9c042fc3a1cd16586350e854",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 153,
+      "file": "stormlord_awaken",
+      "job_id": "67380839-3217-4c07-bc3a-c5d32011fc7d",
+      "webp_sha256": "3dcd19eefec42a550863ed6b2f3658a10ae447130f2821d6625e8147f42b57b8",
+      "width": 256,
+      "height": 233,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        20,
+        76,
+        1005,
+        972
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "ae72b705f1b3bc7cf22f3bcac2eda8da2184b1985384fb4292bf943b96a4bb82",
+      "raw_png_sha256": "7200a01eb96c3ead87ba78737b345c77c2c648ae65b6a302e2c8b2f3d4ec398e",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 154,
+      "file": "tycoon_awaken",
+      "job_id": "2cdd14f2-0600-4c88-9a19-e4a72e884672",
+      "webp_sha256": "0428ab48f23924270c464d79043f5b0889be026372c4ded5d15796110eaa62bb",
+      "width": 256,
+      "height": 255,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        60,
+        56,
+        990,
+        981
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "598e0ec63e98b403dc605f948e7d05e7235462c35136284eee12d78bc2399054",
+      "raw_png_sha256": "7f74d6f6c3528eb9aff0f5067af7bfc55665299277ab28d6d3de12d5cf7801e7",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 155,
+      "file": "saint_awaken",
+      "job_id": "00abd5bd-37fe-457b-9730-b3ab0e802868",
+      "webp_sha256": "b7d7c22ecda45ac51f5d82274a42274a45f0f14db521e4f5e50cf58875dfff4b",
+      "width": 256,
+      "height": 247,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        30,
+        55,
+        988,
+        979
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "2fe5a18fa4423a1eb5a6c530e6b59dcdb8a60a0ae7505a8edbcf8aec6af271f6",
+      "raw_png_sha256": "9a74df953677f24dfdbcbdb421b0628768118759c959d98fbeb8a925938c26c1",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 156,
+      "file": "dimensionist_awaken",
+      "job_id": "ea99b279-403e-4c9b-9daa-e3d3b6004c72",
+      "webp_sha256": "d0bbc58f830a49510a5edd0e80528f787bbaf4130e1b7aee0c19447c25ce36b5",
+      "width": 256,
+      "height": 240,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        22,
+        80,
+        1008,
+        1003
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "05c112c6e257f3e4ac55c1fbec8f293857bfb42901c7429456b63b94bc4d33a0",
+      "raw_png_sha256": "8cee4a837f61a204cead7e3a490baf423d61290b9873310945a347542862f6fb",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 157,
+      "file": "fate_awaken",
+      "job_id": "bc6b61f7-880c-4f87-bfa2-91c4c96e38d4",
+      "webp_sha256": "ee9413e2d3be7242a19df17af6ac198ff4945cd434aebf9d502a3703cfb258bd",
+      "width": 256,
+      "height": 242,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        37,
+        63,
+        993,
+        966
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "3a32ed09fbc35f183d84c6e02ac19d7c11647427675b36147a5ad4cecc75575b",
+      "raw_png_sha256": "887fe10053773a057b977129f399dc6e2df36a12b93f6a2193542ecdd0682807",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 158,
+      "file": "plenty_awaken",
+      "job_id": "fa022d52-0097-4272-b74c-cafb2fb3db14",
+      "webp_sha256": "4a3eda750410f8064e240de40cca660747c8f585bb90cdee54e972c68919f400",
+      "width": 252,
+      "height": 256,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        63,
+        64,
+        961,
+        978
+      ],
+      "raw_edge_touch": false,
+      "light_fringe_pixels": 0,
+      "old_sha256": "cd327e82cde6179825e0b11cdb43c418a29f541f026da15e42ce423040473303",
+      "raw_png_sha256": "49e24119b02e10f084a1ad5414fdbc24f00936420864fdd5c9f5f899f047466e",
+      "visible_clipping": false,
+      "visible_white_fringe": false
+    },
+    {
+      "n": 159,
+      "file": "ruin_awaken",
+      "job_id": "dbdcbc2e-9aee-4e9a-b723-07d5b6cb0c4e",
+      "webp_sha256": "bf162db6585546a823d4dbcecac1662e88307f80bd11ada19e845f30ead5766b",
+      "width": 256,
+      "height": 214,
+      "raw_size": [
+        1024,
+        1024
+      ],
+      "raw_foreground_bbox": [
+        11,
+        99,
+        1012,
+        934
+      ],
+      "raw_edge_touch": true,
+      "light_fringe_pixels": 0,
+      "old_sha256": "e5ffb8c1b16fea43c59cc8adc0120320be97a2f371204fc6aba75259fcb9776d",
+      "raw_png_sha256": "9bb3948edbd216dba73b1891b79c3a2e1ef7ddf737fb0269dadf662b4a7fa7f3",
+      "visible_clipping": false,
+      "visible_white_fringe": false,
+      "edge_review": "Narrow raw margin (<12px threshold); complete closed silhouette visually confirmed in raw sheet and converted light/dark sheet. Not a clipped canvas edge."
+    }
+  ],
+  "visual_review": {
+    "count": 159,
+    "backgrounds": [
+      "#fcf8ef",
+      "#242536"
+    ],
+    "visible_clipping": 0,
+    "visible_white_fringe": 0,
+    "narrow_margin_candidates_manually_cleared": 5
+  },
+  "built_asset_files_verified": 159,
+  "awakened_asset_comparison": {
+    "count": 53,
+    "minimum_changed_union_percent": 41.83,
+    "method": "Actual WebPs on a 256px transparent canvas, centered and bottom aligned; opacity difference or RGB L1 >120 within opaque union. Supporting metric, visual equipment review remains primary.",
+    "records": [
+      {
+        "file": "miner_awaken",
+        "changed_union_percent": 49.04
+      },
+      {
+        "file": "drummer_awaken",
+        "changed_union_percent": 65.37
+      },
+      {
+        "file": "goblin_awaken",
+        "changed_union_percent": 60.15
+      },
+      {
+        "file": "archer_awaken",
+        "changed_union_percent": 59.87
+      },
+      {
+        "file": "apprentice_awaken",
+        "changed_union_percent": 69.67
+      },
+      {
+        "file": "warrior_awaken",
+        "changed_union_percent": 59.43
+      },
+      {
+        "file": "spearman_awaken",
+        "changed_union_percent": 77.99
+      },
+      {
+        "file": "stonegolem_awaken",
+        "changed_union_percent": 60.54
+      },
+      {
+        "file": "ninja_awaken",
+        "changed_union_percent": 70.5
+      },
+      {
+        "file": "k9_awaken",
+        "changed_union_percent": 50.49
+      },
+      {
+        "file": "merchant_awaken",
+        "changed_union_percent": 64.61
+      },
+      {
+        "file": "mudshaman_awaken",
+        "changed_union_percent": 51.56
+      },
+      {
+        "file": "bard_awaken",
+        "changed_union_percent": 61.83
+      },
+      {
+        "file": "scout_awaken",
+        "changed_union_percent": 62.77
+      },
+      {
+        "file": "flamemage_awaken",
+        "changed_union_percent": 63.2
+      },
+      {
+        "file": "cleaver_awaken",
+        "changed_union_percent": 61.44
+      },
+      {
+        "file": "duelist_awaken",
+        "changed_union_percent": 51.09
+      },
+      {
+        "file": "gunner_awaken",
+        "changed_union_percent": 59.72
+      },
+      {
+        "file": "dwarfbomber_awaken",
+        "changed_union_percent": 50.95
+      },
+      {
+        "file": "windarcher_awaken",
+        "changed_union_percent": 66.34
+      },
+      {
+        "file": "icemage_awaken",
+        "changed_union_percent": 78.59
+      },
+      {
+        "file": "gambler_awaken",
+        "changed_union_percent": 56.88
+      },
+      {
+        "file": "blacksmith_awaken",
+        "changed_union_percent": 63.15
+      },
+      {
+        "file": "goblinchief_awaken",
+        "changed_union_percent": 63.3
+      },
+      {
+        "file": "astrologer_awaken",
+        "changed_union_percent": 49.29
+      },
+      {
+        "file": "banker_awaken",
+        "changed_union_percent": 52.75
+      },
+      {
+        "file": "sniper_awaken",
+        "changed_union_percent": 54.0
+      },
+      {
+        "file": "berserker_awaken",
+        "changed_union_percent": 59.09
+      },
+      {
+        "file": "lightning_awaken",
+        "changed_union_percent": 65.4
+      },
+      {
+        "file": "poisonarcher_awaken",
+        "changed_union_percent": 60.28
+      },
+      {
+        "file": "summoner_awaken",
+        "changed_union_percent": 69.43
+      },
+      {
+        "file": "scholar_awaken",
+        "changed_union_percent": 60.74
+      },
+      {
+        "file": "chronomancer_awaken",
+        "changed_union_percent": 70.1
+      },
+      {
+        "file": "alchemist_awaken",
+        "changed_union_percent": 59.74
+      },
+      {
+        "file": "paladin_awaken",
+        "changed_union_percent": 72.97
+      },
+      {
+        "file": "necromancer_awaken",
+        "changed_union_percent": 64.57
+      },
+      {
+        "file": "artillery_awaken",
+        "changed_union_percent": 52.18
+      },
+      {
+        "file": "prophet_awaken",
+        "changed_union_percent": 71.56
+      },
+      {
+        "file": "swordsaint_awaken",
+        "changed_union_percent": 59.38
+      },
+      {
+        "file": "stormarcher_awaken",
+        "changed_union_percent": 68.87
+      },
+      {
+        "file": "dragoncaller_awaken",
+        "changed_union_percent": 62.76
+      },
+      {
+        "file": "warlord_awaken",
+        "changed_union_percent": 62.27
+      },
+      {
+        "file": "archmage_awaken",
+        "changed_union_percent": 41.83
+      },
+      {
+        "file": "assassin_awaken",
+        "changed_union_percent": 54.43
+      },
+      {
+        "file": "fortuna_awaken",
+        "changed_union_percent": 68.08
+      },
+      {
+        "file": "spearsgod_awaken",
+        "changed_union_percent": 66.21
+      },
+      {
+        "file": "stormlord_awaken",
+        "changed_union_percent": 73.51
+      },
+      {
+        "file": "tycoon_awaken",
+        "changed_union_percent": 63.74
+      },
+      {
+        "file": "saint_awaken",
+        "changed_union_percent": 65.67
+      },
+      {
+        "file": "dimensionist_awaken",
+        "changed_union_percent": 62.33
+      },
+      {
+        "file": "fate_awaken",
+        "changed_union_percent": 69.34
+      },
+      {
+        "file": "plenty_awaken",
+        "changed_union_percent": 62.95
+      },
+      {
+        "file": "ruin_awaken",
+        "changed_union_percent": 61.36
+      }
+    ]
+  }
+}

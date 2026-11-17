@@ -1,0 +1,813 @@
+{
+  "base_commit": "ca86c46d437de7aaeae82c9ba561c1a252442f29",
+  "reason": "User-supplied Lucky Defense screenshots take priority over old prompt wording; originals are traceable to the base commit.",
+  "prompts": [
+    {
+      "file": "miner",
+      "original_prompt_sha256": "04a241757b33a25c2137fe437ff9d3f503ed60bcbed15619cfe7a0c18c5cbdbe",
+      "prompt_sha256": "4bb561aea99d29cac40f96e18093afab66058d0aceea6b286906343e172bf1c2"
+    },
+    {
+      "file": "goblin",
+      "original_prompt_sha256": "89c27900d58e3dd908107b290e560a284b97609daad7ad60dd591a7f76154e2e",
+      "prompt_sha256": "91fd0f1f6ef03bb5b281d3ba89475291da2bf386a17a17e425bc3eca3858c3cb"
+    },
+    {
+      "file": "archer",
+      "original_prompt_sha256": "86f8c83c4fb5de632d038a9d53b159d69413d1cef1c371cd202f8a3440f49328",
+      "prompt_sha256": "abfa070132bbdff644cf0a5a27b17c6bab750d1dfcaf344b05528ec849243645"
+    },
+    {
+      "file": "warrior",
+      "original_prompt_sha256": "9df38171d4978c734fc22713d9ee6d96e015f0f5f9b6f36b427961db1a1c25e7",
+      "prompt_sha256": "c652b5c02d2eaf8c037f2779926f1be8c35efabf04b0a6402beee9a592f34964"
+    },
+    {
+      "file": "ninja",
+      "original_prompt_sha256": "54158aa08754a1dc3fc19922255cd252d501416c7a3b13f63e34b976c10243bb",
+      "prompt_sha256": "ea55ca943961ffb0b081afc2d42a3a75db87d2a6977b8fae86491712e119311f"
+    },
+    {
+      "file": "k9",
+      "original_prompt_sha256": "a22a2f0b82e2443fa997fe8d4ede9730acde230f2ada5912e0bda353806be533",
+      "prompt_sha256": "1a422c8d73d77840a4784a4a98fba1def443ec375e4ac02a67c4927ff7201dd9"
+    },
+    {
+      "file": "bard",
+      "original_prompt_sha256": "deeeeb2d797d4fa9251cd6d3a583dbbbc400602a036d7fe9883004d68eb7ef67",
+      "prompt_sha256": "161772b4ee04a642bbe9faf604841e978bcda452f08a09f4e66691dda17eed6a"
+    },
+    {
+      "file": "drummer",
+      "original_prompt_sha256": "8215f97e9a8cc724f80e6a9d6ebb0702597671ffeec616f3c6cc58111ca094ac",
+      "prompt_sha256": "1bd1d1e2786c451f2f2fe7d8b4fe6c6443c8d427aff111774009185fdeb47898"
+    },
+    {
+      "file": "apprentice",
+      "original_prompt_sha256": "3ecc54c661d9479a41517089c2c5f749e5233a51ca51a90cc4e85039b6892d1b",
+      "prompt_sha256": "5a109fb3cbf19119d3224569ca1fd527ac314fcdecf0df5c653f2c4a4800b954"
+    },
+    {
+      "file": "spearman",
+      "original_prompt_sha256": "4330265b29372e1d8bf4789b06fed1441bca5084edf22093b6b107a65bee5bde",
+      "prompt_sha256": "51937f1219201c0f938b49f2cb5f077df2d7bb8fcff5525c3a07ede0b04e4780"
+    },
+    {
+      "file": "stonegolem",
+      "original_prompt_sha256": "7484d1782ee38efbe8b74e56258b0972d19a8470813ff134b7ee2009bd43f4b4",
+      "prompt_sha256": "0d8f0b59f03cd81b707c42fda91f62d69a9836ea3ee8cdd42212a15fcaaff1ae"
+    },
+    {
+      "file": "merchant",
+      "original_prompt_sha256": "dcb8b453ace9f3872f41fe550cfe37d5cf975e7fa2c87c1b1f614ca9f27debdf",
+      "prompt_sha256": "aacd7da07cf855cfb22c00fd1232c9ea133b130251ce582e4ac6e6f3e98ddd6b"
+    },
+    {
+      "file": "mudshaman",
+      "original_prompt_sha256": "9e997593f8a41b18522c9098e5108c9856ecbe7dea1f2ccce16a50bd9d0f2ff6",
+      "prompt_sha256": "94c4532f65f041dc8f4d0549971d98a1c0525c22884e2f27136fd0847160a691"
+    },
+    {
+      "file": "scout",
+      "original_prompt_sha256": "0bd5cb23d44b20d93cf8fde3031960ec38afc33daf3fc942c87b8a4be4397364",
+      "prompt_sha256": "697006cffa929352fbac0f40a6f1d22c3cb855ca6850316f65b591dcd9946a1f"
+    },
+    {
+      "file": "flamemage",
+      "original_prompt_sha256": "80855bc75d7f6c260e5a30d4660391368e6cb4f57409ed1a67ea2f57011ab020",
+      "prompt_sha256": "95c6853c3859a54605687a170387e293d4cdb73cf786de29c78eb3611a87f4c7"
+    },
+    {
+      "file": "cleaver",
+      "original_prompt_sha256": "42dc6d263210ec1520441954926e1abe461b455cfbac9c43d6c1c12b83bbe9c7",
+      "prompt_sha256": "a26a10731d15eecb10e31bb32dd01803ed6cec1806e3441d9f7d36ff23216b15"
+    },
+    {
+      "file": "duelist",
+      "original_prompt_sha256": "f82c0da00ebedcc0801d8b9d89d87bb75fde7b6329128e4f7507f0b1f7729caf",
+      "prompt_sha256": "fd413bb0c12ced6897c7f44e7a6a75f87f46560894147177764402bbdf8324d6"
+    },
+    {
+      "file": "gunner",
+      "original_prompt_sha256": "85e3944f4c72979188097595d54d41921582ad1c437b57f82a65b33ed9fb3752",
+      "prompt_sha256": "545c62875937d4d20ea41ae5718bea5d92f56df7289fd617b731a3c986ac192f"
+    },
+    {
+      "file": "dwarfbomber",
+      "original_prompt_sha256": "9040a76504cbb291b728e8af41ba4809dadf36f397a2ed94cee8a6c042138199",
+      "prompt_sha256": "4a4c8d94c8164465b04947de74cf0e3aa4288ef2844d7585e18083926213d69a"
+    },
+    {
+      "file": "windarcher",
+      "original_prompt_sha256": "dd397a1d238349cfd24ee3b4fff330efcdb4ce10cd02f14a864efb6469a5a5e1",
+      "prompt_sha256": "4dc6f49c5746fd32e52c0fc6e1e322a9ca2adf78df705711d0511861ade54040"
+    },
+    {
+      "file": "icemage",
+      "original_prompt_sha256": "3b0f3c0c58ead955573e79953de67a771248336433e6c7a1f70fb1df4852620c",
+      "prompt_sha256": "962771ad2a71d9b038b55458beedb983260810cfd5b947ed1efc263b506a2cbb"
+    },
+    {
+      "file": "gambler",
+      "original_prompt_sha256": "6d3fdfb7f710b2b61e798cd44cb8c01faf39885b736086783f293eadbf13a0f6",
+      "prompt_sha256": "9ee4f89fd01ff19bae0add12000046b460f216122f24c4a8c6ef88b2c9d4e2d6"
+    },
+    {
+      "file": "blacksmith",
+      "original_prompt_sha256": "c564735278783d38d7d77562c6390275d9850f1c82b8159b148cadf6d67f0335",
+      "prompt_sha256": "225e203874beb80aaf8761b69e7a60eb377138c67051cac1f90a7f74c15e908c"
+    },
+    {
+      "file": "goblinchief",
+      "original_prompt_sha256": "b50a0af92a7ab9d4d3f1f49a0a2a71d5f7558a37288badebd38d3c8080f3c61d",
+      "prompt_sha256": "1075f22fde2f4c94a81cfab98d3f7ce63a12413c2ff1f5c6b3b651bbfcd9fe73"
+    },
+    {
+      "file": "astrologer",
+      "original_prompt_sha256": "2b346a8dfb8806c44727c771be7087d9065829e6c38c3ae28faba940ec669481",
+      "prompt_sha256": "9424e9f386cb406373550ea6ef50f7478fa88df1404429d9575f116bdf8a8c7b"
+    },
+    {
+      "file": "banker",
+      "original_prompt_sha256": "ee5d485fbb207d646a8bc3b9537e277708d05770f902e7c926f8d4d0d1dd3c6f",
+      "prompt_sha256": "28691ee8c65dcaa75369f3aef7456c777e612e8ccafa3cac40e13c8d6e934e65"
+    },
+    {
+      "file": "sniper",
+      "original_prompt_sha256": "f39b1b70e0a9151f53c322a5d7d0adac4bda288a48b4b9e152374067becd4837",
+      "prompt_sha256": "ce16d8f92312fde83560bc728b6d170ec9b393fea4fa4aeaaeeaf12592a1a998"
+    },
+    {
+      "file": "berserker",
+      "original_prompt_sha256": "42766b6501de43ddda8f3a1abd5c08aedccc52562ce1a441080f446613123f62",
+      "prompt_sha256": "55463ce72ce4424ee55b5dbaceb5aae6d9c79281bc7c9d968097186d0994cf47"
+    },
+    {
+      "file": "lightning",
+      "original_prompt_sha256": "34b0fa5e0e94dac09f7921d61807396eba7f1f8f9dce23bbb5948484dd2cdc65",
+      "prompt_sha256": "efd7b3d6b1cb69fd984604a754caa714222df529a31346d6ed527144dfca5866"
+    },
+    {
+      "file": "poisonarcher",
+      "original_prompt_sha256": "e262b193b45fb0a4f0c7292e2c402029dcec132b9e99f52bc20e24b4f992f93e",
+      "prompt_sha256": "488e7962d3568b3a6d509f3a44cb2b2a6e1a31ee2eeef01e978bc99a747141c2"
+    },
+    {
+      "file": "summoner",
+      "original_prompt_sha256": "d9eff9c99e29c3d649cfff1cbdab611478ceb7dd36a2537fda4c18dd4cc1441a",
+      "prompt_sha256": "279bc73e21213399687d6b5e8a60c0f25cca6d02c0cb0a86b68b5f1e8808381c"
+    },
+    {
+      "file": "scholar",
+      "original_prompt_sha256": "576c5d65dfa62125484bc9dcc6a4f5a4c32fafd0714b3bd53d85a42790e312d1",
+      "prompt_sha256": "b9d24fdc4c2bbce79dc288a9856f99cb916953e7d819d91d16feb4c14a3a2139"
+    },
+    {
+      "file": "chronomancer",
+      "original_prompt_sha256": "eb7faca079c6089bc2a695f16938cbaad4fc3ee643ff50d0a7426424b5f856e1",
+      "prompt_sha256": "1c51caab36b26045f632a22603040e5b4455168ec6e12f209e2a715ea1ef9f3d"
+    },
+    {
+      "file": "alchemist",
+      "original_prompt_sha256": "e65982ccf618b3f0d39b5b6662fc6b8af9f4e20f2ad55b789cc2589b1bf422c6",
+      "prompt_sha256": "6cd7b02ebae29420e3f5c7a69abcd7852f31617ccf68ff8b94fc5ac1e7931af1"
+    },
+    {
+      "file": "paladin",
+      "original_prompt_sha256": "ee611023dd6dd8f146290f7d8def70cb8d52b691d0d4a7b477b091088a93f1d7",
+      "prompt_sha256": "7032c3962b51903189788dfae2c55d08b5982d1b8d80f70ae914cdfb50b003be"
+    },
+    {
+      "file": "necromancer",
+      "original_prompt_sha256": "bce0ad9ec1cbe5ce60269c8266c869314e7f40a48d143b32ad2846bc42b5b8b3",
+      "prompt_sha256": "0435e70a24176ebb06f62e5f0712056f69d77e16b1c010e07eea2a68b3bb9469"
+    },
+    {
+      "file": "artillery",
+      "original_prompt_sha256": "2d8946363deee5879722a66b5b610818c103a7f5d6fff678d36d8865fb2583b7",
+      "prompt_sha256": "341ce490f2c27137eca8914c2e84e7f106a94797a42c931e5f88447ff3b6c274"
+    },
+    {
+      "file": "prophet",
+      "original_prompt_sha256": "07b6ea2dfc640f7c0980973e88a139851882f1315aa61da849e221f7c15ea0ee",
+      "prompt_sha256": "84eae7c58867fcf81f23a134a1bdbfa5cdabb9482af9125b7cc3c80e304698af"
+    },
+    {
+      "file": "swordsaint",
+      "original_prompt_sha256": "457fe8c9c5ddc66e866f1e8911a0bcf95816b526e7e2515bc9d9feb24a74154e",
+      "prompt_sha256": "4e6fd1ee563667a1e818563f89d9caa01924ea7208ee77afe29c096c8f7e4a42"
+    },
+    {
+      "file": "stormarcher",
+      "original_prompt_sha256": "6aa7aeb4067074b4e144ac185ca41617550b82f4a22afd73d2b28994f715a685",
+      "prompt_sha256": "c591f466c6a394c5b8f9abbf7d86aff5f96177d7b92d4df90d9f56299a87f4e3"
+    },
+    {
+      "file": "dragoncaller",
+      "original_prompt_sha256": "5b221a7979e6c72d16cd1e1cc399c3883928f5a0713600289af0fe25fd09b590",
+      "prompt_sha256": "ab7de4d0d70f7a8229a5a13a3c805bec45ffe34fe9110422144ba07c42438762"
+    },
+    {
+      "file": "warlord",
+      "original_prompt_sha256": "ef2dd8b3c7362f8e0f0d2bc7cf52829f9dbb9050be0448d866db76e870bb2dc7",
+      "prompt_sha256": "224b9d78ff25af2dff1b516442becf5ccb5eaa03c4cf1d155af8eca08106d3d9"
+    },
+    {
+      "file": "archmage",
+      "original_prompt_sha256": "8331fc95ee7d489f8181d64e47f11830a842344bb1a67e13835c9ed7b4800e96",
+      "prompt_sha256": "b2833ad2356e75bf40ddd7252cd75857c63067835fb0c2813b4a9c65b21c769b"
+    },
+    {
+      "file": "assassin",
+      "original_prompt_sha256": "b455a2616e417191f01e86af60f2cb701d6363105f5d74672318e9c082f59239",
+      "prompt_sha256": "32ce6c589c88d50bc4fa082d1e0bcc0a82e704eefdd950624f1532aaaebbdc15"
+    },
+    {
+      "file": "fortuna",
+      "original_prompt_sha256": "547ca2764a2b703ac0fc40df8105bbc36a69471596796958e169cbd499aa9bb2",
+      "prompt_sha256": "cecf97e8b18477b70ad99db18bd95cc63eb7ba24f687c39135f0332466876da3"
+    },
+    {
+      "file": "spearsgod",
+      "original_prompt_sha256": "d558a32e4bdb60d35e033368571860a6836d1f07fa2d97da6f952b64df2baa8e",
+      "prompt_sha256": "d4a78751d0225053eea8a4b0db39f10c61934d497a2149471e4af5d23dba5557"
+    },
+    {
+      "file": "stormlord",
+      "original_prompt_sha256": "7c6c01a31b35aff5a65434903bb3345d59f1f73cd7eb9c6c00952ee51ca50564",
+      "prompt_sha256": "8adacb681546fb7e4b11b9f5ae8176930e4063409b7311c48ec75f63f2a2c925"
+    },
+    {
+      "file": "tycoon",
+      "original_prompt_sha256": "c487a638ffe2cd7b346f5ed0234cabf5e6e8a571756eaf8be421732080cac424",
+      "prompt_sha256": "63375d8a32600cb1142585118f6dda02f985e6904f6b0c0367534857709a9df1"
+    },
+    {
+      "file": "saint",
+      "original_prompt_sha256": "535cc7b30015a344a03a6a41c1adebd265ae93741f7b7b741abaf0adb8a1c694",
+      "prompt_sha256": "40be4a4254709cae5d312d501c8b2406d552bc7066b1a1c46c430f5c6a1aae82"
+    },
+    {
+      "file": "dimensionist",
+      "original_prompt_sha256": "fb717b4d90239459d1c8c7fdc3e2467ec2c65bdb46a5663c6fc83d6eac160aa0",
+      "prompt_sha256": "741e27024bce2bc9a2913df609ac970a068d2496bdee8497d5f465c67d181103"
+    },
+    {
+      "file": "fate",
+      "original_prompt_sha256": "f4d1bad186482ad43b7eb47121802e38c24978487166c7a477047aa2888e2380",
+      "prompt_sha256": "1fd5d8241f0b64eb1526b348e0a21442bdf27bbdd0175d1bec58f81836b3a9d4"
+    },
+    {
+      "file": "plenty",
+      "original_prompt_sha256": "eab2c3b0ea85c1d6bf8fafb3021d213e25c79038d4c3a728a0e3780779db1d6d",
+      "prompt_sha256": "e62f674dfe9a373a355d8bd4c0aacd1a4659153291add196c27f9ad636a45228"
+    },
+    {
+      "file": "ruin",
+      "original_prompt_sha256": "7d95592e06d26248a7df6d4aa8f87e2d26df7ab167ad2c2461565eebc0444834",
+      "prompt_sha256": "3eeff1774476241ebd400567ea05cea841155075e337ef3dfeb8cff55ddcecc6"
+    },
+    {
+      "file": "elemental",
+      "original_prompt_sha256": "1bdea0f71be94975cf1a5b5c557bc249e542589a663a9a7a1b78dde5ea37e0ff",
+      "prompt_sha256": "60ed818c2e9d0db32cea3999546668e7b99674f62856fd7a3556f16d66686c46"
+    },
+    {
+      "file": "goldking",
+      "original_prompt_sha256": "908a5dd39ef0936de1175a613b3d721d116509425d02001e2a5bdfa565bb35b0",
+      "prompt_sha256": "ed4708624ce376334644e046c4dbe9ef469ed943f9ab1720ee9253c399e7f597"
+    },
+    {
+      "file": "celestial",
+      "original_prompt_sha256": "039058bf79e97fb9c94d8b45d4e46e625953dec4e48b2665b71cf110c5c3aadb",
+      "prompt_sha256": "c02a4c853b51fcc9224612fe5256168e512d2334dca4d5b5041dfde11bc2cb66"
+    },
+    {
+      "file": "legion",
+      "original_prompt_sha256": "9e47e735e6766b76d6724291a1fbf3dd9e2c9c606f7a04e573af96f3c191caa7",
+      "prompt_sha256": "d730fae1b3c47fad43ca62105b7fd7c59bfd53435a87f7095c15da3708013ef1"
+    },
+    {
+      "file": "infiniteblade",
+      "original_prompt_sha256": "93fffa91e695dfd748afbf2176c470832349646d9895a9661a539f4b07de592e",
+      "prompt_sha256": "f0927e3868e5f8c72cbb68f182aaa078b1c2b927429547bfc88907b870450516"
+    },
+    {
+      "file": "timelord",
+      "original_prompt_sha256": "44d791da5adcc54758e5b6d1856c4175e8213b6e50f47b26f3688f6f5234b686",
+      "prompt_sha256": "b51eb4d0d4abbf7b2fc00197a6dcacbb3711e7345283fa0385e800574cfc0a06"
+    },
+    {
+      "file": "goblinking",
+      "original_prompt_sha256": "f4676620d3822460c33237b7359bd9461d13b3e4c836c1c759c83766f6e51329",
+      "prompt_sha256": "f4a8aaaabc0c0b8eadc040a58f1141a49a960bd14ccb0c8b9cfaa503c3c698fc"
+    },
+    {
+      "file": "deathlord",
+      "original_prompt_sha256": "91acfd52efbe9420b02589459b18a2bc3fa5ea766567ef23772d105a87153fc5",
+      "prompt_sha256": "9964fb776402e428f15b04c708387bfa97f9634b0b99694027d108c5551b8dec"
+    },
+    {
+      "file": "goldbattery",
+      "original_prompt_sha256": "c08cd6d12d6755349dc841d4f03a5b691b0142e9c063a87442fc67b1f253227c",
+      "prompt_sha256": "f7750a4032420e46d712eceb753853fc5271d9437da5ecc732557ca5ceeb09c0",
+      "previous_prompt_sha256": "fe8b7f4e2e5099ca2395acf62f654498662e1c1b155a887cf5dc80f3724a03fe",
+      "revision_reason": "Raw body almost touches bottom edge (bbox bottom 1016/1024); soft gradient/texture deviates from flat one-tone style. Regenerate with smaller composition and hard flat fills."
+    },
+    {
+      "file": "fateseer",
+      "original_prompt_sha256": "5c1492dc41f1e33f94781e017fa61553d791b1a251e4e2a5720deeadefba39c4",
+      "prompt_sha256": "1be5915b8d066810f53477f3f8d3943f16406fa30e30e58da6f8bd6d7931247d"
+    },
+    {
+      "file": "festival",
+      "original_prompt_sha256": "85035c83d6f3f0d46446ad31e683ded1105862a0474399e047460e7ae91f3dc8",
+      "prompt_sha256": "619843690d23f78fe86d45ec32c48acf8ac33efcb394c762ec2be774529ab49f"
+    },
+    {
+      "file": "stormavatar",
+      "original_prompt_sha256": "ac21abc2f4deef23ba6da6e57518ed661fcee76177efacc2acd7aac9aafcabed",
+      "prompt_sha256": "3088021ce0c2906ab9e267124c1ebcd5d64dd67ae8ff07ffa19c66fa76c6ed2d"
+    },
+    {
+      "file": "enemy_grax",
+      "original_prompt_sha256": "d272df5cca7c6dfa42d9bfc415ae3d5cd47f62e48c26c5c6f48e4cad3e8ca201",
+      "prompt_sha256": "88edbc01b23e4fa08ad4c1cc683560dd3222c5bcb75c08bbf8a499caced43848"
+    },
+    {
+      "file": "enemy_batqueen",
+      "original_prompt_sha256": "cdc3b5e8adf917936001f6cd713ef1b8ef8b880da773cfa9e4813e290d864784",
+      "prompt_sha256": "0022366a8b9949b9785c7e060ef47867597ba0df3d425207539eb79daa573a66"
+    },
+    {
+      "file": "enemy_sandqueen",
+      "original_prompt_sha256": "f269bd213925fb67e059f675818d31ebafd8a9a058e94fd5092551a0d3400b71",
+      "prompt_sha256": "3407b5992d122a9b36399dc3bd3caa6af6fadc707e7c7f2021d1946fd9e6a5db"
+    },
+    {
+      "file": "enemy_frostwyrm",
+      "original_prompt_sha256": "58ae4fc657b51484ccf4f299f61de6c0b5ac341431a0e8fe8766ef217b19c147",
+      "prompt_sha256": "cc83f3a36fa3058f66bd0808c61ff73593a9fac737ca64dd4c5cb2c25758b145"
+    },
+    {
+      "file": "enemy_ancientgolem",
+      "original_prompt_sha256": "e17c790afbca8e2edcf59671da76abf84618bf3d4452c44059726c69da24b471",
+      "prompt_sha256": "a1de308848c2ba0fa6833c8f063b00b3e855ca304a8d001034c4af8da148c954"
+    },
+    {
+      "file": "enemy_crystaleater",
+      "original_prompt_sha256": "8599bd19f972dc64cde19437f8c2a7b89176177af80c8adf55a75c78b99dc5ab",
+      "prompt_sha256": "6064f46ce4d6023e0fe678ceab9ec85192dab50881d2a2b6c968006776cea4f4"
+    },
+    {
+      "file": "enemy_steelcolossus",
+      "original_prompt_sha256": "4b7e9aa63c2258c9e007c69e20f753477d4dee7d2aa15775c082af4e28e31fd9",
+      "prompt_sha256": "4ec29bbc6c64cc58c8285f0b444bcbbcfcfda2b1d71cf4403ba4ff658531ccaf"
+    },
+    {
+      "file": "enemy_lavagiant",
+      "original_prompt_sha256": "31a8adfa835fb08b717baad4abcbe1df40bb28d7da018ae38274802f9d29c2c9",
+      "prompt_sha256": "eb8b6ce2bcdeb5613033a128045eafb969081cb38262cf35b0148aa5599cf035"
+    },
+    {
+      "file": "enemy_kingslime",
+      "original_prompt_sha256": "7ba455afa999ec7cbedc4e02102d0968231686d517724b21eb4aaf9cf960874c",
+      "prompt_sha256": "19266b904c3f5cd0c2a7f0b7225b45ee7598d312963ef5a9aae5877b0f1cdeca"
+    },
+    {
+      "file": "enemy_rotent",
+      "original_prompt_sha256": "5f7c62140546e047e67478f80706a5c46e2e6059282d2e4b40df7e838341f34a",
+      "prompt_sha256": "f4652c86463690aa24b6df957b66eb82472bf7c113bce68ac9d7582b00b7cb46"
+    },
+    {
+      "file": "enemy_abyssjelly",
+      "original_prompt_sha256": "642fd0a0ae5c3c8eb9892293046056228cfbedd4842933720e33a2f0196a6ee7",
+      "prompt_sha256": "a153807194be445c7b8066744b946c107c7bf156bda900dd45d9e6c2774f84b6"
+    },
+    {
+      "file": "enemy_wraithlord",
+      "original_prompt_sha256": "66191b4b550fa34d6991a5756e78e237c2e35610e4a4c41ba4f0aa55e0c09128",
+      "prompt_sha256": "96c54614d52b53d42a2b0724d088807822b56bf25e8004de3c613580574e5701"
+    },
+    {
+      "file": "enemy_wraithknight",
+      "original_prompt_sha256": "f6c2696dbef7aeff230e756b57b2d533cdcb471749af7d71aaac967c4d130193",
+      "prompt_sha256": "04c65f4b283723cd9230def154f99631aba1e232e22aee5f41a69c29f0fc6cbe"
+    },
+    {
+      "file": "enemy_chaosdragon",
+      "original_prompt_sha256": "3bc7fbf09e3415276786e942c2017abe57aeb2820caeecc419b3987ac0e2db33",
+      "prompt_sha256": "34beb5b3a8235546f0d35eeaa92d4a0d44ae159f02b94ab0ef5acdec96cbe93e"
+    },
+    {
+      "file": "enemy_zephira",
+      "original_prompt_sha256": "eba7cdb3356142e11aef1942fd90ded35c695c258305111ed3a1d347c68c8d1d",
+      "prompt_sha256": "6a26502797f7f59d3e6f4169130fb0a8cbf5407f01f6f866064a117c81aee45c"
+    },
+    {
+      "file": "enemy_gordam",
+      "original_prompt_sha256": "ee52204fb27143e8f6b28895e1977ac4073166fb21ac0688f2db35a1bc02e84f",
+      "prompt_sha256": "ffdf307db724bf012fd892923dc2cd70d943f9b445a2e2cf61a794cbd6c9ff8d"
+    },
+    {
+      "file": "enemy_morgath",
+      "original_prompt_sha256": "37fac4122163f92cfc5fd8a25b8d7e3ff04ad84e3408710a2c68ebf5a6566737",
+      "prompt_sha256": "210bb91d994ed50cf07cff11b4e7b47257ae22e1480c24b4895918d78512e4bf"
+    },
+    {
+      "file": "enemy_nocturne",
+      "original_prompt_sha256": "a4160445fc4f6347a2efd7556da63c6743e0a83f4e76cfb631faef6a131f62ba",
+      "prompt_sha256": "9b4434705714752cb777d18bccf4b6f85253e62d429366094de17190fcf2f5cb"
+    },
+    {
+      "file": "enemy_nox",
+      "original_prompt_sha256": "b0112ba83d48453fb485e48fff60128d93db32caf93cb1e47d7f79f36adb9c6e",
+      "prompt_sha256": "73e9cad086c91887966a57cb735406c549ce493d51bb261de7e93bc12f564913"
+    },
+    {
+      "file": "enemy_slime",
+      "original_prompt_sha256": "4a1f86adce0086d14e240003d1d2e1a19cabaf2e30759be9f51dd46e7fd65d90",
+      "prompt_sha256": "4b6e218c4644c81047f600570c307cc148ed774d55ec32f6a96d91268d61c612"
+    },
+    {
+      "file": "enemy_bat",
+      "original_prompt_sha256": "076d6843fdf7991f545414eb5f3b7432a2fd5239b52bd9190bf32d5e1bd36766",
+      "prompt_sha256": "c88f6b58f6f4e6a3475e02d452d1987a57b97e67d0a42749dd71114ffd9b97ca"
+    },
+    {
+      "file": "enemy_golem",
+      "original_prompt_sha256": "d96e04d590540d7f7bcb976a9c7565f5cd9238d5aaee09c80170b813ba92cdd5",
+      "prompt_sha256": "4b94f12f0b105715ebb6edef784573d376745373456ea08ffe9aca97f62f28cd"
+    },
+    {
+      "file": "enemy_turtle",
+      "original_prompt_sha256": "866200702a70e13d293089afbe4187ec7b9d4d8804b9e2d2470de56204a558f3",
+      "prompt_sha256": "cf9b25e067cb2bbeb7e2a8aa182988c81bc2b2756f1b7d3b0be84a9a37fd391b"
+    },
+    {
+      "file": "enemy_ghost",
+      "original_prompt_sha256": "d8fe8b80d11dc3bd481ea53edf27c50257be1c4af22dbc42529e00bff12e478e",
+      "prompt_sha256": "4fc2c39d4411c76b1029186edecd1ec05da1e7ec4567e222c50ad7d00fe126b1",
+      "previous_prompt_sha256": "239986a8562de5cb1ebd7e3b08ac8b815ebb3ba032d3e917d440acebd2186ba3",
+      "revision_reason": "Rejected unwanted human costume/weapon from style-reference transfer; preserve plain ghost/slime or quadrupedal wolf anatomy."
+    },
+    {
+      "file": "enemy_splitter",
+      "original_prompt_sha256": "9fba3c31fd01727d36d1d222a018642ac1a720f6e6a3397264abe48d7e6fcd7c",
+      "prompt_sha256": "12fd9bc27d172ca797bd7f6841b1924de1f4f7f6524cbc1f05fac39c43641baf",
+      "previous_prompt_sha256": "95039d39b67b518b0d0921260956764f1aad7ea4575cc8f971dd40cc19305367",
+      "revision_reason": "Rejected unwanted human costume/weapon from style-reference transfer; preserve plain ghost/slime or quadrupedal wolf anatomy."
+    },
+    {
+      "file": "enemy_thief",
+      "original_prompt_sha256": "05b3a90cb7dc9d91015de50d051b7e3674e7c42b3adb4f1f40aadaafca6e583f",
+      "prompt_sha256": "2c6846103fe2e4906d9c34865da7c3bd1d799de419720536c1d09f523a779ef4"
+    },
+    {
+      "file": "enemy_healer",
+      "original_prompt_sha256": "7dd02ac998b6ffa45a0ae8de894d5fc59f51e5717a06b3e3d1d60594e7fd8f60",
+      "prompt_sha256": "02d213a360682d1be6bef7b9d7ba6a10699e007b822eb380e0f2942bd65d83ca"
+    },
+    {
+      "file": "enemy_shield",
+      "original_prompt_sha256": "d3bc4f6cade3318572203e96d55e7eda1e5dfd5f9a174b3ab289b46659807b62",
+      "prompt_sha256": "d8c5f7013292791afc46f011948ab06aa6ff39368fd93fea0e2a0aabe0b90dbf"
+    },
+    {
+      "file": "enemy_shadowwolf",
+      "original_prompt_sha256": "c54eff09f8416521d9d5577885904f31b88dab4b984300a659b76702e2a00b16",
+      "prompt_sha256": "ccdcb52dd0df0e244b70eec4ec4e2b50cdcccc3749d94b47f6825e1dfeb24ad9",
+      "previous_prompt_sha256": "1bdc3cf782cd46ea6bac3aa4a1ab5f7212c292d5e7ca13f2ac4438d1c4825a16",
+      "revision_reason": "Rejected unwanted human costume/weapon from style-reference transfer; preserve plain ghost/slime or quadrupedal wolf anatomy."
+    },
+    {
+      "file": "enemy_goblin",
+      "original_prompt_sha256": "e33675f6b7be09534a68ba8db25119748de919d05ea0472ee242b3da801915fc",
+      "prompt_sha256": "2f17037042d9f0a1662a59585ed1b5fe11b435df37a1b7677d3e06c1098c16ec"
+    },
+    {
+      "file": "enemy_gemgolem",
+      "original_prompt_sha256": "a8cb17bd629b6be60a2d7e4030f15129b99a4e03cb7e54602f2b744ce5524fcb",
+      "prompt_sha256": "6ecbb1b9151da44d1d9afa308e058bee260fe21abe74764168e2497aff08e242"
+    },
+    {
+      "file": "enemy_minigolem",
+      "original_prompt_sha256": "488781f60065596b25759b15420d0df04568ef59d46b58cc41228fd26706cd62",
+      "prompt_sha256": "c2f6d89f0346dbd2f7eac924877188c34289766b80c1bdd3039946a599a9bc27"
+    },
+    {
+      "file": "person_lena",
+      "original_prompt_sha256": "a182b833bfd2d4a9d355b0b12589cadae968354915d3cd95205582d1b67c0991",
+      "prompt_sha256": "d91bd69762b124c6a5187702c6db4a10372262c4671eebd3f295b4ebd2906619"
+    },
+    {
+      "file": "person_cedric",
+      "original_prompt_sha256": "452198e11cc57eac4dfbcd926dc26047999793f82f644f6fec15885c2d9d7459",
+      "prompt_sha256": "11170d62244b2158b0a85ec588e9413fe537f81a0811e2577b9ce97283466f47"
+    },
+    {
+      "file": "person_bronga",
+      "original_prompt_sha256": "94b6fc61f9a6f4263ed3256f85bc67e21da1e94417292617c565678ba1509838",
+      "prompt_sha256": "d8cf63e944868635bf7666a33962900c0fb6700901d8ae0244fa135ee335c2f9"
+    },
+    {
+      "file": "person_silien",
+      "original_prompt_sha256": "f0bf1d3a4a37ac63f2f891903c6cc1d07d1695f1482ea8c4e62b1b9cb1722ef6",
+      "prompt_sha256": "ba15b0e55762def580ea747f83f4be1016a86c528dc7de583124a1b89dddf768"
+    },
+    {
+      "file": "person_morwen",
+      "original_prompt_sha256": "c0eed5b745a86e4b1cf371f08927e87f5760a988032549b384db1ce8277e5793",
+      "prompt_sha256": "b4b85ce3cfea0eb17e2ff171835a0c37ef4d47f4c50ba14aa264ffada946b65a"
+    },
+    {
+      "file": "person_urga",
+      "original_prompt_sha256": "86d1e658f99dbbb626014c1c48d6370ef08e052c9824f61ffb47c432b29e90df",
+      "prompt_sha256": "9599f4bd6065552085f2c64392f040ae6bedd7cdd4072439189c01ab515b7f7f"
+    },
+    {
+      "file": "person_pio",
+      "original_prompt_sha256": "e224020b2a7709faf931caa3a94e3eea45d5721f6cf544f2504c53edc64dc48c",
+      "prompt_sha256": "6c8e558e2f42b77d9d35fc58ebab4050c7a3952b75f4b3c256139b919a7a706b"
+    },
+    {
+      "file": "person_mio",
+      "original_prompt_sha256": "bf731a350796781885e04ee777ddeaf15f9ede19940812192ec7c1542d0a2da5",
+      "prompt_sha256": "9a60be637974c88bfa106b4f93323c6979effe336ff57420add96aaaa0a5e5eb"
+    },
+    {
+      "file": "person_commander",
+      "original_prompt_sha256": "aa664bf2f56da83e010a386e474ffff98b409240a65806a3c518c6a831eb7ab5",
+      "prompt_sha256": "c53ecae19f7e18e4abc725b294c26e1f7d18faa9c0f20ebe351eabd010f67e4b"
+    },
+    {
+      "file": "miner_awaken",
+      "original_prompt_sha256": "b05791596f780b1ceceebebc7030d6a0e0d37323c50836cc934f80f129189898",
+      "prompt_sha256": "372771a35c69a15b9bf52012f48ba0ba7ea3d9be7244e8698a3ab457feaace70"
+    },
+    {
+      "file": "drummer_awaken",
+      "original_prompt_sha256": "928bee1c5dcc071bb548deeda5e6c0d64b5790004aeca67b5b8a85f9cf1a3036",
+      "prompt_sha256": "5a92912e0526891017f4254e959f5729be5d2b7cffdfe2d0e78b12d2f617a17e"
+    },
+    {
+      "file": "goblin_awaken",
+      "original_prompt_sha256": "b3fa6842697d04dd0366e58b461a9ae27591fdbc931a52d65c9b287ac17e5be1",
+      "prompt_sha256": "0cab8c93aee6ec87cae1d9f3549e6dfacab91c7660be9c18a8aba6169c9e5631"
+    },
+    {
+      "file": "archer_awaken",
+      "original_prompt_sha256": "fa266ed5772adb835d0ae040b54669ac33dfc15dfe228b17b1d7bdfd171dbde6",
+      "prompt_sha256": "5be38a22217558dd620f0916c3e792d448372a6d5308fbf7e8d8e46dffce1517"
+    },
+    {
+      "file": "apprentice_awaken",
+      "original_prompt_sha256": "9a13456889126329ab8d9806b4e391f0cee409c2340cedf2ddfd39b9179606ee",
+      "prompt_sha256": "235bb2e0281a169fd65c693ddb0f52c42388616314ccd0c0e08bef833d674eec"
+    },
+    {
+      "file": "warrior_awaken",
+      "original_prompt_sha256": "76228788cc06515e68d91991552129921fd03926f28d5b19d013d947a2b81418",
+      "prompt_sha256": "f1cbc072d64ec8da55837572550ba1944a9391e07b5a98d45ca63e3f6c17191d",
+      "revision_reason": "Retry for generous margin on every side."
+    },
+    {
+      "file": "spearman_awaken",
+      "original_prompt_sha256": "fdcc14f2624005de0a0f583a9429c96d9b02598c60931f5f97a330082b34e2c9",
+      "prompt_sha256": "ff67ceec5b974f9694d3922127ec5799f9f305e7c10b0e756d64ff2318ec9e63",
+      "revision_reason": "Retry for generous margin on every side."
+    },
+    {
+      "file": "stonegolem_awaken",
+      "original_prompt_sha256": "06753572daeed33d421c27de2c78e2628102fdf04ea9f95963b7fd4ef5f138f9",
+      "prompt_sha256": "d3615fa96bad58b2cb96342956d0bd22533f11b9a52803499577dfbf16543455"
+    },
+    {
+      "file": "ninja_awaken",
+      "original_prompt_sha256": "fcf7fb2a7134b97a48cbcab63798d15632c547245158e6ad774e34b0ed3a3a89",
+      "prompt_sha256": "af88c66ba2b26dd3066b97adae658c5a9643014148028f762649ba8264ab7e1e",
+      "revision_reason": "Retry for generous margin on every side."
+    },
+    {
+      "file": "k9_awaken",
+      "original_prompt_sha256": "f4e1a4e4cf0ae4c5a80fcf5491eadd17655301fc810cda82f35c5691d19ef802",
+      "prompt_sha256": "7b24b0f906411a74fa75a1d5463d2d9b66635a5bb8181a8edc63767a1e053e25",
+      "revision_reason": "Retry for generous margin on every side."
+    },
+    {
+      "file": "merchant_awaken",
+      "original_prompt_sha256": "aae7be993dbcb5360a61c23fcd1a7307e3cf1fcd90b2a7ffc52195fe40ae74aa",
+      "prompt_sha256": "8e9ac7f0a4445e830b7b187ccf839d43e5d004efe3e9798754f7d52422dd61dc"
+    },
+    {
+      "file": "mudshaman_awaken",
+      "original_prompt_sha256": "32ef188c71f2a87f346fccb43e04b8c73e9d7d41ff1853d54e6ff7bde309211a",
+      "prompt_sha256": "a3cf862579f913a96d30b9b07c404bf0f42dc18185e92409df108bbcc5c8ca2c"
+    },
+    {
+      "file": "bard_awaken",
+      "original_prompt_sha256": "39ac65c28309530d18c9b6d87b5a7b225591c36f2cc1930df3ee392f26629407",
+      "prompt_sha256": "179ccb3a96f441bde9eb717ebb8f22d577ca4e7791229ba656d4c1f0c7e034e5"
+    },
+    {
+      "file": "scout_awaken",
+      "original_prompt_sha256": "ae129a5252472d3db3d7464ff5f88a072e0c63dcffffa3ed30fc7515945f37bc",
+      "prompt_sha256": "19a3ee6facd5402ae4c9d31f375975f399b860665120a5fc342f9926ea0711d9"
+    },
+    {
+      "file": "flamemage_awaken",
+      "original_prompt_sha256": "7640e33e20d1001fc5662ce892c000da67c1da9ea7ac94b42d2f4e92235afb3f",
+      "prompt_sha256": "00468e89525f635fe38aa9ed9999df8c7451e0ba44e9e98f93b1ec86586865d4"
+    },
+    {
+      "file": "cleaver_awaken",
+      "original_prompt_sha256": "45d3fa32879ccba34fde1e0066799bfb538bd75762c1183b39cdde1ad0007b5d",
+      "prompt_sha256": "6ab122d55031b5002d2e3d80b3e3c892927bcf7c5413cec0151bcf50920f2c48"
+    },
+    {
+      "file": "duelist_awaken",
+      "original_prompt_sha256": "fc48cf630bb9d2d821f77d3453ae75eef543076fbb2f6c27d022f6d4bddedcf8",
+      "prompt_sha256": "180fe2f35778d769ceafdc966d2fe28e50b11cc91f16f341de4ca5f0b9707ae8"
+    },
+    {
+      "file": "gunner_awaken",
+      "original_prompt_sha256": "2b672ec55fbd0effc976246234cb30df30da0ec89a396e81501d23ecbfc11be2",
+      "prompt_sha256": "5494860544a62ccf02db7250e6906fe2e93e85c48cc3d89bdc6611d6cccdbef1"
+    },
+    {
+      "file": "dwarfbomber_awaken",
+      "original_prompt_sha256": "81dcd86d4114d3e4adaf8c517546dde4a48e249ef674e45a241873552cc6d4cd",
+      "prompt_sha256": "bfd6636577473da96e6d4a266bce008fd3dd2b64d9ec0f593f1eb5ab5828b637"
+    },
+    {
+      "file": "windarcher_awaken",
+      "original_prompt_sha256": "fcc1d52fac27504c2b1c9609c1a0311d2be29117afe1e24a5b2cf3972fbbca41",
+      "prompt_sha256": "160219a9b99323ea99020deccdb3a8a75f2f0ecce399b6dd37ebc286af6f0d06"
+    },
+    {
+      "file": "icemage_awaken",
+      "original_prompt_sha256": "0362b1429125dd89059e2bb02680b454c9acf0e27c9eec8e88d7260df83095b7",
+      "prompt_sha256": "a47b644be46fa23a3249bb9820bcf527ee28974252bbcdbab8598b63dcc9a27b"
+    },
+    {
+      "file": "gambler_awaken",
+      "original_prompt_sha256": "80d290d5318a7c94c6585105661e3fe1a3d631955f9761d47cdd1431013cd316",
+      "prompt_sha256": "fdbec50e0fe5ba1a85dbe9dc0ef1cbebd24a6c41e6cf6e3ca3bb316ec7844ca9"
+    },
+    {
+      "file": "blacksmith_awaken",
+      "original_prompt_sha256": "1d7675dccc7f522f2551f647c443c5ffded50e860b1acb60af0f016e9acc0011",
+      "prompt_sha256": "3488286213c28250480913fb38602f521571bf9a30935c84168c3a101ff9b395"
+    },
+    {
+      "file": "goblinchief_awaken",
+      "original_prompt_sha256": "c1a20eb9f4c92aaa04272eab64e43a6b6d894f855ea369043e864bc874a688f4",
+      "prompt_sha256": "adca48101413cb84e6ca733d947c0fab8887350b3369db66ade4d1b2d8e742ec"
+    },
+    {
+      "file": "astrologer_awaken",
+      "original_prompt_sha256": "32d57a230de4a7eef44fff92c0868adcf7d6d0e30c273eecaf0930a8098df69b",
+      "prompt_sha256": "ddf81756f989ce51db12405190f8b3504ab9f43dd35f4f680308602b44f40c07"
+    },
+    {
+      "file": "banker_awaken",
+      "original_prompt_sha256": "435589d00819a0a355c0f899c0d5e1fa797bc199a24d859c133878a4c9252380",
+      "prompt_sha256": "545a9e8956feeec33d77680eb2ce8ced257f32bb5851a0d15335579ce02d83be"
+    },
+    {
+      "file": "sniper_awaken",
+      "original_prompt_sha256": "6d9751fb1ed802e0f3f3d0d2d8777aea5d0a5ba2d8301bc200633963df580983",
+      "prompt_sha256": "d528a43bb5a9c440ac311b3d8fb21c8da6d6099c0a7578e197356e9f9771e5ea"
+    },
+    {
+      "file": "berserker_awaken",
+      "original_prompt_sha256": "206c7943f5eef65c8df0e10e8fc373b1099ae7fc65e7cf8035615d94bf5ea1d2",
+      "prompt_sha256": "58c49397f7629a2e6020d795d77a628668013206a4c018b0f09df5e933188d60"
+    },
+    {
+      "file": "lightning_awaken",
+      "original_prompt_sha256": "752777e9fa04505396e163fc2ce3e521b6c16bc455606e87c95567361458e366",
+      "prompt_sha256": "ad7ccc56f9530a015d522efbbff9b3ed3b3fc86fae03b2ef7b8369e8124511be"
+    },
+    {
+      "file": "poisonarcher_awaken",
+      "original_prompt_sha256": "2da1b3b1cb788116fb0a95dc4c7f59f74818ecde8f1ae86a91ad8b5a5522ba45",
+      "prompt_sha256": "2c942f73a28dd5ca0f4c1c0e1aa5ade84f0740756d51d78291f921121c8a50a0"
+    },
+    {
+      "file": "summoner_awaken",
+      "original_prompt_sha256": "6735621ce792f4992818160b8d62373998374126ee574bfb426eff106ba1e50f",
+      "prompt_sha256": "67bed790f224946c8f717be4c02c2083c064224e10471b4b5144dd6aef9ce57b"
+    },
+    {
+      "file": "scholar_awaken",
+      "original_prompt_sha256": "b28fb829b70af2dad08c5d2e564eff4ab1627d0e441f17853eaf76c44040788e",
+      "prompt_sha256": "830e7f04c6790e6b20d4f685f6bafcc7030ccfeea9104732fdd542c223f6c390"
+    },
+    {
+      "file": "chronomancer_awaken",
+      "original_prompt_sha256": "614dd43e4c31ca94daa3ae79a5ce941aead22fff489be41ee946866ae68173a7",
+      "prompt_sha256": "0fd13447440843745e9478ef5dcc46771656725d7dbf5c85d9e1a1167d445412"
+    },
+    {
+      "file": "alchemist_awaken",
+      "original_prompt_sha256": "4ee9fa2076f507298518f973bd57c78027bfecf9ba5b5adaee18a5b253e5f10a",
+      "prompt_sha256": "58f0cd3a36067c32c9109b6efe1c8bde5f0d55e17fa9316acace1aad8956e4e1"
+    },
+    {
+      "file": "paladin_awaken",
+      "original_prompt_sha256": "866b5d30a2681862c625322a50bd767e311dbe647a923c1c63b1e1105c22e62d",
+      "prompt_sha256": "ac8192a9fdb3fabede827f5b3c7bc0403c798c9ccabe77709ec4a290f9ba06c5"
+    },
+    {
+      "file": "necromancer_awaken",
+      "original_prompt_sha256": "65eb2845cea6f36b010ce1fc354c90b9caa58e4a468035c97e59d61684f62a39",
+      "prompt_sha256": "9aaa1b840559bf9701e8e63bb5c7f932987cf2cec7d164318dc7e6cfa84a61f6"
+    },
+    {
+      "file": "artillery_awaken",
+      "original_prompt_sha256": "c478bb844d52ecffe723b53ac553f51d10ac66b3fb0ffc8084eebbd782043e1f",
+      "prompt_sha256": "91c36b8aa3ae857b649392842590447f2cf040114630cd0e577b27316736a139"
+    },
+    {
+      "file": "prophet_awaken",
+      "original_prompt_sha256": "6d6e062d6ccfbe8a6520eb262f45f49234f4d5c097dbe0d3775600ced5640224",
+      "prompt_sha256": "9fb8b34211c761ebaed6ac7b29371d823f5ade3a478f680fed161c868fea4c0d"
+    },
+    {
+      "file": "swordsaint_awaken",
+      "original_prompt_sha256": "ebbb780d5f21823f0c8e11a1a5630515505cf584ab8405ffbf8c65e088671452",
+      "prompt_sha256": "cfba790254eef7075bca9f93bb071942f24fed6841bdc585a58f81495bc7fdc5"
+    },
+    {
+      "file": "stormarcher_awaken",
+      "original_prompt_sha256": "166e0563f9bef1be1084402ae27029d8abd8b37ee2c6eed8bc90035cc854bcad",
+      "prompt_sha256": "738f65f19f1272d4edc5782cf79efce5967095f5b053fdecc17eb59ecd830e3d"
+    },
+    {
+      "file": "dragoncaller_awaken",
+      "original_prompt_sha256": "4bc188f90d8154e4064370670501334bf1eeb825661394ecbf7bd51e4b237d35",
+      "prompt_sha256": "107cde17158499ff6c424075cd4133fa23778bac30ca2013c69af37867011916"
+    },
+    {
+      "file": "warlord_awaken",
+      "original_prompt_sha256": "87ab85939036c34aa0fc87019578267b3307510d87d53792d684f81b73e5512d",
+      "prompt_sha256": "9607ab6b543d48e10e351ab8bd6a839f25d45deafd6a44cd28089e374ed37a3f"
+    },
+    {
+      "file": "archmage_awaken",
+      "original_prompt_sha256": "dbc65e35a2c060de2707ec348c294cdb9b2311eb10a35860e783d9f6d014587d",
+      "prompt_sha256": "3bc454c2e5d3c5704088966462d782b27552e52b30554cfe71059d4d73c63ba0"
+    },
+    {
+      "file": "assassin_awaken",
+      "original_prompt_sha256": "02b39b16e333ffa7913138ac4a34459bdaca7ede3da23e6236c5fed1fa494288",
+      "prompt_sha256": "5620de8e3ba69dd24c5062a0e50b018f22e5426820d740038550737907f00026"
+    },
+    {
+      "file": "fortuna_awaken",
+      "original_prompt_sha256": "7329fa2ff25b4af9df611b91b01feaee8685eac95054c4d19773bd14cb60a4f6",
+      "prompt_sha256": "9c665e053b062cf2ce39e9a7683854785514facfaef3ee62ad1824c451e4ee51"
+    },
+    {
+      "file": "spearsgod_awaken",
+      "original_prompt_sha256": "7c17dc53e440c92bf6595888ec08bbaca11dbf9bc78ca33578e4b72f78b6ae10",
+      "prompt_sha256": "328bb77d1de0d89c64ad01f58053f7c992ac3b7088cd99b08353f1a76939c4b3"
+    },
+    {
+      "file": "stormlord_awaken",
+      "original_prompt_sha256": "777105e3fe29b12ffa2ce7c43008181bf0867a11690c11800e95f861f808e6cc",
+      "prompt_sha256": "edf2992489583fdd34940f629f068bf4f3ccbbe9668c9f097325ed66b9e0c4ef"
+    },
+    {
+      "file": "tycoon_awaken",
+      "original_prompt_sha256": "20f457c0e7a712c4f917cba0089c81ef910a477ba41e9943a0e4aeb6135515a0",
+      "prompt_sha256": "39c5b3d72b0eb1ae5c68b849ad24623ad4d8ba0c16ca8f7f39577f2e55f7c7cd"
+    },
+    {
+      "file": "saint_awaken",
+      "original_prompt_sha256": "99f47418682faa1376f0c7c68464ef7056aa27c664620582d8d8d14aaec3b186",
+      "prompt_sha256": "cd120f4d7d7437ae2bf0deb2c936981831b25b8670e22ea95b01b486deca9fc5"
+    },
+    {
+      "file": "dimensionist_awaken",
+      "original_prompt_sha256": "4ee5f67867821122a0a998bec604e302d408a25caf691a2a467eae71c1dc17bf",
+      "prompt_sha256": "9fec3a087fe88fdd431c43e1d55ea39b93a554459ad1a5b344553787c52717f1"
+    },
+    {
+      "file": "fate_awaken",
+      "original_prompt_sha256": "ccd344ba72aa9b5ae3ffe2cdcf8ef3f327fdfe8478b4decdfc63d1ce3e27d5c5",
+      "prompt_sha256": "a000f7c9740dcc5ccc966d048683200617a829d249db430422a92e7f163aaf70"
+    },
+    {
+      "file": "plenty_awaken",
+      "original_prompt_sha256": "7a74577bbc5aadf05624be1a752acd2b80c71e073ae8957b437cb75214b094e6",
+      "prompt_sha256": "39e93a58ad43959b28ab0fdd8f55699a019726e573eb319b4ed4c1fc5cc0cfa3"
+    },
+    {
+      "file": "ruin_awaken",
+      "original_prompt_sha256": "3e0475c2e3ac40e96745872fda14cee7dc927bf57fc5cbfb5acb9ad8e9f0c9b4",
+      "prompt_sha256": "472e2b6ef8b2f46bfd36897201e8d9b084bb1bccbff10cc5a7f95c2fe1ab768f"
+    }
+  ]
+}

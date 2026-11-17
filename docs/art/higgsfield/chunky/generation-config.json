@@ -1,0 +1,31 @@
+{
+  "model": "gpt_image_2_6",
+  "quality": "medium",
+  "resolution": "1k",
+  "aspect_ratio": "1:1",
+  "background": "opaque",
+  "output_format": "png",
+  "reference_media_ids": [
+    "aedbf596-c8ac-464b-9189-def219d797ab",
+    "b03965d6-a418-430c-a6a8-33a058054187"
+  ],
+  "reference_sources": [
+    "docs/art/higgsfield/chunky/reference/miner.webp",
+    "docs/art/higgsfield/chunky/reference/icemage.webp"
+  ],
+  "base_commit": "ca86c46d437de7aaeae82c9ba561c1a252442f29",
+  "reference_overrides": [
+    {
+      "files": [
+        "enemy_ghost",
+        "enemy_splitter",
+        "enemy_shadowwolf"
+      ],
+      "reference_job_id": "1a31e832-ecdc-4062-b38c-4797dc891d00",
+      "reason": "Accepted flat slime reference avoids transfer of human hat/weapon/body."
+    }
+  ],
+  "generation_count": 167,
+  "accepted_count": 159,
+  "rejected_count": 8
+}
