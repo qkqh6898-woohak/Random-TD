@@ -433,7 +433,12 @@ test('도박 해금: 계정 Lv1이면 1000원·10000원 🔒 + 누르면 "계정
   await expect(page.locator('.toast', { hasText: '계정 Lv7에 열려요' })).toBeVisible();
   expect(await inScene(page, (s) => s.match.state.gambles, null)).toBe(0);
   // 계정 레벨 7 (메타 저장소) → 다음 판부터 1000원 열림
-  await page.evaluate(() => localStorage.setItem('rtd.account', JSON.stringify({ v: 1, level: 7, hidden: [] })));
+  // G-3: 계정 레벨은 판 밖 성장 저장(rtd.progress)이 정답 — rtd.account 레벨은 처음 한 번만 옮겨 온다
+  await page.evaluate(() => {
+    const p = JSON.parse(localStorage.getItem('rtd.progress')!) as { level: number };
+    p.level = 7;
+    localStorage.setItem('rtd.progress', JSON.stringify(p));
+  });
   await start(page, '?seed=42');
   // G-1: 돈 도박은 하단 메뉴 [🎰 도박] 시트로 옮겼다 (예전: 강화 시트의 도박 탭)
   await page.getByTestId('menu-gamble').click();
@@ -441,7 +446,7 @@ test('도박 해금: 계정 Lv1이면 1000원·10000원 🔒 + 누르면 "계정
   await expect(page.getByTestId('gamble-table-10000')).toContainText('🔒 계정 Lv20');
   await page.getByTestId('gamble-table-1000').click();
   await expect.poll(() => inScene(page, (s) => s.match.state.gambles, null)).toBe(1);
-  await page.evaluate(() => localStorage.removeItem('rtd.account'));
+  await page.evaluate(() => localStorage.removeItem('rtd.progress'));
   expect(errors).toEqual([]);
 });
 

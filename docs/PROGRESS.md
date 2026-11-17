@@ -1241,3 +1241,31 @@
 - 검사: `npm ci`, `npm test`(**1,299 통과·3 건너뜀 / 69파일**), `npm run check`, `npm run build` 통과. 요청한 E2E 3개 스펙은 사전 설치 Chromium(`/usr/bin/chromium`)으로 **10 통과·4 실패·1 건너뜀(7.2분)**. 실패는 이전 배경 텍스처 제거, 짧은 보스 컷인 관측, 일반 조작 전체 제한 90초, 기본 배속 틱 수 기준 미달(10, 기대 >12). 테스트를 약화하지 않았다. 교체 전 커밋 비교와 세부 실패 위치는 [VALIDATION.md](art/higgsfield/chunky/VALIDATION.md)에 기록한다.
 - **Claude 후속 통합 주의**: 현재 전투 보스 19종은 외부 WebP 대신 절차 SD 그림을 사용한다. 갤러리의 타워·적·인물 및 인물 초상도 절차 그림 경로가 남아 있어 WebP 교체만으로 모든 화면이 바뀌지는 않는다. 이 작업 범위는 에셋과 기록이다. G-1/G-2/G-3 통합 시 외부 그림 연결과 기존 표정·파츠 애니메이션을 함께 검토할 것. `art/chunky-handoff`에만 푸시하고 main은 푸시하지 않는다.
 - **교체 전 비교 결과**: `ca86c46` 별도 작업 폴더에서 실패 4개만 같은 Chromium으로 단독 실행해 **4개 모두 같은 위치에서 재현**했다(조작 `smoke:118`의 90초 초과, 틱 수 `10`도 동일). 이번 비교에서 새 그림 교체로 생긴 실패는 확인되지 않았다. 소프트웨어 렌더링 성능 및 기존 배경/컷인 타이밍 흐름은 후속 점검 대상이다.
+
+## G 통합 (상태: 통합 완료, main 병합 전 — 갈래 `feat/g-integrate`, `feat/feedback` 3cbd4a0에서)
+
+> 조정자 요청: G-1(게임 시스템)·G-2(금테 테마)·G-3(로비·성장)·FB-1(피드백)·ART-1(통통한 캐주얼 그림 159장)을 한 갈래로. 로컬만 (푸시·main 병합 없음).
+
+- **합친 순서 (모두 `--no-ff`)**: `feat/feedback`(= G-2 → G-3 → FB-1 일직선) 위에 ① main = 원격 `origin/main` **ef4947b**(피드백 에이전트 작업 흐름·이슈 양식 — 로컬 `main` 가지는 오래된 56d95cf라 이미 조상, 원격 main이 요청 설명과 같은 내용) ② `feat/g1-systems` 959d0b3 ③ `art/chunky-handoff` 8cdcf97.
+- **충돌 처리**:
+  - `src/sim/unlocks.ts`: G-3 진짜 구현 (G-1 자리 표시 버림). G-3 `MatchOptions.lockedHidden` → `MatchContext.lockedHidden` → `Craft.craftPlan`·도감이 읽는 길을 통합 테스트로 확인 (`tests/integration/gi-integrate.test.ts`: 새 계정 → `progress.matchOptions` → 판 → craft 'locked'·도감 문구, 해방하면 조합 가능, 개발자 판은 안 잠김).
+  - [신화] 도감 조각 수: `ProgressStore.fragmentsOf(id)`(가진 조각/해방 20, 해방했거나 히든이 아니면 null)를 `Game.codexModel` → `codexSheetModel(fragments)`에 연결 → 잠긴 줄 '🔒 해방 필요 (조각 n/20)' (전부 한글). 로비 📖 도감(G-3)과 판 안 💠 신화 도감(G-1)은 둘 다 둔다.
+  - `TowerSprite.ts`: G-2 받침대·접지 그림자·반짝임·타격 빛·별 배지 + G-1 무더기 자리(`setSlot`). 받침대 = G-2 크기(하한 0.85·상한 1.22) × 무더기 배수 (G-2 하한 때문에 무더기 받침대가 안 줄던 것).
+  - `Game.ts` 신화 조합 연출: G-1의 예전 `mergeSuck(from, to, color)` → G-2 모양(`grade:'hidden'`, 초상 카드, 빛은 레전드 색).
+  - `e2e/a1.spec.ts`: G-1 칸 수 계산 + G-2 `summonFxStats`. `docs/UI.md` 11(G-2)·12(G-3)·13(G-1) 장, PROGRESS는 모든 절 그대로.
+  - 자동으로 합쳐진 것 확인: 일시정지 메뉴 = G-1 '필살기 자동' + G-3 '로비로' + FB-1 [💬 피드백 보내기], 아래 묶음 [신화][소환][도박]/[강화]는 G-1 배치 + G-2 금테 변수(나무 버튼·금줄·소환문 아이콘).
+- **그림 연결 (ART-1 후속)**:
+  - `phaserArt.enemyCharacterTexture`: 하수인뿐 아니라 대장·4천왕·군주도 WebP 우선, 파일이 없으면 SD 절차 그림. 보스는 지름이 이미 커서 배수 `EXTERNAL_BOSS_SCALE` 1.1 (하수인 1.5를 쓰면 박쥐 여왕이 2칸 너비로 맵 밖까지).
+  - 갤러리(`?gallery=1`): `art/characters/externalDom.ts`(manifest → Image)로 타워·각성·적·인물 카드를 WebP로 (같은 대기 몸동작), [🖼 그림] 토글·`art=0`이면 절차 그림. 인물은 WebP가 보통 표정 한 장이라 화남·웃음은 절차 그림.
+  - 이미 WebP를 쓰던 곳(확인만): 정보 패널·캐릭터 카드·고르기 창·[신화] 도감 초상(`towerPortraitKey`), 로비 영웅 초상(`Boot.portraitOf`), 도전 시트 보스 그림(`enemyCharacterTexture` → 이제 WebP).
+  - `docs/art/higgsfield/chunky/`(queue.json 159개 프롬프트·prompt-audit·PROMPT_REVISION·VALIDATION)와 ART-1 절에서 다른 상용 게임 이름을 'chunky casual mobile defense style'(통통한 캐주얼 모바일 디펜스 그림체)로. prompt-audit 해시는 생성 당시 문구 기준이라 그대로 + note. 커밋 기록(8cdcf97 메시지 등)은 고치지 않았다.
+  - `contact-sheet-159.png` 7.4MB → `contact-sheet-159.webp` 1024 너비·품질 72 **0.9MB** (링크 고침). 원본 PNG는 git 기록(8cdcf97)에는 남아 있다.
+- **화면 고침**: 위 HUD 개발자 판 [×1][⏭][💰+]가 '👑 WAVE 10' 아래 깔리던 것 → 양옆 칸 `min-width: min-content`, 가운데는 자리가 모자라면 줄임표 (좁은 화면 개발자 판만). 갤러리 제목 한 줄.
+- **테스트 바꾼 것 (의도한 동작 변경)**: `battle-update` 보스 텍스처 기대값 SD → WebP(+텍스처를 지우면 SD로 돌아가는 것까지), `m5` 도박 해금은 계정 레벨을 `rtd.progress`에 넣는다(G-3부터 계정 레벨의 정답, `rtd.account`는 처음 한 번만 옮김 — G-3은 m5를 돌리지 않아 못 본 것), `g2` 아래 띠 '한 줄' 검사를 세로 겹침 묶음 수 = 1로 (G-1 [👷 300원] 46px 때문에 6px 반올림이 한 줄을 3칸으로 셈 — 기준은 ≤2 → 1로 오히려 엄격). 새 `e2e/gi.spec.ts` 4개 · `characters` 갤러리 그림 1개 · Vitest `gi-integrate` 2개.
+- **완료 조건**: Vitest **75파일 1,406 통과 · 3 건너뜀**, `npm run check`·`npm run build` 통과. 전체 E2E 1차(`E2E_PORT=5186`, 58.7분) **192개 중 183 통과 · 7 실패 · 2 건너뜀** — 실패 7 = g2 테마 3(위 줄 검사) · hud-layout 개발자 HUD 3(내 HUD 고침 1차가 ⏸를 무대 밖으로 밈) · m5 도박 해금 1 → 고친 뒤 g2·hud-layout·m5 **33/33**, HUD 영향 스펙(g1·map-fill·f10·t2·t3-screen·smoke) **45/45**, gi 4/4. G-1이 마지막 변경 뒤 안 돌린 m3b·battle-update·f10-boss·characters는 1차 전체 실행에서 모두 통과.
+- **스크린샷** (412×915, DPR 1): `docs/screens/GI-lobby.png` · `GI-battle.png`(마당 무더기 1·2·3 + 금테 묶음) · `GI-codex.png`(잠긴 신화 조각 7/20·0/20) · `GI-boss.png`(박쥐 여왕 WebP).
+- **남은 문제**:
+  - 통통한 캐주얼 그림은 절차 그림보다 몸집이 커서 3개 무더기 칸은 옆 칸까지 겹쳐 보인다 (G-1 무더기 크기 0.68은 절차 그림 기준). 실제 기기에서 무더기 크기·간격 확인 필요.
+  - 보스 WebP는 몸 한 장이라 절차 SD 보스의 종류별 파츠 박자(`bossPose`)는 몸 전체 흔들림으로만 보인다. 보스 컷인 그림(`assets/cutins`)은 예전 그림체 그대로.
+  - 인물 WebP는 표정이 하나 → 대화 UI(M11b)에서 표정이 필요하면 절차 그림이나 새 그림.
+  - 갤러리 카드 그림 크기는 눈으로 맞춘 값 (타워 = 게임 배율, 적 = 상자 92%/88%).

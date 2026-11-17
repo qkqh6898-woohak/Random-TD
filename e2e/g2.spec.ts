@@ -148,7 +148,17 @@ test.describe('G-2 a. 테두리 테마', () => {
         const band = document.querySelector('.hud-bottom') as HTMLElement;
         const br = band.getBoundingClientRect();
         const kids = [...band.querySelectorAll<HTMLElement>(':scope > *, .hud-choice-slot > *')].filter((e) => e.offsetParent !== null);
-        const tops = new Set(kids.map((e) => Math.round(e.getBoundingClientRect().top / 6)));
+        // 줄 수 = 세로로 겹치지 않는 묶음 수 (G 통합: G-1 아래 띠는 [👷 300원]이 46px로 다른 칩보다 커서, 위 끝 6px 반올림으로는
+        // 한 줄인데도 3칸으로 세어졌다 — 가운데 정렬된 한 줄은 모두 세로로 겹친다)
+        const boxes = kids.map((e) => e.getBoundingClientRect()).sort((a, b) => a.top - b.top);
+        const tops = new Set<number>();
+        let rowBottom = Number.NEGATIVE_INFINITY;
+        for (const b of boxes) {
+          if (b.top >= rowBottom - 0.5) {
+            tops.add(tops.size);
+            rowBottom = b.bottom;
+          } else rowBottom = Math.min(rowBottom, b.bottom);
+        }
         return {
           doc: document.documentElement.scrollWidth - window.innerWidth,
           band: band.scrollWidth - band.clientWidth,
@@ -159,7 +169,7 @@ test.describe('G-2 a. 테두리 테마', () => {
       expect(over.doc).toBeLessThanOrEqual(0);
       expect(over.band).toBeLessThanOrEqual(0);
       expect(over.right).toBeLessThanOrEqual(0.5);
-      expect(over.rows).toBeLessThanOrEqual(2); // 한 줄 (버튼 높이 차이로 반올림 두 칸까지)
+      expect(over.rows).toBe(1); // 한 줄
       // 맵 영역 재기: 맵 0줄 위 끝이 HUD 아래 끝보다 아래 (게임 px → 화면 px)
       const mapTop = await page.evaluate(() => {
         const s = (window as unknown as { __rtd: { game: { scene: { getScene(k: string): { mapLayout: { originY: number } } } } } }).__rtd.game.scene.getScene('Game');
