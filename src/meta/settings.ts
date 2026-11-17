@@ -16,9 +16,11 @@ export interface Settings {
   tapMerge: boolean;
   effectsOff: boolean;
   revealHidden: boolean;
+  /** G-1 '필살기 자동': 필살기가 차면 화면이 바로 ult 명령을 보낸다 (기본 꺼짐) */
+  ultAuto: boolean;
 }
 
-export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({ tapMerge: true, effectsOff: false, revealHidden: false });
+export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({ tapMerge: true, effectsOff: false, revealHidden: false, ultAuto: false });
 
 export interface SettingsStore {
   get(): Readonly<Settings>;

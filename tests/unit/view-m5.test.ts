@@ -349,7 +349,7 @@ describe('계정 저장소 (meta/account)', () => {
     expect(a.recordHidden('h02')).toBe(false);
     const b = createAccountStore(st);
     expect([...b.hiddenFound()]).toEqual(['h02']);
-    expect(JSON.parse(st.getItem(ACCOUNT_KEY)!)).toEqual({ v: 1, level: 1, hidden: ['h02'], guides: [] });
+    expect(JSON.parse(st.getItem(ACCOUNT_KEY)!)).toEqual({ v: 1, level: 1, hidden: ['h02'], guides: [], codex: {} });
   });
 
   it('저장된 계정 레벨을 읽는다 · 망가진 값은 기본값', () => {

@@ -115,7 +115,7 @@ test('HUD 값이 sim과 일치: 단계·타이머·몹 수, 화면 몹 수 = sim
   const v = await simView(page);
   expect(v.stage).toBe(1);
   expect(v.mobs).toBe(20);
-  await expect(page.getByTestId('hud-stage')).toHaveText('1단계');
+  await expect(page.getByTestId('hud-stage')).toHaveText('WAVE 1');
   await expect(page.getByTestId('hud-count')).toHaveText(`${v.mobs}/150`);
   await expect(page.getByTestId('hud-timer')).toHaveText(timerText(v.ticksLeft));
   expect(v.rendered).toBe(v.mobs);
@@ -124,7 +124,7 @@ test('HUD 값이 sim과 일치: 단계·타이머·몹 수, 화면 몹 수 = sim
   await page.waitForTimeout(150);
   const v2 = await simView(page);
   expect(v2.stage).toBe(2);
-  await expect(page.getByTestId('hud-stage')).toHaveText('2단계');
+  await expect(page.getByTestId('hud-stage')).toHaveText('WAVE 2');
   await expect(page.getByTestId('hud-count')).toHaveText(`${v2.mobs}/150`);
   await expect(page.getByTestId('hud-timer')).toHaveText(timerText(v2.ticksLeft));
   expect(v2.rendered).toBe(v2.mobs);
@@ -215,9 +215,9 @@ test('?debug=1: ⏭ 단계 건너뛰기로 10단계 → 보스 단계 표시(�
   const skip = page.getByRole('button', { name: '다음 단계로 즉시 이동' });
   for (let s = 1; s <= 10; s++) {
     await skip.click();
-    await expect(page.getByTestId('hud-stage')).toContainText(`${s}단계`);
+    await expect(page.getByTestId('hud-stage')).toContainText(`WAVE ${s}`);
   }
-  await expect(page.getByTestId('hud-stage')).toHaveText('👑 10단계');
+  await expect(page.getByTestId('hud-stage')).toHaveText('👑 WAVE 10');
   await expect(page.locator('.hud-stage')).toHaveClass(/is-boss/);
   await expect(page.getByTestId('hud-boss')).toBeVisible();
   // M4: 보스 막대 = 군단·계급 이름표 「박쥐 여왕」 (무한 순환 첫 대장)

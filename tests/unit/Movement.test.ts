@@ -85,11 +85,11 @@ describe('순환의 정원 한 바퀴 (DEV_PLAN M1-3 완료 조건)', () => {
 });
 
 describe('캠페인 출구 도달 (CAMPAIGN 목숨)', () => {
-  it('사거리 미로 59칸(T-3 2×2 블록 맵)을 슬라임은 39.4초(787틱)에 지나 목숨 1을 잃는다', () => {
+  it('사거리 미로 35칸(G-1 큰 칸 맵)을 슬라임은 23.35초(467틱)에 지나 목숨 1을 잃는다', () => {
     const match = campaign(1);
     expect(match.state.lives).toBe(20);
     const mob = addMob(match, 'slime');
-    match.stepN(786); // 59000 / 75 = 786.7 → 787번째 틱에 출구
+    match.stepN(466); // 35000 / 75 = 466.7 → 467번째 틱에 출구
     expect(match.world.entities.has(mob.id)).toBe(true);
     match.step();
     expect(match.world.entities.has(mob.id)).toBe(false);
@@ -101,8 +101,8 @@ describe('캠페인 출구 도달 (CAMPAIGN 목숨)', () => {
 
   it('암흑 골렘(목숨 피해 2)이 출구에 닿으면 목숨 20 → 18', () => {
     const match = campaign(1);
-    const golem = addMob(match, 'golem'); // 1.2칸/초 → 59000 / 60 = 983.3 → 984틱
-    match.stepN(983);
+    const golem = addMob(match, 'golem'); // 1.2칸/초 → 35000 / 60 = 583.3 → 584틱
+    match.stepN(583);
     expect(match.state.lives).toBe(20);
     match.step();
     expect(match.world.entities.has(golem.id)).toBe(false);
@@ -124,7 +124,7 @@ describe('캠페인 출구 도달 (CAMPAIGN 목숨)', () => {
   it('출구 직전 위치는 (3,-1) 칸 중심 쪽 위로 올라가는 중', () => {
     const match = campaign(1);
     const mob = addMob(match, 'slime');
-    match.stepN(777);
+    match.stepN(457);
     const pos = positionAt(match.map.path, mob.progress);
     expect(pos.x).toBe(tileCenter(3, -1).x);
     expect(pos.y).toBeGreaterThan(tileCenter(3, -1).y);

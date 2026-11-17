@@ -62,7 +62,7 @@ async function startGame(page: Page, url: string): Promise<void> {
 }
 
 /**
- * 개발자 debugTower로 타워를 순환의 정원 배치 칸마다 하나씩 놓는다 (T-3: 칸이 32개라 65종 중 등급을 고르게 32종 —
+ * 개발자 debugTower로 타워를 순환의 정원 배치 칸마다 하나씩 놓는다 (G-1 마당 맵: 칸이 24개라 65종 중 등급을 고르게 24종 —
  * 크기 비교용 음유시인·궁수·운명의 여신은 꼭 넣는다). 놓은 수를 돌려준다.
  */
 async function placeAllTowers(page: Page): Promise<number> {
@@ -126,12 +126,12 @@ test('전투 배경: 1단계 낮 → ⏭로 11단계가 되면 노을 밴드, �
   const errors = collectErrors(page);
   await startGame(page, '/?dev=1&seed=7');
   await expect.poll(() => sim(page, (s) => s.backgroundKey), { timeout: 20_000 }).toBe('bg-t01-b1');
-  // 캐릭터별 크기: 등급을 고르게 32종을 놓으면 그림 배수가 여러 가지 (요정은 작고 신은 크다)
-  expect(await placeAllTowers(page)).toBe(32);
-  await expect.poll(() => sim(page, (s) => s.towerLayer.count)).toBe(32);
+  // 캐릭터별 크기: 등급을 고르게 24종(G-1 마당 24칸)을 놓으면 그림 배수가 여러 가지 (요정은 작고 신은 크다)
+  expect(await placeAllTowers(page)).toBe(24);
+  await expect.poll(() => sim(page, (s) => s.towerLayer.count)).toBe(24);
   const scales = await sim(page, (s) => s.match.towers().map((t) => ({ id: t.tower, k: s.towerLayer.artScaleOf(t.id) })));
   const byId = new Map(scales.map((x) => [x.id, x.k ?? 0]));
-  expect(new Set(scales.map((x) => x.k)).size).toBeGreaterThan(12);
+  expect(new Set(scales.map((x) => x.k)).size).toBeGreaterThan(8);
   expect(byId.get('bard')!).toBeLessThan(byId.get('archer')!);
   expect(byId.get('archer')!).toBeLessThan(byId.get('fate')!);
   if (SAVE_DOCS) await settle(page);
@@ -217,9 +217,9 @@ test('보스 컷인: 10단계 보스가 나오면 그림·이름·등장!이 미
 test('정보 패널: 캐릭터 설명 두 문장 + [ℹ] 캐릭터 카드 (✕ · 바깥 · Esc로 닫기)', async ({ page }) => {
   const errors = collectErrors(page);
   await startGame(page, '/?dev=1&seed=7');
-  // 위쪽 줄(첫 줄)에 놓으면 패널이 아래에 펼친 그대로 (접지 않음)
+  // 마당 맨 위 줄(y 1)에 놓으면 패널이 아래에 펼친 그대로 (접지 않음)
   await sim(page, (s) => {
-    s.match.world.enqueue({ type: 'debugTower', x: 4, y: 0, t: s.match.rules.towerOrder.indexOf('miner') });
+    s.match.world.enqueue({ type: 'debugTower', x: 4, y: 1, t: s.match.rules.towerOrder.indexOf('miner') });
     s.debugFastForward(1);
     return null;
   });

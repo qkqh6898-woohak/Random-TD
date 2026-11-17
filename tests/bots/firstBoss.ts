@@ -9,6 +9,10 @@
  *   ② 일꾼 규칙 ③ 돈이 되면 자동 소환 칸(`autoSummonTile`, 게임의 꾹 눌러 소환과 같은 칸)에 소환.
  * - B 'A + 일반 강화·미션': ① 승급 ② 받을 미션이 있으면 [모두 받기] ③ 일반 강화 규칙 ④ 일꾼 규칙 ⑤ 소환 ⑥ 칸이 다 차면 남는 돈으로 일반 강화.
  *
+ * G-1 (칸 무더기·연쇄 승급·3택 1): 기본은 지금 게임과 같은 명령 — 소환 = summonAuto(같은 타워 무더기 먼저, 없으면 자동 빈 칸),
+ * 승급 = 가득 찬 무더기에 mergeStack(연쇄), 3택 1 강화 선택이 오면 PICK_PREFERENCE 순으로 고른다(없으면 첫 장).
+ * legacy 옵션이면 예전 명령(summon·merge — 한 칸 하나)으로 (맵만 바꾼 효과 비교용).
+ *
  * 고정 규칙 (출력 표에도 적는다):
  * - 일꾼: 단계 s(준비 = 0)에서 일꾼이 min(s + 1, WORKER_MAX) 명보다 적고 돈이 되면 고용 → 준비 1명, 1단계 2명, 2단계부터 3명.
  * - 일반 강화 (B): 일반 강화 레벨 < ⌊소환 횟수 ÷ UPGRADE_PER_SUMMONS⌋ 이고 돈이 되면 강화 (소환 3번에 강화 1번 꼴).
@@ -20,7 +24,9 @@ import { isMob } from '../../src/sim/entities/Mob';
 import { isTower, type Tower } from '../../src/sim/entities/Tower';
 import { tileAt } from '../../src/sim/map';
 import { hireCheck } from '../../src/sim/systems/Economy';
-import { mergeableGroups, sameKindTowers } from '../../src/sim/systems/Merge';
+import { fullStacks, mergeableGroups, sameKindTowers } from '../../src/sim/systems/Merge';
+import { summonStackCheck } from '../../src/sim/systems/Board';
+import { currentOffer } from '../../src/sim/systems/Cards';
 import { missionsClaimable } from '../../src/sim/systems/Mission';
 import { autoSummonTile, summonCheck } from '../../src/sim/systems/Summon';
 import { upgradeCheck, upgradeLevel } from '../../src/sim/systems/Upgrade';
@@ -40,6 +46,8 @@ export const WORKER_MAX = 3;
 export const UPGRADE_PER_SUMMONS = 3;
 /** 일반 강화 = game.json upgrade 0번 (노말·레어 공격력) */
 export const NORMAL_UPGRADE = 0;
+/** 3택 1 강화 선택 (G-1): 봇이 고르는 카드 순서 (공격력 → 공속 → 소환 할인 → 행운 소환 …, 없으면 첫 장) */
+export const PICK_PREFERENCE: readonly string[] = ['pickAtk', 'pickAps', 'luckySummon', 'pickDiscount', 'twinSummon', 'mergeBless', 'workerPassion', 'freeWorkers', 'pickPity', 'pickUlt'];
 
 export interface FirstBossResult {
   seed: number;
@@ -103,6 +111,8 @@ export interface FirstBossOptions {
   saveUpgrade?: boolean;
   /** 틱마다 (step 뒤) 불린다 — 진단용 */
   onTick?: (m: Match) => void;
+  /** 예전 명령(summon·merge, 한 칸 하나) — G-1 전 규칙으로 비교 */
+  legacy?: boolean;
 }
 
 /** 0.2초마다 고르는 행동 하나 (없으면 null). */
@@ -111,7 +121,16 @@ function decide(m: Match, strategy: Strategy, summons: number, opts: FirstBossOp
   const perSummons = opts.upgradePerSummons ?? UPGRADE_PER_SUMMONS;
   const ctx = m.ctx;
   const w = m.world;
-  const groups = mergeableGroups(ctx, w, 0);
+  if (!opts.legacy) {
+    const offer = currentOffer(ctx, 0);
+    if (offer) {
+      const i = PICK_PREFERENCE.map((id) => offer.cards.indexOf(id)).find((x) => x >= 0) ?? 0;
+      return { type: 'pickCard', i };
+    }
+    const full = fullStacks(ctx, w, 0)[0];
+    if (full) return { type: 'mergeStack', x: full[0]!.tx, y: full[0]!.ty };
+  }
+  const groups = opts.legacy ? mergeableGroups(ctx, w, 0) : [];
   if (groups.length > 0) {
     const g = groups[0]!;
     const a = bestAnchor(m, sameKindTowers(w, g.tower, 0));
@@ -131,7 +150,9 @@ function decide(m: Match, strategy: Strategy, summons: number, opts: FirstBossOp
     if (fail === 'gold' && opts.saveWorkers !== false) return null; // 일꾼 살 돈을 모은다
   }
   const tile = autoSummonTile(ctx, w);
-  if (tile && summonCheck(ctx, w, tile[0], tile[1]) === null) return { type: 'summon', x: tile[0], y: tile[1] };
+  if (!opts.legacy) {
+    if (summonStackCheck(ctx, w, 0) === null) return { type: 'summonAuto' };
+  } else if (tile && summonCheck(ctx, w, tile[0], tile[1]) === null) return { type: 'summon', x: tile[0], y: tile[1] };
   if (strategy === 'B' && !tile && upgradeCheck(ctx, 0, NORMAL_UPGRADE) === null) return { type: 'upgrade', k: NORMAL_UPGRADE };
   return null;
 }
@@ -154,8 +175,8 @@ export function runFirstBoss(d: GameData, seed: number, strategy: Strategy, opts
       const cmd = decide(m, strategy, summons, opts);
       if (cmd) {
         w.enqueue(cmd);
-        if (cmd.type === 'summon') summons++;
-        if (cmd.type === 'merge') {
+        if (cmd.type === 'summon' || cmd.type === 'summonAuto') summons++;
+        if (cmd.type === 'merge' || cmd.type === 'mergeStack') {
           merges++;
           if (firstMerge < 0) firstMerge = w.tick;
         }
@@ -191,7 +212,7 @@ export function runFirstBoss(d: GameData, seed: number, strategy: Strategy, opts
     defeat: cleared ? '' : m.state.defeatReason || 'none',
     towers: m.towers().length,
     summons,
-    merges,
+    merges: m.state.merges,
     workers: m.state.workers,
     normalUpgrade: upgradeLevel(m.state, 0, NORMAL_UPGRADE),
     missionsClaimed: claimed,
@@ -232,9 +253,9 @@ export function firstBossTable(
     `## ${title}`,
     '',
     ...(note ? [note, ''] : []),
-    `- 판: 무한 모드 일반 시작 · 기본 덱 · 계정 Lv1 · 타워 Lv1 · 개발자 치트 없음 · 순환의 정원(${d.maps.circle!.width}×${d.maps.circle!.height}, 배치 ${d.maps.circle!.buildableCount}칸, 2×2 블록)`,
+    `- 판: 무한 모드 일반 시작 · 기본 덱 · 계정 Lv1 · 타워 Lv1 · 개발자 치트 없음 · 순환의 정원(${d.maps.circle!.width}×${d.maps.circle!.height}, 배치 ${d.maps.circle!.buildableCount}칸, ${d.maps.circle!.layout === 'field' ? '가운데 마당 + 둘레 길' : '2×2 블록'}) · 인원 한도 ${d.game.board.unitCap} · 한 칸 ${d.game.board.stackMax}개`,
     `- 시작 골드 ${d.game.match.startGold}원 · 준비 ${d.game.match.prepSeconds}초 · 단계 ${d.game.match.stageSeconds}초 · 보스 제한 ${d.game.boss.timeLimitSeconds}초 · 10단계 박쥐 여왕 체력 **${bossHp.toLocaleString('en-US')}**`,
-    `- 0.2초마다 행동 하나. 승급: 묶음이 생기면 바로 (결과 칸 = 그 종류에서 경로가 가장 많이 보이는 타워). 소환: 자동 소환 칸(경로 칸이 가장 많은 빈 칸).`,
+    `- 0.2초마다 행동 하나 (G-1 명령). 승급: 가득 찬 칸이 생기면 바로 mergeStack (연쇄 포함). 소환: summonAuto (같은 캐릭터 덜 찬 칸 → 자동 빈 칸). 3택 1 강화 선택은 정해 둔 선호 순서로 바로 고름. 필살기·소환 도박은 쓰지 않음.`,
     `- 일꾼: 단계 s(준비 0)에서 min(s+1, ${WORKER_MAX})명까지 돈이 되면 고용 (준비 1 · 1단계 2 · 2단계부터 ${WORKER_MAX}).`,
     `- B만: 받을 미션은 바로 [모두 받기] · 일반 강화 레벨 < ⌊소환 ÷ ${UPGRADE_PER_SUMMONS}⌋이면 강화 · 칸이 다 차면 남는 돈도 일반 강화.`,
     `- 칸: 소환/승급 횟수 · 보스 등장 때 타워 수 노말/레어/유니크/히어로/레전드.`,

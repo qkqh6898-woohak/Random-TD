@@ -68,7 +68,12 @@ async function ff(page: Page, ticks: number): Promise<void> {
 }
 
 /** 순환의 정원 v2 고리 안쪽 블록 16칸 */
-const INNER: [number, number][] = [3, 4, 6, 7].flatMap((y) => [1, 2, 4, 5].map((x) => [x, y] as [number, number]));
+// 순환의 정원 v4 (G-1 마당 맵): 길에 닿은 마당 가장자리 16칸
+const INNER: [number, number][] = [
+  [1, 1], [2, 1], [3, 1], [4, 1],
+  [1, 2], [4, 2], [1, 3], [4, 3], [1, 4], [4, 4], [1, 5], [4, 5],
+  [1, 6], [2, 6], [3, 6], [4, 6],
+];
 
 async function placeInner(page: Page, kinds: string[]): Promise<void> {
   const ok = await inScene(
@@ -115,6 +120,13 @@ test('9단계 예고 → 10단계 박쥐 여왕 → 비행 중 표시 → 처치
   await shot(page, 'F10-preview', 'F10-boss-preview');
   // 10단계: 보스 등장, 아직 날지 않음
   await skipTo(page, 10);
+  // G-1: 5단계 3택 1 강화 카드는 먼저 골라 둔다 (보스 카드 창만 보려고)
+  await inScene(page, (s) => {
+    const st = s.match.state as unknown as { cardOffers: { stage?: number }[] };
+    st.cardOffers.filter((o) => o.stage !== undefined).forEach(() => s.match.world.enqueue({ type: 'pickCard', i: 0 }));
+    s.debugFastForward(1);
+    return null;
+  }, null);
   await expect(page.getByTestId('hud-boss-name')).toHaveText('질풍 군단 · 대장 「박쥐 여왕」');
   await expect(page.getByTestId('hud-boss-note')).toBeHidden();
   // 15초(300틱) 뒤 3초 날아오름 → 보스 막대 아래 짧은 표시, 내려오면 사라짐.
@@ -149,7 +161,7 @@ test('9단계 예고 → 10단계 박쥐 여왕 → 비행 중 표시 → 처치
   const first = await inScene(page, (s) => s.match.state.cardOffers[0]!.cards[0]!, null);
   await page.getByTestId('choice-0').click();
   await expect(panel).toBeHidden();
-  expect(await inScene(page, (s) => s.match.state.cardsPicked, null)).toEqual([first]);
+  expect((await inScene(page, (s) => s.match.state.cardsPicked, null)).at(-1)).toEqual(first);
   expect(errors).toEqual([]);
 });
 
@@ -163,7 +175,7 @@ test('제한 시간 패배: "박쥐 여왕을 90초 안에 잡지 못했어요 �
   // 노말 타워 몇 개로 조금만 깎는다 → 남은 체력이 100% 아래
   await inScene(
     page,
-    (s) => [[1, 3], [2, 3], [4, 3]].every(([x, y]) => s.match.world.enqueue({ type: 'debugTower', x, y, t: 0 }).ok),
+    (s) => [[1, 2], [2, 2], [3, 2]].every(([x, y]) => s.match.world.enqueue({ type: 'debugTower', x, y, t: 0 }).ok),
     null,
   );
   await ff(page, 1850);

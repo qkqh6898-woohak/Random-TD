@@ -63,6 +63,8 @@ export interface Tower extends Entity {
   stackTarget: number;
   /** 기절 (M4-5 혼돈의 용): tick < stunUntil 동안 공격·주기 능력을 쓰지 않는다 (타이머는 1회분까지만 모음) */
   stunUntil: number;
+  /** 필살기 게이지 (G-1, bp — 10000이면 가득). 필살기가 있는 등급만, 처음 공격할 때 생긴다 */
+  ult?: number;
 }
 
 export function isTower(e: Entity): e is Tower {
@@ -108,4 +110,31 @@ export function chargeAttacks(acc: number, apsMilli: number, attackOnce: () => b
   a += apsMilli;
   if (idle && a > ATTACK_COST) a = ATTACK_COST;
   return { shots, acc: a };
+}
+
+/** 그 칸의 타워 무더기 (G-1 '한 칸에 같은 캐릭터 최대 3개', ID 순 = 쌓인 순). 비었으면 빈 배열. */
+export function towersAt(world: World, tx: number, ty: number): Tower[] {
+  const out: Tower[] = [];
+  for (const e of world.entities.list()) if (isTower(e) && e.tx === tx && e.ty === ty) out.push(e);
+  return out;
+}
+
+/** 그 칸 무더기의 맨 위 타워 (가장 나중에 쌓인 것 = ID가 가장 큰 것, 없으면 undefined) — 판매·패널이 고르는 타워. */
+export function topTowerAt(world: World, tx: number, ty: number): Tower | undefined {
+  let top: Tower | undefined;
+  for (const e of world.entities.list()) if (isTower(e) && e.tx === tx && e.ty === ty) top = e;
+  return top;
+}
+
+/** 칸 'x,y' → 그 칸 타워 무더기 (ID 순). 한 틱에 여러 번 찾을 때 한 번 만들어 쓴다. */
+export function towerStacks(world: World): Map<string, Tower[]> {
+  const out = new Map<string, Tower[]>();
+  for (const e of world.entities.list()) {
+    if (!isTower(e)) continue;
+    const k = `${e.tx},${e.ty}`;
+    const list = out.get(k);
+    if (list) list.push(e);
+    else out.set(k, [e]);
+  }
+  return out;
 }

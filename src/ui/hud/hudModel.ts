@@ -45,6 +45,10 @@ export interface HudInput {
 
 export interface HudModel {
   stage: string;
+  /** G-1 위 HUD 가운데 'WAVE n' (무한) · 캠페인은 '1-5' · 준비 '준비' (보스 단계 👑는 Hud가 앞에 붙인다) */
+  wave: string;
+  /** G-1 몹 수 막대 채움 (천분율 0~1000): 무한 = 몹 수 ÷ 한도, 캠페인 = 목숨 ÷ 최대 목숨 */
+  countFill: number;
   boss: boolean;
   /** 남은 시간 m:ss */
   timer: string;
@@ -135,6 +139,12 @@ export function formatStage(state: Pick<MatchState, 'mode' | 'theme' | 'stage'>)
   return state.stage === 0 ? '준비' : `${state.stage}단계`;
 }
 
+/** G-1 위 HUD 단계 글자: 무한 'WAVE n' · 준비 '준비' · 캠페인은 예전 그대로 '1-5'. */
+export function waveLabel(state: Pick<MatchState, 'mode' | 'theme' | 'stage'>): string {
+  if (state.mode === 'campaign') return formatStage(state);
+  return state.stage === 0 ? '준비' : `WAVE ${state.stage}`;
+}
+
 export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
   const { state } = input;
   const campaign = state.mode === 'campaign';
@@ -145,6 +155,14 @@ export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
   const workersFull = workerMax > 0 && state.workers >= workerMax;
   return {
     stage: formatStage(state),
+    wave: waveLabel(state),
+    countFill: campaign
+      ? state.maxLives > 0
+        ? Math.max(0, Math.min(1000, Math.floor((state.lives * 1000) / state.maxLives)))
+        : 0
+      : state.mobLimit > 0
+        ? Math.min(1000, Math.floor((input.mobCount * 1000) / state.mobLimit))
+        : 0,
     boss: state.bossStage,
     timer: formatTimer(input.ticksLeft),
     timerWarn: secLeft <= cfg.timerWarnSeconds,

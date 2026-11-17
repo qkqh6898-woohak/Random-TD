@@ -78,7 +78,7 @@ for (const [w, h] of [
     if (process.env.SAVE_SCREENS === '1' && w === 412) await page.screenshot({ path: 'docs/screens/A1-map.png', animations: 'disabled' });
     // 보스 막대: 10단계까지 ⏭
     for (let i = 0; i < 10; i++) await page.locator('[data-action="skip-stage"]').click();
-    await expect(page.getByTestId('hud-stage')).toHaveText(/10단계/);
+    await expect(page.getByTestId('hud-stage')).toHaveText(/WAVE 10/);
     await expect(page.getByTestId('hud-boss-name')).toBeVisible();
     await page.waitForTimeout(500);
     const boss = await probe(page);

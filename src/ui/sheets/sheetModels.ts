@@ -25,7 +25,7 @@ import { transcendOpen, upgradeCheck, upgradeCost, upgradeEffectBp, upgradeLevel
 import { formatGold, formatTimer, withCommas } from '../hud/hudModel';
 
 /** 바텀 시트 종류 (T-2: 'dev' = 🛠 개발자 도구, 개발자 모드만) */
-export type SheetKind = 'challenge' | 'upgrade' | 'mission' | 'dev';
+export type SheetKind = 'challenge' | 'upgrade' | 'mission' | 'dev' | 'mythic' | 'summon' | 'gamble';
 export type UpgradeTab = 'grade' | 'stat' | 'gamble';
 export type MissionTab = 'normal' | 'hidden';
 
@@ -36,7 +36,7 @@ const GRADE_SHORT: Readonly<Record<Grade, string>> = {
   hero: '히어로',
   legend: '레전드',
   god: '신',
-  hidden: '히든',
+  hidden: '신화',
 };
 
 // ---------------------------------------------------------------- 숫자 표시

@@ -17,7 +17,7 @@ import { firstBossTable, runFirstBoss } from '../bots/firstBoss';
 /** 사전 시험(문서의 10판·30판)과 겹치지 않는 고정 시드 20개 */
 export const FIRST_BOSS_SEEDS: readonly number[] = Array.from({ length: 20 }, (_, i) => 7001 + i);
 /** 조정 단계 (한 번에 한 변수 = 10단계 보스 체력 배율만) */
-const STEPS = [1, 0.5, 0.3, 0.2, 0.15, 0.12, 0.11, 0.1];
+const STEPS = [1, 0.5, 0.38, 0.3, 0.25, 0.2, 0.18, 0.15, 0.1];
 
 function withMul(d: GameData, mul: number): GameData {
   return { ...d, enemies: { ...d.enemies, bossCycle: { ...d.enemies.bossCycle, stageHpMul: { ...d.enemies.bossCycle.stageHpMul, '10': mul } } } };
@@ -87,7 +87,7 @@ describe('F10-2 첫 보스 봇', () => {
         writeFileSync('docs/balance/first-boss-baseline.md', `# 첫 보스 기준값 (F10-2)\n\n${base.md}`);
         writeFileSync(
           'docs/balance/first-boss-tuned.md',
-          `# 첫 보스 조정 결과 (F10-2)\n\n> 해석·결정은 docs/BALANCE.md 7.2 · docs/PROGRESS.md 'F10 첫 보스 밸런스'. 다시 만들기: \`FIRST_BOSS_WRITE=1 npm run bot:first-boss\`.\n\n${tuned.md}\n## 조정 단계 (변수 하나 = enemies.json bossCycle.stageHpMul["10"])\n\n${steps.join('\n')}\n\n## 보스 등장 체력: 기준 빌드 vs 지금\n\n${bossHpCompare(data)}\n`,
+          `# 첫 보스 조정 결과 (F10-2 → G-1 마당 맵·무더기)\n\n> 해석·결정은 docs/BALANCE.md 7.2·'G-1' 절 · docs/PROGRESS.md 'F10 첫 보스 밸런스'·'G-1 게임 시스템'. 다시 만들기: \`FIRST_BOSS_WRITE=1 npm run bot:first-boss\`.\n\n${tuned.md}\n## 조정 단계 (변수 하나 = enemies.json bossCycle.stageHpMul["10"])\n\n${steps.join('\n')}\n\n## 보스 등장 체력: 기준 빌드 vs 지금\n\n${bossHpCompare(data)}\n`,
         );
       }
       expect(base.clears.B).toBeLessThanOrEqual(tuned.clears.B);

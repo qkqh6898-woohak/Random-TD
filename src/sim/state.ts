@@ -18,6 +18,8 @@ export interface CardOffer {
   player: number;
   boss: number;
   cards: string[];
+  /** 3택 1 강화 선택 묶음이면 그 단계 (G-1). 보스 보상 묶음에는 없다 */
+  stage?: number;
 }
 
 /** 승급의 축복 (카드 M4-7): 승급 결과 타워(id)를 다른 결과(alt)로 바꿀 수 있는 선택 하나 */
@@ -186,6 +188,27 @@ export interface MatchState {
   chanceOv?: Record<string, number>;
   /** 지금까지 판 타워 수 (T-2 sellTower, 모든 플레이어). 처음 판매 전에는 필드가 없다 (리플레이 해시 그대로) */
   sells?: number;
+  // ---- G-1 ----
+  /**
+   * 천장 카운터 (플레이어별, [일반 소환, 소환 도박 0, 1, …]): '좋은 결과'(천장 등급 이상) 없이 이어진 횟수.
+   * 천장 수(데이터 − 카드 '행운 부적', 최소 1)에 닿으면 다음 한 번은 그 등급 이상 확정, 좋은 결과가 나오면 0.
+   */
+  pity: number[][];
+  /** 플레이어별 카드 '행운 부적' 천장 줄임 합 (회) */
+  pityCut: number[];
+  /** 플레이어별 카드 '투지' 필살기 충전 증가 합 (bp) */
+  ultChargeBp: number[];
+  /** 플레이어별 필살기 '전군 가속' 공속% (bp, 0 = 없음)와 끝나는 틱 */
+  rallyBp: number[];
+  rallyUntil: number[];
+  /** 플레이어별 카드 '부대 확장' 인원 한도 증가 합 */
+  unitCapBonus: number[];
+  /** 지금까지 한 소환 도박 수 (꽝 포함, 모든 플레이어) */
+  gachas: number;
+  /** 지금까지 만든 신화(히든) 수 */
+  crafts: number;
+  /** 지금까지 쓴 필살기 수 */
+  ults: number;
 }
 
 /** 시스템이 함께 쓰는 문맥. */

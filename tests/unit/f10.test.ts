@@ -215,8 +215,9 @@ describe('안내 표시값', () => {
 
   it('안내 글자·결과 알림 글자 (짧게)', () => {
     expect(mergeGuideText(1, '고블린', true).title).toBe('고블린 3개 — 승급할 수 있어요!');
-    expect(mergeGuideText(2, '고블린', true).title).toBe('고블린 승급 칸 고르기');
-    expect(mergeGuideText(2, '고블린', true).body).toContain('금색 타워를 누르면 승급');
+    // G-1 칸 무더기: 결과 칸을 고르는 단계 대신 '3개 쌓인 칸을 누르면 승급'
+    expect(mergeGuideText(2, '고블린', true).title).toBe('고블린 승급하기');
+    expect(mergeGuideText(2, '고블린', true).body).toContain('3개가 쌓인 칸을 누르면 승급');
     expect(mergeGuideText(2, '고블린', false).body).toContain('[⬆ 승급]');
     const role = data.towers.towers.find((t) => t.id === 'merchant')!.role ?? '';
     const r = mergeResultText('상인', '레어', role);

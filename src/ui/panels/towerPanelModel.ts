@@ -29,7 +29,7 @@ export const GRADE_NAMES: Readonly<Record<Grade, string>> = Object.freeze({
   hero: '히어로',
   legend: '레전드',
   god: '신',
-  hidden: '히든',
+  hidden: '신화',
 });
 
 export const DAMAGE_TYPE_NAMES: Readonly<Record<DamageType, string>> = Object.freeze({
@@ -150,6 +150,8 @@ export interface TowerPanelInput {
   mergeCycle?: { index: number; total: number } | null;
   /** 판매 (T-2): 판매가(원)와 '한 번 더 누르면 판매' 확인 중인가. 생략하면 0원·확인 아님 */
   sell?: { price: number; confirming: boolean };
+  /** G-1 칸 무더기: 그 칸 타워 수 (2 이상이면 이름 뒤 '×n') */
+  stack?: number;
 }
 
 export interface TowerPanelModel {
@@ -240,12 +242,13 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
   const mergeAllTimes = input.owned >= input.mergeCount ? Math.floor(input.owned / input.mergeCount) : 0;
   const ready = input.mergeableGrade && input.owned >= input.mergeCount;
   let note = '';
-  if (!input.mergeableGrade) note = data.grade === 'legend' ? '레전드는 승급할 수 없어요 (히든 재료)' : '이 타워는 승급할 수 없어요';
-  else if (!ready) note = `같은 타워 ${input.mergeCount}개가 모이면 승급할 수 있어요`;
+  if (!input.mergeableGrade) note = data.grade === 'legend' ? '레전드는 승급할 수 없어요 (신화 재료)' : '이 타워는 승급할 수 없어요';
+  else if (!ready) note = `같은 타워 ${input.mergeCount}개가 한 칸에 모이면 승급할 수 있어요`;
   const critText = eff.critBp > 0 ? `${fmtPct(eff.critBp)} ×${fmtNum(eff.critMulBp / 10_000)}` : '—';
   return {
     towerId: data.id,
-    name: data.name,
+    // G-1 칸 무더기: 같은 칸에 여럿이면 '궁수 ×3'
+    name: (input.stack ?? 1) > 1 ? `${data.name} ×${input.stack}` : data.name,
     lore: data.lore,
     role: data.role,
     grade: data.grade,

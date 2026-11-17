@@ -142,17 +142,20 @@ test('눌러서 바로 승급: 승급 가능한 타워를 누르면 패널 없�
   const normals = await idsOfGrade(page, 'normal');
   const cells = await freeCells(page, 4);
   const [a, b, c, d] = cells as [[number, number], [number, number], [number, number], [number, number]];
+  // G-1 칸 무더기: 같은 타워 3개가 한 칸(b)에 쌓여야 승급한다 (사용자 결정 — 예전엔 아무 칸이나 3개)
+  void a;
+  void c;
   await place(page, [
-    [a[0], a[1], normals[0]!],
     [b[0], b[1], normals[0]!],
-    [c[0], c[1], normals[0]!],
+    [b[0], b[1], normals[0]!],
+    [b[0], b[1], normals[0]!],
     [d[0], d[1], normals[1]!],
   ]);
   // 승급할 수 없는 타워(같은 종류 1개) → 패널
   await tapTile(page, d[0], d[1]);
   await expect.poll(() => inScene(page, (s) => s.panelOpen, null)).toBe(true);
   await page.locator('[data-action="panel-close"]').click();
-  // 승급 가능한 타워 → 패널 없이 승급, 결과는 누른 칸 (레어)
+  // 승급 가능한 칸(3개) → 패널 없이 승급, 결과는 누른 칸 (레어)
   await tapTile(page, b[0], b[1]);
   await expect.poll(() => towerCount(page)).toBe(2);
   const atB = await inScene(page, (s, p) => s.match.towers().find((t) => t.tx === p[0] && t.ty === p[1])?.tower ?? null, b);
@@ -162,10 +165,9 @@ test('눌러서 바로 승급: 승급 가능한 타워를 누르면 패널 없�
   // 설정 끄기 (일시정지 메뉴) → 승급 가능한 타워를 누르면 패널
   await place(page, [
     [a[0], a[1], normals[2]!],
-    [c[0], c[1], normals[2]!],
+    [a[0], a[1], normals[2]!],
+    [a[0], a[1], normals[2]!],
   ]);
-  const extra = (await freeCells(page, 1))[0]!;
-  await place(page, [[extra[0], extra[1], normals[2]!]]);
   await page.getByRole('button', { name: '일시정지' }).click();
   const sw = page.getByTestId('pause-tap-merge');
   await expect(sw).toHaveAttribute('aria-checked', 'true');
@@ -224,8 +226,9 @@ test('도박: 10원·100원 두 테이블이 동시에 돈다, 꾹 누르면 계
   const errors = collectErrors(page);
   await start(page);
   await addGold(page, 100_000);
-  await page.getByTestId('menu-upgrade').click();
-  await page.getByTestId('sheet-tab-gamble').click();
+  // G-1: 돈 도박은 [🎰 도박] 시트의 '💰 돈 도박' 탭 (예전 강화 시트의 도박 탭에서 떼어 냄)
+  await page.getByTestId('menu-gamble').click();
+  await page.getByTestId('sheet-tab-money').click();
   // 두 버튼을 거의 동시에 누른다 (헤드리스는 프레임이 느려 click 두 번 사이에 릴 1초가 지나기도 한다)
   await page.evaluate(() => {
     for (const cost of [10, 100]) {
@@ -414,11 +417,13 @@ test('🛠 개발자 도구: 연출 끄기(피해 숫자 없음·저장), 확률
   await page.getByTestId('sheet-tab-fx').click();
   await page.getByTestId('dev-reveal-hidden').click();
   await expect(page.getByTestId('dev-reveal-hidden')).toHaveAttribute('aria-checked', 'true');
+  // G-1: [📋]는 맵 오른쪽 둥근 버튼이라 열린 시트가 덮는다 → 개발자 시트를 닫고 연다
+  await page.getByTestId('sheet-close').click();
   await page.getByTestId('menu-mission').click();
   await page.getByTestId('sheet-tab-hidden').click();
   await expect(page.locator('[data-pane="hidden"]')).not.toContainText('???');
   // 연출 끄기: 타워를 놓고 몹을 불러 피해 숫자가 뜨는 것을 본 뒤 끈다
-  await page.getByTestId('menu-mission').click();
+  await page.getByTestId('sheet-close').click();
   const cells = await freeCells(page, 6);
   const legends = await idsOfGrade(page, 'legend');
   await place(page, cells.map(([x, y], i) => [x, y, legends[i % legends.length]!] as [number, number, string]));
@@ -491,7 +496,7 @@ test('일반 주소: 개발자 UI 없음 ([🛠 개발]·[🛠 변환]·⏭), �
   expect(errors).toEqual([]);
 });
 
-test('아래 띠: [🗼]·[🎲 소환]·[👷]·[⬆ 승급 가능]·접은 카드 알약이 함께 보여도 412·360·320px에서 한 줄 안에 (넘침 없음)', async ({ page }) => {
+test('아래 자원 줄 (G-1): [💰 돈]·[🗼 인원]·[👷]·[⬆ 승급 가능]·[👷 고용]·접은 카드 알약이 함께 보여도 412·360·320px에서 한 줄 안에 (넘침 없음)', async ({ page }) => {
   for (const w of [412, 360, 320]) {
     await page.setViewportSize({ width: w, height: 915 });
     await start(page, '?seed=42');
@@ -508,6 +513,7 @@ test('아래 띠: [🗼]·[🎲 소환]·[👷]·[⬆ 승급 가능]·접은 카
           .concat(band.scrollWidth > band.clientWidth ? [`${label}: band`] : []);
       };
       (document.querySelector('[data-testid=hud-towers]') as HTMLElement).textContent = '96/96';
+      (document.querySelector('[data-testid=hud-gold]') as HTMLElement).textContent = '9.9억원';
       const out = check('base');
       const mr = document.querySelector('.hud-merge-ready') as HTMLButtonElement;
       mr.replaceChildren('⬆', Object.assign(document.createElement('span'), { className: 'hud-mr-word', textContent: ' 승급 가능' }), ' 12');

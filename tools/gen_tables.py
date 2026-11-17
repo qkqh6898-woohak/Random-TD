@@ -388,8 +388,9 @@ def coverage(m, x, y, r):
     return sum(1 for (px, py) in route_cells(m) if (px - x) ** 2 + (py - y) ** 2 <= r * r)
 for mid, m in MAPS.items():
     tiles, owner = m["tiles"], {}
+    field = m.get("layout") == "field"  # G-1: 큰 마당 둘레를 적이 도는 맵 — 마당은 2×2 이상 직사각형
     for name, b in m["blocks"].items():
-        if (b["w"], b["h"]) != (MAP_BLOCK, MAP_BLOCK):
+        if (b["w"] < MAP_BLOCK or b["h"] < MAP_BLOCK) if field else (b["w"], b["h"]) != (MAP_BLOCK, MAP_BLOCK):
             errors.append(f"maps/{mid}.json 블록 {name}: {MAP_BLOCK}×{MAP_BLOCK}이어야 함 ({b['w']}×{b['h']})"); continue
         for y in range(b["y"], b["y"] + b["h"]):
             for x in range(b["x"], b["x"] + b["w"]):
@@ -408,7 +409,8 @@ for mid, m in MAPS.items():
     nb = sum(row.count("B") for row in tiles)
     if nb != m["buildableCount"]: errors.append(f"maps/{mid}.json buildableCount {m['buildableCount']} ≠ 실제 B {nb}")
     if m["mode"] == "stage" and m["turns"] < 5: errors.append(f"maps/{mid}.json 스테이지 맵 회전 {m['turns']}번 (5번 이상)")
-    if len(m["blocks"]) < 6: errors.append(f"maps/{mid}.json 블록 {len(m['blocks'])}개 (6개 이상)")
+    if not field and len(m["blocks"]) < 5: errors.append(f"maps/{mid}.json 블록 {len(m['blocks'])}개 (5개 이상 — G-1 큰 칸)")
+    if field and not m.get("loop"): errors.append(f"maps/{mid}.json 마당 맵은 길이 마당 둘레를 도는 loop여야 함")
 
 def maplist_table():
     rows = ["| 맵 | 모드 | 크기 | 2×2 블록 | 배치 칸 | 경로 길이 | 회전 | 교차 |", "|------|------|------|------|------|------|------|------|"]

@@ -69,7 +69,22 @@ export type CommandPayload =
    * 준비 완료 (F10, 첫 10단계 개선): 준비 단계(0단계)에서만 — 1단계를 이 틱에 바로 시작한다 (남은 준비 시간을 건너뜀).
    * 그 뒤 단계는 여기서부터 60초마다. 준비 단계가 아니면 무시 (연타해도 1단계는 한 번).
    */
-  | { type: 'readyNow' };
+  | { type: 'readyNow' }
+  // ---- G-1 (새 명령만 더한다 — 예전 summon·merge·move는 뜻 그대로라 예전 리플레이가 같게 돈다) ----
+  /** 무더기 소환 (G-1 칸 쌓기): 같은 타워의 덜 찬 내 칸 → 누른 빈 칸 (x, y) → 자동 빈 칸 순으로 놓는다. 일반 소환 천장 포함 */
+  | { type: 'summonPad'; x: number; y: number }
+  /** 무더기 소환 — 자동 칸 ([🎲 소환] 버튼·꾹 눌러 연속 소환) */
+  | { type: 'summonAuto' }
+  /** 연쇄 승급 (G-1): 칸 (x, y)의 가득 찬 무더기를 승급하고 이어서 할 수 있는 만큼 (merge.chainMax까지) */
+  | { type: 'mergeStack'; x: number; y: number }
+  /** 무더기 이동·교환·합치기 (G-1): 칸 (fx, fy)의 무더기를 (tx, ty)로 */
+  | { type: 'moveStack'; fx: number; fy: number; tx: number; ty: number }
+  /** 소환 도박 (G-1): game.json summonGamble.kinds의 k번째, f = 종족 번호 (종족 소환만, 나머지는 0) */
+  | { type: 'gacha'; k: number; f: number }
+  /** 신화 조합 (G-1 도감): rules.recipes의 r번째 (towers.json의 히든 타워 순서) */
+  | { type: 'craft'; r: number }
+  /** 필살기 (G-1): 내 타워 엔티티 id의 게이지가 가득이면 발동 */
+  | { type: 'ult'; id: number };
 
 export type CommandType = CommandPayload['type'];
 
@@ -96,6 +111,13 @@ export const COMMAND_TYPES: readonly CommandType[] = [
   'debugConvertTower',
   'debugSetChance',
   'readyNow',
+  'summonPad',
+  'summonAuto',
+  'mergeStack',
+  'moveStack',
+  'gacha',
+  'craft',
+  'ult',
 ];
 
 /** 칸 좌표 상한 (맵은 이보다 훨씬 작다. 네트워크로 받은 터무니없는 값을 거른다) */
@@ -127,6 +149,13 @@ export const PAYLOAD_FIELDS: { readonly [K in CommandType]: readonly string[] } 
   debugConvertTower: ['x', 'y', 't'],
   debugSetChance: ['key', 'bp'],
   readyNow: [],
+  summonPad: ['x', 'y'],
+  summonAuto: [],
+  mergeStack: ['x', 'y'],
+  moveStack: ['fx', 'fy', 'tx', 'ty'],
+  gacha: ['k', 'f'],
+  craft: ['r'],
+  ult: ['id'],
 };
 
 /** 확률 조정 key 글자 한도 (데이터 이름보다 넉넉히, 네트워크로 받은 터무니없는 값을 거른다) */
@@ -191,6 +220,17 @@ export function validatePayload(cmd: unknown): string | null {
     case 'hireWorker':
     case 'claimAllMissions':
     case 'readyNow':
+    case 'summonAuto':
+      return null;
+    case 'gacha':
+      if (!isNonNegInt(c.k) || c.k > MAX_GAMBLE_TABLE) return `k가 0~${MAX_GAMBLE_TABLE} 정수가 아님: ${String(c.k)} (gacha 명령)`;
+      if (!isNonNegInt(c.f) || c.f > MAX_GAMBLE_TABLE) return `f가 0~${MAX_GAMBLE_TABLE} 정수가 아님: ${String(c.f)} (gacha 명령)`;
+      return null;
+    case 'craft':
+      if (!isNonNegInt(c.r) || c.r > MAX_MISSION_INDEX) return `r이 0~${MAX_MISSION_INDEX} 정수가 아님: ${String(c.r)} (craft 명령)`;
+      return null;
+    case 'ult':
+      if (!isNonNegInt(c.id) || c.id < 1) return `id가 1 이상 정수가 아님: ${String(c.id)} (ult 명령)`;
       return null;
     case 'upgrade':
       if (!isNonNegInt(c.k) || c.k > MAX_UPGRADE_INDEX) return `k가 0~${MAX_UPGRADE_INDEX} 정수가 아님: ${String(c.k)} (upgrade 명령)`;
@@ -230,6 +270,9 @@ export function validatePayload(cmd: unknown): string | null {
     case 'mergeAll':
     case 'move':
     case 'sellTower':
+    case 'summonPad':
+    case 'mergeStack':
+    case 'moveStack':
       for (const k of PAYLOAD_FIELDS[type as CommandType]) {
         const v = c[k];
         if (!isNonNegInt(v) || v > MAX_TILE_COORD) return `${k}가 0~${MAX_TILE_COORD} 정수가 아님: ${String(v)} (${type} 명령)`;

@@ -20,6 +20,7 @@ import {
   claimMilestone,
   claimQuest,
   claimRecruit,
+  heroEntry,
   heroMatchLevels,
   levelUpHero,
   lockedHiddenIds,
@@ -149,6 +150,18 @@ export class ProgressStore {
     if (dev) return { levels };
     const locked = lockedHiddenIds(this.state, this.data);
     return locked.length > 0 ? { levels, lockedHidden: [locked] } : { levels };
+  }
+
+  /**
+   * 신화(히든) 조각: 가진 수 / 해방에 드는 수 (G-1 [신화] 도감의 '🔒 해방 필요 (조각 n/20)').
+   * 히든이 아니거나 이미 해방했으면 null.
+   */
+  fragmentsOf(id: string): { have: number; need: number } | null {
+    const t = this.tower(id);
+    if (!t || t.grade !== 'hidden') return null;
+    const e = heroEntry(this.state, id);
+    if (e.level >= 1) return null;
+    return { have: e.cards, need: this.pd.hidden.unlockFragments };
   }
 
   settle(result: MatchResult): MatchSettlement | null {

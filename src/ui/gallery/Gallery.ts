@@ -33,8 +33,8 @@ const FILTER_GRADES: Record<TowerFilter, readonly Grade[]> = {
   lgh: ['legend', 'god', 'hidden'],
 };
 
-const FILTER_LABEL: Record<TowerFilter, string> = { all: '전체', nr: '노말·레어', uh: '유니크·히어로', lgh: '레전드·신·히든' };
-const GRADE_KO: Record<Grade, string> = { normal: '노말', rare: '레어', unique: '유니크', hero: '히어로', legend: '레전드', god: '신', hidden: '히든' };
+const FILTER_LABEL: Record<TowerFilter, string> = { all: '전체', nr: '노말·레어', uh: '유니크·히어로', lgh: '레전드·신·신화' };
+const GRADE_KO: Record<Grade, string> = { normal: '노말', rare: '레어', unique: '유니크', hero: '히어로', legend: '레전드', god: '신', hidden: '신화' };
 const RANK_KO: Record<string, string> = { minion: '하수인', captain: '대장', commander: '4천왕', lord: '군주' };
 const EXPR_KO: Record<Expression, string> = { normal: '보통', angry: '화남', happy: '웃음' };
 

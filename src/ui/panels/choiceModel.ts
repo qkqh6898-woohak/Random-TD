@@ -3,7 +3,7 @@
  */
 import type { CardOffer, MergePick } from '../../sim/state';
 import type { MatchRules } from '../../sim/rules';
-import { CARD_PICK_TITLE, MERGE_PICK_TITLE } from '../messages';
+import { CARD_PICK_TITLE, MERGE_PICK_TITLE, PICK_CARD_TITLE, pickCardSub } from '../messages';
 
 export interface ChoiceOption {
   title: string;
@@ -39,6 +39,9 @@ const CARD_ICONS: Readonly<Record<string, string>> = {
   twinSummon: '👯',
   godMul: '👑',
   goldPct: '🪙',
+  apsPct: '⚡',
+  pityCut: '🧿',
+  ultCharge: '🔥',
 };
 
 /**
@@ -48,9 +51,10 @@ const CARD_ICONS: Readonly<Record<string, string>> = {
 export function cardChoiceModel(rules: Pick<MatchRules, 'cardById' | 'bossEvery'>, offer: CardOffer): ChoiceModel {
   return {
     kind: 'card',
-    key: `card:${offer.boss}:${offer.cards.join(',')}`,
-    title: CARD_PICK_TITLE,
-    sub: `${offer.boss * rules.bossEvery}단계 보스 보상 · 고르는 동안에도 시간이 흘러요`,
+    // G-1 3택 1 강화 선택 묶음이면 (offer.stage) 제목·부제가 다르다 (같은 창·같은 pickCard 명령)
+    key: `card:${offer.stage !== undefined ? `p${offer.stage}` : offer.boss}:${offer.cards.join(',')}`,
+    title: offer.stage !== undefined ? PICK_CARD_TITLE : CARD_PICK_TITLE,
+    sub: offer.stage !== undefined ? pickCardSub(offer.stage) : `${offer.boss * rules.bossEvery}단계 보스 보상 · 고르는 동안에도 시간이 흘러요`,
     options: offer.cards.map((id) => {
       const c = rules.cardById.get(id);
       return {
@@ -66,7 +70,7 @@ export function cardChoiceModel(rules: Pick<MatchRules, 'cardById' | 'bossEvery'
 }
 
 /** 등급 → 한국어 */
-const GRADE_NAMES: Readonly<Record<string, string>> = { normal: '노말', rare: '레어', unique: '유니크', hero: '히어로', legend: '레전드', god: '신', hidden: '히든' };
+const GRADE_NAMES: Readonly<Record<string, string>> = { normal: '노말', rare: '레어', unique: '유니크', hero: '히어로', legend: '레전드', god: '신', hidden: '신화' };
 
 /** 승급의 축복 선택 → 고르기 창 (0 = 지금 결과 그대로, 1 = 다른 결과). */
 export function mergeChoiceModel(rules: Pick<MatchRules, 'towers'>, pick: MergePick, currentTower: string): ChoiceModel {

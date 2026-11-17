@@ -155,7 +155,7 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
     expect(flat.find((c) => c.label === '공속')!.value).toBe('0.8 (×1)');
     expect(flat.find((c) => c.label === '사거리')!.value).toBe('2.5');
     expect(flat.find((c) => c.label === '범위')!.value).toBe('광역 r0.8');
-    expect(m.note).toBe('같은 타워 3개가 모이면 승급할 수 있어요');
+    expect(m.note).toBe('같은 타워 3개가 한 칸에 모이면 승급할 수 있어요'); // G-1 칸 무더기
     expect(m.outcomes).toBe('상인 · 진흙 주술사');
     expect(m.ability).toBe('—');
     expect(m.abilityLabel).toBe('특색');

@@ -15,7 +15,7 @@
  *   해석: GDD '이동 중' = 끄는 동안 + 놓은 뒤 0.5초 (DEV_PLAN M3-10 '이동 후 0.5초 공격 정지'는 놓은 뒤 부분).
  */
 import type { World } from '../World';
-import { isTower, type Tower } from '../entities/Tower';
+import { isTower, towersAt, type Tower } from '../entities/Tower';
 import { isBuildable, tileCenter } from '../map';
 import type { MatchContext } from '../state';
 
@@ -75,6 +75,33 @@ export function holdTower(ctx: MatchContext, world: World, player: number, x: nu
   if (!tower || tower.owner !== player || tower.held === on) return false;
   tower.held = on;
   world.emit('hold', { player, id: tower.id, on });
+  // G-1 칸 무더기: 같은 칸의 나머지 타워도 함께 (무더기 하나를 통째로 끈다). 타워가 하나면 예전과 같다
+  for (const t of towersAt(world, x, y)) if (t.id !== tower.id && t.owner === player) t.held = on;
+  return true;
+}
+
+/**
+ * 무더기 이동 (G-1 moveStack 명령): 칸 (fx, fy)의 내 타워 무더기를 통째로 옮긴다.
+ * - 빈 배치 칸이면 이동, 내 무더기가 있으면: 같은 타워이고 합쳐서 board.stackMax 이하면 **합치기**, 아니면 **교환**.
+ * - 이동한 타워는 모두 0.5초 공격 정지. 'move' 사건 {player, id(맨 위), fx, fy, tx, ty, swap(교환된 맨 위 id 또는 0), merged(합침), n}.
+ * - 실패 이유는 move와 같다 ('moveFail').
+ */
+export function moveStack(ctx: MatchContext, world: World, player: number, fx: number, fy: number, tx: number, ty: number): boolean {
+  const check = moveCheck(ctx, world, player, fx, fy, tx, ty);
+  if (!check.ok) {
+    world.emit('moveFail', { player, fx, fy, tx, ty, reason: check.reason });
+    return false;
+  }
+  const pause = ctx.rules.movePauseTicks;
+  const from = towersAt(world, fx, fy);
+  const to = towersAt(world, tx, ty);
+  const top = from[from.length - 1] as Tower;
+  const merged = to.length > 0 && (to[0] as Tower).tower === top.tower && from.length + to.length <= ctx.rules.stackMax;
+  for (const t of from) relocate(world, t, tx, ty, pause);
+  if (!merged) for (const t of to) relocate(world, t, fx, fy, pause);
+  ctx.state.moves += 1;
+  const swap = !merged && to.length > 0 ? (to[to.length - 1] as Tower).id : 0;
+  world.emit('move', { player, id: top.id, fx, fy, tx, ty, swap, merged, n: from.length });
   return true;
 }
 

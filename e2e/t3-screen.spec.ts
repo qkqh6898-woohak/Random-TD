@@ -182,13 +182,13 @@ test('화면 크기가 바뀌면 논리 높이·맵을 다시 맞춘다 (412×91
 test('2×2 블록 맵에서 소환: 순환의 정원 32칸 · 빈 땅/길을 누르면 소환 대신 배치 칸이 잠깐 보인다', async ({ page }) => {
   const errors = collectErrors(page);
   await startGame(page, '/?seed=42');
-  await expect(page.getByTestId('hud-towers')).toHaveText('0/32');
+  await expect(page.getByTestId('hud-towers')).toHaveText('0/20');
   // 판 시작 때 배치 칸 강조가 잠깐 보였다가 사라진다 (B-1: 소환 바닥 자체는 늘 보임)
   await expect.poll(() => sim(page, (s) => s.buildHint), { timeout: 5000 }).toBe(0);
   await expect.poll(() => sim(page, (s) => s.backgroundKey), { timeout: 20_000 }).toBe('bg-t01-b1');
   await shot(page, 'T2-map-infinite-empty');
-  // 가운데 빈 땅 (3, 5) → 소환 없음, 배치 칸 강조
-  let p = await tilePoint(page, 3, 5);
+  // 길 (0, 3) (G-1 마당 맵에는 빈 땅이 없다) → 소환 없음, 배치 칸 강조
+  let p = await tilePoint(page, 0, 3);
   await page.touchscreen.tap(p.x, p.y);
   await expect.poll(() => sim(page, (s) => s.buildHint)).toBeGreaterThan(0);
   expect(await sim(page, (s) => s.match.towers().length)).toBe(0);
@@ -196,40 +196,40 @@ test('2×2 블록 맵에서 소환: 순환의 정원 32칸 · 빈 땅/길을 누
   // 배치 칸 (2, 4) → 소환
   p = await tilePoint(page, 2, 4);
   await page.touchscreen.tap(p.x, p.y);
-  await expect(page.getByTestId('hud-towers')).toHaveText('1/32');
+  await expect(page.getByTestId('hud-towers')).toHaveText('1/20');
   expect(await sim(page, (s) => s.match.towers().map((t) => [t.tx, t.ty]))).toEqual([[2, 4]]);
   await expect.poll(() => sim(page, (s) => s.buildHint), { timeout: 5000 }).toBe(0);
   expect(errors).toEqual([]);
 });
 
-test('캠페인 1 사거리 미로(10×10·36칸)에서 소환되고, 개발자 타워 20개 판 · 끄는 동안 배치 칸 강조 스크린샷', async ({ page }) => {
+test('캠페인 1 사거리 미로(7×10·24칸, G-1)에서 소환되고, 개발자 타워 20개 판 · 끄는 동안 배치 칸 강조 스크린샷', async ({ page }) => {
   test.slow();
   const errors = collectErrors(page);
   await startGame(page, '/?dev=1&seed=11', 'campaign');
-  await expect(page.getByTestId('hud-towers')).toHaveText('0/36');
+  await expect(page.getByTestId('hud-towers')).toHaveText('0/20');
   await expect.poll(() => sim(page, (s) => s.buildHint), { timeout: 5000 }).toBe(0);
   const p = await tilePoint(page, 4, 4);
   await page.touchscreen.tap(p.x, p.y);
-  await expect(page.getByTestId('hud-towers')).toHaveText('1/36');
+  await expect(page.getByTestId('hud-towers')).toHaveText('1/20');
   await sim(page, (s) => s.debugFastForward(200));
   await expect.poll(() => sim(page, (s) => s.backgroundKey), { timeout: 20_000 }).toBe('bg-t01-b1');
   await shot(page, 'T2-map-campaign1');
 
-  // 무한 판: 타워 20개 (개발자 명령) → 몹이 도는 판
+  // 무한 판: 타워 16개 (개발자 명령, G-1 큰 칸 20칸 중 — 끌어 놓을 빈 칸을 남김) → 몹이 도는 판
   await startGame(page, '/?dev=1&seed=5');
   const placed = await sim(page, (s) => {
     const cells = s.match.map.buildable;
     const order = s.match.rules.towerOrder;
     let n = 0;
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 16; i++) {
       const c = cells[(i * 7) % cells.length]!;
       if (s.match.world.enqueue({ type: 'debugTower', x: c[0], y: c[1], t: (i * 3) % Math.min(40, order.length) }).ok) n++;
     }
     s.debugFastForward(1);
     return n;
   });
-  expect(placed).toBe(20);
-  await expect.poll(() => sim(page, (s) => s.match.towers().length)).toBe(20);
+  expect(placed).toBe(16);
+  await expect.poll(() => sim(page, (s) => s.match.towers().length)).toBe(16);
   await sim(page, (s) => s.debugFastForward(1200 + 600));
   await expect.poll(() => sim(page, (s) => s.backgroundKey), { timeout: 20_000 }).toBe('bg-t01-b1');
   await page.waitForTimeout(300);
@@ -261,8 +261,8 @@ test('병합 확인 (HF-4): 빈 땅을 짧게 누르면 배치 칸만 보이고,
   await startGame(page, '/?debug=1&seed=42');
   await expect.poll(() => sim(page, (s) => s.buildHint), { timeout: 5000 }).toBe(0);
   await sim(page, (s) => s.match.world.enqueue({ type: 'debugAddGold', amount: 100_000 }));
-  // 가운데 빈 땅 (3, 5)을 꾹 → 자동 칸에 연속 소환, 뗀 뒤에도 배치 칸 잠깐 보이기는 없음
-  const p = await tilePoint(page, 3, 5);
+  // 길 (0, 3)을 꾹 → 자동 칸에 연속 소환, 뗀 뒤에도 배치 칸 잠깐 보이기는 없음
+  const p = await tilePoint(page, 0, 3);
   await page.mouse.move(p.x, p.y);
   await page.mouse.down();
   await expect.poll(() => sim(page, (s) => s.match.towers().length), { timeout: 8000 }).toBeGreaterThanOrEqual(3);

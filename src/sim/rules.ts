@@ -22,6 +22,9 @@ import { DECK_GRADES, deckIssues, type DeckData } from '../data/deck';
 import type {
   BossData,
   CardEffectType,
+  CardPool,
+  GachaGrade,
+  UltKind,
   ChallengeData,
   CurvesFile,
   DamageType,
@@ -122,6 +125,43 @@ export interface CardStats {
   readonly limit: number;
   /** 쌍둥이 소환 지속 (틱) */
   readonly ticks: number;
+  /** 나오는 묶음 (G-1: boss 보스 보상 · pick 3택 1 강화 선택) */
+  readonly pools: readonly CardPool[];
+}
+
+/** 소환 도박 결과 등급 순위 (G-1): 꽝 0 · 노말 1 · 레어 2 · 유니크 3 · 히어로 4 · 레전드 5 · 신 6. 천장 '이상' 비교에 쓴다 */
+export const GACHA_RANK: Readonly<Record<GachaGrade, number>> = Object.freeze({ none: 0, normal: 1, rare: 2, unique: 3, hero: 4, legend: 5, god: 6 });
+
+/** 소환 도박 한 종류 (G-1) — 확률은 bp. */
+export interface GachaKindStats {
+  readonly id: string;
+  readonly name: string;
+  readonly cost: number;
+  readonly faction: boolean;
+  readonly outcomes: readonly { readonly grade: GachaGrade; readonly bp: number }[];
+  /** 천장: n번 연속 rank 이상이 안 나오면 다음 한 번은 rank 이상 확정 */
+  readonly pityN: number;
+  readonly pityRank: number;
+}
+
+/** 신화(히든) 조합 하나 (G-1 도감): 결과 타워 id와 재료 (같은 재료가 여럿일 수 있다) */
+export interface RecipeStats {
+  readonly id: string;
+  readonly materials: readonly string[];
+}
+
+/** 필살기 수치 (G-1, 정수 단위). */
+export interface UltRules {
+  /** 등급 → 공격 1번에 차는 게이지 (bp, 가득 = BP_ONE) */
+  readonly chargeBp: ReadonlyMap<Grade, number>;
+  /** 타워 id → 필살기 종류 (필살기가 있는 등급만) */
+  readonly kindOf: ReadonlyMap<string, UltKind>;
+  readonly nukeRadius: number;
+  readonly nukeMulBp: number;
+  readonly stunRadius: number;
+  readonly stunTicks: number;
+  readonly rallyApsBp: number;
+  readonly rallyTicks: number;
 }
 
 /** 등장 구성표 한 줄: stages [from, to]에서 몹별 칸 수 (몹 순서 = enemies.json mobs 순서). */
@@ -433,6 +473,26 @@ export interface MatchRules {
   /** 개발자 도구 확률 조정: 한 번에 바뀌는 값 (bp)과 이름 목록 (game.json devChances 순서) */
   readonly devChanceStepBp: number;
   readonly devChanceKeys: readonly string[];
+  // ---- G-1 ----
+  /** 칸 하나에 쌓는 같은 타워 수 (3) */
+  readonly stackMax: number;
+  /** 판 안 내 타워 인원 한도 기본값 (game.json board.unitCap) */
+  readonly unitCap: number;
+  /** 연쇄 승급 한 번에 최대 승급 수 */
+  readonly mergeChainMax: number;
+  /** 일반 소환 천장: n번 연속 rank 이상이 없으면 다음 소환은 rank 이상 (레어 직행) */
+  readonly summonPityN: number;
+  readonly summonPityRank: number;
+  /** 소환 도박 4종 (명령 gacha {k}의 k 순서) */
+  readonly gachaKinds: readonly GachaKindStats[];
+  /** 종족 id (towers.json factions 순서, 명령 gacha {f}의 f) */
+  readonly factionOrder: readonly string[];
+  /** 신화 조합 (towers.json의 히든 타워 순서, 명령 craft {r}의 r) */
+  readonly recipes: readonly RecipeStats[];
+  /** 3택 1 강화 선택: from단계부터 every단계마다 (보스 단계 제외) */
+  readonly pickFrom: number;
+  readonly pickEvery: number;
+  readonly ult: UltRules;
 }
 
 /** 정수여야 하는 데이터 값 확인 (스키마가 num만 보장하는 필드). */
@@ -648,6 +708,7 @@ export function buildMatchRules(data: GameData): MatchRules {
     ...buildM4Rules(data, mobOrder),
     ...buildM5Rules(data),
     ...buildT2Rules(data),
+    ...buildG1Rules(data),
   });
   // 한 단계의 등장이 다음 단계 시작 전에 끝나야 한다 (GDD 2.2: 50초 등장 + 10초 휴식)
   if ((rules.slotsPerStage - 1) * rules.spawnIntervalTicks >= rules.stageTicks) {
@@ -699,7 +760,7 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
   const cyc = enemies.bossCycle;
   const cards = cardsFile.cards.map((c) => {
     const e = c.effect;
-    const ratio = e.type === 'atkPct' || e.type === 'quake' || e.type === 'mobSlow' || e.type === 'goldPct';
+    const ratio = e.type === 'atkPct' || e.type === 'quake' || e.type === 'mobSlow' || e.type === 'goldPct' || e.type === 'apsPct' || e.type === 'ultCharge';
     return Object.freeze({
       id: c.id,
       name: c.name,
@@ -709,6 +770,7 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
       value: ratio ? bp(e.value ?? 0) : int(`cards.json ${c.id}.effect.value`, e.value ?? 0),
       limit: e.type === 'mobSlow' ? bp(e.max ?? 0) : int(`cards.json ${c.id}.effect.min`, e.min ?? 0),
       ticks: e.seconds === undefined ? 0 : secondsToTicksExact(e.seconds),
+      pools: Object.freeze([...(c.pools ?? ['boss'])]),
     } satisfies CardStats);
   });
   return {
@@ -934,6 +996,71 @@ function buildT2Rules(data: GameData): Pick<MatchRules, 'autoSummonRadius' | 'se
     towerValues: buildTowerValues(data),
     devChanceStepBp: int('game.json devChances.stepBp', game.devChances.stepBp),
     devChanceKeys: Object.freeze(game.devChances.list.map((c) => c.key)),
+  };
+}
+
+/** 등급 → 소환 도박 순위 (히든은 레전드와 같은 칸으로 본다 — 천장 비교에만 쓴다). */
+export function gradeRank(grade: Grade | GachaGrade): number {
+  return grade === 'hidden' ? GACHA_RANK.legend : GACHA_RANK[grade];
+}
+
+/** 타워 데이터 → 필살기 종류 (game.json ultimate.rules 중 처음 맞는 것). */
+export function ultKindFor(rules: GameData['game']['ultimate']['rules'], t: Pick<TowerData, 'shape' | 'tags' | 'damageType'>): UltKind {
+  for (const r of rules) {
+    if (r.shapes && !r.shapes.includes(t.shape)) continue;
+    if (r.damageTypes && !r.damageTypes.includes(t.damageType)) continue;
+    if (r.tags && !r.tags.some((tag) => t.tags.includes(tag))) continue;
+    return r.kind;
+  }
+  return 'nuke';
+}
+
+/** G-1 규칙 (칸 쌓기·연쇄 승급·천장·소환 도박·신화 조합·3택 1·필살기). */
+function buildG1Rules(data: GameData): Pick<
+  MatchRules,
+  'stackMax' | 'unitCap' | 'mergeChainMax' | 'summonPityN' | 'summonPityRank' | 'gachaKinds' | 'factionOrder' | 'recipes' | 'pickFrom' | 'pickEvery' | 'ult'
+> {
+  const { game, towers, cards } = data;
+  const u = game.ultimate;
+  const chargeBp = new Map<Grade, number>();
+  for (const [g, attacks] of Object.entries(u.grades)) chargeBp.set(g as Grade, idiv(BP_ONE, attacks as number));
+  const kindOf = new Map<string, UltKind>();
+  for (const t of towers.towers) if (chargeBp.has(t.grade)) kindOf.set(t.id, ultKindFor(u.rules, t));
+  return {
+    stackMax: int('game.json board.stackMax', game.board.stackMax),
+    unitCap: int('game.json board.unitCap', game.board.unitCap),
+    mergeChainMax: int('game.json merge.chainMax', game.merge.chainMax),
+    summonPityN: game.summon.pity.n,
+    summonPityRank: gradeRank(game.summon.pity.grade),
+    gachaKinds: Object.freeze(
+      game.summonGamble.kinds.map((k) =>
+        Object.freeze({
+          id: k.id,
+          name: k.name,
+          cost: k.cost,
+          faction: k.faction === true,
+          outcomes: Object.freeze(k.outcomes.map((o) => Object.freeze({ grade: o.grade, bp: exactBp(`game.json summonGamble ${k.id}`, o.chance) }))),
+          pityN: k.pity.n,
+          pityRank: gradeRank(k.pity.grade),
+        }),
+      ),
+    ),
+    factionOrder: Object.freeze(Object.keys(towers.factions)),
+    recipes: Object.freeze(
+      towers.towers.filter((t) => t.grade === 'hidden' && (t.recipe?.length ?? 0) > 0).map((t) => Object.freeze({ id: t.id, materials: Object.freeze([...(t.recipe ?? [])]) })),
+    ),
+    pickFrom: cards.pick.from,
+    pickEvery: cards.pick.every,
+    ult: Object.freeze({
+      chargeBp,
+      kindOf,
+      nukeRadius: tiles(u.kinds.nuke.radius),
+      nukeMulBp: bp(u.kinds.nuke.atkMul),
+      stunRadius: tiles(u.kinds.stun.radius),
+      stunTicks: secondsToTicksExact(u.kinds.stun.seconds),
+      rallyApsBp: bp(u.kinds.rally.apsPct),
+      rallyTicks: secondsToTicksExact(u.kinds.rally.seconds),
+    }),
   };
 }
 

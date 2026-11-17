@@ -21,10 +21,11 @@
  */
 import type { World } from '../World';
 import { streamSummon } from '../World';
-import { ATTACK_COST, isTower, type Tower } from '../entities/Tower';
+import { ATTACK_COST, isTower, towerStacks, towersAt, type Tower } from '../entities/Tower';
 import { canMergeGrade, isDeckGrade, rollMerge } from '../Deck';
 import type { MatchContext } from '../state';
 import { godChanceFor, placeTower } from './Summon';
+import { joinableStack } from './Board';
 import { ownerBonus } from '../abilities';
 import { chanceBonus } from '../chances';
 
@@ -99,9 +100,23 @@ export function pickConsumed(group: readonly Tower[], anchor: Tower, n: number):
 
 /** 승급 한 번 (검사는 끝났다고 본다): anchor + 가장 나중 2개를 지우고 anchor 자리에 결과를 놓는다. */
 function mergeOnce(ctx: MatchContext, world: World, player: number, anchor: Tower, group: readonly Tower[]): Tower {
+  return mergeCore(ctx, world, player, anchor, pickConsumed(group, anchor, ctx.rules.mergeCount - 1), null);
+}
+
+/**
+ * 승급 핵심 (예전 merge·mergeAll과 G-1 칸 무더기 승급이 같이 쓴다): anchor와 consumed를 지우고 결과 하나를 놓는다.
+ * @param place 결과를 놓을 칸을 고르는 함수 (지운 뒤에 불린다, 결과 타워 id를 받는다). null이면 anchor 칸
+ */
+function mergeCore(
+  ctx: MatchContext,
+  world: World,
+  player: number,
+  anchor: Tower,
+  consumed: readonly Tower[],
+  place: ((towerId: string) => readonly [number, number]) | null,
+): Tower {
   const stats = ctx.rules.towers.get(anchor.tower);
   if (!stats) throw new Error(`없는 타워: ${anchor.tower}`);
-  const consumed = pickConsumed(group, anchor, ctx.rules.mergeCount - 1);
   const deck = ctx.decks[player] ?? ctx.rules.baseDeck;
   // 2등급 상승: 행운의 여신 + 개발자 확률 조정 'mergeDouble' (T-2)
   const doubleBp = ownerBonus(ctx, world, player, (def, p) => def.mergeDoubleBp?.(p)) + chanceBonus(ctx.state, 'mergeDouble');
@@ -112,7 +127,8 @@ function mergeOnce(ctx: MatchContext, world: World, player: number, anchor: Towe
   // 재료로 사라진 타워에 걸려 있던 '결과 2개 중 선택'은 지운다
   const gone = new Set<number>([anchor.id, ...consumed.map((t) => t.id)]);
   if (ctx.state.mergePicks.length > 0) ctx.state.mergePicks = ctx.state.mergePicks.filter((m) => !gone.has(m.id));
-  const result = placeTower(world, roll.tower, player, anchor.tx, anchor.ty);
+  const at = place ? place(roll.tower) : ([anchor.tx, anchor.ty] as const);
+  const result = placeTower(world, roll.tower, player, at[0], at[1]);
   ctx.state.merges += 1;
   // 카드 '승급의 축복': 같은 등급의 다른 결과 하나를 고를 수 있게
   const perks = ctx.state.perks[player];
@@ -123,7 +139,7 @@ function mergeOnce(ctx: MatchContext, world: World, player: number, anchor: Towe
       const alt = rng.pick(pool);
       perks.mergeChoices -= 1;
       ctx.state.mergePicks.push({ player, id: result.id, alt });
-      world.emit('mergeChoice', { player, id: result.id, tower: roll.tower, alt, x: anchor.tx, y: anchor.ty });
+      world.emit('mergeChoice', { player, id: result.id, tower: roll.tower, alt, x: at[0], y: at[1] });
     }
   }
   const grade = ctx.rules.towers.get(roll.tower)?.grade ?? '';
@@ -136,9 +152,10 @@ function mergeOnce(ctx: MatchContext, world: World, player: number, anchor: Towe
     grade,
     god: roll.god,
     double: roll.double,
-    x: anchor.tx,
-    y: anchor.ty,
-    removed: consumed.map((t) => `${t.tx},${t.ty}`).join(';'),
+    x: at[0],
+    y: at[1],
+    // 함께 사라진 칸 (예전 승급과 같은 값). 결과가 다른 칸으로 가면(G-1 무더기 합류) anchor 칸도 앞에 넣는다
+    removed: [...(at[0] !== anchor.tx || at[1] !== anchor.ty ? [anchor] : []), ...consumed].map((t) => `${t.tx},${t.ty}`).join(';'),
   });
   return result;
 }
@@ -206,4 +223,92 @@ export function pickMerge(ctx: MatchContext, world: World, player: number, id: n
   }
   world.emit('mergePicked', { player, id, tower: e.tower, x: e.tx, y: e.ty, changed: pick === 1 });
   return true;
+}
+
+// ---------------------------------------------------------------- G-1 칸 무더기 승급 · 연쇄 승급
+
+/** 무더기 승급 실패 이유: 예전 이유 + 칸이 아직 가득 차지 않음('stack') */
+export type StackMergeFail = MergeFail | 'stack';
+
+/** 그 칸의 무더기 (ID 순). */
+export function stackOn(world: World, x: number, y: number): Tower[] {
+  return towersAt(world, x, y);
+}
+
+/**
+ * 칸 (x, y)의 무더기를 승급할 수 있는지 (G-1: 같은 타워가 merge.count(= board.stackMax)개 쌓인 칸만 승급한다).
+ * 순서: 판 진행 중 → 타워 있음 → 내 타워 → 승급할 수 있는 등급 → 칸이 가득 참.
+ */
+export function stackMergeCheck(ctx: MatchContext, world: World, player: number, x: number, y: number): { ok: true; stack: Tower[] } | { ok: false; reason: StackMergeFail } {
+  if (ctx.state.phase !== 'playing') return { ok: false, reason: 'phase' };
+  const stack = stackOn(world, x, y);
+  const anchor = stack[0];
+  if (!anchor) return { ok: false, reason: 'noTower' };
+  if (anchor.owner !== player) return { ok: false, reason: 'notOwner' };
+  const stats = ctx.rules.towers.get(anchor.tower);
+  if (!stats) throw new Error(`없는 타워: ${anchor.tower}`);
+  if (!canMergeGrade(stats.grade)) return { ok: false, reason: 'maxGrade' };
+  if (stack.length < ctx.rules.mergeCount) return { ok: false, reason: 'stack' };
+  return { ok: true, stack };
+}
+
+/** 승급할 수 있는 가득 찬 무더기 (내 것, 바닥 타워 ID 순) — kind를 주면 그 타워만. */
+export function fullStacks(ctx: MatchContext, world: World, player: number, kind?: string): Tower[][] {
+  const out: Tower[][] = [];
+  for (const list of towerStacks(world).values()) {
+    const first = list[0] as Tower;
+    if (first.owner !== player || list.length < ctx.rules.mergeCount) continue;
+    if (kind !== undefined && first.tower !== kind) continue;
+    const g = ctx.rules.towers.get(first.tower)?.grade;
+    if (!g || !canMergeGrade(g)) continue;
+    out.push(list);
+  }
+  return out.sort((a, b) => (a[0] as Tower).id - (b[0] as Tower).id);
+}
+
+/** 무더기 하나 승급: 칸의 타워를 모두 지우고 결과는 같은 타워의 덜 찬 무더기로, 없으면 그 칸에 (G-1 사용자 결정). */
+function mergeStackOnce(ctx: MatchContext, world: World, player: number, stack: readonly Tower[]): Tower {
+  const anchor = stack[0] as Tower;
+  const consumed = stack.slice(1, ctx.rules.mergeCount);
+  return mergeCore(ctx, world, player, anchor, consumed, (towerId) => joinableStack(ctx, world, player, towerId) ?? [anchor.tx, anchor.ty]);
+}
+
+/**
+ * 연쇄 승급 (G-1 mergeStack 명령): 칸 (x, y)의 가득 찬 무더기를 승급하고, 같은 타워의 가득 찬 무더기가 남아 있으면 이어서(바닥 ID 순),
+ * 없으면 이번 연쇄에서 나온 결과 타워의 가득 찬 무더기(바닥 ID 순 첫째)로 이어 간다. 한 번에 최대 merge.chainMax번.
+ * 승급마다 평소 'merge' 사건 (미션·연출·소리가 한 번씩 센다), 두 번 이상이면 끝에 'mergeChain' { player, steps }.
+ * 실패하면 상태·난수를 바꾸지 않고 'mergeFail' { reason } (칸이 덜 찼으면 'stack').
+ * @returns 결과 타워들 (승급 순)
+ */
+export function mergeStack(ctx: MatchContext, world: World, player: number, x: number, y: number): Tower[] {
+  const check = stackMergeCheck(ctx, world, player, x, y);
+  if (!check.ok) {
+    world.emit('mergeFail', { player, x, y, reason: check.reason });
+    return [];
+  }
+  const out: Tower[] = [];
+  let kind = (check.stack[0] as Tower).tower;
+  let next: Tower[] | null = check.stack;
+  while (next && out.length < ctx.rules.mergeChainMax) {
+    const result = mergeStackOnce(ctx, world, player, next);
+    out.push(result);
+    if (ctx.state.phase !== 'playing') break;
+    next = fullStacks(ctx, world, player, kind)[0] ?? null;
+    if (!next) {
+      // 같은 타워가 끝나면: 이번 연쇄에서 나온 결과 타워들의 가득 찬 무더기 (바닥 ID 순 첫째) → 그 타워로 이어 간다
+      const made = new Set(out.map((t) => t.tower));
+      next = fullStacks(ctx, world, player).find((st) => made.has((st[0] as Tower).tower)) ?? null;
+      if (next) kind = (next[0] as Tower).tower;
+    }
+  }
+  if (out.length > 1) world.emit('mergeChain', { player, steps: out.length, x, y });
+  return out;
+}
+
+/**
+ * 승급할 수 있는 무더기 묶음 (G-1 화면용 — 예전 mergeableGroups 자리): 가득 찬 내 무더기마다 하나, 바닥 ID 순.
+ * first = 무더기 바닥 타워 (그 칸을 누르면 mergeStack), count = 그 칸 타워 수.
+ */
+export function mergeableStackGroups(ctx: MatchContext, world: World, player: number): MergeGroup[] {
+  return fullStacks(ctx, world, player).map((st) => ({ tower: (st[0] as Tower).tower, count: st.length, first: st[0] as Tower }));
 }

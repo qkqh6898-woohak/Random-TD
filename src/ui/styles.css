@@ -3814,3 +3814,442 @@ body {
 .update-progress[hidden] {
   display: none;
 }
+
+/* ================================================================ G-1 게임 시스템 (기능 갈래 — 모양은 기존 클래스 재사용, 덧붙이기만) */
+/* 하단 메뉴: [신화] [소환] [도박] [강화] + 작은 [⚔] [📋] (+ 개발자 [🛠]) */
+.hud-menu.is-g1 {
+  grid-template-columns: repeat(4, 1fr) repeat(2, 0.56fr);
+  gap: 1.2cqw;
+  padding-left: 1.6cqw;
+  padding-right: 1.6cqw;
+}
+.hud-menu.is-g1.has-dev {
+  grid-template-columns: repeat(4, 1fr) repeat(3, 0.5fr);
+}
+.hud-menu.is-g1 .hud-menu-btn {
+  font-size: 3.4cqw;
+  padding: 0.8cqw 0.4cqw;
+  min-width: 0;
+}
+.hud-menu-btn.is-mini .hud-menu-word {
+  display: none;
+}
+.hud-menu-btn.is-mini .hud-menu-icon {
+  font-size: 4.2cqw;
+}
+.hud-menu-btn.is-mini .hud-menu-badge,
+.hud-menu.is-g1 .hud-menu-badge {
+  font-size: 2.4cqw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.hud-menu.is-g1 .hud-menu-btn.is-alert .hud-menu-badge {
+  padding: 0 0.8cqw;
+}
+
+/* 필살기 칩 (HUD 1줄 ⏸ 앞) + 목록 */
+.hud-ult {
+  color: #3b2416;
+  background: linear-gradient(180deg, #ffe07a 0%, var(--gold) 70%);
+  border-color: #fff3c4;
+  animation: g1-ult-pulse 1.2s ease-in-out infinite;
+}
+.hud-ult.is-on {
+  animation: none;
+}
+@keyframes g1-ult-pulse {
+  50% {
+    box-shadow: 0 0 0 0.8cqw rgba(255, 216, 90, 0.35);
+  }
+}
+.fx-off .hud-ult {
+  animation: none;
+}
+.hud-ult-list {
+  position: absolute;
+  right: 2cqw;
+  top: 100%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 1cqw;
+  min-width: 52cqw;
+  max-height: 60cqh;
+  overflow-y: auto;
+  padding: 1.6cqw;
+  border-radius: 2.6cqw;
+  background: rgba(13, 18, 32, 0.96);
+  border: 0.3cqw solid var(--panel-line);
+  pointer-events: auto;
+}
+.hud-ult-list[hidden] {
+  display: none !important;
+}
+.hud-ult-head {
+  font-size: 3cqw;
+  font-weight: 800;
+  color: var(--gold);
+}
+.hud-ult-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1.6cqw;
+  min-height: max(9cqw, 40px);
+  font-size: 3.2cqw;
+}
+.hud-ult-name {
+  flex: 1;
+  text-align: left;
+}
+.hud-ult-kind {
+  font-size: 2.6cqw;
+  color: var(--text-dim);
+}
+.hud-ult-all {
+  min-height: max(9cqw, 40px);
+  font-size: 3.2cqw;
+  font-weight: 800;
+}
+
+/* 소환 시트 */
+.sm-pity {
+  display: inline-block;
+  margin-top: 0.4cqw;
+  font-size: 2.8cqw;
+  font-weight: 700;
+  color: #9fd8ff;
+}
+.sm-pity.is-hot {
+  color: var(--gold);
+}
+.sm-odds {
+  font-size: 2.7cqw;
+}
+.sm-sep {
+  margin: 1.6cqw 0 0.4cqw;
+  font-size: 3cqw;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+.sm-factions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1cqw;
+  margin-top: 1cqw;
+}
+.sm-faction {
+  min-height: max(7.6cqw, 32px);
+  padding: 0 1.8cqw;
+  font-size: 2.7cqw;
+  border-left: 1cqw solid var(--faction-color, #888);
+}
+.sm-faction.is-on {
+  color: #3b2416;
+  background: var(--gold);
+}
+.sm-result {
+  min-height: 1.4em;
+  font-weight: 700;
+}
+
+/* 신화 도감 시트 */
+.my-summary {
+  font-size: 3cqw;
+  font-weight: 800;
+  color: var(--gold);
+}
+.my-pic {
+  width: 11cqw;
+  height: 11cqw;
+  object-fit: contain;
+  border-radius: 2cqw;
+  background: rgba(241, 196, 15, 0.16);
+}
+.my-pic.is-silhouette {
+  filter: brightness(0) opacity(0.65);
+}
+.my-mats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8cqw;
+  margin-top: 0.6cqw;
+}
+.my-mat {
+  padding: 0.2cqw 1.4cqw;
+  border-radius: 1.6cqw;
+  font-size: 2.6cqw;
+  background: rgba(255, 255, 255, 0.08);
+}
+.my-mat.is-on {
+  color: #1d3b1d;
+  background: #8fe388;
+}
+.my-mat.is-unknown {
+  color: var(--text-dim);
+}
+.my-row.is-ready {
+  border-color: var(--gold);
+}
+.my-note {
+  font-size: 2.5cqw;
+  color: var(--text-dim);
+}
+.hud-ult[hidden] {
+  display: none !important;
+}
+.hud-menu-btn.is-mini .hud-menu-badge-word {
+  display: none;
+}
+.my-craft[hidden] {
+  display: none !important;
+}
+
+/* ---------------- G-1 2차 (사용자 결정 화면 구조): 위 HUD 'WAVE n' + 몹 막대 · 아래 조작 묶음 · 맵 오른쪽 둥근 버튼 */
+.hud-top-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.hud-side-l,
+.hud-side-r {
+  display: flex;
+  align-items: center;
+  gap: 1.4cqw;
+  min-width: 0;
+}
+.hud-side-r {
+  justify-content: flex-end;
+}
+.hud-wave {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2cqw;
+  line-height: 1.1;
+}
+.hud-wave .hud-stage {
+  font-size: 4.8cqw;
+  letter-spacing: 0.04em;
+  background: rgba(0, 0, 0, 0.35);
+}
+.hud-wave-timer {
+  font-size: 3.6cqw;
+}
+/* 글자 높이를 고정: '👑 WAVE 10'처럼 그림 글자가 들어와도 위 HUD 높이(= 맵 자리)가 변하지 않게 */
+.hud-wave .hud-stage,
+.hud-wave-timer {
+  height: 1.25em;
+  line-height: 1.25em;
+  white-space: nowrap;
+}
+.hud-count-row {
+  justify-content: center;
+}
+.hud-count-row .hud-count {
+  display: flex;
+  align-items: center;
+  gap: 1.6cqw;
+  width: 78%;
+}
+.hud-count-bar {
+  position: relative;
+  flex: 1;
+  height: 2.4cqw;
+  border-radius: 1.2cqw;
+  background: rgba(0, 0, 0, 0.45);
+  border: 0.25cqw solid rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+}
+.hud-count-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: linear-gradient(90deg, #6fd36a, #f5b700 70%, #ff6b5e);
+}
+.hud-count.is-danger .hud-count-fill {
+  background: #ff6b5e;
+}
+.hud-count-row .hud-value {
+  font-size: 3.4cqw;
+  min-width: 13cqw;
+  text-align: right;
+}
+
+/* 아래: 얇은 자원 줄 */
+.hud-bottom.is-g1 {
+  min-height: max(9cqw, 40px);
+  padding: 0.8cqw 2.4cqw;
+  gap: 1.6cqw;
+  font-size: 3.3cqw;
+}
+.hud-bottom.is-g1 > .hud-hire {
+  margin-left: auto;
+}
+.hud-bottom.is-g1 > .hud-merge-ready:not([hidden]) + .hud-hire {
+  margin-left: 0;
+}
+.hud-bottom.is-g1 > .hud-merge-ready {
+  margin-left: auto;
+}
+
+/* 큰 버튼 묶음: [신화] [소환] [도박] / 소환 아래 [강화] */
+.hud-menu.is-g1 {
+  grid-template-columns: 1fr 1.45fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 1.4cqw;
+  padding: 1.2cqw 2.4cqw calc(1.4cqw + env(safe-area-inset-bottom, 0px));
+}
+.hud-menu.is-g1 > .is-mythic {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+.hud-menu.is-g1 > .hud-summon {
+  grid-column: 2;
+  grid-row: 1;
+}
+.hud-menu.is-g1 > .is-gamble {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+}
+.hud-menu.is-g1 > .is-upgrade {
+  grid-column: 2;
+  grid-row: 2;
+  min-height: max(8.6cqw, 44px);
+  flex-direction: row;
+  gap: 1.6cqw;
+}
+.hud-menu.is-g1 > .is-mythic,
+.hud-menu.is-g1 > .is-gamble {
+  font-size: 3.8cqw;
+}
+.hud-menu.is-g1 > .is-mythic .hud-menu-icon,
+.hud-menu.is-g1 > .is-gamble .hud-menu-icon {
+  font-size: 5.6cqw;
+}
+.hud-menu.is-g1 > .is-mythic .hud-menu-label,
+.hud-menu.is-g1 > .is-gamble .hud-menu-label {
+  flex-direction: column;
+  gap: 0.4cqw;
+}
+.hud-menu.is-g1 > .hud-summon {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  justify-content: center;
+  align-items: center;
+  column-gap: 1.2cqw;
+  min-height: max(12cqw, 48px);
+  padding: 0.8cqw 1.6cqw;
+  font-size: 4.4cqw;
+  font-weight: 900;
+  border-radius: 2.6cqw;
+}
+.hud-menu.is-g1 > .hud-summon .hud-summon-die {
+  font-size: 5.6cqw;
+}
+.hud-summon-pity {
+  grid-column: 1 / -1;
+  font-size: 2.6cqw;
+  font-weight: 800;
+  color: #6b3a14;
+  text-align: center;
+}
+.hud-summon-pity:empty {
+  display: none;
+}
+.hud-summon.is-pity .hud-summon-pity {
+  color: #b3122c;
+}
+/* 승급 가능·알약이 보여도 소환 버튼 글자는 줄이지 않는다 (이제 아래 띠가 아니라 큰 버튼) */
+.hud-menu.is-g1 > .hud-summon .hud-summon-word,
+.hud-menu.is-g1 > .hud-summon .hud-summon-cost {
+  display: inline !important;
+}
+
+/* 맵 오른쪽 둥근 버튼 (도전·미션·개발자) */
+.hud-side-btns {
+  position: absolute;
+  right: 2cqw;
+  bottom: calc(100% + 2cqw);
+  display: flex;
+  flex-direction: column;
+  gap: 1.6cqw;
+  pointer-events: none;
+}
+.hud-side-btns > .hud-menu-btn {
+  width: max(12cqw, 44px);
+  height: max(12cqw, 44px);
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  pointer-events: auto;
+  box-shadow: 0 0.5cqw 1.2cqw rgba(0, 0, 0, 0.45);
+}
+.hud-side-btns > .hud-menu-btn .hud-menu-icon {
+  font-size: 4.6cqw;
+}
+.hud-side-btns > .hud-menu-btn .hud-menu-badge {
+  position: absolute;
+  bottom: -1.2cqw;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2.4cqw;
+  padding: 0 0.8cqw;
+  border-radius: 1.4cqw;
+  background: rgba(13, 18, 32, 0.92);
+}
+.hud-side-btns > .hud-menu-btn .hud-menu-badge:empty {
+  display: none;
+}
+/* 자원 줄은 붐비므로 [⬆ 승급 가능 n]은 늘 '⬆ n' (글자 내용은 그대로) */
+.hud-bottom.is-g1 .hud-mr-word {
+  display: none;
+}
+.hud-bottom.is-g1 > .hud-item {
+  flex-shrink: 0;
+}
+.hud-bottom.is-g1 > .hud-gold-item {
+  min-width: 0;
+}
+/* 승급 가능·카드 알약이 보이면 일꾼 수는 숨긴다 ([👷 고용] 버튼이 남아 있다) */
+.hud-bottom.is-g1:has(.hud-merge-ready:not([hidden])) > .hud-workers,
+.hud-bottom.is-g1:has(.cp-pill:not([hidden])) > .hud-workers {
+  display: none;
+}
+.hud-bottom.is-g1:has(.cp-pill:not([hidden])) .hud-gold-gain {
+  display: none;
+}
+/* 자원 줄의 카드 알약은 그림 글자만 (글자는 aria-label에 그대로) */
+.hud-bottom.is-g1 .cp-pill-text {
+  display: none;
+}
+.hud-bottom.is-g1 {
+  gap: 1.1cqw;
+  padding-left: 1.8cqw;
+  padding-right: 1.8cqw;
+}
+.hud-bottom.is-g1:has(.cp-pill:not([hidden])):has(.hud-merge-ready:not([hidden])) .hud-hire .hud-worker-art,
+.hud-bottom.is-g1:has(.cp-pill:not([hidden])):has(.hud-merge-ready:not([hidden])) .hud-towers .hud-label {
+  display: none;
+}
+
+/* G-1: 첫 승급 안내 카드가 맵 오른쪽 둥근 버튼(도전·미션)을 덮지 않게 오른쪽을 비운다 */
+.guide-card {
+  right: calc(4cqw + max(12cqw, 44px));
+}
+.my-row.is-locked .my-note {
+  color: #ffb4a8;
+}
+/* 위 HUD 양옆 칩은 한 줄 고정 ('💰+'가 두 줄로 꺾이며 위 HUD 높이 = 맵 자리가 변하던 것) */
+.hud-top-row .hud-side-l > .btn-chip,
+.hud-top-row .hud-side-r > .btn-chip {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.hud-top-row .hud-side-l {
+  gap: 1cqw;
+}

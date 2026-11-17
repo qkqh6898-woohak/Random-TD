@@ -137,6 +137,11 @@ for (const [w, h] of [
       const cells = await sim(page, (s) => s.match.map.buildable.map(([x, y]) => [x, y] as [number, number]));
       const filled = cells.filter(([x, y]) => (x + y) % 2 === 0);
       await place(page, filled.map(([x, y], i) => [x, y, BIG[i % 2]!] as [number, number, string]));
+      // G-1 인원 한도(20)를 넘겨 빈 칸을 모두 눌러 볼 수 있게 (카드 '부대 확장'과 같은 값 자리)
+      await sim(page, (s) => {
+        (s.match.state as unknown as { unitCapBonus: number[] }).unitCapBonus[0] = 20;
+        return null;
+      });
       const scales = await sim(page, (s) => s.match.towers().map((t) => s.towerLayer.artScaleOf(t.id) ?? 0));
       expect(Math.max(...scales), '혼자인 큰 캐릭터는 2배 이상').toBeGreaterThanOrEqual(2);
       const empty = cells.filter(([x, y]) => (x + y) % 2 !== 0);
@@ -153,16 +158,24 @@ for (const [w, h] of [
         [0.4, 0.3],
         [0, 0.12],
       ];
+      // G-1 칸 무더기: 누른 빈 칸에 소환하되, 같은 캐릭터가 덜 쌓인 칸이 이미 있으면 그 칸에 쌓인다 (사용자 결정) —
+      // 그래서 '누른 칸이 찼다' 또는 '같은 캐릭터 무더기에 하나 더'를 확인한다. 큰 타워 칸에는 절대 들어가지 않는다
+      let taps = 0;
       for (let i = 0; i < empty.length; i++) {
         const [x, y] = empty[i]!;
+        if ((await towers(page)).some((t) => t.tx === x && t.ty === y)) continue;
+        const before = await towers(page);
         const [dx, dy] = offsets[i % offsets.length]!;
         await tap(page, x, y, dx, dy);
-        await expect
-          .poll(async () => (await towers(page)).some((t) => t.tx === x && t.ty === y), { message: `(${x},${y}) +(${dx},${dy}) 탭 → 그 칸에 소환` })
-          .toBe(true);
+        taps++;
+        await expect.poll(async () => (await towers(page)).length, { message: `(${x},${y}) +(${dx},${dy}) 탭 → 소환` }).toBe(before.length + 1);
+        const added = (await towers(page)).find((t) => !before.some((b) => b.id === t.id))!;
+        const joined = before.some((b) => b.tx === added.tx && b.ty === added.ty && b.tower === added.tower);
+        expect(added.tx === x && added.ty === y ? true : joined, `(${x},${y}) 탭 → 그 칸 또는 같은 캐릭터 무더기`).toBe(true);
+        expect(filled.some(([fx, fy]) => fx === added.tx && fy === added.ty)).toBe(false);
         expect(await sim(page, (s) => s.selectedTowerId)).toBeNull();
       }
-      expect((await towers(page)).length).toBe(cells.length);
+      expect(taps).toBeGreaterThan(3);
       if (w === 412) await shot(page, 'B1-empty-pad-tap');
       expect(errors).toEqual([]);
     });
@@ -182,7 +195,7 @@ for (const [w, h] of [
         }
         return [...rows.values()].map(([x, y]) => ({ x, y, openAbove: !set.has(`${x},${y - 1}`) && y > 0 }));
       });
-      expect(picks.length).toBeGreaterThanOrEqual(8);
+      expect(picks.length).toBeGreaterThanOrEqual(6); // G-1 큰 칸 맵: 배치 칸 줄 6개 (예전 8)
       let headTaps = 0;
       for (const [i, c] of picks.entries()) {
         await place(page, [[c.x, c.y, BIG[i % 2]!]]);
@@ -262,7 +275,8 @@ for (const [w, h] of [
       const free = cells.filter(([x, y]) => y > top + 1 && !row0.some(([a, b]) => a === x && b === y));
       const [ax, ay] = free[0]!;
       const dest = free.find(([x, y]) => Math.abs(x - ax) + Math.abs(y - ay) >= 3)!;
-      await place(page, [[ax, ay, 'stonegolem']]);
+      // G-1: 같은 캐릭터끼리는 끌어 놓으면 합쳐지므로(무더기) 교환을 보려면 0번 줄 첫 타워와 다른 캐릭터
+      await place(page, [[ax, ay, BIG[1]!]]);
       const a = (await towers(page)).find((t) => t.tx === ax && t.ty === ay)!;
       // 머리(0.55칸 위) 를 잡고 0.5초 → 끌기
       const from = await tilePoint(page, ax, ay, 0, -0.55);

@@ -100,13 +100,14 @@ export function mergeGuideText(step: MergeGuideStep, towerName: string, tapMerge
   if (step === 1) {
     return {
       title: `${towerName} 3개 — 승급할 수 있어요!`,
-      body: '금색 칸에 결과가 생기고, 빨간 ✕ 두 칸은 재료로 사라져요',
+      // G-1 칸 무더기: 같은 캐릭터 3개가 한 칸에 쌓였다
+      body: '한 칸에 같은 캐릭터 3개가 모였어요 — 합치면 다음 등급 하나가 돼요',
     };
   }
   return {
     // 종류 이름을 넣는다 (F10-4 검토: 두 묶음이 함께 준비되면 지금 어떤 종류를 합치는지 2단계에서도 보이게)
-    title: `${towerName} 승급 칸 고르기`,
-    body: tapMerge ? '금색 타워를 누르면 승급 · 다른 타워를 누르면 그 칸이 결과 칸' : '타워를 눌러 [⬆ 승급] · 누른 타워 칸에 결과가 생겨요',
+    title: `${towerName} 승급하기`,
+    body: tapMerge ? '3개가 쌓인 칸을 누르면 승급 · 이어서 할 수 있으면 연쇄 승급' : '칸을 눌러 [⬆ 승급] · 결과는 같은 캐릭터 칸이나 그 칸에 생겨요',
   };
 }
 

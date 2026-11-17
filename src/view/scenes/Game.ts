@@ -46,7 +46,7 @@ import { TICK_HZ, TickClock, type SimEvent } from '../../sim/World';
 import { bossForStage } from '../../sim/systems/BossSchedule';
 import { TickCostMeter, capTicks, simBudgetMs } from '../tickBudget';
 import type { Projectile } from '../../sim/entities/Projectile';
-import { towerAt, type Tower } from '../../sim/entities/Tower';
+import { towerAt, towersAt, type Tower } from '../../sim/entities/Tower';
 import { canMergeGrade, mergeOutcomes } from '../../sim/Deck';
 import { createMatch, type Match } from '../../sim/match';
 import type { SavedMatch } from '../../save/MatchSaves';
@@ -54,19 +54,20 @@ import { NATIVE_PAUSE_EVENT, setBackHandler } from '../../ui/nativeBack';
 import { isBuildable } from '../../sim/map';
 import type { MatchMode } from '../../sim/state';
 import { NO_MODS, effectiveStats, towerRange } from '../../sim/stats';
-import { mergeCheck, mergeableGroups, sameKindTowers } from '../../sim/systems/Merge';
+import { fullStacks, mergeableStackGroups, sameKindTowers, stackMergeCheck } from '../../sim/systems/Merge';
+import { hasRoom, summonStackCheck } from '../../sim/systems/Board';
 import { isPaused, moveCheck } from '../../sim/systems/Move';
 import { auraCovers, auraRadiusOf, auraSpecOf, computeAuras, towerBonus } from '../../sim/systems/Aura';
 import { towerLevel } from '../../sim/abilities';
 import { METEOR_FX } from '../../sim/abilities/archmage';
-import { autoSummonTile, rankSummonTiles, summonCheck, summonCost, towerCount } from '../../sim/systems/Summon';
+import { rankSummonTiles, summonCheck, summonCost } from '../../sim/systems/Summon';
 import { convertTargets, sellCheck, sellPrice } from '../../sim/systems/Sell';
 import { effectsOff, onEffectsChange, setEffectsOff } from '../effects';
 import { autoSummonInterval } from '../../ui/hold';
 import { createDevSheet, type DevSheetView } from '../../ui/sheets/DevSheet';
 import { devChanceModel, hiddenRecipeRows, nextChanceBp, type DevTab } from '../../ui/sheets/devModels';
 import { createConvertPicker } from '../../ui/panels/ConvertPicker';
-import { GRADE_NAMES, sellNeedsConfirm } from '../../ui/panels/towerPanelModel';
+import { GRADE_NAMES, sellNeedsConfirm, shortFactionName } from '../../ui/panels/towerPanelModel';
 import {
   GUIDE_FIRST_MERGE,
   mergeGuideText,
@@ -96,7 +97,14 @@ import { claimCheck, missionsClaimable } from '../../sim/systems/Mission';
 import { ensureMobTexture } from '../../art/mobs';
 import { enemyCharacterTexture } from '../../art/characters/phaserArt';
 import { createChallengeSheet, type ChallengeSheetView } from '../../ui/sheets/ChallengeSheet';
-import { createUpgradeSheet, type GambleFire, type GambleSlotView, type UpgradeSheetView } from '../../ui/sheets/UpgradeSheet';
+import { createGambleSheet, createUpgradeSheet, type GambleFire, type GambleSheetView, type GambleSlotView, type GambleTab, type UpgradeSheetView } from '../../ui/sheets/UpgradeSheet';
+import { createSummonSheet, type SummonSheetView } from '../../ui/sheets/SummonSheet';
+import { createMythicSheet, type MythicSheetView } from '../../ui/sheets/MythicSheet';
+import { codexSheetModel, newlyDiscovered, summonSheetModel, GACHA_GRADE_NAMES, type CodexSheetModel, type SummonSheetModel } from '../../ui/sheets/g1Models';
+import { gachaCheck } from '../../sim/systems/Gacha';
+import { craftPlan, ownedCounts } from '../../sim/systems/Craft';
+import { readyUlts, ultCheck, ultKindOf } from '../../sim/systems/Ultimate';
+import { pityLeft, unitCap, unitCount } from '../../sim/systems/Board';
 import { createMissionSheet, type MissionSheetView } from '../../ui/sheets/MissionSheet';
 import {
   challengeHudInput,
@@ -149,6 +157,15 @@ import {
   convertText,
   needGoldForSummon,
   sellText,
+  chainMergeText,
+  craftFailText,
+  craftReadyText,
+  craftText,
+  gachaFailText,
+  gachaResultText,
+  ultText,
+  SUMMON_NO_FIT,
+  UNIT_CAP_FULL,
 } from '../../ui/messages';
 import { createChoicePanel, type ChoicePanelView } from '../../ui/panels/ChoicePanel';
 import { cardChoiceModel, mergeChoiceModel } from '../../ui/panels/choiceModel';
@@ -387,7 +404,17 @@ export class GameScene extends Phaser.Scene {
   private legionNames: Record<string, string> = {};
   // ---- M5 ----
   /** 열린 바텀 시트 (하나만) */
-  private sheet: ChallengeSheetView | UpgradeSheetView | MissionSheetView | DevSheetView | null = null;
+  private sheet: ChallengeSheetView | UpgradeSheetView | MissionSheetView | DevSheetView | GambleSheetView | SummonSheetView | MythicSheetView | null = null;
+  /** G-1 [🎰 도박] 시트 탭 */
+  private gambleTab: GambleTab = 'money';
+  /** G-1 종족 소환에서 고른 종족 번호 (판 동안 기억) */
+  private gachaFaction = 0;
+  /** G-1 마지막 소환 도박 결과 글자 (소환 시트 맨 아래) */
+  private gachaResult = '';
+  /** G-1 앞 소환 도박 명령을 넣은 틱 (꾹 누르기가 한 틱에 두 번 넣지 않게) */
+  private gachaQueuedTick = -1;
+  /** G-1 필살기 자동: 마지막으로 보낸 틱 (같은 타워에 두 번 보내지 않게) */
+  private ultSent = new Map<number, number>();
   private sheetKind: SheetKind | null = null;
   /** 시트마다 마지막으로 고른 탭 (다시 열면 그 탭) */
   private upgradeTab: UpgradeTab = 'grade';
@@ -546,6 +573,10 @@ export class GameScene extends Phaser.Scene {
       onSummon: () => this.autoSummonOnce() !== 'stop',
       summonInterval: () => autoSummonInterval(effectsOff()),
       onReady: () => this.sendReady(),
+      onUlt: (id) => this.castUltOf(id),
+      onUltAll: () => {
+        for (const t of readyUlts(this.match.ctx, this.match.world, LOCAL_PLAYER)) this.castUltOf(t.id);
+      },
     });
     this.ctx.ui.clear('screen');
     this.ctx.ui.show('hud', this.hud);
@@ -706,6 +737,7 @@ export class GameScene extends Phaser.Scene {
     this.floatingText.update(time);
     this.fx.update(time, () => this.goldAnchorPx());
     this.refreshHud();
+    this.syncG1();
     this.refreshSheet(this.time.now);
   }
 
@@ -1099,7 +1131,9 @@ export class GameScene extends Phaser.Scene {
       this.closePanel();
       return;
     }
-    const fail = summonCheck(this.match.ctx, this.match.world, tx, ty);
+    let fail = summonCheck(this.match.ctx, this.match.world, tx, ty);
+    // G-1 인원 한도: 빈 칸이어도 내 타워가 한도만큼이면 소환하지 않는다
+    if (fail === null && summonStackCheck(this.match.ctx, this.match.world, LOCAL_PLAYER) === 'cap') fail = 'cap';
     // 빈 땅 (T-2): 누르고 있으면 0.3초 뒤부터 자동 칸에 연속 소환 (맵 안이면 배치 칸이 아니어도)
     const inMap = tx >= 0 && ty >= 0 && tx < this.match.map.width && ty < this.match.map.height;
     const hint = fail === 'notBuildable';
@@ -1110,7 +1144,8 @@ export class GameScene extends Phaser.Scene {
     if (action.kind === 'summon') {
       if (!tapAllowed(this.lastTapMs, now)) return;
       this.lastTapMs = now;
-      if (this.match.world.enqueue({ type: 'summon', x: action.x, y: action.y }).ok) this.autoSummonTick = this.match.tick;
+      // G-1 칸 무더기: 같은 타워의 덜 찬 칸이 있으면 그 칸에, 없으면 누른 칸에 (summonPad)
+      if (this.match.world.enqueue({ type: 'summonPad', x: action.x, y: action.y }).ok) this.autoSummonTick = this.match.tick;
     } else if (action.kind === 'toast') {
       // 돈 부족·빈 칸 없음이면 꾹 눌러도 연속 소환하지 않는다
       this.groundPress = null;
@@ -1128,18 +1163,22 @@ export class GameScene extends Phaser.Scene {
     if (this.paused || this.gameOver) return 'stop';
     if (this.autoSummonTick === this.match.tick) return 'wait';
     const ctx = this.match.ctx;
-    const tile = autoSummonTile(ctx, this.match.world);
-    if (!tile) {
+    // G-1 칸 무더기: 같은 타워의 덜 찬 칸 → 자동 빈 칸 (summonAuto, sim이 굴린 뒤 칸을 정한다)
+    const fail = summonStackCheck(ctx, this.match.world, LOCAL_PLAYER);
+    if (fail === 'full') {
       this.ctx.ui.toast(BOARD_FULL);
       return 'stop';
     }
-    const fail = summonCheck(ctx, this.match.world, tile[0], tile[1]);
     if (fail === 'gold') {
       this.ctx.ui.toast(needGoldForSummon(summonCost(ctx)));
       return 'stop';
     }
+    if (fail === 'cap') {
+      this.ctx.ui.toast(UNIT_CAP_FULL);
+      return 'stop';
+    }
     if (fail) return 'stop';
-    if (!this.match.world.enqueue({ type: 'summon', x: tile[0], y: tile[1] }).ok) return 'stop';
+    if (!this.match.world.enqueue({ type: 'summonAuto' }).ok) return 'stop';
     this.autoSummonTick = this.match.tick;
     return 'ok';
   }
@@ -1212,10 +1251,11 @@ export class GameScene extends Phaser.Scene {
     if (g && this.ctx.settings.get().tapMerge) {
       const t = this.match.world.entities.get(p.id) as Tower | undefined;
       if (t && t.kind === 'tower' && t.owner === LOCAL_PLAYER && t.id !== g.anchorId) {
-        const sameGroup = t.tower === g.kind;
-        if (sameGroup || mergeCheck(this.match.ctx, this.match.world, LOCAL_PLAYER, t.tx, t.ty).ok) {
+        // G-1 칸 무더기: 가득 찬 무더기를 누르면 그 칸이 안내 칸 (결과·재료가 같은 칸)
+        const st = stackMergeCheck(this.match.ctx, this.match.world, LOCAL_PLAYER, t.tx, t.ty);
+        if (st.ok && st.stack[0]!.id !== g.anchorId) {
           g.kind = t.tower;
-          g.anchorId = t.id;
+          g.anchorId = st.stack[0]!.id;
           g.step = 2;
           this.closePanel();
           this.updateGuideCard();
@@ -1224,10 +1264,11 @@ export class GameScene extends Phaser.Scene {
       }
     }
     if (this.ctx.settings.get().tapMerge && !(this.selectedId === p.id && this.panel)) {
-      const mc = mergeCheck(this.match.ctx, this.match.world, LOCAL_PLAYER, p.tx, p.ty);
+      // G-1: 가득 찬 무더기(같은 타워 3개)를 누르면 연쇄 승급 (mergeStack)
+      const mc = stackMergeCheck(this.match.ctx, this.match.world, LOCAL_PLAYER, p.tx, p.ty);
       const now = this.time.now;
       if (mc.ok && !inputLocked(this.inputLockUntil, now)) {
-        if (this.match.world.enqueue({ type: 'merge', x: p.tx, y: p.ty }).ok) {
+        if (this.match.world.enqueue({ type: 'mergeStack', x: p.tx, y: p.ty }).ok) {
           this.inputLockUntil = now + MERGE_INPUT_LOCK_MS;
           this.closePanel();
           return;
@@ -1236,7 +1277,9 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.selectedId === p.id && this.panel) this.closePanel();
     else this.selectTower(p.id);
-    if (summonCheck(this.match.ctx, this.match.world, p.tx, p.ty) === 'full') this.ctx.ui.toast(BOARD_FULL);
+    // 더 소환할 수 없는 판이면 알려 준다: 칸이 꽉 참 → '빈 칸이 없어요', 칸은 있지만 인원 한도 → '인원이 가득 찼어요' (G-1)
+    if (!hasRoom(this.match.ctx, this.match.world, LOCAL_PLAYER)) this.ctx.ui.toast(BOARD_FULL);
+    else if (unitCount(this.match.world, LOCAL_PLAYER) >= unitCap(this.match.ctx, LOCAL_PLAYER)) this.ctx.ui.toast(UNIT_CAP_FULL);
   }
 
   /** 누르는 중: 0.3초가 지나면 끌기 시작, 끄는 중이면 놓을 칸 미리 보기와 타워 그림 위치 갱신. */
@@ -1298,7 +1341,8 @@ export class GameScene extends Phaser.Scene {
     const moved = Math.hypot(p.x - p.downX, p.y - p.downY);
     const action = this.paused || this.gameOver ? 'none' : releaseAction(drop?.preview ?? null, moved, this.layout.tile);
     if (action === 'move' && drop) {
-      const r = this.match.world.enqueue({ type: 'move', fx: p.tx, fy: p.ty, tx: drop.tx, ty: drop.ty });
+      // G-1: 무더기를 통째로 (빈 칸 이동·교환·같은 타워면 합치기)
+      const r = this.match.world.enqueue({ type: 'moveStack', fx: p.tx, fy: p.ty, tx: drop.tx, ty: drop.ty });
       if (r.ok) {
         const c = tileCenterPx(this.layout, drop.tx, drop.ty);
         const at = { x: c.x, y: c.y + this.layout.tile * FOOT_OFFSET_TILES };
@@ -1354,7 +1398,7 @@ export class GameScene extends Phaser.Scene {
    */
   private selectNextMergeable(): void {
     if (this.paused || this.gameOver) return;
-    const groups = mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
+    const groups = mergeableStackGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
     if (groups.length === 0) return;
     // 첫 승급 안내 중이면 안내하는 묶음의 결과 칸 타워를 고른다 (F10). 그 패널이 이미 열려 있으면 다음 묶음으로 넘어가고
     // 안내도 그 묶음으로 옮긴다 (F10-4 검토: 두 묶음이 함께 준비돼도 버튼으로 돌아가며 볼 수 있게)
@@ -1380,14 +1424,15 @@ export class GameScene extends Phaser.Scene {
     this.panelFromMergeCycle = true;
     this.refreshPanel();
     this.mergeHighlight = {
-      tiles: sameKindTowers(this.match.world, g.tower, LOCAL_PLAYER).map((t) => ({ tx: t.tx, ty: t.ty })),
+      // G-1 칸 무더기: 그 칸의 타워마다 (3개)
+      tiles: towersAt(this.match.world, g.first.tx, g.first.ty).map((t) => ({ tx: t.tx, ty: t.ty })),
       startMs: this.time.now,
     };
   }
 
   /** [⬆ 승급 가능 n]으로 연 패널: 고른 타워 묶음이 승급 가능 묶음 몇 번째인지 (묶음 2개 이상일 때만). */
   private mergeCyclePosition(t: Tower): { index: number; total: number } | null {
-    const groups = mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
+    const groups = mergeableStackGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
     if (groups.length < 2) return null;
     return { index: groups.findIndex((g) => g.tower === t.tower), total: groups.length };
   }
@@ -1433,7 +1478,7 @@ export class GameScene extends Phaser.Scene {
       this.ctx.ui.toast(MOVE_CANCELED);
       return;
     }
-    this.match.world.enqueue({ type: 'move', fx: m.tx, fy: m.ty, tx, ty });
+    this.match.world.enqueue({ type: 'moveStack', fx: m.tx, fy: m.ty, tx, ty });
   }
 
   /** 이동 모드 강조: 옮길 수 있는 칸 모두 (빈 배치 칸 = 이동, 내 다른 타워 = 교환). */
@@ -1509,7 +1554,9 @@ export class GameScene extends Phaser.Scene {
     if (inputLocked(this.inputLockUntil, now)) return;
     const t = this.match.world.entities.get(this.selectedId) as Tower | undefined;
     if (!t) return;
-    const r = this.match.world.enqueue({ type, x: t.tx, y: t.ty });
+    // G-1: [승급]·[모두 승급] 모두 그 칸 무더기 연쇄 승급 (예전 merge·mergeAll 명령은 리플레이용으로만 남긴다)
+    void type;
+    const r = this.match.world.enqueue({ type: 'mergeStack', x: t.tx, y: t.ty });
     if (r.ok) this.inputLockUntil = now + MERGE_INPUT_LOCK_MS;
   }
 
@@ -1578,7 +1625,9 @@ export class GameScene extends Phaser.Scene {
       eff: effectiveStats(rules, stats, state.mods[t.owner] ?? NO_MODS, towerBonus(this.match.ctx, t, computeAuras(this.match.ctx, this.match.world))),
       level: towerLevel(this.match.ctx, t.owner, t.tower),
       factionName,
-      owned: sameKindTowers(this.match.world, t.tower, t.owner).length,
+      // G-1: 승급은 칸 무더기 단위 — 그 칸 타워 수 (가득 차면 승급)
+      owned: towersAt(this.match.world, t.tx, t.ty).length,
+      stack: towersAt(this.match.world, t.tx, t.ty).length,
       mergeCount: rules.mergeCount,
       mergeableGrade: canMergeGrade(stats.grade),
       outcomes: mergeOutcomes(deck, stats.grade).map((id) => names.get(id) ?? id),
@@ -1838,9 +1887,83 @@ export class GameScene extends Phaser.Scene {
           break;
         case 'summonFail': {
           if (!eventFxVisible('action', ev.tick, now, frameStart) || ev.player !== 0) break;
-          const text = summonFailText(String(ev.reason), cost);
+          // G-1: 굴린 타워가 들어갈 칸이 없어 취소 (돈은 그대로)
+          const text = ev.rolled === true ? SUMMON_NO_FIT : summonFailText(String(ev.reason), cost);
           if (text) this.ctx.ui.toast(text);
-          if (ev.reason === 'gold') this.fx.shakeTile(Number(ev.x), Number(ev.y), this.shakeOn());
+          if (ev.reason === 'gold' && Number(ev.x) >= 0) this.fx.shakeTile(Number(ev.x), Number(ev.y), this.shakeOn());
+          break;
+        }
+        // ---- G-1 ----
+        case 'mergeChain':
+          if (ev.player !== LOCAL_PLAYER) break;
+          this.noteFx('mergeChain');
+          if (eventFxVisible('action', ev.tick, now, frameStart)) this.ctx.ui.toast(chainMergeText(Number(ev.steps)));
+          break;
+        case 'gacha': {
+          if (ev.player !== LOCAL_PLAYER) break;
+          this.noteFx('gacha');
+          const kind = this.match.rules.gachaKinds[Number(ev.k)];
+          const g = String(ev.grade) as keyof typeof GACHA_GRADE_NAMES;
+          const name = ev.tower ? (this.towerNames.get(String(ev.tower)) ?? String(ev.tower)) : '';
+          this.gachaResult = gachaResultText(kind?.name ?? '', GACHA_GRADE_NAMES[g] ?? '', name, ev.pity === true);
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
+          if (g === 'legend' || g === 'god') {
+            this.ctx.ui.banner(this.gachaResult, null, 2400, 'gold');
+            this.shake(260, 0.006);
+          } else this.ctx.ui.toast(this.gachaResult);
+          break;
+        }
+        case 'gachaFail': {
+          if (ev.player !== LOCAL_PLAYER || !eventFxVisible('action', ev.tick, now, frameStart)) break;
+          const kind = this.match.rules.gachaKinds[Number(ev.k)];
+          const text = gachaFailText(String(ev.reason), (kind?.cost ?? 0) - this.match.state.gold);
+          if (text) this.ctx.ui.toast(text);
+          break;
+        }
+        case 'craft': {
+          if (ev.player !== LOCAL_PLAYER) break;
+          this.noteFx('craft');
+          const id = String(ev.tower);
+          const first = !this.match.state.debug && !this.match.state.debugUsed && this.ctx.account.recordCodex(id);
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
+          this.towerLayer.noteSummoned(Number(ev.id));
+          const from = String(ev.removed)
+            .split(';')
+            .filter((x) => x !== '')
+            .map((xy) => {
+              const [a, b] = xy.split(',');
+              return { tx: Number(a), ty: Number(b) };
+            });
+          // G-2 연출 + G-1 신화 조합: 신화(히든) 초상 카드, 빛은 금빛이 잘 보이게 레전드 색
+          this.fx.mergeSuck(from, { tx: Number(ev.x), ty: Number(ev.y), color: hexToInt(GRADE_COLORS.legend), grade: 'hidden', towerId: id });
+          this.ctx.audio.play('merge');
+          this.shake(260, 0.006);
+          this.ctx.ui.banner(craftText(this.towerNames.get(id) ?? id, first), null, 2600, 'gold');
+          break;
+        }
+        case 'craftFail': {
+          if (ev.player !== LOCAL_PLAYER || !eventFxVisible('action', ev.tick, now, frameStart)) break;
+          const text = craftFailText(String(ev.reason));
+          if (text) this.ctx.ui.toast(text);
+          break;
+        }
+        case 'ult': {
+          this.noteFx('ult');
+          if (!eventFxVisible('action', ev.tick, now, frameStart)) break;
+          const k = String(ev.kind) as 'nuke' | 'stun' | 'rally';
+          const def = this.ctx.data.game.ultimate.kinds[k];
+          if (k === 'nuke') {
+            this.fx.blastRing(Number(ev.x), Number(ev.y), Number(ev.r), 0xffb02e);
+            this.fx.blastRing(Number(ev.x), Number(ev.y), Math.floor(Number(ev.r) * 0.6), 0xff5a2a);
+            this.shake(240, 0.006);
+          } else if (k === 'stun') {
+            this.fx.timeStop(Number(ev.x), Number(ev.y));
+            this.fx.blastRing(Number(ev.x), Number(ev.y), Number(ev.r), 0x9fd8ff);
+          }
+          if (ev.player === LOCAL_PLAYER && def) {
+            const name = this.towerNames.get(String(ev.tower)) ?? String(ev.tower);
+            this.ctx.ui.toast(`${def.icon} ${ultText(name, def.name, k === 'rally' ? 0 : Number(ev.count))}`);
+          }
           break;
         }
         case 'attack':
@@ -2228,7 +2351,7 @@ export class GameScene extends Phaser.Scene {
    * 한 프레임에 여러 종류가 한꺼번에 승급 가능해지면 알림 하나로 합친다 (알림이 쌓여 맵 위쪽 줄을 가리지 않게).
    */
   private checkMergeReady(): void {
-    const groups = mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
+    const groups = mergeableStackGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
     this.mergeReadyCount = groups.length;
     const now = new Set(groups.map((g) => g.tower));
     const fresh = groups.filter((g) => !this.mergeReadyKinds.has(g.tower));
@@ -2346,6 +2469,8 @@ export class GameScene extends Phaser.Scene {
         },
         tapMerge: this.ctx.settings.get().tapMerge,
         onTapMerge: (on) => this.ctx.settings.set('tapMerge', on),
+        ultAuto: this.ctx.settings.get().ultAuto,
+        onUltAuto: (on) => this.ctx.settings.set('ultAuto', on),
         // 도움말 다시 보기 (F10): 계정 기록을 지우고 이 판에서도 다시 띄울 수 있게
         onHelpAgain: () => {
           this.ctx.account.resetGuides();
@@ -2509,19 +2634,22 @@ export class GameScene extends Phaser.Scene {
     const world = this.match.world;
     let anchor: Tower | null = null;
     const sel = this.panel ? this.selectedTower() : null;
-    if (sel && sel.owner === LOCAL_PLAYER && mergeCheck(this.match.ctx, world, LOCAL_PLAYER, sel.tx, sel.ty).ok) anchor = sel;
+    if (sel && sel.owner === LOCAL_PLAYER && stackMergeCheck(this.match.ctx, world, LOCAL_PLAYER, sel.tx, sel.ty).ok) anchor = sel;
     if (!anchor && this.guide) {
       const e = world.entities.get(this.guide.anchorId);
       anchor = e && e.kind === 'tower' ? (e as Tower) : null;
     }
     if (!anchor) return null;
-    return mergePreview(sameKindTowers(world, anchor.tower, LOCAL_PLAYER), anchor, this.match.rules.mergeCount);
+    // G-1 칸 무더기: 결과·재료 = 그 칸 무더기 (바닥 = 결과 자리, 나머지 둘 = 재료)
+    const stack = towersAt(world, anchor.tx, anchor.ty);
+    if (stack.length < this.match.rules.mergeCount) return null;
+    return mergePreview(stack, stack[0] as Tower, this.match.rules.mergeCount);
   }
 
   /** 첫 승급 안내를 지금 띄울 차례인가 (계정에서 아직 안 봤고, 이 판에서 끝내지 않았고, 승급 가능한 묶음이 있음). */
   private guideWillOpen(): boolean {
     if (this.guide || this.guideDone || this.gameOver || this.ctx.account.guideSeen(GUIDE_FIRST_MERGE)) return false;
-    return mergeableGroups(this.match.ctx, this.match.world, LOCAL_PLAYER).length > 0;
+    return mergeableStackGroups(this.match.ctx, this.match.world, LOCAL_PLAYER).length > 0;
   }
 
   /**
@@ -2536,26 +2664,27 @@ export class GameScene extends Phaser.Scene {
     const g = this.guide;
     const world = this.match.world;
     if (g) {
-      const group = sameKindTowers(world, g.kind, LOCAL_PLAYER);
-      if (group.length < this.match.rules.mergeCount) {
+      // G-1 칸 무더기: 안내하는 종류의 가득 찬 무더기가 없어지면 닫는다. 안내 칸 = 무더기 바닥 타워
+      const stacks = fullStacks(this.match.ctx, world, LOCAL_PLAYER, g.kind);
+      if (stacks.length === 0) {
         this.endGuide(false);
         return;
       }
-      if (!group.some((t) => t.id === g.anchorId)) g.anchorId = (group[0] as Tower).id;
-      // 패널로 같은 종류 타워를 고르면 그 타워가 결과 칸. 다른 승급 가능 묶음의 타워를 고르면 안내가 그 묶음으로 (F10-4 검토)
+      if (!stacks.some((st) => st[0]!.id === g.anchorId)) g.anchorId = stacks[0]![0]!.id;
+      // 패널로 다른 가득 찬 무더기를 고르면 안내가 그 무더기로 (F10-4 검토)
       const sel = this.panel ? this.selectedTower() : null;
-      if (sel && sel.owner === LOCAL_PLAYER && sel.id !== g.anchorId) {
-        if (sel.tower === g.kind) g.anchorId = sel.id;
-        else if (mergeCheck(this.match.ctx, world, LOCAL_PLAYER, sel.tx, sel.ty).ok) {
+      if (sel && sel.owner === LOCAL_PLAYER) {
+        const st = stackMergeCheck(this.match.ctx, world, LOCAL_PLAYER, sel.tx, sel.ty);
+        if (st.ok && st.stack[0]!.id !== g.anchorId) {
           g.kind = sel.tower;
-          g.anchorId = sel.id;
+          g.anchorId = st.stack[0]!.id;
         }
       }
       this.updateGuideCard();
       return;
     }
     if (!this.guideWillOpen()) return;
-    const first = mergeableGroups(this.match.ctx, world, LOCAL_PLAYER)[0];
+    const first = mergeableStackGroups(this.match.ctx, world, LOCAL_PLAYER)[0];
     if (!first) return;
     this.guide = { kind: first.tower, anchorId: first.first.id, step: 1 };
     this.guideCard = createGuideCard({
@@ -2647,8 +2776,9 @@ export class GameScene extends Phaser.Scene {
           mobCount: this.match.mobCount(),
           tick: this.match.tick,
           speed,
-          towerCount: towerCount(this.match.world),
-          buildableCount: this.match.map.buildable.length,
+          // G-1 사용자 결정: 🗼 = 내 타워 인원 / 인원 한도 (game.json board.unitCap + 카드)
+          towerCount: unitCount(this.match.world, LOCAL_PLAYER),
+          buildableCount: unitCap(this.match.ctx, LOCAL_PLAYER),
           summonCost: summonCost(this.match.ctx),
           mergeReady: this.mergeReadyCount,
           workerMax: this.match.rules.workerMax,
@@ -2680,8 +2810,45 @@ export class GameScene extends Phaser.Scene {
     if (this.choice && !this.choice.collapsed) this.choice.collapse();
     const ctx = this.match.ctx;
     const close = (): void => this.closeSheet();
-    let view: ChallengeSheetView | UpgradeSheetView | MissionSheetView | DevSheetView;
-    if (kind === 'dev') {
+    let view: ChallengeSheetView | UpgradeSheetView | MissionSheetView | DevSheetView | GambleSheetView | SummonSheetView | MythicSheetView;
+    if (kind === 'gamble') {
+      // G-1 사용자 결정: [🎰 도박] 시트 = 돈 도박 + 소환 도박 4종(천장) 두 탭
+      view = createGambleSheet(
+        {
+          onGamble: (t) => this.playGamble(t),
+          onClose: close,
+          tab: this.gambleTab,
+          onTab: (t) => {
+            this.gambleTab = t;
+          },
+          summon: {
+            opts: {
+              onSummon: () => this.autoSummonOnce() !== 'stop',
+              onGacha: (k) => this.playGacha(k),
+              onFaction: (f) => {
+                this.gachaFaction = f;
+              },
+            },
+            first: this.summonModel(),
+          },
+        },
+        gambleSheetModel(ctx, this.match.world, LOCAL_PLAYER),
+      );
+    } else if (kind === 'summon') {
+      view = createSummonSheet(
+        {
+          onSummon: () => this.autoSummonOnce() !== 'stop',
+          onGacha: (k) => this.playGacha(k),
+          onFaction: (f) => {
+            this.gachaFaction = f;
+          },
+          onClose: close,
+        },
+        this.summonModel(),
+      );
+    } else if (kind === 'mythic') {
+      view = createMythicSheet({ onCraft: (r) => this.sendCraft(r), onClose: close, portrait: (id) => this.portraitOf(id) }, this.codexModel());
+    } else if (kind === 'dev') {
       const settings = this.ctx.settings;
       view = createDevSheet(
         {
@@ -2715,7 +2882,6 @@ export class GameScene extends Phaser.Scene {
       view = createUpgradeSheet(
         {
           onUpgrade: (k) => this.buyUpgrade(k),
-          onGamble: (t) => this.playGamble(t),
           onClose: close,
           onTab: (t) => {
             this.upgradeTab = t;
@@ -2724,7 +2890,6 @@ export class GameScene extends Phaser.Scene {
           gradeOf: (k) => this.match.rules.upgrades[k]?.grades[0] ?? null,
         },
         upgradeSheetModel(ctx, LOCAL_PLAYER),
-        gambleSheetModel(ctx, this.match.world, LOCAL_PLAYER),
       );
     } else {
       view = createMissionSheet(
@@ -2788,9 +2953,11 @@ export class GameScene extends Phaser.Scene {
     if (!view) return;
     const ctx = this.match.ctx;
     if (this.sheetKind === 'challenge') (view as ChallengeSheetView).update(challengeSheetModel(ctx, this.match.tick, this.challengeAbilities));
-    else if (this.sheetKind === 'upgrade') {
-      (view as UpgradeSheetView).update(upgradeSheetModel(ctx, LOCAL_PLAYER), gambleSheetModel(ctx, this.match.world, LOCAL_PLAYER), slotView);
-    } else if (this.sheetKind === 'mission') {
+    else if (this.sheetKind === 'upgrade') (view as UpgradeSheetView).update(upgradeSheetModel(ctx, LOCAL_PLAYER));
+    else if (this.sheetKind === 'gamble') (view as GambleSheetView).update(gambleSheetModel(ctx, this.match.world, LOCAL_PLAYER), slotView, this.summonModel(), this.gachaResult);
+    else if (this.sheetKind === 'summon') (view as SummonSheetView).update(this.summonModel(), this.gachaResult);
+    else if (this.sheetKind === 'mythic') (view as MythicSheetView).update(this.codexModel());
+    else if (this.sheetKind === 'mission') {
       (view as MissionSheetView).update(missionSheetModel(ctx, this.match.world, this.ctx.account.hiddenFound(), this.revealHidden()));
     } else if (this.sheetKind === 'dev') (view as DevSheetView).update(devChanceModel(ctx, this.ctx.data.game.devChances.list), this.recipeRows(), this.runLogRows, pastRuns());
   }
@@ -2862,6 +3029,94 @@ export class GameScene extends Phaser.Scene {
     if (!this.match.world.enqueue({ type: 'gamble', t }).ok) return 'stop';
     this.slots.set(t, { startMs: now, result: null, revealedMs: null, spinMs: off ? 0 : SLOT_SPIN_MS });
     return 'spun';
+  }
+
+  // ---------------------------------------------------------------- G-1 소환 도박 · 신화 · 필살기
+
+  /** [소환] 시트 모델 */
+  private summonModel(): SummonSheetModel {
+    const t = this.ctx.data.towers;
+    const factions = this.match.rules.factionOrder.map((id) => ({ id, name: shortFactionName(t.factions[id]?.name ?? id), color: t.factions[id]?.color ?? '#888888' }));
+    return summonSheetModel(this.match.ctx, this.match.world, LOCAL_PLAYER, factions, this.gachaFaction, this.ctx.data.game.summonGamble.kinds);
+  }
+
+  /** [신화] 도감 모델 */
+  private codexModel(): CodexSheetModel {
+    // G-3 계정 조각 수 → 잠긴 신화 줄 '🔒 해방 필요 (조각 n/20)'
+    const progress = this.ctx.progress;
+    const fragments = progress ? (id: string) => progress.fragmentsOf(id) : undefined;
+    return codexSheetModel(this.match.ctx, this.match.world, LOCAL_PLAYER, this.ctx.data.towers.towers, this.ctx.account.codexFound(), fragments);
+  }
+
+  /** 소환 도박 버튼 (꾹 누르면 연속): 미리 검사해 안 되면 알림 후 멈춤, 되면 gacha 명령. */
+  private playGacha(k: number): boolean {
+    if (this.paused || this.gameOver) return false;
+    if (this.gachaQueuedTick === this.match.tick) return true;
+    const kind = this.match.rules.gachaKinds[k];
+    if (!kind) return false;
+    const f = kind.faction ? this.gachaFaction : 0;
+    const fail = gachaCheck(this.match.ctx, this.match.world, LOCAL_PLAYER, k, f);
+    if (fail) {
+      const text = gachaFailText(fail, kind.cost - this.match.state.gold);
+      if (text) this.ctx.ui.toast(text);
+      return false;
+    }
+    if (!this.match.world.enqueue({ type: 'gacha', k, f }).ok) return false;
+    this.gachaQueuedTick = this.match.tick;
+    return true;
+  }
+
+  /** [제작]: 신화 조합 명령 */
+  private sendCraft(r: number): void {
+    if (this.paused || this.gameOver) return;
+    const plan = craftPlan(this.match.ctx, this.match.world, LOCAL_PLAYER, r);
+    if (!plan.ok) {
+      const text = craftFailText(plan.reason);
+      if (text) this.ctx.ui.toast(text);
+      return;
+    }
+    this.match.world.enqueue({ type: 'craft', r });
+  }
+
+  /** 필살기 발동 (HUD 목록·패널·자동). 같은 틱에 같은 타워는 한 번만. */
+  private castUltOf(id: number): void {
+    if (this.paused || this.gameOver) return;
+    if (this.ultSent.get(id) === this.match.tick) return;
+    if (ultCheck(this.match.ctx, this.match.world, LOCAL_PLAYER, id) !== null) return;
+    if (this.match.world.enqueue({ type: 'ult', id }).ok) this.ultSent.set(id, this.match.tick);
+  }
+
+  /** 매 프레임: HUD 필살기 칩·목록, '필살기 자동'이면 찬 것을 바로 보낸다, 메뉴 배지, 신화 발견 기록. */
+  private syncG1(): void {
+    const ctx = this.match.ctx;
+    const world = this.match.world;
+    const ready = readyUlts(ctx, world, LOCAL_PLAYER);
+    if (!this.paused && !this.gameOver && this.ctx.settings.get().ultAuto) for (const t of ready) this.castUltOf(t.id);
+    const kinds = this.ctx.data.game.ultimate.kinds;
+    this.hud.setUlts(
+      ready.map((t) => {
+        const k = ultKindOf(ctx, t.tower) ?? 'nuke';
+        return { id: t.id, name: this.towerNames.get(t.tower) ?? t.tower, icon: kinds[k].icon, ultName: kinds[k].name };
+      }),
+    );
+    // 신화 발견 (사용자 규칙: 재료를 한꺼번에 가졌을 때). 치트를 쓸 수 있는 판은 계정에 남기지 않는다 (히든 미션과 같은 규칙)
+    if (!this.match.state.debug && !this.match.state.debugUsed && this.match.tick % 10 === 0) {
+      for (const id of newlyDiscovered(this.match.rules, ownedCounts(world, LOCAL_PLAYER), this.ctx.account.codexFound())) {
+        if (this.ctx.account.recordCodex(id)) this.ctx.ui.toast(craftReadyText(this.towerNames.get(id) ?? id), 2600);
+      }
+    }
+    if (this.match.tick % 5 === 0 || this.sheetKind === null) {
+      const codex = this.codexModel();
+      const pity = pityLeft(ctx, LOCAL_PLAYER, 0, this.match.rules.summonPityN);
+      const g = this.match.state.gamble[LOCAL_PLAYER];
+      this.hud.setG1Badges({
+        mythic: codex.ready > 0 ? `${codex.ready} 제작` : codex.summary.replace('발견 ', ''),
+        mythicAlert: codex.ready > 0,
+        summon: pity <= 0 ? '레어 확정!' : `천장 ${pity}`,
+        summonAlert: pity <= 0,
+        gamble: `잭팟 ${Math.min(g?.gauge ?? 0, this.match.rules.jackpotGauge)}/${this.match.rules.jackpotGauge}`,
+      });
+    }
   }
 
   /** 도전 [시작]: 미리 검사해 안 되면 알림, 되면 명령. 시작하면 시트를 닫아 맵을 보여 준다. */

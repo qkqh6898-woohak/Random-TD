@@ -27,7 +27,7 @@ import { ownerBonus } from '../abilities';
 import { chanceBonus, chanceValue } from '../chances';
 
 /** 소환 실패 이유: 판이 끝남 / 배치 칸이 아님 / 이미 타워가 있음 / 배치 칸이 가득 참 / 돈 부족 */
-export type SummonFail = 'phase' | 'notBuildable' | 'occupied' | 'full' | 'gold';
+export type SummonFail = 'phase' | 'notBuildable' | 'occupied' | 'full' | 'gold' | 'cap';
 
 /** 판 위 타워 수. */
 export function towerCount(world: World): number {

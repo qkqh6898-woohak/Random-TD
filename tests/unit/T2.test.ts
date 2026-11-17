@@ -16,7 +16,7 @@ import { computeAuras, towerBonus } from '../../src/sim/systems/Aura';
 import { playReplay, recordReplay, replayToJson } from '../../src/sim/replay';
 import { MISSION_OPEN } from '../../src/sim/state';
 import type { Match } from '../../src/sim/match';
-import { arena, command, data, eventsOf, infinite } from '../helpers/match';
+import { arena, arenaData, command, data, eventsOf, infinite } from '../helpers/match';
 
 const rules = buildMatchRules(data);
 const idsOf = (grade: string): string[] => data.towers.towers.filter((t) => t.grade === grade).map((t) => t.id);
@@ -296,9 +296,9 @@ describe('debugSetChance 명령 (개발자 확률 조정)', () => {
     m.stepN(40);
     command(m, { type: 'sellTower', x, y });
     m.stepN(20);
-    const file = recordReplay(data, m, { name: 't2-roundtrip' });
+    const file = recordReplay(arenaData, m, { name: 't2-roundtrip' });
     const back = JSON.parse(replayToJson(file));
-    const r = playReplay(data, back);
+    const r = playReplay(arenaData, back);
     expect(r.mismatch).toBeNull();
     expect(r.hash).toBe(m.hash());
     expect(r.match.state.chanceOv).toEqual({ 'gamble:4': 1000, critBonus: 500 });

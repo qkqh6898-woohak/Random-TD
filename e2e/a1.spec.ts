@@ -67,8 +67,9 @@ async function placeThreeMiners(page: Page): Promise<void> {
       m.state.debug = true;
       const t = m.rules.towerOrder.indexOf('miner');
       const used = new Set(m.towers().map((k) => `${k.tx},${k.ty}`));
-      const free = m.map.buildable.filter(([x, y]) => !used.has(`${x},${y}`)).slice(0, 3);
-      for (const [x, y] of free) m.world.enqueue({ type: 'debugTower', x, y, t });
+      // G-1 칸 무더기: 빈 칸 하나에 광부 3개 (3개가 쌓인 칸이 승급한다)
+      const free = m.map.buildable.filter(([x, y]) => !used.has(`${x},${y}`)).slice(0, 1);
+      for (const [x, y] of [...free, ...free, ...free]) m.world.enqueue({ type: 'debugTower', x, y, t });
       s.debugFastForward(1);
       m.state.debug = was;
     },
@@ -91,7 +92,7 @@ test.describe('A-1 자동 저장·이어 하기', () => {
     await page.getByRole('button', { name: '배속' }).click();
     await expect(page.getByRole('button', { name: '배속' })).toHaveText(/2/);
     await page.getByTestId('hud-ready').click();
-    await expect(page.getByTestId('hud-stage')).toHaveText('1단계');
+    await expect(page.getByTestId('hud-stage')).toHaveText('WAVE 1');
 
     // 앱이 백그라운드로 (안드로이드 GameActivity.onPause → 이 사건)
     await page.evaluate(() => window.dispatchEvent(new Event('randomtd:native-pause')));
@@ -123,7 +124,7 @@ test.describe('A-1 자동 저장·이어 하기', () => {
     expect(after.workers).toBe(1);
     expect(after.towers).toBe(before.towers);
     expect(after.tick).toBeGreaterThanOrEqual(before.tick);
-    await expect(page.getByTestId('hud-stage')).toHaveText('1단계');
+    await expect(page.getByTestId('hud-stage')).toHaveText('WAVE 1');
     await expect(page.getByRole('button', { name: '배속' })).toHaveText(/2/);
 
     // ⏸ → [타이틀로] → [이어 하기] 그대로 → [새 게임] → [새 게임 시작] → 새 판
@@ -409,14 +410,16 @@ test.describe('A-1 화면 흔들림·소환 연출', () => {
         const m = s.match;
         m.state.gold += 100000;
         const used = new Set(m.towers().map((k) => `${k.tx},${k.ty}`));
-        const free = m.map.buildable.filter(([x, y]) => !used.has(`${x},${y}`)).slice(0, 20);
+        // G-1 마당 맵(24칸): 남은 빈 칸 모두 (12칸 이상)
+        const free = m.map.buildable.filter(([x, y]) => !used.has(`${x},${y}`));
         for (const [x, y] of free) m.world.enqueue({ type: 'summon', x, y });
-        return free.length;
+        return { free: free.length, pads: m.map.buildable.length };
       },
       null,
     );
-    expect(queued).toBe(20);
-    await expect(page.getByTestId('hud-towers')).toHaveText(/^23\//);
+    expect(queued.free).toBeGreaterThanOrEqual(12);
+    // 예전 칸 지정 summon 명령(리플레이용)은 인원 한도를 보지 않아 모든 칸이 찬다
+    await expect(page.getByTestId('hud-towers')).toHaveText(new RegExp(`^${queued.pads}/`));
     expect((await inScene(page, (s) => s.summonFxStats, null)).peak).toBe(12);
 
     // 뒤로 가기: 열린 타워 패널(승급 결과) → 닫힘, 강화 시트 → 닫힘, 그다음 일시정지 → 계속

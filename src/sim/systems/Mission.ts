@@ -234,6 +234,7 @@ export function installMissionTracker(ctx: MatchContext, world: World): System {
   world.on('mergePicked', markTowers);
   world.on('sell', markTowers);
   world.on('convert', markTowers);
+  world.on('craft', markTowers);
   // 방치: 마지막 플레이어 명령 틱 (noop 제외 — 락스텝 빈 명령은 조작이 아니다)
   world.setBeforeCommand((w: World, cmd: Command) => {
     if (cmd.type !== 'noop') state.lastActTick = w.tick;
