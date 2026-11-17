@@ -154,6 +154,30 @@ test('각성 53종: 합친 그림(오라·입자 빼고)이 기본 그림과 4% 
   expect(weak).toEqual([]);
 });
 
+test('갤러리 🖼 그림 (G 통합): 타워·적(보스 포함)·인물이 바깥 그림(WebP)으로, 끄면 절차 그림', async ({ page }) => {
+  const errors = collectErrors(page);
+  await openGallery(page, '&play=0');
+  const stats = () => page.evaluate(() => (window as unknown as { __gallery: { artStats: { listed: number; loaded: number } } }).__gallery.artStats);
+  await expect.poll(async () => (await stats()).loaded, { timeout: 30_000 }).toBe(159);
+  expect((await stats()).listed).toBe(159);
+  await expect(page.getByTestId('gallery-art')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-testid="gallery-card"][data-art="webp"]')).toHaveCount(65);
+  await page.getByTestId('gallery-awaken').click();
+  await expect(page.locator('[data-testid="gallery-card"][data-art="webp"]')).toHaveCount(65);
+  await page.getByTestId('gallery-tab-enemies').click();
+  // 하수인 13 + 대장·4천왕·군주 19 = 32 모두
+  await expect(page.locator('[data-testid="gallery-card"][data-art="webp"]')).toHaveCount(32);
+  await page.getByTestId('gallery-tab-people').click();
+  await expect(page.locator('[data-testid="gallery-card"][data-art="webp"]')).toHaveCount(9);
+  // 표정을 바꾸면 그 인물만 절차 그림 (WebP는 보통 표정 한 장)
+  await cards(page).first().click();
+  await expect(page.locator('[data-testid="gallery-card"][data-art="webp"]')).toHaveCount(8);
+  await page.getByTestId('gallery-art').click();
+  await expect(page.getByTestId('gallery-art')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('[data-testid="gallery-card"][data-art="procedural"]')).toHaveCount(9);
+  expect(errors).toEqual([]);
+});
+
 test('갤러리 휴대폰 412×915: 세로로 스크롤되고 가로로 넘치지 않는다', async ({ page }) => {
   await openGallery(page);
   const m = await page.getByTestId('gallery').evaluate((el) => ({ sh: el.scrollHeight, ch: el.clientHeight, sw: el.scrollWidth, cw: el.clientWidth }));

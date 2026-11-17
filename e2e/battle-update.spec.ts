@@ -93,7 +93,7 @@ test('×16 프레임 초반 치명타도 큰 주황 숫자와 짧은 타격 효�
   await page.screenshot({ path: 'docs/screens/battle-update-critical.png' });
 });
 
-test('SD 일꾼과 보스 그림: 휴대폰 캡처, 보스는 기존 외부 그림 대신 SD 텍스처', async ({ page }) => {
+test('SD 일꾼과 보스 그림: 휴대폰 캡처, 보스는 바깥 그림(WebP) 우선 · 파일이 없으면 SD 텍스처', async ({ page }) => {
   await start(page);
   await expect(page.locator('.hud-hire .hud-worker-art')).toBeVisible();
   const src = await page.locator('.hud-hire .hud-worker-art').getAttribute('src');
@@ -107,10 +107,17 @@ test('SD 일꾼과 보스 그림: 휴대폰 캡처, 보스는 기존 외부 그�
     const { allLooks, isEnemyLook } = await import(looksPath) as typeof import('../src/art/characters/looks');
     const w = window as unknown as { __rtd: { game: { scene: { getScene(id: string): GameScene } } } };
     const s = w.__rtd.game.scene.getScene('Game');
-    return allLooks().filter(isEnemyLook).filter((x) => x.rank !== 'minion').map((x) => enemyCharacterTexture(s, x.id, 0xb36bff)!.key);
+    const ids = allLooks().filter(isEnemyLook).filter((x) => x.rank !== 'minion').map((x) => x.id);
+    const withArt = ids.map((id) => enemyCharacterTexture(s, id, 0xb36bff)!.key);
+    // 바깥 그림이 없는 경우(파일 누락)를 흉내: 한 보스의 WebP 텍스처를 지우면 SD 절차 그림으로 돌아간다
+    s.textures.remove(`ext-char-enemy-${ids[0]}`);
+    const fallback = enemyCharacterTexture(s, ids[0]!, 0xb36bff)!.key;
+    return { ids, withArt, fallback };
   });
-  expect(keys).toHaveLength(19);
-  expect(keys.every((k) => k.startsWith('char-enemy-'))).toBe(true);
+  // G 통합: 통통한 캐주얼 WebP 32장에 보스 19종도 들어 있어 보스도 바깥 그림을 쓴다 (예전: 보스는 늘 SD 텍스처)
+  expect(keys.withArt).toHaveLength(19);
+  expect(keys.withArt).toEqual(keys.ids.map((id) => `ext-char-enemy-${id}`));
+  expect(keys.fallback.startsWith('char-enemy-')).toBe(true);
   await page.goto('/?gallery=1&tab=enemies&play=0');
   await expect(page.locator('canvas').first()).toBeVisible();
   await page.evaluate(async () => {

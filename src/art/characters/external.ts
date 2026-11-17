@@ -31,6 +31,13 @@ export function parseExternalEntry(entry: string): { group: LookGroup; id: strin
   return { group: (m[1] as LookGroup | undefined) ?? 'tower', id: m[2] as string, awakened: m[3] !== undefined };
 }
 
+/** 매니페스트 → 바깥 그림 항목 (순수: 잘못된 항목·형식은 건너뜀) */
+export function externalEntries(manifest: unknown): NonNullable<ReturnType<typeof parseExternalEntry>>[] {
+  const list = (manifest as Partial<ExternalArtManifest> | null | undefined)?.characters;
+  if (!Array.isArray(list)) return [];
+  return list.map((e) => (typeof e === 'string' ? parseExternalEntry(e) : null)).filter((e): e is NonNullable<typeof e> => e !== null);
+}
+
 /** 바깥 그림의 높이 (그림 단위, 크기 배수 1일 때): 절차 그림의 발밑~별 높이와 비슷하게. 실제 크기는 캐릭터별 배수(looks scale)를 곱한다 */
 export const EXTERNAL_FIGURE_UNITS = 230;
 /**
@@ -41,6 +48,11 @@ export const EXTERNAL_FIGURE_MAX_W = 400;
 
 /** 바깥 적 그림 크기 배수 (몹 지름 대비) */
 export const EXTERNAL_ENEMY_SCALE = 1.5;
+/**
+ * 바깥 보스(대장·4천왕·군주) 그림 크기 배수 (G 통합): 보스 지름은 이미 1.35칸 안팎이라 하수인 배수(1.5)를 쓰면 2칸 너비로 맵 밖까지 넘친다
+ * → 지름의 1.1배 (SD 절차 보스와 비슷한 크기).
+ */
+export const EXTERNAL_BOSS_SCALE = 1.1;
 
 /** 바깥 그림 배율 (순수): 높이를 맞추되 너비가 상한을 넘치면 상한에 맞춘다 */
 export function externalFigureScale(w: number, h: number, units = EXTERNAL_FIGURE_UNITS, maxW = EXTERNAL_FIGURE_MAX_W): number {

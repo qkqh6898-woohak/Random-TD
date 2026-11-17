@@ -36,12 +36,21 @@
   font-size: 17px;
   font-weight: 800;
   letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
+/* G 통합: [🖼 그림] 토글이 더해져 좁은 화면에서는 개수 글자를 줄임표로 (제목은 한 줄) */
 .gal-count {
   font-size: 12px;
   color: #c9c3b4;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gal-toggle {
+  flex: none;
 }
 
 .gal-spacer {

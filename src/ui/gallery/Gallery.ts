@@ -6,7 +6,9 @@
  * - 대기 동작 재생/멈춤: 게임과 같은 자세 계산(towerPose + idleParts + compose)을 쓴다 → 게임에서도 같은 동작.
  * - 인물 카드를 누르면 표정(보통 → 화남 → 웃음)이 바뀐다.
  * - 휴대폰 412×915에서 세로로 스크롤. 기존 게임 흐름과 무관 (main.ts가 ?gallery=1일 때만 이 화면을 띄우고 Phaser를 만들지 않는다).
- * - 쿼리로 처음 상태를 정할 수 있다 (스크린샷용): tab=towers|enemies|people, filter=all|nr|uh|lgh, awaken=1, play=0.
+ * - 🖼 그림 토글 (G 통합, 기본 켜짐): 바깥 그림(통통한 캐주얼 WebP, assets/characters)이 있으면 그것을 같은 대기 몸동작으로 그리고,
+ *   그림이 아직 안 받아졌거나 없으면 절차 그림. 끄면 절차 그림만 (파츠 확인용). 인물은 WebP가 '보통' 표정 한 장뿐이라 다른 표정은 절차 그림.
+ * - 쿼리로 처음 상태를 정할 수 있다 (스크린샷용): tab=towers|enemies|people, filter=all|nr|uh|lgh, awaken=1, play=0, art=0.
  */
 import './gallery.css';
 import { ensureEnemyTexture, ensureHumanTexture, ensurePortraitTexture, type HumanTexture } from '../../art/characters/cache';
@@ -16,6 +18,8 @@ import { fxOf } from '../../art/characters/draw';
 import { IDLE_PRESETS, idleParts } from '../../art/characters/idle';
 import { allLooks, hasAwaken, isEnemyLook, type EnemyLook, type HumanLook } from '../../art/characters/looks';
 import { EXPRESSIONS, type Expression } from '../../art/characters/portraits';
+import { externalFigureScale } from '../../art/characters/external';
+import { ExternalImages } from '../../art/characters/externalDom';
 import { ENEMY_BOX, PORTRAIT_BOX } from '../../art/characters/rig';
 import { GRADE_COLORS } from '../../art/palette';
 import type { Grade } from '../../data/load';
@@ -48,6 +52,8 @@ export interface GalleryOptions {
   filter?: TowerFilter;
   awaken?: boolean;
   play?: boolean;
+  /** 바깥 그림(WebP) 우선 (기본 true) */
+  art?: boolean;
   legionColor: (legion: string) => string;
 }
 
@@ -58,7 +64,7 @@ interface Card {
   visible: boolean;
 }
 
-export function readGalleryOptions(search: string): { enabled: boolean; tab?: GalleryTab; filter?: TowerFilter; awaken?: boolean; play?: boolean } {
+export function readGalleryOptions(search: string): { enabled: boolean; tab?: GalleryTab; filter?: TowerFilter; awaken?: boolean; play?: boolean; art?: boolean } {
   const p = new URLSearchParams(search);
   const tab = p.get('tab');
   const filter = p.get('filter');
@@ -68,6 +74,7 @@ export function readGalleryOptions(search: string): { enabled: boolean; tab?: Ga
     filter: filter === 'all' || filter === 'nr' || filter === 'uh' || filter === 'lgh' ? filter : undefined,
     awaken: p.get('awaken') === '1' ? true : undefined,
     play: p.get('play') === '0' ? false : undefined,
+    art: p.get('art') === '0' ? false : undefined,
   };
 }
 
@@ -77,6 +84,9 @@ export class Gallery {
   private filter: TowerFilter;
   private awaken: boolean;
   private play: boolean;
+  private art: boolean;
+  private readonly ext: ExternalImages;
+  private redrawQueued = false;
   private readonly store = new DomTextureStore();
   private readonly grid: HTMLElement;
   private readonly countEl: HTMLElement;
@@ -93,6 +103,17 @@ export class Gallery {
     this.filter = opts.filter ?? 'all';
     this.awaken = opts.awaken ?? false;
     this.play = opts.play ?? true;
+    this.art = opts.art ?? true;
+    // 바깥 그림이 한 장씩 받아질 때마다 (한 프레임에 한 번) 모두 다시 그린다
+    this.ext = new ExternalImages(() => {
+      if (this.redrawQueued) return;
+      this.redrawQueued = true;
+      requestAnimationFrame(() => {
+        this.redrawQueued = false;
+        this.drawAll(false);
+      });
+    });
+    void this.ext.start();
     this.dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
     this.countEl = h('span', { class: 'gal-count', attrs: { 'data-testid': 'gallery-count' } });
     const awakenBtn = h('button', { class: 'gal-toggle', attrs: { 'data-testid': 'gallery-awaken', 'aria-pressed': String(this.awaken), type: 'button' }, text: '✨ 각성' });
@@ -108,6 +129,12 @@ export class Gallery {
       playBtn.setAttribute('aria-pressed', String(this.play));
       playBtn.textContent = this.play ? '⏸ 동작' : '▶ 동작';
       this.drawAll();
+    });
+    const artBtn = h('button', { class: 'gal-toggle', attrs: { 'data-testid': 'gallery-art', 'aria-pressed': String(this.art), type: 'button' }, text: '🖼 그림' });
+    artBtn.addEventListener('click', () => {
+      this.art = !this.art;
+      artBtn.setAttribute('aria-pressed', String(this.art));
+      this.drawAll(false);
     });
     const tabs = h('div', { class: 'gal-tabs', attrs: { role: 'tablist' } });
     for (const [id, label] of [
@@ -137,7 +164,7 @@ export class Gallery {
     const header = h(
       'header',
       { class: 'gal-header' },
-      h('div', { class: 'gal-top' }, h('h1', { class: 'gal-title', text: '캐릭터 갤러리' }), this.countEl, h('span', { class: 'gal-spacer' }), awakenBtn, playBtn),
+      h('div', { class: 'gal-top' }, h('h1', { class: 'gal-title', text: '캐릭터 갤러리' }), this.countEl, h('span', { class: 'gal-spacer' }), artBtn, awakenBtn, playBtn),
       tabs,
       this.filterRow,
     );
@@ -160,6 +187,16 @@ export class Gallery {
 
   private now(): number {
     return performance.now() - this.t0;
+  }
+
+  /** 바깥 그림: 목록 수 · 받은 수 (E2E) */
+  get artStats(): { listed: number; loaded: number } {
+    return { listed: this.ext.listed, loaded: this.ext.loaded };
+  }
+
+  /** 바깥 그림 (그림 토글이 꺼져 있으면 null) */
+  private extImage(group: 'tower' | 'enemy' | 'person', id: string, awakened: boolean): HTMLImageElement | null {
+    return this.art ? this.ext.get(group, id, awakened) : null;
   }
 
   /** 지금 그리드의 카드 수 (E2E) */
@@ -241,6 +278,7 @@ export class Gallery {
     const seed = Math.random();
     const ctx = canvas.getContext('2d');
     const grade = base.grade as Grade;
+    let el: HTMLElement | null = null;
     const draw = (t: number): void => {
       if (!ctx) return;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -248,6 +286,21 @@ export class Gallery {
       ctx.setTransform(scale, 0, 0, scale, -TOWER_VIEW.left * scale, -TOWER_VIEW.top * scale);
       drawPedestal2D(ctx, GRADE_COLORS[grade], grade);
       const pose = towerPose({ timeMs: t, seed, attackAtMs: null, attackMs: 250, appearAtMs: null, gesture: preset.gesture, gestureMs: preset.gestureMs });
+      const ext = this.extImage('tower', base.id, awakened);
+      if (el) el.dataset.art = ext ? 'webp' : 'procedural';
+      if (ext) {
+        // 바깥 그림: 발밑 = 그림 아래 가운데 (게임 CharacterFigure와 같은 배율), 대기 몸동작만
+        const k = externalFigureScale(ext.naturalWidth, ext.naturalHeight);
+        ctx.save();
+        if (this.play) {
+          ctx.translate(pose.dx * TILE_UNITS, pose.bob * TILE_UNITS);
+          ctx.rotate(pose.angle + pose.sway);
+          ctx.scale(pose.sx, pose.sy);
+        }
+        ctx.drawImage(ext, (-ext.naturalWidth * k) / 2, -ext.naturalHeight * k, ext.naturalWidth * k, ext.naturalHeight * k);
+        ctx.restore();
+        return;
+      }
       const idle = idleParts({ preset, gesture: pose.gesture, attack: 0, timeMs: t, seed, body: look.body, prop: look.prop, back: look.back, pet: look.pet, fx: fxOf(look), grade: look.grade, play: this.play });
       const comp = compose(tex.render, idle, t, seed);
       ctx.save();
@@ -259,7 +312,7 @@ export class Gallery {
       drawComposition(ctx, this.store, tex, comp);
       ctx.restore();
     };
-    const el = h(
+    el = h(
       'figure',
       { class: 'gal-card', attrs: { 'data-testid': 'gallery-card', 'data-id': base.id, 'data-kind': 'tower', 'data-awakened': String(awakened), title: `${base.name} — ${preset.label}` } },
       canvas,
@@ -279,8 +332,11 @@ export class Gallery {
     const motion: MobMotion = look.motion;
     const phase = Math.random() * Math.PI * 2;
     const ctx = canvas.getContext('2d');
+    let el: HTMLElement | null = null;
     const draw = (t: number): void => {
       if (!ctx || !img) return;
+      const ext = this.extImage('enemy', look.id, false);
+      if (el) el.dataset.art = ext ? 'webp' : 'procedural';
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
@@ -292,9 +348,13 @@ export class Gallery {
       ctx.translate(64, 79 + p.bob * 9);
       ctx.rotate(p.angle);
       ctx.scale(p.sx, p.sy);
-      ctx.drawImage(img.canvas, -64, -79, ENEMY_BOX, ENEMY_BOX);
+      if (ext) {
+        // 바깥 그림: 너비 92%·높이 88% 안에 맞추고 발밑을 그림자(아래 112) 조금 아래에 (위가 잘리지 않게)
+        const k = Math.min((ENEMY_BOX * 0.92) / Math.max(1, ext.naturalWidth), (ENEMY_BOX * 0.88) / Math.max(1, ext.naturalHeight));
+        ctx.drawImage(ext, (-ext.naturalWidth * k) / 2, 116 - 79 - ext.naturalHeight * k, ext.naturalWidth * k, ext.naturalHeight * k);
+      } else ctx.drawImage(img.canvas, -64, -79, ENEMY_BOX, ENEMY_BOX);
     };
-    const el = h(
+    el = h(
       'figure',
       { class: 'gal-card gal-enemy', attrs: { 'data-testid': 'gallery-card', 'data-id': look.id, 'data-kind': look.kind } },
       canvas,
@@ -312,19 +372,29 @@ export class Gallery {
     const ctx = canvas.getContext('2d');
     const caption = h('figcaption', { class: 'gal-name gal-person-name' }, look.name);
     const exLabel = h('span', { class: 'gal-expr', text: EXPR_KO[ex] });
+    let el: HTMLElement | null = null;
     const draw = (t: number): void => {
       if (!ctx) return;
-      const tex = ensurePortraitTexture(this.store, look, ex, Math.min(2, scale * 1.1));
-      const img = this.store.get(tex.key);
-      if (!img) return;
+      // 바깥 그림은 '보통' 표정 한 장 → 다른 표정은 절차 그림
+      const ext = ex === 'normal' ? this.extImage('person', look.id, false) : null;
+      if (el) el.dataset.art = ext ? 'webp' : 'procedural';
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       // 대화 초상은 숨쉬기만 (세로 1.5%)
       const b = this.play ? 0.5 - 0.5 * Math.cos((t / 1500) * Math.PI * 2) : 0;
       ctx.setTransform(scale, 0, 0, scale * (1 + 0.015 * b), 0, -canvas.height * 0.015 * b);
+      if (ext) {
+        // 상자에 맞춰 (가로세로 비율 유지), 아래 가운데 정렬
+        const k = Math.min(PORTRAIT_BOX.width / Math.max(1, ext.naturalWidth), PORTRAIT_BOX.height / Math.max(1, ext.naturalHeight));
+        ctx.drawImage(ext, (PORTRAIT_BOX.width - ext.naturalWidth * k) / 2, PORTRAIT_BOX.height - ext.naturalHeight * k, ext.naturalWidth * k, ext.naturalHeight * k);
+        return;
+      }
+      const tex = ensurePortraitTexture(this.store, look, ex, Math.min(2, scale * 1.1));
+      const img = this.store.get(tex.key);
+      if (!img) return;
       ctx.drawImage(img.canvas, 0, 0, PORTRAIT_BOX.width, PORTRAIT_BOX.height);
     };
-    const el = h('figure', { class: 'gal-card gal-person', attrs: { 'data-testid': 'gallery-card', 'data-id': look.id, 'data-kind': look.kind, role: 'button', tabindex: '0' } }, canvas, caption, exLabel);
+    el = h('figure', { class: 'gal-card gal-person', attrs: { 'data-testid': 'gallery-card', 'data-id': look.id, 'data-kind': look.kind, role: 'button', tabindex: '0' } }, canvas, caption, exLabel);
     el.addEventListener('click', () => {
       ex = EXPRESSIONS[(EXPRESSIONS.indexOf(ex) + 1) % EXPRESSIONS.length] as Expression;
       exLabel.textContent = EXPR_KO[ex];

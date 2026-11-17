@@ -4022,6 +4022,12 @@ body {
 .hud-side-r {
   justify-content: flex-end;
 }
+/* G 통합: 개발자 판 왼쪽 [×1][⏭][💰+] 세 칩이 '👑 WAVE 10' 아래로 깔리던 것 — 양옆 칸이 칩 너비 아래로 줄지 않게
+   (넓으면 가운데가 살짝 옆으로 밀릴 뿐, 높이·한 줄은 그대로) */
+.hud-top-row > .hud-side-l,
+.hud-top-row > .hud-side-r {
+  min-width: min-content;
+}
 .hud-wave {
   display: flex;
   flex-direction: column;

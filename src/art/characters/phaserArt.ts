@@ -13,17 +13,19 @@ import { auraColorOf, auraOf, fxOf } from './draw';
 import { fxCount } from './idle';
 import { enemyLook, type HumanLook } from './looks';
 import type { MobMotion } from '../../view/render/mobPose';
-import { EXTERNAL_ART_MANIFEST, EXTERNAL_ENEMY_SCALE, externalArtKey, externalArtUrl, externalFigureScale, parseExternalEntry, type ExternalArtManifest } from './external';
+import { EXTERNAL_ART_MANIFEST, EXTERNAL_BOSS_SCALE, EXTERNAL_ENEMY_SCALE, externalArtKey, externalArtUrl, externalEntries, externalFigureScale } from './external';
 import { assetUrl, currentAssetTable, embeddedAssetJson } from '../../assets';
 
 export {
   EXTERNAL_ART_DIR,
   EXTERNAL_ART_MANIFEST,
+  EXTERNAL_BOSS_SCALE,
   EXTERNAL_ENEMY_SCALE,
   EXTERNAL_FIGURE_MAX_W,
   EXTERNAL_FIGURE_UNITS,
   externalArtKey,
   externalArtUrl,
+  externalEntries,
   externalFigureScale,
   parseExternalEntry,
   type ExternalArtManifest,
@@ -94,13 +96,6 @@ export function textureStore(scene: Phaser.Scene): PhaserTextureStore {
 // ---------------------------------------------------------------------------
 // 바깥 그림 연결 지점 (힉스필드 등으로 그린 그림이 생기면 그림 우선)
 // ---------------------------------------------------------------------------
-
-/** 매니페스트 → 바깥 그림 항목 (순수: 잘못된 항목·형식은 건너뜀) */
-export function externalEntries(manifest: unknown): NonNullable<ReturnType<typeof parseExternalEntry>>[] {
-  const list = (manifest as Partial<ExternalArtManifest> | null | undefined)?.characters;
-  if (!Array.isArray(list)) return [];
-  return list.map((e) => (typeof e === 'string' ? parseExternalEntry(e) : null)).filter((e): e is NonNullable<typeof e> => e !== null);
-}
 
 /** Phaser 캐시의 매니페스트 키 */
 const EXTERNAL_MANIFEST_KEY = 'ext-char-manifest';
@@ -339,19 +334,20 @@ export function intToHex(n: number): string {
   return `#${(n & 0xffffff).toString(16).padStart(6, '0')}`;
 }
 
-/** 적 텍스처: 외형 데이터가 있으면 새 그림 (없으면 null → 예전 art/mobs.ts 그림). */
+/** 적 텍스처: 외형 데이터가 있으면 새 그림 — 바깥 그림(WebP)이 있으면 그것, 없으면 SD 절차 그림 (외형 데이터가 없으면 null → 예전 art/mobs.ts 그림). */
 export function enemyCharacterTexture(scene: Phaser.Scene, mobId: string, legionColor: number): { key: string; size: number; motion: MobMotion } | null {
   const look = enemyLook(mobId);
   if (!look) return null;
   const ext = externalArtKey('enemy', mobId, false);
   // 데이터 움직임 그대로 (walk·flap·float·slither — mobPose가 모두 그린다)
   const motion: MobMotion = look.motion;
-  if (look.rank === 'minion' && scene.textures.exists(ext)) {
-    // 보스는 SD 절차 그림을 사용한다. 하수인은 기존 바깥 그림 우선.
+  if (scene.textures.exists(ext)) {
+    // G 통합: 하수인·대장·4천왕·군주 모두 바깥 그림(통통한 캐주얼 WebP) 우선, 파일이 없으면 아래 SD 절차 그림.
     // 바깥 그림은 캐릭터 경계로 잘려 정사각형이 아니다 → 긴 변을 크기로 (몹 지름에 맞춤)
     const img = scene.textures.get(ext).getSourceImage() as { width: number; height: number };
-    // 몸 전체 그림은 둥근 절차 몹보다 같은 지름에서 작아 보인다 → EXTERNAL_ENEMY_SCALE배로
-    return { key: ext, size: (Math.max(img.width, img.height) || 128) / EXTERNAL_ENEMY_SCALE, motion };
+    // 몸 전체 그림은 둥근 절차 몹보다 같은 지름에서 작아 보인다 → EXTERNAL_ENEMY_SCALE배로 (보스는 이미 커서 EXTERNAL_BOSS_SCALE배)
+    const mul = look.rank === 'minion' ? EXTERNAL_ENEMY_SCALE : EXTERNAL_BOSS_SCALE;
+    return { key: ext, size: (Math.max(img.width, img.height) || 128) / mul, motion };
   }
   const t = ensureEnemyTexture(textureStore(scene), look, intToHex(legionColor));
   return { key: t.key, size: t.size, motion };
