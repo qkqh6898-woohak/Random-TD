@@ -2122,7 +2122,9 @@ export class GameScene extends Phaser.Scene {
           // 단계 이자 (피드백 #10): 돈 글자 옆 +n원 + 알림
           if (eventFxVisible('action', ev.tick, now, frameStart)) {
             this.hud.gainGold(Number(ev.amount));
-            this.ctx.ui.toast(stageInterestText(Number(ev.amount), this.match.rules.interestPer, this.match.rules.interestAmount));
+            this.ctx.ui.toast(
+              stageInterestText(Number(ev.amount), this.match.rules.interestPer, this.match.rules.interestAmount, this.match.rules.interestMax),
+            );
           }
           this.noteFx('stageInterest');
           break;

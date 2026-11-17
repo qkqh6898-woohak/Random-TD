@@ -4,17 +4,19 @@
  */
 import { describe, expect, it } from 'vitest';
 import { stageInterest } from '../../src/sim/systems/Stage';
+import { stageInterestText } from '../../src/ui/messages';
 import { data, eventsOf, infinite, jumpToStage } from '../helpers/match';
 
 describe('단계 이자 (피드백 #10)', () => {
   it('수치는 game.json interest: 100원마다 10원', () => {
-    expect(data.game.interest).toEqual({ per: 100, amount: 10 });
+    expect(data.game.interest).toEqual({ per: 100, amount: 10, max: 100 });
     const m = infinite(1);
     expect(m.rules.interestPer).toBe(100);
     expect(m.rules.interestAmount).toBe(10);
+    expect(m.rules.interestMax).toBe(100);
   });
 
-  it('이자 = ⌊돈 ÷ 100⌋ × 10', () => {
+  it('이자 = min(⌊돈 ÷ 100⌋ × 10, 100) — 사용자 결정: 단계당 최대 100원', () => {
     const m = infinite(1);
     const at = (gold: number): number => stageInterest(m.ctx, gold);
     expect(at(0)).toBe(0);
@@ -23,6 +25,8 @@ describe('단계 이자 (피드백 #10)', () => {
     expect(at(199)).toBe(10);
     expect(at(1000)).toBe(100);
     expect(at(1059)).toBe(100);
+    expect(at(1100)).toBe(100);
+    expect(at(50000)).toBe(100);
   });
 
   it('준비 단계 → 1단계에는 이자가 없다', () => {
@@ -64,5 +68,19 @@ describe('단계 이자 (피드백 #10)', () => {
     m.state.goldPctBp = 5000;
     jumpToStage(m, 2);
     expect(m.state.gold).toBe(550);
+  });
+
+  it('상한: 돈 5,000원을 들고 넘어가도 +100원만 (500원 아님)', () => {
+    const m = infinite(1);
+    jumpToStage(m, 1);
+    m.world.drainEvents();
+    m.state.gold = 5000;
+    jumpToStage(m, 2);
+    expect(m.state.gold).toBe(5100);
+    expect(eventsOf(m, 'stageInterest')).toEqual([{ type: 'stageInterest', tick: m.tick - 1, stage: 1, amount: 100 }]);
+  });
+
+  it("알림 문구에 상한도 보인다: '💰 이자 +100원 (100원마다 10원 · 최대 100원)'", () => {
+    expect(stageInterestText(100, 100, 10, 100)).toBe('💰 이자 +100원 (100원마다 10원 · 최대 100원)');
   });
 });

@@ -565,6 +565,8 @@ export interface WorkerConfig {
 export interface InterestConfig {
   per: number;
   amount: number;
+  /** 한 번에 받는 이자 상한 (원, 사용자 결정 '단계당 최대 100원') */
+  max: number;
 }
 
 /** 기본 보스 (ENEMIES.md 4장, M4-5·M4-6). */
@@ -1493,6 +1495,7 @@ export const gameSchema: Schema = s.obj({
   interest: s.obj({
     per: s.int({ min: 1 }),
     amount: s.int({ min: 0 }),
+    max: s.int({ min: 0 }),
   }),
   boss: s.obj({
     reward: s.int({ min: 0 }),
