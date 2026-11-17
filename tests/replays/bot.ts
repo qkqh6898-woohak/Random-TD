@@ -5,6 +5,8 @@
  * - moveEvery틱마다: 가장 나중에 놓인 타워를 들어 올렸다가(hold on/off) 빈 칸으로 옮기거나 다른 타워와 교환.
  * - 처음에 debugTowers를 debug 명령으로 놓는다 (debug 판만).
  * - M4: workers까지는 돈이 되면 일꾼을 먼저 고용, pickCard가 있으면 보스 카드를 그 번호로 고른다 (1초마다 한 가지 행동).
+ * - G-1 stacks (옵션): 예전 summon·merge·move 대신 무더기 명령 summonAuto·mergeStack(연쇄)·moveStack, gacha [k, f, every]면 그 소환 도박,
+ *   필살기가 찬 타워가 있으면 ult, 신화 조합 재료가 모이면 craft.
  * - M5 (옵션이 있을 때만 — 예전 리플레이는 그대로): 받을 미션이 있으면 모두 받기, 도전이 비어 있으면 시작할 수 있는 가장 높은
  *   단계 시작, upgrades 순서대로 목표 레벨까지 강화, gamble.every틱마다 그 테이블 도박. debugGold면 처음에 돈을 더한다 (debug 판).
  */
@@ -18,6 +20,11 @@ import { challengeCheck } from '../../src/sim/systems/Challenge';
 import { gambleCheck } from '../../src/sim/systems/Gamble';
 import { missionsClaimable } from '../../src/sim/systems/Mission';
 import { upgradeCheck, upgradeLevel } from '../../src/sim/systems/Upgrade';
+import { fullStacks } from '../../src/sim/systems/Merge';
+import { summonStackCheck } from '../../src/sim/systems/Board';
+import { gachaCheck } from '../../src/sim/systems/Gacha';
+import { craftPlan } from '../../src/sim/systems/Craft';
+import { readyUlts } from '../../src/sim/systems/Ultimate';
 
 export interface BotOptions {
   /** 이 틱까지 (패배하면 그 전에 멈춤) */
@@ -44,6 +51,10 @@ export interface BotOptions {
   upgrades?: [number, number][];
   /** M5: every틱마다 테이블 t에 도박 (돈이 되면) */
   gamble?: { t: number; every: number };
+  /** G-1: 무더기 명령 (summonAuto·mergeStack·moveStack) + 필살기·신화 조합 */
+  stacks?: boolean;
+  /** G-1: every틱마다 소환 도박 k (종족 f) */
+  gacha?: { k: number; f: number; every: number };
 }
 
 /** M5 행동 하나 (없으면 null): 미션 받기 → 도전 → 강화 → 도박. */
@@ -59,6 +70,15 @@ function menuAction(match: Match, opts: BotOptions, t: number): Parameters<Match
     break; // 앞 강화를 살 돈이 모일 때까지 기다린다
   }
   if (opts.gamble && t % opts.gamble.every === 0 && gambleCheck(ctx, 0, opts.gamble.t) === null) return { type: 'gamble', t: opts.gamble.t };
+  if (opts.stacks) {
+    const ult = readyUlts(ctx, match.world, 0)[0];
+    if (ult) return { type: 'ult', id: ult.id };
+    const r = ctx.rules.recipes.findIndex((_, i) => craftPlan(ctx, match.world, 0, i).ok);
+    if (r >= 0) return { type: 'craft', r };
+  }
+  if (opts.gacha && t % opts.gacha.every === 0 && gachaCheck(ctx, match.world, 0, opts.gacha.k, opts.gacha.f) === null) {
+    return { type: 'gacha', k: opts.gacha.k, f: opts.gacha.f };
+  }
   return null;
 }
 
@@ -92,6 +112,10 @@ export function runBot(match: Match, opts: BotOptions): void {
         w.enqueue(menu);
       } else if (opts.workers && match.state.workers < opts.workers && hireCheck(match.ctx) === null) {
         w.enqueue({ type: 'hireWorker' });
+      } else if (opts.stacks) {
+        const full = fullStacks(match.ctx, w, 0)[0];
+        if (full) w.enqueue({ type: 'mergeStack', x: full[0]!.tx, y: full[0]!.ty });
+        else if (summonStackCheck(match.ctx, w, 0) === null) w.enqueue({ type: 'summonAuto' });
       } else if (g) {
         w.enqueue({ type: opts.allMerge ? 'mergeAll' : 'merge', x: g.first.tx, y: g.first.ty });
       } else {
@@ -110,7 +134,7 @@ export function runBot(match: Match, opts: BotOptions): void {
           w.enqueue({ type: 'hold', x: last.tx, y: last.ty, on: 1 });
           match.step();
           w.enqueue({ type: 'hold', x: last.tx, y: last.ty, on: 0 });
-          w.enqueue({ type: 'move', fx: last.tx, fy: last.ty, tx: dest[0] as number, ty: dest[1] as number });
+          w.enqueue({ type: opts.stacks ? 'moveStack' : 'move', fx: last.tx, fy: last.ty, tx: dest[0] as number, ty: dest[1] as number });
         }
       }
     }

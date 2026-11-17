@@ -391,7 +391,7 @@ for mid, m in MAPS.items():
     nb = sum(row.count("B") for row in tiles)
     if nb != m["buildableCount"]: errors.append(f"maps/{mid}.json buildableCount {m['buildableCount']} ≠ 실제 B {nb}")
     if m["mode"] == "stage" and m["turns"] < 5: errors.append(f"maps/{mid}.json 스테이지 맵 회전 {m['turns']}번 (5번 이상)")
-    if len(m["blocks"]) < 6: errors.append(f"maps/{mid}.json 블록 {len(m['blocks'])}개 (6개 이상)")
+    if len(m["blocks"]) < 5: errors.append(f"maps/{mid}.json 블록 {len(m['blocks'])}개 (5개 이상 — G-1 큰 칸)")
 
 def maplist_table():
     rows = ["| 맵 | 모드 | 크기 | 2×2 블록 | 배치 칸 | 경로 길이 | 회전 | 교차 |", "|------|------|------|------|------|------|------|------|"]

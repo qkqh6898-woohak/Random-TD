@@ -32,13 +32,13 @@ describe('무한 모드 한 판 (타워 없음)', () => {
 });
 
 describe('캠페인 테마 1 한 판 (타워 없음)', () => {
-  it('슬라임 20마리가 차례로 출구에 닿아 목숨 20 → 0, 틱 2936에 패배 (마지막 슬라임은 틱 2150에 나와 그 틱에 첫 걸음 → 사거리 미로 59칸 = 787걸음째 = 2150 + 786)', () => {
+  it('슬라임 20마리가 차례로 출구에 닿아 목숨 20 → 0, 틱 2616에 패배 (마지막 슬라임은 틱 2150에 나와 그 틱에 첫 걸음 → 사거리 미로 35칸(G-1) = 467걸음째 = 2150 + 466)', () => {
     const match = campaign(1, 7);
     runUntilDefeat(match);
     expect(match.state.defeatReason).toBe('lives');
     expect(match.state.leaked).toBe(20);
     expect(match.state.lives).toBe(0);
-    expect(match.state.defeatTick).toBe(2936);
+    expect(match.state.defeatTick).toBe(2616);
     expect(match.state.stage).toBe(2);
   });
 });

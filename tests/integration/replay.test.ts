@@ -16,19 +16,22 @@ const DIR = join(__dirname, '..', 'replays');
 const rules = buildMatchRules(data);
 const t = (id: string): number => rules.towerOrder.indexOf(id);
 
-/** 순환의 정원 v2(T-3 2×2 블록)의 고리 안쪽 블록 4개 = 16칸(모두 경로와 맞닿음, skip 제외)에 타워를 돌려 가며 놓는다 (debug). */
+/**
+ * 순환의 정원 v3(G-1 큰 칸)의 경로와 맞닿은 칸 12개(고리 안 블록 4 + 위·아래 블록의 고리 쪽 줄 8) + 네 귀퉁이 4칸 = 16칸에
+ * 타워를 돌려 가며 놓는다 (debug, skip 칸 제외). 나머지 4칸은 봇 소환용.
+ */
+const RING16: readonly [number, number][] = [
+  [2, 3], [3, 3], [2, 4], [3, 4],
+  [0, 1], [1, 1], [4, 1], [5, 1],
+  [0, 6], [1, 6], [4, 6], [5, 6],
+  [0, 0], [5, 0], [0, 7], [5, 7],
+];
 function innerRing(kinds: string[], skip: readonly [number, number][] = []): [number, number, number][] {
-  const cells = data.maps.circle!.blocks;
   const out: [number, number, number][] = [];
   let k = 0;
-  for (const name of ['안1', '안2', '안3', '안4']) {
-    const b = cells[name]!;
-    for (let y = b.y; y < b.y + b.h; y++) {
-      for (let x = b.x; x < b.x + b.w; x++) {
-        if (skip.some(([sx, sy]) => sx === x && sy === y)) continue;
-        out.push([x, y, t(kinds[k++ % kinds.length] as string)]);
-      }
-    }
+  for (const [x, y] of RING16) {
+    if (skip.some(([sx, sy]) => sx === x && sy === y)) continue;
+    out.push([x, y, t(kinds[k++ % kinds.length] as string)]);
   }
   return out;
 }
@@ -45,38 +48,35 @@ const allLv = (deck: Record<string, string[]>, lv: number): Record<string, numbe
 const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions }[] = [
   {
     name: 'r1-basic',
-    note: '무한 모드 기본 덱, 10단계 끝까지 소환·승급만 (DEV_PLAN 3.2 r1-basic)',
+    note: '무한 모드 기본 덱, 10단계 끝까지 소환·승급만 (DEV_PLAN 3.2 r1-basic) — G-1: 무더기 소환(summonAuto)·연쇄 승급(mergeStack)',
     match: { seed: 1, mode: 'infinite' },
-    bot: { endTick: 1200 + 10 * 1200 },
+    bot: { endTick: 1200 + 10 * 1200, stacks: true },
   },
   {
     name: 'r2-abilities',
-    note: '무한 모드 debug: 특색 16종 + 화염 마법사를 먼저 놓고 소환·모두 승급·이동·교환 15단계 (상태 이상·오라·웅덩이·병사·운석·행운의 여신)',
+    note: '무한 모드 debug: 특색 12종 + 화염 마법사를 먼저 놓고 (G-1 큰 칸 20칸 — 소환·승급 자리 7칸을 남김) 소환·모두 승급·이동·교환 15단계 (상태 이상·오라·웅덩이·병사·운석·행운의 여신)',
     match: { seed: 7, mode: 'infinite', debug: true },
     bot: {
       endTick: 1200 + 15 * 1200,
       allMerge: true,
       moveEvery: 900,
-      // T-3: 순환의 정원 v2 (7×11, 2×2 블록) 칸으로 옮김
+      // G-1: 순환의 정원 v3 (6×8, 큰 칸 20칸) 칸으로 옮김
       debugTowers: [
-        // 소환사는 몹이 나오는 곳(진행도 0 = (0,2)) 옆 → 병사가 경로를 거슬러 걸어 막 나온 몹과 만난다
-        [1, 3, t('summoner')],
-        [2, 3, t('icemage')],
-        [5, 3, t('flamemage')],
-        [1, 7, t('mudshaman')],
-        [4, 7, t('archmage')],
-        [5, 7, t('chronomancer')],
+        // 몹은 (0,2)에서 나와 윗줄 길을 먼저 지난다 → 맞아야 일하는 특색(웅덩이·빙결·병사·운석·시간 정지·주사위)을 윗줄 쪽에.
+        // 큰 칸 맵은 길이 짧아 몹이 고리 끝((0,5) 쪽)까지 거의 오지 않는다
+        [0, 1, t('mudshaman')],
+        [1, 1, t('icemage')],
+        [4, 1, t('summoner')],
+        [5, 1, t('flamemage')],
+        [2, 3, t('archmage')],
+        [3, 3, t('chronomancer')],
         [2, 4, t('blacksmith')],
-        [4, 4, t('scholar')],
-        [2, 6, t('warlord')],
-        [4, 6, t('dragoncaller')],
-        [5, 4, t('assassin')],
-        [1, 0, t('fortuna')],
+        [3, 4, t('scholar')],
+        [0, 0, t('gambler')],
+        [4, 0, t('fortuna')],
         [5, 0, t('alchemist')],
-        [1, 10, t('merchant')],
-        [2, 0, t('gambler')],
-        [4, 1, t('miner')],
-        [2, 1, t('berserker')],
+        [1, 6, t('dragoncaller')],
+        [4, 6, t('assassin')],
       ],
     },
   },
@@ -89,7 +89,7 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       theme: 1,
       levels: [Object.fromEntries(Object.values(data.decks.base).flat().map((id) => [id, 5]))],
     },
-    bot: { endTick: 1200 + 12 * 1200, moveEvery: 1500 },
+    bot: { endTick: 1200 + 12 * 1200, moveEvery: 1500, stacks: true },
   },
   {
     name: 'r3-invisible',
@@ -108,13 +108,13 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       pickCard: 1,
       workers: 3,
       debugTowers: [
-        [1, 1, t('mudshaman')],
+        [0, 1, t('mudshaman')],
         [5, 1, t('mudshaman')],
-        [1, 9, t('flamemage')],
-        [5, 9, t('flamemage')],
-        [2, 4, t('scout')],
-        [4, 6, t('scout')],
-        ...innerRing(['dragoncaller', 'archmage', 'warlord', 'fortuna'], [[2, 4], [4, 6]]),
+        [0, 6, t('flamemage')],
+        [5, 6, t('flamemage')],
+        [2, 3, t('scout')],
+        [3, 4, t('scout')],
+        ...innerRing(['dragoncaller', 'archmage', 'warlord', 'fortuna'], [[0, 1], [5, 1], [0, 6], [5, 6], [2, 3], [3, 4]]),
       ],
     },
   },
@@ -128,10 +128,10 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       debugGold: 200_000,
       upgrades: [[3, 50]],
       debugTowers: [
-        [1, 4, t('gunner')],
-        [1, 3, t('bard')],
-        [2, 4, t('drummer')],
-        [4, 4, t('warlord')],
+        [2, 4, t('gunner')],
+        [2, 3, t('bard')],
+        [3, 4, t('drummer')],
+        [3, 3, t('warlord')],
       ],
     },
   },
@@ -154,7 +154,30 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       ],
       gamble: { t: 1, every: 100 },
       pickCard: 0,
-      debugTowers: [[1, 1, t('celestial')], [4, 9, t('celestial')], ...innerRing(['infiniteblade', 'warlord', 'goldking', 'archmage', 'fortuna'])],
+      debugTowers: [[1, 0, t('celestial')], [4, 7, t('celestial')], ...innerRing(['infiniteblade', 'warlord', 'goldking', 'archmage', 'fortuna'])],
+    },
+  },
+  {
+    name: 'r7-g1',
+    note: 'G-1 게임 시스템: 무한 모드 debug, 무더기 소환·연쇄 승급·무더기 이동 + 행운 소환 도박 10초마다 + 필살기(찬 타워부터) + 신화 조합(재료가 모이면) + 3택 1·보스 카드 첫 장, 히어로 3종을 먼저 놓음 — 15단계',
+    match: { seed: 17, mode: 'infinite', debug: true },
+    bot: {
+      endTick: 1200 + 15 * 1200,
+      stacks: true,
+      moveEvery: 1700,
+      pickCard: 0,
+      workers: 2,
+      debugGold: 30_000,
+      gacha: { k: 0, f: 0, every: 200 },
+      debugTowers: [
+        [2, 3, t('swordsaint')],
+        [3, 4, t('chronomancer')],
+        [1, 1, t('scholar')],
+        // 신화 '황금 왕' 재료 (광부·상인·연금술사)
+        [4, 6, t('miner')],
+        [5, 6, t('merchant')],
+        [5, 7, t('alchemist')],
+      ],
     },
   },
 ];
@@ -239,7 +262,9 @@ describe('M4 리플레이', () => {
     expect(r.match.state).toMatchObject({ phase: 'defeat', defeatReason: 'bossTime', stage: 40, bossId: 'wraithlord' });
     expect(kills).toEqual(['batqueen', 'kingslime', 'ancientgolem']);
     expect(warned).toBe(1);
-    expect(r.match.state.cardsPicked).toHaveLength(3);
+    // 보스 카드 3장 + G-1 3택 1 강화 선택 4장 (5·15·25·35단계)
+    expect(r.match.state.cardsPicked).toHaveLength(7);
+    expect(r.match.state.cardsPicked.filter((id) => rules.cardById.get(id)?.pools.includes('boss') && !rules.cardById.get(id)?.pools.includes('pick'))).not.toHaveLength(0);
     // 판 위에 감지 타워가 한 번도 없었다
     expect(r.match.towers().every((tw) => rules.towers.get(tw.tower)?.detect === 'none')).toBe(true);
     const lord = r.match.mobs().find((x) => x.boss);
@@ -275,7 +300,7 @@ describe('M4 리플레이', () => {
 describe('기록 → 재생', () => {
   it('짧은 판을 기록해 JSON으로 저장·읽기 → 재생하면 같은 해시, 두 번 재생해도 같다', () => {
     const m = createMatch(data, { seed: 99, mode: 'infinite', debug: true });
-    runBot(m, { endTick: 3000, moveEvery: 700, debugTowers: [[4, 3, t('icemage')], [4, 7, t('summoner')]] });
+    runBot(m, { endTick: 3000, moveEvery: 700, debugTowers: [[2, 3, t('icemage')], [4, 7, t('summoner')]] });
     const file = recordReplay(data, m, { name: 'short', checkpointTicks: 100 });
     expect(file.finalHash).toBe(m.hash());
     const loaded = JSON.parse(replayToJson(file)) as ReplayFile;
@@ -370,7 +395,8 @@ describe('M5 리플레이 (검토 반영)', () => {
     for (const type of ['gamble', 'claimAllMissions', 'startChallenge', 'upgrade']) expect(file.commands.some((c) => c.type === type), type).toBe(true);
     for (const lv of [4, 7, 9, 10]) expect(clears, `도전 ${lv}단계`).toContain(lv);
     expect(twinKills).toBe(clears.filter((lv) => lv === 4).length);
-    for (const type of ['challengeFreeze', 'challengeGuard', 'challengeInvisible', 'challengeTeleport', 'missionClaim', 'gamble']) {
+    // G-1 큰 칸 맵: 도전 6단계 그림자 늑대는 5초 순간이동 전에 잡힌다 (순간이동 규칙은 Challenge.test가 본다)
+    for (const type of ['challengeFreeze', 'challengeGuard', 'challengeInvisible', 'missionClaim', 'gamble']) {
       expect(seen.get(type) ?? 0, type).toBeGreaterThan(0);
     }
     expect(r.match.state.gambles).toBeGreaterThan(50);

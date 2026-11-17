@@ -103,7 +103,8 @@ export function towerBonus(ctx: MatchContext, tower: Tower, auras: AuraMap): Tow
   const grade = ctx.rules.towers.get(tower.tower)?.grade;
   const gradeUp = grade ? gradeUpgradeBp(ctx, tower.owner, grade) : 0;
   let atk = (a?.atkPctBp ?? 0) + (level - 1) * ctx.rules.atkPerLevelBp + gradeUp;
-  let aps = a?.apsPctBp ?? 0;
+  // 필살기 '전군 가속' (G-1): 그 플레이어 모든 타워 공속% (끝나면 Ultimate 시스템이 0으로)
+  let aps = (a?.apsPctBp ?? 0) + (ctx.state.rallyBp?.[tower.owner] ?? 0);
   let boss = BP_ONE;
   const def = abilityOf(tower.tower);
   if (def) {

@@ -53,6 +53,7 @@ import { isPaused } from './Move';
 import { aoeTargets, chainTargets, globalTargets, meleeAoeTargets, pierceTargets } from './Shapes';
 import { applyDot } from './Status';
 import { killMob } from './Kill';
+import { chargeUlt } from './Ultimate';
 import { shareChallengeHp } from './Challenge';
 import { candidatesFor, leaderRuleFor, pickTarget, targetCandidates, type LeaderRule, type TargetCandidate } from './Targeting';
 
@@ -240,6 +241,8 @@ function attackOnce(
   let hit = rollHit(stats, eff, crit);
   hit.owner = tower.owner;
   tower.attacks += 1;
+  // 필살기 게이지 (G-1): 히어로 이상만 공격마다 찬다
+  chargeUlt(ctx, tower);
   // 특색 onAttack (광부 돈·도박꾼 주사위·광전사 연속 공격) — 바꾼 1회 공격으로 계속한다
   const def = abilityOf(tower.tower);
   if (def?.onAttack) hit = def.onAttack(envOf(ctx, world), tower, abilityParams(ctx, tower.owner, def), hit, primary);

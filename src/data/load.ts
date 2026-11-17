@@ -379,7 +379,50 @@ export interface SummonConfig {
   godChance: number;
   /** 자동 소환 칸 고르기 반경 (체비쇼프 칸, T-2 꾹 눌러 연속 소환·[🎲 소환] 버튼) */
   autoRadius: number;
+  /** 천장 (G-1): n번 연속 grade 이상이 안 나오면 다음 소환은 grade 이상 확정 */
+  pity: PityConfig;
 }
+
+/** 천장 (G-1): n번 연속 '좋은 결과'(grade 이상)가 없으면 다음 한 번은 grade 이상 확정. */
+export interface PityConfig {
+  n: number;
+  grade: Grade;
+}
+
+/** 소환 도박 결과 하나 (G-1): 등급 ('none' = 꽝)과 확률 */
+export const GACHA_GRADES = ['none', 'normal', 'rare', 'unique', 'hero', 'legend', 'god'] as const;
+export type GachaGrade = (typeof GACHA_GRADES)[number];
+
+/** 소환 도박 한 종류 (G-1, game.json summonGamble.kinds). */
+export interface SummonGambleKind {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+  cost: number;
+  /** 종족을 골라야 하는 도박 (종족 소환) */
+  faction?: boolean;
+  outcomes: { grade: GachaGrade; chance: number }[];
+  pity: PityConfig;
+}
+
+/** 칸 한 개에 쌓는 타워 (G-1 사용자 결정 '한 칸에 같은 캐릭터 최대 3개'). */
+export interface BoardConfig {
+  stackMax: number;
+}
+
+/** 필살기 (G-1): 등급별 공격 몇 번에 가득 차는가, 타워 → 종류 규칙(처음 맞는 것), 종류별 수치. */
+export interface UltimateConfig {
+  grades: Partial<Record<Grade, number>>;
+  rules: { shapes?: Shape[]; tags?: string[]; damageTypes?: DamageType[]; kind: UltKind }[];
+  kinds: {
+    nuke: { name: string; icon: string; radius: number; atkMul: number };
+    stun: { name: string; icon: string; radius: number; seconds: number };
+    rally: { name: string; icon: string; apsPct: number; seconds: number };
+  };
+}
+export const ULT_KINDS = ['nuke', 'stun', 'rally'] as const;
+export type UltKind = (typeof ULT_KINDS)[number];
 
 /** 타워 판매 (T-2, GDD 3장): 받는 돈 = 가치 × rateBp ÷ 10000 내림. 가치 = 소환 비용 × gradeMul (히든 = 재료 가치 합). */
 export interface SellConfig {
@@ -438,6 +481,8 @@ export interface CombatConfig {
 export interface MergeConfig {
   /** 같은 종류·같은 등급 몇 개로 승급하는가 (3) */
   count: number;
+  /** 연쇄 승급 (G-1) 한 번에 최대 몇 번까지 */
+  chainMax: number;
 }
 
 /** 상태 이상 (GDD.md 5.5, M3b). */
@@ -602,6 +647,12 @@ export interface GameConfig {
   maxPlayers: number;
   match: MatchConfig;
   summon: SummonConfig;
+  /** 칸 쌓기 (G-1) */
+  board: BoardConfig;
+  /** 소환 도박 4종 (G-1) */
+  summonGamble: { kinds: SummonGambleKind[] };
+  /** 필살기 (G-1) */
+  ultimate: UltimateConfig;
   /** 타워 판매 (T-2) */
   sell: SellConfig;
   /** 개발자 도구 확률 조정 목록 (T-2) */
@@ -663,6 +714,9 @@ export const CARD_EFFECTS = [
   'twinSummon',
   'godMul',
   'goldPct',
+  'apsPct',
+  'pityCut',
+  'ultCharge',
 ] as const;
 export type CardEffectType = (typeof CARD_EFFECTS)[number];
 
@@ -682,7 +736,11 @@ export interface CardData {
   grade: 'common' | 'rare';
   desc: string;
   effect: CardEffect;
+  /** 나오는 묶음 (G-1): boss 보스 보상 · pick 3택 1 강화 선택. 없으면 boss */
+  pools?: CardPool[];
 }
+export const CARD_POOLS = ['boss', 'pick'] as const;
+export type CardPool = (typeof CARD_POOLS)[number];
 
 /** cards.json: 보스 효과 카드 (GDD.md 3.1, M4-7). */
 export interface CardsFile {
@@ -692,6 +750,8 @@ export interface CardsFile {
   offerSize: number;
   /** 카드 1장마다 희귀 카드일 확률 (0.15) */
   rareChance: number;
+  /** 3택 1 강화 선택 일정 (G-1): from단계부터 every단계마다 (보스 단계 제외) */
+  pick: { from: number; every: number };
   cards: CardData[];
 }
 
@@ -1238,6 +1298,8 @@ function tickSeconds(min: number, max: number): Schema {
   });
 }
 
+const pitySchema: Schema = s.obj({ n: s.int({ min: 1, max: 1000 }), grade: s.str({ enum: GRADES }) });
+
 export const gameSchema: Schema = s.obj({
   version: s.int({ min: 1 }),
   speeds: s.withCheck<SpeedOption[]>(
@@ -1277,6 +1339,56 @@ export const gameSchema: Schema = s.obj({
     cost: s.int({ min: 1 }),
     godChance: s.num({ min: 0, max: 1 }),
     autoRadius: s.int({ min: 0, max: 10 }),
+    pity: pitySchema,
+  }),
+  board: s.obj({ stackMax: s.int({ min: 1, max: 6 }) }),
+  summonGamble: s.obj({
+    kinds: s.arr(
+      s.withCheck<SummonGambleKind>(
+        s.obj({
+          id: s.str({ nonEmpty: true }),
+          name: s.str({ nonEmpty: true }),
+          icon: s.str({ nonEmpty: true }),
+          desc: s.str({ nonEmpty: true }),
+          cost: s.int({ min: 1 }),
+          faction: s.opt(s.bool()),
+          outcomes: s.arr(s.obj({ grade: s.str({ enum: GACHA_GRADES }), chance: s.num({ min: 0, max: 1 }) }), { minLength: 1, maxLength: 8 }),
+          pity: pitySchema,
+        }),
+        (v, path, issues) => {
+          const sum = v.outcomes.reduce((a, o) => a + o.chance, 0);
+          if (Math.abs(sum - 1) > 1e-9) issues.push({ path: `${path}.outcomes`, message: `확률 합이 1이 아님 (${sum})` });
+          for (const [i, o] of v.outcomes.entries()) {
+            const b = o.chance * 10000;
+            if (Math.abs(b - Math.round(b)) > 1e-6) issues.push({ path: `${path}.outcomes[${i}].chance`, message: `0.0001 단위여야 하는데 ${o.chance}` });
+          }
+          const pg = GACHA_GRADES.indexOf(v.pity.grade as GachaGrade);
+          if (!v.outcomes.some((o) => GACHA_GRADES.indexOf(o.grade) >= pg && o.chance > 0)) {
+            issues.push({ path: `${path}.pity.grade`, message: `천장 등급 ${v.pity.grade} 이상인 결과가 없다` });
+          }
+        },
+      ),
+      { minLength: 1, maxLength: 8, uniqueBy: 'id' },
+    ),
+  }),
+  ultimate: s.obj({
+    grades: s.withCheck<Record<string, number>>(s.rec(s.int({ min: 1, max: 10000 })), (v, path, issues) => {
+      for (const k of Object.keys(v)) if (!(GRADES as readonly string[]).includes(k)) issues.push({ path: `${path}.${k}`, message: `모르는 등급 ${k}` });
+    }),
+    rules: s.arr(
+      s.obj({
+        shapes: s.opt(s.arr(s.str({ enum: SHAPES }))),
+        tags: s.opt(s.arr(s.str({ nonEmpty: true }))),
+        damageTypes: s.opt(s.arr(s.str({ enum: DAMAGE_TYPES }))),
+        kind: s.str({ enum: ULT_KINDS }),
+      }),
+      { minLength: 1 },
+    ),
+    kinds: s.obj({
+      nuke: s.obj({ name: s.str({ nonEmpty: true }), icon: s.str({ nonEmpty: true }), radius: s.num({ min: 0, max: 50 }), atkMul: s.num({ min: 0, max: 1000 }) }),
+      stun: s.obj({ name: s.str({ nonEmpty: true }), icon: s.str({ nonEmpty: true }), radius: s.num({ min: 0, max: 50 }), seconds: tickSeconds(0.05, 60) }),
+      rally: s.obj({ name: s.str({ nonEmpty: true }), icon: s.str({ nonEmpty: true }), apsPct: s.num({ min: 0, max: 10 }), seconds: tickSeconds(0.05, 600) }),
+    }),
   }),
   // 타워 판매 (T-2): 가치 배율은 노말~신 (히든 = 조합 재료 합)
   sell: s.obj({
@@ -1319,6 +1431,7 @@ export const gameSchema: Schema = s.obj({
   }),
   merge: s.obj({
     count: s.int({ min: 2, max: 10 }),
+    chainMax: s.int({ min: 1, max: 100 }),
   }),
   hud: s.obj({
     timerWarnSeconds: s.int({ min: 0 }),
@@ -1435,6 +1548,7 @@ export const cardsSchema: Schema = s.obj({
   notes: s.opt(s.str()),
   offerSize: s.int({ min: 1, max: 6 }),
   rareChance: s.num({ min: 0, max: 1 }),
+  pick: s.obj({ from: s.int({ min: 1 }), every: s.int({ min: 1 }) }),
   cards: s.arr(
     s.obj({
       id: s.str({ nonEmpty: true }),
@@ -1448,6 +1562,7 @@ export const cardsSchema: Schema = s.obj({
         max: s.opt(s.num({ min: 0 })),
         seconds: s.opt(tickSeconds(0.05, 3600)),
       }),
+      pools: s.opt(s.arr(s.str({ enum: CARD_POOLS }), { minLength: 1 })),
     }),
     { minLength: 1, uniqueBy: 'id' },
   ),
@@ -1770,7 +1885,18 @@ function crossCheckM4(data: GameData, issues: Issue[]): void {
     twinSummon: [{ key: 'seconds' }],
     godMul: [{ key: 'value', int: true }],
     goldPct: [{ key: 'value' }],
+    apsPct: [{ key: 'value' }],
+    pityCut: [{ key: 'value', int: true }],
+    ultCharge: [{ key: 'value' }],
   };
+  // G-1: 묶음마다 보여 줄 카드가 넉넉한지 (같은 묶음 안 카드는 서로 다르다)
+  for (const pool of CARD_POOLS) {
+    const n = cards.cards.filter((c) => (c.pools ?? ['boss']).includes(pool)).length;
+    if (n < cards.offerSize) issues.push({ file: 'cards.json', path: 'cards', message: `${pool} 묶음 카드 ${n}장 < 한 번에 보여주는 수 ${cards.offerSize}` });
+  }
+  if (cards.pick.from % game.match.bossEvery === 0) issues.push({ file: 'cards.json', path: 'pick.from', message: '강화 선택 첫 단계가 보스 단계다' });
+  // G-1: 칸 쌓기 = 승급 개수 (가득 찬 칸 하나가 승급한다)
+  if (game.board.stackMax !== game.merge.count) issues.push({ file: 'game.json', path: 'board.stackMax', message: `merge.count(${game.merge.count})와 같아야 한다` });
   cards.cards.forEach((c, i) => {
     const e = c.effect;
     for (const r of need[e.type]) {

@@ -16,7 +16,7 @@
  */
 import type { World } from '../World';
 import { mulBp } from '../Fixed';
-import { ATTACK_COST, towerAt, type Tower } from '../entities/Tower';
+import { ATTACK_COST, topTowerAt, towerAt, towersAt, type Tower } from '../entities/Tower';
 import type { MatchContext } from '../state';
 
 export type SellFail = 'phase' | 'noTower' | 'notOwner';
@@ -31,7 +31,8 @@ export type SellCheck = { ok: true; tower: Tower; price: number } | { ok: false;
 /** 팔 수 있는지 (화면 버튼과 명령이 같이 쓴다). */
 export function sellCheck(ctx: MatchContext, world: World, player: number, x: number, y: number): SellCheck {
   if (ctx.state.phase !== 'playing') return { ok: false, reason: 'phase' };
-  const tower = towerAt(world, x, y);
+  // G-1 칸 무더기: 맨 위(가장 나중에 쌓인) 타워 하나를 판다 (타워가 하나면 예전과 같다)
+  const tower = topTowerAt(world, x, y);
   if (!tower) return { ok: false, reason: 'noTower' };
   if (tower.owner !== player) return { ok: false, reason: 'notOwner' };
   return { ok: true, tower, price: sellPrice(ctx.rules, tower.tower) };
@@ -95,13 +96,16 @@ export function convertTower(ctx: MatchContext, world: World, player: number, x:
   const to = rules.towerOrder[t] as string;
   const from = tower.tower;
   state.debugUsed = true;
-  dropMergePicks(ctx, tower.id);
-  tower.tower = to;
-  tower.atkAcc = ATTACK_COST;
-  tower.remDmg = 0;
-  tower.abilityAt = -1;
-  tower.stacks = 0;
-  tower.stackTarget = 0;
+  // G-1 칸 무더기: 같은 칸 타워를 모두 바꾼다 (한 칸에는 같은 타워만)
+  for (const s of towersAt(world, x, y)) {
+    dropMergePicks(ctx, s.id);
+    s.tower = to;
+    s.atkAcc = ATTACK_COST;
+    s.remDmg = 0;
+    s.abilityAt = -1;
+    s.stacks = 0;
+    s.stackTarget = 0;
+  }
   world.emit('convert', { player, id: tower.id, from, tower: to, grade: rules.towers.get(to)?.grade ?? '', x, y });
   return true;
 }

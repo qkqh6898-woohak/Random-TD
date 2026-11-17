@@ -17,6 +17,7 @@ import type { MatchContext } from '../state';
 import { declareDefeat } from './Defeat';
 import { chooseFormation } from './Formation';
 import { bossAlive } from './Kill';
+import { offerPickCards } from './Cards';
 
 /** 다음 단계까지 남은 틱 (0 이상). */
 export function ticksToNextStage(ctx: MatchContext, tick: number): number {
@@ -39,6 +40,8 @@ function beginNextStage(ctx: MatchContext, world: World): void {
   // 보스 제한 시간 전체를 같은 단계에서 보장한다. 일반 단계는 기존 길이 유지.
   state.nextStageTick = world.tick + (state.bossStage ? Math.max(rules.stageTicks, rules.bossTimeTicks) : rules.stageTicks);
   world.emit('stageStart', { stage: state.stage, boss: state.bossStage });
+  // 3택 1 강화 선택 (G-1): 5·15·25 … 단계 (보스 단계 제외)
+  offerPickCards(ctx, world, state.stage);
 }
 
 /**

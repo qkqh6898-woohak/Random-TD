@@ -37,13 +37,13 @@ import { createDefeatSystem } from './systems/Defeat';
 import { createMovementSystem } from './systems/Movement';
 import { createSpawnSystem } from './systems/Spawn';
 import { createStageSystem, readyNow, skipStage, ticksToNextStage } from './systems/Stage';
-import { merge, mergeAll, pickMerge } from './systems/Merge';
+import { merge, mergeAll, mergeStack, pickMerge } from './systems/Merge';
 import { createMobTraitSystem } from './systems/MobTraits';
 import { createDetectionSystem } from './systems/Detection';
 import { createEconomySystem, hireWorker } from './systems/Economy';
 import { applyCard, pickCard } from './systems/Cards';
 import { checkAllBossParams } from './bosses';
-import { holdTower, moveTower } from './systems/Move';
+import { holdTower, moveStack, moveTower } from './systems/Move';
 import { placeTower, summon } from './systems/Summon';
 import { upgrade } from './systems/Upgrade';
 import { gamble } from './systems/Gamble';
@@ -51,6 +51,10 @@ import { createChallengeSystem, startChallenge } from './systems/Challenge';
 import { claimAllMissions, claimMission, installMissionTracker } from './systems/Mission';
 import { convertTower, sellTower } from './systems/Sell';
 import { setChance } from './chances';
+import { summonStack, stackSize } from './systems/Board';
+import { gacha } from './systems/Gacha';
+import { craft } from './systems/Craft';
+import { castUlt, createUltimateSystem } from './systems/Ultimate';
 
 export interface MatchOptions {
   seed: number;
@@ -233,6 +237,14 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     missionCount: rules.missions.map(() => 0),
     lastActTick: 0,
     dangerStage: 0,
+    pity: [],
+    pityCut: [],
+    ultChargeBp: [],
+    rallyBp: [],
+    rallyUntil: [],
+    gachas: 0,
+    crafts: 0,
+    ults: 0,
   };
   const players = opts.players ?? 1;
   for (let p = 0; p < players; p++) {
@@ -240,6 +252,11 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     state.perks.push(newPlayerPerks());
     state.upgrades.push(rules.upgrades.map(() => 0));
     state.gamble.push(newGambleState());
+    state.pity.push(new Array<number>(1 + rules.gachaKinds.length).fill(0));
+    state.pityCut.push(0);
+    state.ultChargeBp.push(0);
+    state.rallyBp.push(0);
+    state.rallyUntil.push(0);
   }
   const accountLevels: number[] = [];
   for (let p = 0; p < players; p++) {
@@ -298,6 +315,7 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
       createDetectionSystem(ctx),
       createAbilitySystem(ctx),
       createSoldierSystem(ctx),
+      createUltimateSystem(ctx),
       createCombatSystem(ctx),
       createEconomySystem(ctx),
       (w) => missionSystem(w),
@@ -328,6 +346,28 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     if (cmd.type === 'debugSetChance') setChance(ctx, w, cmd.player, cmd.key, cmd.bp);
   });
   world.setCommandHandler('debugSkipStage', (w) => skipStage(ctx, w));
+  // ---- G-1 ----
+  world.setCommandHandler('summonPad', (w, cmd) => {
+    if (cmd.type === 'summonPad') summonStack(ctx, w, cmd.player, [cmd.x, cmd.y]);
+  });
+  world.setCommandHandler('summonAuto', (w, cmd) => {
+    if (cmd.type === 'summonAuto') summonStack(ctx, w, cmd.player, null);
+  });
+  world.setCommandHandler('mergeStack', (w, cmd) => {
+    if (cmd.type === 'mergeStack') mergeStack(ctx, w, cmd.player, cmd.x, cmd.y);
+  });
+  world.setCommandHandler('moveStack', (w, cmd) => {
+    if (cmd.type === 'moveStack') moveStack(ctx, w, cmd.player, cmd.fx, cmd.fy, cmd.tx, cmd.ty);
+  });
+  world.setCommandHandler('gacha', (w, cmd) => {
+    if (cmd.type === 'gacha') gacha(ctx, w, cmd.player, cmd.k, cmd.f);
+  });
+  world.setCommandHandler('craft', (w, cmd) => {
+    if (cmd.type === 'craft') craft(ctx, w, cmd.player, cmd.r);
+  });
+  world.setCommandHandler('ult', (w, cmd) => {
+    if (cmd.type === 'ult') castUlt(ctx, w, cmd.player, cmd.id);
+  });
   world.setCommandHandler('readyNow', (w, cmd) => {
     if (cmd.type === 'readyNow') readyNow(ctx, w, cmd.player);
   });
@@ -371,7 +411,10 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
   world.setCommandHandler('debugTower', (w, cmd) => {
     if (cmd.type !== 'debugTower' || !state.debug || state.phase !== 'playing') return;
     const id = rules.towerOrder[cmd.t];
-    if (id === undefined || !isBuildable(map, cmd.x, cmd.y) || towerAt(w, cmd.x, cmd.y)) return;
+    if (id === undefined || !isBuildable(map, cmd.x, cmd.y)) return;
+    // G-1 칸 무더기: 같은 타워가 덜 쌓인 칸에도 놓을 수 있다 (다른 타워·가득 찬 칸은 그대로 무시)
+    const here = towerAt(w, cmd.x, cmd.y);
+    if (here && (here.tower !== id || here.owner !== cmd.player || stackSize(w, cmd.x, cmd.y) >= rules.stackMax)) return;
     state.debugUsed = true;
     const t = placeTower(w, id, cmd.player, cmd.x, cmd.y);
     w.emit('summon', { id: t.id, tower: id, grade: rules.towers.get(id)?.grade ?? '', god: false, rare: false, player: cmd.player, x: cmd.x, y: cmd.y });

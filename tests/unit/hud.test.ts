@@ -207,26 +207,25 @@ describe('맵 화면 배치 (MAPS.md 0장: HUD와 아래 띠 사이에 가장 �
   const circle = data.maps.circle!;
   const crossroads = data.maps.crossroads!;
 
-  it('순환의 정원 7×11: HUD와 아래 메뉴 사이 영역에 꽉 차고 가로 가운데 (A-1: 위아래 반 칸 여백 없음, 예전 109px)', () => {
+  it('순환의 정원 6×8 (G-1 큰 칸): HUD와 아래 메뉴 사이 영역에 꽉 차고 가로 가운데 (v2 7×11은 114px)', () => {
     const L = computeMapLayout(circle);
-    expect(L.tile).toBe(114);
-    expect(L.tile).toBe(Math.floor(MAP_AREA.h / 11));
-    expect([L.cols, L.rows, L.minCol, L.minRow]).toEqual([7, 11, 0, 0]);
+    expect(L.tile).toBe(157);
+    expect(L.tile).toBe(Math.floor(MAP_AREA.h / 8));
+    expect([L.cols, L.rows, L.minCol, L.minRow]).toEqual([6, 8, 0, 0]);
     const left = L.originX;
-    const right = L.originX + 7 * L.tile;
+    const right = L.originX + 6 * L.tile;
     expect(Math.abs(left - (GAME_WIDTH - right))).toBeLessThanOrEqual(1);
     expect(L.originY).toBeGreaterThanOrEqual(MAP_AREA.y);
-    expect(L.originY + 11 * L.tile).toBeLessThanOrEqual(MAP_AREA.y + MAP_AREA.h);
+    expect(L.originY + 8 * L.tile).toBeLessThanOrEqual(MAP_AREA.y + MAP_AREA.h);
   });
 
-  it('사거리 미로 10×10 + 화면 밖 등장·퇴장 줄(y = −1): 1칸 = 108px = 화면 폭 / 10 (맵 B안: 가로 여백 없이 꽉, 예전 반 칸 여백 102px·13×13은 80px)', () => {
+  it('사거리 미로 7×10 + 화면 밖 등장·퇴장 줄(y = −1) (G-1 큰 칸): 1920 높이에서는 세로가 먼저 차서 1칸 = 영역 높이 / 11', () => {
     const L = computeMapLayout(crossroads);
-    expect([L.cols, L.rows, L.minRow]).toEqual([10, 11, -1]);
-    expect(L.tile).toBe(108);
-    expect(L.tile).toBe(Math.floor(GAME_WIDTH / 10));
-    // 가로를 꽉 채운다: 왼쪽 끝 0, 오른쪽 끝 = 화면 폭
-    expect(L.originX).toBe(0);
-    expect(L.originX + L.cols * L.tile).toBe(GAME_WIDTH);
+    expect([L.cols, L.rows, L.minRow]).toEqual([7, 11, -1]);
+    expect(L.tile).toBe(Math.floor(MAP_AREA.h / 11));
+    expect(L.tile).toBeGreaterThan(108);
+    // 가로 가운데
+    expect(Math.abs(L.originX - (GAME_WIDTH - (L.originX + L.cols * L.tile)))).toBeLessThanOrEqual(1);
     const spawn = tileCenterPx(L, 0, -1);
     expect(spawn.y - L.tile / 2).toBeGreaterThanOrEqual(MAP_AREA.y);
   });
@@ -235,14 +234,14 @@ describe('맵 화면 배치 (MAPS.md 0장: HUD와 아래 띠 사이에 가장 �
     const L = computeMapLayout(circle);
     const c = tileCenter(3, 4);
     expect(unitsToPx(L, c.x, c.y)).toEqual(tileCenterPx(L, 3, 4));
-    const px = tileCenterPx(L, 5, 9);
-    expect(pxToTile(L, px.x, px.y)).toEqual({ tx: 5, ty: 9 });
+    const px = tileCenterPx(L, 5, 7);
+    expect(pxToTile(L, px.x, px.y)).toEqual({ tx: 5, ty: 7 });
     expect(pxToTile(L, L.originX - 1, L.originY)).toEqual({ tx: -1, ty: 0 });
     // 몹 위치(진행도) → 픽셀이 경로 칸 안
     const map = buildSimMap(circle);
-    const p = positionAt(map.path, 7000);
+    const p = positionAt(map.path, 6000);
     const t = pxToTile(L, unitsToPx(L, p.x, p.y).x, unitsToPx(L, p.x, p.y).y);
-    expect(t).toEqual({ tx: 6, ty: 3 });
+    expect(t).toEqual({ tx: 5, ty: 3 });
   });
 
   it('맵 영역 = 실제 HUD 아래 (검토 반영: 보스 막대·44px 버튼 때문에 커진 HUD가 맵 윗줄을 덮지 않게)', () => {
@@ -271,10 +270,10 @@ describe('맵 화면 배치 (MAPS.md 0장: HUD와 아래 띠 사이에 가장 �
     expect(gameToCssPx(cssToGamePx(123, 412), 412)).toBeCloseTo(123, 9);
   });
 
-  it('경로 칸 목록: 순환 24칸, 사거리 미로는 맵 안 54칸 + 화면 밖 2칸', () => {
-    expect(pathCells(buildSimMap(circle))).toHaveLength(24);
+  it('경로 칸 목록: 순환 16칸, 사거리 미로는 맵 안 33칸 + 화면 밖 2칸 (G-1)', () => {
+    expect(pathCells(buildSimMap(circle))).toHaveLength(16);
     const cells = pathCells(buildSimMap(crossroads));
-    expect(cells).toHaveLength(56);
+    expect(cells).toHaveLength(35);
     expect(cells[0]).toMatchObject({ x: 0, y: -1, dx: 0, dy: 1 });
     expect(cells.at(-1)).toMatchObject({ x: 3, y: -1 });
   });

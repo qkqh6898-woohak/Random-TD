@@ -179,7 +179,7 @@ describe('summon 명령', () => {
         summonAt(m, x, y, 0);
       }
       const out: string[] = [];
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 10; i++) {
         const [x, y] = tiles[k++]!;
         out.push(summonAt(m, x, y, 1)!.tower);
       }
@@ -187,7 +187,7 @@ describe('summon 명령', () => {
     };
     const base = run(0);
     expect(run(7)).toEqual(base);
-    expect(run(12)).toEqual(base); // 12 + 20 = 32칸 (순환의 정원 v2 배치 칸 전부)
+    expect(run(10)).toEqual(base); // 10 + 10 = 20칸 (순환의 정원 v3 배치 칸 전부, G-1)
     expect(new Set(base).size).toBeGreaterThan(1);
   });
 

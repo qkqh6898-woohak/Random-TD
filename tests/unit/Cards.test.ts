@@ -19,7 +19,9 @@ const card = (id: string) => {
 
 describe('카드 데이터 (GDD 3.1)', () => {
   it('12장 = 일반 8 + 희귀 4, 3장 묶음, 희귀 15%', () => {
-    expect(rules.cards).toHaveLength(12);
+    // G-1: 보스 묶음은 예전 12장 그대로, 강화 선택(pick) 전용 5장이 더해졌다
+    expect(rules.cards.filter((c) => c.pools.includes('boss'))).toHaveLength(12);
+    expect(rules.cards).toHaveLength(17);
     expect(rules.cards.filter((c) => c.rare).map((c) => c.name)).toEqual(['승급의 축복', '쌍둥이 소환', '신의 눈길', '황금 손']);
     expect(rules.cardOfferSize).toBe(3);
     expect(rules.cardRareBp).toBe(1500);

@@ -44,12 +44,12 @@ describe('번들 데이터 로드', () => {
     expect(data.game.speeds.map((x) => x.mul)).toEqual([1, 2, 4, 8, 16]);
   });
 
-  it('맵 파일을 자동으로 모두 읽는다 (T-3 2×2 블록: circle 32칸, crossroads 36칸)', () => {
+  it('맵 파일을 자동으로 모두 읽는다 (G-1 큰 칸 2×2 블록: circle 20칸, crossroads 24칸)', () => {
     const { maps } = loadGameData();
     expect(Object.keys(maps).sort()).toEqual(['circle', 'crossroads']);
-    expect(maps.circle?.buildableCount).toBe(32);
+    expect(maps.circle?.buildableCount).toBe(20);
     expect(maps.circle?.mode).toBe('infinite');
-    expect(maps.crossroads?.buildableCount).toBe(36);
+    expect(maps.crossroads?.buildableCount).toBe(24);
     expect(maps.crossroads?.lives).toBe(20);
   });
 
@@ -96,11 +96,11 @@ describe('데이터 로더 에러 메시지 (필드 경로)', () => {
     const raw = rawCopy();
     const circle = raw.maps.circle as Json;
     const tiles = circle.tiles as string[];
-    tiles[3] = tiles[3]!.slice(0, -2); // 'PBBXB' (B 하나가 빠짐)
+    tiles[0] = tiles[0]!.slice(0, -2); // 'BBXX' (B 두 개가 빠짐)
     (circle.waypoints as number[][])[1] = [5, 3];
     const issues = issuesOf(() => buildGameData(raw));
     const paths = issues.map((i) => `${i.file}|${i.path}`);
-    expect(paths).toContain('maps/circle.json|tiles[3]');
+    expect(paths).toContain('maps/circle.json|tiles[0]');
     expect(paths).toContain('maps/circle.json|buildableCount');
     expect(paths).toContain('maps/circle.json|waypoints[1]');
   });
@@ -133,8 +133,8 @@ describe('데이터 로더 에러 메시지 (필드 경로)', () => {
     cross.pathLength = 999;
     cross.turns = 3;
     const issues = issuesOf(() => buildGameData(raw));
-    expect(issues.find((i) => i.path === 'pathLength')?.message).toContain('59칸인데 999');
-    expect(issues.find((i) => i.path === 'turns')?.message).toContain('10번인데 3');
+    expect(issues.find((i) => i.path === 'pathLength')?.message).toContain('35칸인데 999');
+    expect(issues.find((i) => i.path === 'turns')?.message).toContain('6번인데 3');
   });
 
   it('맵 파생값 검사: loop 맵은 첫 점으로 돌아와야 하고, 길이 0 구간은 안 된다', () => {
@@ -320,12 +320,12 @@ describe('M1 데이터: 곡선 표·등장 규칙·판 설정', () => {
     const raw = rawCopy();
     const circle = raw.maps.circle as Json;
     const tiles = circle.tiles as string[];
-    tiles[2] = 'PPPXPPP'; // (3,2)는 경로인데 X
-    tiles[5] = 'PXXPXXP'; // (3,5)는 P인데 경로가 아님
+    tiles[2] = 'PPPXPP'; // (3,2)는 경로인데 X
+    tiles[3] = 'PPBBXP'; // (1,3)은 P인데 경로가 아님
     const issues = issuesOf(() => buildGameData(raw));
     const msgs = issues.filter((i) => i.path === 'tiles').map((i) => i.message);
     expect(msgs).toContain('경로가 지나는데 P가 아닌 칸: [3,2]');
-    expect(msgs).toContain('경로가 지나지 않는 P 칸: [3,5]');
+    expect(msgs).toContain('경로가 지나지 않는 P 칸: [1,3]');
   });
 
   it('맵 2×2 블록 문법 (T-3): 3×3 블록·블록 밖 배치 칸은 로드할 때 잡는다', () => {
@@ -391,9 +391,10 @@ describe('M4 데이터: 몹 특성·보스·편대·카드', () => {
   const gameOf = (raw: RawGameData): Json => raw.game as Json;
   const cardsOf = (raw: RawGameData): Json[] => (raw.cards as Json).cards as Json[];
 
-  it('cards.json도 함께 읽는다 (12장, 3장 묶음)', () => {
+  it('cards.json도 함께 읽는다 (보스 12장 + G-1 강화 선택 5장, 3장 묶음)', () => {
     const data = loadGameData();
-    expect(data.cards.cards).toHaveLength(12);
+    expect(data.cards.cards).toHaveLength(17);
+    expect(data.cards.pick).toEqual({ from: 5, every: 10 });
     expect(data.cards.offerSize).toBe(3);
   });
 

@@ -93,11 +93,14 @@ describe('가변 높이 맵 영역 (layout.ts mapAreaBelowHud + computeMapLayout
       }
     }
     // 9:16보다 길쭉한 휴대폰에서 사거리 미로(10칸)는 가로가 여백 없이 꽉 찬다 (맵 B안: 1080 / 10 = 108, 예전 반 칸 여백 102), 9:16(412×732)은 세로가 먼저 참
-    expect(sizes.crossroads!.slice(0, 3)).toEqual([108, 108, 108]);
-    expect(sizes.crossroads![3]).toBeGreaterThanOrEqual(95);
-    // 순환의 정원(7×11)은 길쭉할수록 칸이 커진다 (예전 9×11·1920 고정에서는 1칸 약 109px)
+    // G-1 큰 칸 (사용자 요청 '소환칸을 줄이고 크게'): 9:16보다 길쭉한 휴대폰에서 예전보다 1.3배 이상
+    // 순환의 정원 6×8 = 가로가 먼저 차서 1080 / 6 = 180 (v2 7×11은 135·130·128), 사거리 미로 7×10(+화면 밖 1줄) = 149·140·140 (v3 10×10은 108)
+    expect(sizes.circle!.slice(0, 3)).toEqual([180, 180, 180]);
+    expect(sizes.crossroads!.slice(0, 3)).toEqual([149, 140, 140]);
+    for (const v of sizes.crossroads!.slice(0, 3)) expect(v / 108).toBeGreaterThanOrEqual(1.29);
+    // 9:16(412×732)은 세로가 먼저 찬다
     expect(sizes.circle![0]).toBeGreaterThan(sizes.circle![3]!);
-    expect(Math.min(...sizes.circle!)).toBeGreaterThanOrEqual(95);
+    expect(Math.min(...sizes.circle!, ...sizes.crossroads!)).toBeGreaterThanOrEqual(100);
   });
 });
 

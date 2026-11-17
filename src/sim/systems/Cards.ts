@@ -20,6 +20,7 @@ import { streamCards } from '../World';
 import { BP_ONE, mulBp } from '../Fixed';
 import { isMob, isRevealedAt } from '../entities/Mob';
 import type { CardStats } from '../rules';
+import type { CardPool } from '../../data/load';
 import type { MatchContext } from '../state';
 import { rollChanceBp } from './Damage';
 import { earnGold } from './Economy';
@@ -28,16 +29,20 @@ import { chanceValue } from '../chances';
 /** 카드 고르기 실패 이유: 판이 끝남 / 받은 묶음 없음 / 없는 번호 */
 export type CardFail = 'phase' | 'none' | 'index';
 
-/** 카드 묶음 하나 뽑기 (카드 id 목록). 플레이어별 카드 흐름. */
-export function rollOffer(ctx: MatchContext, world: World, player: number): string[] {
+/**
+ * 카드 묶음 하나 뽑기 (카드 id 목록). 플레이어별 카드 흐름.
+ * @param pool 묶음 종류 (G-1): 'boss' 보스 보상 (예전 카드 12장 — 예전과 같은 순서·같은 결과) · 'pick' 3택 1 강화 선택
+ */
+export function rollOffer(ctx: MatchContext, world: World, player: number, pool: CardPool = 'boss'): string[] {
   const { rules } = ctx;
   const rng = world.rng(streamCards(player));
   const out: string[] = [];
+  const cards = rules.cards.filter((c) => c.pools.includes(pool));
   for (let k = 0; k < rules.cardOfferSize; k++) {
     // 희귀 확률: 데이터 값 (개발자 확률 조정 'cardRare'가 있으면 그 값, T-2)
     const rare = rollChanceBp(rng, chanceValue(rules, ctx.state, 'cardRare'));
-    let pool = rules.cards.filter((c) => c.rare === rare && !out.includes(c.id));
-    if (pool.length === 0) pool = rules.cards.filter((c) => !out.includes(c.id));
+    let pool = cards.filter((c) => c.rare === rare && !out.includes(c.id));
+    if (pool.length === 0) pool = cards.filter((c) => !out.includes(c.id));
     if (pool.length === 0) break;
     out.push(rng.pick(pool).id);
   }
@@ -51,6 +56,27 @@ export function offerCards(ctx: MatchContext, world: World, bossNum: number): vo
     if (cards.length === 0) continue;
     ctx.state.cardOffers.push({ player: p, boss: bossNum, cards });
     world.emit('cardOffer', { player: p, boss: bossNum, cards: cards.join(',') });
+  }
+}
+
+/** 3택 1 강화 선택 단계인가 (G-1): pickFrom단계부터 pickEvery단계마다, 보스 단계는 빼고. */
+export function isPickStage(rules: Pick<MatchContext['rules'], 'pickFrom' | 'pickEvery' | 'bossEvery'>, stage: number): boolean {
+  if (stage < rules.pickFrom || (stage - rules.pickFrom) % rules.pickEvery !== 0) return false;
+  return stage % rules.bossEvery !== 0;
+}
+
+/**
+ * 3택 1 강화 선택 (G-1 로그라이크 고르기): 그 단계가 시작될 때 플레이어마다 'pick' 묶음 하나 ('cardOffer' 사건 + pick = 단계).
+ * 보스 카드와 같은 고르기 창·같은 명령(pickCard)으로 고른다. 묶음의 boss = 그 단계까지의 보스 번호(최소 1, 카드 '긴급 자금' 배율).
+ */
+export function offerPickCards(ctx: MatchContext, world: World, stage: number): void {
+  if (!isPickStage(ctx.rules, stage)) return;
+  const boss = Math.max(1, Math.floor(stage / ctx.rules.bossEvery));
+  for (let p = 0; p < world.players; p++) {
+    const cards = rollOffer(ctx, world, p, 'pick');
+    if (cards.length === 0) continue;
+    ctx.state.cardOffers.push({ player: p, boss, cards, stage });
+    world.emit('cardOffer', { player: p, boss, cards: cards.join(','), pick: stage });
   }
 }
 
@@ -118,6 +144,18 @@ export function applyCard(ctx: MatchContext, world: World, player: number, card:
       break;
     case 'goldPct':
       state.goldPctBp += card.value;
+      break;
+    // ---- G-1 (3택 1 강화 카드) ----
+    case 'apsPct': {
+      const mods = state.mods[player];
+      if (mods) mods.apsPctBp += card.value;
+      break;
+    }
+    case 'pityCut':
+      if (state.pityCut[player] !== undefined) state.pityCut[player] += card.value;
+      break;
+    case 'ultCharge':
+      if (state.ultChargeBp[player] !== undefined) state.ultChargeBp[player] += card.value;
       break;
   }
 }
