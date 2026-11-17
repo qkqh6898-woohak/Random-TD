@@ -955,8 +955,20 @@
 }
 
 /* 퀘스트 */
+.quest-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2cqw;
+}
+
 .quest-segs {
   align-self: flex-start;
+}
+
+.quest-claim-all {
+  flex: none;
+  min-width: max(22cqw, 80px);
 }
 
 .quest-list {

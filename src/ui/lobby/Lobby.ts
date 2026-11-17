@@ -744,7 +744,18 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
         : achievementQuests(s, pd)
             .sort((a, b) => Number(a.claimed) - Number(b.claimed) || Number(b.done) - Number(a.done))
             .map((q) => questRow(q, false));
-    questDlg.body.replaceChildren(h('div', { class: 'lobby-segs quest-segs' }, segBtn('daily', '일일'), segBtn('achievements', '업적')), h('div', { class: 'quest-list' }, ...list));
+    // 피드백 #11: 일일·보너스·업적 보상을 한 번에 받기
+    const ready = claimableQuests(s, pd, today);
+    const claimAll = h('button', {
+      class: `btn btn-chip ${ready > 0 ? 'btn-primary' : ''} quest-claim-all`,
+      text: ready > 0 ? `모두 받기 ${ready}` : '모두 받기',
+      attrs: { type: 'button', 'data-testid': 'quest-claim-all', ...(ready > 0 ? {} : { disabled: '' }) },
+      on: { click: () => showGrant('퀘스트 보상', progress.claimAllQuests()) },
+    });
+    questDlg.body.replaceChildren(
+      h('div', { class: 'quest-top' }, h('div', { class: 'lobby-segs quest-segs' }, segBtn('daily', '일일'), segBtn('achievements', '업적')), claimAll),
+      h('div', { class: 'quest-list' }, ...list),
+    );
   }
 
   function openQuests(): void {

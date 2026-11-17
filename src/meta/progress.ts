@@ -607,6 +607,42 @@ export function claimDailyBonus(state: ProgressState, pd: ProgressionData, data:
   return applyReward(state, pd, data, pd.quests.dailyAllBonus, accountRng(state, 'dailyBonus'));
 }
 
+/**
+ * 퀘스트 모두 받기 (피드백 #11): 일일(데이터 순) → 오늘 보너스 → 업적(데이터 순).
+ * 화면 위에서부터 하나씩 받은 것과 같은 순서라 굴림 결과도 같다. 받은 것들을 한 Grant로 합친다. 받을 것이 없으면 null.
+ */
+export function claimAllQuests(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers'>, today: string): Grant | null {
+  const got: Grant[] = [];
+  const add = (g: Grant | null): void => {
+    if (g) got.push(g);
+  };
+  // 카드 보상으로 새 영웅이 생기면 '영웅 레벨 합계' 업적이 새로 끝날 수 있어 받을 것이 없을 때까지 돈다 (받을 때마다 하나씩 줄어 끝난다)
+  while (claimableQuests(state, pd, today) > 0) {
+    for (const q of dailyQuests(state, pd, today)) if (q.done && !q.claimed) add(claimQuest(state, pd, data, q.quest.id, today));
+    add(claimDailyBonus(state, pd, data, today));
+    for (const q of achievementQuests(state, pd)) if (q.done && !q.claimed) add(claimQuest(state, pd, data, q.quest.id, today));
+  }
+  if (got.length === 0) return null;
+  const total = emptyGrant();
+  for (const g of got) {
+    total.xp += g.xp;
+    total.gold += g.gold;
+    total.gems += g.gems;
+    total.levelUps.push(...g.levelUps);
+    for (const c of g.cards) {
+      const t = total.cards.find((x) => x.id === c.id);
+      if (t) t.n += c.n;
+      else total.cards.push({ ...c });
+    }
+    for (const f of g.fragments) {
+      const t = total.fragments.find((x) => x.id === f.id);
+      if (t) t.n += f.n;
+      else total.fragments.push({ ...f });
+    }
+  }
+  return total;
+}
+
 /** 받을 수 있는 퀘스트 수 (빨간 점) */
 export function claimableQuests(state: ProgressState, pd: ProgressionData, today: string): number {
   const d = dailyQuests(state, pd, today).filter((q) => q.done && !q.claimed).length;

@@ -1275,3 +1275,9 @@
 - 고침: 맵별 배치 칸 문자열을 `_cells` 변수로 먼저 만든 뒤 넣음. 검사 내용·출력 문구는 그대로(3.10·3.11·3.12·3.13 출력 바이트 단위 같음, 3.11로 문서 다시 만들어도 docs 변화 없음). 게임 코드·데이터 변경 없음.
 - 테스트: `tests/unit/gen-tables-python.test.ts` — 설치된 `python3.11`로 `--check` 통과·구문 분석, 설치된 3.11~3.13 출력이 같음(없는 버전은 건너뜀). 고치기 전 3개 실패 확인.
 - 확인: Vitest 1,302 통과 · 3 건너뜀(70파일), `npm run check`(python3 = 3.11.17)·`npm run build` 통과, E2E `smoke.spec` 5 통과(이 컨테이너는 Playwright 기본 headless shell이 없어 `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). 전체 E2E는 도구 스크립트만 바뀌어 돌리지 않음.
+
+### 피드백 #11 — 퀘스트 보상 한 번에 받기 (fix/feedback-11)
+- 요청: '퀘스트 보상은 한번에 받기 버튼있어야함' (본문·판 기록 없음 → 리플레이 테스트 대상 없음). 판 안 📋 미션 시트에는 이미 [모두 받기]가 있어, 없는 곳인 **로비 [퀘스트] 창**에 넣었다.
+- `src/meta/progress.ts` `claimAllQuests(state, pd, data, today)`: 일일(데이터 순) → 오늘 보너스 → 업적(데이터 순)을 하나씩 받은 것과 같은 순서로 받고 한 Grant로 합친다(같은 굴림 결과). 카드 보상으로 새 영웅이 생겨 '영웅 레벨 합계' 업적이 새로 끝날 수 있어 받을 것이 없을 때까지 돈다. 받을 것이 없으면 null. `ProgressStore.claimAllQuests()`는 한 번 저장·알림.
+- 화면: 퀘스트 창 [일일][업적] 줄 오른쪽 [모두 받기 N] (N = 로비 빨간 점과 같은 `claimableQuests`, 보너스는 일일을 다 받아야 열려 처음 수에는 안 들지만 함께 받는다). 없으면 꺼진 '모두 받기'. 받은 것은 '퀘스트 보상' 창 한 번에. 저장 형식·데이터 변경 없음.
+- 테스트: `tests/unit/g3-progress.test.ts` 3개(하나씩 받은 것과 상태·합계 같음·2바퀴 이상, 일일 일부만이면 보너스 안 받음, 저장소 알림). `e2e/fb11.spec.ts`(412 받기·합계·꺼짐, 320 한 줄·안 넘침, 스크린샷 `docs/screens/FB11-quests.png`). Vitest 76파일 1,412 통과·3 건너뜀, `npm run check`·`npm run build` 통과, E2E fb11 1/1 · g3 9/9 (`PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`). 전체 E2E(약 1시간)는 로비 퀘스트 창만 바뀌어 돌리지 않음.

@@ -14,6 +14,8 @@ import { loadProgression, parseProgression, type ProgressionData } from '../../s
 import {
   achievementQuests,
   addXp,
+  claimAllQuests,
+  claimableQuests,
   buyShopItem,
   cardsForStage,
   checkLevelUp,
@@ -304,6 +306,56 @@ describe('퀘스트', () => {
     expect(achievementQuests(s, pd).find((q) => q.quest.id === 'a-hero-120')!.progress).toBe(heroLevelSum(s));
     expect(heroLevelSum(fresh())).toBe(25);
   });
+  it('모두 받기 (피드백 #11): 받을 수 있는 일일·보너스·업적을 한 번에, 하나씩 받은 것과 같은 결과', () => {
+    const setup = (): ProgressState => {
+      const s = fresh();
+      refreshDaily(s, TODAY);
+      for (let i = 0; i < 3; i++) settleMatch(s, pd, data, result({ runId: `m${i}`, stage: 15, summons: 50, merges: 10 }), TODAY);
+      return s;
+    };
+    const one = setup();
+    const n = claimableQuests(one, pd, TODAY);
+    expect(n).toBeGreaterThan(pd.quests.daily.length + 1);
+    // 하나씩: 일일(데이터 순) → 오늘 보너스 → 업적(데이터 순), 카드로 새 영웅이 생겨 끝난 '영웅 레벨 합계' 업적까지
+    let gold = 0;
+    let gems = 0;
+    let rounds = 0;
+    while (claimableQuests(one, pd, TODAY) > 0) {
+      rounds++;
+      const gs = [
+        ...dailyQuests(one, pd, TODAY).filter((x) => x.done && !x.claimed).map((q) => claimQuest(one, pd, data, q.quest.id, TODAY)),
+        claimDailyBonus(one, pd, data, TODAY),
+      ];
+      for (const q of achievementQuests(one, pd).filter((x) => x.done && !x.claimed)) gs.push(claimQuest(one, pd, data, q.quest.id, TODAY));
+      for (const g of gs) {
+        gold += g?.gold ?? 0;
+        gems += g?.gems ?? 0;
+      }
+    }
+    expect(rounds).toBeGreaterThan(1);
+    const all = setup();
+    const g = claimAllQuests(all, pd, data, TODAY)!;
+    expect(all).toEqual(one);
+    expect(g.gold).toBe(gold);
+    expect(g.gems).toBe(gems);
+    expect(claimableQuests(all, pd, TODAY)).toBe(0);
+    expect(all.daily.bonusClaimed).toBe(true);
+    // 더 받을 것이 없으면 null (상태 그대로)
+    const before = structuredClone(all);
+    expect(claimAllQuests(all, pd, data, TODAY)).toBeNull();
+    expect(all).toEqual(before);
+  });
+  it('모두 받기: 일일 일부만 끝났으면 보너스는 받지 않는다', () => {
+    const s = fresh();
+    refreshDaily(s, TODAY);
+    settleMatch(s, pd, data, result({ stage: 1, summons: 0, merges: 0, bossKills: 0 }), TODAY);
+    const ready = dailyQuests(s, pd, TODAY).filter((q) => q.done).map((q) => q.quest.id);
+    expect(ready.length).toBeGreaterThan(0);
+    expect(ready.length).toBeLessThan(pd.quests.daily.length);
+    expect(claimAllQuests(s, pd, data, TODAY)).not.toBeNull();
+    expect(s.daily.claimed).toEqual([...ready].sort());
+    expect(s.daily.bonusClaimed).toBe(false);
+  });
 });
 
 describe('상점 (게임 안 화폐만)', () => {
@@ -405,5 +457,17 @@ describe('저장 · 마이그레이션', () => {
     const opts = store.matchOptions(false);
     expect(opts.lockedHidden![0]).toHaveLength(12);
     expect(opts.levels).toEqual([{}]);
+  });
+  it('저장소 모두 받기: 받으면 한 번 저장·알림, 받을 것이 없으면 알림 없음', () => {
+    const st = new MemoryStorage();
+    const store = new ProgressStore(st, pd, data, { seed: 9, now: () => new Date(2026, 10, 17) });
+    store.settle(result({ stage: 15, summons: 50, merges: 10 }));
+    let calls = 0;
+    store.subscribe(() => calls++);
+    expect(store.claimAllQuests()).not.toBeNull();
+    expect(calls).toBe(1);
+    expect(JSON.parse(st.getItem(PROGRESS_KEY)!).daily.bonusClaimed).toBe(true);
+    expect(store.claimAllQuests()).toBeNull();
+    expect(calls).toBe(1);
   });
 });
