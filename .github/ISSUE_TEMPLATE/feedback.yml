@@ -1,0 +1,35 @@
+name: 게임 피드백
+description: 게임 안 [💬 피드백 보내기]가 채워 주는 양식. "feedback" 라벨이 붙으면 Claude가 고칠 브랜치와 PR을 만든다 (저장소 주인이 올린 이슈만).
+title: "[피드백] "
+labels: ["feedback"]
+body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: 종류
+      options:
+        - 버그
+        - 밸런스
+        - 제안
+        - 기타
+    validations:
+      required: true
+  - type: textarea
+    id: body_text
+    attributes:
+      label: 무엇이 문제였나요 / 바라는 점
+      placeholder: 예) 10단계 보스가 너무 빨리 지나가요
+    validations:
+      required: true
+  - type: textarea
+    id: game_info
+    attributes:
+      label: 게임 정보 (자동)
+      description: 버전·모드·시드·웨이브 등 (게임이 채움)
+      render: text
+  - type: textarea
+    id: replay
+    attributes:
+      label: 판 기록 (자동, JSON)
+      description: 같은 시드·입력으로 그 판을 다시 돌릴 수 있는 기록 (게임이 채움)
+      render: json
