@@ -20,3 +20,5 @@ android-release/
 downloads/
 *.apk
 *.p12
+# 작업용 임시 폴더 (ART-1 원본 PNG 등) — 커밋하지 않는다
+tmp/
