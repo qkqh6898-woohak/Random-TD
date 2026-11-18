@@ -3867,19 +3867,18 @@ body {
   animation: none;
 }
 .hud-ult-list {
+  /* 피드백 #43 '스킬창 너무 커서 화면 안보임. 작게': 좁고 낮게 (무대 높이 30%·너비 48% 안), 줄은 안에서 스크롤 */
   position: absolute;
   right: 2cqw;
   top: 100%;
   z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 1cqw;
-  min-width: 52cqw;
-  max-height: 60cqh;
-  overflow-y: auto;
-  padding: 1.6cqw;
-  border-radius: 2.6cqw;
-  background: rgba(13, 18, 32, 0.96);
+  gap: 0.8cqw;
+  width: 44cqw;
+  padding: 1.2cqw;
+  border-radius: 2.2cqw;
+  background: rgba(13, 18, 32, 0.9);
   border: 0.3cqw solid var(--panel-line);
   pointer-events: auto;
 }
@@ -3887,30 +3886,54 @@ body {
   display: none !important;
 }
 .hud-ult-head {
-  font-size: 3cqw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1cqw;
+}
+.hud-ult-title {
+  font-size: 2.8cqw;
   font-weight: 800;
   color: var(--gold);
+  white-space: nowrap;
+}
+.hud-ult-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8cqw;
+  max-height: 38cqw;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .hud-ult-item {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: flex-start;
-  gap: 1.6cqw;
-  min-height: max(9cqw, 40px);
-  font-size: 3.2cqw;
+  gap: 1cqw;
+  min-height: max(7.4cqw, 30px);
+  padding: 0 1.6cqw;
+  font-size: 2.8cqw;
 }
 .hud-ult-name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   text-align: left;
 }
 .hud-ult-kind {
-  font-size: 2.6cqw;
+  flex: none;
+  font-size: 2.3cqw;
   color: var(--text-dim);
 }
 .hud-ult-all {
-  min-height: max(9cqw, 40px);
-  font-size: 3.2cqw;
+  min-height: max(7.4cqw, 30px);
+  padding: 0 2cqw;
+  font-size: 2.8cqw;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 /* 소환 시트 */
