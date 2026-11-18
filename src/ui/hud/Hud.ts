@@ -2,7 +2,7 @@
  * 게임 HUD (DOM, UI.md 4.1·4.2, DEV_PLAN M1-8).
  *
  * 1줄: 단계(보스 단계는 👑) · ⏱ 단계 남은 시간 · 👾 몹 수/한도(무한) 또는 ❤ 목숨(캠페인) · ⏸
- * 2줄: 💰 돈 · 👷 일꾼 수/최대 (M4, 최대면 금색) · [💰+ 개발자] · [⏭ 개발자: 다음 단계로 즉시 이동] · 배속(개발자 ×16까지)
+ * 2줄: 💰 돈 · 👾 몹 수 막대 · 🗼 놓인 타워 수/한도 (피드백 #25: 돈·인원은 위 HUD)
  * 그 아래: 보스 막대 자리 (UI.md 4.1 '보스가 있을 때만'). 자리는 늘 비워 두고 보스 단계에만 보인다
  *   → 보스 단계가 와도 HUD 높이가 그대로라 맵이 밀리거나 가려지지 않는다. 맵 위쪽 끝은 Game 장면이 이 높이를 재서 정한다.
  *   M4: 막대 = 군단·계급 이름표 「보스 이름」 + 체력만큼 채운 띠 + 남은 초 (10초 이하 빨간 깜빡). 보스를 잡으면 '보스 처치!'.
@@ -11,7 +11,7 @@
  * 경고 (UI.md 4.2): 남은 10초 이하 노란색 / 몹 120 이상 빨간색 깜빡 + 화면 가장자리 붉은 테두리 /
  *   목숨 5 이하 빨간색(깜빡이지 않음), 목숨이 줄 때마다 하트가 깨지는 연출.
  *
- * 아래 띠 (M2): 🗼 놓인 타워 수/배치 칸 수 · 소환 안내 · [👷 300원](M4 일꾼 고용) · [⬆ 승급 가능 n](M3, 누르면 그 타워의 정보 패널).
+ * 아래 띠 (M2): 👷 일꾼 수 · 소환 안내 · [👷 300원](M4 일꾼 고용) · [⬆ 승급 가능 n](M3, 누르면 그 타워의 정보 패널).
  *   맵 아래쪽 끝은 Game 장면이 이 띠의 위쪽 끝을 재서 정한다.
  *   M4 검토 반영: 접은 고르기 창의 [🃏 카드 고르기] 알약은 타워 수 옆 자리(choiceSlot)에 들어간다 — 맵 위에 떠 있으면
  *   배치 칸 3개를 덮어 소환 탭을 가로챘다. 알약이 보이는 동안 소환 안내는 숨긴다(CSS).
@@ -285,13 +285,12 @@ export function createHud(opts: HudOptions): HudView {
   }, hireArt, hireLabel);
   // 접은 고르기 창의 알약 자리 (display: contents → 알약이 아래 띠의 flex 항목이 된다)
   const choiceSlot = h('span', { class: 'hud-choice-slot', attrs: { 'data-testid': 'hud-choice-slot' } });
-  // G-1 사용자 결정 (아래 조작 묶음): 얇은 자원 줄 [💰 돈 · 🗼 인원 n/최대 · 👷 일꾼 · (카드 알약) · ⬆ 승급 가능 · 👷 고용]
+  const towersItem = h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl);
+  // G-1 사용자 결정 (아래 조작 묶음): 얇은 자원 줄 [👷 일꾼 · (카드 알약) · ⬆ 승급 가능 · 👷 고용] (피드백 #25: 💰 돈·🗼 인원은 위 HUD로)
   // + 큰 버튼 묶음 [💠 신화] [🎲 소환] [🎰 도박] / 소환 아래 넓은 [⬆ 강화] — 도전·미션은 맵 오른쪽 둥근 버튼
   const bottomBand = h(
     'div',
     { class: 'hud-bottom is-g1' },
-    goldItem,
-    h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl),
     workersItem,
     choiceSlot,
     hintEl,
@@ -305,7 +304,8 @@ export function createHud(opts: HudOptions): HudView {
     h(
       'div',
       { class: 'hud-bar' },
-      // G-1 위 HUD: 왼쪽 배속(개발자 ⏭·💰+) · 가운데 'WAVE n' + 남은 시간 · 오른쪽 필살기·⏸ / 둘째 줄 몹 수 막대 (n / 한도)
+      // G-1 위 HUD: 왼쪽 배속(개발자 ⏭·💰+) · 가운데 'WAVE n' + 남은 시간 · 오른쪽 필살기·⏸
+      // 둘째 줄: 💰 돈 · 몹 수 막대 (n / 한도) · 🗼 인원 n/한도 (피드백 #25 — 돈·인원을 아래 자원 줄에서 위로)
       h(
         'div',
         { class: 'hud-row hud-top-row' },
@@ -313,7 +313,7 @@ export function createHud(opts: HudOptions): HudView {
         h('span', { class: 'hud-wave' }, stageEl, h('span', { class: 'hud-item hud-wave-timer' }, h('span', { class: 'hud-label', text: '⏱', attrs: { 'aria-hidden': 'true' } }), timerEl)),
         h('span', { class: 'hud-side-r' }, ultChip, pauseBtn),
       ),
-      h('div', { class: 'hud-row hud-count-row' }, countItem),
+      h('div', { class: 'hud-row hud-count-row' }, goldItem, countItem, towersItem),
     ),
     bannerSlot,
     ultList,

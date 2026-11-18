@@ -4067,7 +4067,20 @@ body {
   display: flex;
   align-items: center;
   gap: 1.6cqw;
-  width: 78%;
+  flex: 1;
+}
+/* 피드백 #25: 몹 막대 양옆에 💰 돈 · 🗼 인원 (아래 자원 줄에서 옮김). 줄 높이는 그대로 → 맵 자리도 그대로 */
+.hud-count-row > .hud-gold-item,
+.hud-count-row > .hud-towers {
+  flex-shrink: 0;
+  font-size: 3.6cqw;
+  line-height: 1;
+}
+.hud-count-row .hud-gold {
+  min-width: 17cqw;
+}
+.hud-count-row > .hud-towers {
+  padding: 0 1.4cqw;
 }
 .hud-count-bar {
   position: relative;
@@ -4228,15 +4241,9 @@ body {
 .hud-bottom.is-g1 > .hud-item {
   flex-shrink: 0;
 }
-.hud-bottom.is-g1 > .hud-gold-item {
-  min-width: 0;
-}
 /* 승급 가능·카드 알약이 보이면 일꾼 수는 숨긴다 ([👷 고용] 버튼이 남아 있다) */
 .hud-bottom.is-g1:has(.hud-merge-ready:not([hidden])) > .hud-workers,
 .hud-bottom.is-g1:has(.cp-pill:not([hidden])) > .hud-workers {
-  display: none;
-}
-.hud-bottom.is-g1:has(.cp-pill:not([hidden])) .hud-gold-gain {
   display: none;
 }
 /* 자원 줄의 카드 알약은 그림 글자만 (글자는 aria-label에 그대로) */
@@ -4248,8 +4255,7 @@ body {
   padding-left: 1.8cqw;
   padding-right: 1.8cqw;
 }
-.hud-bottom.is-g1:has(.cp-pill:not([hidden])):has(.hud-merge-ready:not([hidden])) .hud-hire .hud-worker-art,
-.hud-bottom.is-g1:has(.cp-pill:not([hidden])):has(.hud-merge-ready:not([hidden])) .hud-towers .hud-label {
+.hud-bottom.is-g1:has(.cp-pill:not([hidden])):has(.hud-merge-ready:not([hidden])) .hud-hire .hud-worker-art {
   display: none;
 }
 
