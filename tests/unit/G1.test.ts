@@ -563,6 +563,29 @@ describe('G-1 화면 모델 (순수)', () => {
     expect(three.every((s) => s.scale < stackSlot(0, 2).scale)).toBe(true);
   });
 
+  it("무더기 칸 너비 상한 (사용자 '3개 무더기 겹침'): 2·3개는 혼자일 때 2배 크기여도 무더기 전체가 칸(+0.06칸) 안", async () => {
+    const { stackSlot, stackArtScale, STACK_HALF_W_PER_ART, STACK_OVERHANG_TILES } = await import('../../src/view/render/stackGeom');
+    // 1개는 상한 없음 — 예전 크기 그대로
+    expect(stackArtScale(2, stackSlot(0, 1))).toBe(2);
+    expect(stackArtScale(1.4, stackSlot(0, 1))).toBe(1.4);
+    for (const n of [2, 3]) {
+      for (const solo of [2, 1.4, 1]) {
+        for (let i = 0; i < n; i++) {
+          const slot = stackSlot(i, n);
+          const art = stackArtScale(solo, slot);
+          expect(art).toBeLessThanOrEqual(solo * slot.scale + 1e-9);
+          // 그림 바깥 끝 = |dx| + 반폭 ≤ 칸 반폭 + 여유
+          expect(Math.abs(slot.dx) + art * STACK_HALF_W_PER_ART).toBeLessThanOrEqual(0.5 + STACK_OVERHANG_TILES + 1e-9);
+        }
+      }
+    }
+    // 예전 3개 무더기(2배 × 0.68 = 1.36, dx 0.24)는 바깥 끝이 약 0.87칸 — 지금은 상한으로 줄어든다
+    expect(stackArtScale(2, stackSlot(1, 3))).toBeLessThan(0.9);
+    // 같은 무더기는 같은 크기 (뒤 가운데도 앞 양옆과 같게)
+    const three = [0, 1, 2].map((i) => stackArtScale(2, stackSlot(i, 3)));
+    expect(new Set(three).size).toBe(1);
+  });
+
   it('소환 시트: 확률 줄·천장 글자·버튼 상태', async () => {
     const { summonSheetModel, oddsLine } = await import('../../src/ui/sheets/g1Models');
     const m = realInfinite(61);
