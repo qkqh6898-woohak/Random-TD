@@ -1236,9 +1236,21 @@ body {
   white-space: nowrap;
 }
 
-.tp-actions-2 .tp-sell {
-  flex: 1.6;
+/* 피드백 #30: 판매는 머리 줄 [ℹ][✕] 왼쪽 작은 두 줄 칩 ('💰 판매' / '+n원'). 터치 영역은 btn-chip 그대로 44px 이상 */
+.tp-sell {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  flex-direction: column;
+  gap: 0;
+  padding: 0.6cqw 1.4cqw;
+  font-size: 2.7cqw;
+  line-height: 1.2;
+  white-space: nowrap;
   color: #ffe27a;
+}
+
+.tp-sell-line {
+  display: block;
 }
 
 .tp-sell.is-confirm {

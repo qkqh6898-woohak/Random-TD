@@ -9,9 +9,10 @@
  *
  * - 글자·버튼 상태는 towerPanelModel.ts(순수 함수)가 만들고, 여기서는 바뀐 부분만 DOM에 쓴다.
  * - [⬆ 승급] [⬆⬆ 모두 승급]은 sim 명령(merge/mergeAll)을 보내는 콜백만 부른다 (패널은 sim을 바꾸지 않는다).
- * - T-2: 둘째 줄 [↔ 이동] [💰 판매 +n원] (+ 개발자 모드 [🛠 변환]). 판매는 히어로 이상이면 첫 누름에 '한 번 더 누르면 판매'로
+ * - T-2: 둘째 줄 [↔ 이동] (+ 개발자 모드 [🛠 변환]). 판매는 히어로 이상이면 첫 누름에 '한 번 더 누르면 판매'로
  *   바뀌고 2초 안에 한 번 더 눌러야 팔린다 (확인 상태는 Game 장면이 들고 모델로 넘긴다).
- *   접기 2단계부터는 두 버튼 줄을 한 줄로 합치고 글자를 줄인다 ([⬆ 승급] [⬆⬆ 승급] [↔] [💰 +450원] [🛠]) — 맵 가운데 줄 타워도
+ *   피드백 #30: [💰 판매 / +n원]은 머리 줄 [ℹ][✕] 왼쪽 작은 두 줄 칩 (승급 버튼 옆에서 실수로 누르지 않게).
+ *   접기 2단계부터는 두 버튼 줄을 한 줄로 합치고 글자를 줄인다 ([⬆ 승급] [⬆⬆ 승급] [↔] [🛠]) — 맵 가운데 줄 타워도
  *   특색 줄이 보이게 (패널 높이를 버튼 한 줄만큼 아낀다).
  * - ✕·Esc(뒤로가기)로 닫는다. 맵의 빈 곳을 터치해도 닫힌다 (Game 장면).
  * - 캐릭터 그림은 Game 장면이 구운 타워 텍스처를 이미지 주소로 넘겨준다. CSS로 숨쉬기 동작을 반복한다.
@@ -177,12 +178,19 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
     h('span', { text: '↔' }),
     h('span', { class: 'tp-word', text: ' 이동' }),
   );
-  const sellBtn = h('button', {
-    class: 'btn tp-sell',
-    attrs: { type: 'button', 'data-action': 'sell', 'data-testid': 'tp-sell' },
-    text: '💰 판매',
-    on: { click: () => opts.onSell?.() },
-  });
+  // 피드백 #30: 판매는 머리 줄([ℹ][✕] 왼쪽)의 작은 두 줄 칩 — 승급·이동 버튼 줄에서 빼서 실수로 누르지 않게
+  const sellLine1 = h('span', { class: 'tp-sell-line' });
+  const sellLine2 = h('span', { class: 'tp-sell-line' });
+  const sellBtn = h(
+    'button',
+    {
+      class: 'btn btn-chip tp-sell',
+      attrs: { type: 'button', 'data-action': 'sell', 'data-testid': 'tp-sell' },
+      on: { click: () => opts.onSell?.() },
+    },
+    sellLine1,
+    sellLine2,
+  );
   const convertBtn = opts.onConvert
     ? h(
         'button',
@@ -206,6 +214,7 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       { class: 'tp-head' },
       h('div', { class: 'tp-portrait-wrap' }, portrait),
       h('div', { class: 'tp-title' }, h('div', { class: 'tp-name-row' }, stars, name, level, pausedEl), subtitle),
+      sellBtn,
       info,
       close,
     ),
@@ -222,7 +231,7 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       h('span', { class: 'tp-label', text: '대상' }),
       target,
     ),
-    h('div', { class: 'tp-act-wrap' }, h('div', { class: 'tp-actions' }, mergeBtn, mergeAllBtn), h('div', { class: 'tp-actions tp-actions-2' }, moveBtn, sellBtn, convertBtn)),
+    h('div', { class: 'tp-act-wrap' }, h('div', { class: 'tp-actions' }, mergeBtn, mergeAllBtn), h('div', { class: 'tp-actions tp-actions-2' }, moveBtn, convertBtn)),
     nextBtn,
     note,
     outcomes,
@@ -272,12 +281,9 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       note.hidden = m.note === '';
       nextBtn.textContent = m.mergeNext;
       nextBtn.hidden = m.mergeNext === '';
-      // 접기 2단계부터는 'tp-word' 글자를 숨긴다 (CSS) → '💰 +450원' · 빨간 '판매'
-      sellBtn.replaceChildren(
-        ...(m.sellConfirming
-          ? [h('span', { class: 'tp-word', text: '한 번 더 누르면 ' }), h('span', { text: '판매' })]
-          : [h('span', { text: '💰' }), h('span', { class: 'tp-word', text: ' 판매' }), h('span', { text: ` ${m.sellPriceText}` })]),
-      );
+      // 두 줄 칩: '💰 판매' / '+450원', 확인 중이면 빨간 '한 번 더' / '누르면 판매' (접기 단계와 무관하게 같은 크기)
+      sellLine1.textContent = m.sellChip[0];
+      sellLine2.textContent = ` ${m.sellChip[1]}`;
       sellBtn.classList.toggle('is-confirm', m.sellConfirming);
       sellBtn.setAttribute('aria-label', m.sellConfirming ? '한 번 더 누르면 판매' : `판매 ${m.sellLabel.replace('💰 판매 ', '')}`);
       outcomes.textContent = m.outcomes ? `승급하면: ${m.outcomes}` : '';
