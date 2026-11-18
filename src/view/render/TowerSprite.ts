@@ -41,7 +41,7 @@ import type { Tower } from '../../sim/entities/Tower';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { MOB_DEPTH_BASE } from './MobSprite';
 import { attackAnimMs, towerPose } from './towerPose';
-import { battleFigureScale, FIGURE_TILES, FOOT_OFFSET_TILES, fillOccupancy, isCrowded, occupancyKey, PEDESTAL_WIDTH_TILES, pedestalScaleFor, STAR_BADGE_W_TILES, STAR_BADGE_Y_TILES } from './towerGeom';
+import { battleFigureScale, FIGURE_TILES, FOOT_OFFSET_TILES, occupancyKey, PEDESTAL_WIDTH_TILES, pedestalScaleFor, STAR_BADGE_W_TILES, STAR_BADGE_Y_TILES } from './towerGeom';
 import { stackArtScale, stackSlot, type StackSlot } from './stackGeom';
 
 /** 이동·교환 뒤 새 칸으로 미끄러지는 시간 (ms) */
@@ -231,7 +231,7 @@ export class TowerSprite {
   }
 
   /** @param reduced 기기 '동작 줄이기' (TowerLayer가 프레임마다 한 번 읽어 넘긴다) — 반짝임·타격 빛을 끈다 */
-  update(timeMs: number, crowded: boolean, topLimit: number, reduced = false): void {
+  update(timeMs: number, topLimit: number, reduced = false): void {
     // 연출 끄기 (T-2): 대기 동작·공격 몸짓·미끄러짐 없이 고정 자세
     const still = effectsOff();
     if (still) this.slideFrom = null;
@@ -269,7 +269,7 @@ export class TowerSprite {
       gesture: preset?.gesture,
       gestureMs: preset?.gestureMs,
     });
-    const soloScale = battleFigureScale(this.lookScale, crowded, (this.baseY - topLimit) / this.tile);
+    const soloScale = battleFigureScale(this.lookScale, (this.baseY - topLimit) / this.tile);
     this.artScale = stackArtScale(soloScale, this.slot);
     const s = this.scale * this.artScale;
     // 받침대: 혼자 있을 때 크기(G-2 하한·상한) × 무더기에서 줄어든 비율(G-1, 칸 너비 상한 포함)
@@ -371,7 +371,6 @@ export class TowerSprite {
 /** 화면의 타워 그림 묶음: sim 타워 목록과 맞춰 만들고 지운다. */
 export class TowerLayer {
   private readonly sprites = new Map<number, TowerSprite>();
-  private readonly occupied = new Set<number>();
   /** 소환 사건을 받았지만 아직 그림이 없는 타워 → 그림을 만들 때 등장 동작 */
   private readonly pendingAppear = new Set<number>();
 
@@ -401,7 +400,6 @@ export class TowerLayer {
   sync(towers: readonly Tower[], timeMs: number, tick?: number): void {
     const seen = new Set<number>();
     const cols = this.layout.cols;
-    fillOccupancy(this.occupied, towers, cols);
     const reduced = prefersReducedMotion();
     // G-1 칸 무더기: 칸마다 타워 수·끄는 그림 (ID 순이라 칸 안 순서 = 쌓인 순서)
     const perTile = new Map<number, number>();
@@ -435,7 +433,7 @@ export class TowerLayer {
       const i = nth.get(key) ?? 0;
       nth.set(key, i + 1);
       sprite.setSlot(stackSlot(i, perTile.get(key) ?? 1), sprite.dragging ? null : (dragOf.get(key) ?? null));
-      sprite.update(timeMs, isCrowded(this.occupied, t.tx, t.ty, cols), this.topLimit, reduced);
+      sprite.update(timeMs, this.topLimit, reduced);
     }
     for (const [id, s] of this.sprites) {
       if (!seen.has(id)) {
@@ -497,16 +495,14 @@ export class TowerLayer {
   }
 
   /**
-   * 그 타워 그림이 쓰는(그림이 아직 없으면 — 소환 직후 — 쓸) 크기 배수 (B-1): 캐릭터 크기 × 기본 2배 / 붙으면 1.4배, HUD 아래까지.
+   * 그 타워 그림이 쓰는(그림이 아직 없으면 — 소환 직후 — 쓸) 크기 배수 (B-1): 캐릭터 크기 × 1.4배(이웃과 무관, 피드백 #66), HUD 아래까지.
    * 소환 주사위를 머리 위로 올릴 때 쓴다. sync와 같은 계산.
    */
-  expectedScale(t: Tower, towers: readonly Tower[]): number {
+  expectedScale(t: Tower): number {
     const sprite = this.sprites.get(t.id);
     if (sprite) return sprite.artScale;
-    const cols = this.layout.cols;
-    const crowded = isCrowded(fillOccupancy(new Set<number>(), towers, cols), t.tx, t.ty, cols);
     const footY = tileCenterPx(this.layout, t.tx, t.ty).y + this.layout.tile * FOOT_OFFSET_TILES;
-    return battleFigureScale(lookScale(towerLook(t.tower), this.art.awakened?.(t.tower) ?? false), crowded, (footY - this.topLimit) / this.layout.tile);
+    return battleFigureScale(lookScale(towerLook(t.tower), this.art.awakened?.(t.tower) ?? false), (footY - this.topLimit) / this.layout.tile);
   }
 
   /** 그 타워의 지금 그려진 발밑 위치 (화면 px). */

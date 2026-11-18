@@ -38,13 +38,11 @@ describe('피드백 #20 등급별 크기', () => {
     for (const g of ORDER.slice(1)) expect(Math.min(...scalesOf(g, false)), g).toBeGreaterThan(normalMax);
   });
 
-  it('전투 화면 크기도 같은 순서 (혼자·붙음 모두)', () => {
-    for (const crowded of [false, true]) {
-      for (let i = 1; i < ORDER.length; i++) {
-        const lowerMax = Math.max(...scalesOf(ORDER[i - 1]!, true).map((s) => battleFigureScale(s, crowded, 99)));
-        const higherMin = Math.min(...scalesOf(ORDER[i]!, false).map((s) => battleFigureScale(s, crowded, 99)));
-        expect(higherMin).toBeGreaterThan(lowerMax);
-      }
+  it('전투 화면 크기도 같은 순서', () => {
+    for (let i = 1; i < ORDER.length; i++) {
+      const lowerMax = Math.max(...scalesOf(ORDER[i - 1]!, true).map((s) => battleFigureScale(s, 99)));
+      const higherMin = Math.min(...scalesOf(ORDER[i]!, false).map((s) => battleFigureScale(s, 99)));
+      expect(higherMin).toBeGreaterThan(lowerMax);
     }
   });
 
@@ -52,16 +50,14 @@ describe('피드백 #20 등급별 크기', () => {
     for (const g of ORDER) {
       for (const aw of [false, true]) {
         for (const look of scalesOf(g, aw)) {
-          for (const crowded of [false, true]) {
-            const solo = battleFigureScale(look, crowded, 99);
-            expect(stackArtScale(solo, stackSlot(0, 1))).toBe(solo);
-            for (const n of [2, 3]) {
-              for (let i = 0; i < n; i++) {
-                const slot = stackSlot(i, n);
-                const art = stackArtScale(solo, slot);
-                expect(art, `${g} ${n}개`).toBeLessThanOrEqual(slot.maxArt!);
-                expect(art).toBeLessThanOrEqual(solo * slot.scale);
-              }
+          const solo = battleFigureScale(look, 99);
+          expect(stackArtScale(solo, stackSlot(0, 1))).toBe(solo);
+          for (const n of [2, 3]) {
+            for (let i = 0; i < n; i++) {
+              const slot = stackSlot(i, n);
+              const art = stackArtScale(solo, slot);
+              expect(art, `${g} ${n}개`).toBeLessThanOrEqual(slot.maxArt!);
+              expect(art).toBeLessThanOrEqual(solo * slot.scale);
             }
           }
         }

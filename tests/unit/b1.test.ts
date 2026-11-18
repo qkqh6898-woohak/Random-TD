@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { tapTile } from '../../src/view/input/tap';
 import type { MapLayout } from '../../src/view/layout';
-import { battleFigureScale, CARD_ABOVE_HEAD_TILES, cardApexTiles, fillOccupancy, FOOT_OFFSET_TILES, isCrowded, towerFigureSpanTiles } from '../../src/view/render/towerGeom';
+import { battleFigureScale, CARD_ABOVE_HEAD_TILES, cardApexTiles, FOOT_OFFSET_TILES, towerFigureSpanTiles } from '../../src/view/render/towerGeom';
 
 // 1칸 100px, 칸 (0, 0) 왼쪽 위 = (0, 0)
 const L: MapLayout = { tile: 100, originX: 0, originY: 0, minCol: 0, minRow: 0, cols: 9, rows: 11 };
@@ -52,14 +52,13 @@ describe('B-1 큰 캐릭터 탭 판정: 빈 소환 칸이 먼저', () => {
 });
 
 describe('B-1 전투 확대 배수', () => {
-  it('혼자 2배 · 붙으면 1.4배 · 머리가 HUD를 넘지 않게 줄이되 캐릭터 크기보다 작게는 안 함', () => {
-    expect(battleFigureScale(1, false, 10)).toBe(2);
-    expect(battleFigureScale(1, true, 10)).toBe(1.4);
+  it('늘 1.4배(피드백 #66: 이웃과 무관 — 예전 혼자 2배·붙으면 1.4배) · 머리가 HUD를 넘지 않게 줄이되 캐릭터 크기보다 작게는 안 함', () => {
+    expect(battleFigureScale(1, 10)).toBe(1.4);
     // 0번 줄: 발밑에서 HUD까지 1.3칸 → 머리 끝이 HUD 아래 끝에 딱 맞게
-    const s = battleFigureScale(1, false, 1.3);
+    const s = battleFigureScale(1, 1.3);
     expect(FOOT_OFFSET_TILES - towerFigureSpanTiles(s).top).toBeCloseTo(1.3, 6);
     // 자리가 아주 없어도 캐릭터 크기(HF-2 looks scale)는 지킨다
-    expect(battleFigureScale(1.25, false, 0.2)).toBe(1.25);
+    expect(battleFigureScale(1.25, 0.2)).toBe(1.25);
   });
 });
 
@@ -71,33 +70,5 @@ describe('B-1 머리 위 연출이 멈추는 높이 (G-2: 초상 카드)', () =>
       expect(cardApexTiles(s)).toBeLessThan(towerFigureSpanTiles(s).top);
       expect(towerFigureSpanTiles(s).top - cardApexTiles(s)).toBeCloseTo(CARD_ABOVE_HEAD_TILES, 6);
     }
-  });
-});
-
-describe('B-1 이웃 붙음 판정 (TowerLayer.sync·expectedScale 공용, 검토 반영)', () => {
-  const cols = 9;
-  const occ = (cells: [number, number][]) => fillOccupancy(new Set<number>(), cells.map(([tx, ty]) => ({ tx, ty })), cols);
-
-  it('위·아래·왼쪽·오른쪽 이웃이면 붙음, 대각선·두 칸 떨어지면 아님', () => {
-    for (const n of [[4, 5], [6, 5], [5, 4], [5, 6]] as [number, number][]) {
-      expect(isCrowded(occ([[5, 5], n]), 5, 5, cols)).toBe(true);
-    }
-    for (const n of [[4, 4], [6, 6], [7, 5], [5, 3]] as [number, number][]) {
-      expect(isCrowded(occ([[5, 5], n]), 5, 5, cols)).toBe(false);
-    }
-    expect(isCrowded(occ([[5, 5]]), 5, 5, cols)).toBe(false); // 자기 자신만
-  });
-
-  it('한 줄 끝(tx = cols−1)과 다음 줄 시작(tx = 0)은 이웃이 아니다', () => {
-    expect(isCrowded(occ([[cols - 1, 2], [0, 3]]), cols - 1, 2, cols)).toBe(false);
-    expect(isCrowded(occ([[cols - 1, 2], [0, 3]]), 0, 3, cols)).toBe(false);
-    expect(isCrowded(occ([[0, 2], [cols - 1, 1]]), 0, 2, cols)).toBe(false);
-  });
-
-  it('fillOccupancy는 같은 Set을 비우고 다시 채운다', () => {
-    const s = occ([[1, 1], [2, 1]]);
-    fillOccupancy(s, [{ tx: 7, ty: 7 }], cols);
-    expect(s.size).toBe(1);
-    expect(isCrowded(s, 1, 1, cols)).toBe(false);
   });
 });

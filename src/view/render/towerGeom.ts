@@ -7,9 +7,11 @@ import { CHIBI_BOUNDS, PEDESTAL_BOUNDS } from '../../art/chibiBounds';
 
 /** 캐릭터 높이 (칸 배수) */
 export const FIGURE_TILES = 1.1;
-/** 전투 화면의 기본 확대 배율과 붙어 있는 캐릭터의 배율 */
-export const BATTLE_FIGURE_SCALE = 2;
-const CROWDED_FIGURE_SCALE = 1.4;
+/**
+ * 전투 화면의 확대 배율. 피드백 #66 '유닛 크기 주변 유닛 유무에 따라 변하는거 없애기': 예전(B-1)에는 혼자 2배·이웃이 붙으면 1.4배라
+ * 옆에 소환·이동·판매할 때마다 크기가 바뀌었다 → 이웃과 상관없이 1.4배 하나 (꽉 찬 판에서도 이웃 칸을 덮지 않는 크기).
+ */
+export const BATTLE_FIGURE_SCALE = 1.4;
 /** 발밑 위치: 칸 중심에서 아래로 (칸 배수) */
 export const FOOT_OFFSET_TILES = 0.3;
 
@@ -31,7 +33,7 @@ export const FIGURE_BOTTOM_TILES = FOOT_OFFSET_TILES + (PEDESTAL_WIDTH_TILES * P
 
 /**
  * G-2 받침대 너비 배수: 2배 캐릭터 발밑에 가려 등급 받침대가 안 보이던 것 → 그림 크기를 조금 따라 키운다 (붙어 있으면 작게).
- * 0.85~1.22배 × 0.78칸 — 2배 그림이면 약 0.94칸(칸 안), 1.4배(붙음)면 약 0.66칸.
+ * 0.85~1.22배 × 0.78칸 — 2배 그림이면 약 0.94칸(칸 안), 1.4배(피드백 #66 기본)면 약 0.66칸.
  * 받침대 아래 끝은 1.22배여도 칸 중심 +0.51칸(칸 아래 경계 +0.5에서 0.01칸) — 탭 판정은 칸 그대로라 영향 없음.
  */
 export function pedestalScaleFor(artScale: number): number {
@@ -45,9 +47,9 @@ const HEAD_ABOVE_FOOT_TILES = FOOT_OFFSET_TILES - FIGURE_TOP_TILES + FIGURE_MOTI
 /** 위 칸으로 삐져나온 머리 부분의 가로 반폭 (칸 배수): 머리(반지름 62)·별·두건 ≈ 0.28칸 + 여유 */
 export const HEAD_HALF_WIDTH_TILES = 0.34;
 
-/** 주변 칸과 HUD 앞에서 실루엣이 겹치지 않게 확대 폭을 줄인다. headroom = 발밑에서 HUD 아래까지의 거리 (칸). */
-export function battleFigureScale(lookScale: number, crowded: boolean, headroom: number): number {
-  const desired = lookScale * (crowded ? CROWDED_FIGURE_SCALE : BATTLE_FIGURE_SCALE);
+/** 캐릭터 크기 × 전투 배율, HUD 앞에서 머리가 넘지 않게 줄인다 (이웃과 무관, 피드백 #66). headroom = 발밑에서 HUD 아래까지의 거리 (칸). */
+export function battleFigureScale(lookScale: number, headroom: number): number {
+  const desired = lookScale * BATTLE_FIGURE_SCALE;
   return Math.min(desired, Math.max(lookScale, headroom / HEAD_ABOVE_FOOT_TILES));
 }
 
@@ -59,25 +61,9 @@ export function towerFigureSpanTiles(scale = 1): { top: number; bottom: number }
   return { top: FOOT_OFFSET_TILES - HEAD_ABOVE_FOOT_TILES * scale, bottom: FIGURE_BOTTOM_TILES };
 }
 
-/**
- * 이웃 붙음 판정 (B-1, 검토 반영 — TowerLayer.sync·expectedScale이 같이 쓴다): 위·아래·왼쪽·오른쪽 칸에 다른 타워가 있으면 붙음 (대각선은 아님).
- * 열 수 + 2를 한 줄 간격으로 써서 한 줄 끝(tx = cols−1)과 다음 줄 시작(tx = 0)이 이웃으로 잡히지 않게 한다.
- */
+/** 칸 번호 (TowerLayer가 칸 무더기를 셀 때 쓴다). 열 수 + 2를 한 줄 간격으로 써서 한 줄 끝과 다음 줄 시작이 붙지 않게 한다. */
 export function occupancyKey(tx: number, ty: number, cols: number): number {
   return ty * (cols + 2) + tx;
-}
-
-/** 타워 칸 목록을 out에 채운다 (매 프레임 같은 Set을 다시 쓴다). */
-export function fillOccupancy(out: Set<number>, towers: readonly { tx: number; ty: number }[], cols: number): Set<number> {
-  out.clear();
-  for (const t of towers) out.add(occupancyKey(t.tx, t.ty, cols));
-  return out;
-}
-
-export function isCrowded(occupied: ReadonlySet<number>, tx: number, ty: number, cols: number): boolean {
-  const key = occupancyKey(tx, ty, cols);
-  const stride = cols + 2;
-  return occupied.has(key - 1) || occupied.has(key + 1) || occupied.has(key - stride) || occupied.has(key + stride);
 }
 
 /** 소환·승급 초상 카드 가운데가 머리 끝보다 더 올라가 멈추는 높이 (칸 배수, G-2 — 소환 카드 절반 높이 ≈ 0.52칸이라 아래 끝이 머리 끝에 살짝 걸친다) */

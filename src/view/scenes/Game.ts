@@ -1801,7 +1801,7 @@ export class GameScene extends Phaser.Scene {
       undefined,
       (x, y) => {
         const t = towerAt(this.match.world, x, y);
-        return t ? this.towerLayer.expectedScale(t, this.match.towers()) : 1;
+        return t ? this.towerLayer.expectedScale(t) : 1;
       },
       // G-2 소환·승급 실루엣·초상 카드: 정보 패널과 같은 캐릭터 한 장 그림
       (towerId) => {
