@@ -4365,3 +4365,45 @@ body {
   cursor: default;
 }
 
+
+/* ---------- v0.1.14 통합: 낮은 화면(높이 ≤ 720px)의 일시정지 메뉴를 한 화면에 ----------
+   피드백 #46(자동 판매 스위치 2줄)·#24([📘 등급·조합 설명])가 함께 들어와 320×640에서 패널이 약 780px → [💬 피드백]·[로비로]가 화면 밖.
+   낮은 화면에서만: 설정 설명 한 줄 숨김, 줄·버튼 높이 44px 안팎, [❔ 도움말]·[📘 등급·조합]을 한 줄에 반씩. 스크롤(#46)은 그대로 남겨 둔다. */
+@media (max-height: 720px) {
+  .pause-panel {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 1.6cqw;
+    padding: 3.6cqw 5cqw;
+  }
+  .pause-panel > * {
+    flex: 1 1 100%;
+  }
+  .pause-title {
+    margin: 0;
+    font-size: 5.4cqw;
+  }
+  .pause-panel .btn {
+    min-height: 44px;
+    font-size: 4.4cqw;
+  }
+  .pause-setting {
+    padding: 0.6cqw 2.4cqw;
+  }
+  .pause-setting-desc {
+    display: none;
+  }
+  .pause-volume-controls {
+    margin-top: 0.4cqw;
+  }
+  .pause-panel > .pause-help,
+  .pause-panel > .pause-grade-guide {
+    flex: 1 1 40%;
+    width: auto;
+    min-width: 0;
+    padding-inline: 1.2cqw;
+    font-size: 3.6cqw;
+    white-space: nowrap;
+  }
+}
