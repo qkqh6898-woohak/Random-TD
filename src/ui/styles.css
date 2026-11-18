@@ -787,10 +787,10 @@ body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  /* 피드백 #63: '자동 승급' 줄이 늘어 412×915에서 [로비로]가 화면 밖으로 밀려 줄 사이를 3 → 2cqw */
+  /* 피드백 #63: '자동 승급' 줄이 늘어 412×915에서 패널이 화면보다 길어져 줄 사이 3 → 2cqw, 위아래 안쪽 여백 6 → 4cqw */
   gap: 2cqw;
   min-width: 60cqw;
-  padding: 6cqw 7cqw;
+  padding: 4cqw 7cqw;
   background: var(--panel);
   border: 0.4cqw solid var(--panel-line);
   border-radius: 4cqw;
