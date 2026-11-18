@@ -6,7 +6,7 @@
  *  - 가운데: 탭 화면 (아래 메뉴로 바꿈)
  *    · [전투] (기본): 로고, 왼쪽 [퀘스트]·[영웅 모집], 오른쪽 [📜 기록]·[⚙], 세로 '웨이브 길'(최고 웨이브 + 10웨이브마다 보상),
  *      큰 [빠른 시작](무한 모드) — 이어 할 판이 있으면 [이어 하기 · n단계] + [새 게임](확인 창)
- *    · [영웅]: 영웅 카드 격자 (탭 [영웅]/[신화], 정렬 [등급 순]/[레벨 순]), 누르면 상세 창(능력치·특색·레벨업)
+ *    · [영웅]: 영웅 카드 격자 (탭 [영웅]/[신화], [⬆ 모두 레벨업 N], 정렬 [등급 순]/[레벨 순]/[레벨업 가능]), 누르면 상세 창(능력치·특색·레벨업)
  *    · [상점]: 게임 안 화폐로 카드 묶음·상자·조각·골드 (실제 돈 상품 없음)
  *    · [도감]: 신화(히든) 영웅 조각 모으기 + 해방, 조합 재료
  *    · [캠페인]: 계정 레벨로 열리는 모드 자리 (열리면 테마 1)
@@ -474,9 +474,22 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
           },
         },
       });
+    // 피드백 #31: 지금 탭의 보유 영웅을 보이는 순서대로 모두 레벨업 (돌아가며 한 레벨씩)
+    const levelAll = h('button', {
+      class: `btn btn-chip ${g.canLevel > 0 ? 'btn-primary' : ''} hero-levelup-all`,
+      text: g.canLevel > 0 ? `⬆ 모두 레벨업 ${g.canLevel}` : '⬆ 모두 레벨업',
+      attrs: { type: 'button', 'data-testid': 'hero-levelup-all', ...(g.canLevel > 0 ? {} : { disabled: '' }) },
+      on: {
+        click: () => {
+          const r = progress.levelUpAll(g.owned.map((c) => c.id));
+          if (r.ups.length > 0) opts.toast(`⬆ 영웅 ${r.ups.length}명 레벨업 · 🃏 ${r.cards} · 💰 ${fmt(r.gold)} 사용`, 2200);
+        },
+      },
+    });
     heroesPanel.replaceChildren(
       h('div', { class: 'lobby-panel-head' }, h('h2', { class: 'lobby-panel-title', text: '영웅 수집' }), h('div', { class: 'lobby-segs' }, tabBtn('heroes', '영웅'), tabBtn('mythic', '신화'))),
-      h('div', { class: 'lobby-sortbar' }, h('span', { class: 'lobby-count', text: `보유 ${g.owned.length}/${g.owned.length + g.unowned.length}` }), h('div', { class: 'lobby-segs' }, sortBtn('grade', '등급 순'), sortBtn('level', '레벨 순'))),
+      h('div', { class: 'lobby-sortbar' }, h('span', { class: 'lobby-count', text: `보유 ${g.owned.length}/${g.owned.length + g.unowned.length}` }), levelAll),
+      h('div', { class: 'lobby-sortbar hero-sorts' }, h('div', { class: 'lobby-segs' }, sortBtn('grade', '등급 순'), sortBtn('level', '레벨 순'), sortBtn('ready', '레벨업 가능'))),
       h(
         'div',
         { class: 'lobby-scroll' },

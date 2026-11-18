@@ -283,6 +283,43 @@ export function levelUpHero(state: ProgressState, pd: ProgressionData, tower: Pi
   return e.level;
 }
 
+export interface LevelUpAllResult {
+  /** 오른 영웅 (주어진 순서), 레벨 from → to */
+  ups: { id: string; from: number; to: number }[];
+  gold: number;
+  cards: number;
+}
+
+/**
+ * 피드백 #31 모두 레벨업: 주어진 순서로 돌아가며 한 레벨씩 올리고, 더 못 올릴 때까지 반복한다
+ * (골드가 모자라도 앞 영웅이 다 가져가지 않게). 결과는 하나씩 누른 것과 같다.
+ */
+export function levelUpAllHeroes(state: ProgressState, pd: ProgressionData, towers: readonly Pick<TowerData, 'id' | 'grade'>[]): LevelUpAllResult {
+  const gold0 = state.gold;
+  const from = new Map<string, { level: number; cards: number }>();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const t of towers) {
+      const e = heroEntry(state, t.id);
+      const before = { level: e.level, cards: e.cards };
+      if (typeof levelUpHero(state, pd, t) !== 'number') continue;
+      if (!from.has(t.id)) from.set(t.id, before);
+      changed = true;
+    }
+  }
+  const ups: LevelUpAllResult['ups'] = [];
+  let cards = 0;
+  for (const t of towers) {
+    const b = from.get(t.id);
+    if (!b) continue;
+    const e = heroEntry(state, t.id);
+    ups.push({ id: t.id, from: b.level, to: e.level });
+    cards += b.cards - e.cards;
+  }
+  return { ups, gold: gold0 - state.gold, cards };
+}
+
 export function heroLevelSum(state: ProgressState): number {
   let sum = 0;
   for (const id of Object.keys(state.heroes).sort()) sum += (state.heroes[id] as HeroEntry).level;

@@ -23,6 +23,7 @@ import {
   claimRecruit,
   heroEntry,
   heroMatchLevels,
+  levelUpAllHeroes,
   levelUpHero,
   lockedHiddenIds,
   parseProgress,
@@ -31,6 +32,7 @@ import {
   settleMatch,
   unlockHidden,
   type Grant,
+  type LevelUpAllResult,
   type MatchResult,
   type MatchSettlement,
   type ProgressState,
@@ -176,6 +178,14 @@ export class ProgressStore {
     if (!t) return 'notOwned';
     const r = levelUpHero(this.state, this.pd, t);
     if (typeof r === 'number') this.changed();
+    return r;
+  }
+
+  /** 피드백 #31: 주어진 순서(로비 [영웅] 지금 탭에 보이는 순서)로 모두 레벨업 (한 번 저장·알림) */
+  levelUpAll(ids: readonly string[]): LevelUpAllResult {
+    const order = ids.map((id) => this.tower(id)).filter((t): t is TowerData => t !== undefined);
+    const r = levelUpAllHeroes(this.state, this.pd, order);
+    if (r.ups.length > 0) this.changed();
     return r;
   }
 
