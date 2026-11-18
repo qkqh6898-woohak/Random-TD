@@ -400,8 +400,8 @@ test('도박: debug 판은 잠긴 테이블도 "디버그", 10원 도박 → 슬
   // G-1: 돈 도박은 하단 메뉴 [🎰 도박] 시트로 옮겼다 (예전: 강화 시트의 도박 탭)
   await page.getByTestId('menu-gamble').click();
   await expect(page.getByTestId('gamble-table-1000')).toContainText('디버그');
-  // 기대값은 잭팟 게이지까지 넣은 실제 값 (M5 검토 반영), '기대값 91%'는 한 줄로 붙어 있다
-  await expect(page.getByTestId('gamble-odds')).toHaveText('×0 40% · ×0.5 20% · ×1 21% · ×2 11% · ×3 6% · ×5 2% — 기대값 91% (잭팟 포함)');
+  // 기대값은 잭팟 게이지까지 넣은 실제 값 (M5 검토 반영), '기대값 137%'(피드백 #59, 예전 91%)는 한 줄로 붙어 있다
+  await expect(page.getByTestId('gamble-odds')).toHaveText('×0 35% · ×0.5 11% · ×1 21% · ×2 13% · ×3 12% · ×5 8% — 기대값 137% (잭팟 포함)');
   expect(await page.getByTestId('gamble-ev').evaluate((el) => el.getClientRects().length)).toBe(1);
   await page.getByTestId('gamble-table-10').click();
   await expect(page.getByTestId('gamble-reel-10')).toHaveClass(/is-spin/);
@@ -422,7 +422,7 @@ test('도박: debug 판은 잠긴 테이블도 "디버그", 10원 도박 → 슬
     null,
   );
   await expect(page.getByTestId('gamble-gauge')).toHaveText('다음 ×3 이상!');
-  await expect(page.getByTestId('gamble-odds')).toHaveText('×3 75% · ×5 25% — 이번 기대값 350%');
+  await expect(page.getByTestId('gamble-odds')).toHaveText('×3 60% · ×5 40% — 이번 기대값 380%');
   expect(errors).toEqual([]);
 });
 
