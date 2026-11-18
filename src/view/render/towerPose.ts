@@ -99,6 +99,25 @@ export interface PoseInput {
   gestureMs?: number;
 }
 
+/** 열쇠 틀 사이를 부드럽게(smoothstep) 잇는다. p는 0~1로 자른다. (피드백 #17 떠오르는 글자 튀어오름 — fxModel이 쓴다) */
+export function keyframeValue(p: number, keys: readonly (readonly [number, number])[]): number {
+  const c = p < 0 ? 0 : p > 1 ? 1 : p;
+  for (let i = 1; i < keys.length; i++) {
+    const [p1, v1] = keys[i] as readonly [number, number];
+    if (c <= p1) {
+      const [p0, v0] = keys[i - 1] as readonly [number, number];
+      const t = p1 > p0 ? (c - p0) / (p1 - p0) : 1;
+      return v0 + (v1 - v0) * t * t * (3 - 2 * t);
+    }
+  }
+  return (keys[keys.length - 1] as readonly [number, number])[1];
+}
+
+/** 같은 열쇠 틀을 lag만큼 늦게 따라가는 값 (시작·끝 값은 같다). */
+export function laggedKeyframeValue(p: number, keys: readonly (readonly [number, number])[], lag: number): number {
+  return keyframeValue(p <= lag ? 0 : (p - lag) / (1 - lag), keys);
+}
+
 /** 숨쉬기 + 위아래 흔들림만 (1.5초 주기, 시작 위상 = seed). */
 export function breathPose(timeMs: number, seed: number): { sx: number; sy: number; bob: number } {
   const u = (TAU * timeMs) / BREATH_PERIOD_MS + seed * TAU;

@@ -6,6 +6,7 @@
  *  - 같은 자리에 숫자가 몰리면(여러 타워가 한 몹을 동시에 때림) 겹치지 않게 위로 쌓는다 (`stackSlot`). 떠오르는 속도가
  *    모두 같아서(일정 속도) 놓을 때 겹치지 않으면 끝까지 겹치지 않는다. 쌓을 자리가 없으면 그 숫자는 띄우지 않는다.
  */
+import { keyframeValue, laggedKeyframeValue } from './towerPose';
 
 export const DAMAGE_COLORS = {
   physical: '#FFFFFF',
@@ -88,15 +89,33 @@ export function damageColor(p: number, m: number, t: number): string {
 export const FLOAT_RISE_TILES = 0.7;
 
 /**
- * 떠오르는 숫자: 경과 비율 k(0~1) → 위로 이동(칸 배수)·투명도·크기.
+ * 떠오르는 숫자 글자 크기 단계 (기본 글자 크기 배수, 피드백 #17 '글자 크기 변화를 다양하게'):
+ * 작은 글자(회복·회피) · 보통(피해) · 큰 글자(돈) · 아주 큰 글자(즉사!) · 치명타.
+ */
+export const FLOAT_TEXT_SIZE_MUL = Object.freeze({ small: 0.85, normal: 1, big: 1.15, huge: 1.5, critical: 1.8 });
+export type FloatTextSize = keyof typeof FLOAT_TEXT_SIZE_MUL;
+
+/** 떠오르는 숫자 세로 크기 열쇠 틀: 톡 튀어 넘쳤다가(최대 1.15 = 겹침 상자 안) 작아졌다 제 크기 (피드백 #17 '말랑말랑') */
+const FLOAT_POP_KEYS: readonly (readonly [number, number])[] = [
+  [0, 0.6],
+  [0.12, 1.15],
+  [0.22, 0.92],
+  [0.32, 1.03],
+  [0.42, 1],
+  [1, 1],
+];
+/** 가로가 세로보다 늦는 몫 (진행 비율) */
+const FLOAT_POP_X_LAG = 0.05;
+
+/**
+ * 떠오르는 숫자: 경과 비율 k(0~1) → 위로 이동(칸 배수)·투명도·가로/세로 크기.
  * 이동은 일정 속도: 감속(ease-out)이면 나중에 뜬 숫자가 먼저 뜬 숫자를 따라잡아 겹친다.
  */
-export function floatingTextFrame(k: number): { rise: number; alpha: number; scale: number } {
+export function floatingTextFrame(k: number): { rise: number; alpha: number; scaleX: number; scaleY: number } {
   const c = k < 0 ? 0 : k > 1 ? 1 : k;
   const rise = FLOAT_RISE_TILES * c;
   const alpha = c < 0.6 ? 1 : 1 - (c - 0.6) / 0.4;
-  const scale = c < 0.15 ? 0.7 + (0.45 * c) / 0.15 : 1.15 - Math.min(0.15, (c - 0.15) * 0.5);
-  return { rise, alpha, scale };
+  return { rise, alpha, scaleX: laggedKeyframeValue(c, FLOAT_POP_KEYS, FLOAT_POP_X_LAG), scaleY: keyframeValue(c, FLOAT_POP_KEYS) };
 }
 
 /** 동전 위치: 처치 자리 a → HUD 돈 b, 경과 비율 k. 처음에 위로 튀었다가 곡선으로 날아간다 (2차 베지어). */
