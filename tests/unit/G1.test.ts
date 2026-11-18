@@ -142,12 +142,12 @@ describe('칸 무더기 소환 (summonAuto · summonPad)', () => {
     expect(m.state.gold).toBe(gold - m.rules.summonCost);
   });
 
-  it('인원 한도 (board.unitCap 20 + 카드 부대 확장): 내 타워가 한도면 소환·소환 도박 모두 cap, 돈은 그대로 · 승급하면 다시', () => {
+  it('인원 한도 (board.unitCap 30 — 피드백 #59로 20 → 30 + 카드 부대 확장): 내 타워가 한도면 소환·소환 도박 모두 cap, 돈은 그대로 · 승급하면 다시', () => {
     const m = realInfinite(19);
     m.state.gold = 100_000;
-    expect(rules.unitCap).toBe(20);
-    for (let i = 0; i < 25; i++) command(m, { type: 'summonAuto' });
-    expect(listTowers(m.world)).toHaveLength(20);
+    expect(rules.unitCap).toBe(30);
+    for (let i = 0; i < 35; i++) command(m, { type: 'summonAuto' });
+    expect(listTowers(m.world)).toHaveLength(30);
     expect(eventsOf(m, 'summonFail').at(-1)?.reason).toBe('cap');
     const gold = m.state.gold;
     command(m, { type: 'gacha', k: 0, f: 0 });
@@ -158,7 +158,7 @@ describe('칸 무더기 소환 (summonAuto · summonPad)', () => {
     command(m, { type: 'debugCard', c: rules.cards.findIndex((c) => c.id === 'pickCap') });
     expect(m.state.unitCapBonus[0]).toBe(3);
     command(m, { type: 'summonAuto' });
-    expect(listTowers(m.world)).toHaveLength(21);
+    expect(listTowers(m.world)).toHaveLength(31);
   });
 
   it('일반 소환 천장: 레어 이상 없이 30회면 다음 소환은 레어, 카운터는 0으로 · 카드 행운 부적은 천장을 줄인다', () => {

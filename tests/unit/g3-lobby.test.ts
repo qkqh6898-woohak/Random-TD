@@ -80,8 +80,8 @@ describe('위 띠 · 웨이브 길 · 조각', () => {
     const s = fresh();
     const rows = fragmentRows(s, pd, data);
     expect(rows).toHaveLength(12);
-    s.heroes[rows[0]!.id]!.cards = 20;
-    expect(fragmentRows(s, pd, data)[0]).toMatchObject({ have: 20, need: 20, canUnlock: true, unlocked: false });
+    s.heroes[rows[0]!.id]!.cards = 5; // 피드백 #59: 해방 조각 20 → 5
+    expect(fragmentRows(s, pd, data)[0]).toMatchObject({ have: 5, need: 5, canUnlock: true, unlocked: false });
   });
   it('정산 요약: 이름·등급 색·NEW, 한 줄 글자', () => {
     const s = fresh();

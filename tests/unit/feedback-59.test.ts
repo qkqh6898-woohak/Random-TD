@@ -53,11 +53,11 @@ describe('피드백 #59', () => {
     expect(unitCap(m.ctx, 0)).toBe(30);
   });
 
-  it('5. 돈 도박 기대값: 잭팟 포함 91.34% → 약 137% (×1.5 ± 2%p), 표만 81% → 128%', () => {
+  it('5. 돈 도박 기대값: 잭팟 포함 91.34% → 약 137% (×1.5 ± 2%p), 표만 81% → 128.5%', () => {
     const real = gambleExpectationBp(rules);
     expect(real).toBeGreaterThanOrEqual(Math.floor((9134 * 3) / 2) - 200);
     expect(real).toBeLessThanOrEqual(Math.floor((9134 * 3) / 2) + 200);
-    expect(gambleRollExpectationBp(rules)).toBe(12800);
+    expect(gambleRollExpectationBp(rules)).toBe(12850);
     const sum = rules.gambleOutcomes.reduce((a, o) => a + o.chanceBp, 0);
     expect(sum).toBe(10000);
   });
