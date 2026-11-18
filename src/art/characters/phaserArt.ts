@@ -135,13 +135,13 @@ const TINT_GLOW_ALPHA = 0.35;
 export const EXTERNAL_OUTLINE_OF_H = 0.022;
 /**
  * G-2: 진한 외곽선 바깥의 빛 테두리 두께 (그림 높이 대비) — 어두운 배경(밤·침공 밴드)에서도 실루엣이 읽히게.
- * 피드백 #21: 이 테두리를 등급 색(받침대 색, presentation.gradeBorderColor)으로 칠한다 → 색이 보이게 0.012 → 0.026.
+ * 피드백 #21: 이 테두리를 등급 색(받침대 색, presentation.gradeBorderColor)으로 칠한다 (두께는 그대로).
  */
-export const EXTERNAL_HALO_OF_H = 0.026;
+export const EXTERNAL_HALO_OF_H = 0.012;
 /** 바깥 그림 외곽선 색 (palette outline 진한 갈색)·알파 */
 const EXTERNAL_OUTLINE_RGBA = 'rgba(40, 24, 14, 0.9)';
-/** 외곽선을 찍는 방향 수 (원 둘레) — 등급 테두리는 반지름이 커서 틈이 안 보이게 24방향 */
-const EXTERNAL_OUTLINE_STEPS = 24;
+/** 외곽선을 찍는 방향 수 (원 둘레) */
+const EXTERNAL_OUTLINE_STEPS = 16;
 
 /**
  * 바깥 그림(힉스필드)에 굵은 진한 외곽선을 두른 텍스처 키 (처음 한 번 굽는다). 문서 4장 '컬러 대비와 굵은 외곽선은 배경과 타워를 분리' —
