@@ -629,10 +629,21 @@ export interface TranscendConfig {
   costGrowth: number;
 }
 
+/** 소환 확률 강화 (피드백 #27): 레어 직행 소환 확률 +rarePerLevel/Lv, 비용 cost[0] + cost[1] × Lv. */
+export interface SummonUpgradeConfig {
+  id: string;
+  name: string;
+  icon: string;
+  rarePerLevel: number;
+  max: number;
+  cost: [number, number];
+}
+
 export interface UpgradeConfig {
   grade: GradeUpgradeConfig[];
   stat: StatUpgradeConfig[];
   transcend: TranscendConfig;
+  summon: SummonUpgradeConfig;
 }
 
 /** 도박 (GDD.md 7.2, M5-5). */
@@ -1541,6 +1552,14 @@ export const gameSchema: Schema = s.obj({
       costBase: s.int({ min: 1 }),
       costGrowth: s.num({ min: 1, max: 10 }),
     }),
+    summon: s.obj({
+      id: s.str({ nonEmpty: true }),
+      name: s.str({ nonEmpty: true }),
+      icon: s.str({ nonEmpty: true }),
+      rarePerLevel: s.num({ min: 0, max: 1 }),
+      max: s.int({ min: 1, max: 1000 }),
+      cost: s.tuple(s.int({ min: 0 }), s.int({ min: 0 })),
+    }),
   }),
   gamble: s.obj({
     tables: s.arr(s.obj({ cost: s.int({ min: 1 }), unlockLevel: s.int({ min: 1 }) }), { minLength: 1, maxLength: 10 }),
@@ -1982,6 +2001,7 @@ function crossCheckM5(data: GameData, issues: Issue[]): void {
     ...game.upgrade.grade.map((g, i) => [`upgrade.grade[${i}].id`, g.id] as const),
     ...game.upgrade.stat.map((g, i) => [`upgrade.stat[${i}].id`, g.id] as const),
     ['upgrade.transcend.id', game.upgrade.transcend.id] as const,
+    ['upgrade.summon.id', game.upgrade.summon.id] as const,
   ]) {
     if (ids.has(id)) issues.push({ file: 'game.json', path, message: `강화 id 중복: ${id}` });
     ids.add(id);

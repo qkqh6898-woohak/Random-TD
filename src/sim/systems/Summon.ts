@@ -4,7 +4,7 @@
  * - `summon` 명령: 빈 배치 칸 (x, y) + 소환 비용(100원) → 그 칸에 타워 하나.
  *   명령은 화면이 미리 검사해서 보내지만, 실행 틱에 **다시 검사**한다 (같은 틱에 같은 칸 명령이 둘 와도 하나만 된다).
  *   실패하면 상태를 바꾸지 않고 난수도 쓰지 않으며 `summonFail` 사건 { reason }을 낸다.
- * - 판정 순서 (GDD 4.3): ① 신 타워 0.01% (덱과 무관, 신 3종 중 균등) → ② 레어 직행 (행운의 여신 3% → 10%, M3-9. 특성·카드는 뒤에서 더함)
+ * - 판정 순서 (GDD 4.3): ① 신 타워 0.01% (덱과 무관, 신 3종 중 균등) → ② 레어 직행 (행운의 여신 3% → 10%, M3-9 + 소환 확률 강화, 피드백 #27. 특성·카드는 뒤에서 더함)
  *   → ③ 덱 노말 5종 균등. 레어 직행이면 덱 레어 5종 균등. 레어 직행 확률이 0이면 ②는 난수를 쓰지 않는다.
  *   난수는 **플레이어별 소환 흐름**(`p{n}.summon`)만 쓴다 → 한 사람의 소환이 다른 사람·몹 등장 순서에 영향을 주지 않는다.
  *   신 판정은 확률과 상관없이 매번 난수 1개를 쓴다 (난수 사용 횟수가 데이터 확률에 따라 달라지지 않게).
@@ -25,6 +25,7 @@ import { canAfford, spendGold } from './Economy';
 import { rollChanceBp } from './Damage';
 import { ownerBonus } from '../abilities';
 import { chanceBonus, chanceValue } from '../chances';
+import { summonUpgradeBp } from './Upgrade';
 
 /** 소환 실패 이유: 판이 끝남 / 배치 칸이 아님 / 이미 타워가 있음 / 배치 칸이 가득 참 / 돈 부족 */
 export type SummonFail = 'phase' | 'notBuildable' | 'occupied' | 'full' | 'gold' | 'cap';
@@ -95,9 +96,12 @@ export function rollSummon(rng: Rng, rules: MatchRules, deck: Deck, rareBp = 0, 
   return { tower: rng.pick(deck.normal), god: false, rare: false };
 }
 
-/** 그 플레이어의 레어 직행 확률 (bp): 판 위 특색(행운의 여신)의 합 — 같은 타워는 한 번만. + 개발자 확률 조정 'summonRare'. */
+/**
+ * 그 플레이어의 레어 직행 확률 (bp): 판 위 특색(행운의 여신)의 합 — 같은 타워는 한 번만. + 개발자 확률 조정 'summonRare'
+ * + 소환 확률 강화 (피드백 #27).
+ */
 export function summonRareChance(ctx: MatchContext, world: World, player: number): number {
-  return ownerBonus(ctx, world, player, (def, p) => def.summonRareBp?.(p)) + chanceBonus(ctx.state, 'summonRare');
+  return ownerBonus(ctx, world, player, (def, p) => def.summonRareBp?.(p)) + chanceBonus(ctx.state, 'summonRare') + summonUpgradeBp(ctx, player);
 }
 
 /** 칸에 타워를 놓는다 (검사 없이, 소환·테스트용). */

@@ -225,7 +225,7 @@ export interface UpgradeRowModel {
   id: string;
   icon: string;
   name: string;
-  /** 대상 설명: 등급 강화 '노말·레어', 능력치·초월 '모든 타워' */
+  /** 대상 설명: 등급 강화 '노말·레어', 능력치·초월 '모든 타워', 소환 확률 '소환 · 레어 확률' */
   target: string;
   lv: number;
   max: number;
@@ -251,9 +251,15 @@ export interface UpgradeSheetModel {
   transcend: UpgradeRowModel | null;
 }
 
-/** 강화 효과 단위: 치명타 확률·피해는 %p, 나머지는 %. */
+/** 강화 효과 단위: 치명타 확률·피해·소환 확률은 %p, 나머지는 %. */
 function effectUnit(u: UpgradeRule): string {
-  return u.stat === 'critChance' || u.stat === 'critMul' ? '%p' : '%';
+  return u.stat === 'critChance' || u.stat === 'critMul' || u.kind === 'summon' ? '%p' : '%';
+}
+
+/** 강화 대상 설명: 등급 강화 '노말·레어', 소환 확률 '소환 · 레어 확률', 나머지 '모든 타워'. */
+function upgradeTarget(u: UpgradeRule): string {
+  if (u.kind === 'grade') return u.grades.map((g) => GRADE_SHORT[g]).join('·');
+  return u.kind === 'summon' ? '소환 · 레어 확률' : '모든 타워';
 }
 
 function upgradeRow(ctx: Pick<MatchContext, 'rules' | 'state'>, player: number, u: UpgradeRule): UpgradeRowModel {
@@ -270,7 +276,7 @@ function upgradeRow(ctx: Pick<MatchContext, 'rules' | 'state'>, player: number, 
     id: u.id,
     icon: u.icon,
     name: u.name,
-    target: u.kind === 'grade' ? u.grades.map((g) => GRADE_SHORT[g]).join('·') : '모든 타워',
+    target: upgradeTarget(u),
     lv,
     max: u.max,
     levelText: transcend ? `Lv ${lv}` : `Lv ${lv}/${u.max}`,
@@ -291,7 +297,7 @@ export function upgradeSheetModel(ctx: Pick<MatchContext, 'rules' | 'state'>, pl
   let transcend: UpgradeRowModel | null = null;
   for (const u of rules.upgrades) {
     if (u.kind === 'grade') grade.push(upgradeRow(ctx, player, u));
-    else if (u.kind === 'stat') stat.push(upgradeRow(ctx, player, u));
+    else if (u.kind === 'stat' || u.kind === 'summon') stat.push(upgradeRow(ctx, player, u));
     else if (transcendOpen(rules, state, player)) transcend = upgradeRow(ctx, player, u);
   }
   return { apsMul: `⚡${mulText(aps < 0 ? 0 : aps > cap ? cap : aps)}`, statNote: statCapNote(rules), grade, stat, transcend };

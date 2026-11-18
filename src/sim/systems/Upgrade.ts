@@ -9,6 +9,7 @@
  *     앞으로 나올 타워 모두. 타워 등급마다 다르므로 Aura.towerBonus가 gradeUpgradeBp로 TowerBonus.atkPctBp에 더한다.
  *   - 능력치 강화 (모든 타워): 공속 +4%·물리/마법 관통 +2%·치명 확률 +1%p·치명 피해 +10%p·사거리 +2% → PlayerMods에 더한다.
  *   - 초월 (등급 강화 3종이 모두 최대일 때 열림): 모든 타워 공격력 +5%/Lv → PlayerMods.atkPctBp.
+ *   - 소환 확률 (피드백 #27, k = 초월 다음): 레어 직행 소환 확률 +perLevel/Lv → Summon.summonRareChance가 summonUpgradeBp로 더한다.
  * - 한도 (M5-4, game.json combat): 최종 공속 = 기본의 5배·초당 15회, 관통 90%, 치명 확률 100% — stats.effectiveStats·Damage가 자른다.
  * - 실패하면 상태를 바꾸지 않고 'upgradeFail' { player, k, reason: phase · unknown · max · locked · gold }.
  *   성공하면 'upgrade' { player, k, id, lv, cost }. 판 상태 upgradesBought(미션 '강화 n회')를 1 올린다.
@@ -123,6 +124,13 @@ export function gradeUpgradeBp(ctx: Pick<MatchContext, 'rules' | 'state'>, playe
   if (k === undefined) return 0;
   const u = ctx.rules.upgrades[k] as UpgradeRule;
   return upgradeLevel(ctx.state, player, k) * u.perLevelBp;
+}
+
+/** 소환 확률 강화로 오른 레어 직행 소환 확률 (bp): 레벨 × 레벨당 값 (강화가 없으면 0). */
+export function summonUpgradeBp(ctx: Pick<MatchContext, 'rules' | 'state'>, player: number): number {
+  let bp = 0;
+  for (const u of ctx.rules.upgrades) if (u.kind === 'summon') bp += upgradeLevel(ctx.state, player, u.k) * u.perLevelBp;
+  return bp;
 }
 
 /** 강화 u의 Lv에서의 효과 (bp) — 화면 '+40% → +44%'용. */
