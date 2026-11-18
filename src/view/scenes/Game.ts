@@ -181,6 +181,8 @@ import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
 import { matchResultOf } from '../../meta/matchResult';
 import { settlementView } from '../../ui/lobby/lobbyModel';
 import { createPauseMenu } from '../../ui/screens/PauseMenu';
+import { createGradeGuideDialog } from '../../ui/screens/GradeGuideDialog';
+import { gradeGuideModel } from '../../ui/screens/gradeGuideModel';
 import { createSceneFeedback, matchFeedbackSnapshot } from '../feedbackInfo';
 import { SCENE_BOOT, SCENE_GAME } from '../config';
 import type { GameContext } from '../context';
@@ -2489,6 +2491,10 @@ export class GameScene extends Phaser.Scene {
         },
         // FB-1: 💬 피드백 보내기 — 일시정지 중이라 틱이 멈춰 있다 (판 기록 = 지금 틱까지, 첨부 기본 켜짐)
         feedback: createSceneFeedback(this.ctx, () => matchFeedbackSnapshot(this.ctx, this.match, this.resumeSpeed > 0 ? this.resumeSpeed : 1, this.resumed), true),
+        // 피드백 #24: 📘 등급·조합 설명 (조합식은 [신화] 도감과 같은 공개 규칙)
+        gradeGuide: createGradeGuideDialog(() =>
+          gradeGuideModel({ baseDps: this.ctx.data.towers.baseDps, mergeCount: this.match.rules.mergeCount, godChanceBp: this.match.rules.godChanceBp, codex: this.codexModel() }),
+        ),
       }),
     );
     this.refreshHud();
