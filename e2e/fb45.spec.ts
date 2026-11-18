@@ -19,9 +19,24 @@ test('돈 +n원은 들어온 돈마다 따로 (합친 숫자가 아님)', async 
   const shown = await page.waitForFunction(() => {
     const els = [...document.querySelectorAll<HTMLElement>('[data-testid="hud-gold-gain"]')];
     if (els.length < 3) return null;
-    return { texts: els.map((e) => e.textContent), slots: els.map((e) => e.style.getPropertyValue('--slot')), tops: els.map((e) => Math.round(e.getBoundingClientRect().top)) };
+    const gold = document.querySelector('[data-testid="hud-gold"]')!.getBoundingClientRect();
+    // 떠오르며 움직이므로 글자 상자 대신 줄 기준 자리(애니메이션 없는 위치)를 본다
+    const rest = els.map((e) => {
+      const r = e.getBoundingClientRect();
+      const shift = new DOMMatrix(getComputedStyle(e).transform).m42;
+      return { top: r.top - shift, bottom: r.bottom - shift };
+    });
+    return {
+      texts: els.map((e) => e.textContent),
+      slots: els.map((e) => e.dataset.slot),
+      tops: rest.map((r) => Math.round(r.top)),
+      // 돈 숫자와 세로로 겹치는 정도 (px) — 위·아래 줄에 있으면 거의 0
+      goldOverlap: rest.map((r) => Math.max(0, Math.min(r.bottom, gold.bottom) - Math.max(r.top, gold.top))),
+      goldHeight: gold.height,
+    };
   });
-  const { texts, slots, tops } = (await shown.jsonValue())!;
+  const { texts, slots, tops, goldOverlap, goldHeight } = (await shown.jsonValue())!;
+  for (const o of goldOverlap) expect(o).toBeLessThan(goldHeight / 2);
   expect(texts).toEqual(['+30원', '+30원', '+1,890원']);
   // 한 줄씩 다른 높이 (겹쳐서 하나로 읽히지 않게)
   expect(new Set(slots).size).toBe(3);

@@ -238,7 +238,7 @@ export function createHud(opts: HudOptions): HudView {
   const bannerSlot = h('div', { class: 'hud-banner-slot', attrs: { 'data-testid': 'hud-banner-slot' } }, bannerEl, chalEl, readyBtn, bossNoteEl);
   // 화면 가장자리 붉은 테두리 (몹 120 이상, 무한)
   const edgeEl = h('div', { class: 'hud-edge', attrs: { 'aria-hidden': 'true', 'data-testid': 'hud-edge' } });
-  // 돈 '+n원' (돈 글자 옆에서 떠오름) — 들어온 돈마다 글자 하나 (피드백 #45), 칸(--slot)마다 한 줄씩 위로
+  // 돈 '+n원' (돈 글자 옆에서 떠오름) — 들어온 돈마다 글자 하나 (피드백 #45), 칸마다 한 줄씩 위로
   const gainSlots: ({ el: HTMLElement; timer: ReturnType<typeof setTimeout> } | null)[] = Array.from({ length: GOLD_GAIN_MAX }, () => null);
   const gainOrder: number[] = [];
   const gainLayer = h('span', { class: 'hud-gold-gains', attrs: { 'aria-hidden': 'true' } });
@@ -381,7 +381,9 @@ export function createHud(opts: HudOptions): HudView {
       freeGainSlot(slot);
     }
     const node = h('span', { class: 'hud-gold-gain is-on', attrs: { 'data-testid': 'hud-gold-gain' }, text: label });
-    node.style.setProperty('--slot', String(slot));
+    node.dataset.slot = String(slot);
+    // 0번은 돈 글자 아래(예전 자리), 1번부터는 돈 글자 줄을 건너뛰어 그 위로 (숫자와 겹치지 않게)
+    node.style.setProperty('--row', String(slot === 0 ? 0 : slot + 1));
     gainLayer.append(node);
     gainSlots[slot] = { el: node, timer: setTimeout(() => freeGainSlot(slot), GOLD_GAIN_MS) };
     gainOrder.push(slot);
