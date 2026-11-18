@@ -8,7 +8,8 @@
  *    3초 주기 안에서 시작 시점을 0~1초 무작위로 늦춰 기계적인 느낌을 줄인다 (ART.md 2.2 '0~1초 무작위 쉼').
  *  - 시작 위상(seed)은 타워마다 무작위 → 같은 타워 여러 개가 똑같이 움직이지 않는다.
  * 공격: 0.25초(공격 간격의 60% 이하) 동안 대상 쪽으로 몸을 내밀었다 돌아온다. 공격 직후 0.3초는 고유 동작 대신 숨쉬기만.
- * 등장: 0.4초 동안 작게 시작해 살짝 넘쳤다가 제 크기로 (소환 직후).
+ * 등장: 0.6초 동안 작게 시작해 크게 넘쳤다가 작아졌다 다시 살짝 커지며 제 크기로 (소환 직후, 피드백 #17 '말랑말랑').
+ *   가로는 세로보다 조금 늦게 따라와 젤리처럼 늘었다 찌그러진다 (appearJelly).
  *
  * 캐릭터 다양화: 고유 동작 창의 몸 움직임을 캐릭터별 프리셋(art/characters/idle.ts)이 고를 수 있다 (`gesture`·`gestureMs`).
  * 넘기지 않으면 예전과 똑같이 '작게 뛰며 갸웃'(hopTilt). 결과의 `gesture`(창 진행 0~1, 창 밖 −1)와 `attackK`로 소품·날개 등 파츠가 같은 박자에 움직인다.
@@ -31,8 +32,19 @@ export const GESTURE_JITTER_MS = 1000;
 export const ATTACK_ANIM_MS = 250;
 /** 공격 직후 고유 동작을 쉬는 시간 (ms) */
 export const ATTACK_CALM_MS = 300;
-/** 등장 동작 길이 (ms) */
-export const APPEAR_MS = 400;
+/** 등장 동작 길이 (ms) — 피드백 #17: 커졌다 작아졌다가 보이게 0.4초 → 0.6초 */
+export const APPEAR_MS = 600;
+/** 등장 크기 열쇠 틀 [진행 0~1, 크기]: 작게 → 크게 넘침 → 작아짐 → 살짝 커짐 → 제 크기 */
+const APPEAR_KEYS: readonly (readonly [number, number])[] = [
+  [0, 0.3],
+  [0.32, 1.22],
+  [0.55, 0.88],
+  [0.75, 1.06],
+  [0.9, 0.98],
+  [1, 1],
+];
+/** 등장 때 가로가 세로보다 늦는 몫 (진행 비율) — 젤리 찌그러짐 */
+const APPEAR_X_LAG = 0.07;
 /** G-2 몸 흔들림(살랑) 주기 (ms)·크기 (rad, 0.02 아래 — '갸웃'과 구별되는 아주 작은 흔들림) */
 export const SWAY_PERIOD_MS = 3400;
 export const SWAY_RAD = 0.016;
@@ -97,6 +109,30 @@ export interface PoseInput {
   gesture?: BodyGesture;
   /** 고유 동작 길이 (ms, 기본 GESTURE_MS) — 주기(3초)의 절반을 넘지 않게 자른다 */
   gestureMs?: number;
+}
+
+/** 열쇠 틀 사이를 부드럽게(smoothstep) 잇는다. p는 0~1로 자른다. */
+export function keyframeValue(p: number, keys: readonly (readonly [number, number])[]): number {
+  const c = p < 0 ? 0 : p > 1 ? 1 : p;
+  for (let i = 1; i < keys.length; i++) {
+    const [p1, v1] = keys[i] as readonly [number, number];
+    if (c <= p1) {
+      const [p0, v0] = keys[i - 1] as readonly [number, number];
+      const t = p1 > p0 ? (c - p0) / (p1 - p0) : 1;
+      return v0 + (v1 - v0) * t * t * (3 - 2 * t);
+    }
+  }
+  return (keys[keys.length - 1] as readonly [number, number])[1];
+}
+
+/** 같은 열쇠 틀을 lag만큼 늦게 따라가는 값 (시작·끝 값은 같다). */
+export function laggedKeyframeValue(p: number, keys: readonly (readonly [number, number])[], lag: number): number {
+  return keyframeValue(p <= lag ? 0 : (p - lag) / (1 - lag), keys);
+}
+
+/** 등장 진행 p(0~1) → 가로·세로 크기 (피드백 #17). */
+export function appearJelly(p: number): { sx: number; sy: number } {
+  return { sx: laggedKeyframeValue(p, APPEAR_KEYS, APPEAR_X_LAG), sy: keyframeValue(p, APPEAR_KEYS) };
 }
 
 /** 숨쉬기 + 위아래 흔들림만 (1.5초 주기, 시작 위상 = seed). */
@@ -202,14 +238,13 @@ export function towerPose(input: PoseInput): TowerPose {
     }
   }
 
-  // 등장: 0.3 → 1.12 → 1 (0.4초)
+  // 등장: 0.3 → 1.22 → 0.88 → 1.06 → 1 (0.6초, 가로는 살짝 늦게 — 젤리)
   if (input.appearAtMs !== null) {
     const a = timeMs - input.appearAtMs;
     if (a >= 0 && a < APPEAR_MS) {
-      const p = a / APPEAR_MS;
-      const s = p < 0.7 ? 0.3 + (1.12 - 0.3) * (p / 0.7) : 1.12 - 0.12 * ((p - 0.7) / 0.3);
-      sx *= s;
-      sy *= s;
+      const j = appearJelly(a / APPEAR_MS);
+      sx *= j.sx;
+      sy *= j.sy;
     }
   }
   // 반짝임: 주기마다 한 번, 타워마다 다른 때·자리 (무기·장신구 쪽: 몸 위 절반의 좌우 끝)

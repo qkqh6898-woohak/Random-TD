@@ -2084,7 +2084,7 @@ export class GameScene extends Phaser.Scene {
         case 'execute': {
           if (!recent) break;
           const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
-          this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.6, EXECUTE_LABEL, DAMAGE_COLORS.execute, time, true);
+          this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.6, EXECUTE_LABEL, DAMAGE_COLORS.execute, time, true, false, 'huge');
           this.noteFx('execute');
           break;
         }
@@ -2198,14 +2198,14 @@ export class GameScene extends Phaser.Scene {
           if (!recent || heals >= MAX_HEAL_TEXTS_PER_FRAME) break;
           heals++;
           const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
-          this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.42, `+${ev.amount}`, DAMAGE_COLORS.heal, time);
+          this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.42, `+${ev.amount}`, DAMAGE_COLORS.heal, time, false, false, 'small');
           this.noteFx('heal');
           break;
         }
         case 'evade': {
           if (!recent) break;
           const px = unitsToPx(this.layout, Number(ev.x), Number(ev.y));
-          this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.42, EVADE_LABEL, DAMAGE_COLORS.evade, time);
+          this.floatingText.spawn(px.x, px.y - this.layout.tile * 0.42, EVADE_LABEL, DAMAGE_COLORS.evade, time, false, false, 'small');
           this.noteFx('evade');
           break;
         }
