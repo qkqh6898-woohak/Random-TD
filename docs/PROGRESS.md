@@ -1331,3 +1331,12 @@
 - 내가 정한 것: '높은 등급' = 레어 직행 확률(행운의 여신과 같은 판정)만 올림, 신 확률·소환 도박 확률은 그대로. 수치(Lv당 +0.5%p, 최대 +10%p, 전체 11,500원)는 JSON에서 조정.
 - 테스트: 새 `tests/unit/feedback-27.test.ts` 7개(고치기 전 7개 실패 확인), `e2e/fb27.spec.ts` 1개(스크린샷 `docs/screens/FB27-summon-upgrade.png`). 의도한 변경으로 고친 테스트: `Upgrade`(강화 순서 끝에 summonLuck), `view-m5`(능력치 탭 줄 목록). 판 상태 모양은 그대로: 새 판의 강화 배열은 예전처럼 10칸이고 소환 확률을 처음 살 때만 11번째 칸이 생긴다(`match.ts`, 개발자 확률 조정 `chanceOv`와 같은 방식) → 리플레이 8개의 주기·끝 해시는 main과 같고 `dataHash` 한 줄만 바뀜(game.json이 바뀌었으므로, `npm run replays`).
 - 남은 문제: 소환 확률 강화 수치(비용 대비 효과)는 실제로 해 보고 판단. 전체 E2E(약 1시간)는 강화 시트만 바뀌어 m5·f10·fb27만 돌렸다.
+
+### 피드백 #28 — 제안 '인구수(인원 한도)를 돈으로 사기' (fix/feedback-28)
+- 요청(피드백 #9의 2번 항목을 나눈 이슈): 인원 한도(20)는 카드 '부대 확장'으로만 늘었다 → [⬆ 강화]에 '인원 +1' 항목, 살수록 비싸지고 최대치, 수치는 JSON. 판 기록 JSON이 없어 기존 판 재현 대상은 없음 → 새 강화가 든 판을 `src/sim/replay.ts`(recordReplay → JSON → playReplay)로 왕복해 같은 해시인지 보는 테스트를 넣었다.
+- 데이터: `game.json` v15 `upgrade.unitCap {id 'unitCap', name '인원 한도', icon 🗼, perLevel 1, max 10, cost [300, 150]}` (스키마 `load.ts`, 강화 id 중복 검사에 포함). 비용 Lv → Lv+1 = 300 + 150 × Lv (총 9,750원으로 +10명). **내가 정한 값** — 소환 100원·카드 +3과 견줘 잡았다. 실제로 해 보고 조정할 것.
+- 규칙: `rules.upgrades` 맨 끝(초월 다음, `rules.unitCapK` = 10)에 `kind: 'unitCap'` — 예전 강화 k·명령 형식은 그대로. 이 종류만 `perLevelBp`가 인원 수(정수). 상태는 기존 `state.upgrades` 레벨뿐이고 `Board.unitCap = board.unitCap + 카드 보너스 + Lv × perLevel`. 저장 형식 변경 없음(예전 이어 하기 저장은 배열 길이가 하나 짧아도 `?? 0`으로 0레벨).
+- 화면: [⬆ 강화] [능력치 강화] 탭 6줄 아래 안내 '인원 한도 · 소환할 수 있는 내 타워 수' + 줄 '🗼 인원 한도 Lv n/10 · 20명 → 21명 · [300원]'(길게 누르면 연속, 최대면 '최대'). HUD '🗼 n/최대'는 `unitCap`을 그대로 읽어 바로 바뀐다.
+- 테스트: 새 `tests/unit/feedback-28.test.ts` 8개(고치기 전 실패 확인 — 데이터·비용 증가·최대·돈 부족·한도 찬 판에서 사면 다시 소환·시트 줄·리플레이 왕복), `Upgrade.test` 순서 기대값에 'unitCap'. 리플레이 8개 다시 만듦(`npm run replays` — 강화 레벨 배열이 하나 길어져 해시만 바뀜, 명령은 같음). 새 `e2e/fb28.spec.ts`(사기 → HUD 0/21 · 다음 비용 450원 · 최대면 꺼짐, 스크린샷 `docs/screens/FB28-unitcap.png`).
+- 남은 문제: 값(300 + 150·Lv, 최대 10)은 사용자 확인 필요. 인원 한도 강화는 미션 '강화 Lv' 대상(`upgradeLevel` key)에는 넣지 않았다.
+- 확인: Vitest 79파일 1,430 통과 · 3 건너뜀, `npm run check`·`npm run build` 통과. E2E(포트 5182) fb28 1/1 + 강화·HUD·저장 영향 스펙 m5·f10·a1·hud-layout **42/42**. 전체 E2E(약 1시간)는 돌리지 않았다.

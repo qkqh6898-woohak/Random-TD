@@ -257,8 +257,8 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
   for (let p = 0; p < players; p++) {
     state.mods.push(newPlayerMods());
     state.perks.push(newPlayerPerks());
-    // 소환 확률 강화(피드백 #27, 맨 뒤 k)는 처음 살 때 칸이 생긴다 → 쓰지 않은 판의 상태·해시·저장 모양은 예전 그대로
-    state.upgrades.push(rules.upgrades.filter((u) => u.kind !== 'summon').map(() => 0));
+    // 소환 확률(피드백 #27)·인원 한도(피드백 #28) 강화(맨 뒤 k)는 처음 살 때 칸이 생긴다 → 쓰지 않은 판의 상태·해시·저장 모양은 예전 그대로
+    state.upgrades.push(rules.upgrades.filter((u) => u.kind !== 'summon' && u.kind !== 'unitCap').map(() => 0));
     state.gamble.push(newGambleState());
     state.pity.push(new Array<number>(1 + rules.gachaKinds.length).fill(0));
     state.pityCut.push(0);

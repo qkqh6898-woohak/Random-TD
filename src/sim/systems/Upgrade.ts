@@ -1,7 +1,7 @@
 /**
  * 판 내 강화 (DEV_PLAN M5-3·M5-4, GDD 7.1). 이번 판 동안 유지된다.
  *
- * - 명령 `upgrade {k}`: rules.upgrades[k]를 한 레벨 올린다 (k 순서 = 등급 강화 3종 → 능력치 강화 6종 → 초월). 실행 때 다시 검사한다.
+ * - 명령 `upgrade {k}`: rules.upgrades[k]를 한 레벨 올린다 (k 순서 = 등급 강화 3종 → 능력치 강화 6종 → 초월 → 소환 확률 → 인원 한도). 실행 때 다시 검사한다.
  *   비용 Lv → Lv+1 = costBase + costPer × Lv (GDD 7.1 표: 일반 50 + 50·Lv, 공속 100 + 60·Lv …), 초월 = curves.json transcendCost[Lv]
  *   (= ⌊50,000 × 1.15^Lv⌋, 도구가 미리 계산). 길게 눌러 연속 강화는 화면이 명령을 여러 번 보낸다 (명령 하나 = 레벨 하나).
  * - 효과:
@@ -10,6 +10,7 @@
  *   - 능력치 강화 (모든 타워): 공속 +4%·물리/마법 관통 +2%·치명 확률 +1%p·치명 피해 +10%p·사거리 +2% → PlayerMods에 더한다.
  *   - 초월 (등급 강화 3종이 모두 최대일 때 열림): 모든 타워 공격력 +5%/Lv → PlayerMods.atkPctBp.
  *   - 소환 확률 (피드백 #27, k = 초월 다음): 레어 직행 소환 확률 +perLevel/Lv → Summon.summonRareChance가 summonUpgradeBp로 더한다.
+ *   - 인원 한도 (피드백 #28, k = 소환 확률 다음): 내 타워 인원 한도 +perLevel명/Lv — 상태는 레벨뿐, Board.unitCap이 레벨로 더한다.
  * - 한도 (M5-4, game.json combat): 최종 공속 = 기본의 5배·초당 15회, 관통 90%, 치명 확률 100% — stats.effectiveStats·Damage가 자른다.
  * - 실패하면 상태를 바꾸지 않고 'upgradeFail' { player, k, reason: phase · unknown · max · locked · gold }.
  *   성공하면 'upgrade' { player, k, id, lv, cost }. 판 상태 upgradesBought(미션 '강화 n회')를 1 올린다.
@@ -107,6 +108,8 @@ export function upgrade(ctx: MatchContext, world: World, player: number, k: numb
   spendGold(state, cost);
   const levels = state.upgrades[player];
   if (!levels) throw new Error(`플레이어 ${player}의 강화 상태가 없다`);
+  // 뒤에 붙은 강화(소환 확률·인원 한도)는 처음 살 때 칸이 생긴다 — 앞 칸이 비어 구멍이 나지 않게 0으로 채운다
+  while (levels.length < k) levels.push(0);
   levels[k] = lv + 1;
   state.upgradesBought += 1;
   const mods = state.mods[player];

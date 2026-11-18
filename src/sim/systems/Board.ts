@@ -9,7 +9,7 @@
  *   (난수는 이미 썼다 — 결정적이라 리플레이는 같다). 성공하면 평소 'summon' 사건 + stack(그 칸 타워 수).
  * - 일반 소환 천장 (G-1 천장): game.json summon.pity — 레어 이상 없이 n번(카드 '행운 부적'만큼 줄어듦, 최소 1) 이어지면 다음 소환은
  *   레어 직행 확정 (판정 순서는 예전과 같다: 신 → 레어 → 노말). 신·레어가 나오면 0, 노말이면 +1. 카운터 = state.pity[플레이어][0].
- * - 인원 한도 (G-1, game.json board.unitCap + 카드 '부대 확장'): 내 타워가 한도만큼이면 소환·소환 도박이 'cap'으로 실패 (승급하면 줄어든다).
+ * - 인원 한도 (G-1, game.json board.unitCap + 카드 '부대 확장' + 인원 한도 강화 — 피드백 #28): 내 타워가 한도만큼이면 소환·소환 도박이 'cap'으로 실패 (승급하면 줄어든다).
  *   쌍둥이 소환의 덤 하나는 한도를 넘을 수 있다. 개발자 놓기·예전 summon 명령은 한도를 보지 않는다.
  * - 예전 명령 summon {x, y}는 그대로 (빈 칸에만, 천장 없음) — 예전 리플레이가 같은 결과를 내게.
  */
@@ -70,9 +70,11 @@ export function hasRoom(ctx: Pick<MatchContext, 'map' | 'rules'>, world: World, 
   return false;
 }
 
-/** 내 타워 인원 한도 (G-1): game.json board.unitCap + 카드 '부대 확장'. */
+/** 내 타워 인원 한도 (G-1): game.json board.unitCap + 카드 '부대 확장' + [⬆ 강화] 인원 한도 강화 (피드백 #28, Lv × perLevel). */
 export function unitCap(ctx: Pick<MatchContext, 'rules' | 'state'>, player: number): number {
-  return ctx.rules.unitCap + (ctx.state.unitCapBonus[player] ?? 0);
+  const { rules, state } = ctx;
+  const bought = (state.upgrades[player]?.[rules.unitCapK] ?? 0) * (rules.upgrades[rules.unitCapK]?.perLevelBp ?? 0);
+  return rules.unitCap + (state.unitCapBonus[player] ?? 0) + bought;
 }
 
 /** 내 타워 수 (인원). */

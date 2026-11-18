@@ -4,7 +4,7 @@
  *
  * - 하단 메뉴 배지: ⚔ 도전 '1 가능'(진행 중이면 '진행 중') · ⬆ 강화 'Lv 5'(강화 레벨 합) · 📋 미션 '2 받기'.
  * - ⚔ 도전 시트: 10단계 카드 (이름·체력·보상·특수 능력·상태 [시작] / ⏳4:32 / 🔒 / 진행 중), 맨 위 '진행 중 18초'.
- * - ⬆ 강화 시트: 맨 위 '⚡×2.6'(지금 공속 배율), [등급 강화] 3줄 / [능력치 강화] 6줄 + 초월(열렸을 때) / [도박] 테이블 4개·
+ * - ⬆ 강화 시트: 맨 위 '⚡×2.6'(지금 공속 배율), [등급 강화] 3줄 / [능력치 강화] 6줄 + 인원 한도(피드백 #28) + 초월(열렸을 때) / [도박] 테이블 4개·
  *   잭팟 게이지 10칸·배율표·최근 결과 5개. 줄마다 Lv, 효과 '+40% → +44%', [비용] 버튼.
  * - 📋 미션 시트: [일반 30] [히든 ???] 탭, 진행도 바, [받기], 맨 위 [모두 받기]. 받을 수 있는 것 → 진행 중 → 받은 것 순.
  *   히든은 이번 판에 달성했거나 예전에 발견해 영구 기록된 것만 이름을 보이고 나머지는 '???'.
@@ -17,6 +17,7 @@ import { BP_ONE } from '../../sim/Fixed';
 import { gambleZeroReduction } from '../../sim/abilities';
 import type { MatchRules, UpgradeRule } from '../../sim/rules';
 import { MISSION_CLAIMED, MISSION_DONE, MISSION_OPEN, type MatchContext } from '../../sim/state';
+import { unitCap } from '../../sim/systems/Board';
 import { challengeCheck, challengeCooldownLeft, challengesAvailable } from '../../sim/systems/Challenge';
 import { goldWithBonus } from '../../sim/systems/Economy';
 import { gambleCheck, gambleExpectationBp, gambleRollExpectationBp, gambleRulesOf, gambleTopMulBp, gambleUnlocked, gambleWeights } from '../../sim/systems/Gamble';
@@ -249,6 +250,8 @@ export interface UpgradeSheetModel {
   stat: UpgradeRowModel[];
   /** 초월 (등급 강화가 모두 최대일 때만, 아니면 null) */
   transcend: UpgradeRowModel | null;
+  /** 인원 한도 강화 (피드백 #28) — 능력치 탭 6줄 아래. 효과 = 한도 '20명 → 21명' */
+  unitCap: UpgradeRowModel | null;
 }
 
 /** 강화 효과 단위: 치명타 확률·피해·소환 확률은 %p, 나머지는 %. */
@@ -271,6 +274,24 @@ function upgradeRow(ctx: Pick<MatchContext, 'rules' | 'state'>, player: number, 
   const effect = cost === null ? `${now} (최대)` : `${now} → +${pctText(upgradeEffectBp(u, lv + 1))}${unit}`;
   const state: UpgradeRowState = fail === null ? 'ok' : fail === 'max' ? 'max' : fail === 'locked' ? 'locked' : 'gold';
   const transcend = u.kind === 'transcend';
+  if (u.kind === 'unitCap') {
+    // 효과는 %가 아니라 지금 인원 한도 (카드 '부대 확장'까지 더한 값)
+    const capNow = unitCap(ctx, player);
+    return {
+      k: u.k,
+      id: u.id,
+      icon: u.icon,
+      name: u.name,
+      target: '내 타워 인원 한도',
+      lv,
+      max: u.max,
+      levelText: `Lv ${lv}/${u.max}`,
+      effect: cost === null ? `${capNow}명 (최대)` : `${capNow}명 → ${capNow + u.perLevelBp}명`,
+      cost,
+      costText: cost === null ? '최대' : formatGold(cost),
+      state,
+    };
+  }
   return {
     k: u.k,
     id: u.id,
@@ -295,12 +316,14 @@ export function upgradeSheetModel(ctx: Pick<MatchContext, 'rules' | 'state'>, pl
   const grade: UpgradeRowModel[] = [];
   const stat: UpgradeRowModel[] = [];
   let transcend: UpgradeRowModel | null = null;
+  let unitCapRow: UpgradeRowModel | null = null;
   for (const u of rules.upgrades) {
     if (u.kind === 'grade') grade.push(upgradeRow(ctx, player, u));
     else if (u.kind === 'stat' || u.kind === 'summon') stat.push(upgradeRow(ctx, player, u));
+    else if (u.kind === 'unitCap') unitCapRow = upgradeRow(ctx, player, u);
     else if (transcendOpen(rules, state, player)) transcend = upgradeRow(ctx, player, u);
   }
-  return { apsMul: `⚡${mulText(aps < 0 ? 0 : aps > cap ? cap : aps)}`, statNote: statCapNote(rules), grade, stat, transcend };
+  return { apsMul: `⚡${mulText(aps < 0 ? 0 : aps > cap ? cap : aps)}`, statNote: statCapNote(rules), grade, stat, transcend, unitCap: unitCapRow };
 }
 
 /** 능력치 강화 한도 안내 — combat 한도 값에서 만든다 (M5 검토 반영: 글자에 박지 않는다). */

@@ -3,6 +3,7 @@
  *
  * - 강화 줄: 그림 · 이름 · Lv · 효과 '+40% → +44%' · [비용] 버튼. 버튼을 길게 누르면 돈이 허락하는 만큼 연속 (ui/hold.ts).
  *   능력치 탭 맨 아래에 🍀 소환 확률 강화(피드백 #27). 초월은 등급 강화 3종이 모두 Lv50이 되면 그 아래에 나타난다.
+ *   인원 한도 강화(피드백 #28, '🗼 인원 한도 20명 → 21명')는 소환 확률 아래 — 안내 한 줄과 함께.
  * - 도박 탭 (T-2): 테이블마다 한 줄 [버튼 · 릴 · 결과] — 테이블끼리 따로 돌아 10원·100원을 동시에 돌릴 수 있다 (전역 잠금 없음).
  *   버튼을 짧게 누르면 한 번, **꾹 누르면 계속** (릴이 멈추면 다음 판, 약 1초마다 / 연출 끄기면 약 0.15초마다) — 손을 떼거나
  *   돈이 모자라거나 시트를 닫으면 멈춘다. 연속 중인 줄에는 '자동' 표시. 1000원 계정 Lv7 · 10000원 Lv20 — 잠겨 있으면 🔒.
@@ -127,6 +128,10 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
   };
   for (const r of first.grade) makeRow(r, panes.grade);
   for (const r of first.stat) makeRow(r, panes.stat);
+  if (first.unitCap) {
+    panes.stat.append(h('div', { class: 'bs-note', attrs: { 'data-testid': 'upgrade-unitcap-note' }, text: '인원 한도 · 소환할 수 있는 내 타워 수' }));
+    makeRow(first.unitCap, panes.stat);
+  }
   // 초월 자리: 열리면 채운다
   const transcendHost = h('div', { class: 'up-transcend' });
   panes.stat.append(transcendHost);
@@ -160,6 +165,7 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
       if (model.apsMul !== lastAps) aps.textContent = lastAps = model.apsMul;
       for (const r of model.grade) updateRow(r);
       for (const r of model.stat) updateRow(r);
+      if (model.unitCap) updateRow(model.unitCap);
       if (model.transcend) {
         if (!transcendBuilt) {
           transcendBuilt = true;
