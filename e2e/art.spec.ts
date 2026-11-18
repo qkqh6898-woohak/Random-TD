@@ -126,14 +126,14 @@ test('전투 배경: 1단계 낮 → ⏭로 11단계가 되면 노을 밴드, �
   const errors = collectErrors(page);
   await startGame(page, '/?dev=1&seed=7');
   await expect.poll(() => sim(page, (s) => s.backgroundKey), { timeout: 20_000 }).toBe('bg-t01-b1');
-  // 캐릭터별 크기: 등급을 고르게 24종(G-1 마당 24칸)을 놓으면 그림 배수가 여러 가지 (요정은 작고 신은 크다)
+  // 캐릭터별 크기: 등급을 고르게 24종(G-1 마당 24칸)을 놓으면 그림 배수가 여러 가지 (피드백 #20: 등급이 높을수록 크다 — 노말 궁수 < 레어 음유시인 < 신)
   expect(await placeAllTowers(page)).toBe(24);
   await expect.poll(() => sim(page, (s) => s.towerLayer.count)).toBe(24);
   const scales = await sim(page, (s) => s.match.towers().map((t) => ({ id: t.tower, k: s.towerLayer.artScaleOf(t.id) })));
   const byId = new Map(scales.map((x) => [x.id, x.k ?? 0]));
   expect(new Set(scales.map((x) => x.k)).size).toBeGreaterThan(8);
-  expect(byId.get('bard')!).toBeLessThan(byId.get('archer')!);
-  expect(byId.get('archer')!).toBeLessThan(byId.get('fate')!);
+  expect(byId.get('archer')!).toBeLessThan(byId.get('bard')!);
+  expect(byId.get('bard')!).toBeLessThan(byId.get('fate')!);
   if (SAVE_DOCS) await settle(page);
   await shot(page, 'T2-art-stage1');
   // ⏭ 버튼으로 10번 → 11단계

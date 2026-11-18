@@ -180,8 +180,9 @@ describe('캐릭터별 화면 크기 (characterLooks.json scale)', () => {
     for (const l of allLooks()) if (isEnemyLook(l)) expect(l.scale).toBeGreaterThanOrEqual(LOOK_SCALE_MIN);
   });
 
-  it('몸집대로: 요정 < 사람 < 골렘·신, 등급이 높으면 조금 더 크다, 각성은 조금 더', () => {
-    expect(lookScale(towerLook('bard'))).toBeLessThan(lookScale(towerLook('archer')));
+  it('같은 등급 안에서는 몸집대로 (요정·고블린 < 사람 < 골렘), 등급이 높으면 더 크다 (피드백 #20), 각성은 조금 더', () => {
+    expect(lookScale(towerLook('bard'))).toBeLessThan(lookScale(towerLook('scout'))); // 같은 레어: 요정 < 사람
+    expect(lookScale(towerLook('goblin'))).toBeLessThan(lookScale(towerLook('archer')));
     expect(lookScale(towerLook('miner'))).toBeLessThan(lookScale(towerLook('warrior')));
     expect(lookScale(towerLook('archer'))).toBeLessThan(lookScale(towerLook('stonegolem')));
     expect(lookScale(towerLook('stonegolem'))).toBeLessThan(lookScale(towerLook('fate')));
