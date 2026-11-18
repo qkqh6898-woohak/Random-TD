@@ -435,7 +435,8 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     if (here && (here.tower !== id || here.owner !== cmd.player || stackSize(w, cmd.x, cmd.y) >= rules.stackMax)) return;
     state.debugUsed = true;
     const t = placeTower(w, id, cmd.player, cmd.x, cmd.y);
-    w.emit('summon', { id: t.id, tower: id, grade: rules.towers.get(id)?.grade ?? '', god: false, rare: false, player: cmd.player, x: cmd.x, y: cmd.y });
+    // debug: 화면 자동 판매(피드백 #46)가 개발자가 놓은 타워는 팔지 않게
+    w.emit('summon', { id: t.id, tower: id, grade: rules.towers.get(id)?.grade ?? '', god: false, rare: false, player: cmd.player, x: cmd.x, y: cmd.y, debug: true });
   });
   return new Match(world, ctx);
 }

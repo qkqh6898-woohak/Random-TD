@@ -61,7 +61,8 @@ import { auraCovers, auraRadiusOf, auraSpecOf, computeAuras, towerBonus } from '
 import { towerLevel } from '../../sim/abilities';
 import { METEOR_FX } from '../../sim/abilities/archmage';
 import { rankSummonTiles, summonCheck, summonCost } from '../../sim/systems/Summon';
-import { convertTargets, sellCheck, sellPrice } from '../../sim/systems/Sell';
+import { autoSellTiles, convertTargets, sellCheck, sellPrice } from '../../sim/systems/Sell';
+import { autoSellGrade } from '../../meta/settings';
 import { effectsOff, onEffectsChange, setEffectsOff } from '../effects';
 import { autoSummonInterval } from '../../ui/hold';
 import { createDevSheet, type DevSheetView } from '../../ui/sheets/DevSheet';
@@ -1849,6 +1850,8 @@ export class GameScene extends Phaser.Scene {
     /** 이번 프레임에 승급 결과 알림을 띄웠다 (모두 승급은 하나만, F10) */
     let resultShown = false;
     const stageNow = this.match.state.stage;
+    /** 이번 프레임에 내가 소환한 타워 id (자동 판매, 피드백 #46 — 개발자가 놓은 타워는 빼고) */
+    const summonedIds: number[] = [];
     for (const ev of this.match.world.drainEvents()) {
       const recent = eventFxVisible('bulk', ev.tick, now, frameStart);
       switch (ev.type) {
@@ -1867,6 +1870,7 @@ export class GameScene extends Phaser.Scene {
           if (ev.player === LOCAL_PLAYER) recordRunEvent(this.runLog, { type: 'readyNow', tick: ev.tick, left: Number(ev.left) });
           break;
         case 'summon':
+          if (ev.player === LOCAL_PLAYER && ev.debug !== true) summonedIds.push(Number(ev.id));
           if (ev.player === LOCAL_PLAYER) recordRunEvent(this.runLog, { type: 'summon', tick: ev.tick, stage: stageNow });
           if (ev.god === true && eventFxVisible('rare', ev.tick, now, frameStart)) {
             this.ctx.ui.toast(godDescends(this.ctx.data.towers.towers.find((t) => t.id === ev.tower)?.name ?? String(ev.tower)), 2400);
@@ -2323,6 +2327,11 @@ export class GameScene extends Phaser.Scene {
           break;
       }
     }
+    // 피드백 #46 자동 판매: 방금 소환된 기준 등급 이하 타워를 평소 판매 명령으로 (리플레이에 남는다)
+    const sellGrade = autoSellGrade(this.ctx.settings.get());
+    if (sellGrade && summonedIds.length > 0 && !this.gameOver) {
+      for (const [x, y] of autoSellTiles(this.match.ctx, this.match.world, LOCAL_PLAYER, summonedIds, sellGrade)) this.match.world.enqueue({ type: 'sellTower', x, y });
+    }
     // 치명타를 먼저, 같은 종류는 큰 피해부터 프레임 한도만큼.
     if (hitTexts.length > 0) {
       // 자리가 없어 못 띄운 숫자가 있으면 다음 후보로 넘어간다 (자르지 않고 정렬만 — B-2 통합 검토)
@@ -2482,6 +2491,10 @@ export class GameScene extends Phaser.Scene {
         onTapMerge: (on) => this.ctx.settings.set('tapMerge', on),
         ultAuto: this.ctx.settings.get().ultAuto,
         onUltAuto: (on) => this.ctx.settings.set('ultAuto', on),
+        autoSellNormal: this.ctx.settings.get().autoSellNormal,
+        onAutoSellNormal: (on) => this.ctx.settings.set('autoSellNormal', on),
+        autoSellRare: this.ctx.settings.get().autoSellRare,
+        onAutoSellRare: (on) => this.ctx.settings.set('autoSellRare', on),
         // 도움말 다시 보기 (F10): 계정 기록을 지우고 이 판에서도 다시 띄울 수 있게
         onHelpAgain: () => {
           this.ctx.account.resetGuides();
