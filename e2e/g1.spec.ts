@@ -268,6 +268,7 @@ test('[소환] 시트: 일반 소환 + 소환 도박 4종 확률·천장 · 종�
   expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(gold0 - 300);
   await expect(page.getByTestId('gacha-result')).toContainText('행운 소환');
   // 종족 소환: 왕국을 골라 두 번
+  await page.locator('.sm-faction-summary').click(); // FB-29: 보조 소환 행의 종족 선택 펼치기
   await page.getByTestId('gacha-faction-kingdom').click();
   await expect(page.getByTestId('gacha-faction-kingdom')).toHaveClass(/is-on/);
   await page.getByTestId('gacha-buy-faction').click();

@@ -180,8 +180,8 @@ describe('캐릭터별 화면 크기 (characterLooks.json scale)', () => {
     for (const l of allLooks()) if (isEnemyLook(l)) expect(l.scale).toBeGreaterThanOrEqual(LOOK_SCALE_MIN);
   });
 
-  it('몸집대로: 요정 < 사람 < 골렘·신, 등급이 높으면 조금 더 크다, 각성은 조금 더', () => {
-    expect(lookScale(towerLook('bard'))).toBeLessThan(lookScale(towerLook('archer')));
+  it('등급 크기가 종족 몸집보다 우선하고, 같은 등급의 몸집 차이와 각성 확대는 유지한다', () => {
+    expect(lookScale(towerLook('archer'))).toBeLessThan(lookScale(towerLook('bard')));
     expect(lookScale(towerLook('miner'))).toBeLessThan(lookScale(towerLook('warrior')));
     expect(lookScale(towerLook('archer'))).toBeLessThan(lookScale(towerLook('stonegolem')));
     expect(lookScale(towerLook('stonegolem'))).toBeLessThan(lookScale(towerLook('fate')));
@@ -189,6 +189,12 @@ describe('캐릭터별 화면 크기 (characterLooks.json scale)', () => {
     expect(lookScale(towerLook('miner'), true)).toBeGreaterThan(lookScale(towerLook('miner'), false));
     // 크기가 모두 같지 않다 (다양함)
     expect(new Set(data.towers.towers.map((t) => lookScale(towerLook(t.id)))).size).toBeGreaterThan(20);
+  });
+
+  it('FB-20: 각성을 포함해 낮은 등급의 가장 큰 그림보다 다음 등급의 가장 작은 그림이 크다', () => {
+    const grades = ['normal', 'rare', 'unique', 'hero', 'legend', 'god', 'hidden'] as const;
+    const sizes = grades.map((g) => data.towers.towers.filter((t) => t.grade === g).flatMap((t) => [lookScale(towerLook(t.id)), lookScale(towerLook(t.id), true)]));
+    for (let i = 1; i < sizes.length; i++) expect(Math.min(...sizes[i]!), grades[i]).toBeGreaterThan(Math.max(...sizes[i - 1]!));
   });
 
   it('적: 하수인 < 대장 < 4천왕 < 군주', () => {

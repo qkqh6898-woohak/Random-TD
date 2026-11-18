@@ -1,0 +1,522 @@
+[
+  {
+    "id": "miner",
+    "grade": "normal",
+    "before": 0.9,
+    "after": 0.672,
+    "awakened_after": 0.692,
+    "awakened_before": 0.95
+  },
+  {
+    "id": "drummer",
+    "grade": "normal",
+    "before": 0.86,
+    "after": 0.664,
+    "awakened_after": 0.684,
+    "awakened_before": 0.91
+  },
+  {
+    "id": "goblin",
+    "grade": "normal",
+    "before": 0.84,
+    "after": 0.66,
+    "awakened_after": 0.68,
+    "awakened_before": 0.89
+  },
+  {
+    "id": "archer",
+    "grade": "normal",
+    "before": 1.0,
+    "after": 0.691,
+    "awakened_after": 0.711,
+    "awakened_before": 1.05
+  },
+  {
+    "id": "apprentice",
+    "grade": "normal",
+    "before": 0.88,
+    "after": 0.668,
+    "awakened_after": 0.688,
+    "awakened_before": 0.93
+  },
+  {
+    "id": "warrior",
+    "grade": "normal",
+    "before": 1.02,
+    "after": 0.695,
+    "awakened_after": 0.715,
+    "awakened_before": 1.07
+  },
+  {
+    "id": "spearman",
+    "grade": "normal",
+    "before": 1.02,
+    "after": 0.695,
+    "awakened_after": 0.715,
+    "awakened_before": 1.07
+  },
+  {
+    "id": "stonegolem",
+    "grade": "normal",
+    "before": 1.25,
+    "after": 0.74,
+    "awakened_after": 0.76,
+    "awakened_before": 1.3
+  },
+  {
+    "id": "ninja",
+    "grade": "normal",
+    "before": 0.94,
+    "after": 0.68,
+    "awakened_after": 0.7,
+    "awakened_before": 0.99
+  },
+  {
+    "id": "k9",
+    "grade": "normal",
+    "before": 1.08,
+    "after": 0.707,
+    "awakened_after": 0.727,
+    "awakened_before": 1.13
+  },
+  {
+    "id": "merchant",
+    "grade": "rare",
+    "before": 0.93,
+    "after": 0.807,
+    "awakened_after": 0.827,
+    "awakened_before": 0.98
+  },
+  {
+    "id": "mudshaman",
+    "grade": "rare",
+    "before": 1.07,
+    "after": 0.844,
+    "awakened_after": 0.864,
+    "awakened_before": 1.12
+  },
+  {
+    "id": "bard",
+    "grade": "rare",
+    "before": 0.83,
+    "after": 0.78,
+    "awakened_after": 0.8,
+    "awakened_before": 0.88
+  },
+  {
+    "id": "scout",
+    "grade": "rare",
+    "before": 0.99,
+    "after": 0.823,
+    "awakened_after": 0.843,
+    "awakened_before": 1.04
+  },
+  {
+    "id": "flamemage",
+    "grade": "rare",
+    "before": 1.03,
+    "after": 0.833,
+    "awakened_after": 0.853,
+    "awakened_before": 1.08
+  },
+  {
+    "id": "cleaver",
+    "grade": "rare",
+    "before": 1.13,
+    "after": 0.86,
+    "awakened_after": 0.88,
+    "awakened_before": 1.18
+  },
+  {
+    "id": "duelist",
+    "grade": "rare",
+    "before": 1.03,
+    "after": 0.833,
+    "awakened_after": 0.853,
+    "awakened_before": 1.08
+  },
+  {
+    "id": "gunner",
+    "grade": "rare",
+    "before": 1.11,
+    "after": 0.855,
+    "awakened_after": 0.875,
+    "awakened_before": 1.16
+  },
+  {
+    "id": "dwarfbomber",
+    "grade": "rare",
+    "before": 0.93,
+    "after": 0.807,
+    "awakened_after": 0.827,
+    "awakened_before": 0.98
+  },
+  {
+    "id": "windarcher",
+    "grade": "rare",
+    "before": 1.03,
+    "after": 0.833,
+    "awakened_after": 0.853,
+    "awakened_before": 1.08
+  },
+  {
+    "id": "icemage",
+    "grade": "unique",
+    "before": 1.06,
+    "after": 0.95,
+    "awakened_after": 0.97,
+    "awakened_before": 1.11
+  },
+  {
+    "id": "gambler",
+    "grade": "unique",
+    "before": 1.06,
+    "after": 0.95,
+    "awakened_after": 0.97,
+    "awakened_before": 1.11
+  },
+  {
+    "id": "blacksmith",
+    "grade": "unique",
+    "before": 1.0,
+    "after": 0.935,
+    "awakened_after": 0.955,
+    "awakened_before": 1.05
+  },
+  {
+    "id": "goblinchief",
+    "grade": "unique",
+    "before": 0.96,
+    "after": 0.925,
+    "awakened_after": 0.945,
+    "awakened_before": 1.01
+  },
+  {
+    "id": "astrologer",
+    "grade": "unique",
+    "before": 0.86,
+    "after": 0.9,
+    "awakened_after": 0.92,
+    "awakened_before": 0.91
+  },
+  {
+    "id": "banker",
+    "grade": "unique",
+    "before": 0.96,
+    "after": 0.925,
+    "awakened_after": 0.945,
+    "awakened_before": 1.01
+  },
+  {
+    "id": "sniper",
+    "grade": "unique",
+    "before": 1.06,
+    "after": 0.95,
+    "awakened_after": 0.97,
+    "awakened_before": 1.11
+  },
+  {
+    "id": "berserker",
+    "grade": "unique",
+    "before": 1.18,
+    "after": 0.98,
+    "awakened_after": 1.0,
+    "awakened_before": 1.23
+  },
+  {
+    "id": "lightning",
+    "grade": "unique",
+    "before": 1.06,
+    "after": 0.95,
+    "awakened_after": 0.97,
+    "awakened_before": 1.11
+  },
+  {
+    "id": "poisonarcher",
+    "grade": "unique",
+    "before": 1.06,
+    "after": 0.95,
+    "awakened_after": 0.97,
+    "awakened_before": 1.11
+  },
+  {
+    "id": "summoner",
+    "grade": "hero",
+    "before": 1.09,
+    "after": 1.07,
+    "awakened_after": 1.09,
+    "awakened_before": 1.14
+  },
+  {
+    "id": "scholar",
+    "grade": "hero",
+    "before": 0.89,
+    "after": 1.02,
+    "awakened_after": 1.04,
+    "awakened_before": 0.94
+  },
+  {
+    "id": "chronomancer",
+    "grade": "hero",
+    "before": 0.89,
+    "after": 1.02,
+    "awakened_after": 1.04,
+    "awakened_before": 0.94
+  },
+  {
+    "id": "alchemist",
+    "grade": "hero",
+    "before": 0.99,
+    "after": 1.045,
+    "awakened_after": 1.065,
+    "awakened_before": 1.04
+  },
+  {
+    "id": "paladin",
+    "grade": "hero",
+    "before": 1.21,
+    "after": 1.1,
+    "awakened_after": 1.12,
+    "awakened_before": 1.26
+  },
+  {
+    "id": "necromancer",
+    "grade": "hero",
+    "before": 1.09,
+    "after": 1.07,
+    "awakened_after": 1.09,
+    "awakened_before": 1.14
+  },
+  {
+    "id": "artillery",
+    "grade": "hero",
+    "before": 1.11,
+    "after": 1.075,
+    "awakened_after": 1.095,
+    "awakened_before": 1.16
+  },
+  {
+    "id": "prophet",
+    "grade": "hero",
+    "before": 1.09,
+    "after": 1.07,
+    "awakened_after": 1.09,
+    "awakened_before": 1.14
+  },
+  {
+    "id": "swordsaint",
+    "grade": "hero",
+    "before": 1.09,
+    "after": 1.07,
+    "awakened_after": 1.09,
+    "awakened_before": 1.14
+  },
+  {
+    "id": "stormarcher",
+    "grade": "hero",
+    "before": 1.09,
+    "after": 1.07,
+    "awakened_after": 1.09,
+    "awakened_before": 1.14
+  },
+  {
+    "id": "dragoncaller",
+    "grade": "legend",
+    "before": 1.07,
+    "after": 1.165,
+    "awakened_after": 1.185,
+    "awakened_before": 1.12
+  },
+  {
+    "id": "warlord",
+    "grade": "legend",
+    "before": 1.27,
+    "after": 1.22,
+    "awakened_after": 1.24,
+    "awakened_before": 1.32
+  },
+  {
+    "id": "archmage",
+    "grade": "legend",
+    "before": 1.12,
+    "after": 1.179,
+    "awakened_after": 1.199,
+    "awakened_before": 1.17
+  },
+  {
+    "id": "assassin",
+    "grade": "legend",
+    "before": 1.1,
+    "after": 1.173,
+    "awakened_after": 1.193,
+    "awakened_before": 1.15
+  },
+  {
+    "id": "fortuna",
+    "grade": "legend",
+    "before": 0.98,
+    "after": 1.14,
+    "awakened_after": 1.16,
+    "awakened_before": 1.03
+  },
+  {
+    "id": "spearsgod",
+    "grade": "legend",
+    "before": 1.2,
+    "after": 1.201,
+    "awakened_after": 1.221,
+    "awakened_before": 1.25
+  },
+  {
+    "id": "stormlord",
+    "grade": "legend",
+    "before": 1.17,
+    "after": 1.192,
+    "awakened_after": 1.212,
+    "awakened_before": 1.22
+  },
+  {
+    "id": "tycoon",
+    "grade": "legend",
+    "before": 1.12,
+    "after": 1.179,
+    "awakened_after": 1.199,
+    "awakened_before": 1.17
+  },
+  {
+    "id": "saint",
+    "grade": "legend",
+    "before": 1.12,
+    "after": 1.179,
+    "awakened_after": 1.199,
+    "awakened_before": 1.17
+  },
+  {
+    "id": "dimensionist",
+    "grade": "legend",
+    "before": 1.12,
+    "after": 1.179,
+    "awakened_after": 1.199,
+    "awakened_before": 1.17
+  },
+  {
+    "id": "fate",
+    "grade": "god",
+    "before": 1.4,
+    "after": 1.3,
+    "awakened_after": 1.32,
+    "awakened_before": 1.45
+  },
+  {
+    "id": "plenty",
+    "grade": "god",
+    "before": 1.4,
+    "after": 1.3,
+    "awakened_after": 1.32,
+    "awakened_before": 1.45
+  },
+  {
+    "id": "ruin",
+    "grade": "god",
+    "before": 1.45,
+    "after": 1.38,
+    "awakened_after": 1.4,
+    "awakened_before": 1.5
+  },
+  {
+    "id": "elemental",
+    "grade": "hidden",
+    "before": 1.16,
+    "after": 1.475,
+    "awakened_after": null,
+    "awakened_before": null
+  },
+  {
+    "id": "goldking",
+    "grade": "hidden",
+    "before": 1.12,
+    "after": 1.46,
+    "awakened_after": null,
+    "awakened_before": null
+  },
+  {
+    "id": "celestial",
+    "grade": "hidden",
+    "before": 1.24,
+    "after": 1.504,
+    "awakened_after": null,
+    "awakened_before": null
+  },
+  {
+    "id": "legion",
+    "grade": "hidden",
+    "before": 1.27,
+    "after": 1.515,
+    "awakened_after": null,
+    "awakened_before": null
+  },
+  {
+    "id": "infiniteblade",
+    "grade": "hidden",
+    "before": 1.16,
+    "after": 1.475,
+    "awakened_after": null,
+    "awakened_before": null
+  },
+  {
+    "id": "timelord",
+    "grade": "hidden",
+    "before": 1.18,
+    "after": 1.482,
+    "awakened_after": null,
+    "awakened_before": null
+  },
+  {
+    "id": "goblinking",
+    "grade": "hidden",
+    "before": 1.3,
+    "after": 1.525,
+    "awakened_after": null,
+    "awakened_before": null
+  },
+  {
+    "id": "deathlord",
+    "grade": "hidden",
+    "before": 1.24,
+    "after": 1.504,
+    "awakened_after": null,
+    "awakened_before": null
+  },
+  {
+    "id": "goldbattery",
+    "grade": "hidden",
+    "before": 1.14,
+    "after": 1.467,
+    "awakened_after": null,
+    "awakened_before": null
+  },
+  {
+    "id": "fateseer",
+    "grade": "hidden",
+    "before": 1.12,
+    "after": 1.46,
+    "awakened_after": null,
+    "awakened_before": null
+  },
+  {
+    "id": "festival",
+    "grade": "hidden",
+    "before": 1.14,
+    "after": 1.467,
+    "awakened_after": null,
+    "awakened_before": null
+  },
+  {
+    "id": "stormavatar",
+    "grade": "hidden",
+    "before": 1.34,
+    "after": 1.54,
+    "awakened_after": null,
+    "awakened_before": null
+  }
+]

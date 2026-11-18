@@ -93,11 +93,12 @@ test('×16 프레임 초반 치명타도 큰 주황 숫자와 짧은 타격 효�
   await page.screenshot({ path: 'docs/screens/battle-update-critical.png' });
 });
 
-test('SD 일꾼과 보스 그림: 휴대폰 캡처, 보스는 바깥 그림(WebP) 우선 · 파일이 없으면 SD 텍스처', async ({ page }) => {
+test('일꾼과 보스 그림: 휴대폰 캡처, WebP 우선 · 파일이 없으면 기존 그림', async ({ page }) => {
   await start(page);
   await expect(page.locator('.hud-hire .hud-worker-art')).toBeVisible();
   const src = await page.locator('.hud-hire .hud-worker-art').getAttribute('src');
-  expect(src).toContain('data:image/svg+xml');
+  expect(src).toContain('assets/ui/worker.webp'); // FB-18: 새 그림이 실제로 로딩되어야 한다.
+  await expect(page.locator('.hud-hire .hud-worker-art')).toHaveJSProperty('naturalWidth', 256);
   await page.getByTestId('hud-hire').click();
   await page.screenshot({ path: 'docs/screens/battle-update-workers.png' });
   const keys = await page.evaluate(async () => {
@@ -140,4 +141,15 @@ test('SD 일꾼과 보스 그림: 휴대폰 캡처, 보스는 바깥 그림(WebP
     document.body.append(sheet);
   });
   await page.screenshot({ path: 'docs/screens/battle-update-bosses.png' });
+  // FB-18: 새 파일이 없을 때도 일꾼·도박 버튼은 기존 그림/이모지로 작동한다.
+  await page.route('**/assets/ui/worker.webp', route => route.abort());
+  await page.route('**/assets/ui/gamble.webp', route => route.abort());
+  await start(page);
+  const worker = page.locator('.hud-hire .hud-worker-art');
+  await expect(worker).toHaveAttribute('src', /^data:image\/svg\+xml/);
+  await expect.poll(() => worker.evaluate(img => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await expect(page.locator('[data-art-icon="gamble"] .ui-art-fallback')).toBeVisible();
+  await expect(page.locator('[data-art-icon="gamble"]')).not.toHaveClass(/is-loaded/);
+  await page.getByTestId('menu-gamble').click();
+  await expect(page.getByTestId('sheet-gamble')).toBeVisible();
 });

@@ -26,7 +26,8 @@
  * HUD는 sim을 읽기만 한다. 배속은 화면 설정(TickClock), 돈 추가·단계 건너뛰기(debug)는 명령으로 보낸다.
  * 루트의 data-tick 속성 = 지금 틱 (E2E가 게임 시간이 흐르는지 볼 때 쓴다, 화면에는 안 보임).
  */
-import { WORKER_PORTRAIT } from '../../art/worker';
+import { WORKER_PORTRAIT, workerPortraitFallback } from '../../art/worker';
+import { artIcon } from '../artIcon';
 import { h } from '../dom';
 import { HOLD_DELAY_MS, attachHoldRepeat, skipRepeatDelay, type HoldHandle } from '../hold';
 import type { UiView } from '../root';
@@ -217,7 +218,7 @@ export function createHud(opts: HudOptions): HudView {
   const bannerTime = h('span', { class: 'hud-banner-time', attrs: { 'data-testid': 'hud-boss-time', role: 'timer', 'aria-live': 'off' }, text: '' });
   // 일꾼 (2줄): 👷 3/10
   const workersEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-workers', 'aria-label': '일꾼 수', ...off }, text: '0/0' });
-  const workersItem = h('span', { class: 'hud-item hud-workers' }, h('img', { class: 'hud-worker-art', attrs: { src: WORKER_PORTRAIT, alt: '', 'aria-hidden': 'true' } }), workersEl);
+  const workersItem = h('span', { class: 'hud-item hud-workers' }, h('img', { class: 'hud-worker-art', attrs: { src: WORKER_PORTRAIT, alt: '', 'aria-hidden': 'true' }, on: { error: workerPortraitFallback } }), workersEl);
   const bannerEl = h('div', { class: 'hud-banner', attrs: { 'data-testid': 'hud-boss', hidden: '' } }, bannerFill, bannerText, bannerTime);
   // 도전 보스 막대 (M5): 보스 막대와 같은 자리
   const chalFill = h('div', { class: 'hud-banner-fill', attrs: { 'data-testid': 'hud-challenge-hp', 'aria-hidden': 'true' } });
@@ -259,7 +260,7 @@ export function createHud(opts: HudOptions): HudView {
       class: 'btn btn-chip hud-summon',
       attrs: { type: 'button', 'data-action': 'summon', 'data-testid': 'hud-summon', 'aria-label': '소환 (꾹 누르면 연속)' },
     },
-    h('span', { class: 'hud-summon-icon', attrs: { 'aria-hidden': 'true' } }),
+    artIcon('summon', '🎲', 'hud-summon-character'),
     h('span', { class: 'hud-summon-word', text: '소환' }),
     summonCost,
     summonPity,
@@ -277,7 +278,7 @@ export function createHud(opts: HudOptions): HudView {
     on: { click: () => opts.onMergeReady?.() },
   });
   const hireLabel = h('span', { text: '' });
-  const hireArt = h('img', { class: 'hud-worker-art', attrs: { src: WORKER_PORTRAIT, alt: '', 'aria-hidden': 'true' } });
+  const hireArt = h('img', { class: 'hud-worker-art', attrs: { src: WORKER_PORTRAIT, alt: '', 'aria-hidden': 'true' }, on: { error: workerPortraitFallback } });
   const hireBtn = h('button', {
     class: 'btn btn-chip hud-hire',
     attrs: { type: 'button', 'data-action': 'hire', 'data-testid': 'hud-hire', 'aria-label': '일꾼 고용' },
@@ -285,13 +286,12 @@ export function createHud(opts: HudOptions): HudView {
   }, hireArt, hireLabel);
   // 접은 고르기 창의 알약 자리 (display: contents → 알약이 아래 띠의 flex 항목이 된다)
   const choiceSlot = h('span', { class: 'hud-choice-slot', attrs: { 'data-testid': 'hud-choice-slot' } });
-  // G-1 사용자 결정 (아래 조작 묶음): 얇은 자원 줄 [💰 돈 · 🗼 인원 n/최대 · 👷 일꾼 · (카드 알약) · ⬆ 승급 가능 · 👷 고용]
+  const towersItem = h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl);
+  // FB-25: 돈·인원은 위 HUD에 고정하고 아래에는 고용·승급·카드 조작만 둔다.
   // + 큰 버튼 묶음 [💠 신화] [🎲 소환] [🎰 도박] / 소환 아래 넓은 [⬆ 강화] — 도전·미션은 맵 오른쪽 둥근 버튼
   const bottomBand = h(
     'div',
     { class: 'hud-bottom is-g1' },
-    goldItem,
-    h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl),
     workersItem,
     choiceSlot,
     hintEl,
@@ -313,6 +313,7 @@ export function createHud(opts: HudOptions): HudView {
         h('span', { class: 'hud-wave' }, stageEl, h('span', { class: 'hud-item hud-wave-timer' }, h('span', { class: 'hud-label', text: '⏱', attrs: { 'aria-hidden': 'true' } }), timerEl)),
         h('span', { class: 'hud-side-r' }, ultChip, pauseBtn),
       ),
+      h('div', { class: 'hud-row hud-resources', attrs: { 'data-testid': 'hud-resources' } }, goldItem, towersItem),
       h('div', { class: 'hud-row hud-count-row' }, countItem),
     ),
     bannerSlot,
@@ -329,7 +330,7 @@ export function createHud(opts: HudOptions): HudView {
         attrs: { type: 'button', 'data-testid': `menu-${kind}`, 'data-action': `menu-${kind}`, 'aria-label': label },
         on: { click: () => opts.onMenu?.(kind) },
       },
-      h('span', { class: 'hud-menu-label' }, h('span', { class: 'hud-menu-icon', text: icon, attrs: { 'aria-hidden': 'true' } }), h('span', { class: 'hud-menu-word', text: label })),
+      h('span', { class: 'hud-menu-label' }, kind === 'mythic' || kind === 'gamble' || kind === 'upgrade' ? artIcon(kind, icon, 'hud-menu-character') : h('span', { class: 'hud-menu-icon', text: icon, attrs: { 'aria-hidden': 'true' } }), h('span', { class: 'hud-menu-word', text: label })),
       badge,
     );
     menuBtns.set(kind, { btn, badge });

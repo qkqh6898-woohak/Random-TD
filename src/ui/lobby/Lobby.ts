@@ -18,6 +18,8 @@
  * 화면은 저장소(ProgressStore)의 동작을 부르고, 바뀌면 구독으로 다시 그린다. sim은 건드리지 않는다.
  */
 import { h } from '../dom';
+import { artIcon } from '../artIcon';
+import type { UiArt } from '../../art/uiIcons';
 import type { UiView } from '../root';
 import type { GameData } from '../../data/load';
 import type { ProgressStore } from '../../meta/progressStore';
@@ -584,7 +586,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
           return h(
             'div',
             { class: 'shop-item', attrs: { 'data-item': it.id } },
-            h('span', { class: 'shop-icon', text: it.icon, attrs: { 'aria-hidden': 'true' } }),
+            artIcon(it.id as UiArt, it.icon, 'shop-icon'),
             h('span', { class: 'shop-text' }, h('strong', { text: it.name }), h('small', { text: it.desc })),
             h('button', {
               class: `btn ${afford ? 'btn-primary' : ''} shop-buy`,
@@ -853,7 +855,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
             attrs: { type: 'button', 'data-tab': id, 'aria-current': tab === id ? 'page' : 'false', 'aria-label': item.label },
             on: { click: () => select(id) },
           },
-          h('span', { class: 'lobby-nav-icon', text: icon, attrs: { 'aria-hidden': 'true' } }),
+          id === 'shop' ? artIcon('shop', icon, 'lobby-nav-icon') : h('span', { class: 'lobby-nav-icon', text: icon, attrs: { 'aria-hidden': 'true' } }),
           h('span', { class: 'lobby-nav-label', text: item.label }),
           badge(counts[id]),
         );

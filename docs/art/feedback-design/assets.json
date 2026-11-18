@@ -1,0 +1,132 @@
+[
+  {
+    "file": "public/assets/ui/app-192.png",
+    "size": [
+      192,
+      192
+    ],
+    "mode": "RGB",
+    "bytes": 49963,
+    "sha256": "0b510c7408066273aa1d99e136aacde59361aa4c59948e4b665379a953e9516e"
+  },
+  {
+    "file": "public/assets/ui/app-512.png",
+    "size": [
+      512,
+      512
+    ],
+    "mode": "RGB",
+    "bytes": 269663,
+    "sha256": "541a7c4beab893d4c3afbfe30fdac9a3e4032a5c84c4e0d0f06eda83bf0c9de7"
+  },
+  {
+    "file": "public/assets/ui/chest-legend.webp",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 17412,
+    "sha256": "db5fd26bc8ececa545bf9e58f4d29ad6fc10c1e0c2313aaf1c41d902ce2a4fda"
+  },
+  {
+    "file": "public/assets/ui/fragments.webp",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 13164,
+    "sha256": "e03f1ebee7ce4dcdc67c5855fad424c42b4dea491a54633ca6d8112b497871c3"
+  },
+  {
+    "file": "public/assets/ui/gamble.webp",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 17988,
+    "sha256": "27e3d4dcdcba617b9d2aaab7459c6dc77accdee538bc7d35475c6a6616a9654c"
+  },
+  {
+    "file": "public/assets/ui/gold-bag.webp",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 16234,
+    "sha256": "6381b9a7d01a760262e748cb82e09fe00078800da0e60b275a7fded5d76fc7bf"
+  },
+  {
+    "file": "public/assets/ui/mythic.webp",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 15860,
+    "sha256": "837b2ebf34605d0fc84302a2dc7c88bec9026d1d62ad7c1a96ba2917add271c8"
+  },
+  {
+    "file": "public/assets/ui/pack-basic.webp",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 17302,
+    "sha256": "cc36d6f6b464aa6f46038ed6cdc884503cbf36f3cb8137a28e462a2c09a6d44d"
+  },
+  {
+    "file": "public/assets/ui/pack-fine.webp",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 18134,
+    "sha256": "9e8cc73e57a9dc4c73f3a8009c0497e58d7da59aa20bd549a93c782b8659b536"
+  },
+  {
+    "file": "public/assets/ui/shop.webp",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 18020,
+    "sha256": "1883fa6589babd3aac1da99b346568790f6f163c43ff43f77cd1e996af92dfb0"
+  },
+  {
+    "file": "public/assets/ui/summon.webp",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 16258,
+    "sha256": "cd4e081d1375d9e65f9c7a1ae3374be3481a0421f0b77ff8e5939d85b27a2233"
+  },
+  {
+    "file": "public/assets/ui/upgrade.webp",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 20948,
+    "sha256": "681fc545df5d183a09f80fa019058b1da0073241934b2a095eb95361f76d552c"
+  },
+  {
+    "file": "public/assets/ui/worker.webp",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "bytes": 15002,
+    "sha256": "f718985e065e052e785b61c01096ba9d29cfadd3d8e82a32899a3bbf12d388e6"
+  }
+]

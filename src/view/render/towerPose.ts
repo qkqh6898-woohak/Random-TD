@@ -8,7 +8,7 @@
  *    3초 주기 안에서 시작 시점을 0~1초 무작위로 늦춰 기계적인 느낌을 줄인다 (ART.md 2.2 '0~1초 무작위 쉼').
  *  - 시작 위상(seed)은 타워마다 무작위 → 같은 타워 여러 개가 똑같이 움직이지 않는다.
  * 공격: 0.25초(공격 간격의 60% 이하) 동안 대상 쪽으로 몸을 내밀었다 돌아온다. 공격 직후 0.3초는 고유 동작 대신 숨쉬기만.
- * 등장: 0.4초 동안 작게 시작해 살짝 넘쳤다가 제 크기로 (소환 직후).
+ * 등장: 0.52초 동안 부풀었다 눌리며 제 크기로 (소환 직후).
  *
  * 캐릭터 다양화: 고유 동작 창의 몸 움직임을 캐릭터별 프리셋(art/characters/idle.ts)이 고를 수 있다 (`gesture`·`gestureMs`).
  * 넘기지 않으면 예전과 똑같이 '작게 뛰며 갸웃'(hopTilt). 결과의 `gesture`(창 진행 0~1, 창 밖 −1)와 `attackK`로 소품·날개 등 파츠가 같은 박자에 움직인다.
@@ -32,7 +32,7 @@ export const ATTACK_ANIM_MS = 250;
 /** 공격 직후 고유 동작을 쉬는 시간 (ms) */
 export const ATTACK_CALM_MS = 300;
 /** 등장 동작 길이 (ms) */
-export const APPEAR_MS = 400;
+export const APPEAR_MS = 520;
 /** G-2 몸 흔들림(살랑) 주기 (ms)·크기 (rad, 0.02 아래 — '갸웃'과 구별되는 아주 작은 흔들림) */
 export const SWAY_PERIOD_MS = 3400;
 export const SWAY_RAD = 0.016;
@@ -202,14 +202,24 @@ export function towerPose(input: PoseInput): TowerPose {
     }
   }
 
-  // 등장: 0.3 → 1.12 → 1 (0.4초)
+  // FB-17: 부풀기 → 눌리기 → 제자리. 단순 확대보다 부피감이 읽히는 짧은 squash/stretch.
   if (input.appearAtMs !== null) {
     const a = timeMs - input.appearAtMs;
     if (a >= 0 && a < APPEAR_MS) {
       const p = a / APPEAR_MS;
-      const s = p < 0.7 ? 0.3 + (1.12 - 0.3) * (p / 0.7) : 1.12 - 0.12 * ((p - 0.7) / 0.3);
-      sx *= s;
-      sy *= s;
+      if (p < 0.55) {
+        const q = 1 - (1 - p / 0.55) ** 3;
+        sx *= 0.35 + 0.71 * q;
+        sy *= 0.22 + 0.96 * q;
+      } else if (p < 0.8) {
+        const q = (p - 0.55) / 0.25;
+        sx *= 1.06 + 0.03 * q;
+        sy *= 1.18 - 0.25 * q;
+      } else {
+        const q = (p - 0.8) / 0.2;
+        sx *= 1.09 - 0.09 * q;
+        sy *= 0.93 + 0.07 * q;
+      }
     }
   }
   // 반짝임: 주기마다 한 번, 타워마다 다른 때·자리 (무기·장신구 쪽: 몸 위 절반의 좌우 끝)

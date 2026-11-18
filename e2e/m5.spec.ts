@@ -291,15 +291,18 @@ test('도전 처치: 보상 +20원·2단계 열림·✅, 10단계 보스와 겹�
     [2, 1, 'archer'],
     [3, 1, 'archer'],
   ]);
-  await inScene(
+  const fixture = await inScene(
     page,
     (s) => {
-      for (const m of s.match.mobs()) if (m.challenge === 1) m.hp = 5;
-      return null;
+      const gold = s.match.state.gold;
+      const targets = s.match.mobs().filter((m) => m.challenge === 1);
+      for (const m of targets) m.hp = 5;
+      return { gold, targets: targets.length };
     },
     null,
   );
-  const gold0 = await inScene(page, (s) => s.match.state.gold, null);
+  expect(fixture.targets).toBe(1);
+  const gold0 = fixture.gold; // 체력을 낮춘 뒤의 도구 왕복 사이 이미 보상이 들어오는 경쟁을 막는다.
   await expect.poll(() => inScene(page, (s) => s.match.state.challengeBest, null), { timeout: 15000 }).toBe(1);
   expect(await inScene(page, (s) => s.match.state.gold, null)).toBeGreaterThanOrEqual(gold0 + 20);
   await expect(page.locator('[data-testid="banner-gold"]', { hasText: '도전 1단계 클리어! +20원 · 2단계 열림' })).toBeVisible();
@@ -570,10 +573,13 @@ test('[⬆ 승급 가능 n]: 누를 때마다 다음 묶음의 패널을 열고 
 test('바텀 시트는 하나만: 시트를 열면 정보 패널이 닫히고, 시트가 열린 동안 타워를 누르면 시트만 닫힘, 카드 창은 알약으로 접혀 뜬다', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
-  // 아래쪽 줄 타워 → 정보 패널은 위에 붙어 하단 메뉴가 보인다
-  await place(page, [[2, 6, 'archer']]);
+  // 아래쪽의 큰 히어로 → 위에 붙는 패널로 시트와 패널의 상호 배제를 확인한다.
+  // 아래 패널이 하단 메뉴를 덮는 것은 기존 설계이며, FB-30으로 패널 높이가 줄어 긴 화면에서는 아래에 들어간다.
+  await place(page, [[2, 6, 'paladin']]);
   await tapTile(page, 2, 6);
   await expect(page.getByTestId('tower-panel')).toHaveClass(/is-top/);
+  const upgradeBox = (await page.getByTestId('menu-upgrade').boundingBox())!;
+  expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest('[data-testid]')?.getAttribute('data-testid'), [upgradeBox.x + upgradeBox.width / 2, upgradeBox.y + upgradeBox.height / 2] as const)).toBe('menu-upgrade');
   await page.getByTestId('menu-upgrade').click();
   await expect(page.getByTestId('sheet-upgrade')).toBeVisible();
   await expect(page.getByTestId('tower-panel')).toHaveCount(0);

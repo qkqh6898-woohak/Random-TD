@@ -84,6 +84,7 @@ export function createSummonPane(opts: Omit<SummonSheetOptions, 'onClose'>, firs
   }
   const rows = new Map<number, RowEls>();
   const factionChips: HTMLButtonElement[] = [];
+  let factionSummary: HTMLElement | null = null;
   const rowEls = first.rows.map((r) => {
     const odds = h('div', { class: 'up-target sm-odds', attrs: { 'data-testid': `gacha-odds-${r.id}` } });
     const pity = h('span', { class: 'sm-pity', attrs: { 'data-testid': `gacha-pity-${r.id}` } });
@@ -106,14 +107,16 @@ export function createSummonPane(opts: Omit<SummonSheetOptions, 'onClose'>, firs
           return b;
         }),
       );
-      extra.push(chips);
+      factionSummary = h('summary', { class: 'sm-faction-summary', text: '종족 고르기' });
+      extra.push(h('details', { class: 'sm-faction-picker' }, factionSummary, h('div', { class: 'sm-faction-desc', text: r.desc }), chips));
     }
     const root = h(
       'div',
-      { class: 'up-row sm-row', attrs: { 'data-testid': `gacha-row-${r.id}` } },
+      { class: `up-row sm-row${r.faction ? ' sm-row-secondary' : ''}`, attrs: { 'data-testid': `gacha-row-${r.id}` } },
       h('span', { class: 'up-icon', text: r.icon, attrs: { 'aria-hidden': 'true' } }),
-      h('div', { class: 'up-main' }, h('div', { class: 'up-name' }, h('span', { text: r.name })), h('div', { class: 'up-effect', text: r.desc }), odds, pity, ...extra),
+      h('div', { class: 'up-main' }, h('div', { class: 'up-name' }, h('span', { text: r.name })), r.faction ? null : h('div', { class: 'up-effect', text: r.desc }), odds, pity),
       btn,
+      ...extra,
     );
     rows.set(r.k, { root, odds, pity, btn, last: {} });
     return root;
@@ -150,6 +153,7 @@ export function createSummonPane(opts: Omit<SummonSheetOptions, 'onClose'>, firs
       }
       if (m.faction !== lastFaction) {
         lastFaction = m.faction;
+        if (factionSummary) factionSummary.textContent = `종족 고르기 · ${first.factions[m.faction]?.name ?? ''}`;
         factionChips.forEach((b, i) => {
           b.classList.toggle('is-on', i === m.faction);
           b.setAttribute('aria-checked', i === m.faction ? 'true' : 'false');

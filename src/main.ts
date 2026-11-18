@@ -10,6 +10,8 @@ import './ui/styles.css';
 import './ui/theme.css';
 import './ui/lobby/lobby.css';
 import './ui/screens/feedback.css';
+import './ui/feedback-design.css';
+import { assetUrl } from './assets';
 import { loadGameData } from './data/load';
 import { allLooks } from './art/characters/looks';
 import { createAccountStore } from './meta/account';
@@ -40,6 +42,11 @@ function must<T extends HTMLElement>(id: string): T {
 }
 
 function boot(): void {
+  // 한 파일 빌드에서도 내장된 PNG로 앱 대표 얼굴을 표시한다.
+  document.querySelector<HTMLLinkElement>('link[rel="icon"]')?.setAttribute('href', assetUrl('assets/ui/app-192.png'));
+  const touchIcon = document.createElement('link');
+  touchIcon.rel = 'apple-touch-icon'; touchIcon.href = assetUrl('assets/ui/app-192.png');
+  document.head.append(touchIcon);
   // G-2 테두리 테마 「금테 성채」: data-theme + 코드로 그린 장식 SVG 변수 (theme.css)
   applyTheme();
   const ui = new UiRoot(must('ui-root'));
