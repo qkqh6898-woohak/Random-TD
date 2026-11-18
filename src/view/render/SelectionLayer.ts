@@ -7,7 +7,6 @@
  *   전체 오라(학자·전쟁 군주)는 자기 칸 발밑에만 옅은 빛. 고르면 위의 진한 표시로 바뀐다.
  * - 길게 눌러 끄는 동안: 놓을 칸을 색으로 미리 보여준다 (빈 칸 이동 = 초록, 교환 = 파랑, 못 놓음 = 빨강)
  *   + 그 칸에 놓았을 때의 사거리 원.
- * - [⬆ 승급 가능 n]을 누르면 (M5-7): 그 묶음 타워마다 금색 고리가 퍼지며 1.5초 동안 강조된다 (highlight, t = 0~1 진행도).
  * - 패널 [↔ 이동] 모드 (T-2): 옮길 수 있는 칸 모두 — 빈 칸 = 옅은 초록, 내 다른 타워(교환) = 옅은 파랑, 옮길 타워 = 흰 테두리.
  * - 배치 칸: 타워를 끄는 동안·배치할 수 없는 곳을 눌렀을 때 소환 바닥을 흰색으로 강조한다 (buildable, alpha 0~1).
  * 화면 전용 (sim을 바꾸지 않는다). 몇 개 안 되는 도형이라 매 프레임 다시 그린다.
@@ -40,8 +39,6 @@ export interface SelectionView {
   sameKind: readonly { tx: number; ty: number }[];
   /** 끄는 중 놓을 칸 미리 보기 (없으면 null) */
   drop: { tx: number; ty: number; preview: DropPreview; range: number } | null;
-  /** 승급 가능 묶음 강조 (M5-7): 칸들과 진행도 t (0 → 1, 끝나면 null) */
-  highlight?: { tiles: readonly { tx: number; ty: number }[]; t: number } | null;
   /** [↔ 이동] 모드 (T-2): 옮길 타워 칸과 놓을 수 있는 칸 (move = 빈 칸, swap = 교환) */
   moveMode?: { from: { tx: number; ty: number }; targets: readonly { tx: number; ty: number; kind: 'move' | 'swap' }[] } | null;
   /** 배치 칸 보이기 (T-3): 칸들과 진하기 alpha (0~1). 없거나 null이면 안 그림 */
@@ -101,19 +98,6 @@ export class SelectionLayer {
     for (const t of view.sameKind) {
       const c = tileCenterPx(L, t.tx, t.ty);
       g.lineStyle(line * 1.4, SAME_KIND_COLOR, pulse).strokeEllipse(c.x, c.y + L.tile * FOOT_OFFSET_TILES, L.tile * 0.86, L.tile * 0.4);
-    }
-    const hl = view.highlight;
-    if (hl && hl.t >= 0 && hl.t < 1) {
-      // 고리 두 개가 칸 크기에서 1.6배까지 퍼지며 옅어진다 (타워 위 층에 그려 눈에 띄게)
-      for (const t of hl.tiles) {
-        const c = tileCenterPx(L, t.tx, t.ty);
-        for (const lag of [0, 0.35]) {
-          const p = (hl.t * 2 + lag) % 1;
-          const r = L.tile * (0.45 + 0.55 * p);
-          o.lineStyle(line * 2, SAME_KIND_COLOR, (1 - p) * (1 - hl.t * 0.5)).strokeCircle(c.x, c.y, r);
-        }
-        o.fillStyle(SAME_KIND_COLOR, 0.18 * (1 - hl.t)).fillCircle(c.x, c.y, L.tile * 0.5);
-      }
     }
     const mm = view.moveMode;
     if (mm) {

@@ -1257,18 +1257,6 @@ body {
   color: #b9a6ff;
 }
 
-/* [⬆ 승급 가능 n]으로 연 패널: 다음 승급 가능 묶음으로 (패널이 아래 띠의 그 버튼을 덮으므로 패널 안에 둔다) */
-.tp-merge-next {
-  width: 100%;
-  min-height: max(9cqw, 40px);
-  font-size: 3.4cqw;
-  padding: 1cqw 2cqw;
-}
-
-.tp-merge-next[hidden] {
-  display: none;
-}
-
 .tp-note,
 .tp-outcomes {
   font-size: 2.9cqw;

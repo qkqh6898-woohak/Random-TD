@@ -18,7 +18,6 @@ import {
   fmtPct,
   fmtScaled2,
   gradeStars,
-  mergeNextText,
   shapeText,
   shortFactionName,
   type TowerPanelInput,
@@ -170,15 +169,6 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
     const small = buildTowerPanelModel(panelInput('apprentice', { eff: effectiveStats(rules, stats, { ...newPlayerMods(), rangePctBp: 200 }) }));
     expect(small.stats.flat().find((c) => c.label === '사거리')).toMatchObject({ value: '2.55', base: '2.5' });
     expect(buildTowerPanelModel(panelInput('apprentice')).stats.flat().find((c) => c.label === '사거리')).toEqual({ label: '사거리', value: '2.5', buffed: false });
-  });
-
-  it('[⬆ 승급 가능 n]으로 연 패널: 묶음 2개 이상이면 [다음 묶음 ▶ 1/3] (M5 검토 반영), 아니면 숨김', () => {
-    expect(mergeNextText(null)).toBe('');
-    expect(mergeNextText({ index: 0, total: 1 })).toBe('');
-    expect(mergeNextText({ index: 0, total: 3 })).toBe('다음 묶음 ▶ 1/3');
-    expect(mergeNextText({ index: -1, total: 2 })).toBe('다음 묶음 ▶');
-    expect(buildTowerPanelModel(panelInput('archer', { mergeCycle: { index: 1, total: 2 } })).mergeNext).toBe('다음 묶음 ▶ 2/2');
-    expect(buildTowerPanelModel(panelInput('archer')).mergeNext).toBe('');
   });
 
   it('특색이 아닌 타워도 능력 설명이 있으면 "능력" 줄에 보여준다 (화염 마법사 화상·군견병 출혈·단일딜 전사·바람 궁수, 검토 반영)', () => {

@@ -58,7 +58,6 @@ type SceneLike = {
   choiceKind: string | null;
   choiceCollapsed: boolean | null;
   selectedTowerId: number | null;
-  mergeHighlightCount: number;
   layout: { tile: number; originX: number; originY: number };
   debugFastForward(n: number): number;
 };

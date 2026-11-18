@@ -499,6 +499,16 @@ test('위쪽 패널 + 알림: 칸이 가득 찬 판에서 아래쪽 타워를 �
   await start(page);
   const all = await inScene(page, (s) => s.match.map.buildable.map(([x, y]) => [x, y] as [number, number]), null);
   await summonMany(page, all);
+  // 피드백 #59로 기본 인원 한도가 30(> 24칸)이 되어 알림이 뜨지 않았다 → 이 판만 인원 한도를 칸 수(놓은 타워 수)에 맞춘다
+  await inScene(
+    page,
+    (s, n) => {
+      const m = s.match as unknown as { rules: { unitCap: number }; state: { unitCapBonus: number[] } };
+      m.state.unitCapBonus[0] = n - m.rules.unitCap;
+      return null;
+    },
+    all.length,
+  );
   const lowest = [...all].sort((p, q) => q[1] - p[1] || p[0] - q[0])[0]!;
   await page.waitForTimeout(100);
   await tapTile(page, lowest[0], lowest[1]);

@@ -25,7 +25,7 @@
  * - M5: 하단 메뉴 [⚔ 도전] [⬆ 강화] [📋 미션] → 바텀 시트(sheet 층, 55% / 끌어서 85%, 게임은 계속 진행, 맵을 누르면 닫힘).
  *   도전 [시작] → startChallenge, 강화 [비용] → upgrade (길게 누르면 연속), 도박 테이블 → gamble (슬롯 1초 연출 뒤 결과),
  *   미션 [받기]·[모두 받기] → claimMission·claimAllMissions. 메뉴 배지 '1 가능'·'Lv 5'·'2 받기', 도전 보스 막대(보스 막대 자리),
- *   패널의 [다음 묶음 ▶]을 누를 때마다 다음 묶음을 골라 패널을 열고 그 타워들에 금색 고리를 퍼뜨린다(1.5초). (아래 띠 [⬆ 승급 가능 n]은 피드백 #65에서 없앰)
+ *   (예전 [⬆ 승급 가능 n]·패널 [다음 묶음 ▶]·금색 강조 고리는 피드백 #65에서 없앴다 — 승급은 [⏫ 모두 승급])
  *   바텀 시트는 하나만: 시트를 열면 정보 패널을 닫고 고르기 창을 접는다, 타워 패널·고르기 창을 펼치면 시트를 닫는다.
  *   히든 미션을 달성하면 계정 저장소에 영구 기록한다 (다음 판부터 이름이 보임).
  * - HF-2: 전투 배경 그림(테마 × 하늘 밴드, BattleBackground — 없으면 절차 풀밭), 단계 보스 등장 컷인(DOM cutin 층, 연출 끄기면 건너뜀),
@@ -248,8 +248,6 @@ const BOSS_PREVIEW_MS = 5200;
 const DROP_HOLD_MS = 400;
 /** 로컬 플레이어 (2인 판은 M13) */
 const LOCAL_PLAYER = 0;
-/** [⬆ 승급 가능 n] 강조 고리 시간 (ms) */
-const MERGE_HIGHLIGHT_MS = 1500;
 /** 연출 끄기 때 도박 꾹 누르기 간격 (ms) — 릴 없이 결과만 (T-2) */
 const GAMBLE_FAST_MS = 150;
 /** 이동 모드 안내 알림 시간 (ms) */
@@ -447,11 +445,6 @@ export class GameScene extends Phaser.Scene {
   private chanceQueuedTick = -1;
   /** 마지막 강화 명령을 넣은 틱 (그 명령이 실행되기 전에는 다음을 넣지 않는다 — 길게 누르기가 돈보다 많이 넣지 않게) */
   private upgradeQueuedTick = -1;
-  /** [⬆ 승급 가능 n]을 누른 횟수 (누를 때마다 다음 묶음) · 강조 고리 */
-  private mergeCycle = 0;
-  /** 정보 패널을 [⬆ 승급 가능 n]으로 열었는가 (패널 안 [다음 묶음 ▶]을 보인다) */
-  private panelFromMergeCycle = false;
-  private mergeHighlight: { tiles: { tx: number; ty: number }[]; startMs: number } | null = null;
   /** 배치 칸을 잠깐 보이기 시작한 때 (T-3 타일 숨김: 판 시작·배치할 수 없는 곳을 누름). 없으면 null */
   private buildHintAt: number | null = null;
   // ---- F10 첫 10단계 개선 ----
@@ -552,8 +545,6 @@ export class GameScene extends Phaser.Scene {
     this.sellConfirm = null;
     this.convertOpen = false;
     this.chanceQueuedTick = -1;
-    this.mergeCycle = 0;
-    this.mergeHighlight = null;
     this.buildHintAt = this.time.now;
     this.guide = null;
     this.guideCard = null;
@@ -1382,7 +1373,6 @@ export class GameScene extends Phaser.Scene {
     const t = this.match.world.entities.get(id);
     if (!t || t.kind !== 'tower') return;
     this.selectedId = id;
-    this.panelFromMergeCycle = false;
     // 바텀 시트는 하나만: 펼친 고르기 창은 알약으로 접는다 (창 뒤에 패널이 열려 ✕가 가려지던 것, 검토 반영). 메뉴 시트는 닫는다
     if (this.choice && !this.choice.collapsed) this.choice.collapse();
     this.closeSheet();
@@ -1391,7 +1381,6 @@ export class GameScene extends Phaser.Scene {
         onMerge: () => this.sendMerge('merge'),
         onMergeAll: () => this.sendMerge('mergeAll'),
         onClose: () => this.closePanel(),
-        onNextMergeable: () => this.selectNextMergeable(),
         onInfo: () => this.openCharacterCard(),
         onMove: () => this.startMoveMode(),
         onSell: () => this.sendSell(),
@@ -1402,51 +1391,6 @@ export class GameScene extends Phaser.Scene {
       this.ctx.ui.show('quick', this.quick);
     }
     this.refreshPanel();
-  }
-
-  /**
-   * 아래 띠 '⬆ 승급 가능 n' (M5-7): 누를 때마다 다음 승급 가능 묶음(가장 먼저 소환된 것부터)을 골라 정보 패널을 열고,
-   * 그 묶음 타워마다 금색 고리를 1.5초 퍼뜨려 강조한다 (UI.md 4.1 '누르면 해당 타워 강조').
-   */
-  private selectNextMergeable(): void {
-    if (this.paused || this.gameOver) return;
-    const groups = mergeableStackGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
-    if (groups.length === 0) return;
-    // 첫 승급 안내 중이면 안내하는 묶음의 결과 칸 타워를 고른다 (F10). 그 패널이 이미 열려 있으면 다음 묶음으로 넘어가고
-    // 안내도 그 묶음으로 옮긴다 (F10-4 검토: 두 묶음이 함께 준비돼도 버튼으로 돌아가며 볼 수 있게)
-    const guide = this.guide;
-    let guideAnchor: number | null = null;
-    if (guide) {
-      let idx = groups.findIndex((x) => x.tower === guide.kind);
-      const onGuide = idx >= 0 && this.panel !== null && this.selectedId === guide.anchorId;
-      if (idx < 0) idx = 0;
-      else if (onGuide && groups.length > 1) idx = (idx + 1) % groups.length;
-      const gg = groups[idx] as (typeof groups)[number];
-      if (gg.tower !== guide.kind || !this.match.world.entities.has(guide.anchorId)) {
-        guide.kind = gg.tower;
-        guide.anchorId = gg.first.id;
-      }
-      guideAnchor = guide.anchorId;
-      this.mergeCycle = idx;
-      this.updateGuideCard();
-    }
-    const g = groups[this.mergeCycle % groups.length] as (typeof groups)[number];
-    this.mergeCycle++;
-    this.selectTower(guideAnchor !== null && this.match.world.entities.has(guideAnchor) ? guideAnchor : g.first.id);
-    this.panelFromMergeCycle = true;
-    this.refreshPanel();
-    this.mergeHighlight = {
-      // G-1 칸 무더기: 그 칸의 타워마다 (3개)
-      tiles: towersAt(this.match.world, g.first.tx, g.first.ty).map((t) => ({ tx: t.tx, ty: t.ty })),
-      startMs: this.time.now,
-    };
-  }
-
-  /** [⬆ 승급 가능 n]으로 연 패널: 고른 타워 묶음이 승급 가능 묶음 몇 번째인지 (묶음 2개 이상일 때만). */
-  private mergeCyclePosition(t: Tower): { index: number; total: number } | null {
-    const groups = mergeableStackGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
-    if (groups.length < 2) return null;
-    return { index: groups.findIndex((g) => g.tower === t.tower), total: groups.length };
   }
 
   // ---------------------------------------------------------------- T-2 판매·이동·변환
@@ -1556,7 +1500,6 @@ export class GameScene extends Phaser.Scene {
     this.quick = null;
     this.panelModel = null;
     this.panelPlaceKey = '';
-    this.panelFromMergeCycle = false;
     this.ctx.ui.setToastSingle(false);
     if (!this.press?.dragging) this.selectedId = null;
   }
@@ -1661,7 +1604,6 @@ export class GameScene extends Phaser.Scene {
       paused: isPaused({ pauseUntil: t.pauseUntil, held: false }, this.match.tick),
       stunned: this.match.tick < t.stunUntil,
       penMaxBp: rules.penMaxBp,
-      mergeCycle: this.panelFromMergeCycle ? this.mergeCyclePosition(t) : null,
       sell: {
         price: sellPrice(rules, t.tower),
         confirming: this.sellConfirm !== null && this.sellConfirm.id === t.id && performance.now() < this.sellConfirm.untilMs,
@@ -1732,7 +1674,6 @@ export class GameScene extends Phaser.Scene {
         buffed,
         sameKind: t && !p ? sameKindTowers(this.match.world, t.tower, t.owner).map((x) => ({ tx: x.tx, ty: x.ty })) : [],
         drop: p && p.drop && stats && t ? { ...p.drop, range: towerRange(this.match.state, t.owner, stats.range) } : null,
-        highlight: this.highlightView(),
         moveMode: this.moveModeView(),
         buildable: { tiles: this.match.map.buildable, alpha: this.buildHint },
       },
@@ -1818,18 +1759,6 @@ export class GameScene extends Phaser.Scene {
     this.selectionLayer = new SelectionLayer(this, this.layout);
     this.guideLayer = new GuideLayer(this, this.layout);
     this.updateToastTop();
-  }
-
-  /** 승급 가능 강조 고리 (끝났으면 null). */
-  private highlightView(): { tiles: { tx: number; ty: number }[]; t: number } | null {
-    const h = this.mergeHighlight;
-    if (!h) return null;
-    const t = (this.time.now - h.startMs) / MERGE_HIGHLIGHT_MS;
-    if (t >= 1 || t < 0) {
-      this.mergeHighlight = null;
-      return null;
-    }
-    return { tiles: h.tiles, t };
   }
 
   private handleEvents(time: number): void {
@@ -3237,11 +3166,6 @@ export class GameScene extends Phaser.Scene {
 
   get sheetSize(): string | null {
     return this.sheet ? this.sheet.size : null;
-  }
-
-  /** E2E: 승급 가능 강조 고리가 그려지는 칸 수 (없으면 0) */
-  get mergeHighlightCount(): number {
-    return this.mergeHighlight ? this.mergeHighlight.tiles.length : 0;
   }
 
   /** E2E (T-2): 이동 모드인가 · 빈 땅 꾹 눌러 연속 소환 중인가 · 변환 고르기 창이 열려 있는가 */
