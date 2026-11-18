@@ -159,6 +159,8 @@ import {
   needGoldForSummon,
   sellText,
   chainMergeText,
+  mergeAllButton,
+  mergeAllText,
   craftFailText,
   craftReadyText,
   craftText,
@@ -578,6 +580,7 @@ export class GameScene extends Phaser.Scene {
       onUltAll: () => {
         for (const t of readyUlts(this.match.ctx, this.match.world, LOCAL_PLAYER)) this.castUltOf(t.id);
       },
+      onMergeAll: () => this.sendMergeAll(),
     });
     this.ctx.ui.clear('screen');
     this.ctx.ui.show('hud', this.hud);
@@ -1561,6 +1564,14 @@ export class GameScene extends Phaser.Scene {
     if (r.ok) this.inputLockUntil = now + MERGE_INPUT_LOCK_MS;
   }
 
+  /** 맵 오른쪽 위 [⏫ 모두 승급] (피드백 #26) → mergeAllStacks 명령. 승급 직후 0.3초는 다시 받지 않는다. */
+  private sendMergeAll(): void {
+    if (this.paused || this.gameOver) return;
+    const now = this.time.now;
+    if (inputLocked(this.inputLockUntil, now)) return;
+    if (this.match.world.enqueue({ type: 'mergeAllStacks' }).ok) this.inputLockUntil = now + MERGE_INPUT_LOCK_MS;
+  }
+
   /** 지금 고른 타워 (없거나 사라졌으면 null). */
   private selectedTower(): Tower | null {
     if (this.selectedId === null) return null;
@@ -1899,6 +1910,11 @@ export class GameScene extends Phaser.Scene {
           if (ev.player !== LOCAL_PLAYER) break;
           this.noteFx('mergeChain');
           if (eventFxVisible('action', ev.tick, now, frameStart)) this.ctx.ui.toast(chainMergeText(Number(ev.steps)));
+          break;
+        case 'mergeAllStacks':
+          if (ev.player !== LOCAL_PLAYER) break;
+          this.noteFx('mergeAllStacks');
+          if (eventFxVisible('action', ev.tick, now, frameStart)) this.ctx.ui.toast(mergeAllText(Number(ev.steps)));
           break;
         case 'gacha': {
           if (ev.player !== LOCAL_PLAYER) break;
@@ -3103,6 +3119,7 @@ export class GameScene extends Phaser.Scene {
     const world = this.match.world;
     const ready = readyUlts(ctx, world, LOCAL_PLAYER);
     if (!this.paused && !this.gameOver && this.ctx.settings.get().ultAuto) for (const t of ready) this.castUltOf(t.id);
+    this.hud.setMergeAll(mergeAllButton(this.mergeReadyCount));
     const kinds = this.ctx.data.game.ultimate.kinds;
     this.hud.setUlts(
       ready.map((t) => {

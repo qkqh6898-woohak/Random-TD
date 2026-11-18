@@ -288,6 +288,16 @@ export function chainMergeText(steps: number): string {
   return `연쇄 승급 ×${steps}!`;
 }
 
+/** 맵 오른쪽 위 [⏫ 모두 승급 n] 버튼 글자 (피드백 #26, n = 승급할 수 있는 무더기 수). 0이면 빈 글자 → 버튼 숨김 */
+export function mergeAllButton(stacks: number): string {
+  return stacks > 0 ? `⏫ 모두 승급 ${stacks}` : '';
+}
+
+/** 모두 승급 결과 알림 (피드백 #26) */
+export function mergeAllText(steps: number): string {
+  return `⏫ 모두 승급 ×${steps}!`;
+}
+
 /** 3택 1 강화 선택 제목·부제 */
 export const PICK_CARD_TITLE = '✨ 강화 카드 1장을 고르세요';
 export function pickCardSub(stage: number): string {

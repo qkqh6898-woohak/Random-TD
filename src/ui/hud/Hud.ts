@@ -21,6 +21,7 @@
  *   보스와 도전이 겹치면 반씩 두 줄 (UI.md 9장 '체력바 2줄') — 자리 높이는 그대로라 맵이 움직이지 않는다.
  *
  * G-1: 하단 메뉴 = [💠 신화] [✨ 소환] [🎰 도박] [⬆ 강화] + 작은 [⚔] [📋] (+ 개발자 [🛠]) — 도전·미션은 아이콘·배지만 (좁은 화면 넘침 방지).
+ *   피드백 #26: 위 띠 아래 맵 오른쪽 위에 [⏫ 모두 승급 n] (승급할 무더기가 있을 때만, onMergeAll).
  *   1줄 ⏸ 앞 [⚡ n] 필살기 칩 (찬 캐릭터가 있을 때만): 누르면 찬 캐릭터 목록 + [모두 발동] (onUlt·onUltAll).
  * 값 계산은 hudModel.ts(순수 함수, 단위 테스트)에서 하고, 여기서는 바뀐 글자만 DOM에 쓴다.
  * HUD는 sim을 읽기만 한다. 배속은 화면 설정(TickClock), 돈 추가·단계 건너뛰기(debug)는 명령으로 보낸다.
@@ -66,6 +67,8 @@ export interface HudOptions {
   /** G-1 필살기: 목록의 캐릭터 하나 발동 (타워 엔티티 id) · 모두 발동 */
   onUlt?: (id: number) => void;
   onUltAll?: () => void;
+  /** 맵 오른쪽 위 [⏫ 모두 승급 n] (피드백 #26): 승급할 수 있는 무더기를 한 번에 모두 승급 */
+  onMergeAll?: () => void;
 }
 
 /** G-1 필살기 목록 한 줄 (HUD [⚡ n] 칩을 누르면 보인다) */
@@ -109,6 +112,8 @@ export interface HudView extends UiView {
   setG1Badges(b: { mythic: string; mythicAlert: boolean; summon: string; summonAlert: boolean; gamble: string }): void;
   /** G-1: 필살기가 찬 캐릭터 (빈 배열이면 칩·목록 숨김) */
   setUlts(list: readonly UltEntry[]): void;
+  /** 피드백 #26: 맵 오른쪽 위 [⏫ 모두 승급 n] 글자 (빈 글자면 숨김) */
+  setMergeAll(text: string): void;
   /** G-1: 필살기 목록이 열려 있는가 (E2E) */
   readonly ultListOpen: boolean;
 }
@@ -166,6 +171,13 @@ export function createHud(opts: HudOptions): HudView {
     class: 'btn btn-chip hud-ult',
     attrs: { type: 'button', 'data-testid': 'hud-ult', 'data-action': 'ult', 'aria-label': '필살기', hidden: '' },
     text: '',
+  });
+  // 피드백 #26: 맵 오른쪽 위 [⏫ 모두 승급 n] — 위 띠 아래에 떠 있어(absolute) 띠 높이·맵 위치를 바꾸지 않는다
+  const mergeAllBtn = h('button', {
+    class: 'btn btn-chip hud-merge-all',
+    attrs: { type: 'button', 'data-action': 'merge-all', 'data-testid': 'hud-merge-all', hidden: '' },
+    text: '',
+    on: { click: () => opts.onMergeAll?.() },
   });
   const ultList = h('div', { class: 'hud-ult-list', attrs: { 'data-testid': 'hud-ult-list', role: 'menu', hidden: '' } });
   let ultOpen = false;
@@ -316,6 +328,7 @@ export function createHud(opts: HudOptions): HudView {
       h('div', { class: 'hud-row hud-count-row' }, countItem),
     ),
     bannerSlot,
+    mergeAllBtn,
     ultList,
   );
   // 하단 메뉴 (M5, UI.md 4.1): 메뉴 이름 + 배지 두 줄
@@ -574,6 +587,12 @@ export function createHud(opts: HudOptions): HudView {
           },
         }),
       );
+    },
+    setMergeAll(text) {
+      if (mergeAllBtn.textContent === text) return;
+      mergeAllBtn.textContent = text;
+      mergeAllBtn.setAttribute('aria-label', text === '' ? '모두 승급' : `모두 승급 (승급 가능 ${text.replace(/\D+/g, '')}칸)`);
+      mergeAllBtn.hidden = text === '';
     },
     get ultListOpen() {
       return ultOpen;
