@@ -10,7 +10,7 @@
   "decks": [{"normal":["miner","goblin","archer","apprentice","warrior"],"rare":["merchant","mudshaman","flamemage","cleaver","duelist"],"unique":["icemage","gambler","blacksmith","sniper","berserker"],"hero":["summoner","scholar","chronomancer","alchemist","swordsaint"],"legend":["dragoncaller","warlord","archmage","assassin","fortuna"]}],
   "levels": [{"alchemist":5,"apprentice":5,"archer":5,"archmage":5,"assassin":5,"berserker":5,"blacksmith":5,"chronomancer":5,"cleaver":5,"dragoncaller":5,"duelist":5,"flamemage":5,"fortuna":5,"gambler":5,"goblin":5,"icemage":5,"merchant":5,"miner":5,"mudshaman":5,"scholar":5,"sniper":5,"summoner":5,"swordsaint":5,"warlord":5,"warrior":5}],
   "accountLevels": [1],
-  "dataHash": 1618751252,
+  "dataHash": 3540383910,
   "endTick": 12766,
   "commands": [
     {"type":"summonAuto","tick":0,"player":0,"seq":0},

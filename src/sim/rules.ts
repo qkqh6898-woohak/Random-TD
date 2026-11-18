@@ -272,13 +272,14 @@ export interface StatusRules {
  * - grade: grades 등급 타워의 공격력 +perLevelBp/Lv (Aura.towerBonus가 타워 등급으로 더한다).
  * - stat: 모든 타워 stat +perLevelBp/Lv (PlayerMods에 더한다).
  * - transcend: 모든 타워 공격력 +perLevelBp/Lv (PlayerMods.atkPctBp). 등급 강화가 모두 최대일 때 열림. 비용 = 표.
+ * - summon: 레어 직행 소환 확률 +perLevelBp/Lv (피드백 #27, Summon.summonRareChance가 더한다). k = 초월 다음 (예전 k 그대로).
  */
 export interface UpgradeRule {
   readonly k: number;
   readonly id: string;
   readonly name: string;
   readonly icon: string;
-  readonly kind: 'grade' | 'stat' | 'transcend';
+  readonly kind: 'grade' | 'stat' | 'transcend' | 'summon';
   readonly grades: readonly Grade[];
   /** 능력치 강화가 올리는 값 (grade·transcend는 null) */
   readonly stat: UpgradeStat | null;
@@ -439,7 +440,7 @@ export interface MatchRules {
   /** 카드 '소환 할인'의 최소 소환 비용 (원, 카드가 없으면 기본 비용) */
   readonly summonCostMin: number;
   // ---- M5 ----
-  /** 판 내 강화 (명령 upgrade {k}의 k 순서: 등급 강화 → 능력치 강화 → 초월) */
+  /** 판 내 강화 (명령 upgrade {k}의 k 순서: 등급 강화 → 능력치 강화 → 초월 → 소환 확률) */
   readonly upgrades: readonly UpgradeRule[];
   /** 등급 → 그 등급을 올리는 등급 강화의 k */
   readonly gradeUpgradeOf: ReadonlyMap<Grade, number>;
@@ -949,6 +950,22 @@ function buildM5Rules(data: GameData): Pick<
       max: curves.transcendCost.length,
       costBase: tr.costBase,
       costPer: 0,
+    } satisfies UpgradeRule),
+  );
+  const su = up.summon;
+  upgrades.push(
+    Object.freeze({
+      k: upgrades.length,
+      id: su.id,
+      name: su.name,
+      icon: su.icon,
+      kind: 'summon',
+      grades: Object.freeze([]),
+      stat: null,
+      perLevelBp: exactBp(`game.json upgrade ${su.id}.rarePerLevel`, su.rarePerLevel),
+      max: su.max,
+      costBase: su.cost[0],
+      costPer: su.cost[1],
     } satisfies UpgradeRule),
   );
   const gb = game.gamble;

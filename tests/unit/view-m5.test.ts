@@ -149,12 +149,12 @@ describe('⚔ 도전 시트', () => {
 });
 
 describe('⬆ 강화 시트', () => {
-  it('등급 3줄 · 능력치 6줄 · 초월은 잠겨 있으면 없음, 공속 배율 ⚡×1', () => {
+  it('등급 3줄 · 능력치 6줄 + 소환 확률(피드백 #27) · 초월은 잠겨 있으면 없음, 공속 배율 ⚡×1', () => {
     const m = arena();
     const s = upgradeSheetModel(m.ctx, 0);
     expect(s.apsMul).toBe('⚡×1');
     expect(s.grade.map((r) => r.id)).toEqual(['normal', 'hero', 'legend']);
-    expect(s.stat.map((r) => r.id)).toEqual(['aps', 'armorPen', 'magicPen', 'crit', 'critDmg', 'range']);
+    expect(s.stat.map((r) => r.id)).toEqual(['aps', 'armorPen', 'magicPen', 'crit', 'critDmg', 'range', 'summonLuck']);
     expect(s.transcend).toBeNull();
     expect(s.grade[0]).toMatchObject({ levelText: 'Lv 0/50', effect: '+0% → +10%', cost: 50, costText: '50원', target: '노말·레어' });
     expect(s.stat[3]).toMatchObject({ effect: '+0%p → +1%p', target: '모든 타워' });

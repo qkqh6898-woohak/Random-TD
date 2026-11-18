@@ -30,9 +30,9 @@ const K = (id: string): number => {
 };
 
 describe('강화 데이터 (GDD 7.1)', () => {
-  it('순서: 등급 강화 3종 → 능력치 강화 6종 → 초월 (명령 k = 이 순서)', () => {
-    expect(rules.upgrades.map((u) => u.id)).toEqual(['normal', 'hero', 'legend', 'aps', 'armorPen', 'magicPen', 'crit', 'critDmg', 'range', 'transcend']);
-    expect(rules.upgrades.map((u) => u.kind)).toEqual(['grade', 'grade', 'grade', 'stat', 'stat', 'stat', 'stat', 'stat', 'stat', 'transcend']);
+  it('순서: 등급 강화 3종 → 능력치 강화 6종 → 초월 → 소환 확률 (명령 k = 이 순서, 피드백 #27은 맨 뒤라 예전 k 그대로)', () => {
+    expect(rules.upgrades.map((u) => u.id)).toEqual(['normal', 'hero', 'legend', 'aps', 'armorPen', 'magicPen', 'crit', 'critDmg', 'range', 'transcend', 'summonLuck']);
+    expect(rules.upgrades.map((u) => u.kind)).toEqual(['grade', 'grade', 'grade', 'stat', 'stat', 'stat', 'stat', 'stat', 'stat', 'transcend', 'summon']);
     expect(rules.upgrades.every((u, i) => u.k === i)).toBe(true);
     expect(rules.transcendK).toBe(9);
   });
