@@ -44,6 +44,21 @@ export const GRADE_STYLE: Readonly<Record<Grade, GradeStyle>> = {
   hidden: { top: '#1e1e2a', side: '#0b0b12', rim: '#f1c40f', glow: '#f1c40f', deco: 'runes', stars: 1 },
 };
 
+/**
+ * 피드백 #21: 맵 캐릭터 빛 테두리 등급 색 = 받침대 윗면 색 (노말 은회색·레어 파랑·유니크 보라·히어로 주황·레전드 빨강·신 흰색).
+ * 신화(hidden)는 윗면이 검정이라 받침대 금테 색.
+ */
+export function gradeBorderColor(grade: Grade): string {
+  const s = GRADE_STYLE[grade];
+  return grade === 'hidden' ? s.rim : s.top;
+}
+
+/** 테두리 색의 캔버스 문자열 (알파 0.95 — 어두운 배경에서도 등급 색이 보이게) */
+export function gradeBorderRgba(grade: Grade): string {
+  const n = Number.parseInt(gradeBorderColor(grade).slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, 0.95)`;
+}
+
 /** 신화(hidden) 받침대 룬 색: 일곱 종족 (towers.json factions 색, ART.md 1.2 '7종족 문양 원판') */
 export const RUNE_COLORS = ['#6B7A3A', '#2E5AAC', '#A0522D', '#3A9D5D', '#5B3A8C', '#B23A2E', '#E58FC4'] as const;
 

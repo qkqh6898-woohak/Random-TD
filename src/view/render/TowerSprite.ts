@@ -326,9 +326,10 @@ export class TowerSprite {
     }
   }
 
-  /** G-2 겉모습 텍스처 키 (E2E): 받침대 · 별 배지 · 종족 문장 · 접지 그림자 */
-  get presentation(): { pedestal: string; stars: string; emblem: string; shadow: string; pedestalScale: number } {
+  /** G-2 겉모습 텍스처 키 (E2E): 받침대 · 별 배지 · 종족 문장 · 접지 그림자 · 몸 그림(피드백 #21 등급 테두리) */
+  get presentation(): { pedestal: string; stars: string; emblem: string; shadow: string; pedestalScale: number; body: string | null } {
     return {
+      body: this.character?.bodyKey ?? null,
       pedestal: this.pedestal.texture.key,
       stars: this.starBadge.texture.key,
       emblem: this.emblem.texture.key,

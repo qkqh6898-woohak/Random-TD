@@ -41,7 +41,7 @@
 | 무엇 | 어떻게 | 파일 |
 |------|--------|------|
 | 등급 받침대 | 위 1.1 'G-2 등급 받침대'. 2배 캐릭터 발에 가려 안 보이던 것 → 그림 크기를 조금 따라 0.85~1.22배 (`towerGeom.pedestalScaleFor`, 2배 ≈ 0.94칸, 붙은 1.4배 ≈ 0.66칸) | `presentation.ts drawGradePedestal`, `art/towers.ts ensurePedestalTexture` (갤러리도 같은 함수) |
-| 테두리 · 테두리 빛 | 바깥 그림: 진한 외곽선 바깥에 따뜻한 흰빛 테(halo) + 그림 안 왼쪽 위 은은한 빛(rim light) → 밤·침공 배경에서도 실루엣이 읽힌다 | `phaserArt.ts outlinedExternalTexture` |
+| 테두리 · 테두리 빛 | 바깥 그림: 진한 외곽선 바깥에 **등급 색 테**(halo, 피드백 #21 — 받침대 윗면 색: 노말 은회·레어 파랑·유니크 보라·히어로 주황·레전드 빨강·신 흰색·신화 금테, `presentation.gradeBorderColor`) + 그림 안 왼쪽 위 은은한 빛(rim light) → 밤·침공 배경에서도 실루엣이 읽히고 등급이 한눈에 보인다 | `phaserArt.ts outlinedExternalTexture` |
 | 접지 그림자 | 발밑 부드러운 타원. 뛰면(bob) 작고 옅어져 떠오른 게 보인다 | `TowerSprite` + `ensureContactShadowTexture` |
 | 별 배지 | 받침대 앞 어두운 알약 + 등급 별 (노말 1 ~ 레전드 5, 신 무지개 별, 신화 검정 알약 + 금별). 칸 안(발밑 +0.15칸) | `presentation.ts drawStarBadge` |
 | 종족 문장 | 받침대 왼쪽 앞 금테 동그라미 + 종족 색 + 문양 (현대 조준경 · 왕국 방패 · 드워프 망치 · 엘프 잎 · 다크 엘프 초승달 · 오크 엄니 · 요정 꽃 · 고대신 해 · 연합 일곱 꼭짓점 별) | `presentation.ts drawFactionEmblem` |

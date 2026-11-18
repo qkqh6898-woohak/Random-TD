@@ -15,6 +15,8 @@ import { enemyLook, type HumanLook } from './looks';
 import type { MobMotion } from '../../view/render/mobPose';
 import { EXTERNAL_ART_MANIFEST, EXTERNAL_BOSS_SCALE, EXTERNAL_ENEMY_SCALE, externalArtKey, externalArtUrl, externalEntries, externalFigureScale } from './external';
 import { assetUrl, currentAssetTable, embeddedAssetJson } from '../../assets';
+import type { Grade } from '../../data/load';
+import { gradeBorderRgba } from '../presentation';
 
 export {
   EXTERNAL_ART_DIR,
@@ -131,28 +133,30 @@ const TINT_GLOW_ALPHA = 0.35;
 
 /** 바깥 그림 외곽선 두께 (그림 높이 대비) — 412px 휴대폰에서 약 1.2px (F10-4: 흑백에서도 풀밭과 캐릭터가 갈라지게) */
 export const EXTERNAL_OUTLINE_OF_H = 0.022;
-/** G-2: 진한 외곽선 바깥의 옅은 빛 테두리 두께 (그림 높이 대비) — 어두운 배경(밤·침공 밴드)에서도 실루엣이 읽히게 */
-export const EXTERNAL_HALO_OF_H = 0.012;
+/**
+ * G-2: 진한 외곽선 바깥의 빛 테두리 두께 (그림 높이 대비) — 어두운 배경(밤·침공 밴드)에서도 실루엣이 읽히게.
+ * 피드백 #21: 이 테두리를 등급 색(받침대 색, presentation.gradeBorderColor)으로 칠한다 → 색이 보이게 0.012 → 0.026.
+ */
+export const EXTERNAL_HALO_OF_H = 0.026;
 /** 바깥 그림 외곽선 색 (palette outline 진한 갈색)·알파 */
 const EXTERNAL_OUTLINE_RGBA = 'rgba(40, 24, 14, 0.9)';
-/** G-2 바깥 빛 테두리 색 (따뜻한 흰빛) */
-const EXTERNAL_HALO_RGBA = 'rgba(255, 244, 214, 0.5)';
-/** 외곽선을 찍는 방향 수 (원 둘레) */
-const EXTERNAL_OUTLINE_STEPS = 16;
+/** 외곽선을 찍는 방향 수 (원 둘레) — 등급 테두리는 반지름이 커서 틈이 안 보이게 24방향 */
+const EXTERNAL_OUTLINE_STEPS = 24;
 
 /**
  * 바깥 그림(힉스필드)에 굵은 진한 외곽선을 두른 텍스처 키 (처음 한 번 굽는다). 문서 4장 '컬러 대비와 굵은 외곽선은 배경과 타워를 분리' —
  * 밝은 궁수·고블린이 흑백 캡처에서 풀밭과 섞이던 것 (F10-4 검토). 그림 둘레에 pad만큼 여백을 더한다.
- * G-2: 외곽선 바깥에 옅은 빛 테두리(halo) + 그림 위 왼쪽 위에서 오는 은은한 테두리 빛(rim light) → 어떤 배경에서도 캐릭터가 떠 보인다.
+ * G-2: 외곽선 바깥에 빛 테두리(halo) + 그림 위 왼쪽 위에서 오는 은은한 테두리 빛(rim light) → 어떤 배경에서도 캐릭터가 떠 보인다.
+ * 피드백 #21: 빛 테두리 색 = 등급 색 (받침대·별 배지와 같은 색). 텍스처 키에 등급을 넣는다.
  * 그림 원본을 읽을 수 없으면(캔버스 없음 등) 원래 키 그대로.
  */
-export function outlinedExternalTexture(scene: Phaser.Scene, key: string): { key: string; pad: number; w: number; h: number } {
+export function outlinedExternalTexture(scene: Phaser.Scene, key: string, grade: Grade): { key: string; pad: number; w: number; h: number } {
   const src = scene.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
   const w = src.width;
   const h = src.height;
   const line = Math.max(2, Math.round(h * EXTERNAL_OUTLINE_OF_H));
   const pad = line + Math.max(1, Math.round(h * EXTERNAL_HALO_OF_H));
-  const olKey = `${key}-ol`;
+  const olKey = `${key}-ol-${grade}`;
   if (scene.textures.exists(olKey)) return { key: olKey, pad, w, h };
   try {
     const sil = document.createElement('canvas');
@@ -173,7 +177,7 @@ export function outlinedExternalTexture(scene: Phaser.Scene, key: string): { key
         g.drawImage(sil, pad + Math.cos(a) * r, pad + Math.sin(a) * r);
       }
     };
-    ring(EXTERNAL_HALO_RGBA, pad);
+    ring(gradeBorderRgba(grade), pad);
     ring(EXTERNAL_OUTLINE_RGBA, line);
     g.drawImage(src, pad, pad);
     // 테두리 빛: 그림 모양 안에서만(source-atop) 왼쪽 위가 살짝 밝다
@@ -212,6 +216,8 @@ export class CharacterFigure {
   private tinted = false;
   /** 바깥 그림 기본 배율 */
   private extScale = 1;
+  /** 피드백 #21: 테두리 등급 (바깥 그림 빛 테두리 색) */
+  readonly grade: Grade;
   /** 기절 중 오라·입자 알파 배수 */
   private dim = 1;
 
@@ -222,6 +228,7 @@ export class CharacterFigure {
     this.res = tex.res;
     const store = textureStore(scene);
     const look = tex.render.look;
+    this.grade = look.grade ?? 'normal';
     const extKey = externalArtKey('tower', look.id, tex.render.awakened);
     this.external = scene.textures.exists(extKey);
     this.textureKey = this.external ? extKey : tex.key;
@@ -234,7 +241,7 @@ export class CharacterFigure {
     } else this.auraImg = null;
     if (this.external) {
       // 바깥 그림: 몸 상자 높이에 맞춰 한 장 (발밑 = 그림 아래 가운데). 외곽선 텍스처는 둘레 여백만큼 커서 원점을 그만큼 옮긴다 — 크기·발밑은 그대로
-      const ol = outlinedExternalTexture(scene, extKey);
+      const ol = outlinedExternalTexture(scene, extKey, this.grade);
       const img = scene.add.image(0, 0, ol.key).setOrigin(0.5, (ol.h + ol.pad) / (ol.h + ol.pad * 2));
       this.extScale = externalFigureScale(ol.w, ol.h);
       img.setScale(this.extScale);
@@ -305,6 +312,11 @@ export class CharacterFigure {
   /** 색 덮기 중인가 (E2E) */
   get isTinted(): boolean {
     return this.tinted;
+  }
+
+  /** 몸 그림 텍스처 키 (E2E — 바깥 그림이면 등급 테두리를 구운 `<키>-ol-<등급>`) */
+  get bodyKey(): string | null {
+    return this.partImgs.get('body')?.texture.key ?? null;
   }
 
   /** 지금 보이는 파츠 수 (E2E) */
