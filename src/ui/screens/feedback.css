@@ -150,3 +150,110 @@
 .pause-feedback {
   width: 100%;
 }
+
+/* ---------------------------------------------------------------- 피드백 #24 📘 등급·조합 설명 창 (일시정지 메뉴에서 연다) */
+.gg-dialog {
+  pointer-events: auto;
+}
+
+.gg-dialog .gg-sub {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 1cqw 0 0;
+  font-size: 4cqw;
+  font-weight: 900;
+  color: var(--gold);
+}
+
+.gg-dialog .gg-count {
+  font-size: 3.2cqw;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.gg-dialog .gg-grades,
+.gg-dialog .gg-recipes,
+.gg-dialog .gg-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2cqw;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gg-dialog .gg-grade {
+  display: grid;
+  grid-template-columns: 19cqw 13cqw minmax(0, 1fr);
+  align-items: center;
+  gap: 2cqw;
+  padding: 1.4cqw 2.4cqw;
+  font-size: 3.5cqw;
+  background: rgba(0, 0, 0, 0.28);
+  border-left: 1.4cqw solid var(--gg-color);
+  border-radius: 1.6cqw;
+}
+
+.gg-dialog .gg-god {
+  border-image: linear-gradient(180deg, #ff5e5e, #ffd34d, #5be37d, #4db8ff, #b56bff) 1;
+}
+
+.gg-dialog .gg-hidden {
+  border-left-color: #f1c40f;
+}
+
+.gg-dialog .gg-stars {
+  color: #ffd34d;
+  font-size: 3.2cqw;
+  letter-spacing: -0.2cqw;
+  white-space: nowrap;
+}
+
+.gg-dialog .gg-name {
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.gg-dialog .gg-how {
+  color: var(--text-dim);
+  word-break: keep-all;
+}
+
+.gg-dialog .gg-rules li {
+  font-size: 3.4cqw;
+  line-height: 1.45;
+  color: var(--text-dim);
+  word-break: keep-all;
+}
+
+.gg-dialog .gg-rules li::before {
+  content: '• ';
+  color: var(--gold);
+}
+
+.gg-dialog .gg-recipe {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 2cqw;
+  padding: 1.2cqw 2.4cqw;
+  font-size: 3.4cqw;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 1.6cqw;
+}
+
+.gg-dialog .gg-recipe-name {
+  font-weight: 900;
+}
+
+.gg-dialog .gg-recipe:not(.is-found) {
+  color: var(--text-dim);
+}
+
+.gg-dialog .gg-recipe-formula {
+  word-break: keep-all;
+}
+
+.pause-grade-guide {
+  width: 100%;
+}
