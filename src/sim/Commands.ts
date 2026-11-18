@@ -79,6 +79,8 @@ export type CommandPayload =
   | { type: 'mergeStack'; x: number; y: number }
   /** 모두 승급 (피드백 #26): 승급할 수 있는 내 무더기를 남김없이 — 무더기마다 mergeStack과 같은 연쇄 규칙 */
   | { type: 'mergeAllStacks' }
+  /** 자동 승급 (피드백 #63): 등급 번호 g(1 노말 ~ 4 히어로) 이하의 가득 찬 내 무더기를 남김없이 — 연쇄로 g 위 등급은 승급하지 않는다 */
+  | { type: 'autoMerge'; g: number }
   /** 무더기 이동·교환·합치기 (G-1): 칸 (fx, fy)의 무더기를 (tx, ty)로 */
   | { type: 'moveStack'; fx: number; fy: number; tx: number; ty: number }
   /** 소환 도박 (G-1): game.json summonGamble.kinds의 k번째, f = 종족 번호 (종족 소환만, 나머지는 0) */
@@ -117,6 +119,7 @@ export const COMMAND_TYPES: readonly CommandType[] = [
   'summonAuto',
   'mergeStack',
   'mergeAllStacks',
+  'autoMerge',
   'moveStack',
   'gacha',
   'craft',
@@ -156,11 +159,15 @@ export const PAYLOAD_FIELDS: { readonly [K in CommandType]: readonly string[] } 
   summonAuto: [],
   mergeStack: ['x', 'y'],
   mergeAllStacks: [],
+  autoMerge: ['g'],
   moveStack: ['fx', 'fy', 'tx', 'ty'],
   gacha: ['k', 'f'],
   craft: ['r'],
   ult: ['id'],
 };
+
+/** 자동 승급 기준 등급 번호 상한 (rules.GACHA_RANK.hero — 레전드 이상은 승급할 수 없다) */
+export const MAX_AUTO_MERGE_RANK = 4;
 
 /** 확률 조정 key 글자 한도 (데이터 이름보다 넉넉히, 네트워크로 받은 터무니없는 값을 거른다) */
 export const MAX_CHANCE_KEY_LENGTH = 32;
@@ -233,6 +240,9 @@ export function validatePayload(cmd: unknown): string | null {
       return null;
     case 'craft':
       if (!isNonNegInt(c.r) || c.r > MAX_MISSION_INDEX) return `r이 0~${MAX_MISSION_INDEX} 정수가 아님: ${String(c.r)} (craft 명령)`;
+      return null;
+    case 'autoMerge':
+      if (!isNonNegInt(c.g) || c.g < 1 || c.g > MAX_AUTO_MERGE_RANK) return `g가 1~${MAX_AUTO_MERGE_RANK} 정수가 아님: ${String(c.g)} (autoMerge 명령)`;
       return null;
     case 'ult':
       if (!isNonNegInt(c.id) || c.id < 1) return `id가 1 이상 정수가 아님: ${String(c.id)} (ult 명령)`;

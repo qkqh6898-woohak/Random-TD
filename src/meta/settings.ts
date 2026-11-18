@@ -7,6 +7,9 @@
  * - revealHidden '히든 미션 조건 보기' (개발자 도구): 미션 시트가 히든 미션 이름·조건을 '???' 대신 보여 준다.
  * - autoSellNormal '노말 자동 판매' · autoSellRare '레어 이하 자동 판매' (피드백 #46, 기본 꺼짐): 방금 소환된 타워가 그 등급 이하면
  *   화면이 바로 sellTower 명령을 보낸다 (둘 다 켜면 레어 이하). 키가 없는 예전 값은 꺼짐.
+ * - autoMerge '자동 승급' (피드백 #63, 기본 'off'): 'normal' · 'rare' · 'unique' · 'hero' = 그 등급 이하의 가득 찬 무더기가 생기면
+ *   화면이 바로 autoMerge 명령을 보낸다. 일시정지 메뉴 한 줄을 누를 때마다 꺼짐 → 노말 → 레어 이하 → 유니크 이하 → 히어로 이하 순.
+ *   키가 없거나 모르는 값이면 꺼짐.
  * 망가진 값은 버리고 기본값. 화면 설정이라 sim·리플레이와 무관하다.
  */
 import type { KeyValueStorage } from '../save/storage';
@@ -24,9 +27,34 @@ export interface Settings {
   autoSellNormal: boolean;
   /** 피드백 #46 '레어 이하 자동 판매' */
   autoSellRare: boolean;
+  /** 피드백 #63 '자동 승급' 기준 등급 */
+  autoMerge: AutoMergeSetting;
 }
 
-export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({ tapMerge: true, effectsOff: false, revealHidden: false, ultAuto: false, autoSellNormal: false, autoSellRare: false });
+/** 자동 승급 설정 값 (누를 때마다 이 순서로 돈다) */
+export const AUTO_MERGE_STEPS = ['off', 'normal', 'rare', 'unique', 'hero'] as const;
+export type AutoMergeSetting = (typeof AUTO_MERGE_STEPS)[number];
+
+export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
+  tapMerge: true,
+  effectsOff: false,
+  revealHidden: false,
+  ultAuto: false,
+  autoSellNormal: false,
+  autoSellRare: false,
+  autoMerge: 'off' as AutoMergeSetting,
+});
+
+/** 다음 자동 승급 설정 (히어로 이하 다음은 꺼짐). */
+export function nextAutoMerge(v: AutoMergeSetting): AutoMergeSetting {
+  return AUTO_MERGE_STEPS[(AUTO_MERGE_STEPS.indexOf(v) + 1) % AUTO_MERGE_STEPS.length] as AutoMergeSetting;
+}
+
+/** 자동 승급 명령의 등급 번호 g (sim rules.GACHA_RANK와 같다: 노말 1 ~ 히어로 4), 꺼짐이면 null. */
+export function autoMergeRank(v: AutoMergeSetting): number | null {
+  const i = AUTO_MERGE_STEPS.indexOf(v);
+  return i > 0 ? i : null;
+}
 
 /** 자동 판매 기준 등급 (이 등급 이하를 판다): 레어 이하가 켜져 있으면 'rare', 노말만이면 'normal', 둘 다 꺼짐이면 null. */
 export function autoSellGrade(s: Readonly<Settings>): 'normal' | 'rare' | null {
@@ -45,8 +73,9 @@ export function parseSettings(raw: string | null): Settings {
   try {
     const o = JSON.parse(raw) as Partial<Record<keyof Settings, unknown>>;
     for (const k of Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]) {
-      if (typeof o[k] === 'boolean') out[k] = o[k] as boolean;
+      if (k !== 'autoMerge' && typeof o[k] === 'boolean') out[k] = o[k] as boolean;
     }
+    if ((AUTO_MERGE_STEPS as readonly unknown[]).includes(o.autoMerge)) out.autoMerge = o.autoMerge as AutoMergeSetting;
   } catch {
     // 망가진 값: 기본값
   }

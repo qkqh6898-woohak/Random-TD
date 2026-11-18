@@ -68,13 +68,14 @@ describe('피드백 #63 자동 승급 (autoMerge)', () => {
     expect(autoMergeReady(m.ctx, m.world, 0, 4)).toBe(true);
   });
 
-  it('승급 결과가 다시 기준 이하 가득 찬 무더기가 되면 이어서 승급 (노말 9개 → 레어 3개 → 유니크)', () => {
+  it('무더기가 많아도(연쇄 상한 merge.chainMax 넘게) 기준 이하는 끝까지 승급', () => {
     const m = arena(65);
     const pads = m.map.buildable;
-    for (let i = 0; i < 9; i++) stack(m, 'goblin', pads[i]![0], pads[i]![1], 3);
+    for (let i = 0; i < 15; i++) stack(m, 'goblin', pads[i]![0], pads[i]![1], 3);
     command(m, { type: 'autoMerge', g: 2 });
     const merges = m.world.drainEvents().filter((e) => e.type === 'merge');
-    expect(merges.length).toBeGreaterThan(m.rules.mergeChainMax);
+    expect(merges.length).toBeGreaterThanOrEqual(15);
+    expect(15).toBeGreaterThan(m.rules.mergeChainMax);
     expect(autoMergeReady(m.ctx, m.world, 0, 2)).toBe(false);
   });
 

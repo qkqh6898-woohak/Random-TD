@@ -293,6 +293,11 @@ export function mergeAllButton(stacks: number): string {
   return stacks > 0 ? `⏫ 모두 승급 ${stacks}` : '';
 }
 
+/** 일시정지 메뉴 '자동 승급' 버튼 글자 (피드백 #63) */
+export function autoMergeLabel(v: 'off' | 'normal' | 'rare' | 'unique' | 'hero'): string {
+  return { off: '꺼짐', normal: '노말', rare: '레어 이하', unique: '유니크 이하', hero: '히어로 이하' }[v];
+}
+
 /** 모두 승급 결과 알림 (피드백 #26) */
 export function mergeAllText(steps: number): string {
   return `⏫ 모두 승급 ×${steps}!`;

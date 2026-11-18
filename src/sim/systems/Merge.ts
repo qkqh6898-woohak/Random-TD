@@ -28,6 +28,7 @@ import { godChanceFor, placeTower } from './Summon';
 import { joinableStack } from './Board';
 import { ownerBonus } from '../abilities';
 import { chanceBonus } from '../chances';
+import { gradeRank } from '../rules';
 
 /** 승급 실패 이유: 판이 끝남 / 그 칸에 타워가 없음 / 남의 타워 / 승급할 수 없는 등급(레전드·신·히든) / 같은 종류가 모자람 */
 export type MergeFail = 'phase' | 'noTower' | 'notOwner' | 'maxGrade' | 'count';
@@ -332,6 +333,38 @@ export function mergeAllStacks(ctx: MatchContext, world: World, player: number):
     next = fullStacks(ctx, world, player)[0];
   }
   world.emit('mergeAllStacks', { player, steps: out.length });
+  return out;
+}
+
+/** 등급 번호 maxRank(rules.GACHA_RANK: 1 노말 ~ 4 히어로) 이하인 승급할 수 있는 가득 찬 내 무더기 중 첫째 (바닥 ID 순). */
+function autoMergeStack(ctx: MatchContext, world: World, player: number, maxRank: number): Tower[] | undefined {
+  return fullStacks(ctx, world, player).find((st) => {
+    const g = ctx.rules.towers.get((st[0] as Tower).tower)?.grade;
+    return g !== undefined && gradeRank(g) <= maxRank;
+  });
+}
+
+/** 자동 승급할 무더기가 있는지 (화면이 autoMerge 명령을 보낼지 정한다, 상태를 바꾸지 않음). */
+export function autoMergeReady(ctx: MatchContext, world: World, player: number, maxRank: number): boolean {
+  return ctx.state.phase === 'playing' && autoMergeStack(ctx, world, player, maxRank) !== undefined;
+}
+
+/**
+ * 자동 승급 (피드백 #63 autoMerge 명령, 화면 설정 '자동 승급'): 등급 번호 maxRank 이하인 가득 찬 내 무더기(바닥 ID 순 첫째)를
+ * 하나씩 승급하고, 그런 무더기가 남지 않을 때까지 되풀이한다 (승급마다 타워가 2개씩 줄어 반드시 끝난다).
+ * mergeStack의 연쇄와 달리 결과 타워가 기준보다 높은 등급이면 그 무더기는 승급하지 않는다 ('레어 이하'면 유니크 무더기는 그대로).
+ * 승급마다 평소 'merge' 사건, 끝에 'autoMerge' { player, steps } 하나. 승급할 무더기가 없거나 판이 끝났으면 상태·난수·사건 없음
+ * (화면이 자동으로 보내는 명령이라 실패 알림을 내지 않는다).
+ * @returns 결과 타워들 (승급 순)
+ */
+export function autoMerge(ctx: MatchContext, world: World, player: number, maxRank: number): Tower[] {
+  const out: Tower[] = [];
+  let next = ctx.state.phase === 'playing' ? autoMergeStack(ctx, world, player, maxRank) : undefined;
+  while (next) {
+    out.push(mergeStackOnce(ctx, world, player, next));
+    next = ctx.state.phase === 'playing' ? autoMergeStack(ctx, world, player, maxRank) : undefined;
+  }
+  if (out.length > 0) world.emit('autoMerge', { player, steps: out.length });
   return out;
 }
 
