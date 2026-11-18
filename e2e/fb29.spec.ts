@@ -18,7 +18,7 @@ async function openSummonGamble(page: Page): Promise<void> {
   await expect(page.getByTestId('gacha-row-faction')).toBeVisible();
 }
 
-type Box = { h: number; icon: number; name: number; btnH: number; right: number };
+type Box = { h: number; w: number; icon: number; name: number; btnH: number; right: number };
 
 async function measure(page: Page, id: string): Promise<Box> {
   return page.getByTestId(`gacha-row-${id}`).evaluate((row) => {
@@ -26,7 +26,10 @@ async function measure(page: Page, id: string): Promise<Box> {
     const name = parseFloat(getComputedStyle(row.querySelector('.up-name')!).fontSize);
     const btn = row.querySelector('.up-buy')!.getBoundingClientRect();
     const r = row.getBoundingClientRect();
-    return { h: r.height, icon: icon.width, name, btnH: btn.height, right: Math.max(r.right, btn.right) };
+    // FB-D1: 종족 줄 아래의 접힌 '종족 고르기'(44px 누르는 줄)는 빼고 본 줄 높이만 비교한다
+    const picker = row.querySelector('.sm-faction-picker');
+    const ph = picker ? picker.getBoundingClientRect().height : 0;
+    return { h: r.height - ph, w: r.width, icon: icon.width, name, btnH: btn.height, right: Math.max(r.right, btn.right) };
   });
 }
 
@@ -44,6 +47,7 @@ for (const width of [412, 320]) {
     for (const id of ['lucky', 'challenge', 'myth']) {
       const o = await measure(page, id);
       expect(f.h).toBeLessThan(o.h);
+      expect(f.w).toBeLessThan(o.w); // FB-D1: 폭 94% 보조 줄
       expect(f.icon).toBeLessThan(o.icon);
       expect(f.name).toBeLessThan(o.name);
       expect(f.btnH).toBeLessThanOrEqual(o.btnH);
