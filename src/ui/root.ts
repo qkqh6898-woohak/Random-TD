@@ -6,6 +6,7 @@
  *  - hud: 게임 중 상단·하단 HUD
  *  - cutin: 보스 컷인 (HF-2). HUD 위·패널 아래, 누르기를 막지 않음 (pointer-events: none)
  *  - guide: 첫 승급 안내 카드 (F10). 컷인 위·패널 아래, 카드 자체는 누르기를 통과시키고 [다음]·✕ 버튼만 받는다
+ *  - quick: 고른 영웅 칸 위 작은 [⬆ 승급]·[✕ 판매] 버튼 (피드백 #47). 안내 카드 위·패널 아래
  *  - panel: 게임 중 타워 정보 패널 (HUD 위, 일시정지·패배 화면 아래)
  *  - sheet: 하단 메뉴 바텀 시트 (도전·강화·미션, M5-1). 패널과 같은 높이 — 바텀 시트는 하나만 열리게 Game 장면이 서로 닫는다
  *  - modal: 게임 중 고르기 창 (보스 카드·승급의 축복, M4-7). 패널 위, 일시정지·패배 화면 아래 — 게임 시간은 흐른다
@@ -21,7 +22,7 @@ export interface UiView {
   destroy?(): void;
 }
 
-export type LayerName = 'screen' | 'hud' | 'cutin' | 'guide' | 'panel' | 'sheet' | 'modal' | 'card' | 'toast';
+export type LayerName = 'screen' | 'hud' | 'cutin' | 'guide' | 'quick' | 'panel' | 'sheet' | 'modal' | 'card' | 'toast';
 
 /** 배너 줄 글자를 줄일 수 있는 하한 (원래 크기의 비율) */
 const BANNER_MIN_FONT_RATIO = 0.6;
@@ -62,6 +63,7 @@ export class UiRoot {
       hud: h('div', { class: 'layer layer-hud' }),
       cutin: h('div', { class: 'layer layer-cutin', attrs: { 'aria-hidden': 'true' } }),
       guide: h('div', { class: 'layer layer-guide' }),
+      quick: h('div', { class: 'layer layer-quick' }),
       panel: h('div', { class: 'layer layer-panel' }),
       sheet: h('div', { class: 'layer layer-sheet' }),
       modal: h('div', { class: 'layer layer-modal' }),
@@ -75,6 +77,7 @@ export class UiRoot {
       this.layers.hud,
       this.layers.cutin,
       this.layers.guide,
+      this.layers.quick,
       this.layers.panel,
       this.layers.sheet,
       this.layers.modal,
