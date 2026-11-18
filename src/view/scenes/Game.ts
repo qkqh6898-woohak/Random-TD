@@ -385,7 +385,7 @@ export class GameScene extends Phaser.Scene {
   /** 고른 타워 (정보 패널) 엔티티 id */
   private selectedId: number | null = null;
   private panel: TowerPanelView | null = null;
-  /** 피드백 #47: 고른 영웅 칸 위 작은 [⬆ 승급]·[✕ 판매] (패널과 함께 열리고 닫힌다) */
+  /** 피드백 #47: 고른 영웅 칸 왼쪽 위 작은 [⬆ 승급] (패널과 함께 열리고 닫힌다 — 판매는 패널 머리 줄 하나뿐) */
   private quick: TowerQuickView | null = null;
   /** 마지막으로 그린 정보 패널 글자 (캐릭터 카드가 같은 값을 쓴다, HF-2) */
   private panelModel: TowerPanelModel | null = null;
@@ -1399,7 +1399,7 @@ export class GameScene extends Phaser.Scene {
         onConvert: this.ctx.debug ? () => this.openConvertPicker() : undefined,
       });
       this.ctx.ui.show('panel', this.panel);
-      this.quick = createTowerQuick({ onMerge: () => this.sendMerge('merge'), onSell: () => this.sendSell() });
+      this.quick = createTowerQuick({ onMerge: () => this.sendMerge('merge') });
       this.ctx.ui.show('quick', this.quick);
     }
     this.refreshPanel();

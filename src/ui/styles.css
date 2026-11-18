@@ -4319,7 +4319,7 @@ body {
   gap: 1cqw;
 }
 
-/* ---------- 피드백 #47: 고른 영웅 칸 위 작은 [⬆ 승급](왼쪽 위)·[✕ 판매](오른쪽 위) ---------- */
+/* ---------- 피드백 #47: 고른 영웅 칸 왼쪽 위 작은 [⬆ 승급] (판매는 패널 머리 줄 하나뿐 — v0.1.14 통합) ---------- */
 .layer-quick > .tower-quick {
   position: absolute;
   inset: 0;
@@ -4365,20 +4365,3 @@ body {
   cursor: default;
 }
 
-.tq-sell {
-  background: linear-gradient(180deg, #e2574c 0%, #a8231b 100%);
-}
-
-.tq-sell.is-confirm {
-  border-color: #ffe27a;
-  animation: tq-pulse 0.5s ease-in-out infinite alternate;
-}
-
-@keyframes tq-pulse {
-  from {
-    transform: scale(1);
-  }
-  to {
-    transform: scale(1.18);
-  }
-}
