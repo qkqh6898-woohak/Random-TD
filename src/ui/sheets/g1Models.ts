@@ -51,6 +51,8 @@ export interface GachaRowModel {
   pityLeft: number;
   state: SummonRowState;
   faction: boolean;
+  /** 작게(덜 눈에 띄게) 그리는 줄 — 피드백 #29: 종족 소환 */
+  compact: boolean;
 }
 
 export interface SummonSheetModel {
@@ -100,6 +102,7 @@ export function summonSheetModel(
       pityLeft: left,
       state: fail === 'gold' ? 'gold' : fail === 'full' ? 'full' : 'ok',
       faction: k.faction,
+      compact: k.faction,
     };
   });
   return {

@@ -3949,6 +3949,58 @@ body {
   color: #3b2416;
   background: var(--gold);
 }
+/* 피드백 #29: 종족 소환 줄은 작게(덜 눈에 띄게) — 규칙·확률·비용은 그대로, 버튼은 누르기 쉬운 40px 이상.
+   이름·설명 한 줄, 확률·천장 한 줄, 종족 칩 한 줄(옆으로 밀기) → 다른 소환 도박 줄보다 낮다. */
+.sm-row.is-compact {
+  gap: 1.8cqw;
+  padding: 1cqw 1.6cqw;
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+.sm-row.is-compact .up-icon {
+  width: 7cqw;
+  height: 7cqw;
+  font-size: 4.2cqw;
+}
+.sm-row.is-compact .up-main {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 1.6cqw;
+}
+.sm-row.is-compact .up-name {
+  font-size: 3.1cqw;
+}
+.sm-row.is-compact .up-effect {
+  font-size: 2.6cqw;
+}
+.sm-row.is-compact .sm-odds,
+.sm-row.is-compact .sm-pity {
+  margin-top: 0;
+  font-size: 2.4cqw;
+}
+.sm-row.is-compact .up-buy {
+  min-width: max(16cqw, 64px);
+  min-height: max(9cqw, 40px);
+  font-size: 3cqw;
+}
+.sm-row.is-compact .sm-factions {
+  position: relative;
+  flex: 1 0 100%;
+  min-width: 0;
+  flex-wrap: nowrap;
+  gap: 0.8cqw;
+  margin-top: 0.6cqw;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sm-row.is-compact .sm-faction {
+  flex-shrink: 0;
+  min-height: max(6cqw, 26px);
+  padding: 0 1.4cqw;
+  font-size: 2.4cqw;
+  white-space: nowrap;
+}
 .sm-result {
   min-height: 1.4em;
   font-weight: 700;

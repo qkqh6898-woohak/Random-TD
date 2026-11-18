@@ -3,7 +3,7 @@
  *
  * - 줄: 그림 · 이름 · 설명 · 확률 '노말 55% · 레어 35% · 유니크 10%' · 천장 '천장까지 12회 (유니크)' · [비용] 버튼.
  *   버튼을 짧게 누르면 한 번, 꾹 누르면 계속 (ui/hold.ts) — 돈이 모자라거나 칸이 없으면 멈춘다.
- * - 종족 소환: 줄 아래 종족 칩 7개 중 하나를 고른다 (고른 종족은 Game이 기억).
+ * - 종족 소환: 줄 아래 종족 칩 7개 중 하나를 고른다 (고른 종족은 Game이 기억). 피드백 #29: 이 줄만 작게(`is-compact`).
  * - 맨 아래 마지막 결과 한 줄.
  * 버튼은 onSummon()·onGacha(k)를 부르고, 실제 명령은 Game 장면이 보낸다 (sim이 실행 틱에 다시 검사). false면 꾹 누르기 멈춤.
  * 값은 g1Models.summonSheetModel(순수), 여기서는 그리기만.
@@ -84,6 +84,7 @@ export function createSummonPane(opts: Omit<SummonSheetOptions, 'onClose'>, firs
   }
   const rows = new Map<number, RowEls>();
   const factionChips: HTMLButtonElement[] = [];
+  let chipBox: HTMLElement | null = null;
   const rowEls = first.rows.map((r) => {
     const odds = h('div', { class: 'up-target sm-odds', attrs: { 'data-testid': `gacha-odds-${r.id}` } });
     const pity = h('span', { class: 'sm-pity', attrs: { 'data-testid': `gacha-pity-${r.id}` } });
@@ -107,10 +108,11 @@ export function createSummonPane(opts: Omit<SummonSheetOptions, 'onClose'>, firs
         }),
       );
       extra.push(chips);
+      chipBox = chips;
     }
     const root = h(
       'div',
-      { class: 'up-row sm-row', attrs: { 'data-testid': `gacha-row-${r.id}` } },
+      { class: r.compact ? 'up-row sm-row is-compact' : 'up-row sm-row', attrs: { 'data-testid': `gacha-row-${r.id}` } },
       h('span', { class: 'up-icon', text: r.icon, attrs: { 'aria-hidden': 'true' } }),
       h('div', { class: 'up-main' }, h('div', { class: 'up-name' }, h('span', { text: r.name })), h('div', { class: 'up-effect', text: r.desc }), odds, pity, ...extra),
       btn,
@@ -154,6 +156,11 @@ export function createSummonPane(opts: Omit<SummonSheetOptions, 'onClose'>, firs
           b.classList.toggle('is-on', i === m.faction);
           b.setAttribute('aria-checked', i === m.faction ? 'true' : 'false');
         });
+        // 한 줄 칩에서 고른 칩이 가려져 있으면 보이게 (가로로만 — 시트는 위아래로 움직이지 않는다)
+        const on = factionChips[m.faction];
+        if (chipBox && on && (on.offsetLeft < chipBox.scrollLeft || on.offsetLeft + on.offsetWidth > chipBox.scrollLeft + chipBox.clientWidth)) {
+          chipBox.scrollLeft = on.offsetLeft;
+        }
       }
       if (res !== lastResult) result.textContent = lastResult = res;
     },
