@@ -3,6 +3,7 @@
  * M0: [계속] [타이틀로]. 설정·도감·포기(정산)는 해당 마일스톤에서 붙인다.
  * T-2: 설정 한 줄 '눌러서 바로 승급' (켜짐: 승급할 수 있는 타워를 누르면 바로 승급 / 꺼짐: 패널을 연다). 저장은 Game 장면이 한다.
  * G-1: 설정 한 줄 '필살기 자동' (켜짐: 필살기가 차면 Game이 바로 ult 명령).
+ * 피드백 #46: 설정 두 줄 '노말 자동 판매' · '레어 이하 자동 판매' (켜짐: 방금 소환된 그 등급 이하 타워를 Game이 바로 sellTower).
  * F10: [❔ 도움말 다시 보기] — 계정에 기록된 '본 도움말'(첫 승급 안내)을 지워, 다음에 승급할 수 있게 되면 다시 안내한다.
  * A-1 (Codex 갈래 M6-10·M6-11에서 옮김): '효과음 크기' 0~100% (5% 단위, 0 = 음소거) + [미리 듣기], '화면 흔들림' 켜짐/꺼짐 — 둘 다 기기에 저장.
  *   열 때 자동 저장했으면 아래 글을 '자동 저장했어요 · 로비에서 이어 할 수 있어요'로.
@@ -22,6 +23,11 @@ export interface PauseMenuOptions {
   /** G-1 '필살기 자동' 지금 값과 바꿀 때. 없으면 줄도 없다 */
   ultAuto?: boolean;
   onUltAuto?: (on: boolean) => void;
+  /** 피드백 #46 '노말 자동 판매' · '레어 이하 자동 판매' 지금 값과 바꿀 때. 없으면 줄도 없다 */
+  autoSellNormal?: boolean;
+  onAutoSellNormal?: (on: boolean) => void;
+  autoSellRare?: boolean;
+  onAutoSellRare?: (on: boolean) => void;
   /** [❔ 도움말 다시 보기] (F10). 없으면 버튼도 없다 */
   onHelpAgain?: () => void;
   /** 메뉴를 열며 자동 저장했다 (A-1) */
@@ -116,6 +122,14 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
   const tapRow =
     opts.tapMerge !== undefined ? switchRow('눌러서 바로 승급', '승급할 수 있는 타워를 누르면 바로 승급', opts.tapMerge, 'pause-tap-merge', (v) => opts.onTapMerge?.(v)) : null;
   const ultRow = opts.ultAuto !== undefined ? switchRow('필살기 자동', '필살기가 차면 바로 써요', opts.ultAuto, 'pause-ult-auto', (v) => opts.onUltAuto?.(v)) : null;
+  const sellNormalRow =
+    opts.autoSellNormal !== undefined
+      ? switchRow('노말 자동 판매', '소환된 노말을 바로 팔아요', opts.autoSellNormal, 'pause-auto-sell-normal', (v) => opts.onAutoSellNormal?.(v))
+      : null;
+  const sellRareRow =
+    opts.autoSellRare !== undefined
+      ? switchRow('레어 이하 자동 판매', '소환된 노말·레어를 바로 팔아요', opts.autoSellRare, 'pause-auto-sell-rare', (v) => opts.onAutoSellRare?.(v))
+      : null;
   const volume = opts.effectVolume !== undefined ? volumeRow(opts, opts.effectVolume) : null;
   const shakeRow =
     opts.screenShake !== undefined ? switchRow('화면 흔들림', '보스·큰 승급 때 화면을 흔들어요', opts.screenShake, 'pause-screen-shake', (v) => opts.onScreenShake?.(v)) : null;
@@ -143,6 +157,8 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
       resume,
       tapRow,
       ultRow,
+      sellNormalRow,
+      sellRareRow,
       volume,
       shakeRow,
       help,

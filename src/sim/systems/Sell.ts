@@ -13,11 +13,14 @@
  *   다른 타워만. 같은 엔티티(같은 id·칸·소환 순서)이고 판 내 스택·공격 타이머·주기 능력은 새로 (승급의 축복 '바꿈'과 같다).
  *   debugUsed 표시. 실패: 'convertFail' { reason: notDebug · phase · noTower · notOwner · unknown · grade · same }.
  *   성공: 'convert' { player, id, from, tower, grade, x, y }.
+ * - 자동 판매 (피드백 #46 '노말 이하 / 희귀 이하 자동 판매 체크'): 화면 설정이라 sim 규칙은 그대로다. 화면이 방금 소환된 타워 id로
+ *   `autoSellTiles`를 불러 고른 칸에 평소 sellTower 명령을 보낸다 (리플레이에 그대로 남는다).
  */
 import type { World } from '../World';
 import { mulBp } from '../Fixed';
-import { ATTACK_COST, topTowerAt, towerAt, towersAt, type Tower } from '../entities/Tower';
+import { ATTACK_COST, isTower, topTowerAt, towerAt, towersAt, type Tower } from '../entities/Tower';
 import type { MatchContext } from '../state';
+import { GACHA_RANK, gradeRank } from '../rules';
 
 export type SellFail = 'phase' | 'noTower' | 'notOwner';
 
@@ -36,6 +39,27 @@ export function sellCheck(ctx: MatchContext, world: World, player: number, x: nu
   if (!tower) return { ok: false, reason: 'noTower' };
   if (tower.owner !== player) return { ok: false, reason: 'notOwner' };
   return { ok: true, tower, price: sellPrice(ctx.rules, tower.tower) };
+}
+
+/** 자동 판매 기준 등급 (이 등급 이하를 판다). */
+export type AutoSellGrade = 'normal' | 'rare';
+
+/**
+ * 자동 판매할 칸 (피드백 #46): ids(방금 소환된 타워 엔티티) 중 아직 판 위에 있고, player 것이며, 등급이 maxGrade 이하인 타워의 칸 (id 순).
+ * 신·히든은 판 적이 없다 (히든은 레전드로 본다). 판이 끝났으면 빈 목록. 같은 칸이 여러 번 나오면 그 칸 맨 위부터 그만큼 판다
+ * (한 칸에는 같은 타워만 쌓이므로 등급이 같다).
+ */
+export function autoSellTiles(ctx: MatchContext, world: World, player: number, ids: readonly number[], maxGrade: AutoSellGrade): [number, number][] {
+  if (ctx.state.phase !== 'playing') return [];
+  const max = GACHA_RANK[maxGrade];
+  const out: [number, number][] = [];
+  for (const id of [...new Set(ids)].sort((a, b) => a - b)) {
+    const e = world.entities.get(id);
+    if (!e || !isTower(e) || e.owner !== player) continue;
+    const grade = ctx.rules.towers.get(e.tower)?.grade;
+    if (grade && gradeRank(grade) <= max) out.push([e.tx, e.ty]);
+  }
+  return out;
 }
 
 /** 이 엔티티에 걸린 '승급의 축복' 선택을 지운다. */
