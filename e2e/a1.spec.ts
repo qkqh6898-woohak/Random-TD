@@ -420,8 +420,18 @@ test.describe('A-1 화면 흔들림·소환 연출', () => {
     await expect(page.getByTestId('hud-towers')).toHaveText(new RegExp(`^${queued.pads}/`));
     expect((await inScene(page, (s) => s.summonFxStats, null)).peak).toBe(12);
 
-    // 뒤로 가기: 열린 타워 패널(승급 결과) → 닫힘, 강화 시트 → 닫힘, 그다음 일시정지 → 계속
+    // 뒤로 가기: 열린 타워 패널 → 닫힘, 강화 시트 → 닫힘, 그다음 일시정지 → 계속
+    // (피드백 #65: [⏫ 모두 승급]은 패널을 열지 않는다 → 타워 하나를 골라 패널을 연다)
     const back = () => page.evaluate(() => !window.dispatchEvent(new Event('randomtd:native-back', { cancelable: true })));
+    await inScene(
+      page,
+      (s) => {
+        const g = s as unknown as { selectTower(id: number): void; match: { towers(): { id: number }[] } };
+        g.selectTower(g.match.towers()[0]!.id);
+        return null;
+      },
+      null,
+    );
     await expect.poll(() => inScene(page, (s) => s.panelOpen, null)).toBe(true);
     expect(await back()).toBe(true);
     await expect.poll(() => inScene(page, (s) => s.panelOpen, null)).toBe(false);
