@@ -19,6 +19,13 @@ export const FIGURE_TOP_TILES = FOOT_OFFSET_TILES + (FIGURE_TILES * CHIBI_BOUNDS
 /** 받침대 너비 (칸 배수) */
 export const PEDESTAL_WIDTH_TILES = 0.78;
 
+/**
+ * 별 배지 (발밑 기준 칸 배수): 가운데 높이 · 너비. 피드백 #22 '별을 조금 더 크게' → 디자인 PR #54(FB-D1 #22) 값 너비 0.56 → 0.72칸(약 29%),
+ * 가운데 높이 0.15 그대로 (v0.1.14 통합: 피드백 PR #32의 0.64·0.14는 같은 일을 겹쳐 하므로 디자인 값을 쓴다).
+ */
+export const STAR_BADGE_Y_TILES = 0.15;
+export const STAR_BADGE_W_TILES = 0.72;
+
 /** 받침대 맨 아래: 칸 중심 기준 칸 배수 (발밑 + 받침대 아래 두께). ≈ +0.475 */
 export const FIGURE_BOTTOM_TILES = FOOT_OFFSET_TILES + (PEDESTAL_WIDTH_TILES * PEDESTAL_BOUNDS.bottom) / (PEDESTAL_BOUNDS.right - PEDESTAL_BOUNDS.left);
 

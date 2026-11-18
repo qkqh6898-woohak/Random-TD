@@ -41,7 +41,7 @@ import type { Tower } from '../../sim/entities/Tower';
 import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { MOB_DEPTH_BASE } from './MobSprite';
 import { attackAnimMs, towerPose } from './towerPose';
-import { battleFigureScale, FIGURE_TILES, FOOT_OFFSET_TILES, fillOccupancy, isCrowded, occupancyKey, PEDESTAL_WIDTH_TILES, pedestalScaleFor } from './towerGeom';
+import { battleFigureScale, FIGURE_TILES, FOOT_OFFSET_TILES, fillOccupancy, isCrowded, occupancyKey, PEDESTAL_WIDTH_TILES, pedestalScaleFor, STAR_BADGE_W_TILES, STAR_BADGE_Y_TILES } from './towerGeom';
 import { stackArtScale, stackSlot, type StackSlot } from './stackGeom';
 
 /** 이동·교환 뒤 새 칸으로 미끄러지는 시간 (ms) */
@@ -65,8 +65,8 @@ const STILL_POSE = Object.freeze({ bob: 0, sx: 1, sy: 1, angle: 0, lunge: 0, dx:
  * G-2 캐릭터 겉모습 (칸 배수, 발밑 기준): 별 배지는 받침대 앞(칸 안), 종족 문장은 받침대 왼쪽 앞, 접지 그림자는 발밑.
  * 모두 칸 아래 끝(+0.5칸 = 발밑 +0.2칸) 안 → 탭 판정·정보 패널 배치(받침대 아래 +0.475칸)와 겹치지 않는다.
  */
-export const STAR_BADGE_Y_TILES = 0.15;
-export const STAR_BADGE_W_TILES = 0.72;
+// 별 배지 값은 towerGeom (순수, 단위 테스트) — FB-D1 #22 0.72칸. E2E(feedback-design)가 이 파일에서 읽으므로 다시 내보낸다.
+export { STAR_BADGE_W_TILES, STAR_BADGE_Y_TILES };
 export const EMBLEM_X_TILES = -0.36;
 export const EMBLEM_Y_TILES = 0.05;
 export const EMBLEM_D_TILES = 0.25;

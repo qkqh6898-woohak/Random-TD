@@ -1401,3 +1401,9 @@
 - 코드: `src/ui/screens/gradeGuideModel.ts`(순수) · `GradeGuideDialog.ts` · `PauseMenu.ts` 옵션 `gradeGuide` · `Game.pause()` 연결 · CSS `feedback.css` 끝. sim·데이터·저장 형식·타워 ID 변경 없음.
 - 테스트: `tests/unit/feedback-24.test.ts` 4개, `e2e/fb24.spec.ts` 2개(412·320: 7줄 순서·별·규칙·조합식 ???·화면 안·뒤로 가기). 스크린샷 `docs/screens/FB24-grade-guide.png`.
 - 남은 문제: 일시정지 메뉴에서만 열린다 — [신화] 시트·정보 패널에도 바로 가기가 필요한지는 실제로 써 보고 결정. 일시정지 메뉴가 한 줄 길어져 아주 낮은 화면에서는 패널이 빡빡할 수 있다(412×915·320×915는 확인).
+
+### 피드백 #22 — 제안 '유닛 아래 별을 조금 더 크게' (fix/feedback-22)
+- 요청: 유닛 아래 별 배지 크기만 조금 키우기 (피드백 #6의 3번 항목을 나눈 이슈). 판 기록 JSON이 없어 리플레이 재현 테스트는 만들지 않았다.
+- 고침: 별 배지 너비 0.56 → **0.64칸**(약 14%). 가운데 높이는 발밑 +0.15 → +0.14칸으로 올려 아래 끝(발밑 +0.21칸)이 예전보다 내려가지 않게 했다(칸 아래 경계·정보 패널 배치 그대로). 별 5개 배지도 받침대 너비(0.78칸) 안. 값은 Phaser 없는 `src/view/render/towerGeom.ts`로 옮겨(`STAR_BADGE_W_TILES`·`STAR_BADGE_Y_TILES`) 단위 테스트가 읽는다. 배지 그림(`drawStarBadge`)·받침대·종족 문장·sim·데이터·저장 형식은 그대로.
+- 테스트: `tests/unit/feedback-22.test.ts` 3개(예전보다 10~30% 큼, 아래 끝 안 내려감, 받침대 너비 안 — 고치기 전 3개 실패). Vitest 79파일 1,425 통과·3 건너뜀, `npm run check`·`npm run build` 통과, E2E g2·gi·smoke 18/18. 스크린샷 `docs/screens/FB22-stars.png`.
+- 남은 문제: 레전드(별 5개) 배지는 왼쪽 종족 문장과 조금 더 겹친다(배지가 앞). 실제 기기에서 크기가 충분한지 확인 필요.
