@@ -83,13 +83,16 @@ describe('소환 확률 강화 명령', () => {
     expect(rareCount(u.max)).toBeGreaterThan(0);
   });
 
-  it('예전 판 상태(강화 배열 10칸)도 Lv0으로 읽고 강화할 수 있다', () => {
+  it('판 상태 모양은 예전 그대로 (강화 배열 10칸) — 소환 확률을 처음 살 때만 칸이 생긴다, 예전 저장도 Lv0으로 읽는다', () => {
     const m = infinite(1);
     const u = luck();
-    m.state.upgrades[0] = m.state.upgrades[0]!.slice(0, 10);
+    expect(m.state.upgrades[0]).toHaveLength(10);
     expect(upgradeLevel(m.state, 0, u.k)).toBe(0);
+    command(m, { type: 'upgrade', k: 0 });
+    expect(m.state.upgrades[0]).toHaveLength(10);
     command(m, { type: 'upgrade', k: u.k });
     expect(upgradeLevel(m.state, 0, u.k)).toBe(1);
+    expect(m.state.upgrades[0]).toHaveLength(11);
   });
 });
 

@@ -1315,8 +1315,8 @@
 ### 피드백 #27 — 제안 '소환 확률을 높이는 강화를 돈으로 사기' (fix/feedback-27)
 - 요청: [⬆ 강화]에 '소환 확률' 항목 (레벨이 오를수록 높은 등급 확률 ↑, 비용 ↑, 수치는 JSON). 이슈에 판 기록 JSON이 없어 리플레이 재현 테스트는 만들지 않았다 (규칙 단위 테스트를 먼저).
 - 데이터: `game.json` v15 `upgrade.summon {id 'summonLuck', name '소환 확률', icon 🍀, rarePerLevel 0.005, max 20, cost [100, 50]}` + 스키마(`load.ts`, id 중복 검사 포함).
-- sim: `UpgradeRule.kind`에 `'summon'`. **명령 k = 초월 다음(10)** — 예전 강화 k·저장된 판의 강화 배열(10칸, 없는 칸은 Lv0)은 그대로. 효과는 `Upgrade.summonUpgradeBp` → `Summon.summonRareChance`에 더함 (= 레어 직행 소환 확률, 일반 소환·무더기 소환 모두). 강화가 0이면 확률 0이라 난수 사용도 예전과 같다.
+- sim: `UpgradeRule.kind`에 `'summon'`. **명령 k = 초월 다음(10)** — 예전 강화 k·저장된 판의 강화 배열(10칸, 없는 칸은 Lv0)은 그대로, 저장 형식 변경 없음. 효과는 `Upgrade.summonUpgradeBp` → `Summon.summonRareChance`에 더함 (= 레어 직행 소환 확률, 일반 소환·무더기 소환 모두). 강화가 0이면 확률 0이라 난수 사용도 예전과 같다.
 - 화면: 능력치 탭 맨 아래 줄 '소환 확률 Lv n/20 · +0.5%p → +1%p · 소환 · 레어 확률' (초월은 그 아래). 효과 단위 %p.
 - 내가 정한 것: '높은 등급' = 레어 직행 확률(행운의 여신과 같은 판정)만 올림, 신 확률·소환 도박 확률은 그대로. 수치(Lv당 +0.5%p, 최대 +10%p, 전체 11,500원)는 JSON에서 조정.
-- 테스트: 새 `tests/unit/feedback-27.test.ts` 7개(고치기 전 7개 실패 확인), `e2e/fb27.spec.ts` 1개(스크린샷 `docs/screens/FB27-summon-upgrade.png`). 의도한 변경으로 고친 테스트: `Upgrade`(강화 순서 끝에 summonLuck), `view-m5`(능력치 탭 줄 목록). 리플레이 8개 다시 만듦(`npm run replays` — 판 상태의 강화 배열이 11칸이 되어 해시가 바뀜, 내용 검사 테스트는 모두 통과).
+- 테스트: 새 `tests/unit/feedback-27.test.ts` 7개(고치기 전 7개 실패 확인), `e2e/fb27.spec.ts` 1개(스크린샷 `docs/screens/FB27-summon-upgrade.png`). 의도한 변경으로 고친 테스트: `Upgrade`(강화 순서 끝에 summonLuck), `view-m5`(능력치 탭 줄 목록). 판 상태 모양은 그대로: 새 판의 강화 배열은 예전처럼 10칸이고 소환 확률을 처음 살 때만 11번째 칸이 생긴다(`match.ts`, 개발자 확률 조정 `chanceOv`와 같은 방식) → 리플레이 8개의 주기·끝 해시는 main과 같고 `dataHash` 한 줄만 바뀜(game.json이 바뀌었으므로, `npm run replays`).
 - 남은 문제: 소환 확률 강화 수치(비용 대비 효과)는 실제로 해 보고 판단. 전체 E2E(약 1시간)는 강화 시트만 바뀌어 m5·f10·fb27만 돌렸다.
