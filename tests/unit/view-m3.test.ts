@@ -281,9 +281,9 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
     expect(span.bottom).toBeCloseTo(0.475, 2);
   });
 
-  it('전투 확대는 기본 2배이며, 이웃 캐릭터와 HUD에 맞춰 줄어든다', () => {
-    expect(battleFigureScale(1.25, false, 5)).toBe(2.5);
-    expect(battleFigureScale(1.25, true, 5)).toBe(1.75);
+  it('전투 확대는 등급 배율로 정하고(이웃과 무관, v0.1.17), HUD에 맞춰서만 줄어든다', () => {
+    expect(battleFigureScale(1.25, false, 5)).toBeCloseTo(1.575, 6);
+    expect(battleFigureScale(1.25, true, 5)).toBeCloseTo(1.575, 6);
     const headroom = 1.5;
     const scale = battleFigureScale(1, false, headroom);
     expect(scale).toBeGreaterThan(1);

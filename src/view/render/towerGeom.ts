@@ -7,9 +7,19 @@ import { CHIBI_BOUNDS, PEDESTAL_BOUNDS } from '../../art/chibiBounds';
 
 /** 캐릭터 높이 (칸 배수) */
 export const FIGURE_TILES = 1.1;
-/** 전투 화면의 기본 확대 배율과 붙어 있는 캐릭터의 배율 */
-export const BATTLE_FIGURE_SCALE = 2;
-const CROWDED_FIGURE_SCALE = 1.4;
+/**
+ * 전투 화면 확대 배율 (v0.1.17, 사용자 '혼자 있는 신·신화도 최대 크기' · 피드백 #36·#66 '주변 유닛 유무에 따라 크기가 변하는 것 없애기'):
+ * 예전엔 혼자 ×2 · 이웃이 있으면 ×1.4라 이웃이 생기거나 팔릴 때마다 크기가 바뀌었고, 혼자 있는 신화(등급 배율 1.5)는 ×3 = 칸 약 2.8개 너비였다.
+ * 이제 이웃과 무관하게 등급 배율(characterLooks scale, 노말 0.7 ~ 신화 1.5)로만 정한다:
+ *   배율 ≤ 1 (노말·레어·유니크) → ×BATTLE_FIGURE_SCALE(1.4), 1을 넘는 부분(히어로 이상)은 FIGURE_TOP_SLOPE(0.7)배로만 커진다
+ *   → 노말 ≈0.98 · 레어 ≈1.15 · 유니크 ≈1.32 · 히어로 ≈1.44 · 레전드 ≈1.53 · 신 ≈1.64 · 신화 ≈1.75 (등급 순서 그대로, 신화 반폭 ≈0.8칸).
+ */
+export const BATTLE_FIGURE_SCALE = 1.4;
+export const FIGURE_TOP_SLOPE = 0.7;
+/** 등급 배율(looks scale) → 전투 그림 배율 (이웃·무더기·HUD 여백 전) */
+export function figureArtScale(lookScale: number): number {
+  return lookScale <= 1 ? lookScale * BATTLE_FIGURE_SCALE : BATTLE_FIGURE_SCALE + (lookScale - 1) * FIGURE_TOP_SLOPE;
+}
 /** 발밑 위치: 칸 중심에서 아래로 (칸 배수) */
 export const FOOT_OFFSET_TILES = 0.3;
 
@@ -45,10 +55,12 @@ const HEAD_ABOVE_FOOT_TILES = FOOT_OFFSET_TILES - FIGURE_TOP_TILES + FIGURE_MOTI
 /** 위 칸으로 삐져나온 머리 부분의 가로 반폭 (칸 배수): 머리(반지름 62)·별·두건 ≈ 0.28칸 + 여유 */
 export const HEAD_HALF_WIDTH_TILES = 0.34;
 
-/** 주변 칸과 HUD 앞에서 실루엣이 겹치지 않게 확대 폭을 줄인다. headroom = 발밑에서 HUD 아래까지의 거리 (칸). */
-export function battleFigureScale(lookScale: number, crowded: boolean, headroom: number): number {
-  const desired = lookScale * (crowded ? CROWDED_FIGURE_SCALE : BATTLE_FIGURE_SCALE);
-  return Math.min(desired, Math.max(lookScale, headroom / HEAD_ABOVE_FOOT_TILES));
+/**
+ * 전투 그림 배율: 등급 배율로 정한 크기(figureArtScale)를 HUD 앞에서만 줄인다. headroom = 발밑에서 HUD 아래까지의 거리 (칸).
+ * 이웃 유무(_crowded)는 v0.1.17부터 크기에 쓰지 않는다 (피드백 #36·#66) — 호출 쪽 호환을 위해 인자만 남긴다.
+ */
+export function battleFigureScale(lookScale: number, _crowded: boolean, headroom: number): number {
+  return Math.min(figureArtScale(lookScale), Math.max(lookScale, headroom / HEAD_ABOVE_FOOT_TILES));
 }
 
 /**

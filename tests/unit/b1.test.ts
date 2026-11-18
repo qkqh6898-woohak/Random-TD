@@ -52,9 +52,12 @@ describe('B-1 큰 캐릭터 탭 판정: 빈 소환 칸이 먼저', () => {
 });
 
 describe('B-1 전투 확대 배수', () => {
-  it('혼자 2배 · 붙으면 1.4배 · 머리가 HUD를 넘지 않게 줄이되 캐릭터 크기보다 작게는 안 함', () => {
-    expect(battleFigureScale(1, false, 10)).toBe(2);
-    expect(battleFigureScale(1, true, 10)).toBe(1.4);
+  it('v0.1.17: 이웃과 무관하게 등급 배율로만(×1.4, 1 넘는 부분은 ×0.7) · 머리가 HUD를 넘지 않게 줄이되 캐릭터 크기보다 작게는 안 함', () => {
+    expect(battleFigureScale(1, false, 10)).toBeCloseTo(1.4, 6);
+    expect(battleFigureScale(1, true, 10)).toBeCloseTo(1.4, 6); // 이웃이 있어도 같다 (피드백 #36·#66)
+    // 신화(1.5)는 예전 혼자 ×2 = 3.0 → 1.75, 노말(0.7)은 0.98 — 등급 순서는 그대로
+    expect(battleFigureScale(1.5, false, 10)).toBeCloseTo(1.75, 6);
+    expect(battleFigureScale(0.7, false, 10)).toBeCloseTo(0.98, 6);
     // 0번 줄: 발밑에서 HUD까지 1.3칸 → 머리 끝이 HUD 아래 끝에 딱 맞게
     const s = battleFigureScale(1, false, 1.3);
     expect(FOOT_OFFSET_TILES - towerFigureSpanTiles(s).top).toBeCloseTo(1.3, 6);
@@ -99,5 +102,17 @@ describe('B-1 이웃 붙음 판정 (TowerLayer.sync·expectedScale 공용, 검�
     fillOccupancy(s, [{ tx: 7, ty: 7 }], cols);
     expect(s.size).toBe(1);
     expect(isCrowded(s, 1, 1, cols)).toBe(false);
+  });
+});
+
+describe('v0.1.17 혼자 있는 높은 등급 크기 상한 (사용자 요청 · 피드백 #36·#66)', () => {
+  it('신·신화도 그림 반폭이 1칸을 넘지 않고(이웃 칸을 절반 넘게 덮지 않음), 등급이 높을수록 크다', async () => {
+    const { figureArtScale } = await import('../../src/view/render/towerGeom');
+    const { STACK_HALF_W_PER_ART } = await import('../../src/view/render/stackGeom');
+    const looks = [0.7, 0.82, 0.94, 1.06, 1.18, 1.34, 1.5]; // 노말 … 신화 (characterLooks 등급 구간 가운데)
+    const arts = looks.map(figureArtScale);
+    for (let i = 1; i < arts.length; i++) expect(arts[i]!).toBeGreaterThan(arts[i - 1]!);
+    expect(arts[arts.length - 1]! * STACK_HALF_W_PER_ART).toBeLessThan(1); // 신화 반폭 ≈ 0.8칸 (예전 혼자 ×2 = 약 1.38칸)
+    expect(figureArtScale(1.54) * STACK_HALF_W_PER_ART).toBeLessThan(1);
   });
 });
