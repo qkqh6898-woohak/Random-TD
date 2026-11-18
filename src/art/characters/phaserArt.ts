@@ -277,6 +277,11 @@ export class CharacterFigure {
     return this.tinted;
   }
 
+  /** 몸 그림 텍스처 키 (E2E, 피드백 #21 — 바깥 그림이면 등급 띠를 구운 `<키>-ol-<등급>`) */
+  get bodyKey(): string | null {
+    return this.partImgs.get('body')?.texture.key ?? null;
+  }
+
   /** 지금 보이는 파츠 수 (E2E) */
   get partCount(): number {
     return this.partImgs.size;
