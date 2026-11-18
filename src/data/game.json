@@ -218,7 +218,7 @@
     "grade": [
       {
         "id": "normal",
-        "name": "일반 강화",
+        "name": "노말·레어 강화",
         "grades": [
           "normal",
           "rare"
@@ -232,7 +232,7 @@
       },
       {
         "id": "hero",
-        "name": "영웅 강화",
+        "name": "유니크·히어로 강화",
         "grades": [
           "unique",
           "hero"
@@ -246,7 +246,7 @@
       },
       {
         "id": "legend",
-        "name": "전설 강화",
+        "name": "레전드·신·신화 강화",
         "grades": [
           "legend",
           "god",

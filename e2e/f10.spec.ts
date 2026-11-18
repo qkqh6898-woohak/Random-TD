@@ -381,7 +381,7 @@ test('강화·미션 (일반 시작): 준비 단계에서 열기 · 시트는 �
   await page.getByTestId('menu-upgrade').click();
   await expect.poll(() => inScene(page, (s) => s.sheetOpen, null)).toBe('upgrade');
   const row = page.getByTestId('upgrade-row-normal');
-  await expect(row).toContainText('일반 강화');
+  await expect(row).toContainText('노말·레어 강화');
   await expect(row).toContainText('Lv 0/50');
   await expect(row).toContainText('+0% → +10%');
   await expect(page.getByTestId('upgrade-buy-normal')).toHaveText('50원');
@@ -389,6 +389,14 @@ test('강화·미션 (일반 시작): 준비 단계에서 열기 · 시트는 �
   await page.waitForTimeout(700);
   expect(Number(await page.locator('[data-screen="game"]').getAttribute('data-tick'))).toBeGreaterThan(t0);
   await shot(page, 'F10-ui-upgrade');
+  // 피드백 #23: 등급 강화 이름이 등급 표기 그대로 ('레전드·신·신화 강화'가 가장 길다) — 이름 줄이 버튼과 겹치지 않는다
+  for (const [id, name] of [['normal', '노말·레어 강화'], ['hero', '유니크·히어로 강화'], ['legend', '레전드·신·신화 강화']] as const) {
+    const r = page.getByTestId(`upgrade-row-${id}`);
+    await expect(r.locator('.up-name')).toContainText(name);
+    const right = await r.locator('.up-name > *').evaluateAll((els) => Math.max(...els.map((e) => e.getBoundingClientRect().right)));
+    const buyBox = (await r.locator('.up-buy').boundingBox())!;
+    expect(right).toBeLessThanOrEqual(buyBox.x + 1);
+  }
   // 50원 → Lv1, 노말·레어 +10%
   await page.getByTestId('upgrade-buy-normal').click();
   await expect.poll(() => inScene(page, (s) => s.match.state.gold, null)).toBe(950);
