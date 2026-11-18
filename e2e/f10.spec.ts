@@ -381,7 +381,7 @@ test('강화·미션 (일반 시작): 준비 단계에서 열기 · 시트는 �
   await page.getByTestId('menu-upgrade').click();
   await expect.poll(() => inScene(page, (s) => s.sheetOpen, null)).toBe('upgrade');
   const row = page.getByTestId('upgrade-row-normal');
-  await expect(row).toContainText('일반 강화');
+  await expect(row).toContainText('노말·레어 강화');
   await expect(row).toContainText('Lv 0/50');
   await expect(row).toContainText('+0% → +10%');
   await expect(page.getByTestId('upgrade-buy-normal')).toHaveText('50원');

@@ -95,7 +95,7 @@
   "shop": [
     { "id": "pack-basic", "name": "영웅 카드 묶음", "desc": "무작위 영웅 카드 5장", "icon": "🃏", "price": { "gold": 800 }, "cards": 5, "weights": { "normal": 5000, "rare": 3000, "unique": 1400, "hero": 500, "legend": 100 } },
     { "id": "pack-fine", "name": "고급 카드 묶음", "desc": "유니크 이상 영웅 카드 6장", "icon": "🎴", "price": { "gems": 60 }, "cards": 6, "weights": { "unique": 6000, "hero": 3000, "legend": 1000 } },
-    { "id": "chest-legend", "name": "전설 상자", "desc": "히어로 이상 영웅 카드 5장 · 드물게 신", "icon": "🎁", "price": { "gems": 150 }, "cards": 5, "weights": { "hero": 6500, "legend": 3400, "god": 100 } },
+    { "id": "chest-legend", "name": "레전드 상자", "desc": "히어로 이상 영웅 카드 5장 · 드물게 신", "icon": "🎁", "price": { "gems": 150 }, "cards": 5, "weights": { "hero": 6500, "legend": 3400, "god": 100 } },
     { "id": "fragments", "name": "신화 조각 꾸러미", "desc": "잠긴 신화 영웅 조각 3개", "icon": "🧩", "price": { "gems": 80 }, "fragments": 3 },
     { "id": "gold-bag", "name": "골드 주머니", "desc": "골드 2,000", "icon": "💰", "price": { "gems": 40 }, "gold": 2000 }
   ],
