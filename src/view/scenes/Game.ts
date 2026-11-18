@@ -436,6 +436,8 @@ export class GameScene extends Phaser.Scene {
   private groundPress: GroundPress | null = null;
   /** 자동 소환 명령을 넣은 틱 (그 명령이 실행되기 전에는 다음을 넣지 않는다 — 같은 칸을 두 번 고르지 않게) */
   private autoSummonTick = -1;
+  /** 일꾼 고용 명령을 넣은 틱 (꾹 누르기 중 실행 전 명령을 두 번 넣지 않게, 피드백 #66) */
+  private hireTick = -1;
   /** 패널 [↔ 이동] 모드: 옮길 타워 */
   private moveMode: { id: number; tx: number; ty: number } | null = null;
   /** 판매 확인 (히어로 이상: 이 시각까지 한 번 더 누르면 판매) */
@@ -2554,15 +2556,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** 일꾼 고용 버튼: 미리 검사해 안 되면 바로 알림, 되면 명령 (sim이 실행 틱에 다시 검사). */
-  private hire(): void {
-    if (this.paused || this.gameOver) return;
+  /** 일꾼 고용 명령을 보냈으면 true (꾹 누르기 계속, 피드백 #66) */
+  private hire(): boolean {
+    if (this.paused || this.gameOver) return false;
+    // 앞 고용 명령이 아직 실행 전(같은 틱)이면 이번은 건너뛰고 계속 — 돈 검사가 앞 고용을 빼고 하지 않게
+    if (this.hireTick === this.match.tick) return true;
     const fail = hireCheck(this.match.ctx);
     if (fail) {
       const text = hireFailText(fail, this.match.rules.workerCost, this.match.state.gold, this.match.rules.workerMax);
       if (text) this.ctx.ui.toast(text);
-      return;
+      return false;
     }
-    this.match.world.enqueue({ type: 'hireWorker' });
+    if (!this.match.world.enqueue({ type: 'hireWorker' }).ok) return false;
+    this.hireTick = this.match.tick;
+    return true;
   }
 
   /**

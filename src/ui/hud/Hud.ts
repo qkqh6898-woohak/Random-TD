@@ -52,8 +52,8 @@ export interface HudOptions {
   onAddGold?: () => void;
   /** 아래 띠 '⬆ 승급 가능 n': 승급할 수 있는 타워를 골라 정보 패널을 연다 (M3) */
   onMergeReady?: () => void;
-  /** 아래 띠 '👷 300원': 일꾼 고용 (M4) */
-  onHire?: () => void;
+  /** 아래 띠 '👷 300원': 일꾼 고용 (M4). 꾹 누르면 계속 (피드백 #66) — 고용 명령을 보냈으면 true, 돈 부족·최대·일시정지면 false (멈춤) */
+  onHire?: () => boolean;
   /** 하단 메뉴 (M5): 도전·강화·미션 바텀 시트 열기/닫기 */
   onMenu?: (kind: SheetKind) => void;
   /** 하단 메뉴 넷째 칸 [🛠 개발] (T-2, 개발자 모드만) */
@@ -298,8 +298,11 @@ export function createHud(opts: HudOptions): HudView {
   const hireBtn = h('button', {
     class: 'btn btn-chip hud-hire',
     attrs: { type: 'button', 'data-action': 'hire', 'data-testid': 'hud-hire', 'aria-label': '일꾼 고용' },
-    on: { click: () => opts.onHire?.() },
   }, hireArt, hireLabel);
+  // 피드백 #66: [🎲 소환]처럼 꾹 누르면 같은 간격으로 계속 고용 (돈이 모자라거나 최대면 멈춤)
+  const hireHold = attachHoldRepeat(hireBtn, () => opts.onHire?.() ?? false, {
+    delay: (n) => (n <= 0 ? HOLD_DELAY_MS : (opts.summonInterval?.() ?? 250)),
+  });
   // 접은 고르기 창의 알약 자리 (display: contents → 알약이 아래 띠의 flex 항목이 된다)
   const choiceSlot = h('span', { class: 'hud-choice-slot', attrs: { 'data-testid': 'hud-choice-slot' } });
   const towersItem = h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl);
@@ -638,6 +641,7 @@ export function createHud(opts: HudOptions): HudView {
       skipHold?.detach();
       skipHold = null;
       summonHold?.detach();
+      hireHold.detach();
       clearTimeout(breakTimer);
       breakTimer = undefined;
       clearTimeout(goldPulseTimer);
