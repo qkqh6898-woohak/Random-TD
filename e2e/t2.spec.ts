@@ -496,6 +496,18 @@ test('일반 주소: 개발자 UI 없음 ([🛠 개발]·[🛠 변환]·⏭), �
     expect(r!.x + r!.width, sel).toBeLessThanOrEqual(412);
     expect(r!.height, sel).toBeGreaterThanOrEqual(44);
   }
+  // 피드백 #30: 판매는 머리 줄(초상·이름 줄) 안 작은 칩 — 승급·이동 버튼보다 위, [↔ 이동]보다 좁고, 승급 버튼 줄에는 없다
+  await expect(page.locator('.tp-head [data-testid="tp-sell"]')).toBeVisible();
+  await expect(page.locator('.tp-act-wrap [data-testid="tp-sell"]')).toHaveCount(0);
+  // v0.1.14 통합: 화면 전체에 판매 버튼은 이 하나뿐 (FB-D1 #30 머리 줄 — PR #51 칸 위 [✕ 판매]는 뺐다)
+  await expect(page.locator('[data-action="sell"]:visible, [data-testid="tq-sell"]')).toHaveCount(1);
+  const sellBox = (await page.getByTestId('tp-sell').boundingBox())!;
+  const mergeBox = (await page.locator('[data-action="merge"]').boundingBox())!;
+  const closeBox = (await page.locator('[data-action="panel-close"]').boundingBox())!;
+  expect(sellBox.y + sellBox.height).toBeLessThanOrEqual(mergeBox.y);
+  expect(sellBox.width).toBeLessThan(mergeBox.width);
+  expect(sellBox.x + sellBox.width).toBeLessThanOrEqual(closeBox.x);
+  expect(await page.getByTestId('tp-sell').evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
   // 히든 미션은 ??? 그대로 (저장값이 있어도 개발자 모드가 아니면 쓰지 않음)
   await page.locator('[data-action="panel-close"]').click();
   await page.getByTestId('menu-mission').click();
