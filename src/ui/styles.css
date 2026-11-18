@@ -1347,6 +1347,11 @@ body {
 .hud-merge-all[hidden] {
   display: none;
 }
+/* v0.1.14 통합: z-index 4라 위 층(일시정지·패배 화면, layer-screen)보다 앞에 떠서 일시정지 메뉴 스위치를 가로챘다 (t2 '눌러서 바로 승급') →
+   화면 층에 무언가 떠 있으면 숨긴다 */
+.layer-hud:has(~ .layer-screen:not(:empty)) .hud-merge-all {
+  display: none;
+}
 
 /* ---------- M4 배너 알림 (편대 예고·투명 몹 경고·보스 이름표·보스 처치) ---------- */
 .toast-banner {

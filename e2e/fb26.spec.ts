@@ -89,6 +89,14 @@ test('[⏫ 모두 승급 n]: 오른쪽 위에 보이고, 누르면 가득 찬 �
   mkdirSync('test-results/screens', { recursive: true });
   await page.screenshot({ path: 'test-results/screens/FB26-merge-all.png', animations: 'disabled' });
   if (SAVE_DOCS) await page.screenshot({ path: 'docs/screens/FB26-merge-all.png', animations: 'disabled' });
+  // v0.1.14 통합: 일시정지 메뉴가 열리면 숨는다 (z-index로 메뉴 위에 떠서 스위치를 가로채던 것) — 닫으면 다시 보인다
+  await page.getByRole('button', { name: '일시정지' }).click();
+  await expect(page.locator('[data-screen="pause"]')).toBeVisible();
+  await expect(page.getByTestId('hud-merge-all')).toBeHidden();
+  await page.getByTestId('pause-tap-merge').click();
+  await page.getByTestId('pause-tap-merge').click();
+  await page.getByRole('button', { name: '계속' }).click();
+  await expect(page.getByTestId('hud-merge-all')).toBeVisible();
   await page.getByTestId('hud-merge-all').click();
   await expect.poll(() => fullCount(page)).toBe(0);
   await expect(page.getByTestId('hud-merge-all')).toBeHidden();
