@@ -77,6 +77,8 @@ export type CommandPayload =
   | { type: 'summonAuto' }
   /** 연쇄 승급 (G-1): 칸 (x, y)의 가득 찬 무더기를 승급하고 이어서 할 수 있는 만큼 (merge.chainMax까지) */
   | { type: 'mergeStack'; x: number; y: number }
+  /** 모두 승급 (피드백 #26): 승급할 수 있는 내 무더기를 남김없이 — 무더기마다 mergeStack과 같은 연쇄 규칙 */
+  | { type: 'mergeAllStacks' }
   /** 무더기 이동·교환·합치기 (G-1): 칸 (fx, fy)의 무더기를 (tx, ty)로 */
   | { type: 'moveStack'; fx: number; fy: number; tx: number; ty: number }
   /** 소환 도박 (G-1): game.json summonGamble.kinds의 k번째, f = 종족 번호 (종족 소환만, 나머지는 0) */
@@ -114,6 +116,7 @@ export const COMMAND_TYPES: readonly CommandType[] = [
   'summonPad',
   'summonAuto',
   'mergeStack',
+  'mergeAllStacks',
   'moveStack',
   'gacha',
   'craft',
@@ -152,6 +155,7 @@ export const PAYLOAD_FIELDS: { readonly [K in CommandType]: readonly string[] } 
   summonPad: ['x', 'y'],
   summonAuto: [],
   mergeStack: ['x', 'y'],
+  mergeAllStacks: [],
   moveStack: ['fx', 'fy', 'tx', 'ty'],
   gacha: ['k', 'f'],
   craft: ['r'],
@@ -221,6 +225,7 @@ export function validatePayload(cmd: unknown): string | null {
     case 'claimAllMissions':
     case 'readyNow':
     case 'summonAuto':
+    case 'mergeAllStacks':
       return null;
     case 'gacha':
       if (!isNonNegInt(c.k) || c.k > MAX_GAMBLE_TABLE) return `k가 0~${MAX_GAMBLE_TABLE} 정수가 아님: ${String(c.k)} (gacha 명령)`;

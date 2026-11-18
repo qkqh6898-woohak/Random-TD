@@ -273,6 +273,26 @@ function mergeStackOnce(ctx: MatchContext, world: World, player: number, stack: 
   return mergeCore(ctx, world, player, anchor, consumed, (towerId) => joinableStack(ctx, world, player, towerId) ?? [anchor.tx, anchor.ty]);
 }
 
+/** 연쇄 승급 본체 (mergeStack·mergeAllStacks가 같이 쓴다): stack부터 같은 타워 → 이번 결과 타워 순으로 최대 merge.chainMax번. */
+function chainFrom(ctx: MatchContext, world: World, player: number, first: Tower[]): Tower[] {
+  const out: Tower[] = [];
+  let kind = (first[0] as Tower).tower;
+  let next: Tower[] | null = first;
+  while (next && out.length < ctx.rules.mergeChainMax) {
+    const result = mergeStackOnce(ctx, world, player, next);
+    out.push(result);
+    if (ctx.state.phase !== 'playing') break;
+    next = fullStacks(ctx, world, player, kind)[0] ?? null;
+    if (!next) {
+      // 같은 타워가 끝나면: 이번 연쇄에서 나온 결과 타워들의 가득 찬 무더기 (바닥 ID 순 첫째) → 그 타워로 이어 간다
+      const made = new Set(out.map((t) => t.tower));
+      next = fullStacks(ctx, world, player).find((st) => made.has((st[0] as Tower).tower)) ?? null;
+      if (next) kind = (next[0] as Tower).tower;
+    }
+  }
+  return out;
+}
+
 /**
  * 연쇄 승급 (G-1 mergeStack 명령): 칸 (x, y)의 가득 찬 무더기를 승급하고, 같은 타워의 가득 찬 무더기가 남아 있으면 이어서(바닥 ID 순),
  * 없으면 이번 연쇄에서 나온 결과 타워의 가득 찬 무더기(바닥 ID 순 첫째)로 이어 간다. 한 번에 최대 merge.chainMax번.
@@ -286,22 +306,32 @@ export function mergeStack(ctx: MatchContext, world: World, player: number, x: n
     world.emit('mergeFail', { player, x, y, reason: check.reason });
     return [];
   }
-  const out: Tower[] = [];
-  let kind = (check.stack[0] as Tower).tower;
-  let next: Tower[] | null = check.stack;
-  while (next && out.length < ctx.rules.mergeChainMax) {
-    const result = mergeStackOnce(ctx, world, player, next);
-    out.push(result);
-    if (ctx.state.phase !== 'playing') break;
-    next = fullStacks(ctx, world, player, kind)[0] ?? null;
-    if (!next) {
-      // 같은 타워가 끝나면: 이번 연쇄에서 나온 결과 타워들의 가득 찬 무더기 (바닥 ID 순 첫째) → 그 타워로 이어 간다
-      const made = new Set(out.map((t) => t.tower));
-      next = fullStacks(ctx, world, player).find((st) => made.has((st[0] as Tower).tower)) ?? null;
-      if (next) kind = (next[0] as Tower).tower;
-    }
-  }
+  const out = chainFrom(ctx, world, player, check.stack);
   if (out.length > 1) world.emit('mergeChain', { player, steps: out.length, x, y });
+  return out;
+}
+
+/**
+ * 모두 승급 (피드백 #26 mergeAllStacks 명령, 맵 오른쪽 위 [⏫ 모두 승급]): 승급할 수 있는 내 가득 찬 무더기(바닥 ID 순 첫째)부터
+ * mergeStack과 같은 연쇄 규칙으로 승급하고, 가득 찬 무더기가 남지 않을 때까지 되풀이한다 (승급마다 타워가 2개씩 줄어 반드시 끝난다).
+ * 승급마다 평소 'merge' 사건, 끝에 'mergeAllStacks' { player, steps } 하나 (연쇄마다 'mergeChain'을 내지 않는다 — 알림이 쌓이지 않게).
+ * 승급할 무더기가 없거나 판이 끝났으면 상태·난수를 바꾸지 않고 'mergeFail' { reason: 'none' | 'phase', x: -1, y: -1 }.
+ * @returns 결과 타워들 (승급 순)
+ */
+export function mergeAllStacks(ctx: MatchContext, world: World, player: number): Tower[] {
+  const fail = (reason: 'phase' | 'none'): Tower[] => {
+    world.emit('mergeFail', { player, x: -1, y: -1, reason });
+    return [];
+  };
+  if (ctx.state.phase !== 'playing') return fail('phase');
+  let next = fullStacks(ctx, world, player)[0];
+  if (!next) return fail('none');
+  const out: Tower[] = [];
+  while (next && ctx.state.phase === 'playing') {
+    out.push(...chainFrom(ctx, world, player, next));
+    next = fullStacks(ctx, world, player)[0];
+  }
+  world.emit('mergeAllStacks', { player, steps: out.length });
   return out;
 }
 

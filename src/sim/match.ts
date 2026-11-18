@@ -37,7 +37,7 @@ import { createDefeatSystem } from './systems/Defeat';
 import { createMovementSystem } from './systems/Movement';
 import { createSpawnSystem } from './systems/Spawn';
 import { createStageSystem, readyNow, skipStage, ticksToNextStage } from './systems/Stage';
-import { merge, mergeAll, mergeStack, pickMerge } from './systems/Merge';
+import { merge, mergeAll, mergeAllStacks, mergeStack, pickMerge } from './systems/Merge';
 import { createMobTraitSystem } from './systems/MobTraits';
 import { createDetectionSystem } from './systems/Detection';
 import { createEconomySystem, hireWorker } from './systems/Economy';
@@ -374,6 +374,9 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
   });
   world.setCommandHandler('mergeStack', (w, cmd) => {
     if (cmd.type === 'mergeStack') mergeStack(ctx, w, cmd.player, cmd.x, cmd.y);
+  });
+  world.setCommandHandler('mergeAllStacks', (w, cmd) => {
+    if (cmd.type === 'mergeAllStacks') mergeAllStacks(ctx, w, cmd.player);
   });
   world.setCommandHandler('moveStack', (w, cmd) => {
     if (cmd.type === 'moveStack') moveStack(ctx, w, cmd.player, cmd.fx, cmd.fy, cmd.tx, cmd.ty);
