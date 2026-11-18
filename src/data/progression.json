@@ -38,7 +38,7 @@
     "gradeGoldPct": { "normal": 100, "rare": 150, "unique": 200, "hero": 300, "legend": 400, "god": 500, "hidden": 500 }
   },
   "hidden": {
-    "unlockFragments": 20
+    "unlockFragments": 5
   },
   "waveRoad": {
     "milestones": [
