@@ -11,7 +11,7 @@
  *   소환·소환 실패(사람이 한 행동의 응답)는 이번 프레임에 돈 틱이면 모두, 신 강림 알림은 언제나 (fxModel.eventFxVisible).
  *
  * - 타워 탭 (M3-11): 정보 패널(DOM) + 사거리 원·같은 종류 강조. 패널의 [승급]·[모두 승급] → merge·mergeAll 명령,
- *   승급 직후 0.3초는 입력을 받지 않는다 (UI.md 9장). 아래 띠 '⬆ 승급 가능 n'을 누르면 승급할 수 있는 타워를 고른다.
+ *   승급 직후 0.3초는 입력을 받지 않는다 (UI.md 9장). 승급 버튼은 맵 오른쪽 위 [⏫ 모두 승급] 하나 (피드백 #65, 꾹 누르면 계속).
  * - 타워 길게 눌러 끌기 (M3-10): 0.3초 누르면 타워가 손가락 위로 들리고(hold 명령 → 끄는 동안 공격 정지, GDD 4.5),
  *   놓을 칸을 초록(이동)·파랑(교환)·빨강(불가)으로 보여준다. 놓을 칸은 손가락이 움직인 만큼만 바뀐다(처음 누른 자리와 무관).
  *   손을 떼면 hold 해제 + move 명령. 명령이 실행될 때까지 놓은 자리에 붙잡아 둔다. 움직이지 않고 떼면 느린 탭 = 정보 패널.
@@ -25,7 +25,7 @@
  * - M5: 하단 메뉴 [⚔ 도전] [⬆ 강화] [📋 미션] → 바텀 시트(sheet 층, 55% / 끌어서 85%, 게임은 계속 진행, 맵을 누르면 닫힘).
  *   도전 [시작] → startChallenge, 강화 [비용] → upgrade (길게 누르면 연속), 도박 테이블 → gamble (슬롯 1초 연출 뒤 결과),
  *   미션 [받기]·[모두 받기] → claimMission·claimAllMissions. 메뉴 배지 '1 가능'·'Lv 5'·'2 받기', 도전 보스 막대(보스 막대 자리),
- *   [⬆ 승급 가능 n]을 누를 때마다 다음 묶음을 골라 패널을 열고 그 타워들에 금색 고리를 퍼뜨린다(1.5초).
+ *   패널의 [다음 묶음 ▶]을 누를 때마다 다음 묶음을 골라 패널을 열고 그 타워들에 금색 고리를 퍼뜨린다(1.5초). (아래 띠 [⬆ 승급 가능 n]은 피드백 #65에서 없앰)
  *   바텀 시트는 하나만: 시트를 열면 정보 패널을 닫고 고르기 창을 접는다, 타워 패널·고르기 창을 펼치면 시트를 닫는다.
  *   히든 미션을 달성하면 계정 저장소에 영구 기록한다 (다음 판부터 이름이 보임).
  * - HF-2: 전투 배경 그림(테마 × 하늘 밴드, BattleBackground — 없으면 절차 풀밭), 단계 보스 등장 컷인(DOM cutin 층, 연출 끄기면 건너뜀),
@@ -576,7 +576,6 @@ export class GameScene extends Phaser.Scene {
       onPause: () => this.pause(),
       onSkipStage: this.ctx.debug ? () => this.match.world.enqueue({ type: 'debugSkipStage' }) : undefined,
       onAddGold: this.ctx.debug ? () => this.match.world.enqueue({ type: 'debugAddGold', amount: config.debug.addGold }) : undefined,
-      onMergeReady: () => this.selectNextMergeable(),
       onHire: () => this.hire(),
       onMenu: (kind) => this.toggleSheet(kind),
       devMenu: this.ctx.debug,
@@ -1575,12 +1574,16 @@ export class GameScene extends Phaser.Scene {
     if (r.ok) this.inputLockUntil = now + MERGE_INPUT_LOCK_MS;
   }
 
-  /** 맵 오른쪽 위 [⏫ 모두 승급] (피드백 #26) → mergeAllStacks 명령. 승급 직후 0.3초는 다시 받지 않는다. */
-  private sendMergeAll(): void {
-    if (this.paused || this.gameOver) return;
+  /**
+   * 맵 오른쪽 위 [⏫ 모두 승급] (피드백 #26) → mergeAllStacks 명령. 승급 직후 0.3초는 다시 받지 않는다.
+   * 피드백 #65: 꾹 누르기가 이 함수를 되풀이해 부른다 — 승급할 무더기가 있을 때만 보내고(없으면 기다림), 일시정지·판 끝이면 false (멈춤).
+   */
+  private sendMergeAll(): boolean {
+    if (this.paused || this.gameOver) return false;
     const now = this.time.now;
-    if (inputLocked(this.inputLockUntil, now)) return;
-    if (this.match.world.enqueue({ type: 'mergeAllStacks' }).ok) this.inputLockUntil = now + MERGE_INPUT_LOCK_MS;
+    if (inputLocked(this.inputLockUntil, now)) return true;
+    if (this.mergeReadyCount > 0 && this.match.world.enqueue({ type: 'mergeAllStacks' }).ok) this.inputLockUntil = now + MERGE_INPUT_LOCK_MS;
+    return true;
   }
 
   /** 지금 고른 타워 (없거나 사라졌으면 null). */

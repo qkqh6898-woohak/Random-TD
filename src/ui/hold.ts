@@ -39,6 +39,15 @@ export function gambleHoldDelay(n: number): number {
   return n <= 0 ? HOLD_DELAY_MS : GAMBLE_POLL_MS;
 }
 
+/**
+ * 맵 오른쪽 위 [⏫ 모두 승급] 꾹 누르기 (피드백 #65): 처음은 HOLD_DELAY_MS, 그 뒤 MERGE_ALL_POLL_MS마다 다시 묻는다 —
+ * 누르고 있는 동안 새로 가득 찬 무더기가 생기면 또 모두 승급 (승급 직후 입력 잠금 0.3초는 Game이 지킨다).
+ */
+export const MERGE_ALL_POLL_MS = 100;
+export function mergeAllHoldDelay(n: number): number {
+  return n <= 0 ? HOLD_DELAY_MS : MERGE_ALL_POLL_MS;
+}
+
 /** 자동 소환 간격 (ms, T-2 꾹 눌러 연속 소환·[🎲 소환] 버튼): 초당 약 4번, 연출 끄기면 초당 약 10번 */
 export const AUTO_SUMMON_MS = 250;
 export const AUTO_SUMMON_FAST_MS = 100;

@@ -8,7 +8,7 @@ import { effectiveStats, newPlayerMods } from '../../src/sim/stats';
 import { mergeableGroups } from '../../src/sim/systems/Merge';
 import { moveCheck } from '../../src/sim/systems/Move';
 import { placeTower } from '../../src/sim/systems/Summon';
-import { buildHudModel, mergeReadyText, summonInfo } from '../../src/ui/hud/hudModel';
+import { buildHudModel, summonInfo } from '../../src/ui/hud/hudModel';
 import { mergeFailText, mergeReadyToast } from '../../src/ui/messages';
 import { choosePanelPlacement } from '../../src/ui/panels/TowerPanel';
 import {
@@ -292,17 +292,6 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
 });
 
 describe('아래 띠 승급 버튼·알림 (UI.md 4.1·8장)', () => {
-  it('mergeReadyText: 0이면 숨김(빈 글자), n이면 "⬆ 승급 가능 n"', () => {
-    expect(mergeReadyText(0)).toBe('');
-    expect(mergeReadyText(2)).toBe('⬆ 승급 가능 2');
-    const m = infinite(1);
-    const model = buildHudModel(
-      { state: m.state, ticksLeft: 100, mobCount: 0, tick: 0, speed: 1, mergeReady: 3 },
-      data.game.hud,
-    );
-    expect(model.mergeReady).toBe('⬆ 승급 가능 3');
-  });
-
   it('mergeableGroups: 같은 종류 3개 이상 + 승급 가능한 등급만, 가장 먼저 소환된 타워 순', () => {
     const m = infinite(2);
     const cells = m.map.buildable.slice(0, 12);

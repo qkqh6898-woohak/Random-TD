@@ -1313,21 +1313,6 @@ body {
   line-clamp: 1;
 }
 
-/* 아래 띠의 '⬆ 승급 가능 n' 버튼 (UI.md 4.1) */
-.hud-merge-ready {
-  font-size: 3.4cqw;
-  color: #3b2416;
-  background: linear-gradient(180deg, #ffd85a 0%, var(--gold) 60%, var(--gold-deep) 100%);
-  border-color: #fff3c4;
-  white-space: nowrap;
-}
-
-/* 숨기면 자리도 비운다 (T-2): 아래 띠 높이는 늘 보이는 [👷] 고용 버튼(44px)이 정하므로 출렁이지 않는다.
- * 예전처럼 자리를 남기면 [🎲 소환]·알약과 함께 412px에서 줄이 넘쳤다. */
-.hud-merge-ready[hidden] {
-  display: none;
-}
-
 /* 맵 오른쪽 위 [⏫ 모두 승급 n] (피드백 #26): 위 띠 바로 아래에 떠 있다 — 띠 높이·맵 위치는 그대로 */
 .hud-merge-all {
   position: absolute;
@@ -1343,6 +1328,9 @@ body {
   border-color: #fff3c4;
   white-space: nowrap;
   box-shadow: 0 0.5cqw 1.2cqw rgba(0, 0, 0, 0.45);
+  /* 피드백 #65: 꾹 누르기 — 길게 눌러도 메뉴·확대가 뜨지 않게 */
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
 }
 .hud-merge-all[hidden] {
   display: none;
@@ -1537,10 +1525,6 @@ body {
 }
 
 .hud-bottom:has(.cp-pill:not([hidden])) .hud-hint {
-  display: none;
-}
-
-.hud-bottom:has(.hud-merge-ready:not([hidden])) .cp-pill-text {
   display: none;
 }
 
@@ -2924,8 +2908,7 @@ body {
   box-shadow: none;
 }
 
-/* 승급 가능 버튼이나 접은 고르기 창 알약이 보이면 '소환' 글자를 숨겨 줄이 넘치지 않게 ([🎲 100원]) */
-.hud-bottom:has(.hud-merge-ready:not([hidden])) .hud-summon-word,
+/* 접은 고르기 창 알약이 보이면 '소환' 글자를 숨겨 줄이 넘치지 않게 ([🎲 100원]) */
 .hud-bottom:has(.cp-pill:not([hidden])) .hud-summon-word {
   display: none;
 }
@@ -2935,16 +2918,12 @@ body {
   display: none;
 }
 
-/* 아래 띠 버튼은 옆 여백을 조금 좁힌다: [🗼 n/96] [🎲 100원] [👷 300원] [⬆ 승급 가능 n]이 412px·360px·320px에서 넘치지 않게 */
+/* 아래 띠 버튼은 옆 여백을 조금 좁힌다: [🗼 n/96] [🎲 100원] [👷 300원]이 412px·360px·320px에서 넘치지 않게 */
 .hud-bottom > .btn-chip,
 .hud-choice-slot > .btn-chip {
   padding-left: 1.9cqw;
   padding-right: 1.9cqw;
   font-size: 3.4cqw;
-}
-
-.hud-bottom > .hud-merge-ready {
-  font-size: 3.3cqw;
 }
 
 /* 안내가 비면 자리도 비우고(간격 하나 아낌) 버튼은 오른쪽으로 */
@@ -2953,23 +2932,8 @@ body {
 }
 
 .hud-bottom > .hud-summon,
-.hud-bottom > .hud-summon[hidden] + .hud-hire,
-.hud-bottom > .hud-merge-ready:not([hidden]) {
+.hud-bottom > .hud-summon[hidden] + .hud-hire {
   margin-left: auto;
-}
-
-/* 승급 가능 버튼이 소환 바로 앞에 있으면 소환은 그 옆에 붙인다 (소환·일꾼은 늘 오른쪽 끝 → 자리가 안 바뀐다) */
-.hud-bottom > .hud-merge-ready:not([hidden]) + .hud-summon {
-  margin-left: 0;
-}
-
-/* 알약 + 승급 가능 버튼까지 있으면(보스 카드를 접어 둔 동안) 간격을 좁히고 승급 버튼은 '⬆ n'만 — 320px에서도 한 줄 */
-.hud-bottom:has(.cp-pill:not([hidden])):has(.hud-merge-ready:not([hidden])) {
-  gap: 1.4cqw;
-}
-
-.hud-bottom:has(.cp-pill:not([hidden])) .hud-mr-word {
-  display: none;
 }
 
 /* 하단 메뉴 넷째 칸 [🛠 개발] (개발자 모드만) */
@@ -3348,8 +3312,8 @@ body {
   }
 }
 
-/* 첫 승급 안내 중: [⬆ 승급 가능] 버튼이 반짝인다 */
-.hud-merge-ready.is-guide {
+/* 첫 승급 안내 중: [⏫ 모두 승급] 버튼이 반짝인다 (피드백 #65 전에는 아래 띠 [⬆ 승급 가능]) */
+.hud-merge-all.is-guide {
   animation: hud-guide-pulse 0.9s ease-in-out infinite alternate;
   outline: 0.6cqw solid #fff3c4;
   outline-offset: 0.4cqw;
@@ -4159,12 +4123,6 @@ body {
 .hud-bottom.is-g1 > .hud-hire {
   margin-left: auto;
 }
-.hud-bottom.is-g1 > .hud-merge-ready:not([hidden]) + .hud-hire {
-  margin-left: 0;
-}
-.hud-bottom.is-g1 > .hud-merge-ready {
-  margin-left: auto;
-}
 
 /* 큰 버튼 묶음: [신화] [소환] [도박] / 소환 아래 [강화] */
 .hud-menu.is-g1 {
@@ -4275,18 +4233,13 @@ body {
 .hud-side-btns > .hud-menu-btn .hud-menu-badge:empty {
   display: none;
 }
-/* 자원 줄은 붐비므로 [⬆ 승급 가능 n]은 늘 '⬆ n' (글자 내용은 그대로) */
-.hud-bottom.is-g1 .hud-mr-word {
-  display: none;
-}
 .hud-bottom.is-g1 > .hud-item {
   flex-shrink: 0;
 }
 .hud-bottom.is-g1 > .hud-gold-item {
   min-width: 0;
 }
-/* 승급 가능·카드 알약이 보이면 일꾼 수는 숨긴다 ([👷 고용] 버튼이 남아 있다) */
-.hud-bottom.is-g1:has(.hud-merge-ready:not([hidden])) > .hud-workers,
+/* 카드 알약이 보이면 일꾼 수는 숨긴다 ([👷 고용] 버튼이 남아 있다) */
 .hud-bottom.is-g1:has(.cp-pill:not([hidden])) > .hud-workers {
   display: none;
 }
@@ -4301,10 +4254,6 @@ body {
   gap: 1.1cqw;
   padding-left: 1.8cqw;
   padding-right: 1.8cqw;
-}
-.hud-bottom.is-g1:has(.cp-pill:not([hidden])):has(.hud-merge-ready:not([hidden])) .hud-hire .hud-worker-art,
-.hud-bottom.is-g1:has(.cp-pill:not([hidden])):has(.hud-merge-ready:not([hidden])) .hud-towers .hud-label {
-  display: none;
 }
 
 /* G-1: 첫 승급 안내 카드가 맵 오른쪽 둥근 버튼(도전·미션)을 덮지 않게 오른쪽을 비운다 */
