@@ -3,6 +3,7 @@
  * 켜면 방금 소환된 그 등급 이하 타워를 바로 판다 (평소 sellTower 명령), 설정은 rtd.settings에 남고, 메뉴는 화면 안에 들어간다.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
 import { clickStart } from './title';
 
 test.describe.configure({ timeout: 150_000 });
@@ -54,6 +55,16 @@ test('피드백 #46: [노말 자동 판매]·[레어 이하 자동 판매] 스�
   // 메뉴 전체가 화면 안 (스위치 두 줄을 더해도 [로비로]가 보인다)
   const exitBox = (await page.locator('[data-action="exit"]').boundingBox())!;
   expect(exitBox.y + exitBox.height).toBeLessThanOrEqual(915);
+  mkdirSync('docs/screens', { recursive: true });
+  await page.screenshot({ path: 'docs/screens/FB46-pause.png', animations: 'disabled' });
+  // 낮은 화면(360×640, 16:9): 패널 위가 잘리지 않고, 스크롤해서 [로비로]까지 닿는다
+  await page.setViewportSize({ width: 360, height: 640 });
+  const title = (await page.locator('#pause-title').boundingBox())!;
+  expect(title.y).toBeGreaterThanOrEqual(0);
+  await page.locator('[data-action="exit"]').scrollIntoViewIfNeeded();
+  const exitSmall = (await page.locator('[data-action="exit"]').boundingBox())!;
+  expect(exitSmall.y + exitSmall.height).toBeLessThanOrEqual(640);
+  await page.setViewportSize({ width: 412, height: 915 });
   await normal.click();
   await expect(normal).toHaveAttribute('aria-checked', 'true');
   await page.locator('[data-action="resume"]').click();

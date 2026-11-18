@@ -773,11 +773,15 @@ body {
 
 /* ---------- 일시정지 메뉴 ---------- */
 .pause-screen {
-  justify-content: center;
+  /* 피드백 #46: 설정 줄이 늘어 16:9 같은 낮은 화면에서는 패널이 화면보다 길다 → 위가 잘리지 않게 safe center + 세로 스크롤 */
+  justify-content: safe center;
+  overflow-y: auto;
+  padding: 2cqw 0;
   background: rgba(13, 18, 32, 0.72);
 }
 
 .pause-panel {
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
