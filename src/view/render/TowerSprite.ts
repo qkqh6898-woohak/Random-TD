@@ -42,7 +42,7 @@ import { tileCenterPx, unitsToPx, type MapLayout } from '../layout';
 import { MOB_DEPTH_BASE } from './MobSprite';
 import { attackAnimMs, towerPose } from './towerPose';
 import { battleFigureScale, FIGURE_TILES, FOOT_OFFSET_TILES, fillOccupancy, isCrowded, occupancyKey, PEDESTAL_WIDTH_TILES, pedestalScaleFor } from './towerGeom';
-import { stackSlot, type StackSlot } from './stackGeom';
+import { stackArtScale, stackSlot, type StackSlot } from './stackGeom';
 
 /** 이동·교환 뒤 새 칸으로 미끄러지는 시간 (ms) */
 const SLIDE_MS = 140;
@@ -270,10 +270,10 @@ export class TowerSprite {
       gestureMs: preset?.gestureMs,
     });
     const soloScale = battleFigureScale(this.lookScale, crowded, (this.baseY - topLimit) / this.tile);
-    this.artScale = soloScale * this.slot.scale;
+    this.artScale = stackArtScale(soloScale, this.slot);
     const s = this.scale * this.artScale;
-    // 받침대: 혼자 있을 때 크기(G-2 하한·상한) × 무더기 크기 배수(G-1)
-    this.pedestal.setScale(this.pedestalBase * pedestalScaleFor(soloScale) * this.slot.scale);
+    // 받침대: 혼자 있을 때 크기(G-2 하한·상한) × 무더기에서 줄어든 비율(G-1, 칸 너비 상한 포함)
+    this.pedestal.setScale(this.pedestalBase * pedestalScaleFor(soloScale) * (this.artScale / soloScale));
     const fx = this.lungeDx * pose.lunge * this.tile + pose.dx * this.tile;
     const fy = pose.bob * this.tile + this.lungeDy * pose.lunge * this.tile;
     this.figure.setPosition(fx, fy);

@@ -4186,19 +4186,19 @@ body {
   display: inline !important;
 }
 
-/* 맵 오른쪽 둥근 버튼 (도전·미션·개발자) */
+/* 맵 오른쪽 아래 둥근 버튼 (도전·미션·개발자): 세로로 쌓으면 맨 오른쪽 줄 캐릭터를 덮어서 → 맵 아래 길 위에 가로 한 줄 (도전이 맨 오른쪽) */
 .hud-side-btns {
   position: absolute;
   right: 2cqw;
-  bottom: calc(100% + 2cqw);
+  bottom: calc(100% + 0.6cqw);
   display: flex;
-  flex-direction: column;
+  flex-direction: row-reverse;
   gap: 1.6cqw;
   pointer-events: none;
 }
 .hud-side-btns > .hud-menu-btn {
-  width: max(12cqw, 44px);
-  height: max(12cqw, 44px);
+  width: max(10.6cqw, 44px);
+  height: max(10.6cqw, 44px);
   min-height: 0;
   padding: 0;
   border-radius: 50%;
