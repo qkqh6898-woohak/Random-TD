@@ -317,8 +317,7 @@ test('A-1 효과음: 사람 입력 전 무음, 볼륨 기본 40%·5 단위·음�
 
   await placeThreeMiners(page);
   const n = (await probe()).notes.length;
-  await page.getByTestId('hud-merge-ready').click();
-  await page.locator('[data-action="merge"]').click();
+  await page.getByTestId('hud-merge-all').click(); // 피드백 #65: 승급 버튼은 [⏫ 모두 승급] 하나
   await expect.poll(async () => (await probe()).notes.slice(n)).toEqual([392, 523.25, 783.99]);
 });
 
@@ -399,8 +398,7 @@ test.describe('A-1 화면 흔들림·소환 연출', () => {
     await inScene(page, (s) => s.tweens.resumeAll(), null);
 
     await placeThreeMiners(page);
-    await page.getByTestId('hud-merge-ready').click();
-    await page.locator('[data-action="merge"]').click();
+    await page.getByTestId('hud-merge-all').click(); // 피드백 #65: 승급 버튼은 [⏫ 모두 승급] 하나
     await expect.poll(seen).toEqual(expect.arrayContaining(['summon-card', 'summon-portal', 'merge-material-orb', 'merge-card', 'merge-star']));
     expect(await page.evaluate(() => (window as unknown as { dieTex: number }).dieTex)).toBe(0);
     // 한도: 한 프레임에 소환 20번이어도 동시에 떠 있는 초상 카드는 12개까지 (A-1 주사위 한도 그대로)

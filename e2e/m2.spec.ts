@@ -200,7 +200,7 @@ test('배치 칸이 가득 차면 타워 칸 탭 → "빈 칸이 없어요 — �
   });
   await expect(page.getByTestId('hud-towers')).toHaveText(`${CELLS * 3}/${CAP}`); // 개발자 놓기는 인원 한도를 보지 않는다
   // 승급 버튼이 보이면 안내는 비고(잘리지 않게, M4 검토 반영), 없으면 '빈 칸이 없어요' — 어느 쪽이든 글자가 잘리지 않는다
-  await expect(page.getByTestId('hud-merge-ready')).toBeVisible();
+  await expect(page.getByTestId('hud-merge-all')).toBeVisible();
   await expect(page.getByTestId('hud-hint')).toHaveText('');
   await expect.poll(async () => (await view(page)).renderedTowers).toBe(CELLS * 3);
   await tapTile(page, 2, 4);

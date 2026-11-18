@@ -216,7 +216,7 @@ test('승급 (G-1 칸 무더기): 같은 타워 3개가 쌓인 칸 → 패널 [�
   await expect(page.getByTestId('tp-owned')).toHaveText('3/3');
   await expect(page.getByTestId('tp-name')).toContainText('×3');
   await expect(page.locator('[data-action="merge"]')).toBeEnabled();
-  await expect(page.locator('[data-testid="hud-merge-ready"]')).toBeVisible();
+  await expect(page.getByTestId('hud-merge-all')).toBeVisible();
   await page.locator('[data-action="merge"]').click();
   await expect.poll(async () => inScene(page, (s) => s.match.state.merges, null)).toBeGreaterThanOrEqual(1);
   const after = await towers(page);
@@ -233,33 +233,33 @@ test('승급 (G-1 칸 무더기): 같은 타워 3개가 쌓인 칸 → 패널 [�
   expect(errors).toEqual([]);
 });
 
-test('모두 승급 (G-1 연쇄): 가득 찬 칸이 여럿이면 한 번에 이어서 승급, 아래 띠 [⬆ 승급 가능 n] 버튼이 승급할 칸을 고른다', async ({ page }) => {
+test('모두 승급 (G-1 연쇄): 가득 찬 칸이 여럿이면 한 번에 이어서 승급, 승급 버튼은 맵 오른쪽 위 [⏫ 모두 승급 n] 하나 (피드백 #65)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
   const layout0 = await inScene(page, (s) => ({ ...s.mapLayout }), null);
-  await expect(page.getByTestId('hud-merge-ready')).toBeHidden();
+  await expect(page.getByTestId('hud-merge-all')).toBeHidden();
   await autoSummonMany(page, 30);
   const before = await towers(page);
   const fulls = fullStacks(before);
   expect(fulls.length).toBeGreaterThanOrEqual(2);
-  const readyBtn = page.getByTestId('hud-merge-ready');
+  const readyBtn = page.getByTestId('hud-merge-all');
   await expect(readyBtn).toBeVisible();
+  await expect(page.locator('.hud-bottom button', { hasText: '승급' })).toHaveCount(0);
   await expect(page.locator('.toast', { hasText: '승급 가능' })).toHaveCount(1);
   await expect(page.getByTestId('hud-hint')).toHaveText('');
   const stageBox = (await page.locator('#stage').boundingBox())!;
-  for (const id of ['hud-hire', 'hud-merge-ready']) {
+  for (const id of ['hud-hire', 'hud-merge-all']) {
     const b = (await page.getByTestId(id).boundingBox())!;
     expect(b.x + b.width).toBeLessThanOrEqual(stageBox.x + stageBox.width + 0.5);
   }
   await page.waitForTimeout(200);
   expect(await inScene(page, (s) => ({ ...s.mapLayout }), null)).toEqual(layout0);
-  await expect(readyBtn).toHaveText(/⬆ 승급 가능 \d/);
+  await expect(readyBtn).toHaveText(`⏫ 모두 승급 ${fulls.length}`);
+  // 한 번 누르면 패널 없이 가득 찬 무더기가 모두 승급
   await readyBtn.click();
-  await expect(page.getByTestId('tower-panel')).toBeVisible();
-  const selected = await inScene(page, (s) => s.selectedTowerId, null);
-  expect(fulls.some((st) => st.some((t) => t.id === selected))).toBe(true);
-  await page.locator('[data-action="merge-all"]').click();
-  await expect.poll(async () => inScene(page, (s) => s.match.state.merges, null)).toBeGreaterThanOrEqual(1);
+  await expect.poll(async () => inScene(page, (s) => s.match.state.merges, null)).toBeGreaterThanOrEqual(fulls.length);
+  await expect.poll(async () => fullStacks(await towers(page)).length).toBe(0);
+  await expect(readyBtn).toBeHidden();
   const after = await towers(page);
   expect(after.length).toBe(before.length - 2 * (await inScene(page, (s) => s.match.state.merges, null)));
   expect(errors).toEqual([]);
