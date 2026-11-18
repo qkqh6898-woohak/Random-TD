@@ -568,36 +568,45 @@ export function createHud(opts: HudOptions): HudView {
       ultChip.textContent = `⚡ ${list.length}`;
       ultChip.setAttribute('aria-label', `필살기 ${list.length}명 준비`);
       if (list.length === 0) setUltOpen(false);
+      // 피드백 #43 '스킬창 너무 커서 화면 안보임': 머리 줄에 [모두 발동], 캐릭터 줄은 작은 스크롤 칸 안에
       ultList.replaceChildren(
-        h('div', { class: 'hud-ult-head', text: '⚡ 필살기 준비 완료' }),
-        ...list.map((u) =>
-          h(
-            'button',
-            {
-              class: 'btn hud-ult-item',
-              attrs: { type: 'button', role: 'menuitem', 'data-testid': `hud-ult-${u.id}` },
-              on: {
-                click: () => {
-                  opts.onUlt?.(u.id);
-                },
+        h(
+          'div',
+          { class: 'hud-ult-head' },
+          h('span', { class: 'hud-ult-title', text: '⚡ 필살기' }),
+          h('button', {
+            class: 'btn hud-ult-all',
+            attrs: { type: 'button', 'data-testid': 'hud-ult-all' },
+            text: '모두 발동',
+            on: {
+              click: () => {
+                opts.onUltAll?.();
+                setUltOpen(false);
               },
             },
-            h('span', { class: 'hud-ult-icon', text: u.icon, attrs: { 'aria-hidden': 'true' } }),
-            h('span', { class: 'hud-ult-name', text: u.name }),
-            h('span', { class: 'hud-ult-kind', text: u.ultName }),
+          }),
+        ),
+        h(
+          'div',
+          { class: 'hud-ult-items' },
+          ...list.map((u) =>
+            h(
+              'button',
+              {
+                class: 'btn hud-ult-item',
+                attrs: { type: 'button', role: 'menuitem', 'data-testid': `hud-ult-${u.id}` },
+                on: {
+                  click: () => {
+                    opts.onUlt?.(u.id);
+                  },
+                },
+              },
+              h('span', { class: 'hud-ult-icon', text: u.icon, attrs: { 'aria-hidden': 'true' } }),
+              h('span', { class: 'hud-ult-name', text: u.name }),
+              h('span', { class: 'hud-ult-kind', text: u.ultName }),
+            ),
           ),
         ),
-        h('button', {
-          class: 'btn hud-ult-all',
-          attrs: { type: 'button', 'data-testid': 'hud-ult-all' },
-          text: '모두 발동',
-          on: {
-            click: () => {
-              opts.onUltAll?.();
-              setUltOpen(false);
-            },
-          },
-        }),
       );
     },
     get ultListOpen() {
