@@ -386,6 +386,8 @@ export function createHud(opts: HudOptions): HudView {
     node.dataset.slot = String(slot);
     // 0번은 돈 글자 아래(예전 자리), 1번부터는 돈 글자 줄을 건너뛰어 그 위로 (숫자와 겹치지 않게)
     node.style.setProperty('--row', String(slot === 0 ? 0 : slot + 1));
+    // 위 HUD 자원 줄(FB-D1 #25)에서는 돈 글자 오른쪽에서 시작해 아래로 한 줄씩 (화면 위로 나가지 않게, feedback-design.css)
+    node.style.setProperty('--slot', String(slot));
     gainLayer.append(node);
     gainSlots[slot] = { el: node, timer: setTimeout(() => freeGainSlot(slot), GOLD_GAIN_MS) };
     gainOrder.push(slot);

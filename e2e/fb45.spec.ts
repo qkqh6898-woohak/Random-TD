@@ -24,14 +24,16 @@ test('돈 +n원은 들어온 돈마다 따로 (합친 숫자가 아님)', async 
     const rest = els.map((e) => {
       const r = e.getBoundingClientRect();
       const shift = new DOMMatrix(getComputedStyle(e).transform).m42;
-      return { top: r.top - shift, bottom: r.bottom - shift };
+      return { top: r.top - shift, bottom: r.bottom - shift, left: r.left, right: r.right };
     });
     return {
       texts: els.map((e) => e.textContent),
       slots: els.map((e) => e.dataset.slot),
       tops: rest.map((r) => Math.round(r.top)),
-      // 돈 숫자와 세로로 겹치는 정도 (px) — 위·아래 줄에 있으면 거의 0
-      goldOverlap: rest.map((r) => Math.max(0, Math.min(r.bottom, gold.bottom) - Math.max(r.top, gold.top))),
+      // 돈 숫자와 겹치는 정도 (px) — 위·아래 줄이거나 옆(FB-D1 위 HUD 자원 줄은 돈 오른쪽)이면 0
+      goldOverlap: rest.map((r) =>
+        Math.min(r.right, gold.right) - Math.max(r.left, gold.left) <= 0 ? 0 : Math.max(0, Math.min(r.bottom, gold.bottom) - Math.max(r.top, gold.top)),
+      ),
       goldHeight: gold.height,
     };
   });
