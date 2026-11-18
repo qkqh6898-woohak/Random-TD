@@ -20,6 +20,7 @@ import {
   cardsForStage,
   checkLevelUp,
   claimDailyBonus,
+  claimAllMilestones,
   claimMilestone,
   claimQuest,
   claimRecruit,
@@ -33,6 +34,7 @@ import {
   lockedHiddenIds,
   matchRewardSpec,
   milestoneState,
+  readyMilestones,
   newProgress,
   parseProgress,
   refreshDaily,
@@ -270,6 +272,43 @@ describe('웨이브 길', () => {
     const f = claimMilestone(s, pd, data, 20)!;
     expect(f.fragments.reduce((a, c) => a + c.n, 0)).toBe(3);
   });
+  it('모두 받기 (피드백 #57): 받을 수 있는 이정표를 낮은 웨이브부터 한 번에, 하나씩 받은 것과 같은 결과', () => {
+    const setup = (): ProgressState => {
+      const s = fresh();
+      s.bestWave = 45;
+      claimMilestone(s, pd, data, 20);
+      return s;
+    };
+    const one = setup();
+    const ready = pd.waveRoad.milestones.filter((m) => milestoneState(one, m.wave) === 'ready').map((m) => m.wave);
+    expect(ready).toEqual([10, 30, 40]);
+    expect(readyMilestones(one, pd)).toBe(3);
+    let gold = 0;
+    let gems = 0;
+    let cards = 0;
+    let frags = 0;
+    for (const w of ready) {
+      const g = claimMilestone(one, pd, data, w)!;
+      gold += g.gold;
+      gems += g.gems;
+      cards += g.cards.reduce((a, c) => a + c.n, 0);
+      frags += g.fragments.reduce((a, c) => a + c.n, 0);
+    }
+    const all = setup();
+    const r = claimAllMilestones(all, pd, data)!;
+    expect(r.waves).toEqual([10, 30, 40]);
+    expect(all).toEqual(one);
+    expect(r.grant.gold).toBe(gold);
+    expect(r.grant.gems).toBe(gems);
+    expect(r.grant.cards.reduce((a, c) => a + c.n, 0)).toBe(cards);
+    expect(r.grant.fragments.reduce((a, c) => a + c.n, 0)).toBe(frags);
+    expect(readyMilestones(all, pd)).toBe(0);
+    expect(milestoneState(all, 50)).toBe('locked');
+    // 더 받을 것이 없으면 null (상태 그대로)
+    const before = structuredClone(all);
+    expect(claimAllMilestones(all, pd, data)).toBeNull();
+    expect(all).toEqual(before);
+  });
 });
 
 describe('퀘스트', () => {
@@ -457,6 +496,18 @@ describe('저장 · 마이그레이션', () => {
     const opts = store.matchOptions(false);
     expect(opts.lockedHidden![0]).toHaveLength(12);
     expect(opts.levels).toEqual([{}]);
+  });
+  it('저장소 웨이브 길 모두 받기 (피드백 #57): 한 번 저장·알림, 받을 것이 없으면 알림 없음', () => {
+    const st = new MemoryStorage();
+    const store = new ProgressStore(st, pd, data, { seed: 9, now: () => new Date(2026, 10, 17) });
+    store.settle(result({ stage: 25 }));
+    let calls = 0;
+    store.subscribe(() => calls++);
+    expect(store.claimAllMilestones()!.waves).toEqual([10, 20]);
+    expect(calls).toBe(1);
+    expect(JSON.parse(st.getItem(PROGRESS_KEY)!).claimedWaves).toEqual([10, 20]);
+    expect(store.claimAllMilestones()).toBeNull();
+    expect(calls).toBe(1);
   });
   it('저장소 모두 받기: 받으면 한 번 저장·알림, 받을 것이 없으면 알림 없음', () => {
     const st = new MemoryStorage();
