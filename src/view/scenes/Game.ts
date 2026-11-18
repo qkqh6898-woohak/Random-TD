@@ -172,6 +172,8 @@ import { createChoicePanel, type ChoicePanelView } from '../../ui/panels/ChoiceP
 import { cardChoiceModel, mergeChoiceModel } from '../../ui/panels/choiceModel';
 import { createTowerPanel, type TowerPanelView } from '../../ui/panels/TowerPanel';
 import { buildTowerPanelModel, type TowerPanelModel } from '../../ui/panels/towerPanelModel';
+import { createTowerQuick, type TowerQuickView } from '../../ui/panels/TowerQuick';
+import { quickModel, quickPlacement } from '../../ui/panels/towerQuickModel';
 import { createCharacterCard } from '../../ui/panels/CharacterCard';
 import { characterCardModel } from '../../ui/panels/characterCardModel';
 import { createHud, type HudView } from '../../ui/hud/Hud';
@@ -378,6 +380,8 @@ export class GameScene extends Phaser.Scene {
   /** 고른 타워 (정보 패널) 엔티티 id */
   private selectedId: number | null = null;
   private panel: TowerPanelView | null = null;
+  /** 피드백 #47: 고른 영웅 칸 위 작은 [⬆ 승급]·[✕ 판매] (패널과 함께 열리고 닫힌다) */
+  private quick: TowerQuickView | null = null;
   /** 마지막으로 그린 정보 패널 글자 (캐릭터 카드가 같은 값을 쓴다, HF-2) */
   private panelModel: TowerPanelModel | null = null;
   private press: PressState | null = null;
@@ -1389,6 +1393,8 @@ export class GameScene extends Phaser.Scene {
         onConvert: this.ctx.debug ? () => this.openConvertPicker() : undefined,
       });
       this.ctx.ui.show('panel', this.panel);
+      this.quick = createTowerQuick({ onMerge: () => this.sendMerge('merge'), onSell: () => this.sendSell() });
+      this.ctx.ui.show('quick', this.quick);
     }
     this.refreshPanel();
   }
@@ -1541,6 +1547,8 @@ export class GameScene extends Phaser.Scene {
     this.sellConfirm = null;
     if (this.panel) this.ctx.ui.clear('panel');
     this.panel = null;
+    if (this.quick) this.ctx.ui.clear('quick');
+    this.quick = null;
     this.panelModel = null;
     this.panelPlaceKey = '';
     this.panelFromMergeCycle = false;
@@ -1644,6 +1652,13 @@ export class GameScene extends Phaser.Scene {
     });
     this.panelModel = model;
     const changed = this.panel.update(model, this.portraitOf(t.tower));
+    if (this.quick) {
+      const ui0 = this.ctx.ui.el;
+      const w0 = ui0.clientWidth;
+      const c0 = tileCenterPx(this.layout, t.tx, t.ty);
+      this.quick.update(quickModel(model));
+      this.quick.place(quickPlacement(gameToCssPx(c0.x, w0), gameToCssPx(c0.y, w0), gameToCssPx(this.layout.tile, w0), w0, ui0.clientHeight));
+    }
     // 패널이 고른 타워 그림을 가리지 않게: 실제 패널 높이와 그림 위치를 재서 쪽·접기 단계를 정한다 (바뀔 때만)
     const ui = this.ctx.ui.el;
     const figureScale = this.towerLayer.artScaleOf(t.id) ?? 1;

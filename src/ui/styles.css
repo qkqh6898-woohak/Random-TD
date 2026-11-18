@@ -4269,3 +4269,67 @@ body {
 .hud-top-row .hud-side-l {
   gap: 1cqw;
 }
+
+/* ---------- 피드백 #47: 고른 영웅 칸 위 작은 [⬆ 승급](왼쪽 위)·[✕ 판매](오른쪽 위) ---------- */
+.layer-quick > .tower-quick {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tq-btn {
+  position: absolute;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font: inherit;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  border-radius: 50%;
+  border: 2px solid #fff6d0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* 터치 영역은 그림보다 넓게 (지름 28px + 둘레 8px ≈ 44px) */
+.tq-btn::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+}
+
+.tq-merge {
+  background: linear-gradient(180deg, #ffd25a 0%, #d58a12 100%);
+  color: #4a2a00;
+}
+
+.tq-merge:disabled {
+  background: linear-gradient(180deg, #8a8a8a 0%, #5a5a5a 100%);
+  color: #d8d8d8;
+  border-color: #bdbdbd;
+  opacity: 0.75;
+  cursor: default;
+}
+
+.tq-sell {
+  background: linear-gradient(180deg, #e2574c 0%, #a8231b 100%);
+}
+
+.tq-sell.is-confirm {
+  border-color: #ffe27a;
+  animation: tq-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes tq-pulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.18);
+  }
+}
