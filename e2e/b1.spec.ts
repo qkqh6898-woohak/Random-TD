@@ -379,7 +379,8 @@ test('d. 소환·승급 초상 카드는 뒷면 → 앞면으로 뒤집히며 �
     },
     [x, y, HEAD_ABOVE_FOOT] as [number, number, number],
   );
-  expect(apex.sc).toBeGreaterThan(1.3);
+  // 피드백 #66: 이웃과 무관하게 1.4배 × 캐릭터 크기 (이 시드의 노말 캐릭터 0.66 → 약 0.92, 예전 혼자 2배면 1.32)
+  expect(apex.sc).toBeGreaterThan(0.9);
   // 위로: 카드 가운데가 머리 끝 위 / 옆으로: 카드 가운데가 머리 반폭(0.34칸 × 크기) + 카드 반폭(0.39칸)만큼 비킴
   if (apex.card >= apex.headTop) expect(apex.dx, JSON.stringify(apex)).toBeGreaterThan(0.34 * apex.sc + 0.3);
   else expect(apex.card, JSON.stringify(apex)).toBeLessThan(apex.headTop);
