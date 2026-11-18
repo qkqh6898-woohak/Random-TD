@@ -712,7 +712,8 @@ test('기본 5종: 이름표 없이 나란히 흑백 캡처해도 서로 다르�
   const { ux, uy } = pair!;
   await place(page, [[ux, uy + 1, 'stonegolem']]);
   const golem = (await myTowers(page)).find((t) => t.tx === ux && t.ty === uy + 1)!;
-  await expect.poll(() => inScene(page, (s, id) => s.towerLayer.artScaleOf(id), golem.id)).toBeGreaterThan(1.2);
+  // 피드백 #66: 이웃과 무관하게 1.4배 × 캐릭터 크기 (돌 골렘 약 1.04, 예전 혼자 2배면 약 1.48)
+  await expect.poll(() => inScene(page, (s, id) => s.towerLayer.artScaleOf(id), golem.id)).toBeGreaterThan(1);
   const n0 = (await myTowers(page)).length;
   // 위 칸이 빈 배치 칸일 때: 골렘 머리 중 위 칸 아래쪽 1/3(크기 1 높이)을 누르면 골렘 (위 칸에 소환되지 않음)
   await page.waitForTimeout(400);
