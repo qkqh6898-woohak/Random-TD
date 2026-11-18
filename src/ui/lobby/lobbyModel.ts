@@ -35,7 +35,8 @@ const GRADE_RANK: Readonly<Record<Grade, number>> = Object.freeze({ hidden: 7, g
 
 /** 영웅 탭: [영웅] 노말~레전드 / [신화] 히든(신화)·신 */
 export type HeroTab = 'heroes' | 'mythic';
-export type HeroSort = 'grade' | 'level';
+/** 'ready' = 피드백 #31 레벨업 가능(카드가 모인 영웅) 먼저 */
+export type HeroSort = 'grade' | 'level' | 'ready';
 
 export function tabOf(grade: Grade): HeroTab {
   return grade === 'hidden' || grade === 'god' ? 'mythic' : 'heroes';
@@ -101,6 +102,8 @@ export interface HeroGridModel {
   unowned: HeroCardModel[];
   /** 레벨업 카드가 모인 영웅 수 (탭 빨간 점) */
   ready: number;
+  /** 지금 바로(카드 + 골드) 레벨업할 수 있는 영웅 수 — [⬆ 모두 레벨업 N] */
+  canLevel: number;
 }
 
 /** 영웅 탭 목록: 보유(정렬) + 보유하지 않음(등급 순). 같은 값이면 데이터 순서 */
@@ -110,9 +113,12 @@ export function heroGrid(state: ProgressState, pd: ProgressionData, data: Pick<G
   const cards = data.towers.towers.filter((t) => tabOf(t.grade) === tab).map((t) => heroCard(state, pd, t, deck));
   const byGrade = (a: HeroCardModel, b: HeroCardModel): number => GRADE_RANK[b.grade] - GRADE_RANK[a.grade] || (order.get(a.id) as number) - (order.get(b.id) as number);
   const byLevel = (a: HeroCardModel, b: HeroCardModel): number => b.level - a.level || byGrade(a, b);
-  const owned = cards.filter((c) => c.owned).sort(sort === 'level' ? byLevel : byGrade);
+  const byReady = (a: HeroCardModel, b: HeroCardModel): number => Number(b.ready) - Number(a.ready) || byGrade(a, b);
+  const owned = cards.filter((c) => c.owned).sort(sort === 'level' ? byLevel : sort === 'ready' ? byReady : byGrade);
   const unowned = cards.filter((c) => !c.owned).sort(byGrade);
-  return { owned, unowned, ready: cards.filter((c) => c.ready).length };
+  const towers = new Map(data.towers.towers.map((t) => [t.id, t]));
+  const canLevel = owned.filter((c) => checkLevelUp(state, pd, towers.get(c.id) as TowerData) === 'ok').length;
+  return { owned, unowned, ready: cards.filter((c) => c.ready).length, canLevel };
 }
 
 /** 영웅 + 신화 탭 모두에서 카드가 모인 영웅 수 */

@@ -213,6 +213,16 @@
   margin-bottom: 1.6cqw;
 }
 
+.hero-sorts {
+  justify-content: flex-end;
+}
+
+.hero-levelup-all {
+  flex: none;
+  font-size: 3.4cqw;
+  padding: 1cqw 2.6cqw;
+}
+
 .lobby-count {
   font-size: 3.3cqw;
   font-weight: 700;
