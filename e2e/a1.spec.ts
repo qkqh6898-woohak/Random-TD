@@ -440,7 +440,7 @@ test.describe('A-1 화면 흔들림·소환 연출', () => {
   });
 
   test('?dev=1 연출 끄기면 초상 카드도 없다', async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: true, effectsOff: true, revealHidden: false })));
+    await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true, effectsOff: true, revealHidden: false })));
     await openTitle(page, '?dev=1&seed=42');
     await page.getByRole('button', { name: '시작' }).click();
     await waitGame(page);

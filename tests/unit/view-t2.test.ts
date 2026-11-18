@@ -33,10 +33,24 @@ describe('연출 끄기 상태 (src/view/effects.ts)', () => {
 });
 
 describe('화면 설정 (rtd.settings)', () => {
-  it('기본: 눌러서 바로 승급 켜짐 · 연출 끄기 꺼짐 · 히든 보기 꺼짐, 망가진 값은 기본값', () => {
-    expect(parseSettings(null)).toEqual({ tapMerge: true, effectsOff: false, revealHidden: false, ultAuto: false, autoSellNormal: false, autoSellRare: false });
+  it('기본: 눌러서 바로 승급 꺼짐(피드백 #17) · 연출 끄기 꺼짐 · 히든 보기 꺼짐, 망가진 값은 기본값', () => {
+    expect(parseSettings(null)).toEqual({ tapMerge: false, effectsOff: false, revealHidden: false, ultAuto: false, autoSellNormal: false, autoSellRare: false });
     expect(parseSettings('{{{')).toEqual({ ...DEFAULT_SETTINGS });
-    expect(parseSettings('{"tapMerge":"no","effectsOff":true}')).toEqual({ tapMerge: true, effectsOff: true, revealHidden: false, ultAuto: false, autoSellNormal: false, autoSellRare: false });
+    expect(parseSettings('{"v":2,"tapMerge":"no","effectsOff":true}')).toEqual({ tapMerge: false, effectsOff: true, revealHidden: false, ultAuto: false, autoSellNormal: false, autoSellRare: false });
+  });
+
+  it('피드백 #17: 예전(v1·버전 없음) 저장값의 바로 승급 켜짐은 한 번 꺼짐으로, v2로 저장한 켜짐은 그대로', () => {
+    expect(parseSettings('{"v":1,"tapMerge":true,"effectsOff":true}')).toMatchObject({ tapMerge: false, effectsOff: true });
+    expect(parseSettings('{"tapMerge":true}').tapMerge).toBe(false);
+    expect(parseSettings('{"v":2,"tapMerge":true}').tapMerge).toBe(true);
+    // 다시 켜면 v2로 저장 → 다음 실행에도 켜짐
+    const st = new MemoryStorage();
+    st.setItem(SETTINGS_KEY, '{"v":1,"tapMerge":true}');
+    const a = createSettingsStore(st);
+    expect(a.get().tapMerge).toBe(false);
+    a.set('tapMerge', true);
+    expect(JSON.parse(st.getItem(SETTINGS_KEY) ?? '{}')).toMatchObject({ v: 2, tapMerge: true });
+    expect(createSettingsStore(st).get().tapMerge).toBe(true);
   });
 
   it('바꾸면 저장되고 다음에 읽힌다', () => {
