@@ -1,6 +1,6 @@
 /**
  * B-1 전투 화면 소환 연출 (Codex 패치 확인) E2E — 휴대폰 412×915 · 360×800.
- * 사용자 결정: 캐릭터는 기본 2배(상하좌우에 타워가 붙으면 1.4배, HUD 아래까지로 줄임), 소환 바닥은 늘 보이는 구운 텍스처, 맵 위아래 여백 없음.
+ * 사용자 결정: 캐릭터는 1.4배(피드백 #66: 이웃과 무관 — 예전 혼자 2배·붙으면 1.4배, HUD 아래까지로 줄임), 소환 바닥은 늘 보이는 구운 텍스처, 맵 위아래 여백 없음.
  * 이 결정 때문에 큰 머리가 위·옆 칸을 덮는다 → 터치 판정이 맞는지 여기서 본다:
  *  a. 빈 소환 칸(큰 타워 바로 위·옆, 0번 줄 포함)을 누르면 그 칸에 소환 — 큰 이웃의 머리가 탭을 가져가지 않는다.
  *  b. 타워 몸·커진 머리를 누르면 그 타워를 고르고 정보 패널, 패널은 고른 그림(실제 크기)을 가리지 않는다.
@@ -133,7 +133,7 @@ for (const [w, h] of [
       test.slow();
       const errors = collectErrors(page);
       await start(page);
-      // 바둑판: (x + y) 짝수 칸에 큰 캐릭터 → 서로 붙지 않아 모두 기본 2배(돌 골렘 2.5배), 빈 칸은 위·아래·옆이 큰 타워
+      // 바둑판: (x + y) 짝수 칸에 큰 캐릭터 (1.4배 — 돌 골렘 1.75배, 피드백 #66), 빈 칸은 위·아래·옆이 큰 타워
       const cells = await sim(page, (s) => s.match.map.buildable.map(([x, y]) => [x, y] as [number, number]));
       const filled = cells.filter(([x, y]) => (x + y) % 2 === 0);
       await place(page, filled.map(([x, y], i) => [x, y, BIG[i % 2]!] as [number, number, string]));
@@ -143,7 +143,7 @@ for (const [w, h] of [
         return null;
       });
       const scales = await sim(page, (s) => s.match.towers().map((t) => s.towerLayer.artScaleOf(t.id) ?? 0));
-      expect(Math.max(...scales), '혼자인 큰 캐릭터는 2배 이상').toBeGreaterThanOrEqual(2);
+      expect(Math.max(...scales), '큰 캐릭터(돌 골렘)는 1.4배보다 크다').toBeGreaterThan(1.4);
       const empty = cells.filter(([x, y]) => (x + y) % 2 !== 0);
       // 바로 아래에 큰 타워가 있는 빈 칸·0번 줄 빈 칸이 있어야 의미가 있다
       const has = (x: number, y: number) => filled.some(([fx, fy]) => fx === x && fy === y);
@@ -184,7 +184,7 @@ for (const [w, h] of [
       test.slow();
       const errors = collectErrors(page);
       await start(page);
-      // 줄마다 큰 타워 하나 (혼자 → 2배). 위 칸이 길·장식이면 위 칸까지 올라온 머리를 눌러도 고른다
+      // 줄마다 큰 타워 하나. 위 칸이 길·장식이면 위 칸까지 올라온 머리를 눌러도 고른다
       const picks = await sim(page, (s) => {
         const set = new Set(s.match.map.buildable.map(([x, y]) => `${x},${y}`));
         const rows = new Map<number, [number, number]>();
@@ -244,7 +244,7 @@ for (const [w, h] of [
       const cells = await sim(page, (s) => s.match.map.buildable.map(([x, y]) => [x, y] as [number, number]));
       const top = Math.min(...cells.map((c) => c[1]));
       const row0 = cells.filter(([, y]) => y === top);
-      // 0번 줄을 큰 캐릭터로 채운다 (붙어 있으면 1.4배)
+      // 0번 줄을 큰 캐릭터로 채운다
       await place(page, row0.map(([x, y], i) => [x, y, BIG[i % 2]!] as [number, number, string]));
       // e: 머리 끝(실제 크기)이 HUD 띠 아래 · 일시정지·배속 버튼 가운데·양끝을 누르면 그 버튼
       const heads = await page.evaluate((head) => {
