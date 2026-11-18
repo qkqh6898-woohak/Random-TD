@@ -515,6 +515,8 @@ body {
   opacity: 0;
   pointer-events: none;
   white-space: nowrap;
+  /* 피드백 #45: 들어온 돈마다 글자 하나 — 동시에 뜬 글자는 줄(--row, Hud.ts)마다 위로 */
+  margin-top: calc(var(--row, 0) * -3.8cqw);
 }
 
 .hud-gold-gain.is-on {

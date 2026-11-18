@@ -31,13 +31,15 @@ import { artIcon } from '../artIcon';
 import { h } from '../dom';
 import { HOLD_DELAY_MS, attachHoldRepeat, skipRepeatDelay, type HoldHandle } from '../hold';
 import type { UiView } from '../root';
-import { livesDropped, withCommas, type HudModel } from './hudModel';
+import { goldGainLabels, livesDropped, type HudModel } from './hudModel';
 import type { SheetKind } from '../sheets/sheetModels';
 
 /** 하트 깨짐 연출 길이 (ms) — styles.css `heart-break`와 같게 */
 export const HEART_BREAK_MS = 600;
-/** 돈 '+n원' 떠오름 길이 (ms) — styles.css `gold-gain`과 같게. 이 안에 또 들어오면 숫자를 합친다 */
+/** 돈 '+n원' 떠오름 길이 (ms) — styles.css `gold-gain`과 같게 */
 export const GOLD_GAIN_MS = 700;
+/** 돈 '+n원'을 동시에 띄우는 최대 개수 (피드백 #45: 합치지 않고 하나씩 — 넘치면 가장 오래된 것을 지운다) */
+export const GOLD_GAIN_MAX = 4;
 
 export interface HudOptions {
   onSpeed: () => void;
@@ -237,14 +239,16 @@ export function createHud(opts: HudOptions): HudView {
   const bannerSlot = h('div', { class: 'hud-banner-slot', attrs: { 'data-testid': 'hud-banner-slot' } }, bannerEl, chalEl, readyBtn, bossNoteEl);
   // 화면 가장자리 붉은 테두리 (몹 120 이상, 무한)
   const edgeEl = h('div', { class: 'hud-edge', attrs: { 'aria-hidden': 'true', 'data-testid': 'hud-edge' } });
-  // 돈 '+n원' (돈 글자 옆에서 떠오름)
-  const gainEl = h('span', { class: 'hud-gold-gain', attrs: { 'data-testid': 'hud-gold-gain', 'aria-hidden': 'true' } });
+  // 돈 '+n원' (돈 글자 옆에서 떠오름) — 들어온 돈마다 글자 하나 (피드백 #45), 칸마다 한 줄씩 위로
+  const gainSlots: ({ el: HTMLElement; timer: ReturnType<typeof setTimeout> } | null)[] = Array.from({ length: GOLD_GAIN_MAX }, () => null);
+  const gainOrder: number[] = [];
+  const gainLayer = h('span', { class: 'hud-gold-gains', attrs: { 'aria-hidden': 'true' } });
   const goldItem = h(
     'span',
     { class: 'hud-item hud-gold-item' },
     h('span', { class: 'hud-label', text: '💰', attrs: { 'aria-hidden': 'true' } }),
     goldEl,
-    gainEl,
+    gainLayer,
   );
   // 아래 띠: 타워 수 · 소환 안내
   const towersEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-towers', 'aria-label': '놓인 타워 수', ...off }, text: '0/0' });
@@ -359,23 +363,40 @@ export function createHud(opts: HudOptions): HudView {
   let last: Partial<HudModel> = {};
   let readyState: 'hidden' | 'ready' | 'sent' = 'hidden';
   let breakTimer: ReturnType<typeof setTimeout> | undefined;
-  let gainTimer: ReturnType<typeof setTimeout> | undefined;
-  let gainSum = 0;
-  /** 이번 프레임에 들어온 돈 (update()에서 한 번에 보여 준다) */
-  let pendingGain = 0;
-  const showGain = (amount: number): void => {
-    gainSum = gainTimer === undefined ? amount : gainSum + amount;
-    gainEl.textContent = `+${withCommas(gainSum)}원`;
-    gainEl.classList.remove('is-on');
+  let goldPulseTimer: ReturnType<typeof setTimeout> | undefined;
+  /** 이번 프레임에 들어온 돈들 (update()에서 하나씩 따로 보여 준다) */
+  let pendingGains: number[] = [];
+  const freeGainSlot = (slot: number): void => {
+    const g = gainSlots[slot];
+    if (!g) return;
+    clearTimeout(g.timer);
+    g.el.remove();
+    gainSlots[slot] = null;
+    const i = gainOrder.indexOf(slot);
+    if (i >= 0) gainOrder.splice(i, 1);
+  };
+  const showGain = (label: string): void => {
+    let slot = gainSlots.indexOf(null);
+    if (slot < 0) {
+      // 칸이 모두 찼으면 가장 오래된 글자를 지우고 그 칸을 쓴다
+      slot = gainOrder[0] ?? 0;
+      freeGainSlot(slot);
+    }
+    const node = h('span', { class: 'hud-gold-gain is-on', attrs: { 'data-testid': 'hud-gold-gain' }, text: label });
+    node.dataset.slot = String(slot);
+    // 0번은 돈 글자 아래(예전 자리), 1번부터는 돈 글자 줄을 건너뛰어 그 위로 (숫자와 겹치지 않게)
+    node.style.setProperty('--row', String(slot === 0 ? 0 : slot + 1));
+    gainLayer.append(node);
+    gainSlots[slot] = { el: node, timer: setTimeout(() => freeGainSlot(slot), GOLD_GAIN_MS) };
+    gainOrder.push(slot);
+  };
+  const pulseGold = (): void => {
     goldEl.classList.remove('is-gain');
-    void gainEl.offsetWidth; // 애니메이션을 처음부터 다시
-    gainEl.classList.add('is-on');
+    void goldEl.offsetWidth; // 애니메이션을 처음부터 다시
     goldEl.classList.add('is-gain');
-    clearTimeout(gainTimer);
-    gainTimer = setTimeout(() => {
-      gainTimer = undefined;
-      gainSum = 0;
-      gainEl.classList.remove('is-on');
+    clearTimeout(goldPulseTimer);
+    goldPulseTimer = setTimeout(() => {
+      goldPulseTimer = undefined;
       goldEl.classList.remove('is-gain');
     }, GOLD_GAIN_MS);
   };
@@ -423,12 +444,13 @@ export function createHud(opts: HudOptions): HudView {
     },
     gainGold(amount) {
       if (!(amount > 0)) return;
-      pendingGain += amount;
+      pendingGains.push(amount);
     },
     update(m) {
-      if (pendingGain > 0) {
-        showGain(pendingGain);
-        pendingGain = 0;
+      if (pendingGains.length > 0) {
+        for (const label of goldGainLabels(pendingGains, GOLD_GAIN_MAX)) showGain(label);
+        pendingGains = [];
+        pulseGold();
       }
       if (last.tick !== m.tick) el.dataset.tick = String(m.tick);
       if (last.wave !== m.wave || last.boss !== m.boss) {
@@ -588,8 +610,9 @@ export function createHud(opts: HudOptions): HudView {
       summonHold?.detach();
       clearTimeout(breakTimer);
       breakTimer = undefined;
-      clearTimeout(gainTimer);
-      gainTimer = undefined;
+      clearTimeout(goldPulseTimer);
+      goldPulseTimer = undefined;
+      for (let i = 0; i < GOLD_GAIN_MAX; i++) freeGainSlot(i);
     },
   };
 }

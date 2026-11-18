@@ -120,6 +120,17 @@ export function formatTimer(ticksLeft: number): string {
 /** 세 자리마다 쉼표 — 알림 문구도 같이 쓰도록 messages.ts에 있다 (여기서 다시 내보낸다). */
 export { withCommas };
 
+/**
+ * 돈 옆 '+n원' 글자들 (피드백 #45): 들어온 돈 하나에 글자 하나 — 합치지 않는다.
+ * 한 번에 max개보다 많으면 가장 최근 max개만.
+ */
+export function goldGainLabels(amounts: readonly number[], max: number): string[] {
+  return amounts
+    .filter((a) => a > 0)
+    .slice(-max)
+    .map((a) => `+${withCommas(a)}원`);
+}
+
 /** 소수 한 자리, 끝의 .0은 뺀다 (내림 — 실제보다 많아 보이지 않게). */
 function oneDecimal(v: number): string {
   const t = Math.floor(v * 10) / 10;
