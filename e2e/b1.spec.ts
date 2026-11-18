@@ -143,7 +143,8 @@ for (const [w, h] of [
         return null;
       });
       const scales = await sim(page, (s) => s.match.towers().map((t) => s.towerLayer.artScaleOf(t.id) ?? 0));
-      expect(Math.max(...scales), '혼자인 큰 캐릭터는 2배 이상').toBeGreaterThanOrEqual(2);
+      // v0.1.17: 크기는 이웃과 무관하게 등급 배율로만 (높은 등급 ≈1.4~1.75) — 큰 캐릭터 머리는 여전히 위 칸으로 올라간다
+      expect(Math.max(...scales), '큰 캐릭터는 1.4배 이상').toBeGreaterThanOrEqual(1.4);
       const empty = cells.filter(([x, y]) => (x + y) % 2 !== 0);
       // 바로 아래에 큰 타워가 있는 빈 칸·0번 줄 빈 칸이 있어야 의미가 있다
       const has = (x: number, y: number) => filled.some(([fx, fy]) => fx === x && fy === y);
@@ -379,7 +380,7 @@ test('d. 소환·승급 초상 카드는 뒷면 → 앞면으로 뒤집히며 �
     },
     [x, y, HEAD_ABOVE_FOOT] as [number, number, number],
   );
-  expect(apex.sc).toBeGreaterThan(1.3);
+  expect(apex.sc).toBeGreaterThan(0.9); // v0.1.17: 노말 ≈0.92~1.04 (이웃과 무관)
   // 위로: 카드 가운데가 머리 끝 위 / 옆으로: 카드 가운데가 머리 반폭(0.34칸 × 크기) + 카드 반폭(0.39칸)만큼 비킴
   if (apex.card >= apex.headTop) expect(apex.dx, JSON.stringify(apex)).toBeGreaterThan(0.34 * apex.sc + 0.3);
   else expect(apex.card, JSON.stringify(apex)).toBeLessThan(apex.headTop);
