@@ -199,6 +199,7 @@ test('마당 맵: 6×8 가운데 4×6 마당 24칸 + 둘레 고리, 칸이 예�
 
 test('칸 무더기: 가득 찬 칸을 누르면 연쇄 승급 (알림 ×n) · 패널 이름 ×n · 끌어서 무더기 통째 이동', async ({ page }) => {
   const errors = collectErrors(page);
+  await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true }))); // 피드백 #17: 바로 승급은 이제 기본 꺼짐 — 이 테스트는 켠 플레이어
   await start(page);
   const pads = await inScene(page, (s) => s.match.map.buildable, null);
   const [a, b, c] = [pads[10]!, pads[11]!, pads[16]!];

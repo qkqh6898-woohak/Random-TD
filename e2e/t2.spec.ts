@@ -138,6 +138,7 @@ async function shot(page: Page, name: string): Promise<void> {
 
 test('눌러서 바로 승급: 승급 가능한 타워를 누르면 패널 없이 그 칸에서 승급, 못 하면 패널, 설정을 끄면 패널', async ({ page }) => {
   const errors = collectErrors(page);
+  await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true }))); // 피드백 #17: 바로 승급은 이제 기본 꺼짐 — 이 테스트는 켠 플레이어
   await start(page);
   const normals = await idsOfGrade(page, 'normal');
   const cells = await freeCells(page, 4);
@@ -410,9 +411,9 @@ test('🛠 개발자 도구: 연출 끄기(피해 숫자 없음·저장), 확률
   const line = page.getByTestId('dev-gamble-line');
   const line0 = await line.textContent();
   await page.getByTestId('dev-chance-up-gamble:5').click();
-  await expect(page.getByTestId('dev-chance-value-gamble:5')).toHaveText('2.1%');
+  await expect(page.getByTestId('dev-chance-value-gamble:5')).toHaveText('8.1%'); // 피드백 #59: ×5 기본 8% (+0.1%p)
   await expect(line).not.toHaveText(line0 ?? '');
-  await expect(line).toContainText('×0 39.9%');
+  await expect(line).toContainText('×0 34.9%'); // 피드백 #59: ×0 기본 35%
   await shot(page, 'T2-play-devtools-chance');
   await page.getByTestId('dev-chance-reset').click();
   await expect(godValue).toHaveText('0.01%');

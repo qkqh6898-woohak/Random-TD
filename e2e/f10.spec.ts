@@ -242,8 +242,11 @@ test('새 플레이어 (디버그 없이): 추천 칸 소환 → 준비 완료 �
         }
     }).observe(document.querySelector('.layer-toast')!, { childList: true });
   });
-  // 3개 쌓인 칸을 누르면 승급 → 그 칸 3개가 모두 사라지고 다음 등급 하나 (그 칸, 같은 캐릭터 칸이 있으면 그 칸)
+  // 3개 쌓인 칸을 누르면 정보창 → [⬆ 승급] (피드백 #17: 새 플레이어는 '눌러서 바로 승급' 꺼짐) → 그 칸 3개가 모두 사라지고 다음 등급 하나
   await tapTile(page, other.tx, other.ty);
+  await expect(page.locator('[data-action="merge"]').first()).toBeVisible();
+  expect(await inScene(page, (s) => s.match.state.merges, null)).toBe(0);
+  await page.locator('[data-action="merge"]').first().click();
   await expect.poll(() => inScene(page, (s) => s.match.state.merges, null)).toBe(1);
   const after = await myTowers(page);
   for (const id of stackIds) expect(after.some((t) => t.id === id)).toBe(false);
@@ -270,6 +273,7 @@ test('새 플레이어 (디버그 없이): 추천 칸 소환 → 준비 완료 �
 
 test('두 묶음이 함께 준비되면: 다른 묶음 타워를 누르면 안내가 옮겨 가고(바로 승급 안 함), [⬆ 승급 가능]으로 묶음을 돌아가며 · 아래 띠 소환·일꾼 자리는 그대로 · [확인]로 닫기', async ({ page }) => {
   const errors = collectErrors(page);
+  await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true }))); // 피드백 #17: 바로 승급은 이제 기본 꺼짐 — 이 테스트는 켠 플레이어
   await start(page, '?debug=1&seed=7');
   // 승급 가능 버튼이 없을 때의 [🎲 소환]·[👷 일꾼] 자리
   const summon = page.getByTestId('hud-summon');

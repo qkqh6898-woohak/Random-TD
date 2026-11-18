@@ -499,6 +499,16 @@ test('위쪽 패널 + 알림: 칸이 가득 찬 판에서 아래쪽 타워를 �
   await start(page);
   const all = await inScene(page, (s) => s.match.map.buildable.map(([x, y]) => [x, y] as [number, number]), null);
   await summonMany(page, all);
+  // 피드백 #59: 인원 한도 30 > 칸 24 — 칸마다 같은 타워를 하나씩 더 쌓아(8칸) 한도를 넘긴다 → '인원이 가득 찼어요'
+  await page.evaluate(() => {
+    const s = (window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } }).__rtd.game.scene.getScene('Game') as {
+      match: { towers(): { tx: number; ty: number; tower: string }[]; rules: { towerOrder: string[] }; world: { enqueue(c: unknown): unknown } };
+      debugFastForward(n: number): number;
+    };
+    for (const t of s.match.towers().slice(0, 8)) s.match.world.enqueue({ type: 'debugTower', x: t.tx, y: t.ty, t: s.match.rules.towerOrder.indexOf(t.tower) });
+    s.debugFastForward(1);
+  });
+  await expect.poll(async () => (await towers(page)).length).toBeGreaterThanOrEqual(all.length + 8);
   const lowest = [...all].sort((p, q) => q[1] - p[1] || p[0] - q[0])[0]!;
   await page.waitForTimeout(100);
   await tapTile(page, lowest[0], lowest[1]);
