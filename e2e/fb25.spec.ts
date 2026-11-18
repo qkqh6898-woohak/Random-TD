@@ -19,7 +19,7 @@ test('돈·인원은 위 HUD 자원 줄 (아래 자원 줄에는 없음), 긴 �
     await page.setViewportSize({ width: w, height: 915 });
     await start(page);
     await expect(page.getByTestId('hud-gold')).toHaveText('1,000원');
-    await expect(page.getByTestId('hud-towers')).toHaveText('0/20');
+    await expect(page.getByTestId('hud-towers')).toHaveText('0/30'); // board.unitCap (피드백 #59로 20 → 30)
     const r = await page.evaluate(() => {
       const q = (s: string) => document.querySelector(s) as HTMLElement;
       const gold = q('[data-testid=hud-gold]');

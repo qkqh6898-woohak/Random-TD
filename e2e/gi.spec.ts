@@ -2,7 +2,7 @@
  * G 통합 E2E (휴대폰 412×915): G-1 게임 시스템 · G-2 금테 테마 · G-3 로비 · 통통한 캐주얼 WebP 그림이 한 판에서 같이 동작하는지.
  * - 로비: 금테 테마 + 영웅 초상이 WebP.
  * - 전투: 마당 맵 무더기(1·2·3개) + [신화][소환][도박]/[강화] 묶음에 금테 테마가 입혀짐.
- * - [신화] 도감: 새 계정(신화 모두 잠김)에서 판 ctx.lockedHidden이 차 있고 잠긴 줄에 '🔒 해방 필요 (조각 n/20)', [제작] 꺼짐.
+ * - [신화] 도감: 새 계정(신화 모두 잠김)에서 판 ctx.lockedHidden이 차 있고 잠긴 줄에 '🔒 해방 필요 (조각 n/5)', [제작] 꺼짐 (해방 조각 수는 피드백 #59로 20 → 5).
  * - 보스: 10단계 보스가 바깥 그림(ext-char-enemy-*) 텍스처.
  * SAVE_SCREENS=1이면 docs/screens/GI-lobby.png · GI-battle.png · GI-codex.png · GI-boss.png.
  */
@@ -114,7 +114,7 @@ test('전투: 마당 맵 무더기 1·2·3개 + 금테 아래 묶음 [신화][�
   expect(errors).toEqual([]);
 });
 
-test('[신화] 도감: 새 계정은 신화가 잠겨 판에 들어가고, 잠긴 줄에 조각 n/20 · [제작] 꺼짐', async ({ page }) => {
+test('[신화] 도감: 새 계정은 신화가 잠겨 판에 들어가고, 잠긴 줄에 조각 n/5 · [제작] 꺼짐', async ({ page }) => {
   const errors = collectErrors(page);
   await page.addInitScript(() => {
     if (sessionStorage.getItem('gi-seeded')) return;
@@ -125,11 +125,11 @@ test('[신화] 도감: 새 계정은 신화가 잠겨 판에 들어가고, 잠�
   const locked = await inScene(page, (s) => [...(s.match.ctx.lockedHidden[0] ?? [])], null);
   expect(locked).toHaveLength(12);
   expect(locked).toContain('goldking');
-  // 계정 조각: 황금 왕 7개 (로비 상점·보상으로 모은 것처럼)
+  // 계정 조각: 황금 왕 3개 (로비 상점·보상으로 모은 것처럼 — 해방에 5개, 피드백 #59)
   await inScene(
     page,
     (s) => {
-      s.ctx.progress!.state.heroes.goldking = { level: 0, cards: 7 };
+      s.ctx.progress!.state.heroes.goldking = { level: 0, cards: 3 };
       return null;
     },
     null,
@@ -138,9 +138,9 @@ test('[신화] 도감: 새 계정은 신화가 잠겨 판에 들어가고, 잠�
   await expect(page.getByTestId('sheet-mythic')).toBeVisible();
   const row = page.getByTestId('mythic-row-goldking');
   await expect(row).toHaveClass(/is-locked/);
-  await expect(row.locator('.my-note')).toHaveText('🔒 해방 필요 (조각 7/20)');
+  await expect(row.locator('.my-note')).toHaveText('🔒 해방 필요 (조각 3/5)');
   await expect(page.getByTestId('mythic-craft-goldking')).toBeDisabled();
-  await expect(page.getByTestId('mythic-row-festival').locator('.my-note')).toHaveText('🔒 해방 필요 (조각 0/20)');
+  await expect(page.getByTestId('mythic-row-festival').locator('.my-note')).toHaveText('🔒 해방 필요 (조각 0/5)');
   await page.waitForTimeout(300);
   await shot(page, 'GI-codex');
   expect(errors).toEqual([]);
