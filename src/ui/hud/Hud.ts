@@ -377,7 +377,8 @@ export function createHud(opts: HudOptions): HudView {
   const showGain = (label: string): void => {
     let slot = gainSlots.indexOf(null);
     if (slot < 0) {
-      slot = gainOrder[0];
+      // 칸이 모두 찼으면 가장 오래된 글자를 지우고 그 칸을 쓴다
+      slot = gainOrder[0] ?? 0;
       freeGainSlot(slot);
     }
     const node = h('span', { class: 'hud-gold-gain is-on', attrs: { 'data-testid': 'hud-gold-gain' }, text: label });
