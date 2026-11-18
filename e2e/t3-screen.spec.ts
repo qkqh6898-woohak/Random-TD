@@ -182,7 +182,7 @@ test('화면 크기가 바뀌면 논리 높이·맵을 다시 맞춘다 (412×91
 test('2×2 블록 맵에서 소환: 순환의 정원 32칸 · 빈 땅/길을 누르면 소환 대신 배치 칸이 잠깐 보인다', async ({ page }) => {
   const errors = collectErrors(page);
   await startGame(page, '/?seed=42');
-  await expect(page.getByTestId('hud-towers')).toHaveText('0/20');
+  await expect(page.getByTestId('hud-towers')).toHaveText('0/30');
   // 판 시작 때 배치 칸 강조가 잠깐 보였다가 사라진다 (B-1: 소환 바닥 자체는 늘 보임)
   await expect.poll(() => sim(page, (s) => s.buildHint), { timeout: 5000 }).toBe(0);
   await expect.poll(() => sim(page, (s) => s.backgroundKey), { timeout: 20_000 }).toBe('bg-t01-b1');
@@ -196,7 +196,7 @@ test('2×2 블록 맵에서 소환: 순환의 정원 32칸 · 빈 땅/길을 누
   // 배치 칸 (2, 4) → 소환
   p = await tilePoint(page, 2, 4);
   await page.touchscreen.tap(p.x, p.y);
-  await expect(page.getByTestId('hud-towers')).toHaveText('1/20');
+  await expect(page.getByTestId('hud-towers')).toHaveText('1/30');
   expect(await sim(page, (s) => s.match.towers().map((t) => [t.tx, t.ty]))).toEqual([[2, 4]]);
   await expect.poll(() => sim(page, (s) => s.buildHint), { timeout: 5000 }).toBe(0);
   expect(errors).toEqual([]);
@@ -206,11 +206,11 @@ test('캠페인 1 사거리 미로(7×10·24칸, G-1)에서 소환되고, 개발
   test.slow();
   const errors = collectErrors(page);
   await startGame(page, '/?dev=1&seed=11', 'campaign');
-  await expect(page.getByTestId('hud-towers')).toHaveText('0/20');
+  await expect(page.getByTestId('hud-towers')).toHaveText('0/30');
   await expect.poll(() => sim(page, (s) => s.buildHint), { timeout: 5000 }).toBe(0);
   const p = await tilePoint(page, 4, 4);
   await page.touchscreen.tap(p.x, p.y);
-  await expect(page.getByTestId('hud-towers')).toHaveText('1/20');
+  await expect(page.getByTestId('hud-towers')).toHaveText('1/30');
   await sim(page, (s) => s.debugFastForward(200));
   await expect.poll(() => sim(page, (s) => s.backgroundKey), { timeout: 20_000 }).toBe('bg-t01-b1');
   await shot(page, 'T2-map-campaign1');

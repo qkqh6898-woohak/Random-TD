@@ -1,6 +1,6 @@
 /**
  * M5-5 도박: 4테이블(10·100·1000·10000원, 1000원 계정 Lv7·10000원 Lv20, debug 허용), 배율표, 잭팟 게이지 10칸,
- * 도박꾼 ×0 감소, 10만 회 기대값 91% ± 1% (잭팟 포함 실제 도박 — M5 검토 반영).
+ * 도박꾼 ×0 감소, 10만 회 기대값 137% ± 1% (잭팟 포함 실제 도박 — 피드백 #59 '기댓값 약 50% 늘리기'로 예전 91%에서 ×1.5).
  */
 import { describe, expect, it } from 'vitest';
 import { Rng } from '../../src/sim/Rng';
@@ -22,19 +22,19 @@ describe('도박 데이터 (GDD 7.2)', () => {
     ]);
   });
 
-  it('배율표: ×0 40% · ×0.5 20% · ×1 21% · ×2 11% · ×3 6% · ×5 2% (bp) — 표만 81%, 잭팟 포함 실제 기대값 91%', () => {
+  it('배율표 (피드백 #59): ×0 35% · ×0.5 11% · ×1 21% · ×2 13% · ×3 12% · ×5 8% (bp) — 표만 128.5%, 잭팟 포함 실제 기대값 137% (예전 91%의 ×1.5)', () => {
     expect(rules.gambleOutcomes.map((o) => [o.mulBp, o.chanceBp])).toEqual([
-      [0, 4000],
-      [5000, 2000],
+      [0, 3500],
+      [5000, 1100],
       [10000, 2100],
-      [20000, 1100],
-      [30000, 600],
-      [50000, 200],
+      [20000, 1300],
+      [30000, 1200],
+      [50000, 800],
     ]);
-    expect(gambleRollExpectationBp(rules)).toBe(8100);
-    expect(gambleRollExpectationBp(rules, 0, true)).toBe(35000); // 잭팟 한 번 = ×3 · ×5를 6 : 2 → ×3.5
-    // (25 × 0.81 + 3.5) ÷ 26 = 0.9134…
-    expect(gambleExpectationBp(rules)).toBe(9134);
+    expect(gambleRollExpectationBp(rules)).toBe(12850);
+    expect(gambleRollExpectationBp(rules, 0, true)).toBe(38000); // 잭팟 한 번 = ×3 · ×5를 12 : 8 → ×3.8
+    // (10/0.35 × 1.285 + 3.8) ÷ (10/0.35 + 1) = 1.3700…
+    expect(gambleExpectationBp(rules)).toBe(13700);
     expect(rules.jackpotGauge).toBe(10);
     expect(rules.jackpotMinMulBp).toBe(30000);
   });
@@ -148,13 +148,13 @@ describe('잭팟 게이지 (PROGRESSION 9.2)', () => {
     expect(jackpots).toBeGreaterThan(50); // 약 2000 / 26
   });
 
-  it('잭팟 가중치: ×3·×5만 기본 확률 비율 6 : 2', () => {
-    expect(gambleWeights(rules, 0, true)).toEqual([0, 0, 0, 0, 600, 200]);
+  it('잭팟 가중치: ×3·×5만 기본 확률 비율 12 : 8', () => {
+    expect(gambleWeights(rules, 0, true)).toEqual([0, 0, 0, 0, 1200, 800]);
   });
 
   it('실제 기대값 식: ×0이 없으면 잭팟도 없다 (표 기대값 그대로), 게이지가 0칸이어도 표 그대로', () => {
     expect(gambleExpectationBp(rules, 9000)).toBe(gambleRollExpectationBp(rules, 9000));
-    expect(gambleExpectationBp({ ...rules, jackpotGauge: 0 })).toBe(8100);
+    expect(gambleExpectationBp({ ...rules, jackpotGauge: 0 })).toBe(12850);
   });
 
   it('최근 결과는 5개까지 (오래된 것부터 버림)', () => {
@@ -166,13 +166,13 @@ describe('잭팟 게이지 (PROGRESSION 9.2)', () => {
 });
 
 describe('도박꾼 특색: ×0 확률 −3%p → 그만큼 ×1에', () => {
-  it('판 위 도박꾼이 있으면 가중치 ×0 37%·×1 24%, 표 기대값 84% · 잭팟 포함 약 93.5% (두 개여도 한 번만)', () => {
+  it('판 위 도박꾼이 있으면 가중치 ×0 32%·×1 24%, 표 기대값 131.5% · 잭팟 포함 약 139% (두 개여도 한 번만)', () => {
     const m = arena(1);
     placeTower(m.world, 'gambler', 0, 4, 0);
     placeTower(m.world, 'gambler', 0, 5, 0);
-    expect(gambleWeights(rules, 300, false)).toEqual([3700, 2000, 2400, 1100, 600, 200]);
-    expect(gambleRollExpectationBp(rules, 300)).toBe(8400);
-    expect(gambleExpectationBp(rules, 300)).toBe(9349);
+    expect(gambleWeights(rules, 300, false)).toEqual([3200, 1100, 2400, 1300, 1200, 800]);
+    expect(gambleRollExpectationBp(rules, 300)).toBe(13150);
+    expect(gambleExpectationBp(rules, 300)).toBe(13920);
     // 실제 도박이 읽는 값
     m.state.gold = 100_000;
     const ev: number[] = [];
@@ -181,17 +181,17 @@ describe('도박꾼 특색: ×0 확률 −3%p → 그만큼 ×1에', () => {
     }
     for (const e of m.world.drainEvents()) if (e.type === 'gamble' && !e.jackpot) ev.push(e.mul as number);
     const zeroRate = ev.filter((x) => x === 0).length / ev.length;
-    expect(zeroRate).toBeGreaterThan(0.35);
-    expect(zeroRate).toBeLessThan(0.39);
+    expect(zeroRate).toBeGreaterThan(0.3);
+    expect(zeroRate).toBeLessThan(0.34);
   });
 
   it('×0 감소가 ×0 확률보다 크면 0까지만', () => {
-    expect(gambleWeights(rules, 9000, false)).toEqual([0, 2000, 6100, 1100, 600, 200]);
+    expect(gambleWeights(rules, 9000, false)).toEqual([0, 1100, 5600, 1300, 1200, 800]);
   });
 });
 
 describe('10만 회 기대값 (DEV_PLAN M5-5)', () => {
-  it('배율표 그대로 10만 번 뽑으면 (잭팟 없이) 표 기대값 81% ± 1%, 배율마다 확률 ± 0.5%p', () => {
+  it('배율표 그대로 10만 번 뽑으면 (잭팟 없이) 표 기대값 128.5% ± 1%, 배율마다 확률 ± 0.5%p', () => {
     const rng = new Rng(20261115);
     const N = 100_000;
     const counts = new Map<number, number>();
@@ -202,15 +202,15 @@ describe('10만 회 기대값 (DEV_PLAN M5-5)', () => {
       counts.set(o.mulBp, (counts.get(o.mulBp) ?? 0) + 1);
     }
     const ev = sum / N / 10000;
-    expect(ev).toBeGreaterThan(0.8);
-    expect(ev).toBeLessThan(0.82);
+    expect(ev).toBeGreaterThan(1.275);
+    expect(ev).toBeLessThan(1.295);
     for (const o of rules.gambleOutcomes) {
       const rate = (counts.get(o.mulBp) ?? 0) / N;
       expect(Math.abs(rate - o.chanceBp / 10000)).toBeLessThan(0.005);
     }
   });
 
-  it('실제 100원 도박 10만 번 (잭팟 포함): 받은 돈 ÷ 낸 돈 = 91% ± 1% (DEV_PLAN M5-5 완료 조건, M5 검토 반영)', () => {
+  it('실제 100원 도박 10만 번 (잭팟 포함): 받은 돈 ÷ 낸 돈 = 137% ± 1% (DEV_PLAN M5-5 완료 조건 — 피드백 #59로 91% → 137%)', () => {
     const m = infinite(11);
     m.state.gold = 1e12;
     const N = 100_000;
@@ -224,15 +224,15 @@ describe('10만 회 기대값 (DEV_PLAN M5-5)', () => {
       won += win;
       if (i % 5000 === 0) m.world.drainEvents();
     }
-    // 잭팟 주기 ≈ 10 ÷ 0.4 + 1 = 26회
-    expect(jackpots / N).toBeGreaterThan(1 / 28);
-    expect(jackpots / N).toBeLessThan(1 / 24);
-    expect(won / paid).toBeGreaterThan(0.9);
-    expect(won / paid).toBeLessThan(0.92);
+    // 잭팟 주기 ≈ 10 ÷ 0.35 + 1 ≈ 29.6회
+    expect(jackpots / N).toBeGreaterThan(1 / 32);
+    expect(jackpots / N).toBeLessThan(1 / 27.5);
+    expect(won / paid).toBeGreaterThan(1.36);
+    expect(won / paid).toBeLessThan(1.38);
     expect(Math.abs(won / paid - gambleExpectationBp(rules) / 10000)).toBeLessThan(0.01);
   });
 
-  it('판 위 도박꾼이 있으면 실제 10만 회 기대값 약 93.5% (잭팟 포함, 100% 아래)', () => {
+  it('판 위 도박꾼이 있으면 실제 10만 회 기대값 약 139% (잭팟 포함, 피드백 #59 이후 100% 위)', () => {
     const m = arena(5);
     placeTower(m.world, 'gambler', 0, 4, 0);
     m.state.gold = 1e12;
@@ -243,7 +243,7 @@ describe('10만 회 기대값 (DEV_PLAN M5-5)', () => {
       if (i % 5000 === 0) m.world.drainEvents();
     }
     const ev = won / (N * 100);
-    expect(Math.abs(ev - 0.9349)).toBeLessThan(0.01);
-    expect(ev).toBeLessThan(1);
+    expect(Math.abs(ev - 1.392)).toBeLessThan(0.01);
+    expect(ev).toBeGreaterThan(1);
   });
 });

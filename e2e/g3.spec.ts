@@ -4,7 +4,7 @@
  *  b. 영웅 탭: 모든 타워가 [영웅]/[신화] 격자에 (보유 / 보유하지 않음), [등급 순]/[레벨 순]
  *  c. 레벨업: 카드 + 골드를 쓰고 Lv이 오르며, 다음 판 입력(MatchOptions.levels)에 들어간다
  *  d. 패배 → 정산(경험치·골드·카드·조각) 표시, 로비 최고 웨이브·골드 갱신, 같은 판은 한 번만, 일일 퀘스트 받기
- *  e. 신화 조각: 20개 모은 히든 영웅을 [해방] → 잠긴 목록(MatchOptions.lockedHidden)에서 빠짐
+ *  e. 신화 조각: 5개(피드백 #59, 예전 20) 모은 히든 영웅을 [해방] → 잠긴 목록(MatchOptions.lockedHidden)에서 빠짐
  *  f. 아래 메뉴 5칸이 412·360·320에서 한 줄, 44px 이상, 가로 넘침 없음
  *  g. 안드로이드 뒤로 가기: 창 → [전투] 탭 → 앱 종료(처리 안 함)
  * 스크린샷 (deviceScaleFactor 1): docs/screens/G3-{lobby,heroes,hero-detail,gameover-rewards,codex-fragments}.png
@@ -245,17 +245,17 @@ test('G-3 d. 패배 → 정산 표시 · 최고 웨이브 갱신 · 한 번만 �
   expect(errors).toEqual([]);
 });
 
-test('G-3 e. 신화 조각 20개 → [해방] → 다음 판 잠긴 목록에서 빠짐', async ({ page }) => {
+test('G-3 e. 신화 조각 5개 → [해방] → 다음 판 잠긴 목록에서 빠짐', async ({ page }) => {
   const errors = collectErrors(page);
   await openLobby(page);
   await page.locator('.lobby-nav [data-tab="codex"]').click();
   const rows = page.locator('.codex-row');
   await expect(rows).toHaveCount(12);
   const id = (await rows.nth(1).getAttribute('data-hero'))!;
-  await patchProgress(page, `p.heroes[${JSON.stringify(id)}].cards = 20;`);
+  await patchProgress(page, `p.heroes[${JSON.stringify(id)}].cards = 5;`);
   await page.locator('.lobby-nav [data-tab="codex"]').click();
   await expect(page.getByTestId('codex-count')).toHaveText('해방 0/12');
-  await expect(page.getByTestId(`codex-frag-${id}`)).toHaveText('🧩 20/20');
+  await expect(page.getByTestId(`codex-frag-${id}`)).toHaveText('🧩 5/5');
   await expect(page.locator('.lobby-nav [data-tab="codex"] .lobby-badge')).toHaveText('1');
   await page.waitForTimeout(300);
   await shot(page, 'G3-codex-fragments');

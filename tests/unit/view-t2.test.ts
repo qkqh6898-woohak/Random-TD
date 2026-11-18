@@ -84,17 +84,17 @@ describe('타워 패널 판매 버튼', () => {
 describe('개발자 확률 조정 줄 (devModels)', () => {
   const list = data.game.devChances.list;
 
-  it('줄 = game.json devChances 순서, 지금 값·기본값, 신 0.01%, 도박 ×5 2%, 치명타 보너스 +0%', () => {
+  it('줄 = game.json devChances 순서, 지금 값·기본값, 신 0.01%, 도박 ×5 8%, 치명타 보너스 +0%', () => {
     const m = arena(1, { debug: true });
     const model = devChanceModel(m.ctx, list);
     expect(model.rows.map((r) => r.key)).toEqual(list.map((c) => c.key));
     const row = (k: string) => model.rows.find((r) => r.key === k)!;
     expect(row('god').value).toBe('0.01%');
-    expect(row('gamble:5').value).toBe('2%');
+    expect(row('gamble:5').value).toBe('8%');
     expect(row('critBonus').value).toBe('+0%');
     expect(row('critBonus').canDown).toBe(false);
     expect(model.anyChanged).toBe(false);
-    expect(model.gambleLine).toContain('×0 40%');
+    expect(model.gambleLine).toContain('×0 35%');
     expect(chanceText('summonRare', 250)).toBe('+2.5%');
   });
 

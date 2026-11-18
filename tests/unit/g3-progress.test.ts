@@ -211,15 +211,16 @@ describe('영웅 레벨업', () => {
 
 describe('히든(신화) 영웅 해방', () => {
   const hidden = data.towers.towers.filter((t) => t.grade === 'hidden');
-  it('처음엔 히든 12종 모두 잠김, 조각 20개로 해방(조각 소비) → 잠긴 목록에서 빠짐', () => {
+  it('처음엔 히든 12종 모두 잠김, 조각 unlockFragments개(피드백 #59: 5개)로 해방(조각 소비) → 잠긴 목록에서 빠짐', () => {
     const s = fresh();
     expect(lockedHiddenIds(s, data)).toHaveLength(hidden.length);
     const h = hidden[0]!;
     expect(isHiddenUnlocked(s, h.id, data)).toBe(false);
     expect(isHiddenUnlocked(s, 'miner', data)).toBe(true);
-    s.heroes[h.id]!.cards = 19;
+    expect(pd.hidden.unlockFragments).toBe(5);
+    s.heroes[h.id]!.cards = 4;
     expect(unlockHidden(s, pd, h)).toBe('fragments');
-    s.heroes[h.id]!.cards = 23;
+    s.heroes[h.id]!.cards = 8;
     expect(unlockHidden(s, pd, h)).toBe('ok');
     expect(s.heroes[h.id]).toEqual({ level: 1, cards: 3 });
     expect(isHiddenUnlocked(s, h.id, data)).toBe(true);

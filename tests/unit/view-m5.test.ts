@@ -209,33 +209,33 @@ describe('🎰 도박 탭', () => {
     expect(gambleSheetModel(b.ctx, b.world, 0).tables.map((t) => t.state)).toEqual(['ok', 'ok', 'debug', 'debug']);
   });
 
-  it('배율표·기대값 91% (잭팟 포함 실제 기대값 — M5 검토 반영) · 잭팟 게이지 · 최근 결과', () => {
+  it('배율표·기대값 137% (잭팟 포함 실제 기대값 — 피드백 #59로 91% → 137%) · 잭팟 게이지 · 최근 결과', () => {
     const m = arena();
     const g = gambleSheetModel(m.ctx, m.world, 0);
     expect(g.odds).toEqual([
-      { mul: '×0', pct: '40%' },
-      { mul: '×0.5', pct: '20%' },
+      { mul: '×0', pct: '35%' },
+      { mul: '×0.5', pct: '11%' },
       { mul: '×1', pct: '21%' },
-      { mul: '×2', pct: '11%' },
-      { mul: '×3', pct: '6%' },
-      { mul: '×5', pct: '2%' },
+      { mul: '×2', pct: '13%' },
+      { mul: '×3', pct: '12%' },
+      { mul: '×5', pct: '8%' },
     ]);
-    expect(g.expectation).toBe('기대값 91% (잭팟 포함)');
+    expect(g.expectation).toBe('기대값 137% (잭팟 포함)');
     expect(g.gaugeMax).toBe(10);
     expect(g.readyText).toBe('다음 ×3 이상!');
     m.state.gamble[0]!.gauge = 10;
     m.state.gamble[0]!.recent = [0, 5000, 20000];
     const j = gambleSheetModel(m.ctx, m.world, 0);
     expect(j.jackpotReady).toBe(true);
-    expect(j.odds.map((o) => o.pct)).toEqual(['0%', '0%', '0%', '0%', '75%', '25%']);
-    expect(j.expectation).toBe('이번 기대값 350%');
+    expect(j.odds.map((o) => o.pct)).toEqual(['0%', '0%', '0%', '0%', '60%', '40%']);
+    expect(j.expectation).toBe('이번 기대값 380%');
     expect(j.recent).toEqual(['×0', '×0.5', '×2']);
   });
 
-  it('도박꾼이 판 위에 있으면 기대값 93% (잭팟 포함), 잭팟 문구는 game.json minMul에서', () => {
+  it('도박꾼이 판 위에 있으면 기대값 139% (잭팟 포함), 잭팟 문구는 game.json minMul에서', () => {
     const m = arena();
     placeTower(m.world, 'gambler', 0, 4, 0);
-    expect(gambleSheetModel(m.ctx, m.world, 0).expectation).toBe('기대값 93% (잭팟 포함)');
+    expect(gambleSheetModel(m.ctx, m.world, 0).expectation).toBe('기대값 139% (잭팟 포함)');
     const rules = { ...m.rules, jackpotMinMulBp: 20000 };
     expect(gambleSheetModel({ ...m.ctx, rules }, m.world, 0).readyText).toBe('다음 ×2 이상!');
   });

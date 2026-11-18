@@ -143,7 +143,7 @@ test('마당 맵: 6×8 가운데 4×6 마당 24칸 + 둘레 고리, 칸이 예�
   await expect(page.getByTestId('menu-mythic')).toContainText('신화');
   await expect(page.getByTestId('hud-summon')).toContainText('100원');
   await expect(page.getByTestId('hud-summon-pity')).toHaveText('천장 30');
-  await expect(page.getByTestId('hud-towers')).toHaveText('0/20'); // 인원 n / 한도 (game.json board.unitCap)
+  await expect(page.getByTestId('hud-towers')).toHaveText('0/30'); // 인원 n / 한도 (game.json board.unitCap — 피드백 #59로 20 → 30)
   // 소환 버튼이 가운데, 신화 왼쪽·도박 오른쪽, 강화는 소환 바로 아래
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
   const [my, su, ga, up] = [await box('menu-mythic'), await box('hud-summon'), await box('menu-gamble'), await box('menu-upgrade')];

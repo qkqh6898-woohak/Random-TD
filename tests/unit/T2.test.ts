@@ -223,18 +223,18 @@ describe('debugSetChance 명령 (개발자 확률 조정)', () => {
   it('도박 확률: ×0이 나머지를 흡수해 합 100%, ×0이 0 아래로 내려가지 않게 잘림, 기대값이 바뀐다', () => {
     const m = arena(1, { debug: true });
     const base = gambleExpectationBp(gambleRulesOf(m.ctx));
-    command(m, { type: 'debugSetChance', key: 'gamble:5', bp: 210 }); // ×5 2% → 2.1%
+    command(m, { type: 'debugSetChance', key: 'gamble:5', bp: 810 }); // ×5 8% → 8.1%
     const eff = effectiveGambleOutcomes(m.rules, m.state);
-    expect(eff.map((o) => o.chanceBp)).toEqual([3990, 2000, 2100, 1100, 600, 210]);
+    expect(eff.map((o) => o.chanceBp)).toEqual([3490, 1100, 2100, 1300, 1200, 810]);
     expect(eff.reduce((s, o) => s + o.chanceBp, 0)).toBe(10000);
     expect(gambleExpectationBp(gambleRulesOf(m.ctx))).toBeGreaterThan(base);
     // ×1을 100%로 → 다른 배율(×0 제외) 합만큼 잘림, ×0 = 0
-    expect(chanceMaxBp(m.rules, m.state, 'gamble:2')).toBe(10000 - 2000 - 1100 - 600 - 210);
+    expect(chanceMaxBp(m.rules, m.state, 'gamble:2')).toBe(10000 - 1100 - 1300 - 1200 - 810);
     command(m, { type: 'debugSetChance', key: 'gamble:2', bp: 10000 });
     const eff2 = effectiveGambleOutcomes(m.rules, m.state);
     expect(eff2[0]!.chanceBp).toBe(0);
     expect(eff2.reduce((s, o) => s + o.chanceBp, 0)).toBe(10000);
-    expect(eventsOf(m, 'chanceSet').at(-1)).toMatchObject({ key: 'gamble:2', bp: 10000 - 2000 - 1100 - 600 - 210 });
+    expect(eventsOf(m, 'chanceSet').at(-1)).toMatchObject({ key: 'gamble:2', bp: 10000 - 1100 - 1300 - 1200 - 810 });
     // 되돌리기: key 하나 (bp −1), 모두 (key 'all')
     command(m, { type: 'debugSetChance', key: 'gamble:2', bp: -1 });
     expect(effectiveGambleOutcomes(m.rules, m.state)[2]!.chanceBp).toBe(2100);

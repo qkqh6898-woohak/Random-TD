@@ -127,8 +127,8 @@ const RING: [number, number][] = [
 ];
 /** 배치 칸 수 (순환의 정원 v4) */
 const CELLS = 24;
-/** 인원 한도 (G-1 game.json board.unitCap) — 🗼 n/한도 */
-const CAP = 20;
+/** 인원 한도 (G-1 game.json board.unitCap, 피드백 #59로 20 → 30) — 🗼 n/한도 */
+const CAP = 30;
 
 test('빈 배치 칸 탭 → 소환: 타워가 보이고 돈 1,000 → 900원, 🗼 1/32 / 경로·타워 칸 탭은 아무 일 없음', async ({ page }) => {
   const errors = collectErrors(page);
