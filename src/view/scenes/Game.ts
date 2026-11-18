@@ -62,7 +62,7 @@ import { towerLevel } from '../../sim/abilities';
 import { METEOR_FX } from '../../sim/abilities/archmage';
 import { rankSummonTiles, summonCheck, summonCost } from '../../sim/systems/Summon';
 import { autoSellTiles, convertTargets, sellCheck, sellPrice } from '../../sim/systems/Sell';
-import { autoSellGrade } from '../../meta/settings';
+import { autoSellGrade, resetMatchSettings } from '../../meta/settings';
 import { effectsOff, onEffectsChange, setEffectsOff } from '../effects';
 import { autoSummonInterval } from '../../ui/hold';
 import { createDevSheet, type DevSheetView } from '../../ui/sheets/DevSheet';
@@ -520,6 +520,8 @@ export class GameScene extends Phaser.Scene {
     this.saveFailToast = false;
     this.resumed = saved !== null;
     if (saved) this.releaseSavedHolds();
+    // 피드백 #62: 새 판이면 지난 판의 자동 판매·필살기 자동을 끈다 (이어 하기는 그대로)
+    else resetMatchSettings(this.ctx.settings);
     this.paused = false;
     this.gameOver = false;
     this.prevProgress = new Map();
