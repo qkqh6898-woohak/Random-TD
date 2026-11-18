@@ -504,7 +504,7 @@ test('일반 주소: 개발자 UI 없음 ([🛠 개발]·[🛠 변환]·⏭), �
   expect(errors).toEqual([]);
 });
 
-test('아래 자원 줄 (G-1): [💰 돈]·[🗼 인원]·[👷]·[⬆ 승급 가능]·[👷 고용]·접은 카드 알약이 함께 보여도 412·360·320px에서 한 줄 안에 (넘침 없음)', async ({ page }) => {
+test('아래 자원 줄 (G-1): [👷]·[⬆ 승급 가능]·[👷 고용]·접은 카드 알약이 함께 보여도 412·360·320px에서 한 줄 안에 (넘침 없음 · 💰 돈·🗼 인원은 피드백 #25로 위 HUD — e2e/fb25)', async ({ page }) => {
   for (const w of [412, 360, 320]) {
     await page.setViewportSize({ width: w, height: 915 });
     await start(page, '?seed=42');
