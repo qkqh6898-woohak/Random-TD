@@ -268,17 +268,18 @@ export interface StatusRules {
 }
 
 /**
- * 판 내 강화 하나 (GDD 7.1, M5-3) — 정수 단위. 명령 upgrade {k}의 k = rules.upgrades의 순서 (등급 강화 → 능력치 강화 → 초월).
+ * 판 내 강화 하나 (GDD 7.1, M5-3) — 정수 단위. 명령 upgrade {k}의 k = rules.upgrades의 순서 (등급 강화 → 능력치 강화 → 초월 → 인원 한도).
  * - grade: grades 등급 타워의 공격력 +perLevelBp/Lv (Aura.towerBonus가 타워 등급으로 더한다).
  * - stat: 모든 타워 stat +perLevelBp/Lv (PlayerMods에 더한다).
  * - transcend: 모든 타워 공격력 +perLevelBp/Lv (PlayerMods.atkPctBp). 등급 강화가 모두 최대일 때 열림. 비용 = 표.
+ * - unitCap (피드백 #28): 내 타워 인원 한도 +perLevelBp명/Lv — 이 종류만 perLevelBp가 bp가 아니라 인원 수(정수). Board.unitCap이 더한다.
  */
 export interface UpgradeRule {
   readonly k: number;
   readonly id: string;
   readonly name: string;
   readonly icon: string;
-  readonly kind: 'grade' | 'stat' | 'transcend';
+  readonly kind: 'grade' | 'stat' | 'transcend' | 'unitCap';
   readonly grades: readonly Grade[];
   /** 능력치 강화가 올리는 값 (grade·transcend는 null) */
   readonly stat: UpgradeStat | null;
@@ -447,6 +448,8 @@ export interface MatchRules {
   readonly transcendK: number;
   /** 초월 강화 비용 표 (curves.json transcendCost, Lv → Lv+1) */
   readonly transcendCost: readonly number[];
+  /** 인원 한도 강화의 k (피드백 #28, 초월 다음 — 예전 k는 그대로) */
+  readonly unitCapK: number;
   /** 도박 테이블 (비용·해금 계정 레벨) */
   readonly gambleTables: readonly { readonly cost: number; readonly unlockLevel: number }[];
   /** 도박 배율표 (bp) */
@@ -881,6 +884,7 @@ function buildM5Rules(data: GameData): Pick<
   | 'gradeUpgradeOf'
   | 'transcendK'
   | 'transcendCost'
+  | 'unitCapK'
   | 'gambleTables'
   | 'gambleOutcomes'
   | 'jackpotGauge'
@@ -951,6 +955,23 @@ function buildM5Rules(data: GameData): Pick<
       costPer: 0,
     } satisfies UpgradeRule),
   );
+  const uc = up.unitCap;
+  const unitCapK = upgrades.length;
+  upgrades.push(
+    Object.freeze({
+      k: unitCapK,
+      id: uc.id,
+      name: uc.name,
+      icon: uc.icon,
+      kind: 'unitCap',
+      grades: Object.freeze([]),
+      stat: null,
+      perLevelBp: uc.perLevel,
+      max: uc.max,
+      costBase: uc.cost[0],
+      costPer: uc.cost[1],
+    } satisfies UpgradeRule),
+  );
   const gb = game.gamble;
   const outcomes = gb.outcomes.map((o, i) =>
     Object.freeze({ mulBp: exactBp(`game.json gamble.outcomes[${i}].mul`, o.mul), chanceBp: exactBp(`game.json gamble.outcomes[${i}].chance`, o.chance) }),
@@ -963,6 +984,7 @@ function buildM5Rules(data: GameData): Pick<
     gradeUpgradeOf,
     transcendK,
     transcendCost: Object.freeze([...curves.transcendCost]),
+    unitCapK,
     gambleTables: Object.freeze(gb.tables.map((t) => Object.freeze({ cost: t.cost, unlockLevel: t.unlockLevel }))),
     gambleOutcomes: Object.freeze(outcomes),
     jackpotGauge: gb.jackpot.gauge,

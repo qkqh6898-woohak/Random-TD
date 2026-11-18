@@ -30,11 +30,12 @@ const K = (id: string): number => {
 };
 
 describe('강화 데이터 (GDD 7.1)', () => {
-  it('순서: 등급 강화 3종 → 능력치 강화 6종 → 초월 (명령 k = 이 순서)', () => {
-    expect(rules.upgrades.map((u) => u.id)).toEqual(['normal', 'hero', 'legend', 'aps', 'armorPen', 'magicPen', 'crit', 'critDmg', 'range', 'transcend']);
-    expect(rules.upgrades.map((u) => u.kind)).toEqual(['grade', 'grade', 'grade', 'stat', 'stat', 'stat', 'stat', 'stat', 'stat', 'transcend']);
+  it('순서: 등급 강화 3종 → 능력치 강화 6종 → 초월 → 인원 한도(피드백 #28) (명령 k = 이 순서)', () => {
+    expect(rules.upgrades.map((u) => u.id)).toEqual(['normal', 'hero', 'legend', 'aps', 'armorPen', 'magicPen', 'crit', 'critDmg', 'range', 'transcend', 'unitCap']);
+    expect(rules.upgrades.map((u) => u.kind)).toEqual(['grade', 'grade', 'grade', 'stat', 'stat', 'stat', 'stat', 'stat', 'stat', 'transcend', 'unitCap']);
     expect(rules.upgrades.every((u, i) => u.k === i)).toBe(true);
     expect(rules.transcendK).toBe(9);
+    expect(rules.unitCapK).toBe(10);
   });
 
   it('등급군: 일반 = 노말·레어, 영웅 = 유니크·히어로, 전설 = 레전드·신·히든 (모든 등급이 정확히 하나)', () => {
