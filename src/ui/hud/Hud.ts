@@ -178,7 +178,7 @@ export function createHud(opts: HudOptions): HudView {
   // 피드백 #26: 맵 오른쪽 위 [⏫ 모두 승급 n] — 위 띠 아래에 떠 있어(absolute) 띠 높이·맵 위치를 바꾸지 않는다
   const mergeAllBtn = h('button', {
     class: 'btn btn-chip hud-merge-all',
-    attrs: { type: 'button', 'data-action': 'merge-all', 'data-testid': 'hud-merge-all', hidden: '' },
+    attrs: { type: 'button', 'data-action': 'merge-all-stacks', 'data-testid': 'hud-merge-all', hidden: '' },
     text: '',
     on: { click: () => opts.onMergeAll?.() },
   });
