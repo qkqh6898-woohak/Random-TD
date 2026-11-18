@@ -16,6 +16,7 @@ import type { ProgressionData } from './progressionData';
 import {
   accountSeedFrom,
   buyShopItem,
+  claimAllMilestones,
   claimAllQuests,
   claimDailyBonus,
   claimMilestone,
@@ -199,6 +200,13 @@ export class ProgressStore {
 
   claimMilestone(wave: number): Grant | null {
     return this.after(claimMilestone(this.state, this.pd, this.data, wave));
+  }
+
+  /** 피드백 #57: 받을 수 있는 웨이브 길 보상 전부 (한 번 저장·알림) */
+  claimAllMilestones(): ReturnType<typeof claimAllMilestones> {
+    const r = claimAllMilestones(this.state, this.pd, this.data);
+    if (r) this.changed();
+    return r;
   }
 
   claimRecruit(): Grant | null {

@@ -328,8 +328,14 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
         action = h('button', {
           class: 'btn btn-primary wave-claim',
           text: '받기',
-          attrs: { type: 'button', 'data-testid': `wave-claim-${n.wave}`, 'aria-label': `${n.wave}웨이브 보상 받기` },
-          on: { click: () => showGrant(`${n.wave}웨이브 보상`, progress.claimMilestone(n.wave)) },
+          attrs: { type: 'button', 'data-testid': `wave-claim-${n.wave}`, 'aria-label': m.ready > 1 ? `웨이브 보상 ${m.ready}개 모두 받기` : `${n.wave}웨이브 보상 받기` },
+          // 피드백 #57: [받기] 하나로 받을 수 있는 웨이브 보상을 모두 받는다
+          on: {
+            click: () => {
+              const r = progress.claimAllMilestones();
+              showGrant(r && r.waves.length > 1 ? `웨이브 보상 ${r.waves.length}개` : `${r?.waves[0] ?? n.wave}웨이브 보상`, r?.grant ?? null);
+            },
+          },
         });
       } else if (n.state === 'claimed') action = h('span', { class: 'wave-done', text: '✓ 받음' });
       else action = h('span', { class: 'wave-lock', text: '🔒' });
@@ -382,7 +388,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       rightKids.push(
         h(
           'button',
-          { class: 'btn lobby-side-btn title-records-btn', attrs: { type: 'button', 'data-action': 'records', 'aria-haspopup': 'dialog', 'aria-label': '기록' }, on: { click: () => recordsDialog.showModal() } },
+          { class: 'btn lobby-side-btn', attrs: { type: 'button', 'data-action': 'records', 'aria-haspopup': 'dialog', 'aria-label': '기록' }, on: { click: () => recordsDialog.showModal() } },
           h('span', { class: 'lobby-side-icon', text: '🏆', attrs: { 'aria-hidden': 'true' } }),
           h('span', { text: '기록' }),
         ),

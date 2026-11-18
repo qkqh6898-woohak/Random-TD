@@ -564,6 +564,22 @@ export function claimMilestone(state: ProgressState, pd: ProgressionData, data: 
   return applyReward(state, pd, data, m.reward, accountRng(state, `wave:${wave}`));
 }
 
+/**
+ * 웨이브 길 모두 받기 (피드백 #57): [받기] 하나를 누르면 받을 수 있는 이정표를 낮은 웨이브부터 전부 받는다.
+ * 아래에서부터 하나씩 받은 것과 같은 순서라 굴림 결과도 같다. 받은 웨이브와 합친 Grant, 받을 것이 없으면 null.
+ */
+export function claimAllMilestones(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers'>): { waves: number[]; grant: Grant } | null {
+  const waves: number[] = [];
+  const got: Grant[] = [];
+  for (const m of [...pd.waveRoad.milestones].sort((a, b) => a.wave - b.wave)) {
+    const g = claimMilestone(state, pd, data, m.wave);
+    if (!g) continue;
+    waves.push(m.wave);
+    got.push(g);
+  }
+  return got.length === 0 ? null : { waves, grant: mergeGrants(got) };
+}
+
 export function readyMilestones(state: ProgressState, pd: ProgressionData): number {
   return pd.waveRoad.milestones.filter((m) => milestoneState(state, m.wave) === 'ready').length;
 }
@@ -659,7 +675,11 @@ export function claimAllQuests(state: ProgressState, pd: ProgressionData, data: 
     add(claimDailyBonus(state, pd, data, today));
     for (const q of achievementQuests(state, pd)) if (q.done && !q.claimed) add(claimQuest(state, pd, data, q.quest.id, today));
   }
-  if (got.length === 0) return null;
+  return got.length === 0 ? null : mergeGrants(got);
+}
+
+/** 여러 Grant를 하나로 (카드·조각은 같은 id끼리 합침, 처음 나온 순서) */
+function mergeGrants(got: Grant[]): Grant {
   const total = emptyGrant();
   for (const g of got) {
     total.xp += g.xp;

@@ -52,7 +52,7 @@ async function patchProgress(page: Page, patch: string, query = ''): Promise<voi
   await openLobby(page, query);
 }
 
-async function progress(page: Page): Promise<{ gold: number; gems: number; level: number; bestWave: number; heroes: Record<string, { level: number; cards: number }>; daily: { claimed: string[] } }> {
+async function progress(page: Page): Promise<{ gold: number; gems: number; level: number; bestWave: number; heroes: Record<string, { level: number; cards: number }>; daily: { claimed: string[] }; claimedWaves: number[] }> {
   return page.evaluate(() => JSON.parse(localStorage.getItem('rtd.progress')!));
 }
 
@@ -84,16 +84,23 @@ test('G-3 a. 로비: 최고 웨이브 · 웨이브 길 보상 받기 · [빠른 
   await expect(page.locator('.lobby-nav [data-tab="battle"] .lobby-badge')).toBeVisible();
   await page.waitForTimeout(400);
   await shot(page, 'G3-lobby');
-  // 10웨이브 받기 → 받은 창 (골드 300 + 카드 3장) → 골드 1,300
+  // 피드백 #57: 10웨이브 [받기] 하나로 10·20·30·40 모두 받기 → 받은 창 한 번 (골드 300 + 600, 보석 30 + 50, 카드·조각)
   await page.getByTestId('wave-claim-10').click();
   const grant = page.getByTestId('grant-dialog');
   await expect(grant).toBeVisible();
+  await expect(grant).toContainText('웨이브 보상 4개');
   await expect(grant.locator('.grant-card')).not.toHaveCount(0);
-  await expect(grant).toContainText('💰 +300');
+  await expect(grant).toContainText('💰 +900');
+  await expect(grant).toContainText('💎 +80');
   await page.getByTestId('grant-dialog-close').click();
-  await expect(page.getByTestId('lobby-gold')).toContainText('1,300');
-  await expect(page.locator('.wave-node[data-wave="10"]')).toHaveClass(/is-claimed/);
-  expect((await progress(page)).gold).toBe(1300);
+  await expect(page.getByTestId('lobby-gold')).toContainText('1,900');
+  await expect(page.locator('.wave-node.is-ready')).toHaveCount(0);
+  await expect(page.locator('.wave-node.is-claimed')).toHaveCount(4);
+  await expect(page.locator('.wave-node[data-wave="50"]')).toHaveClass(/is-locked/);
+  const after = await progress(page);
+  expect(after.gold).toBe(1900);
+  expect(after.gems).toBe(130);
+  expect(after.claimedWaves).toEqual([10, 20, 30, 40]);
   // [빠른 시작] → 전투 (무한 모드)
   await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
