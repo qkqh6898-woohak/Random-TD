@@ -20,6 +20,7 @@ import { allLooks, hasAwaken, isEnemyLook, type EnemyLook, type HumanLook } from
 import { EXPRESSIONS, type Expression } from '../../art/characters/portraits';
 import { externalFigureScale } from '../../art/characters/external';
 import { ExternalImages } from '../../art/characters/externalDom';
+import { outlinedArt } from '../../art/characters/gradeOutline';
 import { ENEMY_BOX, PORTRAIT_BOX } from '../../art/characters/rig';
 import { GRADE_COLORS } from '../../art/palette';
 import type { Grade } from '../../data/load';
@@ -297,7 +298,8 @@ export class Gallery {
           ctx.rotate(pose.angle + pose.sway);
           ctx.scale(pose.sx, pose.sy);
         }
-        ctx.drawImage(ext, (-ext.naturalWidth * k) / 2, -ext.naturalHeight * k, ext.naturalWidth * k, ext.naturalHeight * k);
+        const art = outlinedArt(ext, ext.naturalWidth, ext.naturalHeight, grade);
+        ctx.drawImage(art.canvas, (-ext.naturalWidth * k) / 2 - art.pad * k, -(ext.naturalHeight + art.pad) * k, art.canvas.width * k, art.canvas.height * k);
         ctx.restore();
         return;
       }

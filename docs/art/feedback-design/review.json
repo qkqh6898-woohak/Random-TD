@@ -1,0 +1,110 @@
+[
+  {
+    "file": "app-mascot",
+    "raw_sha256": "7eb0299f9242f10c4046379f0609034af4c8310858a7c364bf09eb526911caca",
+    "raw_size": [
+      1024,
+      1024
+    ],
+    "review": "accepted: complete silhouette, coherent chunky character style, no text; native alpha for UI art"
+  },
+  {
+    "file": "worker",
+    "raw_sha256": "9bf8ab4a597275632ba0800a238d994b54396220e7c9d5109146563c3d9313e0",
+    "raw_size": [
+      1024,
+      1024
+    ],
+    "review": "accepted: complete silhouette, coherent chunky character style, no text; native alpha for UI art"
+  },
+  {
+    "file": "shop",
+    "raw_sha256": "22863903592f099e5e793d10c8c4333d4185c584a8ded3f6288ea7e57f5887bc",
+    "raw_size": [
+      1024,
+      1024
+    ],
+    "review": "accepted: complete silhouette, coherent chunky character style, no text; native alpha for UI art"
+  },
+  {
+    "file": "gamble",
+    "raw_sha256": "b624ecb9656cb58ac6bec7633a59e9f58080da026d0bcb482ec978937d64697e",
+    "raw_size": [
+      1024,
+      1024
+    ],
+    "review": "accepted: complete silhouette, coherent chunky character style, no text; native alpha for UI art"
+  },
+  {
+    "file": "mythic",
+    "raw_sha256": "9b93b8930fe3956a7587b5a2c4c0064665a2adbd5f5176548d6656683afd9dae",
+    "raw_size": [
+      1024,
+      1024
+    ],
+    "review": "accepted: complete silhouette, coherent chunky character style, no text; native alpha for UI art"
+  },
+  {
+    "file": "summon",
+    "raw_sha256": "3677c2ac215c1086e6f2084ec14d631951c94a7660c7b3b0470dd8cbaa239b60",
+    "raw_size": [
+      1024,
+      1024
+    ],
+    "review": "accepted: complete silhouette, coherent chunky character style, no text; native alpha for UI art"
+  },
+  {
+    "file": "upgrade",
+    "raw_sha256": "e7003f2f302c8a2b7dbbcb14cb6ccdfa167c7cf91aae629f395c1730c017b928",
+    "raw_size": [
+      1024,
+      1024
+    ],
+    "review": "accepted: complete silhouette, coherent chunky character style, no text; native alpha for UI art"
+  },
+  {
+    "file": "pack-basic",
+    "raw_sha256": "c8414f9f60df5b80757552d4571098e471bc9b894a4b99620b9beb6478ab3cb6",
+    "raw_size": [
+      1024,
+      1024
+    ],
+    "review": "accepted: complete silhouette, coherent chunky character style, no text; native alpha for UI art"
+  },
+  {
+    "file": "pack-fine",
+    "raw_sha256": "32e52ea76d498d8b2c3e2e186aa1155ba3444ec82384a221128911c67fbf273a",
+    "raw_size": [
+      1024,
+      1024
+    ],
+    "review": "accepted: complete silhouette, coherent chunky character style, no text; native alpha for UI art"
+  },
+  {
+    "file": "chest-legend",
+    "raw_sha256": "839db76dd4b9da170217bf712f70a4f1b7dd33d5a0cdd29fb53b387fb33afcff",
+    "raw_size": [
+      1024,
+      1024
+    ],
+    "review": "accepted: complete silhouette, coherent chunky character style, no text; native alpha for UI art"
+  },
+  {
+    "file": "fragments",
+    "raw_sha256": "cb47ea8c32979d3dcaa4c0cdd13ba19914d6f5c3bf90a4fd4d5913057068d998",
+    "raw_size": [
+      1024,
+      1024
+    ],
+    "review": "accepted: complete silhouette, coherent chunky character style, no text; native alpha for UI art"
+  },
+  {
+    "file": "gold-bag",
+    "raw_sha256": "07ded19a2b840bb55021780128ec8480bdcb8de0a2d3dcaeec97c65bd613d7c7",
+    "raw_size": [
+      1024,
+      1024
+    ],
+    "review": "accepted: complete silhouette, coherent chunky character style, no text; native alpha for UI art"
+  }
+]

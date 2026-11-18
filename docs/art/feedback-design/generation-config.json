@@ -1,0 +1,21 @@
+{
+  "base_commit": "f229a8cea6d902d5393c63fdef9740fea7d5e1c4",
+  "model": "gpt_image_2_6",
+  "quality": "medium",
+  "resolution": "1k",
+  "aspect_ratio": "1:1",
+  "output_format": "png",
+  "background": "app-mascot: opaque; UI icons: native transparent",
+  "reference_media_ids": [
+    "aedbf596-c8ac-464b-9189-def219d797ab",
+    "b03965d6-a418-430c-a6a8-33a058054187"
+  ],
+  "reference_sources": [
+    "docs/art/higgsfield/chunky/reference/miner.webp",
+    "docs/art/higgsfield/chunky/reference/icemage.webp"
+  ],
+  "accepted": 12,
+  "regenerated": 0,
+  "app_mascot_decision": "Use the existing dwarf miner as the app representative; no new story protagonist or unit ID is introduced.",
+  "initial_base_commit": "28c4ce67ac061f13f7db5b8ed1cc7946e6ae3331"
+}

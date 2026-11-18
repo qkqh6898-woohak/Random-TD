@@ -1,5 +1,12 @@
 /** 고용 일꾼 전용 그림: 노란 안전모·파란 멜빵·공구 가방. 전투 타워와 분리. */
-export const WORKER_PORTRAIT = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72">
+import { uiArtUrl } from './uiIcons';
+
+export const WORKER_PORTRAIT = uiArtUrl('worker');
+export function workerPortraitFallback(event: Event): void {
+  const image = event.currentTarget as HTMLImageElement;
+  if (image.src !== WORKER_PORTRAIT_FALLBACK) image.src = WORKER_PORTRAIT_FALLBACK;
+}
+export const WORKER_PORTRAIT_FALLBACK = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72">
 <g stroke="#3b2416" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
 <ellipse cx="32" cy="68" rx="23" ry="3" fill="#3b2416" opacity=".16" stroke="none"/>
 <path d="M18 46 Q10 49 12 59 L20 59 M46 46 Q54 49 51 58 L45 58" fill="#ffcf9f"/>

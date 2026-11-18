@@ -15,6 +15,8 @@ import { enemyLook, type HumanLook } from './looks';
 import type { MobMotion } from '../../view/render/mobPose';
 import { EXTERNAL_ART_MANIFEST, EXTERNAL_BOSS_SCALE, EXTERNAL_ENEMY_SCALE, externalArtKey, externalArtUrl, externalEntries, externalFigureScale } from './external';
 import { assetUrl, currentAssetTable, embeddedAssetJson } from '../../assets';
+import type { Grade } from '../../data/load';
+import { outlinedArt } from './gradeOutline';
 
 export {
   EXTERNAL_ART_DIR,
@@ -133,58 +135,26 @@ const TINT_GLOW_ALPHA = 0.35;
 export const EXTERNAL_OUTLINE_OF_H = 0.022;
 /** G-2: 진한 외곽선 바깥의 옅은 빛 테두리 두께 (그림 높이 대비) — 어두운 배경(밤·침공 밴드)에서도 실루엣이 읽히게 */
 export const EXTERNAL_HALO_OF_H = 0.012;
-/** 바깥 그림 외곽선 색 (palette outline 진한 갈색)·알파 */
-const EXTERNAL_OUTLINE_RGBA = 'rgba(40, 24, 14, 0.9)';
-/** G-2 바깥 빛 테두리 색 (따뜻한 흰빛) */
-const EXTERNAL_HALO_RGBA = 'rgba(255, 244, 214, 0.5)';
-/** 외곽선을 찍는 방향 수 (원 둘레) */
-const EXTERNAL_OUTLINE_STEPS = 16;
-
 /**
  * 바깥 그림(힉스필드)에 굵은 진한 외곽선을 두른 텍스처 키 (처음 한 번 굽는다). 문서 4장 '컬러 대비와 굵은 외곽선은 배경과 타워를 분리' —
  * 밝은 궁수·고블린이 흑백 캡처에서 풀밭과 섞이던 것 (F10-4 검토). 그림 둘레에 pad만큼 여백을 더한다.
- * G-2: 외곽선 바깥에 옅은 빛 테두리(halo) + 그림 위 왼쪽 위에서 오는 은은한 테두리 빛(rim light) → 어떤 배경에서도 캐릭터가 떠 보인다.
+ * FB-21: 진갈색 선 바깥에 받침대와 같은 등급 색 띠를 더한다. 원본의 납작한 색면은 덮지 않는다.
  * 그림 원본을 읽을 수 없으면(캔버스 없음 등) 원래 키 그대로.
  */
-export function outlinedExternalTexture(scene: Phaser.Scene, key: string): { key: string; pad: number; w: number; h: number } {
+export function outlinedExternalTexture(scene: Phaser.Scene, key: string, grade?: Grade): { key: string; pad: number; w: number; h: number } {
   const src = scene.textures.get(key).getSourceImage() as HTMLImageElement | HTMLCanvasElement;
   const w = src.width;
   const h = src.height;
   const line = Math.max(2, Math.round(h * EXTERNAL_OUTLINE_OF_H));
-  const pad = line + Math.max(1, Math.round(h * EXTERNAL_HALO_OF_H));
-  const olKey = `${key}-ol`;
+  const pad = line + Math.max(2, Math.round(h * (grade ? 0.028 : EXTERNAL_HALO_OF_H)));
+  const olKey = `${key}-ol${grade ? `-${grade}` : ''}`;
   if (scene.textures.exists(olKey)) return { key: olKey, pad, w, h };
   try {
-    const sil = document.createElement('canvas');
-    sil.width = w;
-    sil.height = h;
-    const sg = sil.getContext('2d');
+    const art = outlinedArt(src, w, h, grade, false); // Phaser가 복사본을 보관하므로 Canvas 원본은 중복 보관하지 않는다.
     const tex = scene.textures.createCanvas(olKey, w + pad * 2, h + pad * 2);
     const g = tex?.getContext();
-    if (!sg || !tex || !g) throw new Error('no canvas');
-    const ring = (color: string, r: number): void => {
-      sg.globalCompositeOperation = 'copy';
-      sg.drawImage(src, 0, 0);
-      sg.globalCompositeOperation = 'source-in';
-      sg.fillStyle = color;
-      sg.fillRect(0, 0, w, h);
-      for (let i = 0; i < EXTERNAL_OUTLINE_STEPS; i++) {
-        const a = (i / EXTERNAL_OUTLINE_STEPS) * Math.PI * 2;
-        g.drawImage(sil, pad + Math.cos(a) * r, pad + Math.sin(a) * r);
-      }
-    };
-    ring(EXTERNAL_HALO_RGBA, pad);
-    ring(EXTERNAL_OUTLINE_RGBA, line);
-    g.drawImage(src, pad, pad);
-    // 테두리 빛: 그림 모양 안에서만(source-atop) 왼쪽 위가 살짝 밝다
-    g.globalCompositeOperation = 'source-atop';
-    const rim = g.createLinearGradient(pad, pad, pad + w * 0.7, pad + h * 0.7);
-    rim.addColorStop(0, 'rgba(255, 246, 220, 0.22)');
-    rim.addColorStop(0.35, 'rgba(255, 246, 220, 0.04)');
-    rim.addColorStop(1, 'rgba(255, 246, 220, 0)');
-    g.fillStyle = rim;
-    g.fillRect(pad, pad, w, h);
-    g.globalCompositeOperation = 'source-over';
+    if (!tex || !g) throw new Error('no canvas');
+    g.drawImage(art.canvas, 0, 0);
     tex.refresh();
     return { key: olKey, pad, w, h };
   } catch {
@@ -234,7 +204,7 @@ export class CharacterFigure {
     } else this.auraImg = null;
     if (this.external) {
       // 바깥 그림: 몸 상자 높이에 맞춰 한 장 (발밑 = 그림 아래 가운데). 외곽선 텍스처는 둘레 여백만큼 커서 원점을 그만큼 옮긴다 — 크기·발밑은 그대로
-      const ol = outlinedExternalTexture(scene, extKey);
+      const ol = outlinedExternalTexture(scene, extKey, look.grade);
       const img = scene.add.image(0, 0, ol.key).setOrigin(0.5, (ol.h + ol.pad) / (ol.h + ol.pad * 2));
       this.extScale = externalFigureScale(ol.w, ol.h);
       img.setScale(this.extScale);

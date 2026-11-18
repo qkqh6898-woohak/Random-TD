@@ -123,7 +123,7 @@ describe('타워 대기 동작 (ART.md 2.2, DEV_PLAN M2-8)', () => {
     expect(attackAnimMs(160)).toBeCloseTo(96);
   });
 
-  it('등장: 0.4초 동안 작게 시작해 살짝 넘쳤다가 제 크기', () => {
+  it('등장: 짧게 부풀었다 눌리며 제 크기로 돌아온다', () => {
     const start = towerPose({ timeMs: 0, seed: 0, attackAtMs: null, attackMs: 250, appearAtMs: 0 });
     expect(start.sx).toBeLessThan(0.4);
     const peak = towerPose({ timeMs: APPEAR_MS * 0.7, seed: 0, attackAtMs: null, attackMs: 250, appearAtMs: 0 });

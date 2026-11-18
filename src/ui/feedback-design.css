@@ -1,0 +1,131 @@
+/* Codex 디자인 피드백 #15–18, #20–22, #25, #29–30. 규칙과 명령은 기존 경로를 사용한다. */
+:root {
+  --font-display: 'Arial Rounded MT Bold', 'NanumSquareRound', 'Malgun Gothic', system-ui, sans-serif;
+}
+.ui-art-icon {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 2em;
+  height: 2em;
+  flex: none;
+  vertical-align: middle;
+}
+.ui-art-icon > img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.ui-art-icon:not(.is-loaded) > img { visibility: hidden; }
+.ui-art-icon.is-loaded > .ui-art-fallback { visibility: hidden; }
+.lobby-nav-icon.ui-art-icon { width: 12cqw; height: 10cqw; }
+.shop-icon.ui-art-icon { width: 14cqw; height: 15cqw; background: none; }
+.hud-menu-character { width: 14cqw; height: 14cqw; }
+.hud-summon-character { width: 9cqw; height: 9cqw; }
+.hud-menu.is-g1 > .is-upgrade .hud-menu-character { width: 7cqw; height: 7cqw; }
+.hud-menu.is-g1 > .is-upgrade .hud-menu-label { flex-direction: row; }
+.hud-menu.is-g1 > .is-mythic .hud-menu-label,
+.hud-menu.is-g1 > .is-gamble .hud-menu-label { gap: 0; }
+.hud-menu-word,
+.hud-summon-word,
+.lobby-title,
+.lobby-panel h2,
+.bs-title,
+.tp-name { font-family: var(--font-display); font-weight: 900; letter-spacing: -0.025em; }
+.hud-menu.is-g1 > .is-mythic,
+.hud-menu.is-g1 > .is-gamble { font-size: 4.3cqw; }
+.hud-menu-badge { font-variant-numeric: tabular-nums; }
+
+/* 돈·인원 수는 위 HUD의 독립된 한 줄. 숨겨지는 아래 자원 줄의 영향을 받지 않는다. */
+.hud-resources {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 5.5cqw;
+  gap: 2cqw;
+  padding: 0 1cqw;
+  border-bottom: 0.25cqw solid rgba(255, 224, 152, 0.18);
+}
+.hud-resources .hud-gold { font-size: 4.8cqw; line-height: 1.1; font-weight: 900; }
+.hud-resources .hud-towers { padding: 0.2cqw 1.8cqw; font-size: 3.8cqw; line-height: 1.2; font-weight: 800; white-space: nowrap; }
+.hud-count-row .hud-count-icon { font-size: 3cqw; line-height: 1; }
+.hud-count-row .hud-value { font-size: max(11px, 3cqw); line-height: 1; }
+.hud-resources .hud-gold-item { min-width: 0; }
+.hud-resources .hud-gold-gain { left: 100%; top: -1cqw; font-size: 3.2cqw; white-space: nowrap; }
+.hud-bottom.is-g1 { min-height: max(10cqw, 44px); }
+.hud-bottom.is-g1 > .hud-workers { display: inline-flex; }
+.hud-worker-art { width: 8cqw; height: 9cqw; }
+.hud-hire .hud-worker-art { width: 9cqw; height: 10cqw; }
+
+/* 판매는 정보창 위의 보조 동작. 시각 크기는 작게, 손가락 영역은 최소 44px로 유지한다. */
+.tp-head { gap: 1cqw; }
+.tp-portrait-wrap { position: relative; }
+.tp-portrait-wrap > .tp-info {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  width: 100%;
+  height: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 14px;
+  color: #fff5d6;
+  text-shadow: 0 1px 3px #231b20;
+}
+.tp-head > .tp-sell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  width: max(14cqw, 52px);
+  height: max(12cqw, 48px);
+  padding: 0.8cqw 1.3cqw;
+  font-size: max(11px, 2.8cqw);
+  line-height: 1.2;
+  color: #f3d491;
+  background: rgba(33, 25, 36, 0.85);
+  border-color: rgba(232, 182, 74, 0.45);
+  white-space: nowrap;
+}
+.tp-head > .tp-sell:not(.is-confirm) > span:first-child { display: none; }
+.tp-head > .tp-sell .tp-word { display: inline; font-weight: 800; }
+.tp-head > .tp-sell.is-confirm .tp-word { display: block; max-width: 13.5cqw; white-space: normal; font-size: 10px; line-height: 1.1; }
+.tp-head > .tp-sell.is-confirm { color: #fff; background: #a8231b; border-color: #ffc2bb; }
+.tp-name { font-size: 4.4cqw; }
+
+/* 종족 소환은 좁은 보조 행. 확률/천장/가격과 7개 종족 선택은 그대로 읽고 누를 수 있다. */
+.sm-row-secondary { padding: 1.5cqw 1.8cqw; gap: 1.5cqw; background: rgba(17, 21, 35, 0.62); box-shadow: none; }
+.sm-row-secondary > .up-icon { font-size: 5cqw; width: 6cqw; }
+.sm-row-secondary .up-name { font-size: 3.3cqw; }
+.sm-row-secondary .up-effect { font-size: 2.8cqw; }
+.sm-row-secondary .sm-odds,
+.sm-row-secondary .sm-pity { font-size: 2.7cqw; }
+.sm-row-secondary .sm-factions { gap: 0.8cqw; }
+.sm-row-secondary .sm-faction { padding: 0.8cqw 1.2cqw; min-height: 44px; font-size: max(11px, 2.8cqw); }
+.sm-row-secondary .sm-buy { min-height: 44px; padding: 1cqw 1.4cqw; font-size: 3.2cqw; }
+.sm-row-secondary { display: grid; grid-template-columns: 6cqw minmax(0, 1fr) auto; width: 94%; margin-inline: auto; border-color: rgba(190, 191, 207, 0.28); }
+.sm-faction-picker { grid-column: 1 / -1; min-width: 0; }
+.sm-faction-summary { display: list-item; min-height: 44px; padding-block: 8px; line-height: 1.35; cursor: pointer; font-size: max(11px, 2.9cqw); color: #d9d5d0; }
+.sm-faction-summary:focus-visible { outline: 2px solid #ffe08a; outline-offset: 2px; border-radius: 4px; }
+.sm-faction-desc { font-size: max(11px, 2.8cqw); color: #c9c4c1; margin-block: 0.8cqw; }
+
+/* 등장 시 말랑한 질감은 캐릭터의 squash/stretch와 함께, 숫자/제목은 크기 대비로 읽는다. */
+.hud-menu-btn:active .ui-art-icon,
+.hud-summon:active .ui-art-icon { transform: translateY(0.5cqw) scale(0.94, 1.04); }
+.ui-art-icon { transition: transform 140ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .ui-art-icon { transition: none; }
+  .hud-menu-btn:active .ui-art-icon,
+  .hud-summon:active .ui-art-icon { transform: none; }
+}

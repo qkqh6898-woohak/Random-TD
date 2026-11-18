@@ -98,6 +98,7 @@ test.describe('G-2 a. 테두리 테마', () => {
       await clickStart(page);
       await expect(page.locator('[data-screen="game"]')).toBeVisible();
       await expect.poll(() => sim(page, (s) => s.mapLayout.tile)).toBeGreaterThan(0);
+      await expect(page.locator('[data-art-icon="summon"]')).toHaveClass(/is-loaded/);
 
       const look = await page.evaluate(() => {
         const cs = (sel: string, pseudo?: string) => getComputedStyle(document.querySelector(sel)!, pseudo);
@@ -110,14 +111,15 @@ test.describe('G-2 a. 테두리 테마', () => {
           bottomBg: cs('.hud-bottom').backgroundImage,
           menuBg: cs('.hud-menu').backgroundImage,
           mapFrame: cs('#game', '::after').boxShadow,
-          summonIcon: cs('[data-testid="hud-summon"] .hud-summon-icon').backgroundImage,
-          summonText: document.querySelector('[data-testid="hud-summon"]')!.textContent,
+          summonIcon: document.querySelector<HTMLImageElement>('[data-art-icon="summon"] img')!.getAttribute('src'),
+          summonText: (document.querySelector('[data-testid="hud-summon"]')! as HTMLElement).innerText,
           pointer: [cs('.hud-bar', '::before').pointerEvents, cs('.hud-bottom', '::before').pointerEvents, cs('#game', '::after').pointerEvents],
         };
       });
       expect(look.corner).toMatch(/^url\("data:image\/svg\+xml/);
       expect(look.barLine).toBe('rgba(232, 182, 74, 0.85)'); // 금테
-      for (const v of [look.barOrn, look.barGem, look.bottomOrn, look.summonIcon]) expect(v).toContain('data:image/svg+xml');
+      for (const v of [look.barOrn, look.barGem, look.bottomOrn]) expect(v).toContain('data:image/svg+xml');
+      expect(look.summonIcon).toContain('assets/ui/summon.webp'); // FB-18: 힉스필드 캐릭터 그림
       expect(look.bottomBg).toContain('gradient');
       expect(look.menuBg).toContain('data:image/svg+xml'); // 금줄
       expect(look.mapFrame).toContain('rgba(232, 182, 74');
@@ -230,11 +232,13 @@ test('G-2 b. 소환 = 소환문 + 실루엣 + 그 캐릭터 초상 카드, 승�
     return free;
   });
   await page.waitForTimeout(300);
+  // 디버그 배치의 소환 카드도 셀 수 있다. 준비용 카드와 분리해 실제 승급이 정확히 카드 1장을 더 만드는지 본다.
+  const shownBeforeMerge = await sim(page, (s) => s.summonFxStats.shown);
   await sim(page, (s, c) => s.match.world.enqueue({ type: 'merge', x: c[0], y: c[1] }), tri[0]!);
   await expect.poll(() => sim(page, (s) => s.summonFxStats.stars)).toBeGreaterThanOrEqual(2); // 레어 = 별 2개
   await expect.poll(async () => (await fxSeen(page)).names).toEqual(expect.arrayContaining(['merge-material-orb', 'merge-portal', 'merge-card', 'merge-star']));
   const after = await sim(page, (s) => s.summonFxStats);
-  expect(after.shown).toBe(2);
+  expect(after.shown).toBe(shownBeforeMerge + 1);
   expect(after.peak).toBeGreaterThanOrEqual(1);
   expect((await fxSeen(page)).dieTex).toBe(0);
   expect(errors).toEqual([]);

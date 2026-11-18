@@ -6,7 +6,7 @@
  *   시작 위상은 타워마다 무작위 (화면 쪽 Math.random — sim과 무관) → 같은 타워 여러 개가 똑같이 움직이지 않는다.
  *   공격하지 않아도 계속 움직인다. 트윈 대신 매 프레임 시각으로 자세를 계산한다.
  * - 공격 사건이 오면 대상 쪽으로 몸을 내밀고(0.25초 또는 공격 간격의 60%) 대상 쪽을 바라본다.
- * - 소환 직후 0.4초 등장 동작.
+ * - 소환 직후 0.52초 등장 동작.
  * - 깊이 = 발밑 화면 y (몹과 같은 기준) → 아래쪽이 위에 그려진다.
  * - M3-10: 이동·교환으로 칸이 바뀌면 0.14초 동안 새 칸으로 미끄러진다. 길게 눌러 끄는 동안은 손가락 위로 들려 따라온다.
  * - 캐릭터 다양화 (art/characters): 외형 데이터(characterLooks.json)가 있는 타워는 파츠 그림(등·몸·소품·동반자 + 오라·입자)으로 그리고,
@@ -66,7 +66,7 @@ const STILL_POSE = Object.freeze({ bob: 0, sx: 1, sy: 1, angle: 0, lunge: 0, dx:
  * 모두 칸 아래 끝(+0.5칸 = 발밑 +0.2칸) 안 → 탭 판정·정보 패널 배치(받침대 아래 +0.475칸)와 겹치지 않는다.
  */
 export const STAR_BADGE_Y_TILES = 0.15;
-export const STAR_BADGE_W_TILES = 0.56;
+export const STAR_BADGE_W_TILES = 0.72;
 export const EMBLEM_X_TILES = -0.36;
 export const EMBLEM_Y_TILES = 0.05;
 export const EMBLEM_D_TILES = 0.25;
@@ -265,7 +265,7 @@ export class TowerSprite {
       seed: this.seed,
       attackAtMs: this.attackAtMs,
       attackMs: this.attackMs,
-      appearAtMs: this.appearAtMs,
+      appearAtMs: reduced ? null : this.appearAtMs,
       gesture: preset?.gesture,
       gestureMs: preset?.gestureMs,
     });

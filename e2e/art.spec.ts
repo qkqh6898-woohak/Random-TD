@@ -132,7 +132,7 @@ test('전투 배경: 1단계 낮 → ⏭로 11단계가 되면 노을 밴드, �
   const scales = await sim(page, (s) => s.match.towers().map((t) => ({ id: t.tower, k: s.towerLayer.artScaleOf(t.id) })));
   const byId = new Map(scales.map((x) => [x.id, x.k ?? 0]));
   expect(new Set(scales.map((x) => x.k)).size).toBeGreaterThan(8);
-  expect(byId.get('bard')!).toBeLessThan(byId.get('archer')!);
+  expect(byId.get('archer')!).toBeLessThan(byId.get('bard')!); // FB-20: 노말 궁수 < 레어 음유시인
   expect(byId.get('archer')!).toBeLessThan(byId.get('fate')!);
   if (SAVE_DOCS) await settle(page);
   await shot(page, 'T2-art-stage1');

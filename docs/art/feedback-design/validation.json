@@ -1,0 +1,93 @@
+{
+  "base": "f229a8cea6d902d5393c63fdef9740fea7d5e1c4",
+  "unit": {
+    "files": 79,
+    "passed": 1423,
+    "skipped": 5,
+    "log": "tmp/feedback_work/unit-final.log"
+  },
+  "full_canvas_initial": {
+    "total": 197,
+    "passed": 182,
+    "failed": 13,
+    "skipped": 2,
+    "log": "tmp/feedback_work/e2e-canvas-full.log"
+  },
+  "affected_canvas_followup": {
+    "total": 29,
+    "passed": 24,
+    "failed": 5,
+    "log": "tmp/feedback_work/e2e-affected.log"
+  },
+  "panel_canvas_final": {
+    "passed": 1,
+    "failed": 0,
+    "log": "tmp/feedback_work/e2e-panel-final.log"
+  },
+  "baseline_canvas_comparison": {
+    "commit": "28c4ce67ac061f13f7db5b8ed1cc7946e6ae3331",
+    "same_game_code_as_final_base": true,
+    "passed": 1,
+    "failed": 5,
+    "failures": [
+      "G2 debug setup card counter",
+      "HUD banner layout 412x915",
+      "HUD banner layout 360x640",
+      "HUD banner layout 320x568",
+      "HUD banner layout 915x412"
+    ],
+    "log": "tmp/feedback_work/baseline-e2e.log"
+  },
+  "webgl_full_partial": {
+    "passed": 3,
+    "interrupted": 1,
+    "not_run": 193,
+    "log": "tmp/feedback_work/e2e-webgl-partial.log"
+  },
+  "remaining": {
+    "baseline_failures": 4,
+    "environment_blocked_file_url_tests": 1,
+    "whole_suite_rerun_after_fixes": false
+  },
+  "canvas_launch": "PW_CHROMIUM_PATH=/workspace/Random-TD-feedback/tmp/feedback_work/chromium-canvas E2E_PORT=5196 npx playwright test --trace off",
+  "canvas_wrapper": "exec /usr/bin/chromium --disable-webgl \"$@\"",
+  "chromium_install_performed": false,
+  "final_webgl_design": {
+    "passed": 4,
+    "failed": 0,
+    "minutes": 4.2,
+    "log": "tmp/feedback_work/e2e-webgl-final.log"
+  },
+  "final_build": {
+    "check": "PASS",
+    "build": "PASS",
+    "single": "PASS",
+    "logs": [
+      "tmp/feedback_work/check-final2.log",
+      "tmp/feedback_work/build-final2.log",
+      "tmp/feedback_work/single-final.log"
+    ]
+  },
+  "single_http_complement": {
+    "filePolicy": "Error: page.goto: net::ERR_BLOCKED_BY_ADMINISTRATOR at file:///workspace/Random-TD-feedback/tmp/feedback_work/policy-probe.html",
+    "httpStandalone": "PASS",
+    "requests": [
+      "http://127.0.0.1:5198/%EC%9A%B4%EB%B9%A8%EB%94%94%ED%8E%9C%EC%8A%A4-test.html"
+    ],
+    "errors": [],
+    "table": {
+      "files": 245,
+      "art": true,
+      "favicon": true
+    },
+    "worker": {
+      "embedded": true,
+      "width": 256
+    },
+    "outcome": {
+      "towers": 1,
+      "gold": "900원"
+    },
+    "log": "tmp/feedback_work/single-http-check.log"
+  }
+}
