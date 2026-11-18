@@ -3007,6 +3007,11 @@ body {
   font-size: 3.6cqw;
 }
 
+/* 피드백 #63 자동 승급: '히어로 이하'까지 한 줄로 */
+.pause-panel .pause-auto-merge {
+  white-space: nowrap;
+}
+
 /* 켜고 끄는 버튼 (일시정지 메뉴·개발자 도구) */
 .dv-switch {
   flex-shrink: 0;

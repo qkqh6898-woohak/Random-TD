@@ -4,6 +4,7 @@
  * T-2: 설정 한 줄 '눌러서 바로 승급' (켜짐: 승급할 수 있는 타워를 누르면 바로 승급 / 꺼짐: 패널을 연다). 저장은 Game 장면이 한다.
  * G-1: 설정 한 줄 '필살기 자동' (켜짐: 필살기가 차면 Game이 바로 ult 명령).
  * 피드백 #46: 설정 두 줄 '노말 자동 판매' · '레어 이하 자동 판매' (켜짐: 방금 소환된 그 등급 이하 타워를 Game이 바로 sellTower).
+ * 피드백 #63: 설정 한 줄 '자동 승급' — 누를 때마다 [꺼짐 → 노말 → 레어 이하 → 유니크 이하 → 히어로 이하] (켜짐: 그 등급 이하 가득 찬 무더기를 Game이 바로 autoMerge).
  * F10: [❔ 도움말 다시 보기] — 계정에 기록된 '본 도움말'(첫 승급 안내)을 지워, 다음에 승급할 수 있게 되면 다시 안내한다.
  * A-1 (Codex 갈래 M6-10·M6-11에서 옮김): '효과음 크기' 0~100% (5% 단위, 0 = 음소거) + [미리 듣기], '화면 흔들림' 켜짐/꺼짐 — 둘 다 기기에 저장.
  *   열 때 자동 저장했으면 아래 글을 '자동 저장했어요 · 로비에서 이어 할 수 있어요'로.
@@ -15,6 +16,8 @@ import { h } from '../dom';
 import type { UiView } from '../root';
 import { feedbackButton, type FeedbackDialogView } from './FeedbackDialog';
 import { gradeGuideButton, type GradeGuideDialogView } from './GradeGuideDialog';
+import { nextAutoMerge, type AutoMergeSetting } from '../../meta/settings';
+import { autoMergeLabel } from '../messages';
 
 export interface PauseMenuOptions {
   onResume: () => void;
@@ -30,6 +33,9 @@ export interface PauseMenuOptions {
   onAutoSellNormal?: (on: boolean) => void;
   autoSellRare?: boolean;
   onAutoSellRare?: (on: boolean) => void;
+  /** 피드백 #63 '자동 승급' 지금 값과 바꿀 때. 없으면 줄도 없다 */
+  autoMerge?: AutoMergeSetting;
+  onAutoMerge?: (v: AutoMergeSetting) => void;
   /** [❔ 도움말 다시 보기] (F10). 없으면 버튼도 없다 */
   onHelpAgain?: () => void;
   /** 메뉴를 열며 자동 저장했다 (A-1) */
@@ -72,6 +78,32 @@ function switchRow(name: string, desc: string, value: boolean, testId: string, o
     { class: 'pause-setting' },
     h('div', { class: 'pause-setting-main' }, h('div', { class: 'pause-setting-name', text: name }), h('div', { class: 'pause-setting-desc', text: desc })),
     sw,
+  );
+}
+
+/** 자동 승급 줄 (피드백 #63): 이름·설명 + 누를 때마다 다음 값으로 도는 버튼 (꺼짐이 아니면 켜짐 모양). */
+function autoMergeRow(initial: AutoMergeSetting, onChange: (v: AutoMergeSetting) => void): HTMLElement {
+  let cur = initial;
+  const btn = h('button', {
+    class: 'btn dv-switch pause-switch pause-auto-merge',
+    attrs: { type: 'button', 'data-testid': 'pause-auto-merge', 'aria-label': '자동 승급' },
+  });
+  const show = (): void => {
+    btn.textContent = autoMergeLabel(cur);
+    btn.dataset.value = cur;
+    btn.classList.toggle('is-on', cur !== 'off');
+  };
+  show();
+  btn.addEventListener('click', () => {
+    cur = nextAutoMerge(cur);
+    show();
+    onChange(cur);
+  });
+  return h(
+    'div',
+    { class: 'pause-setting' },
+    h('div', { class: 'pause-setting-main' }, h('div', { class: 'pause-setting-name', text: '자동 승급' }), h('div', { class: 'pause-setting-desc', text: '그 등급 이하 3개가 모이면 바로 승급해요' })),
+    btn,
   );
 }
 
@@ -134,6 +166,7 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
     opts.autoSellRare !== undefined
       ? switchRow('레어 이하 자동 판매', '소환된 노말·레어를 바로 팔아요', opts.autoSellRare, 'pause-auto-sell-rare', (v) => opts.onAutoSellRare?.(v))
       : null;
+  const mergeAutoRow = opts.autoMerge !== undefined ? autoMergeRow(opts.autoMerge, (v) => opts.onAutoMerge?.(v)) : null;
   const volume = opts.effectVolume !== undefined ? volumeRow(opts, opts.effectVolume) : null;
   const shakeRow =
     opts.screenShake !== undefined ? switchRow('화면 흔들림', '보스·큰 승급 때 화면을 흔들어요', opts.screenShake, 'pause-screen-shake', (v) => opts.onScreenShake?.(v)) : null;
@@ -160,6 +193,7 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
       h('h2', { class: 'pause-title', text: '일시정지', attrs: { id: 'pause-title' } }),
       resume,
       tapRow,
+      mergeAutoRow,
       ultRow,
       sellNormalRow,
       sellRareRow,

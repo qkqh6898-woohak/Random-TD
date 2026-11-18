@@ -54,7 +54,7 @@ import { NATIVE_PAUSE_EVENT, setBackHandler } from '../../ui/nativeBack';
 import { isBuildable } from '../../sim/map';
 import type { MatchMode } from '../../sim/state';
 import { NO_MODS, effectiveStats, towerRange } from '../../sim/stats';
-import { fullStacks, mergeableStackGroups, sameKindTowers, stackMergeCheck } from '../../sim/systems/Merge';
+import { autoMergeReady, fullStacks, mergeableStackGroups, sameKindTowers, stackMergeCheck } from '../../sim/systems/Merge';
 import { hasRoom, summonStackCheck } from '../../sim/systems/Board';
 import { isPaused, moveCheck } from '../../sim/systems/Move';
 import { auraCovers, auraRadiusOf, auraSpecOf, computeAuras, towerBonus } from '../../sim/systems/Aura';
@@ -62,7 +62,7 @@ import { towerLevel } from '../../sim/abilities';
 import { METEOR_FX } from '../../sim/abilities/archmage';
 import { rankSummonTiles, summonCheck, summonCost } from '../../sim/systems/Summon';
 import { autoSellTiles, convertTargets, sellCheck, sellPrice } from '../../sim/systems/Sell';
-import { autoSellGrade } from '../../meta/settings';
+import { autoMergeRank, autoSellGrade } from '../../meta/settings';
 import { effectsOff, onEffectsChange, setEffectsOff } from '../effects';
 import { autoSummonInterval } from '../../ui/hold';
 import { createDevSheet, type DevSheetView } from '../../ui/sheets/DevSheet';
@@ -425,6 +425,8 @@ export class GameScene extends Phaser.Scene {
   private gachaQueuedTick = -1;
   /** G-1 필살기 자동: 마지막으로 보낸 틱 (같은 타워에 두 번 보내지 않게) */
   private ultSent = new Map<number, number>();
+  /** 피드백 #63: 마지막으로 autoMerge 명령을 보낸 틱 */
+  private autoMergeSentTick = -1;
   private sheetKind: SheetKind | null = null;
   /** 시트마다 마지막으로 고른 탭 (다시 열면 그 탭) */
   private upgradeTab: UpgradeTab = 'grade';
@@ -1583,6 +1585,18 @@ export class GameScene extends Phaser.Scene {
     if (this.match.world.enqueue({ type: 'mergeAllStacks' }).ok) this.inputLockUntil = now + MERGE_INPUT_LOCK_MS;
   }
 
+  /**
+   * 피드백 #63 '자동 승급' (설정): 기준 등급 이하의 가득 찬 무더기가 있으면 autoMerge 명령 (리플레이에 남는다).
+   * 같은 틱에는 한 번만 보낸다 (한 틱에 여러 프레임이 그려져도 명령이 쌓이지 않게).
+   */
+  private sendAutoMerge(): void {
+    if (this.paused || this.gameOver) return;
+    const g = autoMergeRank(this.ctx.settings.get().autoMerge);
+    if (g === null || this.autoMergeSentTick === this.match.tick) return;
+    if (!autoMergeReady(this.match.ctx, this.match.world, LOCAL_PLAYER, g)) return;
+    if (this.match.world.enqueue({ type: 'autoMerge', g }).ok) this.autoMergeSentTick = this.match.tick;
+  }
+
   /** 지금 고른 타워 (없거나 사라졌으면 null). */
   private selectedTower(): Tower | null {
     if (this.selectedId === null) return null;
@@ -2528,6 +2542,8 @@ export class GameScene extends Phaser.Scene {
         onAutoSellNormal: (on) => this.ctx.settings.set('autoSellNormal', on),
         autoSellRare: this.ctx.settings.get().autoSellRare,
         onAutoSellRare: (on) => this.ctx.settings.set('autoSellRare', on),
+        autoMerge: this.ctx.settings.get().autoMerge,
+        onAutoMerge: (v) => this.ctx.settings.set('autoMerge', v),
         // 도움말 다시 보기 (F10): 계정 기록을 지우고 이 판에서도 다시 띄울 수 있게
         onHelpAgain: () => {
           this.ctx.account.resetGuides();
@@ -3153,6 +3169,7 @@ export class GameScene extends Phaser.Scene {
     const world = this.match.world;
     const ready = readyUlts(ctx, world, LOCAL_PLAYER);
     if (!this.paused && !this.gameOver && this.ctx.settings.get().ultAuto) for (const t of ready) this.castUltOf(t.id);
+    this.sendAutoMerge();
     this.hud.setMergeAll(mergeAllButton(this.mergeReadyCount));
     const kinds = this.ctx.data.game.ultimate.kinds;
     this.hud.setUlts(

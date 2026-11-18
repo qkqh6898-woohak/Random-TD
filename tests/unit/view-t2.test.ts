@@ -34,9 +34,9 @@ describe('연출 끄기 상태 (src/view/effects.ts)', () => {
 
 describe('화면 설정 (rtd.settings)', () => {
   it('기본: 눌러서 바로 승급 켜짐 · 연출 끄기 꺼짐 · 히든 보기 꺼짐, 망가진 값은 기본값', () => {
-    expect(parseSettings(null)).toEqual({ tapMerge: true, effectsOff: false, revealHidden: false, ultAuto: false, autoSellNormal: false, autoSellRare: false });
+    expect(parseSettings(null)).toEqual({ tapMerge: true, effectsOff: false, revealHidden: false, ultAuto: false, autoSellNormal: false, autoSellRare: false, autoMerge: 'off' });
     expect(parseSettings('{{{')).toEqual({ ...DEFAULT_SETTINGS });
-    expect(parseSettings('{"tapMerge":"no","effectsOff":true}')).toEqual({ tapMerge: true, effectsOff: true, revealHidden: false, ultAuto: false, autoSellNormal: false, autoSellRare: false });
+    expect(parseSettings('{"tapMerge":"no","effectsOff":true}')).toEqual({ tapMerge: true, effectsOff: true, revealHidden: false, ultAuto: false, autoSellNormal: false, autoSellRare: false, autoMerge: 'off' });
   });
 
   it('바꾸면 저장되고 다음에 읽힌다', () => {
@@ -45,7 +45,7 @@ describe('화면 설정 (rtd.settings)', () => {
     a.set('tapMerge', false);
     a.set('effectsOff', true);
     expect(JSON.parse(st.getItem(SETTINGS_KEY) ?? '{}')).toMatchObject({ tapMerge: false, effectsOff: true });
-    expect(createSettingsStore(st).get()).toEqual({ tapMerge: false, effectsOff: true, revealHidden: false, ultAuto: false, autoSellNormal: false, autoSellRare: false });
+    expect(createSettingsStore(st).get()).toEqual({ tapMerge: false, effectsOff: true, revealHidden: false, ultAuto: false, autoSellNormal: false, autoSellRare: false, autoMerge: 'off' });
   });
 });
 
