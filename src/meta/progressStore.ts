@@ -7,6 +7,8 @@
  *   예전 키는 지우거나 바꾸지 않는다 (전투 기록·효과음·화면 흔들림·설정·판 저장 그대로).
  * - 날짜(일일 퀘스트)는 기기 시계의 지역 날짜 'YYYY-MM-DD' — sim 밖이라 Date를 쓸 수 있다 (테스트는 now를 넣는다).
  * - 바뀔 때마다 바로 쓴다. 쓰기 실패는 삼킨다 (메모리 사본으로 이어 감 — BrowserStorage).
+ * - 검토 M4: 저장 글자를 읽을 수 없거나(망가짐) 이 앱보다 새 형식이면, 덮어쓰기 전에 원본을 `<키>.bak.<시각>`에 백업한다.
+ *   모르는 최상위 필드·데이터에 없는 타워의 영웅 기록은 parseProgress가 그대로 들고 다닌다.
  */
 import type { GameData, TowerData } from '../data/load';
 import { ACCOUNT_KEY } from './account';
@@ -28,6 +30,7 @@ import {
   levelUpHero,
   lockedHiddenIds,
   parseProgress,
+  progressNeedsBackup,
   refreshDaily,
   serializeProgress,
   settleMatch,
@@ -102,6 +105,13 @@ export class ProgressStore {
     this.created = raw === null;
     const seed = opts.seed ?? accountSeedFrom(`${this.now().getTime()}:${Math.random()}`);
     // 개발자 계정은 일반 계정 기록을 옮기지 않는다 (따로 시작)
+    if (progressNeedsBackup(raw)) {
+      try {
+        storage.setItem(`${this.key}.bak.${this.now().getTime()}`, raw as string);
+      } catch {
+        // 백업 실패는 게임을 막지 않는다
+      }
+    }
     this.state = parseProgress(raw, pd, data, seed, opts.dev ? {} : readLegacy(storage));
     refreshDaily(this.state, this.today());
     this.save();
@@ -231,10 +241,11 @@ export class ProgressStore {
     return r;
   }
 
-  /** 개발자 모드 로비 [🛠 +재화]: 골드·보석·카드·조각 (개발자 계정 슬롯에만) */
+  /** 개발자 모드 로비 [🛠 +재화]: 골드·보석·🔥 불꽃·카드·조각 (개발자 계정 슬롯에만) */
   devGrant(): void {
     this.state.gold += 10000;
     this.state.gems += 1000;
+    this.state.flame += 1000;
     for (const t of this.data.towers.towers) {
       const e = (this.state.heroes[t.id] ??= { level: 0, cards: 0 });
       e.cards += t.grade === 'hidden' ? this.pd.hidden.unlockFragments : 20;

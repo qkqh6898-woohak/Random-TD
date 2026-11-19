@@ -49,7 +49,7 @@ describe('영웅 상세', () => {
     const s = fresh();
     s.heroes.miner = { level: 3, cards: 10 };
     const d = heroDetail(s, pd, data, 'miner')!;
-    expect(d.cost).toEqual({ cards: 4, gold: 200 });
+    expect(d.cost).toEqual({ cards: 4, flame: 20 }); // V2.0 PR-A: 골드 → 🔥 불꽃
     expect(d.bonus).toBe('+8%');
     expect(d.nextBonus).toBe('+12%');
     expect(d.check).toBe('ok');
@@ -73,7 +73,7 @@ describe('위 띠 · 웨이브 길 · 조각', () => {
     expect(r.best).toBe(23);
     expect(r.next).toBe(30);
     expect(r.ready).toBe(2);
-    expect(r.nodes[0]).toMatchObject({ wave: 10, state: 'ready', reward: '💰 300 · 🃏 3' });
+    expect(r.nodes[0]).toMatchObject({ wave: 10, state: 'ready', reward: '💰 300 · 🔥 15 · 🃏 3' });
     expect(r.nodes[2]!.state).toBe('locked');
   });
   it('리미티드 조각 줄: 12종, 해방 가능 표시', () => {

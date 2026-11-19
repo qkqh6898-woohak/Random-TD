@@ -13,9 +13,9 @@ const pd = loadProgression(data);
 const ms = pd.waveRoad.milestones;
 
 describe('피드백 #61 웨이브 길 1000웨이브까지', () => {
-  it('10웨이브마다 10 ~ 1000 (100개), 1~100웨이브 보상은 예전 그대로', () => {
+  it('10웨이브마다 10 ~ 1000 (100개), 1~100웨이브 보상은 예전 그대로 (+ V2.0 PR-A 🔥 불꽃 = 골드의 1/20)', () => {
     expect(ms.map((m) => m.wave)).toEqual(Array.from({ length: 100 }, (_, i) => (i + 1) * 10));
-    expect(ms[0]!.reward).toEqual({ gold: 300, cards: 3 });
+    expect(ms[0]!.reward).toEqual({ gold: 300, flame: 15, cards: 3 });
     expect(ms[9]!.reward).toEqual({ gems: 200, fragments: 10 });
   });
 

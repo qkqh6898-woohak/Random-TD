@@ -15,10 +15,11 @@ export const PROGRESSION_FILE = 'progression.json';
 /** 영웅 카드가 나오는 일반 등급 (히든은 조각, 신은 상점 상자에서만 드물게) */
 export const CARD_GRADES = ['normal', 'rare', 'unique', 'hero', 'legend'] as const;
 
-/** 받을 것 (보상·상점 내용 공용). cards = 무작위 영웅 카드 장수, fragments = 리미티드 조각 개수 */
+/** 받을 것 (보상·상점 내용 공용). cards = 무작위 영웅 카드 장수, fragments = 리미티드 조각 개수, flame = 🔥 불꽃 (V2.0 PR-A) */
 export interface RewardSpec {
   gold?: number;
   gems?: number;
+  flame?: number;
   cards?: number;
   fragments?: number;
 }
@@ -49,7 +50,18 @@ export interface ShopItemData {
 export interface ProgressionData {
   version: number;
   notes: string;
-  account: { xpBase: number; xpStep: number; levelUpGems: number; every10Gems: number; startGold: number; startGems: number };
+  account: {
+    xpBase: number;
+    xpStep: number;
+    levelUpGems: number;
+    every10Gems: number;
+    startGold: number;
+    startGems: number;
+    /** 새 계정 🔥 불꽃 (V2.0 PR-A) */
+    startFlame: number;
+    /** 불꽃이 생기기 전 저장(형식 v1)에 한 번 주는 불꽃 — 예전 계정이 영웅 레벨업에서 막히지 않게 */
+    legacyFlame: number;
+  };
   matchRewards: {
     minStage: number;
     xpPerStage: number;
@@ -57,6 +69,9 @@ export interface ProgressionData {
     xpNewBest: number;
     goldPerStage: number;
     goldPerBoss: number;
+    /** 🔥 불꽃: 도달 웨이브당 · 보스 처치당 (V2.0 PR-A) */
+    flamePerStage: number;
+    flamePerBoss: number;
     fragmentsPerBoss: number;
     /** [도달 단계 이상, 카드 장수] — 단계 오름차순 */
     cardsByStage: [number, number][];
@@ -66,10 +81,10 @@ export interface ProgressionData {
     maxLevel: number;
     /** Lv n → n+1 기본 카드 수 (index n−1) */
     cards: number[];
-    /** Lv n → n+1 기본 골드 (index n−1) */
-    gold: number[];
+    /** Lv n → n+1 기본 🔥 불꽃 (index n−1, V2.0 PR-A — 예전 골드 표 ÷ 10) */
+    flame: number[];
     gradeCardPct: Record<Grade, number>;
-    gradeGoldPct: Record<Grade, number>;
+    gradeFlamePct: Record<Grade, number>;
   };
   hidden: { unlockFragments: number };
   waveRoad: { milestones: { wave: number; reward: RewardSpec }[] };
@@ -81,9 +96,9 @@ export interface ProgressionData {
 
 const nonNeg = s.int({ min: 0 });
 const reward: Schema = s.withCheck<RewardSpec>(
-  s.obj({ gold: s.opt(nonNeg), gems: s.opt(nonNeg), cards: s.opt(nonNeg), fragments: s.opt(nonNeg) }),
+  s.obj({ gold: s.opt(nonNeg), gems: s.opt(nonNeg), flame: s.opt(nonNeg), cards: s.opt(nonNeg), fragments: s.opt(nonNeg) }),
   (v, path, issues) => {
-    if (!v.gold && !v.gems && !v.cards && !v.fragments) issues.push({ path, message: '보상이 비어 있다' });
+    if (!v.gold && !v.gems && !v.flame && !v.cards && !v.fragments) issues.push({ path, message: '보상이 비어 있다' });
   },
 );
 const weights: Schema = s.withCheck<Record<string, number>>(s.rec(nonNeg), (v, path, issues) => {
@@ -109,6 +124,8 @@ export const progressionSchema: Schema = s.obj({
     every10Gems: nonNeg,
     startGold: nonNeg,
     startGems: nonNeg,
+    startFlame: nonNeg,
+    legacyFlame: nonNeg,
   }),
   matchRewards: s.obj({
     minStage: s.int({ min: 0 }),
@@ -117,6 +134,8 @@ export const progressionSchema: Schema = s.obj({
     xpNewBest: nonNeg,
     goldPerStage: nonNeg,
     goldPerBoss: nonNeg,
+    flamePerStage: nonNeg,
+    flamePerBoss: nonNeg,
     fragmentsPerBoss: nonNeg,
     cardsByStage: s.withCheck<[number, number][]>(s.arr(s.tuple(s.int({ min: 0 }), nonNeg), { minLength: 1 }), (v, path, issues) => {
       for (let i = 1; i < v.length; i++) {
@@ -129,9 +148,9 @@ export const progressionSchema: Schema = s.obj({
   heroes: s.obj({
     maxLevel: s.int({ min: 2, max: 99 }),
     cards: s.arr(s.int({ min: 1 }), { minLength: 1 }),
-    gold: s.arr(nonNeg, { minLength: 1 }),
+    flame: s.arr(nonNeg, { minLength: 1 }),
     gradeCardPct: gradePct,
-    gradeGoldPct: gradePct,
+    gradeFlamePct: gradePct,
   }),
   hidden: s.obj({ unlockFragments: s.int({ min: 1 }) }),
   waveRoad: s.obj({
@@ -176,7 +195,7 @@ export function crossCheckProgression(p: ProgressionData, data: Pick<GameData, '
   if (p.heroes.maxLevel > simMax) issues.push({ path: 'heroes.maxLevel', message: `game.json towerLevel.max(${simMax})보다 크다 — 판 레벨 입력으로 쓸 수 없다` });
   const steps = p.heroes.maxLevel - 1;
   if (p.heroes.cards.length !== steps) issues.push({ path: 'heroes.cards', message: `길이 ${p.heroes.cards.length} ≠ maxLevel − 1 (${steps})` });
-  if (p.heroes.gold.length !== steps) issues.push({ path: 'heroes.gold', message: `길이 ${p.heroes.gold.length} ≠ maxLevel − 1 (${steps})` });
+  if (p.heroes.flame.length !== steps) issues.push({ path: 'heroes.flame', message: `길이 ${p.heroes.flame.length} ≠ maxLevel − 1 (${steps})` });
   const hasGrade = (g: Grade): boolean => data.towers.towers.some((t) => t.grade === g);
   const checkWeights = (w: Partial<Record<Grade, number>> | undefined, path: string): void => {
     for (const [g, v] of Object.entries(w ?? {})) if ((v ?? 0) > 0 && !hasGrade(g as Grade)) issues.push({ path: `${path}.${g}`, message: `그 등급 타워가 없다: ${g}` });

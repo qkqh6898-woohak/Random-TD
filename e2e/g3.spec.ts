@@ -147,10 +147,10 @@ test('G-3 b. 영웅 탭: 모든 타워 격자 · [영웅]/[리미티드] · 정�
   expect(errors).toEqual([]);
 });
 
-test('G-3 c. 레벨업: 카드 + 골드를 쓰고, 다음 판 입력에 영웅 레벨이 들어간다', async ({ page }) => {
+test('G-3 c. 레벨업: 카드 + 🔥 불꽃(V2.0 PR-A, 예전 골드)을 쓰고, 다음 판 입력에 영웅 레벨이 들어간다', async ({ page }) => {
   const errors = collectErrors(page);
   await openLobby(page);
-  await patchProgress(page, 'p.heroes.miner.cards = 5; p.gold = 1000;');
+  await patchProgress(page, 'p.heroes.miner.cards = 5; p.flame = 100;');
   await page.locator('.lobby-nav [data-tab="heroes"]').click();
   const miner = page.locator('.hero-card[data-hero="miner"]');
   await expect(miner.getByTestId('hero-up')).toBeVisible();
@@ -166,8 +166,8 @@ test('G-3 c. 레벨업: 카드 + 골드를 쓰고, 다음 판 입력에 영웅 �
   await expect(page.getByTestId('hero-detail-level')).toHaveText('Lv 2');
   await expect(page.getByTestId('hero-detail-cards')).toHaveText('🃏 카드 3/3');
   await expect(page.getByTestId('hero-detail-bonus')).toHaveText('전투 공격력 +4% → +8%');
-  await expect(page.getByTestId('lobby-gold')).toContainText('900');
-  // 카드 3장 · 골드 900 → 한 번 더 (Lv2 → 3: 카드 3, 골드 150)
+  await expect(page.getByTestId('lobby-flame')).toContainText('90');
+  // 카드 3장 · 불꽃 90 → 한 번 더 (Lv2 → 3: 카드 3, 불꽃 15)
   await page.getByTestId('hero-levelup').click();
   await expect(page.getByTestId('hero-detail-level')).toHaveText('Lv 3');
   await expect(page.getByTestId('hero-levelup')).toBeDisabled();

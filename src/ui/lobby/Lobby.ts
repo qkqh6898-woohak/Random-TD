@@ -164,6 +164,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     const chips: HTMLElement[] = [];
     if (v.gold) chips.push(h('span', { class: 'go-chip', text: `💰 +${fmt(v.gold)}` }));
     if (v.gems) chips.push(h('span', { class: 'go-chip', text: `💎 +${fmt(v.gems)}` }));
+    if (v.flame) chips.push(h('span', { class: 'go-chip', text: `🔥 +${fmt(v.flame)}` }));
     if (v.xp) chips.push(h('span', { class: 'go-chip', text: `⭐ +${fmt(v.xp)}` }));
     if (v.levelUps.length) chips.push(h('span', { class: 'go-chip', text: `계정 Lv ${v.levelUps[v.levelUps.length - 1]}` }));
     return h(
@@ -212,6 +213,8 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
         { class: 'lobby-wallet' },
         h('span', { class: 'lobby-coin', attrs: { 'data-testid': 'lobby-gold', 'aria-label': `골드 ${t.gold}` } }, h('span', { class: 'lobby-coin-icon', text: '💰', attrs: { 'aria-hidden': 'true' } }), fmt(t.gold)),
         h('span', { class: 'lobby-coin is-gem', attrs: { 'data-testid': 'lobby-gems', 'aria-label': `보석 ${t.gems}` } }, h('span', { class: 'lobby-coin-icon', text: '💎', attrs: { 'aria-hidden': 'true' } }), fmt(t.gems)),
+        // V2.0 PR-A 🔥 불꽃: 영웅 레벨업에만 쓴다
+        h('span', { class: 'lobby-coin is-flame', attrs: { 'data-testid': 'lobby-flame', 'aria-label': `불꽃 ${t.flame}` } }, h('span', { class: 'lobby-coin-icon', text: '🔥', attrs: { 'aria-hidden': 'true' } }), fmt(t.flame)),
       ),
     );
   }
@@ -491,7 +494,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       on: {
         click: () => {
           const r = progress.levelUpAll(g.owned.map((c) => c.id));
-          if (r.ups.length > 0) opts.toast(`⬆ 영웅 ${r.ups.length}명 레벨업 · 🃏 ${r.cards} · 💰 ${fmt(r.gold)} 사용`, 2200);
+          if (r.ups.length > 0) opts.toast(`⬆ 영웅 ${r.ups.length}명 레벨업 · 🃏 ${r.cards} · 🔥 ${fmt(r.flame)} 사용`, 2200);
         },
       },
     });
@@ -527,7 +530,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     const d = heroDetail(progress.state, pd, data, detailId);
     if (!d) return;
     detailDlg.title.textContent = d.name;
-    const why: Record<string, string> = { notOwned: '보유하지 않은 영웅이에요', max: '최고 레벨이에요', cards: '카드가 모자라요', gold: '골드가 모자라요', ok: '' };
+    const why: Record<string, string> = { notOwned: '보유하지 않은 영웅이에요', max: '최고 레벨이에요', cards: '카드가 모자라요', flame: '🔥 불꽃이 모자라요 (판을 하면 모여요)', ok: '' };
     let action: HTMLElement;
     if (d.locked) {
       action = h(
@@ -548,7 +551,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
         'button',
         {
           class: 'btn btn-primary hero-levelup',
-          attrs: { type: 'button', 'data-testid': 'hero-levelup', 'aria-label': `레벨업 카드 ${d.cost.cards} 골드 ${d.cost.gold}`, ...(d.check === 'ok' ? {} : { disabled: '' }) },
+          attrs: { type: 'button', 'data-testid': 'hero-levelup', 'aria-label': `레벨업 카드 ${d.cost.cards} 불꽃 ${d.cost.flame}`, ...(d.check === 'ok' ? {} : { disabled: '' }) },
           on: {
             click: () => {
               const r = progress.levelUp(d.id);
@@ -557,7 +560,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
           },
         },
         h('span', { text: '레벨업' }),
-        h('small', { text: `🃏 ${d.cost.cards} · 💰 ${fmt(d.cost.gold)}` }),
+        h('small', { text: `🃏 ${d.cost.cards} · 🔥 ${fmt(d.cost.flame)}` }),
       );
     } else action = h('p', { class: 'hero-detail-why', text: d.owned ? '최고 레벨이에요' : '카드를 얻으면 영입돼요' });
     detailDlg.body.replaceChildren(

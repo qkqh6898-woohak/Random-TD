@@ -175,9 +175,9 @@ if ART.get("themes", 0) > len(C["themes"]): errors.append(f"art.themes {ART.get(
 PG = json.load(open(ROOT / "src/data/progression.json", encoding="utf-8"))
 _hl = PG["heroes"]
 if _hl["maxLevel"] > G["towerLevel"]["max"]: errors.append(f"progression.json heroes.maxLevel {_hl['maxLevel']} > game.json towerLevel.max {G['towerLevel']['max']}")
-for _k in ("cards", "gold"):
+for _k in ("cards", "flame"):  # V2.0 PR-A: 영웅 레벨업 = 카드 + 🔥 불꽃 (예전 골드)
     if len(_hl[_k]) != _hl["maxLevel"] - 1: errors.append(f"progression.json heroes.{_k} 길이 {len(_hl[_k])} ≠ maxLevel − 1")
-for _k in ("gradeCardPct", "gradeGoldPct"):
+for _k in ("gradeCardPct", "gradeFlamePct"):
     for _g in GRADES:
         if _g not in _hl[_k]: errors.append(f"progression.json heroes.{_k}.{_g} 없음")
 _waves = [m["wave"] for m in PG["waveRoad"]["milestones"]]
@@ -188,6 +188,9 @@ _qids = [q["id"] for q in PG["quests"]["daily"] + PG["quests"]["achievements"]]
 if len(_qids) != len(set(_qids)): errors.append("progression.json 퀘스트 id가 겹침")
 for _it in PG["shop"]:
     if len(_it["price"]) != 1 or list(_it["price"])[0] not in ("gold", "gems"): errors.append(f"progression.json 상점 {_it['id']}: 가격은 gold·gems 중 하나만 (게임 안 화폐)")
+    if "flame" in _it: errors.append(f"progression.json 상점 {_it['id']}: 🔥 불꽃은 상점에서 팔지 않는다 (판 결과로만 — V2.0 PR-A)")
+# V2.0 PR-A 🔥 불꽃: 판 정산으로 얻는다 (웨이브당·보스당 둘 다 0이면 레벨업이 막힌다)
+if PG["matchRewards"]["flamePerStage"] + PG["matchRewards"]["flamePerBoss"] <= 0: errors.append("progression.json matchRewards: 판 정산 불꽃이 0")
 
 # ---------- 표 생성 ----------
 def fmt(x):

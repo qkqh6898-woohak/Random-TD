@@ -118,7 +118,7 @@ test('V14 로비 영웅', async ({ page }) => {
     const p = JSON.parse(localStorage.getItem('rtd.progress')!);
     p.heroes.miner.cards = 5;
     p.heroes.archer.cards = 2;
-    p.gold = 1000;
+    p.flame = 100;
     localStorage.setItem('rtd.progress', JSON.stringify(p));
   });
   await page.goto('/');

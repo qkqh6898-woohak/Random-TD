@@ -81,7 +81,8 @@ export function heroCard(state: ProgressState, pd: ProgressionData, t: TowerData
     owned,
     cards: e.cards,
     need,
-    ready: need !== null && e.cards >= need,
+    // V2.0 PR-A: ▲·탭 배지·[모두 레벨업 N]이 같은 규칙 — 레벨업은 checkLevelUp(카드 + 🔥 불꽃) 'ok', 잠긴 리미티드는 조각이 모였을 때
+    ready: locked ? need !== null && e.cards >= need : owned && checkLevelUp(state, pd, t) === 'ok',
     locked,
     inDeck: deck.has(t.id),
     max: owned && cost === null,
@@ -91,9 +92,9 @@ export function heroCard(state: ProgressState, pd: ProgressionData, t: TowerData
 export interface HeroGridModel {
   owned: HeroCardModel[];
   unowned: HeroCardModel[];
-  /** 레벨업 카드가 모인 영웅 수 (탭 빨간 점) */
+  /** 지금 바로 레벨업(카드 + 🔥 불꽃)·해방할 수 있는 영웅 수 (탭 빨간 점, ▲와 같은 규칙) */
   ready: number;
-  /** 지금 바로(카드 + 골드) 레벨업할 수 있는 영웅 수 — [⬆ 모두 레벨업 N] */
+  /** 지금 바로(카드 + 🔥 불꽃) 레벨업할 수 있는 보유 영웅 수 — [⬆ 모두 레벨업 N] (= 보유 영웅의 ▲ 수) */
   canLevel: number;
 }
 
@@ -126,7 +127,7 @@ export interface HeroDetailModel extends HeroCardModel {
   /** 지금 레벨의 전투 공격력 보너스 % 글자 ('+8%') · 다음 레벨 */
   bonus: string;
   nextBonus: string | null;
-  cost: { cards: number; gold: number } | null;
+  cost: { cards: number; flame: number } | null;
   check: LevelUpCheck;
   /** 잠긴 히든: 해방 가능 */
   canUnlock: boolean;
@@ -180,11 +181,13 @@ export interface TopBarModel {
   xpRatio: number;
   gold: number;
   gems: number;
+  /** 🔥 불꽃 (V2.0 PR-A) */
+  flame: number;
 }
 
 export function topBar(state: ProgressState, pd: ProgressionData): TopBarModel {
   const need = xpToNext(pd, state.level);
-  return { level: state.level, xp: state.xp, xpNeed: need, xpRatio: Math.min(1, state.xp / need), gold: state.gold, gems: state.gems };
+  return { level: state.level, xp: state.xp, xpNeed: need, xpRatio: Math.min(1, state.xp / need), gold: state.gold, gems: state.gems, flame: state.flame };
 }
 
 export interface WaveNode {
@@ -204,10 +207,11 @@ export interface WaveRoadModel {
   ready: number;
 }
 
-export function rewardText(r: { gold?: number; gems?: number; cards?: number; fragments?: number }): string {
+export function rewardText(r: { gold?: number; gems?: number; flame?: number; cards?: number; fragments?: number }): string {
   const parts: string[] = [];
   if (r.gold) parts.push(`💰 ${r.gold.toLocaleString('ko-KR')}`);
   if (r.gems) parts.push(`💎 ${r.gems.toLocaleString('ko-KR')}`);
+  if (r.flame) parts.push(`🔥 ${r.flame.toLocaleString('ko-KR')}`);
   if (r.cards) parts.push(`🃏 ${r.cards}`);
   if (r.fragments) parts.push(`🧩 ${r.fragments}`);
   return parts.join(' · ');
@@ -259,6 +263,7 @@ export interface GrantView {
   xp: number;
   gold: number;
   gems: number;
+  flame: number;
   levelUps: number[];
   cards: { id: string; name: string; n: number; grade: Grade; color: string; isNew: boolean }[];
   fragments: { id: string; name: string; n: number }[];
@@ -270,6 +275,7 @@ export function grantView(g: Grant, data: Pick<GameData, 'towers'>): GrantView {
     xp: g.xp,
     gold: g.gold,
     gems: g.gems,
+    flame: g.flame,
     levelUps: [...g.levelUps],
     cards: g.cards.map((c) => {
       const t = tower.get(c.id);
@@ -285,6 +291,7 @@ export function grantLine(g: GrantView): string {
   const parts: string[] = [];
   if (g.gold) parts.push(`💰 ${g.gold.toLocaleString('ko-KR')}`);
   if (g.gems) parts.push(`💎 ${g.gems.toLocaleString('ko-KR')}`);
+  if (g.flame) parts.push(`🔥 ${g.flame.toLocaleString('ko-KR')}`);
   const cards = g.cards.reduce((a, c) => a + c.n, 0);
   if (cards) parts.push(`🃏 ${cards}장`);
   const frags = g.fragments.reduce((a, c) => a + c.n, 0);

@@ -36,7 +36,7 @@ function reasonLine(reason: string): HTMLElement {
   return h('p', { class: 'gameover-reason' }, ...kids);
 }
 
-/** 정산 상자 (G-3): 최고 웨이브 · 경험치 바 · 골드/보석 · 카드(등급 색, 새 영웅 NEW) · 조각 */
+/** 정산 상자 (G-3): 최고 웨이브 · 경험치 바 · 골드/보석/🔥 불꽃(V2.0 PR-A) · 카드(등급 색, 새 영웅 NEW) · 조각 */
 function rewardsBox(r: SettlementView): HTMLElement {
   const chips: HTMLElement[] = [];
   const chip = (icon: string, text: string, testid: string): HTMLElement =>
@@ -44,6 +44,7 @@ function rewardsBox(r: SettlementView): HTMLElement {
   chips.push(chip('⭐', `경험치 +${r.xp.toLocaleString('ko-KR')}`, 'go-xp'));
   chips.push(chip('💰', `+${r.gold.toLocaleString('ko-KR')}`, 'go-gold'));
   if (r.gems > 0) chips.push(chip('💎', `+${r.gems.toLocaleString('ko-KR')}`, 'go-gems'));
+  if (r.flame > 0) chips.push(chip('🔥', `+${r.flame.toLocaleString('ko-KR')}`, 'go-flame'));
   const cardTotal = r.cards.reduce((a, c) => a + c.n, 0);
   const fragTotal = r.fragments.reduce((a, c) => a + c.n, 0);
   return h(

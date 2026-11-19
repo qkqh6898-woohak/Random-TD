@@ -113,16 +113,17 @@
 
 .lobby-wallet {
   display: flex;
-  gap: 1.6cqw;
+  gap: 1.2cqw;
   flex: none;
 }
 
+/* V2.0 PR-A: 💰 골드 · 💎 보석 · 🔥 불꽃 셋이 한 줄에 들도록 조금 좁게 (예전 17cqw · 여백 2.2cqw) */
 .lobby-coin {
   display: inline-flex;
   align-items: center;
-  gap: 0.8cqw;
-  min-width: 17cqw;
-  padding: 1.2cqw 2.2cqw;
+  gap: 0.6cqw;
+  min-width: 13cqw;
+  padding: 1.2cqw 1.6cqw;
   font-size: 3.6cqw;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
