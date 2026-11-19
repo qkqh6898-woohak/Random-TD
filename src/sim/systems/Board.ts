@@ -15,7 +15,7 @@
  */
 import type { World } from '../World';
 import { streamSummon } from '../World';
-import { isTower, towerStacks, type Tower } from '../entities/Tower';
+import { isTower, isUniformStack, towerStacks, type Tower } from '../entities/Tower';
 import { isBuildable } from '../map';
 import { gradeRank } from '../rules';
 import type { MatchContext } from '../state';
@@ -24,13 +24,14 @@ import { autoSummonTile, godChanceFor, placeTower, rollSummon, summonCost, summo
 
 /**
  * 새 타워 towerId가 들어갈 수 있는 내 무더기 칸: 같은 타워가 쌓여 있고 board.stackMax보다 적은 칸 중 바닥 타워 ID가 가장 작은 칸.
+ * 섞인 칸(다른 타워가 낀 칸)은 고르지 않는다 (V2 H1).
  * @param except 셈에서 뺄 타워 id (곧 사라질 재료)
  */
 export function joinableStack(ctx: Pick<MatchContext, 'rules'>, world: World, player: number, towerId: string, except?: ReadonlySet<number>): readonly [number, number] | null {
   let best: Tower[] | null = null;
   for (const list of towerStacks(world).values()) {
     const first = list[0] as Tower;
-    if (first.owner !== player || first.tower !== towerId) continue;
+    if (first.owner !== player || first.tower !== towerId || !isUniformStack(list)) continue;
     const n = except ? list.filter((t) => !except.has(t.id)).length : list.length;
     if (n === 0 || n >= ctx.rules.stackMax) continue;
     if (!best || first.id < (best[0] as Tower).id) best = list;
