@@ -35,13 +35,14 @@ test('승급 가능 버튼이 떠도 👷 일꾼 수가 보인다 (실제 판)',
     for (let i = 0; i < 3; i++) s.match.world.enqueue({ type: 'debugTower', x, y, t });
     s.debugFastForward(1);
   });
-  await expect(page.getByTestId('hud-merge-ready')).toBeVisible();
+  // 피드백 #65: 승급 가능은 맵 오른쪽 위 [⏫ 모두 승급] (아래 띠 [⬆ 승급 가능]은 없어졌다)
+  await expect(page.getByTestId('hud-merge-all')).toBeVisible();
   await expect(page.getByTestId('hud-workers')).toBeVisible();
   await expect(page.getByTestId('hud-workers')).toHaveText('1/10');
   expect(errors).toEqual([]);
 });
 
-test('승급 가능·카드 알약이 함께 떠도 일꾼 수가 보이고 아래 줄이 412·360·320px에서 넘치지 않는다', async ({ page }) => {
+test('카드 알약이 떠도(승급 가능은 오른쪽 위) 일꾼 수가 보이고 아래 줄이 412·360·320px에서 넘치지 않는다', async ({ page }) => {
   for (const w of [412, 360, 320]) {
     await page.setViewportSize({ width: w, height: 915 });
     await start(page);
@@ -49,9 +50,8 @@ test('승급 가능·카드 알약이 함께 떠도 일꾼 수가 보이고 아�
       const band = document.querySelector('.hud-bottom') as HTMLElement;
       const workers = document.querySelector('[data-testid=hud-workers]') as HTMLElement;
       workers.textContent = '10/10';
-      const mr = document.querySelector('.hud-merge-ready') as HTMLButtonElement;
-      mr.replaceChildren('⬆', Object.assign(document.createElement('span'), { className: 'hud-mr-word', textContent: ' 승급 가능' }), ' 12');
-      mr.hidden = false;
+      // 피드백 #65: 아래 띠의 [⬆ 승급 가능]은 없어졌다 — 카드 알약 + 일꾼 '10/10'이 가장 붐비는 경우
+      const noMergeReady = band.querySelector('.hud-merge-ready') === null;
       const slot = document.querySelector('.hud-choice-slot') as HTMLElement;
       slot.innerHTML = '<button class="btn btn-chip cp-pill is-card"><span class="cp-pill-icon">🃏</span><span class="cp-pill-text">카드 고르기</span></button>';
       const br = band.getBoundingClientRect();
@@ -64,8 +64,10 @@ test('승급 가능·카드 알약이 함께 떠도 일꾼 수가 보이고 아�
         visible: workers.offsetParent !== null && wr.width > 0 && wr.left >= br.left - 0.5 && wr.right <= br.right + 0.5,
         over,
         bandOver: band.scrollWidth - band.clientWidth,
+        noMergeReady,
       };
     });
+    expect(r.noMergeReady, `${w}px`).toBe(true);
     expect(r.visible, `${w}px`).toBe(true);
     expect(r.over, `${w}px`).toEqual([]);
     expect(r.bandOver, `${w}px`).toBeLessThanOrEqual(0);

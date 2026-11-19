@@ -219,6 +219,12 @@ describe('안내 표시값', () => {
     expect(mergeGuideText(2, '고블린', true).title).toBe('고블린 승급하기');
     expect(mergeGuideText(2, '고블린', true).body).toContain('3개가 쌓인 칸을 누르면 승급');
     expect(mergeGuideText(2, '고블린', false).body).toContain('[⬆ 승급]');
+    // 피드백 #65: 안내가 반짝이는 버튼 = 맵 오른쪽 위 [⏫ 모두 승급] (아래 띠 [⬆ 승급 가능]은 없어졌다) — 글자도 그 버튼을 알려 준다
+    for (const tap of [true, false]) {
+      expect(mergeGuideText(2, '고블린', tap).body).toContain('오른쪽 위 [⏫ 모두 승급]');
+      expect(mergeGuideText(2, '고블린', tap).body).not.toContain('승급 가능');
+      expect(mergeGuideText(2, '고블린', tap).body.length).toBeLessThanOrEqual(44);
+    }
     const role = data.towers.towers.find((t) => t.id === 'merchant')!.role ?? '';
     const r = mergeResultText('상인', '레어', role);
     expect(r.title).toBe('⬆ 레어 상인');
