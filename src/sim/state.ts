@@ -9,7 +9,8 @@ import type { Deck, MatchRules, ThemeMods } from './rules';
 import type { PlayerMods } from './stats';
 
 export type MatchMode = 'infinite' | 'campaign';
-export type MatchPhase = 'playing' | 'defeat';
+/** 판 진행: 진행 중 / 패배 / 캠페인 클리어 (V2 L5 — 마지막 단계를 버티면 'victory') */
+export type MatchPhase = 'playing' | 'defeat' | 'victory';
 /** 패배 이유: 무한 = 몹 수 초과, 캠페인 = 목숨 0, 공통 = 보스 제한 시간 초과(M4-6), 캠페인 = 보스 출구 도달 */
 export type DefeatReason = '' | 'mobLimit' | 'lives' | 'bossTime' | 'bossLeak';
 

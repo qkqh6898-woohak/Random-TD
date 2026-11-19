@@ -65,10 +65,10 @@ describe('전투 기록', () => {
     expect(storage.getItem(RECORDS_KEY)).toBeNull();
   });
 
-  it('망가진 값은 빈 기록, v0.1.7(Codex 갈래) 키·형식 v1·v2는 그대로 읽고 새 키에 쓴다', () => {
-    expect(parseRecord('{"version":1,"bestStage":9000,"bossClears":null,"bestChallenge":0}')).toMatchObject({ bestStage: 0 });
+  it('망가진 칸만 버림(V2 L3), v0.1.7(Codex 갈래) 키·형식 v1·v2는 그대로 읽고 새 키에 쓴다', () => {
+    expect(parseRecord('{"version":1,"bestStage":9000,"bossClears":null,"bestChallenge":0}')).toMatchObject({ bestStage: 9000, bossClears: {} });
     expect(parseRecord('not json').bestStage).toBe(0);
-    expect(parseRecord('{"version":2,"bestStage":5,"bossClears":{"batqueen":10},"bestChallenge":0,"recent":[]}').bestStage).toBe(0);
+    expect(parseRecord('{"version":2,"bestStage":5,"bossClears":{"batqueen":10},"bestChallenge":0,"recent":[]}')).toMatchObject({ bestStage: 5, bossClears: {} });
     const storage = new MemoryStorage();
     storage.setItem(LEGACY_RECORDS_KEY, '{"version":1,"bestStage":30,"bossClears":{"batqueen":10},"bestChallenge":1}');
     const records = new BattleRecords(storage);

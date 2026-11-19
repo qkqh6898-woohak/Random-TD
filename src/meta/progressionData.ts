@@ -203,9 +203,12 @@ export function crossCheckProgression(p: ProgressionData, data: Pick<GameData, '
   checkWeights(p.matchRewards.cardGradeWeights, 'matchRewards.cardGradeWeights');
   checkWeights(p.recruit.weights, 'recruit.weights');
   p.shop.forEach((it, i) => checkWeights(it.weights, `shop[${i}].weights`));
+  // 일일·업적 id는 두 목록을 합쳐서도 겹치면 안 된다 (V2 L1 — claimQuest가 일일을 먼저 찾아 같은 id 업적은 영영 못 받고
+  // claimAllQuests가 끝나지 않는다). 경로는 실제 목록·순번으로
   const ids = new Set<string>();
-  for (const [i, q] of [...p.quests.daily, ...p.quests.achievements].entries()) {
-    if (ids.has(q.id)) issues.push({ path: `quests[${i}].id`, message: `퀘스트 id가 겹친다: ${q.id}` });
+  const all = [...p.quests.daily.map((q, i) => ({ q, path: `quests.daily[${i}].id` })), ...p.quests.achievements.map((q, i) => ({ q, path: `quests.achievements[${i}].id` }))];
+  for (const { q, path } of all) {
+    if (ids.has(q.id)) issues.push({ path, message: `퀘스트 id가 겹친다 (일일·업적 합쳐서): ${q.id}` });
     ids.add(q.id);
   }
   for (const [i, q] of p.quests.daily.entries()) if (q.stat === 'heroLevelSum') issues.push({ path: `quests.daily[${i}].stat`, message: 'heroLevelSum은 업적에만 쓴다' });

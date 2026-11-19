@@ -72,6 +72,12 @@ describe('데이터 (progression.json)', () => {
     bad3.matchRewards.cardsByStage = [[10, 5], [5, 6]];
     expect(() => parseProgression(bad3, data)).toThrow(/오름차순/);
   });
+  it('V2 L1: 일일과 업적이 같은 id를 쓰면 거절 (목록을 합쳐서 검사 — 같은 id 업적은 받을 수 없고 모두 받기가 끝나지 않음)', () => {
+    const bad = structuredClone(pd);
+    bad.quests.achievements[0]!.id = bad.quests.daily[0]!.id;
+    expect(() => parseProgression(bad, data)).toThrow(/quests\.achievements\[0\]\.id.*겹친다/s);
+    expect(new Set([...pd.quests.daily, ...pd.quests.achievements].map((q) => q.id)).size).toBe(pd.quests.daily.length + pd.quests.achievements.length);
+  });
 });
 
 describe('계정 레벨', () => {

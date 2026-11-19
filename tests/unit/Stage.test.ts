@@ -60,14 +60,14 @@ describe('단계 타이머 (GDD 2.2)', () => {
     expect(match.state.stage).toBe(2);
   });
 
-  it('캠페인은 마지막 단계(50) 다음으로 넘어가지 않는다', () => {
+  it('캠페인은 마지막 단계(50) 다음으로 넘어가지 않는다 (끝까지 버티면 클리어 — V2 L5, tests/unit/v2-l5-campaign-end.test.ts)', () => {
     const match = campaign(1);
     expect(match.state.lastStage).toBe(50);
     jumpToStage(match, 50);
     match.state.lives = 999; // 몹이 새어도 지지 않게
     match.stepN(5000);
     expect(match.state.stage).toBe(50);
-    expect(match.ticksToNextStage()).toBe(0);
+    expect(match.ended).toBe(true);
   });
 
   it('무한 모드는 끝이 없다 (lastStage 0)', () => {
@@ -190,11 +190,12 @@ describe('개발용 단계 건너뛰기 (debugSkipStage 명령)', () => {
     expect(match.state.nextStageTick).toBeGreaterThan(match.tick);
   });
 
-  it('캠페인 마지막 단계에서는 더 넘어가지 않는다', () => {
+  it('캠페인 마지막 단계에서는 더 넘어가지 않는다 (누르면 클리어 — V2 L5)', () => {
     const match = createMatch(data, { seed: 4, mode: 'campaign', theme: 1, debug: true });
     jumpToStage(match, 50);
     match.world.enqueue({ type: 'debugSkipStage' });
     match.step();
     expect(match.state.stage).toBe(50);
+    expect(match.state.phase).toBe('victory');
   });
 });

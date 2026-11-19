@@ -168,6 +168,23 @@ public final class UpdateLogicTest {
         Object back = UpdateLogic.Json.parse(UpdateLogic.jsonObject("notes", "줄1\n\"따옴표\" <b>"));
         eq("줄1\n\"따옴표\" <b>", ((java.util.Map<?, ?>) back).get("notes"), "왕복");
 
+        // V2 L6: 받는 중·설치 중에 웹이 다시 확인(페이지 다시 읽기)하면 지금 상태를 처음부터 다시 보낸다
+        String avail = "{\"type\":\"available\",\"version\":\"0.2.0\",\"current\":\"0.1.9\",\"notes\":\"n\",\"size\":100}";
+        eq(java.util.Arrays.asList(avail), UpdateLogic.resyncEvents("available", "0.2.0", "0.1.9", "n", 100L, 0L, false, false), "다시 확인: 제안만");
+        eq(java.util.Arrays.asList(avail, "{\"type\":\"permission\"}"),
+                UpdateLogic.resyncEvents("permission", "0.2.0", "0.1.9", "n", 100L, 0L, false, false), "다시 확인: 권한 대기");
+        eq(java.util.Arrays.asList(avail, "{\"type\":\"progress\",\"received\":40,\"total\":100}"),
+                UpdateLogic.resyncEvents("downloading", "0.2.0", "0.1.9", "n", 100L, 40L, false, false), "다시 확인: 받는 중 진행률");
+        eq(java.util.Arrays.asList(avail, "{\"type\":\"progress\",\"received\":100,\"total\":100}", "{\"type\":\"verifying\"}"),
+                UpdateLogic.resyncEvents("downloading", "0.2.0", "0.1.9", "n", 100L, 100L, true, false), "다시 확인: 확인 중");
+        eq(java.util.Arrays.asList(avail, "{\"type\":\"progress\",\"received\":100,\"total\":100}", "{\"type\":\"installing\"}"),
+                UpdateLogic.resyncEvents("installing", "0.2.0", "0.1.9", "n", 100L, 100L, false, false), "다시 확인: 설치 세션");
+        eq(java.util.Arrays.asList(avail, "{\"type\":\"progress\",\"received\":100,\"total\":100}", "{\"type\":\"installing\",\"step\":\"confirm\"}"),
+                UpdateLogic.resyncEvents("installing", "0.2.0", "0.1.9", "n", 100L, 100L, false, true), "다시 확인: 설치 확인 창");
+        eq(java.util.Arrays.asList(avail, "{\"type\":\"progress\",\"received\":100,\"total\":100}"),
+                UpdateLogic.resyncEvents("downloading", "0.2.0", "0.1.9", "n", 100L, 500L, false, false), "받은 양은 전체를 넘지 않음");
+        eq(java.util.Collections.emptyList(), UpdateLogic.resyncEvents("idle", "0.2.0", "0.1.9", "n", 100L, 0L, false, false), "모르는 상태는 없음");
+
         if (failures > 0) {
             System.err.println("UpdateLogicTest 실패 " + failures + "개");
             System.exit(1);

@@ -186,6 +186,8 @@ export class World {
   private readonly listeners = new Map<string, EventListener[]>();
   /** 명령을 실행하기 전에 불리는 훅 (방치 미션의 '마지막 조작 틱' 등) */
   private beforeCommand: ((world: World, command: Command) => void) | null = null;
+  /** 예약 거절 필터 (setCommandFilter) */
+  private commandFilter: ((input: CommandInput) => string | null) | null = null;
 
   constructor(options: WorldOptions) {
     if (!Number.isSafeInteger(options.seed)) throw new Error(`시드는 정수여야 한다 (받은 값: ${options.seed})`);
@@ -255,7 +257,17 @@ export class World {
    * 플레이어 번호는 0 ~ players-1만 받는다.
    */
   enqueue(input: CommandInput): EnqueueResult {
+    const refused = this.commandFilter?.(input) ?? null;
+    if (refused !== null) return { ok: false, reason: refused };
     return this.queue.enqueue(input, this.tick);
+  }
+
+  /**
+   * 예약 거절 필터 (하나): 이유 글자를 돌려주면 그 명령은 받지 않는다 → 실행 기록(리플레이)에도 남지 않는다.
+   * 판을 만드는 쪽이 판 설정(예: 예전 명령은 리플레이·개발자 판에서만, V2 L2)으로 정한다. 상태가 아니라 설정이라 해시·체크포인트 밖.
+   */
+  setCommandFilter(filter: ((input: CommandInput) => string | null) | null): void {
+    this.commandFilter = filter;
   }
 
   /** 1틱 진행. */

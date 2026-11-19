@@ -2,7 +2,10 @@
  * U-1 앱 안 업데이트 — 웹 쪽 규칙 (src/update): 자바 사건 읽기, 상태 기계(idle → checking → available → downloading → installing / error),
  * 한 실행에 한 번 확인, 다리가 없으면 아무것도 안 함, 다리 호출 실패는 오류 상태로(게임은 그대로).
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { UPDATE_SAVE_NOTE } from '../../src/ui/messages';
 import { UpdateService, findBridge, type NativeUpdateBridge, type UpdateHost } from '../../src/update/UpdateService';
 import {
   cleanNotes,
@@ -92,6 +95,26 @@ describe('상태 기계 (reduceUpdate)', () => {
     s = reduceUpdate(s, native({ type: 'installing', confirm: true }));
     expect(s).toMatchObject({ kind: 'installing', confirm: true });
     expect(reduceUpdate(s, native({ type: 'installed' })).kind).toBe('installed');
+  });
+
+  it('V2 L6: 받는 중·설치 중에 웹이 다시 읽혀도 자바가 다시 보낸 사건(UpdateLogic.resyncEvents 순서)으로 지금 단계가 되살아난다', () => {
+    // 자바 UpdateLogic.resyncEvents와 같은 JSON (android/test UpdateLogicTest가 같은 모양을 검사)
+    const replay = (jsons: string[]): UpdateState =>
+      jsons.reduce<UpdateState>((st, j) => {
+        const ev = parseNativeEvent(JSON.parse(j));
+        expect(ev, j).not.toBeNull();
+        return reduceUpdate(st, native(ev!));
+      }, reduceUpdate(idle, { type: 'check' }));
+    const avail = JSON.stringify({ type: 'available', ...OFFER });
+    const total = OFFER.size;
+    expect(replay([avail, JSON.stringify({ type: 'progress', received: 40, total })])).toMatchObject({ kind: 'downloading', received: 40, total });
+    expect(replay([avail, JSON.stringify({ type: 'progress', received: total, total }), '{"type":"verifying"}']).kind).toBe('verifying');
+    expect(replay([avail, JSON.stringify({ type: 'progress', received: total, total }), '{"type":"installing","step":"confirm"}'])).toMatchObject({ kind: 'installing', confirm: true });
+    expect(replay([avail, '{"type":"permission"}']).kind).toBe('permission');
+    // 다시 보낸 뒤 이어지는 진행 사건도 받는다 (예전엔 'checking'에 멈춰 모두 버렸다)
+    let s = replay([avail, JSON.stringify({ type: 'progress', received: 10, total })]);
+    s = reduceUpdate(s, native({ type: 'progress', received: 20, total }));
+    expect(s).toMatchObject({ kind: 'downloading', received: 20 });
   });
 
   it('권한: available → permission → (설정에서 돌아와) downloading', () => {
@@ -251,5 +274,14 @@ describe('화면 글', () => {
     expect(errorMessage('network')).toContain('인터넷');
     expect(errorMessage('aborted')).toBe('업데이트를 취소했어요');
     expect(errorMessage('digest')).toContain('지웠어요');
+  });
+
+  it('V2 M3: 업데이트 창 저장 안내는 진행 중 판이 끝날 수 있음을 말한다 (예전 \'저장한 판과 기록은 그대로\'는 거짓)', () => {
+    expect(UPDATE_SAVE_NOTE).toContain('계정·기록은 그대로');
+    expect(UPDATE_SAVE_NOTE).toContain('게임 규칙이 바뀐 업데이트면');
+    expect(UPDATE_SAVE_NOTE).toContain('보상');
+    const src = readFileSync(join(__dirname, '..', '..', 'src', 'ui', 'screens', 'UpdateDialog.ts'), 'utf8');
+    expect(src).not.toContain('저장한 판과 기록은 그대로');
+    expect(src.match(/UPDATE_SAVE_NOTE/g)?.length).toBe(3); // import 1 + 내려받기 전·설치 확인 2
   });
 });

@@ -78,7 +78,16 @@ export interface MatchOptions {
    * 판 시작 때 정해진 입력 (해시 밖, 리플레이·판 저장에 기록).
    */
   lockedHidden?: readonly (readonly string[])[];
+  /**
+   * 예전 명령(summon·merge·mergeAll·move — 칸 무더기 규칙 전의 명령)을 받을지 (V2 검토 L2). 리플레이 재생(playReplay·recordReplay)만 켠다
+   * — 예전 리플레이가 같은 결과를 내게. 꺼져 있으면 일반 판은 예약 단계에서 거절한다(실행 기록에도 남지 않음 → 그 판의 리플레이도 같다).
+   * 개발자 판(debug)은 치트 판이라 그대로 받는다 (E2E·개발 도구가 판을 빨리 만드는 데 쓴다). 판 상태가 아니라 설정 (해시 밖).
+   */
+  legacyCommands?: boolean;
 }
+
+/** 칸 무더기(G-1) 전의 예전 명령 — 리플레이·개발자 판에서만 받는다 (V2 L2). */
+export const LEGACY_COMMAND_TYPES: readonly string[] = Object.freeze(['summon', 'merge', 'mergeAll', 'move']);
 
 export class Match {
   readonly world: World;
@@ -149,6 +158,16 @@ export class Match {
 
   get defeated(): boolean {
     return this.ctx.state.phase === 'defeat';
+  }
+
+  /** 캠페인 클리어 (V2 L5: 마지막 단계를 끝까지 버팀) */
+  get victory(): boolean {
+    return this.ctx.state.phase === 'victory';
+  }
+
+  /** 판이 끝났다 (패배 또는 클리어) */
+  get ended(): boolean {
+    return this.ctx.state.phase !== 'playing';
   }
 
   hash(): number {
@@ -344,6 +363,9 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     ],
   });
   missionSystem = installMissionTracker(ctx, world);
+  if (!opts.legacyCommands && !opts.debug) {
+    world.setCommandFilter((input) => (LEGACY_COMMAND_TYPES.includes(input.type) ? `예전 명령은 리플레이에서만 받는다: ${input.type}` : null));
+  }
   world.setCommandHandler('upgrade', (w, cmd) => {
     if (cmd.type === 'upgrade') upgrade(ctx, w, cmd.player, cmd.k);
   });
