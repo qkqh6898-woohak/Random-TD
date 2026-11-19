@@ -9,6 +9,8 @@
  * - 진행 중인 판 저장(MatchSaves)과 따로 둔다. 망가진 값은 빈 기록으로.
  */
 import type { Match } from '../sim/match';
+import type { MatchRules } from '../sim/rules';
+import type { AbandonedRun } from './MatchSaves';
 import { bossForStage } from '../sim/systems/BossSchedule';
 import { TICK_HZ } from '../sim/World';
 import type { KeyValueStorage } from './storage';
@@ -87,26 +89,58 @@ export class BattleRecords {
   complete(match: Match, runId: string): { bestStage: number; newBest: boolean } | null {
     const { rules, state, world } = match;
     if (!match.defeated || state.mode !== 'infinite' || state.debug || state.debugUsed || world.players !== 1) return null;
+    return this.record(rules, {
+      runId,
+      mode: state.mode,
+      theme: state.theme,
+      stage: state.stage,
+      bossesKilled: state.bossesKilled,
+      challengeBest: state.challengeBest,
+      durationSeconds: Math.floor((state.defeatTick + 1) / TICK_HZ),
+    });
+  }
+
+  /**
+   * 업데이트로 버린 진행 중 판을 기록한다 (V2 M2a — MatchSaves.onAbandoned). 패배 판과 같은 조건(일반 1인 무한 모드)만, 게임 시간 = 저장한 틱.
+   * rules = 지금 데이터의 규칙 (보스 주기·보스 id — 데이터가 바뀌었으면 근사값).
+   */
+  completeAbandoned(rules: MatchRules, run: Pick<AbandonedRun, 'runId' | 'mode' | 'theme' | 'players' | 'stage' | 'bossesKilled' | 'challengeBest' | 'tick' | 'dev'>): { bestStage: number; newBest: boolean } | null {
+    if (run.mode !== 'infinite' || run.dev || run.players !== 1) return null;
+    return this.record(rules, {
+      runId: run.runId,
+      mode: run.mode,
+      theme: run.theme,
+      stage: run.stage,
+      bossesKilled: run.bossesKilled,
+      challengeBest: run.challengeBest,
+      durationSeconds: Math.floor(run.tick / TICK_HZ),
+    });
+  }
+
+  private record(
+    rules: MatchRules,
+    r: { runId: string; mode: string; theme: number; stage: number; bossesKilled: number; challengeBest: number; durationSeconds: number },
+  ): { bestStage: number; newBest: boolean } | null {
     const record = this.read();
-    if (record.recent.some((r) => r.id === runId)) return { bestStage: record.bestStage, newBest: false };
-    const newBest = state.stage > record.bestStage;
-    record.bestStage = Math.max(record.bestStage, state.stage);
-    record.bestChallenge = Math.max(record.bestChallenge, state.challengeBest);
+    if (record.recent.some((x) => x.id === r.runId)) return { bestStage: record.bestStage, newBest: false };
+    const newBest = r.stage > record.bestStage;
+    record.bestStage = Math.max(record.bestStage, r.stage);
+    record.bestChallenge = Math.max(record.bestChallenge, r.challengeBest);
     // 보스를 잡아야 다음 보스 단계로 넘어간다 (못 잡으면 제한 시간 패배) → 처치 수 × 주기까지의 보스 단계가 처치한 단계
-    const lastCleared = Math.min(state.stage, state.bossesKilled * rules.bossEvery);
+    const lastCleared = Math.min(r.stage, r.bossesKilled * rules.bossEvery);
     const ids: string[] = [];
     for (let stage = rules.bossEvery; stage <= lastCleared; stage += rules.bossEvery) {
-      const boss = bossForStage(rules, state.mode, state.theme, stage);
+      const boss = bossForStage(rules, r.mode, r.theme, stage);
       if (!boss) continue;
       if (!ids.includes(boss.id)) ids.push(boss.id);
       record.bossClears[boss.id] = Math.max(record.bossClears[boss.id] ?? 0, stage);
     }
     const run: RunResult = {
-      id: runId,
-      stage: state.stage,
-      durationSeconds: Math.floor((state.defeatTick + 1) / TICK_HZ),
+      id: r.runId,
+      stage: r.stage,
+      durationSeconds: r.durationSeconds,
       bossIds: ids,
-      bestChallenge: state.challengeBest,
+      bestChallenge: r.challengeBest,
     };
     record.recent = [run, ...record.recent].slice(0, RECENT_LIMIT);
     try {

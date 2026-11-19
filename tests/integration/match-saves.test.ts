@@ -11,6 +11,7 @@ import type { CommandInput } from '../../src/sim/Commands';
 import { createMatch } from '../../src/sim/match';
 import { matchInputs, recordReplay, replayMatchOptions, type ReplayFile } from '../../src/sim/replay';
 import { OPTIONAL_STATE_KEYS } from '../../src/sim/state';
+import { SIM_VERSION } from '../../src/sim/version';
 import { arenaData, command, data, infinite, summonAt } from '../helpers/match';
 
 const DIR = join(__dirname, '..', 'replays');
@@ -167,7 +168,7 @@ describe('지문·슬롯·손상', () => {
     expect(decodeSave('{"a":1}')).toBeNull();
   });
 
-  it('손상된 저장·다른 데이터·다른 앱 버전·다른 형식은 버리고 슬롯을 지운다 (게임은 새 판으로)', () => {
+  it('손상된 저장·다른 데이터·다른 규칙 버전·다른 형식은 버리고 슬롯을 지운다 (게임은 새 판으로)', () => {
     const { store, storage } = saves();
     store.write(infinite(13), 1, null, 'x');
     const raw = storage.getItem(MATCH_SLOT)!;
@@ -189,11 +190,11 @@ describe('지문·슬롯·손상', () => {
     expect(other.discardedByUpdate).toBe(false);
     expect(storage.getItem(MATCH_SLOT)).toBeNull();
 
-    // 앱 버전이 바뀜
+    // sim 규칙 버전이 바뀜 (V2 M2b — 앱 버전만 바뀐 것은 이어 한다: tests/integration/v2-m2-sim-version.test.ts)
     store.write(infinite(13), 1, null, 'x');
-    const newer = new MatchSaves(arenaData, storage, { version: '9.9.9', dev: false });
+    const newer = new MatchSaves(arenaData, storage, { version: '9.9.9', dev: false, simVersion: SIM_VERSION + 1 });
     expect(newer.read()).toBeNull();
-    expect(newer.lastDiscard).toContain('앱 버전');
+    expect(newer.lastDiscard).toContain('규칙 버전');
     expect(newer.discardedByUpdate).toBe(true);
 
     // 형식이 다른 옛 저장 (Codex 갈래 v0.1.7 모양) — 머리가 없다

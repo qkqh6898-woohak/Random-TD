@@ -348,3 +348,12 @@ export function craftFailText(reason: string): string | null {
   if (reason === 'full') return BOARD_FULL;
   return null;
 }
+
+/**
+ * 업데이트로 진행 중 판을 이어 할 수 없을 때 타이틀 알림 (V2 M2a — 버리기 전에 정산). credited = 이번에 보상을 줬음.
+ * 정산하지 못했으면(값이 이상한 옛 저장·이미 받은 판) 예전 문구.
+ */
+export function abandonedRunToast(info: { run: { stage: number }; credited: boolean } | null): string {
+  if (info?.credited) return `게임 규칙이 바뀌어 진행 중이던 판(${info.run.stage}단계)은 여기서 끝났어요. 그 판의 보상은 받았어요.`;
+  return '업데이트로 진행 중이던 판은 이어 할 수 없어요. 계정·설정·전투 기록은 그대로예요.';
+}
