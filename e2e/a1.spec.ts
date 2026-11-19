@@ -317,8 +317,7 @@ test('A-1 효과음: 사람 입력 전 무음, 볼륨 기본 40%·5 단위·음�
 
   await placeThreeMiners(page);
   const n = (await probe()).notes.length;
-  await page.getByTestId('hud-merge-ready').click();
-  await page.locator('[data-action="merge"]').click();
+  await page.getByTestId('hud-merge-all').click(); // 피드백 #65: 승급 버튼은 [⏫ 모두 승급] 하나
   await expect.poll(async () => (await probe()).notes.slice(n)).toEqual([392, 523.25, 783.99]);
 });
 
@@ -399,8 +398,7 @@ test.describe('A-1 화면 흔들림·소환 연출', () => {
     await inScene(page, (s) => s.tweens.resumeAll(), null);
 
     await placeThreeMiners(page);
-    await page.getByTestId('hud-merge-ready').click();
-    await page.locator('[data-action="merge"]').click();
+    await page.getByTestId('hud-merge-all').click(); // 피드백 #65: 승급 버튼은 [⏫ 모두 승급] 하나
     await expect.poll(seen).toEqual(expect.arrayContaining(['summon-card', 'summon-portal', 'merge-material-orb', 'merge-card', 'merge-star']));
     expect(await page.evaluate(() => (window as unknown as { dieTex: number }).dieTex)).toBe(0);
     // 한도: 한 프레임에 소환 20번이어도 동시에 떠 있는 초상 카드는 12개까지 (A-1 주사위 한도 그대로)
@@ -422,8 +420,18 @@ test.describe('A-1 화면 흔들림·소환 연출', () => {
     await expect(page.getByTestId('hud-towers')).toHaveText(new RegExp(`^${queued.pads}/`));
     expect((await inScene(page, (s) => s.summonFxStats, null)).peak).toBe(12);
 
-    // 뒤로 가기: 열린 타워 패널(승급 결과) → 닫힘, 강화 시트 → 닫힘, 그다음 일시정지 → 계속
+    // 뒤로 가기: 열린 타워 패널 → 닫힘, 강화 시트 → 닫힘, 그다음 일시정지 → 계속
+    // (피드백 #65: [⏫ 모두 승급]은 패널을 열지 않는다 → 타워 하나를 골라 패널을 연다)
     const back = () => page.evaluate(() => !window.dispatchEvent(new Event('randomtd:native-back', { cancelable: true })));
+    await inScene(
+      page,
+      (s) => {
+        const g = s as unknown as { selectTower(id: number): void; match: { towers(): { id: number }[] } };
+        g.selectTower(g.match.towers()[0]!.id);
+        return null;
+      },
+      null,
+    );
     await expect.poll(() => inScene(page, (s) => s.panelOpen, null)).toBe(true);
     expect(await back()).toBe(true);
     await expect.poll(() => inScene(page, (s) => s.panelOpen, null)).toBe(false);

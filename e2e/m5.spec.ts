@@ -58,7 +58,6 @@ type SceneLike = {
   choiceKind: string | null;
   choiceCollapsed: boolean | null;
   selectedTowerId: number | null;
-  mergeHighlightCount: number;
   layout: { tile: number; originX: number; originY: number };
   debugFastForward(n: number): number;
 };
@@ -524,49 +523,6 @@ test('미션: 달성하면 한 줄 배너·배지 "n 받기" → [받기]로 보
   await expect(page.getByTestId('mission-row-h08')).toHaveAttribute('data-status', 'open');
   await expect(page.getByTestId('mission-row-h02').locator('.ms-name-text')).toHaveText('???');
   await page.evaluate(() => localStorage.removeItem('rtd.account'));
-  expect(errors).toEqual([]);
-});
-
-test('[⬆ 승급 가능 n]: 누를 때마다 다음 묶음의 패널을 열고 그 타워들에 금색 고리 강조', async ({ page }) => {
-  const errors = collectErrors(page);
-  await start(page);
-  // G-1 칸 무더기: 같은 캐릭터 3개가 한 칸에 (궁수 (2,3), 광부 (1,5))
-  await place(page, [
-    [2, 3, 'archer'],
-    [2, 3, 'archer'],
-    [2, 3, 'archer'],
-    [1, 5, 'miner'],
-    [1, 5, 'miner'],
-    [1, 5, 'miner'],
-  ]);
-  const btn = page.getByTestId('hud-merge-ready');
-  await expect(btn).toHaveText('⬆ 승급 가능 2');
-  // 강조는 1.5초 — 느린 헤드리스 화면(T-3: 캔버스가 화면 높이만큼 커짐)에서도 놓치지 않게 누르자마자 잰다
-  await btn.click();
-  expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
-  await expect(page.getByTestId('tower-panel')).toBeVisible();
-  await expect(page.getByTestId('tp-name')).toHaveText('궁수 ×3');
-  // 아래에 붙은 패널이 [⬆ 승급 가능 n]을 덮어도 패널 안 [다음 묶음 ▶]으로 이어서 넘긴다 (M5 검토 반영)
-  const next = page.locator('[data-action="merge-next"]');
-  await expect(next).toHaveText('다음 묶음 ▶ 1/2');
-  await next.click();
-  expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
-  await expect(page.getByTestId('tp-name')).toHaveText('광부 ×3');
-  await expect(next).toHaveText('다음 묶음 ▶ 2/2');
-  await next.click();
-  await expect(page.getByTestId('tp-name')).toHaveText('궁수 ×3');
-  // 패널을 닫고 버튼을 눌러도 다음 묶음
-  await page.locator('[data-action="panel-close"]').click();
-  await btn.click();
-  expect(await inScene(page, (s) => s.mergeHighlightCount, null)).toBe(3);
-  await expect(page.getByTestId('tp-name')).toHaveText('광부 ×3');
-  // 타워를 직접 눌러 연 패널에는 [다음 묶음 ▶]이 없다
-  await page.locator('[data-action="panel-close"]').click();
-  await tapTile(page, 2, 3);
-  await expect(page.getByTestId('tp-name')).toHaveText('궁수 ×3');
-  await expect(next).toBeHidden();
-  // 1.5초 뒤 강조 끝
-  await expect.poll(() => inScene(page, (s) => s.mergeHighlightCount, null), { timeout: 4000 }).toBe(0);
   expect(errors).toEqual([]);
 });
 

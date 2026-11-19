@@ -11,7 +11,7 @@
  * 경고 (UI.md 4.2): 남은 10초 이하 노란색 / 몹 120 이상 빨간색 깜빡 + 화면 가장자리 붉은 테두리 /
  *   목숨 5 이하 빨간색(깜빡이지 않음), 목숨이 줄 때마다 하트가 깨지는 연출.
  *
- * 아래 띠 (M2): 🗼 놓인 타워 수/배치 칸 수 · 소환 안내 · [👷 300원](M4 일꾼 고용) · [⬆ 승급 가능 n](M3, 누르면 그 타워의 정보 패널).
+ * 아래 띠 (M2): 🗼 놓인 타워 수/배치 칸 수 · 소환 안내 · [👷 300원](M4 일꾼 고용). 예전 [⬆ 승급 가능 n](M3)은 피드백 #65에서 없앴다.
  *   맵 아래쪽 끝은 Game 장면이 이 띠의 위쪽 끝을 재서 정한다.
  *   M4 검토 반영: 접은 고르기 창의 [🃏 카드 고르기] 알약은 타워 수 옆 자리(choiceSlot)에 들어간다 — 맵 위에 떠 있으면
  *   배치 칸 3개를 덮어 소환 탭을 가로챘다. 알약이 보이는 동안 소환 안내는 숨긴다(CSS).
@@ -22,6 +22,7 @@
  *
  * G-1: 하단 메뉴 = [💠 신화] [✨ 소환] [🎰 도박] [⬆ 강화] + 작은 [⚔] [📋] (+ 개발자 [🛠]) — 도전·미션은 아이콘·배지만 (좁은 화면 넘침 방지).
  *   피드백 #26: 위 띠 아래 맵 오른쪽 위에 [⏫ 모두 승급 n] (승급할 무더기가 있을 때만, onMergeAll).
+ *   피드백 #65: 승급 버튼은 이것 하나 — 한 번 누르면 전체 승급, 꾹 누르면 누르는 동안 새로 찬 무더기도 계속 (mergeAllHoldDelay).
  *   1줄 ⏸ 앞 [⚡ n] 필살기 칩 (찬 캐릭터가 있을 때만): 누르면 찬 캐릭터 목록 + [모두 발동] (onUlt·onUltAll).
  * 값 계산은 hudModel.ts(순수 함수, 단위 테스트)에서 하고, 여기서는 바뀐 글자만 DOM에 쓴다.
  * HUD는 sim을 읽기만 한다. 배속은 화면 설정(TickClock), 돈 추가·단계 건너뛰기(debug)는 명령으로 보낸다.
@@ -30,7 +31,7 @@
 import { WORKER_PORTRAIT, workerPortraitFallback } from '../../art/worker';
 import { artIcon } from '../artIcon';
 import { h } from '../dom';
-import { HOLD_DELAY_MS, attachHoldRepeat, skipRepeatDelay, type HoldHandle } from '../hold';
+import { HOLD_DELAY_MS, attachHoldRepeat, mergeAllHoldDelay, skipRepeatDelay, type HoldHandle } from '../hold';
 import type { UiView } from '../root';
 import { goldGainLabels, livesDropped, type HudModel } from './hudModel';
 import type { SheetKind } from '../sheets/sheetModels';
@@ -41,6 +42,8 @@ export const HEART_BREAK_MS = 600;
 export const GOLD_GAIN_MS = 700;
 /** 돈 '+n원'을 동시에 띄우는 최대 개수 (피드백 #45: 합치지 않고 하나씩 — 넘치면 가장 오래된 것을 지운다) */
 export const GOLD_GAIN_MAX = 4;
+/** 꾹 누르는 동안 승급할 무더기가 없을 때 [⏫ 모두 승급] 글자 (피드백 #65) */
+const MERGE_ALL_HOLD_LABEL = '⏫ 모두 승급';
 
 export interface HudOptions {
   onSpeed: () => void;
@@ -50,8 +53,6 @@ export interface HudOptions {
   onSkipStage?: () => void;
   /** 개발자 모드만: 돈 추가 (CLAUDE.md 4장 개발용 치트) */
   onAddGold?: () => void;
-  /** 아래 띠 '⬆ 승급 가능 n': 승급할 수 있는 타워를 골라 정보 패널을 연다 (M3) */
-  onMergeReady?: () => void;
   /** 아래 띠 '👷 300원': 일꾼 고용 (M4) */
   onHire?: () => void;
   /** 하단 메뉴 (M5): 도전·강화·미션 바텀 시트 열기/닫기 */
@@ -70,8 +71,11 @@ export interface HudOptions {
   /** G-1 필살기: 목록의 캐릭터 하나 발동 (타워 엔티티 id) · 모두 발동 */
   onUlt?: (id: number) => void;
   onUltAll?: () => void;
-  /** 맵 오른쪽 위 [⏫ 모두 승급 n] (피드백 #26): 승급할 수 있는 무더기를 한 번에 모두 승급 */
-  onMergeAll?: () => void;
+  /**
+   * 맵 오른쪽 위 [⏫ 모두 승급 n] (피드백 #26): 승급할 수 있는 무더기를 한 번에 모두 승급.
+   * 피드백 #65: 꾹 누르면 되풀이 — false면 (일시정지·판 끝) 꾹 누르기를 멈춘다.
+   */
+  onMergeAll?: () => boolean;
 }
 
 /** G-1 필살기 목록 한 줄 (HUD [⚡ n] 칩을 누르면 보인다) */
@@ -109,7 +113,7 @@ export interface HudView extends UiView {
   update(model: HudModel): void;
   /** [▶ 준비 완료] 상태 (F10): hidden · ready · sent(눌렀고 시작을 기다림 — 다시 눌러도 아무 일 없음) */
   setReady(state: 'hidden' | 'ready' | 'sent'): void;
-  /** 첫 승급 안내 (F10): [⬆ 승급 가능] 버튼을 반짝여 강조 */
+  /** 첫 승급 안내 (F10): [⏫ 모두 승급] 버튼을 반짝여 강조 (피드백 #65 전에는 아래 띠 [⬆ 승급 가능]) */
   setMergeGuide(on: boolean): void;
   /** G-1: 하단 메뉴 [신화]·[소환]·[도박] 배지 (alert = 강조) */
   setG1Badges(b: { mythic: string; mythicAlert: boolean; summon: string; summonAlert: boolean; gamble: string }): void;
@@ -176,12 +180,15 @@ export function createHud(opts: HudOptions): HudView {
     text: '',
   });
   // 피드백 #26: 맵 오른쪽 위 [⏫ 모두 승급 n] — 위 띠 아래에 떠 있어(absolute) 띠 높이·맵 위치를 바꾸지 않는다
+  // 피드백 #65: 하나뿐인 승급 버튼. 짧게 = 한 번 모두 승급, 꾹 = 누르는 동안 되풀이
   const mergeAllBtn = h('button', {
     class: 'btn btn-chip hud-merge-all',
     attrs: { type: 'button', 'data-action': 'merge-all-stacks', 'data-testid': 'hud-merge-all', hidden: '' },
     text: '',
-    on: { click: () => opts.onMergeAll?.() },
   });
+  const mergeAllHold: HoldHandle | null = opts.onMergeAll
+    ? attachHoldRepeat(mergeAllBtn, () => opts.onMergeAll?.() ?? false, { delay: mergeAllHoldDelay })
+    : null;
   const ultList = h('div', { class: 'hud-ult-list', attrs: { 'data-testid': 'hud-ult-list', role: 'menu', hidden: '' } });
   let ultOpen = false;
   let ultKey = '';
@@ -287,12 +294,6 @@ export function createHud(opts: HudOptions): HudView {
       })
     : null;
   if (!opts.onSummon) summonBtn.hidden = true;
-  const mergeReadyBtn = h('button', {
-    class: 'btn btn-chip hud-merge-ready',
-    attrs: { type: 'button', 'data-action': 'merge-ready', 'data-testid': 'hud-merge-ready', hidden: '' },
-    text: '',
-    on: { click: () => opts.onMergeReady?.() },
-  });
   const hireLabel = h('span', { text: '' });
   const hireArt = h('img', { class: 'hud-worker-art', attrs: { src: WORKER_PORTRAIT, alt: '', 'aria-hidden': 'true' }, on: { error: workerPortraitFallback } });
   const hireBtn = h('button', {
@@ -311,7 +312,6 @@ export function createHud(opts: HudOptions): HudView {
     workersItem,
     choiceSlot,
     hintEl,
-    mergeReadyBtn,
     hireBtn,
   );
 
@@ -493,13 +493,6 @@ export function createHud(opts: HudOptions): HudView {
         hintEl.classList.toggle('is-short', !m.summonAffordable);
         summonBtn.classList.toggle('is-off', !m.summonAffordable);
       }
-      if (last.mergeReady !== m.mergeReady) {
-        // '⬆ 승급 가능 n' — 가운데 낱말은 따로 감싼다: 아래 띠가 붐비면(접은 고르기 알약까지) CSS가 '⬆ n'으로 줄인다 (글자 내용은 그대로)
-        const parts = /^(\S+)( .+)( \d+)$/.exec(m.mergeReady);
-        if (parts) mergeReadyBtn.replaceChildren(parts[1]!, h('span', { class: 'hud-mr-word', text: parts[2]! }), parts[3]!);
-        else mergeReadyBtn.textContent = m.mergeReady;
-        mergeReadyBtn.hidden = m.mergeReady === '';
-      }
       setText(speedBtn, 'speed', m.speed);
       if (last.bossBanner !== m.bossBanner) {
         if (m.bossBanner) {
@@ -623,21 +616,24 @@ export function createHud(opts: HudOptions): HudView {
       );
     },
     setMergeAll(text) {
-      if (mergeAllBtn.textContent === text) return;
-      mergeAllBtn.textContent = text;
+      // 피드백 #65: 꾹 누르는 동안은 승급할 게 잠깐 없어도 버튼을 남긴다 (숨기면 손가락 아래에서 사라져 꾹 누르기가 끊긴다)
+      const shown = text === '' && mergeAllHold?.active ? MERGE_ALL_HOLD_LABEL : text;
+      if (mergeAllBtn.textContent === shown) return;
+      mergeAllBtn.textContent = shown;
       mergeAllBtn.setAttribute('aria-label', text === '' ? '모두 승급' : `모두 승급 (승급 가능 ${text.replace(/\D+/g, '')}칸)`);
-      mergeAllBtn.hidden = text === '';
+      mergeAllBtn.hidden = shown === '';
     },
     get ultListOpen() {
       return ultOpen;
     },
     setMergeGuide(on) {
-      if (mergeReadyBtn.classList.contains('is-guide') !== on) mergeReadyBtn.classList.toggle('is-guide', on);
+      if (mergeAllBtn.classList.contains('is-guide') !== on) mergeAllBtn.classList.toggle('is-guide', on);
     },
     destroy() {
       skipHold?.detach();
       skipHold = null;
       summonHold?.detach();
+      mergeAllHold?.detach();
       clearTimeout(breakTimer);
       breakTimer = undefined;
       clearTimeout(goldPulseTimer);

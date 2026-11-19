@@ -536,14 +536,10 @@ test('아래 자원 줄 (G-1): [👷]·[⬆ 승급 가능]·[👷 고용]·접�
       (document.querySelector('[data-testid=hud-towers]') as HTMLElement).textContent = '96/96';
       (document.querySelector('[data-testid=hud-gold]') as HTMLElement).textContent = '9.9억원';
       const out = check('base');
-      const mr = document.querySelector('.hud-merge-ready') as HTMLButtonElement;
-      mr.replaceChildren('⬆', Object.assign(document.createElement('span'), { className: 'hud-mr-word', textContent: ' 승급 가능' }), ' 12');
-      mr.hidden = false;
-      out.push(...check('merge'));
+      // 피드백 #65: 아래 띠에 [⬆ 승급 가능 n]이 없다 (승급은 맵 오른쪽 위 [⏫ 모두 승급])
+      if (band.querySelector('.hud-merge-ready')) out.push('merge-ready still in band');
       const slot = document.querySelector('.hud-choice-slot') as HTMLElement;
       slot.innerHTML = '<button class="btn btn-chip cp-pill is-card"><span class="cp-pill-icon">🃏</span><span class="cp-pill-text">카드 고르기</span></button>';
-      out.push(...check('merge+pill'));
-      mr.hidden = true;
       out.push(...check('pill'));
       return out;
     });

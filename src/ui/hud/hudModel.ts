@@ -2,7 +2,7 @@
  * HUD 표시값 계산 (순수 함수, DOM 없음 → 단위 테스트로 "값이 sim과 일치"를 확인한다).
  * UI.md 4.1·4.2: 1줄 = 단계·타이머·몹 수(무한)/목숨(캠페인)·⏸, 2줄 = 돈·배속.
  * 아래 띠 (M2): 놓인 타워 수/배치 칸 수 · 소환 안내 (돈이 모자라면 빨간색).
- * M3: 아래 띠에 '⬆ 승급 가능 n' 버튼 (UI.md 4.1, 승급할 수 있는 묶음 수. 0이면 숨김).
+ * M3: 아래 띠 '⬆ 승급 가능 n' 버튼은 피드백 #65에서 없앴다 — 승급은 맵 오른쪽 위 [⏫ 모두 승급 n] 하나 (Hud.setMergeAll).
  * M4: 2줄에 '👷 3/10' (최대면 금색), 아래 띠에 [👷 300원] 일꾼 고용 버튼 (최대면 '👷 최대'), 보스 막대 = 이름표 + 체력 채움 + 남은 초
  *   (UI.md 4.1 '[보스: 박쥐 여왕 ▓▓▓▓░░ 38초]', 10초 이하 빨강). 보스를 잡은 보스 단계는 '보스 처치! 남은 시간은 휴식'.
  * M5: 도전 보스 막대 (UI.md 4.1 '보스·도전 보스가 있을 때만', 9장 '보스 단계와 도전이 겹치면 체력바 2줄' — 같은 자리를 반씩 나눈다),
@@ -30,7 +30,7 @@ export interface HudInput {
   buildableCount?: number;
   /** 소환 비용 (생략하면 0) */
   summonCost?: number;
-  /** 승급할 수 있는 묶음 수 (생략하면 0) */
+  /** 승급할 수 있는 묶음 수 (생략하면 0) — 있으면 아래 띠 소환 안내를 비운다 */
   mergeReady?: number;
   /** 일꾼 최대 수·고용 비용 (생략하면 일꾼 표시 없음 = 0/0) */
   workerMax?: number;
@@ -91,8 +91,6 @@ export interface HudModel {
   summonCost: string;
   /** 소환할 돈이 있는가 (없으면 안내가 빨간색) */
   summonAffordable: boolean;
-  /** '⬆ 승급 가능 n' 글자 (승급할 묶음이 없으면 빈 글자 → 버튼 숨김) */
-  mergeReady: string;
   /** 도전 보스 막대 글자 '⚔ 도전 3단계 「돌거북」' (도전 중이 아니면 null) */
   challengeBanner: string | null;
   /** 도전 보스 체력 채움 (천분율, 막대가 없으면 −1) */
@@ -187,7 +185,6 @@ export function buildHudModel(input: HudInput, cfg: HudConfig): HudModel {
     ...bossBar(state.bossStage, input.boss ?? null, cfg),
     tick: input.tick,
     ...summonInfo(state.gold, input.towerCount ?? 0, input.buildableCount ?? 0, input.summonCost ?? 0, (input.mergeReady ?? 0) > 0),
-    mergeReady: mergeReadyText(input.mergeReady ?? 0),
     workers: `${state.workers}/${workerMax}`,
     workersFull,
     hireLabel: workersFull ? '👷 최대' : `👷 ${withCommas(workerCost)}원`,
@@ -296,15 +293,10 @@ export function bossBar(
   return { bossBanner: null, bossHp: -1, bossTime: '', bossTimeWarn: false, bossNote: '' };
 }
 
-/** 아래 띠 승급 버튼 글자 (UI.md 4.1 '[⬆ 승급 가능 2]'). 0이면 빈 글자. */
-export function mergeReadyText(groups: number): string {
-  return groups > 0 ? `⬆ 승급 가능 ${groups}` : '';
-}
-
 /**
  * 아래 띠: 타워 수와 소환 안내 (UI.md 4.3 '빈 배치 칸 터치 = 즉시 소환').
  * M4: 같은 줄에 [👷 300원] 고용 버튼이 생겨 안내는 늘 짧게 '소환 · 100원' (M2의 '빈 칸을 눌러 소환 · 100원'은 412px에서 잘린다).
- * @param short 아래 띠에 [⬆ 승급 가능 n]이 보일 때: 안내를 비운다 — 고용·승급 버튼과 같은 줄이라 '소환 · 100원'도 잘린다
+ * @param short 승급할 무더기가 있을 때 (피드백 #65 전에는 아래 띠 [⬆ 승급 가능 n], 지금은 맵 오른쪽 위 [⏫ 모두 승급 n]): 안내를 비운다 — 고용·승급 버튼과 같은 줄이라 '소환 · 100원'도 잘린다
  *   (승급 버튼 자체가 할 일을 알려 준다). 칸이 가득 찼을 때도 같다: '빈 칸이 없어요'는 승급 버튼이 없을 때만
  *   (검토 반영 — 가득 찬 판 후반에 '빈 칸…'으로 잘렸다. 가득 찬 것은 옆의 '71/71'이 보여 준다)
  * T-2: 같은 줄에 [🎲 소환 100원] 버튼(누르면 소환, 꾹 누르면 계속)이 생겨 '소환 · 100원' 안내는 뺐다 — 비용은 버튼 글자(summonCost).

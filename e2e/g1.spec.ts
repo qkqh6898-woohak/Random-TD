@@ -214,7 +214,7 @@ test('칸 무더기: 가득 찬 칸을 누르면 연쇄 승급 (알림 ×n) · �
     [c[0], c[1], 'archer'],
     [c[0], c[1], 'archer'],
   ]);
-  await expect(page.getByTestId('hud-merge-ready')).toBeVisible();
+  await expect(page.getByTestId('hud-merge-all')).toBeVisible();
   await shot(page, 'G1-stacks');
   // 덜 찬 칸(궁수 2) → 패널 '궁수 ×2'
   await tapTile(page, c[0], c[1]);

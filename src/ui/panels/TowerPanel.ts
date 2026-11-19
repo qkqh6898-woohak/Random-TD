@@ -28,8 +28,6 @@ export interface TowerPanelOptions {
   onMerge: () => void;
   onMergeAll: () => void;
   onClose: () => void;
-  /** [다음 묶음 ▶] — [⬆ 승급 가능 n]으로 연 패널에서 다음 승급 가능 묶음으로 (M5-7, 검토 반영) */
-  onNextMergeable?: () => void;
   /** [ℹ] 캐릭터 카드 열기 (HF-2) — 없으면 버튼을 숨긴다 */
   onInfo?: () => void;
   /** [↔ 이동] (T-2): 옮길 칸 고르기 모드 */
@@ -161,12 +159,6 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
     h('span', { text: '승급' }),
     mergeAllTimes,
   );
-  const nextBtn = h('button', {
-    class: 'btn tp-merge-next',
-    attrs: { type: 'button', 'data-action': 'merge-next', hidden: '' },
-    text: '다음 묶음 ▶',
-    on: { click: () => opts.onNextMergeable?.() },
-  });
   const moveBtn = h(
     'button',
     {
@@ -223,7 +215,6 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       target,
     ),
     h('div', { class: 'tp-act-wrap' }, h('div', { class: 'tp-actions' }, mergeBtn, mergeAllBtn), h('div', { class: 'tp-actions tp-actions-2' }, moveBtn, convertBtn)),
-    nextBtn,
     note,
     outcomes,
   );
@@ -270,8 +261,6 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       mergeAllTimes.textContent = m.mergeAllTimes > 1 ? ` ×${m.mergeAllTimes}` : '';
       note.textContent = m.note;
       note.hidden = m.note === '';
-      nextBtn.textContent = m.mergeNext;
-      nextBtn.hidden = m.mergeNext === '';
       // 접기 2단계부터는 'tp-word' 글자를 숨긴다 (CSS) → '💰 +450원' · 빨간 '판매'
       sellBtn.replaceChildren(
         ...(m.sellConfirming

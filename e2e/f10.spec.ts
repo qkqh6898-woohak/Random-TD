@@ -210,7 +210,7 @@ test('새 플레이어 (디버그 없이): 추천 칸 소환 → 준비 완료 �
   const card = page.getByTestId('guide-card');
   await expect(card).toBeVisible();
   await expect(page.getByTestId('guide-title')).toContainText('3개 — 승급할 수 있어요!');
-  await expect(page.getByTestId('hud-merge-ready')).toHaveClass(/is-guide/);
+  await expect(page.getByTestId('hud-merge-all')).toHaveClass(/is-guide/); // 피드백 #65: 승급 버튼은 [⏫ 모두 승급] 하나
   let g = await guide(page);
   let list = await myTowers(page);
   const anchor = list.find((t) => t.id === g.guide!.anchorId)!;
@@ -265,20 +265,20 @@ test('새 플레이어 (디버그 없이): 추천 칸 소환 → 준비 완료 �
   expect(bSub).toContain((info.role ?? '').slice(0, 10));
   // 안내는 끝나고 계정에 기록
   await expect(card).toBeHidden();
-  await expect(page.getByTestId('hud-merge-ready')).not.toHaveClass(/is-guide/);
+  await expect(page.getByTestId('hud-merge-all')).not.toHaveClass(/is-guide/);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { guides?: string[] });
   expect(saved.guides).toContain('firstMerge');
   expect(errors).toEqual([]);
 });
 
-test('두 묶음이 함께 준비되면: 다른 묶음 타워를 누르면 안내가 옮겨 가고(바로 승급 안 함), [⬆ 승급 가능]으로 묶음을 돌아가며 · 아래 띠 소환·일꾼 자리는 그대로 · [확인]로 닫기', async ({ page }) => {
+test('두 묶음이 함께 준비되면: 다른 묶음 타워를 누르면 안내가 옮겨 가고(바로 승급 안 함), 아래 띠에 승급 버튼 없음(피드백 #65) · 소환·일꾼 자리는 그대로 · [확인]로 닫기', async ({ page }) => {
   const errors = collectErrors(page);
   await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true }))); // 피드백 #17: 바로 승급은 이제 기본 꺼짐 — 이 테스트는 켠 플레이어
   await start(page, '?debug=1&seed=7');
-  // 승급 가능 버튼이 없을 때의 [🎲 소환]·[👷 일꾼] 자리
+  // 승급할 무더기가 없을 때의 [🎲 소환]·[👷 일꾼] 자리
   const summon = page.getByTestId('hud-summon');
   const hire = page.getByTestId('hud-hire');
-  await expect(page.getByTestId('hud-merge-ready')).toBeHidden();
+  await expect(page.getByTestId('hud-merge-all')).toBeHidden();
   const s0 = (await summon.boundingBox())!;
   const h0 = (await hire.boundingBox())!;
   const cells = await inScene(page, (s) => s.match.map.buildable.slice(0, 6), null);
@@ -288,7 +288,9 @@ test('두 묶음이 함께 준비되면: 다른 묶음 타워를 누르면 안�
     ...[0, 1, 2].map(() => [cells[3]![0], cells[3]![1], 'archer'] as [number, number, string]),
   ]);
   await expect(page.getByTestId('guide-card')).toBeVisible();
-  await expect(page.getByTestId('hud-merge-ready')).toBeVisible();
+  // 피드백 #65: 승급 버튼은 맵 오른쪽 위 [⏫ 모두 승급] 하나 — 아래 띠에는 없다
+  await expect(page.getByTestId('hud-merge-all')).toBeVisible();
+  await expect(page.locator('.hud-bottom button', { hasText: '승급' })).toHaveCount(0);
   // 아래 띠: 일꾼은 그대로, 소환은 오른쪽 끝이 그대로이고 예전 소환 가운데를 눌러도 소환 (일꾼 고용이 아님)
   const s1 = (await summon.boundingBox())!;
   const h1 = (await hire.boundingBox())!;
@@ -311,14 +313,6 @@ test('두 묶음이 함께 준비되면: 다른 묶음 타워를 누르면 안�
   expect(g.preview!.result).toEqual({ tx: archer.tx, ty: archer.ty });
   expect(g.preview!.materials).toEqual(simMaterials(list, archer.id));
   await expect(page.getByTestId('guide-title')).toContainText('궁수');
-  // [⬆ 승급 가능]: 처음엔 안내 묶음(궁수) 결과 칸 패널, 패널의 [다음 묶음 ▶]을 누르면 다음 묶음(고블린)으로 — 안내도 함께
-  await page.getByTestId('hud-merge-ready').click({ force: true }); // 안내 중엔 반짝이며 커졌다 작아진다
-  await expect.poll(() => inScene(page, (s) => s.selectedTowerId, null)).toBe(archer.id);
-  await page.locator('[data-action="merge-next"]').click();
-  await expect.poll(async () => (await guide(page)).guide?.kind).toBe('goblin');
-  const gob = (await guide(page)).guide!.anchorId;
-  await expect.poll(() => inScene(page, (s) => s.selectedTowerId, null)).toBe(gob);
-  expect(await inScene(page, (s) => s.match.state.merges, null)).toBe(0);
   await shot(page, 'F10-ui-two-groups');
   // 2/2의 [확인] = 닫기 (계정에 기록)
   if ((await page.getByTestId('guide-step').textContent()) !== '2/2') await page.getByTestId('guide-next').click();
