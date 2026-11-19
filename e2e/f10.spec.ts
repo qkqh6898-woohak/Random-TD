@@ -438,6 +438,8 @@ test('강화·미션 (일반 시작): 준비 단계에서 열기 · 시트는 �
 test('미션 (일반 시작): 소환 10회 → 배지 "1 받기" → 받을 것이 맨 위 → [받기] 연타해도 +100원 한 번 / [모두 받기] 연타도 한 번', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=12');
+  // V2.0 PR-A: 소환 비용 22원부터 +2원 → 10번 = 310원으로 돈을 맞춘다 (예전 1,000원 = 100원 × 10)
+  await inScene(page, (s) => { s.match.state.gold = 310; return null; }, null);
   for (let i = 0; i < 10; i++) {
     await page.getByTestId('hud-summon').click();
     await expect.poll(async () => (await myTowers(page)).length).toBe(i + 1);
@@ -664,7 +666,8 @@ test('기본 5종: 이름표 없이 나란히 흑백 캡처해도 서로 다르�
   });
   console.log('기본 5종 흑백 실루엣', JSON.stringify(sil));
   // 면적 하한 0.1: F10-4 실측 0.12~0.31, A-1에서 맵 위아래 여백을 없애 칸이 커진(135 → 141px) 뒤 고블린 0.116 (외곽선 두께가 정수 px로 반올림됨)
-  for (const a of sil.area) expect(a).toBeGreaterThan(0.1);
+  // V2.0 PR-A: 혼자 그림이 칸의 60~80%로 작아져(예전 ≈98%) 자른 상자 안 면적도 줄었다 (실측 최소 ≈0.099) → 하한 0.05
+  for (const a of sil.area) expect(a).toBeGreaterThan(0.05);
   for (const x of sil.xor) expect(x).toBeGreaterThan(0.2);
   // 다섯 장이 서로 충분히 다르다 (흑백 평균 차이)
   const diffs = await sheet.evaluate(async () => {

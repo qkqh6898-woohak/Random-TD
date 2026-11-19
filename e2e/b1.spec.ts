@@ -381,7 +381,8 @@ test('d. 소환·승급 초상 카드는 뒷면 → 앞면으로 뒤집히며 �
     },
     [x, y, HEAD_ABOVE_FOOT] as [number, number, number],
   );
-  expect(apex.sc).toBeGreaterThan(0.9); // v0.1.17: 노말 ≈0.92~1.04 (이웃과 무관)
+  expect(apex.sc).toBeGreaterThan(0.6); // V2.0 PR-A: 노말 칸의 59~65% = 배율 ≈0.64~0.71 (이웃과 무관)
+  expect(apex.sc).toBeLessThan(0.75);
   // 위로: 카드 가운데가 머리 끝 위 / 옆으로: 카드 가운데가 머리 반폭(0.34칸 × 크기) + 카드 반폭(0.39칸)만큼 비킴
   if (apex.card >= apex.headTop) expect(apex.dx, JSON.stringify(apex)).toBeGreaterThan(0.34 * apex.sc + 0.3);
   else expect(apex.card, JSON.stringify(apex)).toBeLessThan(apex.headTop);

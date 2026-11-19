@@ -486,7 +486,7 @@ test('일반 주소: 개발자 UI 없음 ([🛠 개발]·[🛠 변환]·⏭), �
   await tapTile(page, t[0], t[1]);
   await expect.poll(() => inScene(page, (s) => s.panelOpen, null)).toBe(true);
   await expect(page.locator('[data-action="move"]')).toBeVisible();
-  await expect(page.getByTestId('tp-sell')).toHaveText('💰 판매 +50원');
+  await expect(page.getByTestId('tp-sell')).toHaveText('💰 판매 +15원'); // V2.0 PR-A 노말 판매가
   await expect(page.locator('[data-action="convert"]')).toHaveCount(0);
   await shot(page, 'T2-play-panel');
   // 패널 버튼(승급·이동·판매)이 412px 안에 들어간다 — 접기 2단계부터는 두 줄이 한 줄로 합쳐져 줄 상자(.tp-actions-2)가 없다(display: contents)

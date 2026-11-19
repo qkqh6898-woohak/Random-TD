@@ -312,30 +312,44 @@ test('자동 공격: 몹을 잡으면 피해 숫자·+3원·동전이 뜨고 돈
 /** 페이지 안에서 Game 장면을 꺼내는 코드 (page.evaluate 안에서만 쓴다). */
 type W = { __rtd: { game: { scene: { getScene(k: string): unknown } } } };
 
-test('검토 반영: 타워 머리(위 칸으로 삐져나온 헬멧·별)를 탭해도 위 칸에 소환되지 않는다', async ({ page }) => {
+test('검토 반영: 타워 머리(그려진 헬멧·별)를 탭해도 위 칸에 소환되지 않는다 · V2.0 PR-A 머리가 칸 안이면 위 칸은 바로 소환', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=7');
   await tapTile(page, 1, 4);
   await expect(page.getByTestId('hud-towers')).toHaveText(`1/${CAP}`);
   await expect.poll(async () => (await view(page)).renderedTowers).toBe(1);
-  // (1, 4) 칸 위쪽 경계에서 0.12칸·0.25칸 위 = 캐릭터 헬멧·별이 그려진 자리 (리뷰 재현: 여기를 누르면 위 칸 (1, 3)에 소환됐다)
-  for (const up of [0.12, 0.25]) {
-    const p = await page.evaluate(
-      ([dy]) => {
+  // 머리 끝이 칸 위 경계보다 얼마나 위인가 (칸 배수): 발밑 = 칸 중심 + 0.3, 머리 끝 = 발밑 − 1.136 × 그림 배율.
+  // V2.0 PR-A: 노말은 그림 배율 ≈0.64~0.71이라 머리 끝이 칸 안 (예전 ≈0.98배는 칸 위로 0.3칸쯤 삐져나왔다)
+  const scale = await page.evaluate(() => {
+    const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike & { towerLayer: { artScaleOf(id: number): number | undefined } };
+    return s.towerLayer.artScaleOf(s.match.towers()[0]!.id) ?? 0;
+  });
+  const protrude = (0.3 + 0.776 + 0.06) * scale - 0.8;
+  expect(scale).toBeGreaterThan(0.6);
+  expect(scale).toBeLessThan(0.75);
+  // 그려진 머리 자리 (삐져나왔으면 그 가운데, 아니면 칸 위 경계 바로 아래) → 위 칸 (1, 3)에 소환되지 않는다
+  const dy = protrude > 0.02 ? protrude / 2 : -0.05;
+  const point = async (up: number) =>
+    page.evaluate(
+      ([d]) => {
         const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
         const L = s.mapLayout;
         const r = document.getElementById('stage')!.getBoundingClientRect();
         const k = r.width / 1080;
-        return { x: r.left + (L.originX + 1.5 * L.tile) * k, y: r.top + (L.originY + (4 - dy!) * L.tile) * k };
+        return { x: r.left + (L.originX + 1.5 * L.tile) * k, y: r.top + (L.originY + (4 - d!) * L.tile) * k };
       },
       [up] as const,
     );
-    await page.touchscreen.tap(p.x, p.y);
-    await page.waitForTimeout(150);
-  }
+  const p = await point(dy);
+  await page.touchscreen.tap(p.x, p.y);
+  await page.waitForTimeout(200);
   let v = await view(page);
   expect(v.towers).toBe(1);
   expect(v.gold).toBe(978);
+  // 칸 안 머리를 눌렀으면 그 타워의 정보 패널이 열린다 → 닫고 계속
+  const close = page.locator('[data-action="panel-close"]');
+  if (await close.count()) await close.click();
+  await expect(page.getByTestId('tower-panel')).toHaveCount(0);
   // 위 칸 가운데는 그대로 소환된다
   await tapTile(page, 1, 3);
   await expect(page.getByTestId('hud-towers')).toHaveText(`2/${CAP}`);
