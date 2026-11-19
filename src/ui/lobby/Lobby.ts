@@ -883,6 +883,9 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   }
 
   function renderPanel(): void {
+    // 피드백 #61: 해방·레벨업 등으로 같은 탭을 다시 그리면 새 스크롤 상자가 맨 위에서 시작했다 → 위치를 그대로 옮긴다
+    // (탭을 바꿀 때는 select()가 맨 위로)
+    const scrollTop = panels[tab].querySelector<HTMLElement>('.lobby-scroll')?.scrollTop ?? 0;
     if (tab === 'battle') {
       renderRoad();
       renderSide();
@@ -890,6 +893,8 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     else if (tab === 'shop') renderShop();
     else if (tab === 'codex') renderCodex();
     else renderLocked();
+    const box = panels[tab].querySelector<HTMLElement>('.lobby-scroll');
+    if (box && scrollTop > 0) box.scrollTop = scrollTop;
   }
 
   const body = h('main', { class: 'lobby-body' }, ...LOBBY_TABS.map((id) => panels[id]));

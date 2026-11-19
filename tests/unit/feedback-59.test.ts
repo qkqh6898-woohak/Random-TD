@@ -24,8 +24,8 @@ describe('피드백 #59', () => {
     expect(pd.hidden.unlockFragments).toBe(5);
   });
 
-  it('2. 웨이브 길 보상은 10웨이브마다 100웨이브까지 (이미 있음)', () => {
-    expect(pd.waveRoad.milestones.map((m) => m.wave)).toEqual([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
+  it('2. 웨이브 길 보상은 10웨이브마다 100웨이브까지 (이미 있음 — 피드백 #61로 1000웨이브까지 늘어남)', () => {
+    expect(pd.waveRoad.milestones.map((m) => m.wave).slice(0, 10)).toEqual([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
   });
 
   it('3. 단계 이자 상한 10,000원 — 100원마다 10원은 그대로', () => {
