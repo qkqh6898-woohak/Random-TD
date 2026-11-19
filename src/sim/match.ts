@@ -73,8 +73,8 @@ export interface MatchOptions {
   /** 플레이어별 계정 레벨 (도박 테이블 해금, M5-5). 메타(src/meta/account.ts)가 넣고 생략하면 1 */
   accountLevels?: readonly number[];
   /**
-   * 플레이어별 잠긴 히든(신화) 타워 id (G-3 히든 영웅 해방, src/meta/progress.ts lockedHiddenIds). 잠긴 히든은 판에서 조합할 수 없다
-   * — 조합 규칙(G-1 신화 도감)이 `isHiddenLocked(ctx, player, id)`(sim/unlocks.ts)로 확인한다. 생략·빈 목록 = 모두 열림(예전과 같음).
+   * 플레이어별 잠긴 히든(리미티드) 타워 id (G-3 히든 영웅 해방, src/meta/progress.ts lockedHiddenIds). 잠긴 히든은 판에서 조합할 수 없다
+   * — 조합 규칙(G-1 리미티드 도감)이 `isHiddenLocked(ctx, player, id)`(sim/unlocks.ts)로 확인한다. 생략·빈 목록 = 모두 열림(예전과 같음).
    * 판 시작 때 정해진 입력 (해시 밖, 리플레이·판 저장에 기록).
    */
   lockedHidden?: readonly (readonly string[])[];

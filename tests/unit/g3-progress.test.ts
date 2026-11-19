@@ -209,7 +209,7 @@ describe('영웅 레벨업', () => {
   });
 });
 
-describe('히든(신화) 영웅 해방', () => {
+describe('히든(리미티드) 영웅 해방', () => {
   const hidden = data.towers.towers.filter((t) => t.grade === 'hidden');
   it('처음엔 히든 12종 모두 잠김, 조각 unlockFragments개(피드백 #59: 5개)로 해방(조각 소비) → 잠긴 목록에서 빠짐', () => {
     const s = fresh();

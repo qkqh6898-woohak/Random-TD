@@ -1,6 +1,6 @@
 /**
  * 📘 등급·조합 설명 창 (피드백 #24). 전투 일시정지 메뉴의 [📘 등급·조합 설명]으로 연다.
- * 등급 순서(낮음 → 높음, 색·별)와 승급·신화 조합 방법, 신화 조합식(도감과 같은 공개 규칙)을 보여 준다.
+ * 등급 순서(낮음 → 높음, 색·별)와 승급·리미티드 조합 방법, 리미티드 조합식(도감과 같은 공개 규칙)을 보여 준다.
  * 값은 gradeGuideModel(순수) — 여기서는 그리기만. <dialog>라 뒤로 가기(nativeBack)·Esc가 닫는다.
  */
 import { h } from '../dom';
@@ -52,7 +52,7 @@ export function createGradeGuideDialog(model: () => GradeGuideModel): GradeGuide
     );
     const recipes = m.recipes.length
       ? [
-          h('h3', { class: 'gg-sub' }, h('span', { text: '💠 신화 조합식' }), h('span', { class: 'gg-count', text: m.recipeSummary, attrs: { 'data-testid': 'grade-guide-recipe-summary' } })),
+          h('h3', { class: 'gg-sub' }, h('span', { text: '💠 리미티드 조합식' }), h('span', { class: 'gg-count', text: m.recipeSummary, attrs: { 'data-testid': 'grade-guide-recipe-summary' } })),
           h(
             'ul',
             { class: 'gg-recipes', attrs: { 'data-testid': 'grade-guide-recipes' } },

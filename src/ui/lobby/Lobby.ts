@@ -6,9 +6,9 @@
  *  - 가운데: 탭 화면 (아래 메뉴로 바꿈)
  *    · [전투] (기본): 로고, 왼쪽 [퀘스트]·[영웅 모집], 오른쪽 [📜 기록]·[⚙], 세로 '웨이브 길'(최고 웨이브 + 10웨이브마다 보상),
  *      큰 [빠른 시작](무한 모드) — 이어 할 판이 있으면 [이어 하기 · n단계] + [새 게임](확인 창)
- *    · [영웅]: 영웅 카드 격자 (탭 [영웅]/[신화], [⬆ 모두 레벨업 N], 정렬 [등급 순]/[레벨 순]/[레벨업 가능]), 누르면 상세 창(능력치·특색·레벨업)
+ *    · [영웅]: 영웅 카드 격자 (탭 [영웅]/[리미티드], [⬆ 모두 레벨업 N], 정렬 [등급 순]/[레벨 순]/[레벨업 가능]), 누르면 상세 창(능력치·특색·레벨업)
  *    · [상점]: 게임 안 화폐로 카드 묶음·상자·조각·골드 (실제 돈 상품 없음)
- *    · [도감]: 신화(히든) 영웅 조각 모으기 + 해방, 조합 재료
+ *    · [도감]: 리미티드(히든) 영웅 조각 모으기 + 해방, 조합 재료
  *    · [캠페인]: 계정 레벨로 열리는 모드 자리 (열리면 테마 1)
  *  - 아래 메뉴 5칸: 상점 · 영웅 · 전투 · 도감 · 캠페인 (320px에서도 한 줄)
  *
@@ -18,6 +18,7 @@
  * 화면은 저장소(ProgressStore)의 동작을 부르고, 바뀌면 구독으로 다시 그린다. sim은 건드리지 않는다.
  */
 import { h } from '../dom';
+import { GRADE_NAMES } from '../../data/grades';
 import { artIcon } from '../artIcon';
 import type { UiArt } from '../../art/uiIcons';
 import type { UiView } from '../root';
@@ -495,7 +496,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       },
     });
     heroesPanel.replaceChildren(
-      h('div', { class: 'lobby-panel-head' }, h('h2', { class: 'lobby-panel-title', text: '영웅 수집' }), h('div', { class: 'lobby-segs' }, tabBtn('heroes', '영웅'), tabBtn('mythic', '신화'))),
+      h('div', { class: 'lobby-panel-head' }, h('h2', { class: 'lobby-panel-title', text: '영웅 수집' }), h('div', { class: 'lobby-segs' }, tabBtn('heroes', '영웅'), tabBtn('mythic', `신·${GRADE_NAMES.hidden}`))),
       h('div', { class: 'lobby-sortbar' }, h('span', { class: 'lobby-count', text: `보유 ${g.owned.length}/${g.owned.length + g.unowned.length}` }), levelAll),
       h('div', { class: 'lobby-sortbar hero-sorts' }, h('div', { class: 'lobby-segs' }, sortBtn('grade', '등급 순'), sortBtn('level', '레벨 순'), sortBtn('ready', '레벨업 가능'))),
       h(
@@ -631,8 +632,8 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     const rows = fragmentRows(progress.state, pd, data);
     const unlocked = rows.filter((r) => r.unlocked).length;
     codexPanel.replaceChildren(
-      h('div', { class: 'lobby-panel-head' }, h('h2', { class: 'lobby-panel-title', text: '신화 도감' }), h('span', { class: 'lobby-count', attrs: { 'data-testid': 'codex-count' }, text: `해방 ${unlocked}/${rows.length}` })),
-      h('p', { class: 'lobby-note', text: `신화 영웅은 조각 ${pd.hidden.unlockFragments}개를 모아 해방해야 전투에서 조합할 수 있어요. 조각은 보스 처치·웨이브 길·퀘스트·상점에서 얻어요.` }),
+      h('div', { class: 'lobby-panel-head' }, h('h2', { class: 'lobby-panel-title', text: '리미티드 도감' }), h('span', { class: 'lobby-count', attrs: { 'data-testid': 'codex-count' }, text: `해방 ${unlocked}/${rows.length}` })),
+      h('p', { class: 'lobby-note', text: `리미티드 영웅은 조각 ${pd.hidden.unlockFragments}개를 모아 해방해야 전투에서 조합할 수 있어요. 조각은 보스 처치·웨이브 길·퀘스트·상점에서 얻어요.` }),
       h(
         'div',
         { class: 'lobby-scroll codex-list' },

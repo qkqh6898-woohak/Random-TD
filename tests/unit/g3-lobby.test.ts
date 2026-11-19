@@ -1,5 +1,5 @@
 /**
- * G-3 로비 화면 모델 (순수): 영웅 격자·정렬·탭, 상세(비용·보너스), 웨이브 길, 신화 조각, 정산 요약.
+ * G-3 로비 화면 모델 (순수): 영웅 격자·정렬·탭, 상세(비용·보너스), 웨이브 길, 리미티드 조각, 정산 요약.
  */
 import { describe, expect, it } from 'vitest';
 import { loadGameData } from '../../src/data/load';
@@ -12,7 +12,7 @@ const pd = loadProgression(data);
 const fresh = () => newProgress(pd, data, 7);
 
 describe('영웅 격자', () => {
-  it('[영웅] 탭 = 노말~레전드 50종, [신화] 탭 = 히든 12 + 신 3, 모든 타워가 어느 한 탭에', () => {
+  it('[영웅] 탭 = 노말~레전드 50종, [리미티드] 탭 = 히든 12 + 신 3, 모든 타워가 어느 한 탭에', () => {
     const s = fresh();
     const a = heroGrid(s, pd, data, 'heroes', 'grade');
     const b = heroGrid(s, pd, data, 'mythic', 'grade');
@@ -76,7 +76,7 @@ describe('위 띠 · 웨이브 길 · 조각', () => {
     expect(r.nodes[0]).toMatchObject({ wave: 10, state: 'ready', reward: '💰 300 · 🃏 3' });
     expect(r.nodes[2]!.state).toBe('locked');
   });
-  it('신화 조각 줄: 12종, 해방 가능 표시', () => {
+  it('리미티드 조각 줄: 12종, 해방 가능 표시', () => {
     const s = fresh();
     const rows = fragmentRows(s, pd, data);
     expect(rows).toHaveLength(12);

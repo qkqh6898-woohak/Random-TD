@@ -12,7 +12,7 @@
  *  - `heroMatchLevels(state, pd, data)` → MatchOptions.levels[플레이어] (타워 id → Lv, 2 이상만). sim이 레벨당 공격력
  *    (game.json towerLevel.atkPerLevel = +4%)과 특색 수치 보간(Lv1 → Lv15)을 적용한다. 리플레이·판 저장 입력에 기록된다.
  *  - `lockedHiddenIds(state, data)` → MatchOptions.lockedHidden[플레이어]. sim `isHiddenLocked(ctx, player, id)`로 읽는다.
- *  - `isHiddenUnlocked(state, id)` — 화면(신화 도감)용.
+ *  - `isHiddenUnlocked(state, id)` — 화면(리미티드 도감)용.
  */
 import type { GameData, Grade, TowerData } from '../data/load';
 import { Rng, deriveSeed } from '../sim/Rng';
@@ -354,7 +354,7 @@ export function heroAtkBonuses(state: ProgressState, pd: ProgressionData, data: 
 }
 
 // ---------------------------------------------------------------------------
-// 히든(신화) 영웅 해방
+// 히든(리미티드) 영웅 해방
 // ---------------------------------------------------------------------------
 
 /** 히든 영웅이 해방됐는가. 히든이 아니면 늘 true */
@@ -523,7 +523,7 @@ function addStats(block: StatBlock, r: MatchResult): void {
 }
 
 /**
- * 판 정산 (패배 화면): 경험치·골드·영웅 카드·신화 조각, 최고 웨이브, 누적·오늘 기록, 모집 게이지.
+ * 판 정산 (패배 화면): 경험치·골드·영웅 카드·리미티드 조각, 최고 웨이브, 누적·오늘 기록, 모집 게이지.
  * 같은 runId는 한 번만 (두 번째는 null). today = 기기 날짜 'YYYY-MM-DD' (오늘 기록, 과거로 돌린 시계면 오늘 기록은 세지 않음).
  */
 export function settleMatch(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers'>, result: MatchResult, today: string): MatchSettlement | null {

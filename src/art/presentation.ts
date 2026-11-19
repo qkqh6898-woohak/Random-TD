@@ -5,7 +5,7 @@
  * - Phaser 쪽(art/towers.ts)은 이 함수로 텍스처를 한 번 굽고, DOM 갤러리(domArt.drawPedestal2D)도 같은 함수를 쓴다 → 게임과 갤러리가 같은 받침대.
  * - 받침대 경계는 예전 그대로(chibiBounds PEDESTAL_BOUNDS: −98~98 × −26~44) → 탭 판정·정보 패널 배치·머리 높이 계산이 그대로.
  * - 등급 문법 (ART.md 1.1 색 그대로): 노말 돌판 · 레어 사파이어 징 4개 · 유니크 보라 점 고리 · 히어로 금별 징 5개 ·
- *   레전드 금테 + 뒤쪽 왕관 뿔 · 신 무지개 면 + 구름 · 히든(UI 이름 '신화') 검정 + 금테 + 일곱 종족 색 룬.
+ *   레전드 금테 + 뒤쪽 왕관 뿔 · 신 무지개 면 + 구름 · 히든(UI 이름 '리미티드') 검정 + 금테 + 일곱 종족 색 룬.
  *   유니크 이상은 받침대 둘레에 등급 색 빛 고리.
  * 색·모양은 화면 표현 상수라 코드에 둔다.
  */
@@ -30,7 +30,7 @@ export interface GradeStyle {
   glow: string | null;
   /** 장식 종류 */
   deco: 'cracks' | 'studs' | 'dots' | 'starStuds' | 'crown' | 'clouds' | 'runes';
-  /** 별 배지 별 수 (신·신화는 1 + 특별 색) */
+  /** 별 배지 별 수 (신·리미티드는 1 + 특별 색) */
   stars: number;
 }
 
@@ -44,7 +44,7 @@ export const GRADE_STYLE: Readonly<Record<Grade, GradeStyle>> = {
   hidden: { top: '#1e1e2a', side: '#0b0b12', rim: '#f1c40f', glow: '#f1c40f', deco: 'runes', stars: 1 },
 };
 
-/** 신화(hidden) 받침대 룬 색: 일곱 종족 (towers.json factions 색, ART.md 1.2 '7종족 문양 원판') */
+/** 리미티드(hidden) 받침대 룬 색: 일곱 종족 (towers.json factions 색, ART.md 1.2 '7종족 문양 원판') */
 export const RUNE_COLORS = ['#6B7A3A', '#2E5AAC', '#A0522D', '#3A9D5D', '#5B3A8C', '#B23A2E', '#E58FC4'] as const;
 
 function ellipse(c: C2D, x: number, y: number, rx: number, ry: number): void {
@@ -248,7 +248,7 @@ export function drawGradePedestal(c: C2D, grade: Grade): void {
 export const STAR_BADGE = { w: 120, h: 30 } as const;
 
 /**
- * 별 배지: 어두운 알약 위 등급 별 (노말 1 ~ 레전드 5, 신 = 무지개 별 하나, 신화 = 검정 알약 + 금별 하나). 원점 = 가운데.
+ * 별 배지: 어두운 알약 위 등급 별 (노말 1 ~ 레전드 5, 신 = 무지개 별 하나, 리미티드 = 검정 알약 + 금별 하나). 원점 = 가운데.
  */
 export function drawStarBadge(c: C2D, grade: Grade): void {
   const s = GRADE_STYLE[grade];

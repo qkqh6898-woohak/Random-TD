@@ -1,9 +1,9 @@
 /**
- * 피드백 #61: 신화 해방을 누르면 목록이 맨 위로 굴러가는 버그.
+ * 피드백 #61: 리미티드 해방을 누르면 목록이 맨 위로 굴러가는 버그.
  * 해방하면 진행이 바뀌어 로비가 패널을 다시 그리는데(replaceChildren), 새 스크롤 상자는 scrollTop 0에서 시작했다.
  * → 같은 탭 안에서 다시 그릴 때는 스크롤 위치를 그대로 둔다 (탭을 바꾸면 예전처럼 맨 위).
- *  a. 도감 탭: 아래로 굴린 뒤 맨 아래 신화 [해방] → 스크롤 위치 그대로
- *  b. 영웅 탭 [신화]: 아래로 굴린 뒤 잠긴 신화 상세 창 [해방] → 닫아도 스크롤 위치 그대로
+ *  a. 도감 탭: 아래로 굴린 뒤 맨 아래 리미티드 [해방] → 스크롤 위치 그대로
+ *  b. 영웅 탭 [리미티드]: 아래로 굴린 뒤 잠긴 리미티드 상세 창 [해방] → 닫아도 스크롤 위치 그대로
  */
 import { expect, test, type Page } from '@playwright/test';
 
@@ -46,7 +46,7 @@ test('FB61 a. 도감 [해방]을 눌러도 목록이 맨 위로 굴러가지 않
   expect(await scrollTop(page, list)).toBe(0);
 });
 
-test('FB61 b. 영웅 탭 [신화] 상세 창 [해방] 뒤에도 목록 스크롤 그대로', async ({ page }) => {
+test('FB61 b. 영웅 탭 [리미티드] 상세 창 [해방] 뒤에도 목록 스크롤 그대로', async ({ page }) => {
   await openLobby(page);
   await page.locator('.lobby-nav [data-tab="heroes"]').click();
   await page.locator('[data-hero-tab="mythic"]').click();

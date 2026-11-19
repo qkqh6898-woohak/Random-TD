@@ -18,6 +18,7 @@
  *  - M3: 공격 형태 값(광역 반경 → 단위, 관통·연쇄·다중 → 마리 수), 관통·치명타(bp), 감지. 공속 한도·관통 최대·연쇄 감소 등
  *    전투 규칙 수치는 game.json combat, 승급 개수는 game.json merge (MatchRules).
  */
+import { GRADE_RANK } from '../data/grades';
 import { DECK_GRADES, deckIssues, type DeckData } from '../data/deck';
 import type {
   BossData,
@@ -130,7 +131,15 @@ export interface CardStats {
 }
 
 /** 소환 도박 결과 등급 순위 (G-1): 꽝 0 · 노말 1 · 레어 2 · 유니크 3 · 히어로 4 · 레전드 5 · 신 6. 천장 '이상' 비교에 쓴다 */
-export const GACHA_RANK: Readonly<Record<GachaGrade, number>> = Object.freeze({ none: 0, normal: 1, rare: 2, unique: 3, hero: 4, legend: 5, god: 6 });
+export const GACHA_RANK: Readonly<Record<GachaGrade, number>> = Object.freeze({
+  none: 0,
+  normal: GRADE_RANK.normal,
+  rare: GRADE_RANK.rare,
+  unique: GRADE_RANK.unique,
+  hero: GRADE_RANK.hero,
+  legend: GRADE_RANK.legend,
+  god: GRADE_RANK.god,
+});
 
 /** 소환 도박 한 종류 (G-1) — 확률은 bp. */
 export interface GachaKindStats {
@@ -144,7 +153,7 @@ export interface GachaKindStats {
   readonly pityRank: number;
 }
 
-/** 신화(히든) 조합 하나 (G-1 도감): 결과 타워 id와 재료 (같은 재료가 여럿일 수 있다) */
+/** 리미티드(히든) 조합 하나 (G-1 도감): 결과 타워 id와 재료 (같은 재료가 여럿일 수 있다) */
 export interface RecipeStats {
   readonly id: string;
   readonly materials: readonly string[];
@@ -496,7 +505,7 @@ export interface MatchRules {
   readonly gachaKinds: readonly GachaKindStats[];
   /** 종족 id (towers.json factions 순서, 명령 gacha {f}의 f) */
   readonly factionOrder: readonly string[];
-  /** 신화 조합 (towers.json의 히든 타워 순서, 명령 craft {r}의 r) */
+  /** 리미티드 조합 (towers.json의 히든 타워 순서, 명령 craft {r}의 r) */
   readonly recipes: readonly RecipeStats[];
   /** 3택 1 강화 선택: from단계부터 every단계마다 (보스 단계 제외) */
   readonly pickFrom: number;
@@ -1049,9 +1058,13 @@ function buildT2Rules(data: GameData): Pick<MatchRules, 'autoSummonRadius' | 'se
   };
 }
 
-/** 등급 → 소환 도박 순위 (히든은 레전드와 같은 칸으로 본다 — 천장 비교에만 쓴다). */
+/**
+ * 등급 → 등급 번호 (src/data/grades.ts GRADE_RANK: 노말 1 … 신 6 · 리미티드(hidden) 7, 꽝 0).
+ * 천장·자동 판매·자동 승급 비교에 쓴다. V2.0 PR-A: 예전엔 히든을 레전드(5)와 같게 봤다 — 소환·도박은 히든을 내지 않고
+ * 자동 판매·승급 기준은 유니크 이하라 동작은 같다.
+ */
 export function gradeRank(grade: Grade | GachaGrade): number {
-  return grade === 'hidden' ? GACHA_RANK.legend : GACHA_RANK[grade];
+  return grade === 'none' ? 0 : GRADE_RANK[grade];
 }
 
 /** 타워 데이터 → 필살기 종류 (game.json ultimate.rules 중 처음 맞는 것). */
@@ -1065,7 +1078,7 @@ export function ultKindFor(rules: GameData['game']['ultimate']['rules'], t: Pick
   return 'nuke';
 }
 
-/** G-1 규칙 (칸 쌓기·연쇄 승급·천장·소환 도박·신화 조합·3택 1·필살기). */
+/** G-1 규칙 (칸 쌓기·연쇄 승급·천장·소환 도박·리미티드 조합·3택 1·필살기). */
 function buildG1Rules(data: GameData): Pick<
   MatchRules,
   'stackMax' | 'unitCap' | 'mergeChainMax' | 'summonPityN' | 'summonPityRank' | 'gachaKinds' | 'factionOrder' | 'recipes' | 'pickFrom' | 'pickEvery' | 'ult'

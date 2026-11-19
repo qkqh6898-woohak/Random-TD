@@ -1,7 +1,7 @@
 /**
  * G-1 게임 시스템 E2E (휴대폰 412×915): 마당 맵(소환 칸 마당 둘레를 적이 돈다) · 위 HUD 'WAVE n'·몹 막대 · 아래 조작 묶음
- * [신화] [소환] [도박] / [강화] + 자원 줄(돈·인원 n/한도) + 맵 오른쪽 도전·미션 · 칸 무더기(한 칸 같은 캐릭터 3개)·연쇄 승급 ·
- * [도박] 시트 두 탭(돈 도박 · 소환 도박 4종·천장) · 3택 1 강화 선택 · 필살기 [⚡] · [신화] 도감·제작 · 412/360/320 넘침 없음.
+ * [리미티드] [소환] [도박] / [강화] + 자원 줄(돈·인원 n/한도) + 맵 오른쪽 도전·미션 · 칸 무더기(한 칸 같은 캐릭터 3개)·연쇄 승급 ·
+ * [도박] 시트 두 탭(돈 도박 · 소환 도박 4종·천장) · 3택 1 강화 선택 · 필살기 [⚡] · [리미티드] 도감·제작 · 412/360/320 넘침 없음.
  * sim은 window.__rtd로 읽고(개발자 명령으로 판을 차리기만), 버튼·맵은 화면에서 누른다. SAVE_SCREENS=1이면 docs/screens/G1-*.png.
  */
 import { expect, test, type Page } from '@playwright/test';
@@ -132,7 +132,7 @@ async function expectDockFits(page: Page): Promise<void> {
   expect(r.menus).toBeGreaterThanOrEqual(5);
 }
 
-test('마당 맵: 6×8 가운데 4×6 마당 24칸 + 둘레 고리, 칸이 예전(135)보다 1.3배 이상 · 위 HUD WAVE·몹 막대 · 아래 [신화][소환][도박]/[강화] · 오른쪽 도전·미션', async ({ page }) => {
+test('마당 맵: 6×8 가운데 4×6 마당 24칸 + 둘레 고리, 칸이 예전(135)보다 1.3배 이상 · 위 HUD WAVE·몹 막대 · 아래 [리미티드][소환][도박]/[강화] · 오른쪽 도전·미션', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=42');
   const L = await inScene(page, (s) => ({ ...s.mapLayout, pads: s.match.map.buildable.length, w: s.match.map.width, h: s.match.map.height }), null);
@@ -140,11 +140,11 @@ test('마당 맵: 6×8 가운데 4×6 마당 24칸 + 둘레 고리, 칸이 예�
   await expect(page.getByTestId('hud-stage')).toHaveText('준비');
   expect(L.tile).toBeGreaterThanOrEqual(Math.round(135 * 1.3));
   for (const id of ['menu-mythic', 'hud-summon', 'menu-gamble', 'menu-upgrade', 'menu-challenge', 'menu-mission']) await expect(page.getByTestId(id)).toBeVisible();
-  await expect(page.getByTestId('menu-mythic')).toContainText('신화');
+  await expect(page.getByTestId('menu-mythic')).toContainText('리미티드');
   await expect(page.getByTestId('hud-summon')).toContainText('100원');
   await expect(page.getByTestId('hud-summon-pity')).toHaveText('천장 30');
   await expect(page.getByTestId('hud-towers')).toHaveText('0/30'); // 인원 n / 한도 (game.json board.unitCap — 피드백 #59로 20 → 30)
-  // 소환 버튼이 가운데, 신화 왼쪽·도박 오른쪽, 강화는 소환 바로 아래
+  // 소환 버튼이 가운데, 리미티드 왼쪽·도박 오른쪽, 강화는 소환 바로 아래
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
   const [my, su, ga, up] = [await box('menu-mythic'), await box('hud-summon'), await box('menu-gamble'), await box('menu-upgrade')];
   expect(my.x + my.width).toBeLessThanOrEqual(su.x + 1);
@@ -282,7 +282,7 @@ test('[소환] 시트: 일반 소환 + 소환 도박 4종 확률·천장 · 종�
   await expect.poll(() => inScene(page, (s) => s.match.state.pity[0]![0]!, null)).toBeGreaterThanOrEqual(0);
   await page.waitForTimeout(300);
   await shot(page, 'G1-summon-gamble');
-  // 천장: 신화 도박 카운터를 천장 직전으로 → '다음 1회 레전드 확정!', 한 번 돌리면 레전드 이상
+  // 천장: 레전드 도박 카운터를 천장 직전으로 → '다음 1회 레전드 확정!', 한 번 돌리면 레전드 이상
   await inScene(page, (s) => {
     s.match.state.pity[0]![4] = 25;
     return null;
@@ -378,7 +378,7 @@ test('필살기: 찬 캐릭터가 있으면 HUD [⚡ n] → 목록에서 발동 
   expect(errors).toEqual([]);
 });
 
-test('[신화] 도감: 발견 전 실루엣·??? + 힌트 하나 · 발견한 조합은 재료가 모이면 [제작] · 기록은 계정에 남는다', async ({ page, baseURL }) => {
+test('[리미티드] 도감: 발견 전 실루엣·??? + 힌트 하나 · 발견한 조합은 재료가 모이면 [제작] · 기록은 계정에 남는다', async ({ page, baseURL }) => {
   const errors = collectErrors(page);
   // 예전 계정 저장(도감 없음)에 황금 왕 발견 기록을 더한 상태로 시작
   await page.addInitScript(() => {

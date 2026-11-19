@@ -105,7 +105,7 @@ describe('G-2 소환·승급 초상 카드', () => {
     }
   });
 
-  it('승급 등급 별: 노말 1 ~ 레전드 5, 신·신화 5', () => {
+  it('승급 등급 별: 노말 1 ~ 레전드 5, 신·리미티드 5', () => {
     expect(GRADES.map((g) => mergeStarCount(g))).toEqual([1, 2, 3, 4, 5, 5, 5]);
     expect(mergeStarCount('???')).toBe(1);
   });
@@ -168,7 +168,7 @@ function recorder(): { ctx: CanvasRenderingContext2D; box: { l: number; r: numbe
 }
 
 describe('G-2 캐릭터 겉모습: 등급 받침대·별 배지·종족 문장', () => {
-  it('등급 7종의 받침대 장식이 모두 다르다 (노말 → 신·신화)', () => {
+  it('등급 7종의 받침대 장식이 모두 다르다 (노말 → 신·리미티드)', () => {
     expect(new Set(GRADES.map((g) => GRADE_STYLE[g].deco)).size).toBe(7);
     expect(GRADES.map((g) => GRADE_STYLE[g].stars)).toEqual([1, 2, 3, 4, 5, 1, 1]);
     // 유니크 이상만 빛 고리

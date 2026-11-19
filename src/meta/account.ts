@@ -29,14 +29,14 @@ export interface AccountStore {
   markGuide(id: string): boolean;
   /** 본 도움말 기록을 모두 지운다 ([도움말 다시 보기]) */
   resetGuides(): void;
-  /** G-1 신화 도감: 발견한 조합(결과 타워 id) */
+  /** G-1 리미티드 도감: 발견한 조합(결과 타워 id) */
   codexFound(): ReadonlySet<string>;
   /** 조합 발견 기록. 새로 기록했으면 true */
   recordCodex(id: string): boolean;
 }
 
 /**
- * 신화 도감 한 칸 (G-1). 조합마다 객체로 두어 나중에 값을 더할 수 있게 한다
+ * 리미티드 도감 한 칸 (G-1). 조합마다 객체로 두어 나중에 값을 더할 수 있게 한다
  * (G-3 '조각 모아 히든 영웅 해방'의 잠김/해방 표시 등 — 모르는 필드는 읽을 때 그대로 둔다).
  */
 export interface CodexEntry {
@@ -50,7 +50,7 @@ interface AccountSave {
   level: number;
   hidden: string[];
   guides: string[];
-  /** G-1 신화 도감 (조합 id → 칸). 예전 저장에는 없다 → 빈 객체 */
+  /** G-1 리미티드 도감 (조합 id → 칸). 예전 저장에는 없다 → 빈 객체 */
   codex: Record<string, CodexEntry>;
 }
 

@@ -10,6 +10,7 @@
  *   그림이 아직 안 받아졌거나 없으면 절차 그림. 끄면 절차 그림만 (파츠 확인용). 인물은 WebP가 '보통' 표정 한 장뿐이라 다른 표정은 절차 그림.
  * - 쿼리로 처음 상태를 정할 수 있다 (스크린샷용): tab=towers|enemies|people, filter=all|nr|uh|lgh, awaken=1, play=0, art=0.
  */
+import { GRADES, GRADE_NAMES } from '../../data/grades';
 import './gallery.css';
 import { ensureEnemyTexture, ensureHumanTexture, ensurePortraitTexture, type HumanTexture } from '../../art/characters/cache';
 import { compose } from '../../art/characters/compose';
@@ -32,14 +33,14 @@ export type GalleryTab = 'towers' | 'enemies' | 'people';
 export type TowerFilter = 'all' | 'nr' | 'uh' | 'lgh';
 
 const FILTER_GRADES: Record<TowerFilter, readonly Grade[]> = {
-  all: ['normal', 'rare', 'unique', 'hero', 'legend', 'god', 'hidden'],
+  all: GRADES,
   nr: ['normal', 'rare'],
   uh: ['unique', 'hero'],
   lgh: ['legend', 'god', 'hidden'],
 };
 
-const FILTER_LABEL: Record<TowerFilter, string> = { all: '전체', nr: '노말·레어', uh: '유니크·히어로', lgh: '레전드·신·신화' };
-const GRADE_KO: Record<Grade, string> = { normal: '노말', rare: '레어', unique: '유니크', hero: '히어로', legend: '레전드', god: '신', hidden: '신화' };
+const FILTER_LABEL: Record<TowerFilter, string> = { all: '전체', nr: '노말·레어', uh: '유니크·히어로', lgh: `레전드·신·${GRADE_NAMES.hidden}` };
+const GRADE_KO: Readonly<Record<Grade, string>> = GRADE_NAMES;
 const RANK_KO: Record<string, string> = { minion: '하수인', captain: '대장', commander: '4천왕', lord: '군주' };
 const EXPR_KO: Record<Expression, string> = { normal: '보통', angry: '화남', happy: '웃음' };
 

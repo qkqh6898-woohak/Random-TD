@@ -10,6 +10,7 @@
  *   히든은 이번 판에 달성했거나 예전에 발견해 영구 기록된 것만 이름을 보이고 나머지는 '???'.
  * 버튼이 눌리는지는 sim의 검사 함수(upgradeCheck·gambleCheck·challengeCheck·claimCheck)를 그대로 쓴다 → 화면과 명령 판정이 같다.
  */
+import { GRADE_NAMES } from '../../data/grades';
 import type { Grade } from '../../data/load';
 import type { World } from '../../sim/World';
 import { TICK_HZ } from '../../sim/World';
@@ -30,15 +31,7 @@ export type SheetKind = 'challenge' | 'upgrade' | 'mission' | 'dev' | 'mythic' |
 export type UpgradeTab = 'grade' | 'stat' | 'gamble';
 export type MissionTab = 'normal' | 'hidden';
 
-const GRADE_SHORT: Readonly<Record<Grade, string>> = {
-  normal: '노말',
-  rare: '레어',
-  unique: '유니크',
-  hero: '히어로',
-  legend: '레전드',
-  god: '신',
-  hidden: '신화',
-};
+const GRADE_SHORT: Readonly<Record<Grade, string>> = GRADE_NAMES;
 
 // ---------------------------------------------------------------- 숫자 표시
 

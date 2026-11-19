@@ -47,8 +47,9 @@ export class DataError extends Error {
 // 타입
 // ---------------------------------------------------------------------------
 
-export const GRADES = ['normal', 'rare', 'unique', 'hero', 'legend', 'god', 'hidden'] as const;
-export type Grade = (typeof GRADES)[number];
+// 등급 순서·이름의 정답은 src/data/grades.ts 한 곳 (V2.0 PR-A).
+import { GRADES, type Grade } from './grades';
+export { GRADES, type Grade };
 export const DAMAGE_TYPES = ['physical', 'magic', 'hybrid', 'true'] as const;
 export type DamageType = (typeof DAMAGE_TYPES)[number];
 export const SHAPES = ['single', 'melee', 'aoe', 'melee_aoe', 'pierce', 'chain', 'multi', 'global'] as const;

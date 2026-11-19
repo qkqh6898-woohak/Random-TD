@@ -16,7 +16,7 @@ export interface GameOverOptions {
   tip?: string;
   /** 개발자 모드만 (F10-4 검토, 결정 6): '이번 판 기록' 줄 — 패배 화면이 🛠를 덮어도 첫 소환·첫 승급·보스 시각·남은 체력을 읽을 수 있게 */
   log?: readonly { label: string; value: string }[];
-  /** G-3 판 정산 (경험치·골드·보석·영웅 카드·신화 조각·최고 웨이브). 없으면 줄 없음 */
+  /** G-3 판 정산 (경험치·골드·보석·영웅 카드·리미티드 조각·최고 웨이브). 없으면 줄 없음 */
   rewards?: SettlementView;
   onRetry: () => void;
   onExit: () => void;
@@ -78,7 +78,7 @@ function rewardsBox(r: SettlementView): HTMLElement {
         )
       : null,
     fragTotal > 0
-      ? h('div', { class: 'go-frags', attrs: { 'data-testid': 'go-frags' } }, `🧩 신화 조각 ${r.fragments.map((f) => `${f.name} +${f.n}`).join(' · ')}`)
+      ? h('div', { class: 'go-frags', attrs: { 'data-testid': 'go-frags' } }, `🧩 리미티드 조각 ${r.fragments.map((f) => `${f.name} +${f.n}`).join(' · ')}`)
       : null,
     r.recruitGain > 0 ? h('div', { class: 'go-recruit', text: `영웅 모집 게이지 +${r.recruitGain}` }) : null,
   );

@@ -22,15 +22,9 @@ import type { TowerStats } from '../../sim/rules';
 import { APS_SCALE, ATK_SCALE } from '../../sim/rules';
 import type { EffectiveStats } from '../../sim/stats';
 
-export const GRADE_NAMES: Readonly<Record<Grade, string>> = Object.freeze({
-  normal: '노말',
-  rare: '레어',
-  unique: '유니크',
-  hero: '히어로',
-  legend: '레전드',
-  god: '신',
-  hidden: '신화',
-});
+/** 등급 이름 — 정답은 src/data/grades.ts (V2.0 PR-A 통일) */
+import { GRADE_NAMES } from '../../data/grades';
+export { GRADE_NAMES };
 
 export const DAMAGE_TYPE_NAMES: Readonly<Record<DamageType, string>> = Object.freeze({
   physical: '물리',
@@ -229,7 +223,7 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
   const mergeAllTimes = input.owned >= input.mergeCount ? Math.floor(input.owned / input.mergeCount) : 0;
   const ready = input.mergeableGrade && input.owned >= input.mergeCount;
   let note = '';
-  if (!input.mergeableGrade) note = data.grade === 'legend' ? '레전드는 승급할 수 없어요 (신화 재료)' : '이 타워는 승급할 수 없어요';
+  if (!input.mergeableGrade) note = data.grade === 'legend' ? '레전드는 승급할 수 없어요 (리미티드 재료)' : '이 타워는 승급할 수 없어요';
   else if (!ready) note = `같은 타워 ${input.mergeCount}개가 한 칸에 모이면 승급할 수 있어요`;
   const critText = eff.critBp > 0 ? `${fmtPct(eff.critBp)} ×${fmtNum(eff.critMulBp / 10_000)}` : '—';
   return {

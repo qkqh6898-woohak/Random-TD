@@ -1913,7 +1913,7 @@ export class GameScene extends Phaser.Scene {
               const [a, b] = xy.split(',');
               return { tx: Number(a), ty: Number(b) };
             });
-          // G-2 연출 + G-1 신화 조합: 신화(히든) 초상 카드, 빛은 금빛이 잘 보이게 레전드 색
+          // G-2 연출 + G-1 리미티드 조합: 리미티드(히든) 초상 카드, 빛은 금빛이 잘 보이게 레전드 색
           this.fx.mergeSuck(from, { tx: Number(ev.x), ty: Number(ev.y), color: hexToInt(GRADE_COLORS.legend), grade: 'hidden', towerId: id });
           this.ctx.audio.play('merge');
           this.shake(260, 0.006);
@@ -2447,7 +2447,7 @@ export class GameScene extends Phaser.Scene {
     const text = defeatText(this.match.state, this.defeatBossInfo());
     // 전투 기록 (A-1, 일반 무한 판만) + 끝난 판의 자동 저장 지우기
     const best = this.ctx.records.complete(this.match, this.runId);
-    // G-3 판 정산 (경험치·골드·영웅 카드·신화 조각·최고 웨이브) — 같은 판은 한 번만
+    // G-3 판 정산 (경험치·골드·영웅 카드·리미티드 조각·최고 웨이브) — 같은 판은 한 번만
     const settled = this.ctx.progress?.settle(matchResultOf(this.match, this.runId)) ?? null;
     if (this.saveToken !== null) this.ctx.saves.clear(this.saveToken);
     this.saveToken = null;
@@ -2516,7 +2516,7 @@ export class GameScene extends Phaser.Scene {
         },
         // FB-1: 💬 피드백 보내기 — 일시정지 중이라 틱이 멈춰 있다 (판 기록 = 지금 틱까지, 첨부 기본 켜짐)
         feedback: createSceneFeedback(this.ctx, () => matchFeedbackSnapshot(this.ctx, this.match, this.resumeSpeed > 0 ? this.resumeSpeed : 1, this.resumed), true),
-        // 피드백 #24: 📘 등급·조합 설명 (조합식은 [신화] 도감과 같은 공개 규칙)
+        // 피드백 #24: 📘 등급·조합 설명 (조합식은 [리미티드] 도감과 같은 공개 규칙)
         gradeGuide: createGradeGuideDialog(() =>
           gradeGuideModel({ baseDps: this.ctx.data.towers.baseDps, mergeCount: this.match.rules.mergeCount, godChanceBp: this.match.rules.godChanceBp, codex: this.codexModel() }),
         ),
@@ -3081,7 +3081,7 @@ export class GameScene extends Phaser.Scene {
     return 'spun';
   }
 
-  // ---------------------------------------------------------------- G-1 소환 도박 · 신화 · 필살기
+  // ---------------------------------------------------------------- G-1 소환 도박 · 리미티드 · 필살기
 
   /** [소환] 시트 모델 */
   private summonModel(): SummonSheetModel {
@@ -3090,9 +3090,9 @@ export class GameScene extends Phaser.Scene {
     return summonSheetModel(this.match.ctx, this.match.world, LOCAL_PLAYER, factions, this.gachaFaction, this.ctx.data.game.summonGamble.kinds);
   }
 
-  /** [신화] 도감 모델 */
+  /** [리미티드] 도감 모델 */
   private codexModel(): CodexSheetModel {
-    // G-3 계정 조각 수 → 잠긴 신화 줄 '🔒 해방 필요 (조각 n/20)'
+    // G-3 계정 조각 수 → 잠긴 리미티드 줄 '🔒 해방 필요 (조각 n/20)'
     const progress = this.ctx.progress;
     const fragments = progress ? (id: string) => progress.fragmentsOf(id) : undefined;
     return codexSheetModel(this.match.ctx, this.match.world, LOCAL_PLAYER, this.ctx.data.towers.towers, this.ctx.account.codexFound(), fragments);
@@ -3116,7 +3116,7 @@ export class GameScene extends Phaser.Scene {
     return true;
   }
 
-  /** [제작]: 신화 조합 명령 */
+  /** [제작]: 리미티드 조합 명령 */
   private sendCraft(r: number): void {
     if (this.paused || this.gameOver) return;
     const plan = craftPlan(this.match.ctx, this.match.world, LOCAL_PLAYER, r);
@@ -3136,7 +3136,7 @@ export class GameScene extends Phaser.Scene {
     if (this.match.world.enqueue({ type: 'ult', id }).ok) this.ultSent.set(id, this.match.tick);
   }
 
-  /** 매 프레임: HUD 필살기 칩·목록, '필살기 자동'이면 찬 것을 바로 보낸다, 메뉴 배지, 신화 발견 기록. */
+  /** 매 프레임: HUD 필살기 칩·목록, '필살기 자동'이면 찬 것을 바로 보낸다, 메뉴 배지, 리미티드 발견 기록. */
   private syncG1(): void {
     const ctx = this.match.ctx;
     const world = this.match.world;
@@ -3150,7 +3150,7 @@ export class GameScene extends Phaser.Scene {
         return { id: t.id, name: this.towerNames.get(t.tower) ?? t.tower, icon: kinds[k].icon, ultName: kinds[k].name };
       }),
     );
-    // 신화 발견 (사용자 규칙: 재료를 한꺼번에 가졌을 때). 치트를 쓸 수 있는 판은 계정에 남기지 않는다 (히든 미션과 같은 규칙)
+    // 리미티드 발견 (사용자 규칙: 재료를 한꺼번에 가졌을 때). 치트를 쓸 수 있는 판은 계정에 남기지 않는다 (히든 미션과 같은 규칙)
     if (!this.match.state.debug && !this.match.state.debugUsed && this.match.tick % 10 === 0) {
       for (const id of newlyDiscovered(this.match.rules, ownedCounts(world, LOCAL_PLAYER), this.ctx.account.codexFound())) {
         if (this.ctx.account.recordCodex(id)) this.ctx.ui.toast(craftReadyText(this.towerNames.get(id) ?? id), 2600);

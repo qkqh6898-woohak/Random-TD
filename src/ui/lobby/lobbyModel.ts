@@ -1,7 +1,8 @@
 /**
- * 로비 화면 모델 (G-3, 순수 — DOM 없음): 영웅 카드 목록·정렬, 웨이브 길, 신화 조각, 상단 바, 정산 요약.
+ * 로비 화면 모델 (G-3, 순수 — DOM 없음): 영웅 카드 목록·정렬, 웨이브 길, 리미티드 조각, 상단 바, 정산 요약.
  * 화면(Lobby.ts·GameOverScreen.ts)은 이 모델을 그리기만 한다. 수치는 progression.json · towers.json에서.
  */
+import { GRADE_NAMES, GRADE_RANK } from '../../data/grades';
 import type { GameData, Grade, TowerData } from '../../data/load';
 import { GRADE_COLORS } from '../../art/palette';
 import type { ProgressionData } from '../../meta/progressionData';
@@ -20,20 +21,10 @@ import {
   type ProgressState,
 } from '../../meta/progress';
 
-export const GRADE_KO: Readonly<Record<Grade, string>> = Object.freeze({
-  normal: '노말',
-  rare: '레어',
-  unique: '유니크',
-  hero: '히어로',
-  legend: '레전드',
-  god: '신',
-  hidden: '신화',
-});
+/** 등급 이름 — 정답은 src/data/grades.ts (V2.0 PR-A 통일, 예전 이 파일의 표는 지움) */
+export const GRADE_KO: Readonly<Record<Grade, string>> = GRADE_NAMES;
 
-/** 등급 순 (높은 등급이 앞) */
-const GRADE_RANK: Readonly<Record<Grade, number>> = Object.freeze({ hidden: 7, god: 6, legend: 5, hero: 4, unique: 3, rare: 2, normal: 1 });
-
-/** 영웅 탭: [영웅] 노말~레전드 / [신화] 히든(신화)·신 */
+/** 영웅 탭: [영웅] 노말~레전드 / [리미티드] 히든(리미티드)·신 */
 export type HeroTab = 'heroes' | 'mythic';
 /** 'ready' = 피드백 #31 레벨업 가능(카드가 모인 영웅) 먼저 */
 export type HeroSort = 'grade' | 'level' | 'ready';
@@ -121,7 +112,7 @@ export function heroGrid(state: ProgressState, pd: ProgressionData, data: Pick<G
   return { owned, unowned, ready: cards.filter((c) => c.ready).length, canLevel };
 }
 
-/** 영웅 + 신화 탭 모두에서 카드가 모인 영웅 수 */
+/** 영웅 + 리미티드 탭 모두에서 카드가 모인 영웅 수 */
 export function heroesReady(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers' | 'decks'>): number {
   return heroGrid(state, pd, data, 'heroes', 'grade').ready + heroGrid(state, pd, data, 'mythic', 'grade').ready;
 }
@@ -229,7 +220,7 @@ export function waveRoad(state: ProgressState, pd: ProgressionData): WaveRoadMod
 }
 
 // ---------------------------------------------------------------------------
-// 신화 조각 (도감/카드 탭)
+// 리미티드 조각 (도감/카드 탭)
 // ---------------------------------------------------------------------------
 
 export interface FragmentRow {

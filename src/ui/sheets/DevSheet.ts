@@ -44,7 +44,7 @@ export interface DevSheetView extends BottomSheetView<DevTab> {
 const TABS = [
   { id: 'fx', label: '⚙ 설정' },
   { id: 'chance', label: '🎲 확률' },
-  { id: 'recipes', label: '💠 신화 조합' },
+  { id: 'recipes', label: '💠 리미티드 조합' },
 ] as const;
 
 /** 켜고 끄는 줄 (스위치 모양 버튼, aria-pressed) */

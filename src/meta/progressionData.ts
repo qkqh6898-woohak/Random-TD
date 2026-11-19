@@ -15,7 +15,7 @@ export const PROGRESSION_FILE = 'progression.json';
 /** 영웅 카드가 나오는 일반 등급 (히든은 조각, 신은 상점 상자에서만 드물게) */
 export const CARD_GRADES = ['normal', 'rare', 'unique', 'hero', 'legend'] as const;
 
-/** 받을 것 (보상·상점 내용 공용). cards = 무작위 영웅 카드 장수, fragments = 신화 조각 개수 */
+/** 받을 것 (보상·상점 내용 공용). cards = 무작위 영웅 카드 장수, fragments = 리미티드 조각 개수 */
 export interface RewardSpec {
   gold?: number;
   gems?: number;

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "name": "r7-g1",
-  "note": "G-1 게임 시스템: 무한 모드 debug, 무더기 소환·연쇄 승급·무더기 이동 + 행운 소환 도박 10초마다 + 필살기(찬 타워부터) + 신화 조합(재료가 모이면) + 3택 1·보스 카드 첫 장, 히어로 3종을 먼저 놓음 — 15단계",
+  "note": "G-1 게임 시스템: 무한 모드 debug, 무더기 소환·연쇄 승급·무더기 이동 + 행운 소환 도박 10초마다 + 필살기(찬 타워부터) + 리미티드 조합(재료가 모이면) + 3택 1·보스 카드 첫 장, 히어로 3종을 먼저 놓음 — 15단계",
   "seed": 17,
   "mode": "infinite",
   "theme": 0,
@@ -10,7 +10,7 @@
   "decks": [{"normal":["miner","goblin","archer","apprentice","warrior"],"rare":["merchant","mudshaman","flamemage","cleaver","duelist"],"unique":["icemage","gambler","blacksmith","sniper","berserker"],"hero":["summoner","scholar","chronomancer","alchemist","swordsaint"],"legend":["dragoncaller","warlord","archmage","assassin","fortuna"]}],
   "levels": [{}],
   "accountLevels": [1],
-  "dataHash": 4094903435,
+  "dataHash": 2136701646,
   "endTick": 19200,
   "commands": [
     {"type":"debugTower","tick":0,"player":0,"seq":0,"x":2,"y":3,"t":38},

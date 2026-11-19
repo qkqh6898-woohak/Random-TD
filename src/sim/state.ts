@@ -205,7 +205,7 @@ export interface MatchState {
   unitCapBonus: number[];
   /** 지금까지 한 소환 도박 수 (꽝 포함, 모든 플레이어) */
   gachas: number;
-  /** 지금까지 만든 신화(히든) 수 */
+  /** 지금까지 만든 리미티드(히든) 수 */
   crafts: number;
   /** 지금까지 쓴 필살기 수 */
   ults: number;
@@ -232,7 +232,7 @@ export interface MatchContext {
    */
   readonly accountLevels: readonly number[];
   /**
-   * 플레이어별 잠긴 히든(신화) 타워 id (G-3 히든 영웅 해방). 판 시작 때 정해진 입력 (해시 밖, 리플레이에 기록). 빈 집합 = 모두 열림.
+   * 플레이어별 잠긴 히든(리미티드) 타워 id (G-3 히든 영웅 해방). 판 시작 때 정해진 입력 (해시 밖, 리플레이에 기록). 빈 집합 = 모두 열림.
    * 조합 규칙은 sim/unlocks.ts `isHiddenLocked`로 읽는다.
    */
   readonly lockedHidden: readonly ReadonlySet<string>[];

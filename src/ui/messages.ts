@@ -50,7 +50,7 @@ export function mergeReadyToast(names: string | readonly string[]): string {
 export function mergeFailText(reason: string, count: number): string | null {
   if (reason === 'count') return `같은 타워가 ${count}개 있어야 승급할 수 있어요`;
   if (reason === 'stack') return `같은 타워 ${count}개가 한 칸에 모여야 승급해요`;
-  if (reason === 'maxGrade') return '레전드는 승급할 수 없어요 (신화 재료)';
+  if (reason === 'maxGrade') return '레전드는 승급할 수 없어요 (리미티드 재료)';
   return null;
 }
 
@@ -331,19 +331,19 @@ export function ultText(towerName: string, ultName: string, count: number): stri
   return count > 0 ? `${towerName}의 ${ultName}! (${count})` : `${towerName}의 ${ultName}!`;
 }
 
-/** 신화 조합 알림 */
+/** 리미티드 조합 알림 */
 export function craftText(name: string, first: boolean): string {
-  return first ? `💠 신화 ${name} 탄생! 도감에 기록했어요` : `💠 신화 ${name} 탄생!`;
+  return first ? `💠 리미티드 ${name} 탄생! 도감에 기록했어요` : `💠 리미티드 ${name} 탄생!`;
 }
 
-/** 신화 재료가 모두 모였을 때 */
+/** 리미티드 재료가 모두 모였을 때 */
 export function craftReadyText(name: string): string {
-  return `💠 ${name} 재료가 모였어요 — [신화]에서 만들어요`;
+  return `💠 ${name} 재료가 모였어요 — [리미티드]에서 만들어요`;
 }
 
-/** 신화 조합 실패 → 글자 */
+/** 리미티드 조합 실패 → 글자 */
 export function craftFailText(reason: string): string | null {
-  if (reason === 'locked') return '아직 해방하지 않은 신화예요';
+  if (reason === 'locked') return '아직 해방하지 않은 리미티드예요';
   if (reason === 'material') return '재료가 모자라요';
   if (reason === 'full') return BOARD_FULL;
   return null;

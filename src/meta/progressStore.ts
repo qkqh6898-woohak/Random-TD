@@ -157,7 +157,7 @@ export class ProgressStore {
   }
 
   /**
-   * 신화(히든) 조각: 가진 수 / 해방에 드는 수 (G-1 [신화] 도감의 '🔒 해방 필요 (조각 n/20)').
+   * 리미티드(히든) 조각: 가진 수 / 해방에 드는 수 (G-1 [리미티드] 도감의 '🔒 해방 필요 (조각 n/20)').
    * 히든이 아니거나 이미 해방했으면 null.
    */
   fragmentsOf(id: string): { have: number; need: number } | null {

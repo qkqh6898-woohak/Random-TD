@@ -3829,7 +3829,7 @@ body {
 }
 
 /* ================================================================ G-1 게임 시스템 (기능 갈래 — 모양은 기존 클래스 재사용, 덧붙이기만) */
-/* 하단 메뉴: [신화] [소환] [도박] [강화] + 작은 [⚔] [📋] (+ 개발자 [🛠]) */
+/* 하단 메뉴: [리미티드] [소환] [도박] [강화] + 작은 [⚔] [📋] (+ 개발자 [🛠]) */
 .hud-menu.is-g1 {
   grid-template-columns: repeat(4, 1fr) repeat(2, 0.56fr);
   gap: 1.2cqw;
@@ -3990,7 +3990,7 @@ body {
   font-weight: 700;
 }
 
-/* 신화 도감 시트 */
+/* 리미티드 도감 시트 */
 .my-summary {
   font-size: 3cqw;
   font-weight: 800;
@@ -4142,7 +4142,7 @@ body {
   margin-left: auto;
 }
 
-/* 큰 버튼 묶음: [신화] [소환] [도박] / 소환 아래 [강화] */
+/* 큰 버튼 묶음: [리미티드] [소환] [도박] / 소환 아래 [강화] */
 .hud-menu.is-g1 {
   grid-template-columns: 1fr 1.45fr 1fr;
   grid-template-rows: auto auto;

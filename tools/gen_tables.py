@@ -17,7 +17,7 @@ MS = json.load(open(ROOT / "src/data/missions.json", encoding="utf-8"))["mission
 G = json.load(open(ROOT / "src/data/game.json", encoding="utf-8"))
 towers = T["towers"]; BASE = T["baseDps"]
 GRADES = ["normal", "rare", "unique", "hero", "legend", "god", "hidden"]
-GK = {"normal": "노말", "rare": "레어", "unique": "유니크", "hero": "히어로", "legend": "레전드", "god": "신", "hidden": "히든"}
+GK = {"normal": "노말", "rare": "레어", "unique": "유니크", "hero": "히어로", "legend": "레전드", "god": "신", "hidden": "리미티드"}
 GS = {"normal": "N", "rare": "R", "unique": "U", "hero": "H", "legend": "L", "god": "G", "hidden": "X"}
 SHAPE = {"single": "단일", "melee": "근접 단일", "aoe": "광역", "melee_aoe": "근접 광역", "pierce": "관통", "chain": "연쇄", "multi": "다중", "global": "전체"}
 DMG = {"physical": "물리", "magic": "마법", "hybrid": "혼합", "true": "고정"}
@@ -88,6 +88,12 @@ for t in towers:
     if t.get("recipe"):
         for rid in t["recipe"]:
             if rid not in byid: errors.append(f"{t['name']} 조합 재료 {rid} 없음")
+# V2.0 PR-A 등급 순서 (src/data/grades.ts): 노말 < … < 레전드 < 신 < 리미티드(hidden) — 등급 기준 DPS가 오름차순,
+# 리미티드는 가장 약한 것도 가장 강한 신보다 전투력 지수(power)가 높다.
+for a, b in zip(GRADES, GRADES[1:]):
+    if not BASE[a] < BASE[b]: errors.append(f"baseDps 순서: {GK[a]} {BASE[a]} < {GK[b]} {BASE[b]} 이어야 함")
+_gods = [power(t) for t in towers if t["grade"] == "god"]; _lim = [power(t) for t in towers if t["grade"] == "hidden"]
+if _gods and _lim and not min(_lim) > max(_gods): errors.append(f"리미티드 최소 전투력 {min(_lim):.0f} ≤ 신 최대 {max(_gods):.0f}")
 detect = [t["name"] for t in towers if t["detect"] != "none" and t["grade"] in need_special]
 if len(detect) < 6: errors.append("감지 타워가 너무 적음")
 mobids = {m["id"] for m in E["mobs"]}
@@ -216,7 +222,7 @@ def tower_table(g):
     return "\n".join(rows)
 
 def recipe_table():
-    rows = ["| 히든 타워 | 조합식 (N 노말 · R 레어 · U 유니크 · H 히어로 · L 레전드) |", "|------|------|"]
+    rows = ["| 리미티드 타워 | 조합식 (N 노말 · R 레어 · U 유니크 · H 히어로 · L 레전드) |", "|------|------|"]
     for t in towers:
         if t.get("recipe"):
             parts = [f"{byid[r]['name']}({GS[byid[r]['grade']]})" for r in t["recipe"]]
