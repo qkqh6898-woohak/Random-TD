@@ -1,0 +1,292 @@
+[
+  {
+    "id": "shop",
+    "label": "상점",
+    "file": "public/assets/ui/v2/shop.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "158c29a180d712b0ea3c374108bf3270509faa60347bb82a4663071e2fe78e6c"
+  },
+  {
+    "id": "heroes",
+    "label": "영웅",
+    "file": "public/assets/ui/v2/heroes.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "600659db0990ecce80743a6bd642acb928d56968ff8442fa48ec0d098efbfa30"
+  },
+  {
+    "id": "battle",
+    "label": "전투",
+    "file": "public/assets/ui/v2/battle.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "022e6ae18537a1990e02a0a3da8cde546b1093eb0be4fe68fa42e54a0fd030f5"
+  },
+  {
+    "id": "codex",
+    "label": "도감",
+    "file": "public/assets/ui/v2/codex.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "3123f5a9dcef407dcf6af8d26f877d6f70d0c19b62db45feba417957cd6c4d06"
+  },
+  {
+    "id": "campaign",
+    "label": "캠페인",
+    "file": "public/assets/ui/v2/campaign.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "18698381c39fb160702c322e68e93a77483d703f5c6a01f36a99ea37deaa0bc0"
+  },
+  {
+    "id": "friends",
+    "label": "친구",
+    "file": "public/assets/ui/v2/friends.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "1468869adffb3f91c21512bb67d001aeafed3f1cb08d2d490c93baf0276760ea"
+  },
+  {
+    "id": "mail",
+    "label": "우편",
+    "file": "public/assets/ui/v2/mail.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "955d7c8621b68c09845e7b1d384442a92f6aa9156199f93c00dab3a58b1da59c"
+  },
+  {
+    "id": "menu",
+    "label": "메뉴",
+    "file": "public/assets/ui/v2/menu.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "8cc1c180a42d877974702a446c01200919cc2c74e66657dcbff7d74a70eb25cd"
+  },
+  {
+    "id": "quests",
+    "label": "퀘스트",
+    "file": "public/assets/ui/v2/quests.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "984273a3674a633057839d23d533fd05ff2529f1063ea903c5e8bf23ec50448f"
+  },
+  {
+    "id": "settings",
+    "label": "설정",
+    "file": "public/assets/ui/v2/settings.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "b2db1cd7a380a282ea8460af53f459e85b865a2ee08630a561964410a6761de8"
+  },
+  {
+    "id": "mission",
+    "label": "미션",
+    "file": "public/assets/ui/v2/mission.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "3215fab3953367cdc3b0a936f72369b1234c401de0bb0f4cb6416d40d05c3a06"
+  },
+  {
+    "id": "stats",
+    "label": "통계",
+    "file": "public/assets/ui/v2/stats.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "4cb7b256902ee7a7e2cc24721ba46673da8da19bc65470813794db9b2892f16a"
+  },
+  {
+    "id": "speed",
+    "label": "배속",
+    "file": "public/assets/ui/v2/speed.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "e9ef55d0dd21224bab206a4884b60e9f947e864c0f44a9b2deb592fa9532761b"
+  },
+  {
+    "id": "chat",
+    "label": "채팅",
+    "file": "public/assets/ui/v2/chat.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "b4003e70513ba3478e2de249a91dd0d0de4558845b219485fc2e4bca64ab9d23"
+  },
+  {
+    "id": "sell",
+    "label": "판매",
+    "file": "public/assets/ui/v2/sell.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "59bb7335839cffcd0b700b24baef73e17f825f4a9245953d2c931ae153759ee6"
+  },
+  {
+    "id": "delete",
+    "label": "삭제",
+    "file": "public/assets/ui/v2/delete.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "ec3e7aefcf5928df4189a6ea48da29be14972a28f069eeb06b043eede10688ff"
+  },
+  {
+    "id": "pause",
+    "label": "일시정지",
+    "file": "public/assets/ui/v2/pause.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "7d8bb078b3f153577838f57b1ceab923ebd3538c3e6d03d4bbaefb7e8bf0419e"
+  },
+  {
+    "id": "info",
+    "label": "정보",
+    "file": "public/assets/ui/v2/info.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "4dada5d65c3774a858e4414cd34de1a5e2ecf9c9c513b622a6fef1ebb95dfd02"
+  },
+  {
+    "id": "close",
+    "label": "닫기",
+    "file": "public/assets/ui/v2/close.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "1deddbf6f410f03777a0f198ffaf8740199d38354ff6dc55fd790d63fe9176ea"
+  },
+  {
+    "id": "gold",
+    "label": "골드",
+    "file": "public/assets/ui/v2/gold.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "a4ca358f05c577b5425e0fd1abb828a286ac1df1e7691428fe53c53e89917a98"
+  },
+  {
+    "id": "diamond",
+    "label": "다이아",
+    "file": "public/assets/ui/v2/diamond.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "91ecaafedce1370221b3eeac9f1fb8d1d606bcdf2862f41fab91eaff872d69a9"
+  },
+  {
+    "id": "flame",
+    "label": "불꽃",
+    "file": "public/assets/ui/v2/flame.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": false,
+    "sha256": "caf68b795a8aec4b1d83dbf53542526d76dacac4bb6e0c647a088454e1d85f03"
+  },
+  {
+    "id": "energy",
+    "label": "에너지",
+    "file": "public/assets/ui/v2/energy.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "85be40728b504fd1681fab6cd6bd0597fe1358c8ba16017e0aa3ca5ec50738aa"
+  },
+  {
+    "id": "battle-coin",
+    "label": "전투 코인",
+    "file": "public/assets/ui/v2/battle-coin.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "6ace04401b36c2149e999ba956175bcd6dc52ae9e4ca3b7e8cd9ce6f7b742d99"
+  },
+  {
+    "id": "luck",
+    "label": "행운석",
+    "file": "public/assets/ui/v2/luck.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "3172604fd2190101e0aced8c447b3828be371046b33fdb0cb20bde841b79c405"
+  },
+  {
+    "id": "upgrade",
+    "label": "강화",
+    "file": "public/assets/ui/v2/upgrade.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "2f785f84f62220fe2b488be385770caa6a7d55f6c1d715ecdbae77e5854dde8e"
+  },
+  {
+    "id": "plus",
+    "label": "더하기",
+    "file": "public/assets/ui/v2/plus.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "b5aaf629d89bfc960975ef1792319aaea38147217b3d45cc2968ea6f17128623"
+  },
+  {
+    "id": "mythic",
+    "label": "신화",
+    "file": "public/assets/ui/v2/mythic.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "bcd097ca88d32a71d3b2a50e9da9ca4b055e6022220d087b1c7fa528ad9c1850"
+  },
+  {
+    "id": "roulette",
+    "label": "룰렛",
+    "file": "public/assets/ui/v2/roulette.svg",
+    "format": "SVG",
+    "viewBox": "0 0 48 48",
+    "stroke_px_at_48": 2,
+    "runtime_link": "presentation only",
+    "sha256": "c91eeae6788500132474b1691c3f688b50d8c0d9344b93724b8b6af6205e5ddd"
+  }
+]

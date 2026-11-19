@@ -1,0 +1,57 @@
+/* PR-B: opt-in tokens only. Never replace existing :root / --gold / .btn tokens. */
+.rtd-v2 {
+  --rtd-bg: #6B5046;
+  --rtd-panel: #3A2A22;
+  --rtd-outline: #3B2314;
+  --rtd-primary: #F7D23E;
+  --rtd-primary-shadow: #E0A800;
+  --rtd-secondary: #3E4A7A;
+  --rtd-secondary-shadow: #283051;
+  --rtd-progress: #3DDC5A;
+  --rtd-notification: #F04848;
+  --rtd-experience: #3BA9F0;
+  --rtd-wood: #7A4E36;
+  --rtd-paper: #F3EBD3;
+  --rtd-close: #3E4F7A;
+  --rtd-forest: #3F6B22;
+  --rtd-yellow-tree: #E8B33A;
+  --rtd-path: #E9C77A;
+  --rtd-grass: #7BA83A;
+  --rtd-earth: #8A5A32;
+  --rtd-white: #FFFFFF;
+  --rtd-number: #FF9A3C;
+  --rtd-critical: #4FD8F0;
+  /* Accessible semantic surfaces; decorative source colors above remain exact. */
+  --rtd-badge: #236634;
+  --rtd-danger-ink: #A12525;
+  --rtd-disabled: #D2CCC2;
+  --rtd-muted-ink: #5C493E;
+  --rtd-title-font: 'RTD Jua', 'Malgun Gothic', system-ui, sans-serif;
+  --rtd-body-font: -apple-system, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  --rtd-type-small: 12px;
+  --rtd-type-body: 14px;
+  --rtd-type-number: 18px;
+  --rtd-type-button: 24px;
+  --rtd-line: 2px;
+  --rtd-text-line: 1.5px;
+  --rtd-touch: 44px;
+  --rtd-radius: 12px;
+  --rtd-gap: 8px;
+  --rtd-safe-top: env(safe-area-inset-top, 0px);
+  --rtd-safe-right: env(safe-area-inset-right, 0px);
+  --rtd-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --rtd-safe-left: env(safe-area-inset-left, 0px);
+  font-family: var(--rtd-body-font);
+  font-size: var(--rtd-type-body);
+  line-height: 1.45;
+  color: var(--rtd-outline);
+  color-scheme: light;
+}
+/* Existing order: normal, rare, unique, hero, legend, god, hidden. Names are not remapped. */
+.rtd-v2 [data-grade='normal'] { --rtd-grade-bg: #B7AC8E; --rtd-grade-border: #F3EBD3; --rtd-grade-small: #D9D0B8; }
+.rtd-v2 [data-grade='rare'] { --rtd-grade-bg: #3E4F8C; --rtd-grade-border: #5B8BE0; --rtd-grade-small: #4FC3F7; }
+.rtd-v2 [data-grade='unique'] { --rtd-grade-bg: #6A3A9C; --rtd-grade-border: #9B6AD8; --rtd-grade-small: #E58CF0; }
+.rtd-v2 [data-grade='hero'] { --rtd-grade-bg: #E3A92B; --rtd-grade-border: #FFE07A; --rtd-grade-small: #FFD54A; }
+.rtd-v2 [data-grade='legend'] { --rtd-grade-bg: #E2772A; --rtd-grade-bg-end: #F5A04A; --rtd-grade-border: #FF9A3C; --rtd-grade-small: #FFB46B; }
+.rtd-v2 [data-grade='god'] { --rtd-grade-bg: #B8323A; --rtd-grade-border: #FF6B6B; --rtd-grade-small: #FF8A8A; }
+.rtd-v2 [data-grade='hidden'] { --rtd-grade-bg: #2B2A5E; --rtd-grade-border: #FFD54A; --rtd-grade-small: #8C86FF; }

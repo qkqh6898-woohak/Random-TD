@@ -61,6 +61,12 @@ function boot(): void {
   };
   installFatalHandlers(window, (e) => showFatal(e, 'run'));
 
+  // PR-B: development-only design system review. No game menu or production route.
+  if (import.meta.env.DEV && new URLSearchParams(location.search).get('ui-gallery') === '1') {
+    import('./ui/design-system/gallery').then(({ mountDesignGallery }) => mountDesignGallery(must('app'))).catch((e: unknown) => showFatal(e, 'boot'));
+    return;
+  }
+
   if (new URLSearchParams(location.search).get('gallery') === '1') {
     // 캐릭터 갤러리 (?gallery=1): 게임(Phaser)을 만들지 않고 DOM 갤러리만 띄운다 — 기존 게임 흐름과 무관
     startGallery().catch((e: unknown) => showFatal(e, 'boot'));
