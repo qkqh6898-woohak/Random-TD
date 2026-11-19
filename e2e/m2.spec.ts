@@ -279,7 +279,7 @@ test('자동 공격: 몹을 잡으면 피해 숫자·+3원·동전이 뜨고 돈
   // 처치하면 '+3원'(V2.0 PR-A 1단계 처치 보상 3 + ⌊1/4⌋)이 떠오르거나 동전이 날아간다
   await expect.poll(async () => {
     const l = await labels(page);
-    return l.labels.includes('+3원') || l.coins > 0;
+    return l.labels.some((t) => /^\+\d+원$/.test(t)) || l.coins > 0; // 슬라임 +3원 · 고블린 떼(×0.4) +1원
   }, { timeout: 15000 }).toBe(true);
   // 멈추고 비교: 돈 = 번 돈 = 처치 × 3원 (1단계 슬라임) + 광부 특색 돈(+5원씩, M3b), HUD 돈 = sim 돈
   await page.getByRole('button', { name: '일시정지' }).click();
