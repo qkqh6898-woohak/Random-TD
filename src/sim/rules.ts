@@ -492,7 +492,7 @@ export interface MatchRules {
   readonly sellRateBp: number;
   /** 타워 id → 판매 가치 (원, 판매가 = 가치 × sellRateBp 내림) */
   readonly towerValues: ReadonlyMap<string, number>;
-  /** 일반 소환이 낼 수 있는 등급 (노말·레어 직행·신 — Summon.rollSummon). 이 등급의 판매가는 지금 소환 비용 − 1 이하 (V2.0 PR-A) */
+  /** 일반 소환이 낼 수 있는 등급 (노말·레어 직행·신 — Summon.rollSummon). 이 등급의 판매가는 ⌊(지금 소환 비용 − 1) ÷ 2⌋ 이하 (쌍둥이 소환까지) (V2.0 PR-A) */
   readonly summonOutcomeGrades: readonly Grade[];
   /** 개발자 도구 확률 조정: 한 번에 바뀌는 값 (bp)과 이름 목록 (game.json devChances 순서) */
   readonly devChanceStepBp: number;

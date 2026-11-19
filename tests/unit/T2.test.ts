@@ -64,7 +64,7 @@ describe('sellTower 명령', () => {
   it('타워를 지우고 칸을 비우며 판매가를 받는다 (번 돈·황금 손 아님), sell 사건, 판 수', () => {
     const m = arena();
     const at = put(m, idsOf('rare')[0]!);
-    m.state.summonCount[0] = 20; // 지금 소환 비용 62원 → 레어 표 판매가 45원 그대로 (V2.0 PR-A 상한 = 소환 비용 − 1)
+    m.state.summonCount[0] = 40; // 지금 소환 비용 102원 → 레어 표 판매가 45원 그대로 (V2.0 PR-A 상한 = ⌊(소환 비용 − 1) ÷ 2⌋ = 50)
     const gold = m.state.gold;
     const earned = m.state.goldEarned;
     m.state.goldPctBp = 2500; // 황금 손이 있어도 판매가는 그대로
@@ -105,7 +105,7 @@ describe('sellTower 명령', () => {
     m.world.enqueue({ type: 'sellTower', x: at.x, y: at.y });
     m.world.enqueue({ type: 'sellTower', x: at.x, y: at.y });
     m.step();
-    expect(m.state.gold).toBe(gold + 15);
+    expect(m.state.gold).toBe(gold + 10); // 노말 15원이지만 지금 소환 비용 22원 → 상한 ⌊21/2⌋ = 10 (V2.0 PR-A)
     expect(eventsOf(m, 'sellFail').map((e) => e.reason)).toEqual(['noTower']);
   });
 
@@ -118,7 +118,7 @@ describe('sellTower 명령', () => {
     expect(m.state.mergePicks).toEqual([]);
   });
 
-  it('되파는 돈벌이가 안 된다 (V2.0 PR-A): 소환 22원 → 판매 15원 · 레어 표 판매가 45원도 지금 소환 비용 − 1(24 − 1 = 23원)까지', () => {
+  it('되파는 돈벌이가 안 된다 (V2.0 PR-A): 소환 22원 → 판매 11원 이하 · 레어 표 판매가 45원도 ⌊(지금 소환 비용 24 − 1) ÷ 2⌋ = 11원까지 (쌍둥이 둘을 팔아도 손해)', () => {
     const m = arena();
     const gold = m.state.gold;
     const [x, y] = m.map.buildable[0]!;
@@ -129,7 +129,7 @@ describe('sellTower 명령', () => {
     const at = put(m, idsOf('rare')[0]!);
     const g1 = m.state.gold;
     command(m, { type: 'sellTower', x: at.x, y: at.y });
-    expect(m.state.gold - g1).toBe(23); // 지금 소환 비용 24원(1번 소환) − 1
+    expect(m.state.gold - g1).toBe(11); // ⌊(지금 소환 비용 24원 − 1) ÷ 2⌋
   });
 
   it('판매가 섞인 판도 결정적이다 (같은 명령 → 같은 해시)', () => {

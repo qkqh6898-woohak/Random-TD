@@ -100,7 +100,7 @@ describe('V2.0 PR-A 판매가 (소환 비용과 따로) · 검토 H2 되팔기 �
     for (const [g, v] of Object.entries(want)) for (const id of idsOf(g)) expect(sellPrice(m.rules, id), id).toBe(v);
   });
 
-  it('모든 할인 상태 × 소환 횟수에서 일반 소환이 낼 수 있는 등급(노말·레어·신)의 실제 판매가 < 지금 소환 비용', () => {
+  it('모든 할인 상태 × 소환 횟수에서 일반 소환이 낼 수 있는 등급(노말·레어·신)의 실제 판매가 × 2 < 지금 소환 비용 (쌍둥이까지)', () => {
     const m = fresh();
     expect([...m.rules.summonOutcomeGrades]).toEqual(['normal', 'rare', 'god']);
     for (let disc = 0; disc <= m.rules.summonDiscountMaxBp; disc += 500) {
@@ -109,7 +109,8 @@ describe('V2.0 PR-A 판매가 (소환 비용과 따로) · 검토 H2 되팔기 �
         m.state.summonCount[0] = n;
         const cost = summonCost(m.ctx, 0);
         expect(cost).toBeGreaterThanOrEqual(m.rules.summonCost);
-        for (const g of m.rules.summonOutcomeGrades) for (const id of idsOf(g)) expect(sellPriceFor(m.ctx, id, 0), `${id} 할인 ${disc} 횟수 ${n}`).toBeLessThan(cost);
+        // 쌍둥이 소환(한 번 값에 둘)까지: 두 개를 팔아도 소환 비용보다 적다
+        for (const g of m.rules.summonOutcomeGrades) for (const id of idsOf(g)) expect(2 * sellPriceFor(m.ctx, id, 0), `${id} 할인 ${disc} 횟수 ${n}`).toBeLessThan(cost);
       }
     }
   });
@@ -141,13 +142,14 @@ describe('V2.0 PR-A 판매가 (소환 비용과 따로) · 검토 H2 되팔기 �
     }
   });
 
-  it('몬테카를로: 할인 최대 · 레어 직행 100% · 신 확률 크게 올려도 소환 → 바로 판매 되풀이는 돈을 잃는다', () => {
-    for (const setup of ['none', 'max'] as const) {
+  it('몬테카를로: 할인 최대 · 레어 직행 100% · 신 확률 크게 · 쌍둥이 소환까지 소환 → 바로 판매 되풀이는 돈을 잃는다', () => {
+    for (const setup of ['none', 'max', 'twin'] as const) {
       const m = fresh(42);
-      if (setup === 'max') {
+      if (setup !== 'none') {
         m.state.summonDiscountBp = m.rules.summonDiscountMaxBp;
         m.state.chanceOv = { summonRare: 10_000, god: 500 };
       }
+      if (setup === 'twin') m.state.perks[0]!.twinUntil = 1_000_000; // 카드 '쌍둥이 소환'이 판 내내
       m.state.gold = 50_000;
       const g0 = m.state.gold;
       const e0 = m.state.goldEarned;
@@ -167,8 +169,9 @@ describe('V2.0 PR-A 판매가 (소환 비용과 따로) · 검토 H2 되팔기 �
       }
       const net = m.state.gold - g0 - (m.state.goldEarned - e0); // 처치·이자 수입 빼고
       expect(summons, setup).toBeGreaterThan(300);
-      expect(net, `${setup} 순손익`).toBeLessThanOrEqual(-summons);
-      if (setup === 'max') expect(grades.has('rare')).toBe(true);
+      // 소환 한 번마다 1원 이상 손해 (쌍둥이는 둘을 합쳐 한 번 값)
+      expect(net, `${setup} 순손익`).toBeLessThanOrEqual(setup === 'twin' ? -Math.floor(summons / 2) : -summons);
+      if (setup !== 'none') expect(grades.has('rare')).toBe(true);
       expect(m.world.entities.list().filter(isTower).length).toBe(0);
       grades = new Set();
     }

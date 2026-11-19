@@ -6,8 +6,9 @@
  *   신 = 레전드, game.json sell.gradeMul), 히든 = 조합 재료 가치의 합 (rules.towerValues). 노말 15원 · 레어 45원 · 유니크 135원 ·
  *   히어로 405원 · 레전드 1,215원.
  *   **되팔기 돈벌이 없음 (V2.0 PR-A, 검토 H2)**: 일반 소환이 낼 수 있는 등급(노말·레어 직행·신 — rules.summonOutcomeGrades)은
- *   판매가가 늘 **그 주인의 지금 소환 비용 − 1원** 이하 (`sellPriceFor`). 소환 비용은 할인 카드를 모두 받아도 기본 22원 아래로 안 내려가고
- *   소환할수록 오르므로, 어떤 할인·확률 상태에서도 소환 → 판매는 한 번마다 1원 이상 잃는다.
+ *   판매가가 늘 **⌊(그 주인의 지금 소환 비용 − 1) ÷ 2⌋원** 이하 (`sellPriceFor`). ÷ 2 = 카드 '쌍둥이 소환'(한 번 값에 둘)까지 막는다:
+ *   두 개를 팔아도 2 × ⌊(c − 1)/2⌋ ≤ c − 1 < c. 소환 비용은 할인 카드를 모두 받아도 기본 22원 아래로 안 내려가고 소환할수록 오르므로,
+ *   어떤 할인·확률·쌍둥이 상태에서도 소환 → 판매는 손해다.
  *   타워를 지우고 칸을 비운다 (승급 재료로 사라질 때와 같다 → 오라·특색·투사체는 다음 틱부터 그 타워 없이).
  *   '승급의 축복' 선택이 걸려 있던 타워면 그 선택도 지운다. 판 돈은 '번 돈'(goldEarned)이 아니고 카드 '황금 손'도 받지 않는다
  *   (가치의 절반이라 소환·승급을 되파는 돈벌이가 되지 않는다). 판 수 state.sells (처음 판매 때 생김).
@@ -35,14 +36,14 @@ export function sellPrice(rules: MatchContext['rules'], towerId: string): number
 }
 
 /**
- * 실제 판매가 (원, V2.0 PR-A): 표 판매가, 단 일반 소환이 낼 수 있는 등급(rules.summonOutcomeGrades)이면 주인의 지금 소환 비용 − 1 이하.
- * 판매 명령·정보 패널·자동 판매가 모두 이 값을 쓴다.
+ * 실제 판매가 (원, V2.0 PR-A): 표 판매가, 단 일반 소환이 낼 수 있는 등급(rules.summonOutcomeGrades)이면 ⌊(주인의 지금 소환 비용 − 1) ÷ 2⌋ 이하
+ * (쌍둥이 소환으로 한 번 값에 둘을 받아도 손해). 판매 명령·정보 패널·자동 판매가 모두 이 값을 쓴다.
  */
 export function sellPriceFor(ctx: Pick<MatchContext, 'rules' | 'state'>, towerId: string, owner: number): number {
   const price = sellPrice(ctx.rules, towerId);
   const grade = ctx.rules.towers.get(towerId)?.grade;
   if (!grade || !ctx.rules.summonOutcomeGrades.includes(grade)) return price;
-  const cap = summonCost(ctx, owner) - 1;
+  const cap = Math.floor((summonCost(ctx, owner) - 1) / 2);
   return price > cap ? (cap > 0 ? cap : 0) : price;
 }
 

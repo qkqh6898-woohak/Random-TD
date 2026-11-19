@@ -284,7 +284,7 @@ test('도박: 10원·100원 두 테이블이 동시에 돈다, 꾹 누르면 계
   expect(errors).toEqual([]);
 });
 
-test('판매: 노말은 한 번에 +15원, 히어로는 한 번 더 눌러야 +405원 (V2.0 PR-A 판매가) · 알림 · 칸이 빈다', async ({ page }) => {
+test('판매: 노말은 한 번에 +10원(표 15원 · 지금 소환 비용 22원 → 상한 ⌊21/2⌋), 히어로는 한 번 더 눌러야 +405원 (V2.0 PR-A 판매가) · 알림 · 칸이 빈다', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
   const [n, h] = await freeCells(page, 2);
@@ -297,12 +297,12 @@ test('판매: 노말은 한 번에 +15원, 히어로는 한 번 더 눌러야 +4
   await tapTile(page, n![0], n![1]);
   await expect.poll(() => inScene(page, (s) => s.panelOpen, null)).toBe(true);
   const sell = page.getByTestId('tp-sell');
-  await expect(sell).toHaveText('💰 판매 +15원');
+  await expect(sell).toHaveText('💰 판매 +10원');
   const gold = await inScene(page, (s) => s.match.state.gold, null);
   await sell.click();
   await expect.poll(() => inScene(page, (s) => s.match.towers().length, null)).toBe(1);
-  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(gold + 15);
-  await expect(page.locator('.toast', { hasText: '판매 +15원' })).toBeVisible();
+  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(gold + 10);
+  await expect(page.locator('.toast', { hasText: '판매 +10원' })).toBeVisible();
   // 히어로: 첫 누름은 확인
   await tapTile(page, h![0], h![1]);
   await expect.poll(() => inScene(page, (s) => s.panelOpen, null)).toBe(true);
@@ -321,7 +321,7 @@ test('판매: 노말은 한 번에 +15원, 히어로는 한 번 더 눌러야 +4
   });
   expect(first).toEqual({ label: '한 번 더 누르면 판매', count: 1, labelLater: '한 번 더 누르면 판매' });
   await expect.poll(() => towerCount(page)).toBe(0);
-  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(gold + 15 + 405);
+  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(gold + 10 + 405);
   expect(errors).toEqual([]);
 });
 
@@ -486,7 +486,7 @@ test('일반 주소: 개발자 UI 없음 ([🛠 개발]·[🛠 변환]·⏭), �
   await tapTile(page, t[0], t[1]);
   await expect.poll(() => inScene(page, (s) => s.panelOpen, null)).toBe(true);
   await expect(page.locator('[data-action="move"]')).toBeVisible();
-  await expect(page.getByTestId('tp-sell')).toHaveText('💰 판매 +15원'); // V2.0 PR-A 노말 판매가
+  await expect(page.getByTestId('tp-sell')).toHaveText('💰 판매 +11원'); // V2.0 PR-A: 1번 소환 뒤 비용 24원 → 노말 상한 ⌊23/2⌋
   await expect(page.locator('[data-action="convert"]')).toHaveCount(0);
   await shot(page, 'T2-play-panel');
   // 패널 버튼(승급·이동·판매)이 412px 안에 들어간다 — 접기 2단계부터는 두 줄이 한 줄로 합쳐져 줄 상자(.tp-actions-2)가 없다(display: contents)
