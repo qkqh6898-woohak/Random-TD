@@ -61,7 +61,9 @@ test('피드백 #46: [노말 자동 판매]·[레어 이하 자동 판매] 스�
   await page.setViewportSize({ width: 360, height: 640 });
   const title = (await page.locator('#pause-title').boundingBox())!;
   expect(title.y).toBeGreaterThanOrEqual(0);
-  await page.locator('[data-action="exit"]').scrollIntoViewIfNeeded();
+  // 피드백 #63 '자동 승급' 줄이 늘어 360×640에서는 패널이 스크롤된다 — scrollIntoViewIfNeeded는 소수 픽셀(640.45)만큼 모자라게
+  // 멈출 수 있어 화면을 끝까지 내린다 ([로비로] 아래 안내 글·여백까지 보인다)
+  await page.locator('.pause-screen').evaluate((el) => el.scrollTo(0, el.scrollHeight));
   const exitSmall = (await page.locator('[data-action="exit"]').boundingBox())!;
   expect(exitSmall.y + exitSmall.height).toBeLessThanOrEqual(640);
   await page.setViewportSize({ width: 412, height: 915 });
