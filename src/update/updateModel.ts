@@ -6,6 +6,8 @@
  *   installed · cancelled · error(code)
  * 상태: idle → checking → available → (permission →) downloading(진행) → verifying → installing → (설치 화면) / error · dismissed(나중에)
  * 웹은 받을 주소를 모른다 — 자바가 릴리스 JSON에서 정한다. 여기서는 받은 값의 모양만 확인한다.
+ * 다시 읽기 (V2 L6): 받는 중·설치 중에 페이지가 다시 읽히면 웹은 idle → checking에서 시작한다. 자바 check()는 그때 제안(available)부터
+ * 지금 단계(progress → verifying / installing(step) / permission)까지 다시 보낸다 (UpdateLogic.resyncEvents) → 아래 상태 기계가 그대로 따라간다.
  */
 
 export interface UpdateOffer {
