@@ -8,6 +8,8 @@
  * - revealHidden '히든 미션 조건 보기' (개발자 도구): 미션 시트가 히든 미션 이름·조건을 '???' 대신 보여 준다.
  * - autoSellNormal '노말 자동 판매' · autoSellRare '레어 이하 자동 판매' (피드백 #46, 기본 꺼짐): 방금 소환된 타워가 그 등급 이하면
  *   화면이 바로 sellTower 명령을 보낸다 (둘 다 켜면 레어 이하). 키가 없는 예전 값은 꺼짐.
+ * - 피드백 #62: 판 안 전략 스위치(MATCH_SETTING_KEYS = 필살기 자동·노말 자동 판매·레어 이하 자동 판매)는 새 판을 시작하면
+ *   기본값(꺼짐)으로 돌아간다 (resetMatchSettings, 이어 하기는 그대로). 조작·화면 취향은 판을 넘어 남는다.
  * 망가진 값은 버리고 기본값. 화면 설정이라 sim·리플레이와 무관하다.
  */
 import type { KeyValueStorage } from '../save/storage';
@@ -35,9 +37,17 @@ export function autoSellGrade(s: Readonly<Settings>): 'normal' | 'rare' | null {
   return s.autoSellNormal ? 'normal' : null;
 }
 
+/** 피드백 #62: 새 판을 시작하면 기본값으로 돌아가는 판 안 스위치 */
+export const MATCH_SETTING_KEYS = ['ultAuto', 'autoSellNormal', 'autoSellRare'] as const satisfies readonly (keyof Settings)[];
+
 export interface SettingsStore {
   get(): Readonly<Settings>;
   set<K extends keyof Settings>(key: K, value: Settings[K]): void;
+}
+
+/** 피드백 #62: 새 판 시작 — 판 안 스위치를 기본값으로 (이미 기본값이면 저장하지 않는다). */
+export function resetMatchSettings(store: SettingsStore): void {
+  for (const k of MATCH_SETTING_KEYS) store.set(k, DEFAULT_SETTINGS[k]);
 }
 
 export function parseSettings(raw: string | null): Settings {
