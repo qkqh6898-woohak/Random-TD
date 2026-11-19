@@ -188,7 +188,7 @@ export class BootScene extends Phaser.Scene {
       );
     }
     // 업데이트로 진행 중 판을 이어 할 수 없게 됐으면 한 번 알린다 (예전엔 말없이 사라졌다 — B-2 통합 검토)
-    if (!saved && this.ctx.saves.discardedByUpdate) this.ctx.ui.toast(abandonedRunToast(this.ctx.saves.lastAbandoned), 4500);
+    if (!saved && (this.ctx.saves.discardedByUpdate || this.ctx.saves.lastAbandoned?.credited)) this.ctx.ui.toast(abandonedRunToast(this.ctx.saves.lastAbandoned), 4500);
     // 로비의 뒤로 가기: 열린 창(기록·새 게임 확인·영웅 상세·퀘스트 …)은 nativeBack이 닫고, 다른 탭이면 [전투] 탭으로,
     // 전투 탭이면 처리하지 않음 → 앱이 닫힌다 (G-3)
     setBackHandler(this.lobby ? () => this.lobby?.back() ?? false : null);

@@ -282,3 +282,28 @@ test('병합 확인 (HF-4): 빈 땅을 짧게 누르면 배치 칸만 보이고,
   await expect.poll(() => sim(page, (s) => s.buildHint)).toBe(0);
   expect(errors).toEqual([]);
 });
+
+test('V2 L5: 캠페인 1을 50단계까지 버티면(개발자 ⏭) 같은 결과 화면에 제목 "테마 1 클리어!" · 정산 · 판이 멈춤', async ({ page }) => {
+  const errors = collectErrors(page);
+  await startGame(page, '/?dev=1&seed=11', 'campaign');
+  // 49단계까지 바로 넘기고(다음 틱에 50단계 시작), 그다음 틱에 ⏭ — 50단계에서 누르면 클리어 (sim L5)
+  await sim(page, (s) => {
+    const m = s.match as unknown as { state: { stage: number; nextStageTick: number }; tick: number };
+    m.state.stage = 49;
+    m.state.nextStageTick = m.tick;
+    s.debugFastForward(1);
+  });
+  expect(await sim(page, (s) => (s.match as unknown as { state: { stage: number } }).state.stage)).toBe(50);
+  await sim(page, (s) => {
+    s.match.world.enqueue({ type: 'debugSkipStage' });
+    s.debugFastForward(2);
+  });
+  await expect(page.locator('[data-screen="gameover"]')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId('gameover-title')).toHaveText('테마 1 클리어!');
+  await expect(page.locator('.gameover-reason')).toContainText('50단계');
+  await expect(page.getByTestId('gameover-rewards')).toBeVisible();
+  const tick = await sim(page, (s) => s.match.tick);
+  expect(await sim(page, (s) => s.debugFastForward(20))).toBe(0); // 끝난 판은 더 돌지 않는다
+  expect(await sim(page, (s) => s.match.tick)).toBe(tick);
+  expect(errors).toEqual([]);
+});

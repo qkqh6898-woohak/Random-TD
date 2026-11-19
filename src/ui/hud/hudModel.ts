@@ -362,6 +362,20 @@ export function defeatText(
   return { reason, record, tip };
 }
 
+/**
+ * 판이 끝났을 때 결과 화면 글자 (V2 L5): 캠페인 클리어(phase 'victory')면 제목 '테마 n 클리어!', 아니면 패배(defeatText).
+ * 정산은 둘 다 같은 matchResultOf → progress.settle.
+ */
+export function gameEndText(
+  state: Pick<MatchState, 'mode' | 'theme' | 'stage' | 'defeatReason' | 'mobLimit' | 'phase'>,
+  boss: DefeatBossInfo | null = null,
+): { title: string; reason: string; record: string; tip: string; victory: boolean } {
+  if (state.phase === 'victory') {
+    return { title: `테마 ${state.theme} 클리어!`, reason: `${state.stage}단계를 모두 버텼어요`, record: `테마 ${state.theme} · ${state.stage}단계 클리어`, tip: '', victory: true };
+  }
+  return { title: '패배', ...defeatText(state, boss), victory: false };
+}
+
 /** 단계 시작 알림 글자 (토스트). */
 export function stageToastText(state: Pick<MatchState, 'mode' | 'theme' | 'stage' | 'bossStage'>): string {
   const label = formatStage(state);

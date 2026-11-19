@@ -326,6 +326,9 @@ export function gachaFailText(reason: string, short: number): string | null {
 /** G-1 인원 한도 */
 export const UNIT_CAP_FULL = '인원이 가득 찼어요 — 승급으로 줄여 보세요';
 
+/** 승급의 축복 [바꾸기]: 바꾼 타워를 옮길 자리가 없어 그대로 둠 (V2 H1 — sim 'mergePickFail' reason 'full', 축복 1회는 돌려줌) */
+export const MERGE_PICK_FULL = '옮길 자리가 없어 바꾸지 못했어요 — 축복을 돌려받았어요';
+
 /** 필살기 알림 */
 export function ultText(towerName: string, ultName: string, count: number): string {
   return count > 0 ? `${towerName}의 ${ultName}! (${count})` : `${towerName}의 ${ultName}!`;

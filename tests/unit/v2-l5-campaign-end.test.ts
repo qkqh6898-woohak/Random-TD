@@ -1,13 +1,15 @@
 /**
  * V2 검토 L5: 캠페인(개발자 버튼)이 50단계 뒤 끝나지 않고 단계 타이머 0인 채 계속 돌던 것.
  * 결정: 마지막 단계가 끝나는 시각까지 버티면(보스 제한 시간 검사를 먼저 통과) phase = 'victory' + 'victory' 사건 — 그 뒤 sim은 멈춘다.
- * 화면(Game.ts)이 victory를 결과 화면으로 보이는 일은 다른 갈래 소유라 나중 (docs/v2/fixes-notes.md).
+ * 화면(V2 통합): Game.ts가 match.ended로 멈추고, victory면 같은 결과 화면에 제목 '테마 n 클리어!'(gameEndText) — 정산은 패배와 같은 matchResultOf.
  */
 import { describe, expect, it } from 'vitest';
 import { createMatch } from '../../src/sim/match';
 import { isMob } from '../../src/sim/entities/Mob';
 import type { Match } from '../../src/sim/match';
 import { campaign, data, eventsOf, jumpToStage } from '../helpers/match';
+import { gameEndText } from '../../src/ui/hud/hudModel';
+import { matchResultOf } from '../../src/meta/matchResult';
 
 /** 맵 위 몹을 모두 지운다 (보스 포함 — 처치 보상 없이) */
 function clearMobs(m: Match): void {
@@ -80,5 +82,35 @@ describe('L5 캠페인 클리어', () => {
     m.step();
     expect(m.state.stage).toBe(51);
     expect(m.state.phase).toBe('playing');
+  });
+});
+
+describe('L5 화면: 클리어 결과 화면 (V2 통합)', () => {
+  function cleared(): Match {
+    const m = createMatch(data, { seed: 4, mode: 'campaign', theme: 1, debug: true });
+    jumpToStage(m, 50);
+    m.world.enqueue({ type: 'debugSkipStage' });
+    m.step();
+    return m;
+  }
+
+  it("클리어면 제목 '테마 1 클리어!' · 패배 사유·보스 팁 없음 / 패배면 예전 '패배' 그대로", () => {
+    const m = cleared();
+    expect(m.ended).toBe(true);
+    const t = gameEndText(m.state);
+    expect(t).toMatchObject({ title: '테마 1 클리어!', victory: true, tip: '' });
+    expect(t.reason).toContain('50단계');
+    expect(t.record).toContain('클리어');
+    const lost = campaign(1);
+    jumpToStage(lost, 50);
+    lost.state.lives = 999;
+    lost.stepN(lost.rules.bossTimeTicks + lost.rules.stageTicks + 5);
+    expect(lost.defeated).toBe(true);
+    expect(gameEndText(lost.state)).toMatchObject({ title: '패배', victory: false });
+  });
+
+  it('클리어 판도 패배와 같은 정산 입력 (도달 50단계, 같은 runId는 한 번만은 progress.settle이 지킴)', () => {
+    const m = cleared();
+    expect(matchResultOf(m, 'run-v')).toMatchObject({ runId: 'run-v', mode: 'campaign', stage: 50 });
   });
 });

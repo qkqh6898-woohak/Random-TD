@@ -8,6 +8,10 @@ import type { UiView } from '../root';
 import type { SettlementView } from '../lobby/lobbyModel';
 
 export interface GameOverOptions {
+  /** 큰 제목 (기본 '패배'. 캠페인 클리어면 '테마 n 클리어!' — V2 L5) */
+  title?: string;
+  /** 클리어 화면 (제목 색만 다름) */
+  victory?: boolean;
   /** 큰 제목 아래 한 줄 (예: '8단계에서 몹이 150마리를 넘었어요') */
   reason: string;
   /** 기록 (예: '최고 8단계') */
@@ -105,13 +109,13 @@ export function createGameOverScreen(opts: GameOverOptions): UiView {
   const el = h(
     'div',
     {
-      class: 'screen gameover-screen',
+      class: `screen gameover-screen${opts.victory ? ' is-victory' : ''}`,
       attrs: { 'data-screen': 'gameover', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'gameover-title' },
     },
     h(
       'div',
       { class: 'pause-panel gameover-panel' },
-      h('h2', { class: 'gameover-title', text: '패배', attrs: { id: 'gameover-title' } }),
+      h('h2', { class: 'gameover-title', text: opts.title ?? '패배', attrs: { id: 'gameover-title', 'data-testid': 'gameover-title' } }),
       reasonLine(opts.reason),
       h('p', { class: 'gameover-record', text: opts.record }),
       opts.rewards ? rewardsBox(opts.rewards) : null,

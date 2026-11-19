@@ -171,6 +171,7 @@ import {
   ultText,
   SUMMON_NO_FIT,
   UNIT_CAP_FULL,
+  MERGE_PICK_FULL,
 } from '../../ui/messages';
 import { createChoicePanel, type ChoicePanelView } from '../../ui/panels/ChoicePanel';
 import { cardChoiceModel, mergeChoiceModel } from '../../ui/panels/choiceModel';
@@ -181,7 +182,7 @@ import { quickModel, quickPlacement } from '../../ui/panels/towerQuickModel';
 import { createCharacterCard } from '../../ui/panels/CharacterCard';
 import { characterCardModel } from '../../ui/panels/characterCardModel';
 import { createHud, type HudView } from '../../ui/hud/Hud';
-import { bossHudInput, buildHudModel, deckDetectNames, defeatText, formatStage, legionNameMap, stageToastText, type DefeatBossInfo } from '../../ui/hud/hudModel';
+import { bossHudInput, buildHudModel, deckDetectNames, gameEndText, formatStage, legionNameMap, stageToastText, type DefeatBossInfo } from '../../ui/hud/hudModel';
 import { availableSpeeds, nextSpeed } from '../../ui/hud/speed';
 import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
 import { matchResultOf } from '../../meta/matchResult';
@@ -545,6 +546,8 @@ export class GameScene extends Phaser.Scene {
     this.sheet = null;
     this.sheetKind = null;
     this.slots = new Map();
+    // 검토 L8: 다시 하기(scene.restart)는 같은 장면 객체를 쓴다 — 지난 판의 '이 틱에 궁극기 보냄' 기록이 새 판(틱 0부터)에 남지 않게
+    this.ultSent = new Map();
     this.upgradeQueuedTick = -1;
     this.groundPress = null;
     this.autoSummonTick = -1;
@@ -869,10 +872,10 @@ export class GameScene extends Phaser.Scene {
     return this.background?.currentKey ?? null;
   }
 
-  /** 틱 n번 실행. 마지막 틱 직전의 진행도를 기억해 보간에 쓴다. 패배하면 그 자리에서 멈춘다. */
+  /** 틱 n번 실행. 마지막 틱 직전의 진행도를 기억해 보간에 쓴다. 판이 끝나면(패배·캠페인 클리어) 그 자리에서 멈춘다. */
   private runTicks(n: number): void {
     for (let i = 0; i < n; i++) {
-      if (this.match.defeated) break;
+      if (this.match.ended) break;
       if (i === n - 1) {
         this.prevProgress.clear();
         for (const m of this.match.mobs()) this.prevProgress.set(m.id, m.progress);
@@ -891,7 +894,7 @@ export class GameScene extends Phaser.Scene {
    */
   debugFastForward(ticks: number): number {
     let done = 0;
-    while (done < ticks && !this.match.defeated) {
+    while (done < ticks && !this.match.ended) {
       this.match.step();
       done++;
     }
@@ -1775,7 +1778,8 @@ export class GameScene extends Phaser.Scene {
     let lastStage: { stage: number; boss: boolean } | null = null;
     /** 이번 프레임에 보스 등장 배너를 띄웠다 → 'N단계 보스 단계!' 알림은 생략 (배너가 단계까지 보여 준다) */
     let bossArrived = false;
-    let defeated = false;
+    /** 판이 끝남 (패배 또는 캠페인 클리어 — V2 L5) */
+    let ended = false;
     const now = this.match.tick;
     const frameStart = this.frameStartTick;
     const cost = summonCost(this.match.ctx, LOCAL_PLAYER);
@@ -1827,8 +1831,11 @@ export class GameScene extends Phaser.Scene {
         case 'stageStart':
           lastStage = { stage: Number(ev.stage), boss: ev.boss === true };
           break;
+        case 'victory':
+          ended = true;
+          break;
         case 'defeat':
-          defeated = true;
+          ended = true;
           if (ev.reason === 'bossTime') {
             // 이번 판 기록 (개발자 도구): 시간 초과 때 남은 보스 체력
             const b = bossHudInput(this.match.rules, this.legionNames, this.match.state, this.match.mobs(), this.match.tick);
@@ -2208,6 +2215,10 @@ export class GameScene extends Phaser.Scene {
             else this.slots.set(t, { startMs: this.time.now - SLOT_SPIN_MS, result, revealedMs: null });
           }
           break;
+        case 'mergePickFail':
+          // V2 H1: 무더기 안 결과를 바꾸려는데 옮길 칸이 없음 → 바꾸지 않고 축복 1회를 돌려받음 (창은 선택이 사라져 닫힌다)
+          if (ev.player === LOCAL_PLAYER && ev.reason === 'full') this.ctx.ui.toast(MERGE_PICK_FULL);
+          break;
         case 'gambleFail': {
           if (ev.player !== LOCAL_PLAYER) break;
           {
@@ -2340,7 +2351,7 @@ export class GameScene extends Phaser.Scene {
     }
     if (lastStage) this.previewBoss(lastStage.stage);
     this.checkMergeReady();
-    if (defeated) this.showGameOver();
+    if (ended) this.showGameOver();
   }
 
   /**
@@ -2444,7 +2455,8 @@ export class GameScene extends Phaser.Scene {
     this.ctx.ui.clearToasts();
     if (this.paused) this.paused = false;
     this.clock.speed = 0;
-    const text = defeatText(this.match.state, this.defeatBossInfo());
+    // 패배 또는 캠페인 클리어 (V2 L5) — 화면·정산은 같고 제목·사유만 다르다
+    const text = gameEndText(this.match.state, this.match.victory ? null : this.defeatBossInfo());
     // 전투 기록 (A-1, 일반 무한 판만) + 끝난 판의 자동 저장 지우기
     const best = this.ctx.records.complete(this.match, this.runId);
     // G-3 판 정산 (경험치·골드·영웅 카드·리미티드 조각·최고 웨이브) — 같은 판은 한 번만
@@ -2453,7 +2465,7 @@ export class GameScene extends Phaser.Scene {
     this.saveToken = null;
     // 개발자 모드: 이번 판 기록을 패배 화면에도 보이고 '지난 판'에 남긴다 (F10-4 검토, 결정 6 — 패배 화면이 🛠를 덮음)
     const log = this.ctx.debug ? this.runLogRows : undefined;
-    this.savePastRun('패배');
+    this.savePastRun(text.victory ? '클리어' : '패배');
     this.ctx.ui.show(
       'screen',
       createGameOverScreen({
@@ -2465,7 +2477,7 @@ export class GameScene extends Phaser.Scene {
         onExit: () => this.scene.start(SCENE_BOOT),
       }),
     );
-    this.game.events.emit('rtd:game-over', { stage: this.match.state.stage, reason: this.match.state.defeatReason });
+    this.game.events.emit('rtd:game-over', { stage: this.match.state.stage, reason: this.match.state.defeatReason, victory: text.victory });
   }
 
   /** 일시정지 메뉴 열기: 게임 시간을 멈춘다 (배속 0). */
@@ -2806,7 +2818,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** 개발자 모드: 이번 판 기록을 '지난 판'(최근 3판, 세션)에 한 번 남긴다 — 소환을 한 판만 (그냥 들어왔다 나간 판은 빼고). */
-  private savePastRun(how: '패배' | '나감'): void {
+  private savePastRun(how: '패배' | '나감' | '클리어'): void {
     if (!this.ctx.debug || this.runLogSaved || !this.match || this.runLog.firstSummonTick === null) return;
     this.runLogSaved = true;
     const st = this.match.state;
