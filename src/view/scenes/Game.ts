@@ -434,6 +434,8 @@ export class GameScene extends Phaser.Scene {
   private groundPress: GroundPress | null = null;
   /** 자동 소환 명령을 넣은 틱 (그 명령이 실행되기 전에는 다음을 넣지 않는다 — 같은 칸을 두 번 고르지 않게) */
   private autoSummonTick = -1;
+  /** 일꾼 고용 명령을 넣은 틱 (꾹 누르기 중 실행 전 명령을 두 번 넣지 않게, 피드백 #66) */
+  private hireQueuedTick = -1;
   /** 패널 [↔ 이동] 모드: 옮길 타워 */
   private moveMode: { id: number; tx: number; ty: number } | null = null;
   /** 판매 확인 (히어로 이상: 이 시각까지 한 번 더 누르면 판매) */
@@ -543,6 +545,7 @@ export class GameScene extends Phaser.Scene {
     this.upgradeQueuedTick = -1;
     this.groundPress = null;
     this.autoSummonTick = -1;
+    this.hireQueuedTick = -1;
     this.moveMode = null;
     this.sellConfirm = null;
     this.convertOpen = false;
@@ -2487,16 +2490,23 @@ export class GameScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  /** 일꾼 고용 버튼: 미리 검사해 안 되면 바로 알림, 되면 명령 (sim이 실행 틱에 다시 검사). */
-  private hire(): void {
-    if (this.paused || this.gameOver) return;
+  /**
+   * 일꾼 고용 버튼: 미리 검사해 안 되면 바로 알림, 되면 명령 (sim이 실행 틱에 다시 검사).
+   * 피드백 #66: 꾹 누르기가 되풀이해 부른다 — 명령을 보냈거나 앞 명령을 기다리면 true, 안 되면(돈·최대·일시정지) false = 멈춤.
+   */
+  private hire(): boolean {
+    if (this.paused || this.gameOver) return false;
+    // 피드백 #66 꾹 누르기: 앞 고용 명령이 아직 실행 전(같은 틱)이면 이번은 건너뛰고 계속 — 돈·인원 검사가 앞 고용을 빼고 하지 않게
+    if (this.hireQueuedTick === this.match.tick) return true;
     const fail = hireCheck(this.match.ctx);
     if (fail) {
       const text = hireFailText(fail, this.match.rules.workerCost, this.match.state.gold, this.match.rules.workerMax);
       if (text) this.ctx.ui.toast(text);
-      return;
+      return false;
     }
-    this.match.world.enqueue({ type: 'hireWorker' });
+    if (!this.match.world.enqueue({ type: 'hireWorker' }).ok) return false;
+    this.hireQueuedTick = this.match.tick;
+    return true;
   }
 
   /**
@@ -2649,7 +2659,7 @@ export class GameScene extends Phaser.Scene {
 
   /**
    * 첫 승급 안내 (계정마다 한 번): 처음 승급할 수 있게 되면 가장 먼저 소환된 타워가 있는 묶음을 골라 결과 칸(그 타워)·재료 두 칸·
-   * [⬆ 승급 가능] 버튼을 강조하고 카드를 띄운다. 묶음이 사라지면(판매 등) 기록 없이 닫고, 승급하거나 ✕를 누르면 기록하고 닫는다.
+   * 맵 오른쪽 위 [⏫ 모두 승급] 버튼(피드백 #65)을 강조하고 카드를 띄운다. 묶음이 사라지면(판매 등) 기록 없이 닫고, 승급하거나 ✕를 누르면 기록하고 닫는다.
    */
   private syncMergeGuide(): void {
     if (this.gameOver) {

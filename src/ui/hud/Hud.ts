@@ -53,8 +53,11 @@ export interface HudOptions {
   onSkipStage?: () => void;
   /** 개발자 모드만: 돈 추가 (CLAUDE.md 4장 개발용 치트) */
   onAddGold?: () => void;
-  /** 아래 띠 '👷 300원': 일꾼 고용 (M4) */
-  onHire?: () => void;
+  /**
+   * 아래 띠 '👷 300원': 일꾼 고용 (M4). 피드백 #66: 꾹 누르면 [🎲 소환]과 같은 간격으로 계속 —
+   * 고용 명령을 보냈으면(또는 앞 명령이 실행되길 기다리면) true, 돈 부족·최대·일시정지면 false (꾹 누르기 멈춤)
+   */
+  onHire?: () => boolean;
   /** 하단 메뉴 (M5): 도전·강화·미션 바텀 시트 열기/닫기 */
   onMenu?: (kind: SheetKind) => void;
   /** 하단 메뉴 넷째 칸 [🛠 개발] (T-2, 개발자 모드만) */
@@ -299,8 +302,14 @@ export function createHud(opts: HudOptions): HudView {
   const hireBtn = h('button', {
     class: 'btn btn-chip hud-hire',
     attrs: { type: 'button', 'data-action': 'hire', 'data-testid': 'hud-hire', 'aria-label': '일꾼 고용' },
-    on: { click: () => opts.onHire?.() },
   }, hireArt, hireLabel);
+  // 피드백 #66: 짧게 = 한 명, 꾹 = [🎲 소환]과 같은 간격(처음 0.38초, 그 뒤 초당 약 4번 · 연출 끄기면 약 10번)으로 계속.
+  // 돈이 모자라거나 최대가 되면 onHire가 false → 멈춤 (키보드 click은 한 번)
+  const hireHold: HoldHandle | null = opts.onHire
+    ? attachHoldRepeat(hireBtn, () => opts.onHire?.() ?? false, {
+        delay: (n) => (n <= 0 ? HOLD_DELAY_MS : (opts.summonInterval?.() ?? 250)),
+      })
+    : null;
   // 접은 고르기 창의 알약 자리 (display: contents → 알약이 아래 띠의 flex 항목이 된다)
   const choiceSlot = h('span', { class: 'hud-choice-slot', attrs: { 'data-testid': 'hud-choice-slot' } });
   const towersItem = h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl);
@@ -633,6 +642,7 @@ export function createHud(opts: HudOptions): HudView {
       skipHold?.detach();
       skipHold = null;
       summonHold?.detach();
+      hireHold?.detach();
       mergeAllHold?.detach();
       clearTimeout(breakTimer);
       breakTimer = undefined;

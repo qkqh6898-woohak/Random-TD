@@ -678,10 +678,15 @@ body {
   color: var(--gold);
 }
 
-/* 일꾼 고용 버튼 (아래 띠): 살 수 없으면 흐리게 (눌러도 이유를 알림으로 알려 준다) */
+/* 일꾼 고용 버튼 (아래 띠): 살 수 없으면 흐리게 (눌러도 이유를 알림으로 알려 준다).
+ * 피드백 #66: 꾹 누르면 계속 고용 — 길게 눌러도 글자 고르기·메뉴·확대가 뜨지 않게 */
 .hud-hire {
   flex-shrink: 0;
   color: #ffd28a;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
 }
 
 .hud-hire.is-off {
