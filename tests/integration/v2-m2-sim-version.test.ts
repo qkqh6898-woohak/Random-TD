@@ -123,6 +123,33 @@ describe('M2a 업데이트로 버리는 판은 먼저 정산', () => {
     expect(abandonedRunToast(again.lastAbandoned)).toContain('이어 할 수 없어요');
   });
 
+  it('V2 통합: 버린 판 정산도 🔥 불꽃을 준다 — 패배 화면과 같은 양, 같은 판은 한 번만', () => {
+    const old = env();
+    const m = midRun();
+    old.saves.write(m, 1, null, 'run-flame');
+    const raw = old.storage.getItem(MATCH_SLOT)!;
+    const next = env(SIM_VERSION + 1);
+    const flame0 = next.progress.state.flame;
+    // 기대값: matchRewardSpec(12단계·보스 1) — 패배 화면 정산과 같은 공식
+    const expected = pd.matchRewards.flamePerStage * 12 + pd.matchRewards.flamePerBoss * 1;
+    expect(expected).toBeGreaterThan(0);
+    next.storage.setItem(MATCH_SLOT, raw);
+    expect(next.saves.read()).toBeNull();
+    expect(next.saves.lastAbandoned?.credited).toBe(true);
+    expect(next.progress.state.flame).toBe(flame0 + expected);
+    // 슬롯이 되살아나 다음 실행에서 또 만나도 불꽃은 더 늘지 않는다
+    next.storage.setItem(MATCH_SLOT, raw);
+    const again = new MatchSaves(data, next.storage, {
+      version: '0.2.0',
+      dev: false,
+      simVersion: SIM_VERSION + 1,
+      onAbandoned: (run) => settleAbandonedRun(run, { progress: next.progress, records: next.records, rules: () => rules }),
+    });
+    expect(again.read()).toBeNull();
+    expect(again.lastAbandoned?.credited).toBe(false);
+    expect(next.progress.state.flame).toBe(flame0 + expected);
+  });
+
   it('데이터가 바뀐 업데이트도 정산한다', () => {
     const old = env();
     old.saves.write(midRun(), 1, null, 'run-data');
