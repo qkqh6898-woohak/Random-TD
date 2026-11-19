@@ -1611,3 +1611,21 @@
 - 쓰이지 않게 된 코드 정리: 정보 패널 [다음 묶음 ▶](`merge-next`, `mergeNextText`)·금색 강조 고리(`mergeHighlight`, SelectionLayer `highlight`)·`Game.selectNextMergeable`은 [⬆ 승급 가능]으로 연 패널에서만 보였으므로 함께 지웠다 (`view-m3` 단위 테스트 1개, m5 `mergeHighlightCount` 타입 줄도).
 - `m3a` '위쪽 패널 + 알림'은 main에서도 실패하고 있었다(#59로 인원 한도 30 > 마당 24칸 → 알림이 안 뜸) → 그 판만 인원 한도를 놓은 타워 수에 맞추게 고침.
 - 남은 문제: 버튼 글자는 '⏫ 모두 승급 n' 그대로(화살표 아이콘만으로 줄이지 않음). 꾹 누르기는 실제 휴대폰 터치로는 확인하지 않음.
+
+### V2 고침 1차 — 코드 검토(docs/v2/review.md) 확정 결함 고침 (갈래 v2/fixes)
+
+> 조정자 요청: 검토에서 확정된 결함을 고친다. 다른 갈래 `v2/pr-a`가 동시에 고치는 파일(progress·progressStore·data JSON·load·rules·Sell·Summon·Game.ts·lobbyModel·Lobby·towerGeom·stackGeom·CLAUDE.md·기존 문서)은 건드리지 않음. 자세한 표·결정·나중 할 일: **`docs/v2/fixes-notes.md`**.
+
+- **H1** 승급의 축복 [바꾸기]: 무더기 안의 결과 타워는 alt 무더기 → 빈 칸으로 옮겨 바꾸고, 자리가 없으면 'full'로 거절(축복 1회 돌려줌). 혼자인 칸은 예전처럼 제자리. 무더기 검사(`stackMergeCheck`·`fullStacks`·`joinableStack`)는 모두 같은 타워인 칸만 (`isUniformStack`).
+- **L2** 예전 명령(summon·merge·mergeAll·move)은 리플레이 재생(`MatchOptions.legacyCommands`)·개발자 판에서만 — 일반 판은 예약 단계에서 거절(`World.setCommandFilter`, 실행 기록에도 안 남음). 테스트 도우미 판은 legacyCommands 켬, E2E a1·m2의 일반 판 예전 summon은 그 판에서만 필터를 끔.
+- **M1** `BrowserStorage`: 기기 저장소에 못 쓴 키는 다음 쓰기가 성공할 때까지 메모리 사본이 정답 → 자동 저장이 이어지고, 끝난 판이 되살아나지 않음.
+- **M2** 저장 지문 = 형식 + **`SIM_VERSION`**(src/sim/version.ts, 지금 1) + 데이터 지문 — 앱 버전만 바뀐 릴리스는 진행 중 판을 이어 한다. 형식·규칙·데이터가 달라 버릴 때는 **먼저 정산**(`MatchSaves.onAbandoned` → `settleAbandonedRun` → 기존 `ProgressStore.settle` + `BattleRecords.completeAbandoned`, runId로 한 번만). 올리는 규칙은 fixes-notes 'SIM_VERSION — 언제 올리나'.
+- **M3** 업데이트 창 문구: '계정·기록은 그대로예요. 진행 중인 판은 이어 할 수 있고, 게임 규칙이 바뀐 업데이트면 그때까지의 보상을 받고 끝나요.'
+- **L3** 전투 기록: 이상한 항목만 버리고, 더 높은 형식은 덮어쓰지 않음.
+- **L5** 캠페인: 50단계를 끝까지 버티면 `phase 'victory'`(sim 멈춤, `Match.victory`·`Match.ended`). 결과 화면은 Game.ts(나중).
+- **L6** 업데이트: 받는 중·설치 중 웹이 다시 읽히면 자바 `check()`가 제안부터 지금 단계까지 다시 보냄(`UpdateLogic.resyncEvents`, JVM 테스트).
+- **L9** ci.yml: setup-java + `android/check-java.sh`, 액션 SHA 고정.
+- **L1(일부)** 일일·업적 id 겹침 검사는 이미 있었음 → 경로 고침·회귀 테스트. 루프 끊기는 progress.ts(나중).
+- **리플레이 해시 변화 없음** (`npm run replays` 안 함).
+- **나중에(다른 갈래 소유 파일)**: M4(progressStore 백업·모르는 필드 보존), L1 루프 끊기, L4(자동 판매가 도박 결과를 팖), L7(배지 규칙), L8(ultSent 초기화), H1 'full' 알림, L5 클리어 화면, CLAUDE.md 6장 SIM_VERSION 문구 — 정확한 변경은 fixes-notes 표.
+- **완료 조건**: Vitest **108파일 1,575 통과 · 3 건너뜀**, `npm run check`·`npm run build`·`bash android/check-java.sh` 통과. **관련 E2E**(`E2E_PORT=5181`, 127개: related-e2e.sh 68052a7 결과 + smoke·update·g1·m4·m5·t2·f10·b1·devtools·g3·gi + m3a·g2·g2-shots) — 다시 돌려 모두 통과, 단 `m2:257`·`m3a:236`·`m5:159`·`m5:236` 4개는 **고치기 전 68052a7에서도 같은 자리에서 실패**(부하 load 7~8에서 잠깐 뜨는 알림·배너를 놓침, 내 변경과 무관). 다시 찍힌 스크린샷은 되돌림. 전체 E2E는 v2/pr-a와 합친 뒤.
