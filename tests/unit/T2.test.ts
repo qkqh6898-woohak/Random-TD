@@ -34,13 +34,13 @@ function put(m: Match, id: string, owner = 0): { x: number; y: number } {
 }
 
 describe('판매가 (game.json sell)', () => {
-  it('가치 = 소환 비용 × 3^등급 (노말 100 · 레어 300 · 유니크 900 · 히어로 2,700 · 레전드 8,100), 판매가 = 50% 내림', () => {
-    const expected: Record<string, number> = { normal: 50, rare: 150, unique: 450, hero: 1350, legend: 4050, god: 4050 };
+  it('가치 = 노말 가치(sell.baseValue 30, V2.0 PR-A 소환 비용과 따로) × 3^등급 (노말 30 · 레어 90 · 유니크 270 · 히어로 810 · 레전드 2,430), 판매가 = 50% 내림', () => {
+    const expected: Record<string, number> = { normal: 15, rare: 45, unique: 135, hero: 405, legend: 1215, god: 1215 };
     for (const [grade, price] of Object.entries(expected)) {
       for (const id of idsOf(grade)) expect(sellPrice(rules, id), `${grade} ${id}`).toBe(price);
     }
-    expect(rules.towerValues.get(idsOf('legend')[0]!)).toBe(8100);
-    expect(rules.towerValues.get(idsOf('god')[0]!)).toBe(8100); // 신 = 레전드 가치
+    expect(rules.towerValues.get(idsOf('legend')[0]!)).toBe(2430);
+    expect(rules.towerValues.get(idsOf('god')[0]!)).toBe(2430); // 신 = 레전드 가치
   });
 
   it('히든 = 조합 재료 가치의 합 × 50% (12종 모두 재료가 있다)', () => {
@@ -64,17 +64,18 @@ describe('sellTower 명령', () => {
   it('타워를 지우고 칸을 비우며 판매가를 받는다 (번 돈·황금 손 아님), sell 사건, 판 수', () => {
     const m = arena();
     const at = put(m, idsOf('rare')[0]!);
+    m.state.summonCount[0] = 20; // 지금 소환 비용 62원 → 레어 표 판매가 45원 그대로 (V2.0 PR-A 상한 = 소환 비용 − 1)
     const gold = m.state.gold;
     const earned = m.state.goldEarned;
     m.state.goldPctBp = 2500; // 황금 손이 있어도 판매가는 그대로
     command(m, { type: 'sellTower', x: at.x, y: at.y });
     expect(towerAt(m.world, at.x, at.y)).toBeUndefined();
-    expect(m.state.gold).toBe(gold + 150);
+    expect(m.state.gold).toBe(gold + 45);
     expect(m.state.goldEarned).toBe(earned);
     expect(m.state.sells).toBe(1);
     const ev = eventsOf(m, 'sell');
     expect(ev).toHaveLength(1);
-    expect(ev[0]).toMatchObject({ player: 0, x: at.x, y: at.y, gold: 150, grade: 'rare' });
+    expect(ev[0]).toMatchObject({ player: 0, x: at.x, y: at.y, gold: 45, grade: 'rare' });
     // 빈 칸이 되었으니 다시 소환할 수 있다
     command(m, { type: 'summon', x: at.x, y: at.y });
     expect(towerAt(m.world, at.x, at.y)).toBeDefined();
@@ -104,7 +105,7 @@ describe('sellTower 명령', () => {
     m.world.enqueue({ type: 'sellTower', x: at.x, y: at.y });
     m.world.enqueue({ type: 'sellTower', x: at.x, y: at.y });
     m.step();
-    expect(m.state.gold).toBe(gold + 50);
+    expect(m.state.gold).toBe(gold + 15);
     expect(eventsOf(m, 'sellFail').map((e) => e.reason)).toEqual(['noTower']);
   });
 
@@ -117,13 +118,18 @@ describe('sellTower 명령', () => {
     expect(m.state.mergePicks).toEqual([]);
   });
 
-  it('되파는 돈벌이가 안 된다: 소환 100원 → 판매 50원, 노말 3개(300원) → 레어 → 150원', () => {
+  it('되파는 돈벌이가 안 된다 (V2.0 PR-A): 소환 22원 → 판매 15원 · 레어 표 판매가 45원도 지금 소환 비용 − 1(24 − 1 = 23원)까지', () => {
     const m = arena();
     const gold = m.state.gold;
     const [x, y] = m.map.buildable[0]!;
     command(m, { type: 'summon', x, y });
     command(m, { type: 'sellTower', x, y });
-    expect(m.state.gold).toBe(gold - 100 + 50);
+    const got = m.state.gold - (gold - 22);
+    expect(got).toBeLessThan(22);
+    const at = put(m, idsOf('rare')[0]!);
+    const g1 = m.state.gold;
+    command(m, { type: 'sellTower', x: at.x, y: at.y });
+    expect(m.state.gold - g1).toBe(23); // 지금 소환 비용 24원(1번 소환) − 1
   });
 
   it('판매가 섞인 판도 결정적이다 (같은 명령 → 같은 해시)', () => {

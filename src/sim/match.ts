@@ -220,7 +220,8 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     invisibleWarned: false,
     cardOffers: [],
     cardsPicked: [],
-    summonDiscount: 0,
+    summonDiscountBp: 0,
+    summonCount: [],
     mobSlowBp: 0,
     goldPctBp: 0,
     perks: [],
@@ -266,6 +267,7 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     state.ultChargeBp.push(0);
     state.rallyBp.push(0);
     state.rallyUntil.push(0);
+    state.summonCount.push(0);
   }
   const accountLevels: number[] = [];
   for (let p = 0; p < players; p++) {

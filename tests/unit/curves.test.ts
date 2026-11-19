@@ -103,16 +103,16 @@ describe('방어력·마법 저항 성장 (ENEMIES.md 2장·3.1)', () => {
   });
 });
 
-describe('처치 보상 (10 + ⌊s/10⌋) × 배율', () => {
-  it('10단계 슬라임 = 11원 (DEV_PLAN M2-2), 1단계 = 10원, 45단계 = 14원', () => {
-    expect(killReward(rules, 10, 10000)).toBe(11);
-    expect(killReward(rules, 1, 10000)).toBe(10);
+describe('처치 보상 (3 + ⌊s/4⌋) × 배율 (V2.0 PR-A, 예전 10 + ⌊s/10⌋)', () => {
+  it('10단계 슬라임 = 5원, 1단계 = 3원, 45단계 = 14원', () => {
+    expect(killReward(rules, 10, 10000)).toBe(5);
+    expect(killReward(rules, 1, 10000)).toBe(3);
     expect(killReward(rules, 45, 10000)).toBe(14);
   });
 
-  it('배율은 곱한 뒤 내림: 40단계 고블린 ×0.4 = 14 × 0.4 = 5.6 → 5, 투명 도둑 ×2 = 28', () => {
+  it('배율은 곱한 뒤 내림: 40단계 고블린 ×0.4 = 13 × 0.4 = 5.2 → 5, 투명 도둑 ×2 = 26', () => {
     expect(killReward(rules, 40, 4000)).toBe(5);
-    expect(killReward(rules, 40, 20000)).toBe(28);
+    expect(killReward(rules, 40, 20000)).toBe(26);
   });
 });
 

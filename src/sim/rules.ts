@@ -7,7 +7,7 @@
  * 성장 곡선 (ENEMIES.md 2장, BALANCE.md 1·3장):
  *  - 기준 체력 HP(s): curves.json 표 (tools/precompute-curves.mjs가 거듭제곱으로 미리 계산)
  *  - 방어력·마법 저항: mulBp(기본값, armorMulBp[s]) + armorFlat[s]  (= 기본값 × (1 + 0.02s) 내림 + max(0, s − 100))
- *  - 처치 보상: mulBp(base + ⌊s / perStages⌋, rewardMulBp)  (= (10 + ⌊s/10⌋) × 배율 내림)
+ *  - 처치 보상: mulBp(base + ⌊s / perStages⌋, rewardMulBp)  (= (3 + ⌊s/4⌋) × 배율 내림 — V2.0 PR-A, 예전 (10 + ⌊s/10⌋))
  *  - 표 끝(maxStage = 500)을 넘는 단계는 마지막 값을 쓴다 (HP(500) ≈ 9.6×10¹³. 실제로 닿을 일이 없는 단계).
  *
  * 타워 (M2, towers.json → TowerStats):
@@ -355,8 +355,12 @@ export interface MatchRules {
   readonly towers: ReadonlyMap<string, TowerStats>;
   /** 신 타워 id (towers.json 순서). 소환·승급 때 신 판정에 걸리면 이 중 균등 */
   readonly godTowers: readonly string[];
-  /** 소환 비용 (원) */
+  /** 소환 기본 비용 (원, 첫 소환) */
   readonly summonCost: number;
+  /** 일반 소환 1번마다 오르는 비용 (원, V2.0 PR-A) */
+  readonly summonCostStep: number;
+  /** 소환 비용 최대 (원) */
+  readonly summonCostMax: number;
   /** 신 타워 확률 (bp, 0.01% = 1) */
   readonly godChanceBp: number;
   /** 투사체 속도 (단위/틱). 12칸/초 = 600 */
@@ -447,8 +451,8 @@ export interface MatchRules {
   readonly cardById: ReadonlyMap<string, CardStats>;
   readonly cardOfferSize: number;
   readonly cardRareBp: number;
-  /** 카드 '소환 할인'의 최소 소환 비용 (원, 카드가 없으면 기본 비용) */
-  readonly summonCostMin: number;
+  /** 카드 '소환 할인' 합의 최대 (bp, 카드가 없으면 0) */
+  readonly summonDiscountMaxBp: number;
   // ---- M5 ----
   /** 판 내 강화 (명령 upgrade {k}의 k 순서: 등급 강화 → 능력치 강화 → 초월 → 소환 확률 → 인원 한도) */
   readonly upgrades: readonly UpgradeRule[];
@@ -488,6 +492,8 @@ export interface MatchRules {
   readonly sellRateBp: number;
   /** 타워 id → 판매 가치 (원, 판매가 = 가치 × sellRateBp 내림) */
   readonly towerValues: ReadonlyMap<string, number>;
+  /** 일반 소환이 낼 수 있는 등급 (노말·레어 직행·신 — Summon.rollSummon). 이 등급의 판매가는 지금 소환 비용 − 1 이하 (V2.0 PR-A) */
+  readonly summonOutcomeGrades: readonly Grade[];
   /** 개발자 도구 확률 조정: 한 번에 바뀌는 값 (bp)과 이름 목록 (game.json devChances 순서) */
   readonly devChanceStepBp: number;
   readonly devChanceKeys: readonly string[];
@@ -695,6 +701,8 @@ export function buildMatchRules(data: GameData): MatchRules {
     towers,
     godTowers: Object.freeze(data.towers.towers.filter((t) => t.grade === 'god').map((t) => t.id)),
     summonCost: game.summon.cost,
+    summonCostStep: game.summon.costStep,
+    summonCostMax: game.summon.costMax,
     godChanceBp: bp(game.summon.godChance),
     projectileSpeed: projectileUnitsPerSec / TICK_HZ,
     baseDeck: freezeDeck(data.decks.base),
@@ -769,7 +777,7 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
   | 'cardById'
   | 'cardOfferSize'
   | 'cardRareBp'
-  | 'summonCostMin'
+  | 'summonDiscountMaxBp'
 > {
   const { enemies, game, cards: cardsFile, campaign } = data;
   const bosses = new Map<string, BossStats>();
@@ -781,7 +789,8 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
   const cyc = enemies.bossCycle;
   const cards = cardsFile.cards.map((c) => {
     const e = c.effect;
-    const ratio = e.type === 'atkPct' || e.type === 'quake' || e.type === 'mobSlow' || e.type === 'goldPct' || e.type === 'apsPct' || e.type === 'ultCharge';
+    const ratio =
+      e.type === 'atkPct' || e.type === 'quake' || e.type === 'mobSlow' || e.type === 'goldPct' || e.type === 'apsPct' || e.type === 'ultCharge' || e.type === 'summonDiscount';
     return Object.freeze({
       id: c.id,
       name: c.name,
@@ -789,7 +798,7 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
       desc: c.desc,
       type: e.type,
       value: ratio ? bp(e.value ?? 0) : int(`cards.json ${c.id}.effect.value`, e.value ?? 0),
-      limit: e.type === 'mobSlow' ? bp(e.max ?? 0) : int(`cards.json ${c.id}.effect.min`, e.min ?? 0),
+      limit: e.type === 'mobSlow' || e.type === 'summonDiscount' ? bp(e.max ?? 0) : int(`cards.json ${c.id}.effect.min`, e.min ?? 0),
       ticks: e.seconds === undefined ? 0 : secondsToTicksExact(e.seconds),
       pools: Object.freeze([...(c.pools ?? ['boss'])]),
     } satisfies CardStats);
@@ -842,7 +851,7 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
     cardById: new Map(cards.map((c) => [c.id, c])),
     cardOfferSize: cardsFile.offerSize,
     cardRareBp: bp(cardsFile.rareChance),
-    summonCostMin: cards.find((c) => c.type === 'summonDiscount')?.limit ?? game.summon.cost,
+    summonDiscountMaxBp: cards.find((c) => c.type === 'summonDiscount')?.limit ?? 0,
   };
 }
 
@@ -1027,7 +1036,8 @@ function buildM5Rules(data: GameData): Pick<
 }
 
 /**
- * 타워 판매 가치 (원, T-2): 소환 비용 × 등급 배율 (노말 1·레어 3·유니크 9·히어로 27·레전드 81·신 = game.json sell.gradeMul),
+ * 타워 판매 가치 (원, T-2): 노말 가치(game.json sell.baseValue — V2.0 PR-A부터 소환 비용과 따로) × 등급 배율
+ * (노말 1·레어 3·유니크 9·히어로 27·레전드 81·신 = game.json sell.gradeMul),
  * 히든 = 조합 재료 가치의 합. 거듭제곱은 데이터 표(gradeMul)로 — sim에서 계산하지 않는다.
  */
 export function buildTowerValues(data: Pick<GameData, 'towers' | 'game'>): Map<string, number> {
@@ -1037,7 +1047,7 @@ export function buildTowerValues(data: Pick<GameData, 'towers' | 'game'>): Map<s
   const base = (id: string): number => {
     const t = byId.get(id);
     if (!t || t.grade === 'hidden') return 0;
-    return game.summon.cost * game.sell.gradeMul[t.grade];
+    return game.sell.baseValue * game.sell.gradeMul[t.grade];
   };
   for (const t of towers.towers) {
     if (t.grade !== 'hidden') out.set(t.id, base(t.id));
@@ -1047,12 +1057,15 @@ export function buildTowerValues(data: Pick<GameData, 'towers' | 'game'>): Map<s
 }
 
 /** T-2 규칙 (자동 소환·판매·개발자 확률 조정). */
-function buildT2Rules(data: GameData): Pick<MatchRules, 'autoSummonRadius' | 'sellRateBp' | 'towerValues' | 'devChanceStepBp' | 'devChanceKeys'> {
+function buildT2Rules(
+  data: GameData,
+): Pick<MatchRules, 'autoSummonRadius' | 'sellRateBp' | 'towerValues' | 'summonOutcomeGrades' | 'devChanceStepBp' | 'devChanceKeys'> {
   const { game } = data;
   return {
     autoSummonRadius: int('game.json summon.autoRadius', game.summon.autoRadius),
     sellRateBp: int('game.json sell.rateBp', game.sell.rateBp),
     towerValues: buildTowerValues(data),
+    summonOutcomeGrades: Object.freeze(['normal', 'rare', ...(data.towers.towers.some((t) => t.grade === 'god') ? (['god'] as const) : [])] as Grade[]),
     devChanceStepBp: int('game.json devChances.stepBp', game.devChances.stepBp),
     devChanceKeys: Object.freeze(game.devChances.list.map((c) => c.key)),
   };

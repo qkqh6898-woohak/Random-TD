@@ -20,7 +20,7 @@ import { isBuildable } from '../map';
 import { gradeRank } from '../rules';
 import type { MatchContext } from '../state';
 import { canAfford, spendGold } from './Economy';
-import { autoSummonTile, godChanceFor, placeTower, rollSummon, summonCost, summonRareChance, type SummonFail } from './Summon';
+import { autoSummonTile, godChanceFor, noteSummonPaid, placeTower, rollSummon, summonCost, summonRareChance, type SummonFail } from './Summon';
 
 /**
  * 새 타워 towerId가 들어갈 수 있는 내 무더기 칸: 같은 타워가 쌓여 있고 board.stackMax보다 적은 칸 중 바닥 타워 ID가 가장 작은 칸.
@@ -113,7 +113,7 @@ export function summonStackCheck(ctx: MatchContext, world: World, player: number
   if (ctx.state.phase !== 'playing') return 'phase';
   if (unitCount(world, player) >= unitCap(ctx, player)) return 'cap';
   if (!hasRoom(ctx, world, player)) return 'full';
-  if (!canAfford(ctx.state, summonCost(ctx))) return 'gold';
+  if (!canAfford(ctx.state, summonCost(ctx, player))) return 'gold';
   return null;
 }
 
@@ -143,7 +143,8 @@ export function summonStack(ctx: MatchContext, world: World, player: number, pre
     world.emit('summonFail', { player, x: fx, y: fy, reason: 'full', rolled: true });
     return null;
   }
-  spendGold(state, summonCost(ctx));
+  spendGold(state, summonCost(ctx, player));
+  noteSummonPaid(state, player);
   if (lucky && perks && roll.rare) perks.rareSummons -= 1;
   const tower = placeTower(world, roll.tower, player, at[0], at[1]);
   state.summons += 1;

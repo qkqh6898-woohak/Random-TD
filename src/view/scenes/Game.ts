@@ -61,7 +61,7 @@ import { auraCovers, auraRadiusOf, auraSpecOf, computeAuras, towerBonus } from '
 import { towerLevel } from '../../sim/abilities';
 import { METEOR_FX } from '../../sim/abilities/archmage';
 import { rankSummonTiles, summonCheck, summonCost } from '../../sim/systems/Summon';
-import { autoSellTiles, convertTargets, sellCheck, sellPrice } from '../../sim/systems/Sell';
+import { autoSellTiles, convertTargets, isAutoSellSummon, sellCheck, sellPriceFor } from '../../sim/systems/Sell';
 import { AUTO_MERGE_KEYS, autoMergeChoice, autoMergeRank, autoSellGrade, autoSellMinRank, resetMatchSettings, type AutoMergeGrade } from '../../meta/settings';
 import { gradeRank } from '../../sim/rules';
 import { effectsOff, onEffectsChange, setEffectsOff } from '../effects';
@@ -1141,7 +1141,7 @@ export class GameScene extends Phaser.Scene {
       this.closePanel();
       return;
     }
-    let fail = summonCheck(this.match.ctx, this.match.world, tx, ty);
+    let fail = summonCheck(this.match.ctx, this.match.world, tx, ty, LOCAL_PLAYER);
     // G-1 인원 한도: 빈 칸이어도 내 타워가 한도만큼이면 소환하지 않는다
     if (fail === null && summonStackCheck(this.match.ctx, this.match.world, LOCAL_PLAYER) === 'cap') fail = 'cap';
     // 빈 땅 (T-2): 누르고 있으면 0.3초 뒤부터 자동 칸에 연속 소환 (맵 안이면 배치 칸이 아니어도)
@@ -1150,7 +1150,7 @@ export class GameScene extends Phaser.Scene {
     if (inMap) this.groundPress = { pointer, downMs: now, downX: pointer.worldX, downY: pointer.worldY, auto: false, lastMs: now, hint };
     // 길·빈 땅을 짧게 누르면 배치 칸을 잠깐 보여준다 (T-3: 평소에는 칸을 숨김). 맵 안은 뗄 때(꾹 눌러 연속 소환이면 안 보임), 맵 밖은 바로
     else if (hint) this.buildHintAt = now;
-    const action = decideTap(fail, tx, ty, summonCost(this.match.ctx));
+    const action = decideTap(fail, tx, ty, summonCost(this.match.ctx, LOCAL_PLAYER));
     if (action.kind === 'summon') {
       if (!tapAllowed(this.lastTapMs, now)) return;
       this.lastTapMs = now;
@@ -1180,7 +1180,7 @@ export class GameScene extends Phaser.Scene {
       return 'stop';
     }
     if (fail === 'gold') {
-      this.ctx.ui.toast(needGoldForSummon(summonCost(ctx)));
+      this.ctx.ui.toast(needGoldForSummon(summonCost(ctx, LOCAL_PLAYER)));
       return 'stop';
     }
     if (fail === 'cap') {
@@ -1614,7 +1614,7 @@ export class GameScene extends Phaser.Scene {
       stunned: this.match.tick < t.stunUntil,
       penMaxBp: rules.penMaxBp,
       sell: {
-        price: sellPrice(rules, t.tower),
+        price: sellPriceFor(this.match.ctx, t.tower, t.owner),
         confirming: this.sellConfirm !== null && this.sellConfirm.id === t.id && performance.now() < this.sellConfirm.untilMs,
       },
     });
@@ -1778,7 +1778,7 @@ export class GameScene extends Phaser.Scene {
     let defeated = false;
     const now = this.match.tick;
     const frameStart = this.frameStartTick;
-    const cost = summonCost(this.match.ctx);
+    const cost = summonCost(this.match.ctx, LOCAL_PLAYER);
     let texts = 0;
     let heals = 0;
     let sparks = 0;
@@ -1839,7 +1839,7 @@ export class GameScene extends Phaser.Scene {
           if (ev.player === LOCAL_PLAYER) recordRunEvent(this.runLog, { type: 'readyNow', tick: ev.tick, left: Number(ev.left) });
           break;
         case 'summon':
-          if (ev.player === LOCAL_PLAYER && ev.debug !== true) summonedIds.push(Number(ev.id));
+          if (isAutoSellSummon(ev, LOCAL_PLAYER)) summonedIds.push(Number(ev.id));
           if (ev.player === LOCAL_PLAYER) recordRunEvent(this.runLog, { type: 'summon', tick: ev.tick, stage: stageNow });
           if (ev.god === true && eventFxVisible('rare', ev.tick, now, frameStart)) {
             this.ctx.ui.toast(godDescends(this.ctx.data.towers.towers.find((t) => t.id === ev.tower)?.name ?? String(ev.tower)), 2400);
@@ -2829,7 +2829,7 @@ export class GameScene extends Phaser.Scene {
           // G-1 사용자 결정: 🗼 = 내 타워 인원 / 인원 한도 (game.json board.unitCap + 카드)
           towerCount: unitCount(this.match.world, LOCAL_PLAYER),
           buildableCount: unitCap(this.match.ctx, LOCAL_PLAYER),
-          summonCost: summonCost(this.match.ctx),
+          summonCost: summonCost(this.match.ctx, LOCAL_PLAYER),
           mergeReady: this.mergeReadyCount,
           workerMax: this.match.rules.workerMax,
           workerCost: this.match.rules.workerCost,

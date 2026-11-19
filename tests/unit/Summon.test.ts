@@ -1,5 +1,5 @@
 /**
- * M2-1 소환: 빈 배치 칸 + 100원 → 덱 노말 5종 균등 (플레이어별 소환 난수), 신 판정 우선, 실패 이유, 실행 틱 재검사.
+ * M2-1 소환: 빈 배치 칸 + 소환 비용(V2.0 PR-A 22원부터 소환마다 +2원) → 덱 노말 5종 균등 (플레이어별 소환 난수), 신 판정 우선, 실패 이유, 실행 틱 재검사.
  */
 import { describe, expect, it } from 'vitest';
 import { validatePayload } from '../../src/sim/Commands';
@@ -15,8 +15,10 @@ const rules: MatchRules = buildMatchRules(data);
 const BASE_NORMALS = ['miner', 'goblin', 'archer', 'apprentice', 'warrior'];
 
 describe('데이터: 소환 규칙과 기본 덱', () => {
-  it('소환 비용 100원, 신 확률 0.01% = 1bp, 신 3종, 기본 덱 노말 = 광부·고블린·궁수·견습 마법사·전사', () => {
-    expect(rules.summonCost).toBe(100);
+  it('소환 비용 22원(+2원씩, 최대 200원), 신 확률 0.01% = 1bp, 신 3종, 기본 덱 노말 = 광부·고블린·궁수·견습 마법사·전사', () => {
+    expect(rules.summonCost).toBe(22);
+    expect(rules.summonCostStep).toBe(2);
+    expect(rules.summonCostMax).toBe(200);
     expect(rules.godChanceBp).toBe(1);
     expect(rules.godTowers).toHaveLength(3);
     for (const id of rules.godTowers) expect(rules.towers.get(id)?.grade).toBe('god');
@@ -98,7 +100,7 @@ describe('소환 판정 (rollSummon)', () => {
 });
 
 describe('summon 명령', () => {
-  it('빈 배치 칸 + 100원 → 그 칸에 타워 1개, 돈 1000 → 900, summon 사건', () => {
+  it('빈 배치 칸 + 22원 → 그 칸에 타워 1개, 돈 1000 → 978, summon 사건', () => {
     const m = infinite(1);
     expect(m.state.gold).toBe(1000);
     const t = summonAt(m, 0, 0);
@@ -106,14 +108,15 @@ describe('summon 명령', () => {
     expect(BASE_NORMALS).toContain(t!.tower);
     expect(t!.owner).toBe(0);
     expect([t!.x, t!.y]).toEqual([500, 500]); // 칸 중심
-    expect(m.state.gold).toBe(900);
+    expect(m.state.gold).toBe(978);
     expect(m.state.summons).toBe(1);
     const ev = m.world.drainEvents().find((e) => e.type === 'summon');
     expect(ev).toMatchObject({ id: t!.id, tower: t!.tower, grade: 'normal', god: false, x: 0, y: 0 });
   });
 
-  it('10번 소환하면 돈 0, 11번째는 돈 부족 (gold) — 상태·난수 그대로', () => {
+  it('10번 소환하면 돈 0 (22 + 24 + … + 40 = 310원), 11번째(42원)는 돈 부족 (gold) — 상태·난수 그대로', () => {
     const m = infinite(2);
+    m.state.gold = 310;
     const tiles = m.map.buildable.slice(0, 11);
     for (const [x, y] of tiles.slice(0, 10)) expect(summonAt(m, x, y)).toBeDefined();
     expect(m.state.gold).toBe(0);
@@ -135,7 +138,7 @@ describe('summon 명령', () => {
     expect(m.state.gold).toBe(1000);
     summonAt(m, 4, 4);
     command(m, { type: 'summon', x: 4, y: 4 });
-    expect(m.state.gold).toBe(900);
+    expect(m.state.gold).toBe(978);
     expect(towerCount(m.world)).toBe(1);
     const fails = m.world.drainEvents().filter((e) => e.type === 'summonFail').map((e) => e.reason);
     expect(fails).toEqual(['notBuildable', 'occupied']);
@@ -158,7 +161,7 @@ describe('summon 명령', () => {
     m.world.enqueue({ type: 'summon', x: 2, y: 2 });
     m.step();
     expect(listTowers(m.world)).toHaveLength(1);
-    expect(m.state.gold).toBe(900);
+    expect(m.state.gold).toBe(978);
     expect(m.world.drainEvents().filter((e) => e.type === 'summonFail').map((e) => e.reason)).toEqual(['occupied']);
   });
 

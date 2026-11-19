@@ -1,6 +1,7 @@
 /**
  * M2 통합: 소환한 타워가 실제 판에서 몹을 잡고 돈을 번다. 같은 시드 + 같은 명령 → 같은 해시 (리플레이 재료).
  */
+import { summonCost } from '../../src/sim/systems/Summon';
 import { describe, expect, it } from 'vitest';
 import type { Command } from '../../src/sim/Commands';
 import type { Point } from '../../src/data/load';
@@ -16,7 +17,7 @@ function ringTiles(match: Match): Point[] {
 function playGreedy(match: Match, untilStage: number, tiles: Point[]): void {
   let next = 0;
   while (match.state.stage < untilStage && !match.defeated) {
-    while (next < tiles.length && match.state.gold >= match.rules.summonCost) {
+    while (next < tiles.length && match.state.gold >= summonCost(match.ctx, 0)) {
       const [x, y] = tiles[next++]!;
       match.world.enqueue({ type: 'summon', x, y });
       match.step();
@@ -34,16 +35,17 @@ describe('타워가 있는 무한 모드', () => {
       withTowers.step();
     }
     expect(withTowers.towers()).toHaveLength(10);
-    expect(withTowers.state.gold).toBe(0);
+    expect(withTowers.state.gold).toBe(1000 - 310); // V2.0 PR-A: 22 + 24 + … + 40원
     runToStage(withTowers, 6);
     const bare = infinite(42);
     runToStage(bare, 6);
     expect(withTowers.state.kills).toBeGreaterThan(30);
-    expect(withTowers.state.gold).toBe(withTowers.state.goldEarned); // 처치 보상 + 특색 돈만큼
-    // 1~5단계 슬라임 = 10원 + 광부 특색(공격마다 1% 확률 +5원, M3-9)이 번 돈 + 단계 이자 (피드백 #10)
+    expect(withTowers.state.gold).toBe(690 + withTowers.state.goldEarned); // 남은 돈 + 처치 보상 + 특색 돈 + 이자
+    // 1~5단계 슬라임 = 3·4원(V2.0 PR-A 3 + ⌊s/4⌋) + 광부 특색(공격마다 1% 확률 +5원, M3-9)이 번 돈 + 단계 이자 (피드백 #10)
     const events = withTowers.world.drainEvents();
     const sum = (type: string): number => events.filter((e) => e.type === type).reduce((a, e) => a + Number(e.amount), 0);
-    expect(withTowers.state.goldEarned).toBe(withTowers.state.kills * 10 + sum('abilityGold') + sum('stageInterest'));
+    const killGold = events.filter((e) => e.type === 'kill').reduce((a, e) => a + Number(e.reward), 0);
+    expect(withTowers.state.goldEarned).toBe(killGold + sum('abilityGold') + sum('stageInterest'));
     expect(withTowers.mobCount()).toBeLessThan(bare.mobCount() - 30);
     expect(withTowers.mobCount() + withTowers.state.kills).toBe(bare.mobCount()); // 나온 수는 같다 (등장은 세계 난수)
   });

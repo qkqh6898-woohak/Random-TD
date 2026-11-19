@@ -379,8 +379,12 @@ export interface MatchConfig {
 
 /** 소환 (GDD.md 3·4.3). */
 export interface SummonConfig {
-  /** 소환 비용 (원) */
+  /** 소환 기본 비용 (원, 첫 소환) */
   cost: number;
+  /** 일반 소환 1번마다 오르는 비용 (원, V2.0 PR-A) */
+  costStep: number;
+  /** 소환 비용 최대 (원) */
+  costMax: number;
   /** 신 타워 확률 (0.0001 = 0.01%) */
   godChance: number;
   /** 자동 소환 칸 고르기 반경 (체비쇼프 칸, T-2 꾹 눌러 연속 소환·[🎲 소환] 버튼) */
@@ -435,6 +439,8 @@ export type UltKind = (typeof ULT_KINDS)[number];
 /** 타워 판매 (T-2, GDD 3장): 받는 돈 = 가치 × rateBp ÷ 10000 내림. 가치 = 소환 비용 × gradeMul (히든 = 재료 가치 합). */
 export interface SellConfig {
   rateBp: number;
+  /** 노말 1개의 가치 (원, V2.0 PR-A — 소환 비용과 따로. 노말 판매가 = baseValue × rateBp, 늘 기본 소환 비용보다 낮아야 한다) */
+  baseValue: number;
   /** 등급별 가치 배율 (노말 1·레어 3·유니크 9·히어로 27·레전드 81·신 = 레전드). 히든은 재료 합이라 없다 */
   gradeMul: Record<Exclude<Grade, 'hidden'>, number>;
   /** 판매 버튼을 두 번 눌러야 하는 등급 */
@@ -1383,6 +1389,8 @@ export const gameSchema: Schema = s.obj({
   }),
   summon: s.obj({
     cost: s.int({ min: 1 }),
+    costStep: s.int({ min: 0 }),
+    costMax: s.int({ min: 1 }),
     godChance: s.num({ min: 0, max: 1 }),
     autoRadius: s.int({ min: 0, max: 10 }),
     pity: pitySchema,
@@ -1439,6 +1447,7 @@ export const gameSchema: Schema = s.obj({
   // 타워 판매 (T-2): 가치 배율은 노말~신 (히든 = 조합 재료 합)
   sell: s.obj({
     rateBp: s.int({ min: 0, max: 10000 }),
+    baseValue: s.int({ min: 1 }),
     gradeMul: s.obj({
       normal: s.int({ min: 0 }),
       rare: s.int({ min: 0 }),
@@ -1874,6 +1883,17 @@ function crossCheckT2(data: GameData, issues: Issue[]): void {
       else if (m.grade === 'hidden') issues.push({ file: 'towers.json', path: `towers[${i}].recipe[${j}]`, message: `히든 재료는 히든일 수 없다: ${id}` });
     });
   });
+  // V2.0 PR-A 경제: 소환 비용 기본 ≤ 최대, 되팔기 돈벌이 없음 — 노말 판매가 < 기본 소환 비용(할인으로도 그 아래로 안 내려감),
+  // 등급 배율은 승급 개수의 거듭제곱 이하 (승급으로 만든 타워의 판매가 < 재료를 소환한 비용의 합)
+  if (game.summon.costMax < game.summon.cost) issues.push({ file: 'game.json', path: 'summon.costMax', message: `최대 비용(${game.summon.costMax}) < 기본 비용(${game.summon.cost})` });
+  const sellOf = (mul: number): number => Math.floor((game.sell.baseValue * mul * game.sell.rateBp) / 10000);
+  let need = 1;
+  for (const g of ['normal', 'rare', 'unique', 'hero', 'legend'] as const) {
+    if (sellOf(game.sell.gradeMul[g]) >= game.summon.cost * need) {
+      issues.push({ file: 'game.json', path: `sell.gradeMul.${g}`, message: `${g} 판매가 ${sellOf(game.sell.gradeMul[g])}원 ≥ 재료 소환 비용 최소 ${game.summon.cost * need}원 (되팔기 돈벌이)` });
+    }
+    need *= game.merge.count;
+  }
   const zero = game.gamble.outcomes.findIndex((o) => o.mul === 0);
   game.devChances.list.forEach((c, i) => {
     const path = `devChances.list[${i}].key`;
@@ -1945,7 +1965,7 @@ function crossCheckM4(data: GameData, issues: Issue[]): void {
     rareSummons: [{ key: 'value', int: true }],
     workerMul: [{ key: 'value', int: true }],
     quake: [{ key: 'value', ratio: true }],
-    summonDiscount: [{ key: 'value', int: true }],
+    summonDiscount: [{ key: 'value', ratio: true }],
     mobSlow: [{ key: 'value', ratio: true }],
     freeWorkers: [{ key: 'value', int: true }],
     mergeChoice: [{ key: 'value', int: true }],
@@ -1974,8 +1994,8 @@ function crossCheckM4(data: GameData, issues: Issue[]): void {
       else if (r.int && !Number.isInteger(v)) issues.push({ file: 'cards.json', path, message: `정수여야 하는데 ${v}` });
       else if (r.ratio && v > 1) issues.push({ file: 'cards.json', path, message: `0~1이어야 하는데 ${v}` });
     }
-    if (e.type === 'summonDiscount' && (e.min === undefined || !Number.isInteger(e.min) || e.min < 1)) {
-      issues.push({ file: 'cards.json', path: `cards[${i}].effect.min`, message: '소환 비용 최소(1 이상 정수)가 필요하다' });
+    if (e.type === 'summonDiscount' && (e.max === undefined || e.max <= 0 || e.max > 1)) {
+      issues.push({ file: 'cards.json', path: `cards[${i}].effect.max`, message: '소환 할인 합 최대(0~1, V2.0 PR-A 비율 할인)가 필요하다' });
     }
     if (e.type === 'mobSlow' && (e.max === undefined || e.max > 1)) {
       issues.push({ file: 'cards.json', path: `cards[${i}].effect.max`, message: '이동속도 감소 합 최대(0~1)가 필요하다' });

@@ -138,8 +138,10 @@ export interface MatchState {
   cardOffers: CardOffer[];
   /** 지금까지 고른 카드 id (고른 순) */
   cardsPicked: string[];
-  /** 카드 '소환 할인' 합 (원) */
-  summonDiscount: number;
+  /** 카드 '소환 할인' 합 (bp, 합 최대 카드 max — V2.0 PR-A: 예전엔 정액 원) */
+  summonDiscountBp: number;
+  /** 플레이어별 돈을 내고 한 일반 소환 횟수 (소환 비용 = 기본 + 횟수 × 증가분, V2.0 PR-A). 웨이브가 바뀌어도 그대로 */
+  summonCount: number[];
   /** 카드 '끈끈이' 몹 이동속도 감소 합 (bp, 최대 45%) */
   mobSlowBp: number;
   /** 카드 '황금 손' 돈 획득 증가 합 (bp) */

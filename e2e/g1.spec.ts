@@ -141,7 +141,7 @@ test('마당 맵: 6×8 가운데 4×6 마당 24칸 + 둘레 고리, 칸이 예�
   expect(L.tile).toBeGreaterThanOrEqual(Math.round(135 * 1.3));
   for (const id of ['menu-mythic', 'hud-summon', 'menu-gamble', 'menu-upgrade', 'menu-challenge', 'menu-mission']) await expect(page.getByTestId(id)).toBeVisible();
   await expect(page.getByTestId('menu-mythic')).toContainText('리미티드');
-  await expect(page.getByTestId('hud-summon')).toContainText('100원');
+  await expect(page.getByTestId('hud-summon')).toContainText('22원'); // V2.0 PR-A 첫 소환 22원
   await expect(page.getByTestId('hud-summon-pity')).toHaveText('천장 30');
   await expect(page.getByTestId('hud-towers')).toHaveText('0/30'); // 인원 n / 한도 (game.json board.unitCap — 피드백 #59로 20 → 30)
   // 소환 버튼이 가운데, 리미티드 왼쪽·도박 오른쪽, 강화는 소환 바로 아래
@@ -266,7 +266,7 @@ test('[소환] 시트: 일반 소환 + 소환 도박 4종 확률·천장 · 종�
   const gold0 = await inScene(page, (s) => s.match.state.gold, null);
   await page.getByTestId('gacha-buy-lucky').click();
   await expect.poll(() => inScene(page, (s) => s.match.state.gachas, null)).toBe(1);
-  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(gold0 - 300);
+  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(gold0 - 600); // V2.0 PR-A 행운 소환 600원
   await expect(page.getByTestId('gacha-result')).toContainText('행운 소환');
   // 종족 소환: 왕국을 골라 두 번
   await page.locator('.sm-faction-summary').click(); // FB-29: 보조 소환 행의 종족 선택 펼치기

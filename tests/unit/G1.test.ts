@@ -590,6 +590,7 @@ describe('G-1 화면 모델 (순수)', () => {
   it('소환 시트: 확률 줄·천장 글자·버튼 상태', async () => {
     const { summonSheetModel, oddsLine } = await import('../../src/ui/sheets/g1Models');
     const m = realInfinite(61);
+    m.state.gold = 5000; // V2.0 PR-A: 레전드 도박 2,000원
     const factions = rules.factionOrder.map((id) => ({ id, name: id, color: '#fff' }));
     const model = summonSheetModel(m.ctx, m.world, 0, factions, 2, data.game.summonGamble.kinds);
     expect(model.normal.pity).toBe('천장까지 30회 (레어)');

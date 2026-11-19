@@ -72,7 +72,7 @@ export function summonSheetModel(
   display: readonly { icon: string; desc: string }[],
 ): SummonSheetModel {
   const { rules } = ctx;
-  const cost = summonCost(ctx);
+  const cost = summonCost(ctx, player);
   const nFail = summonStackCheck(ctx, world, player);
   const nLeft = pityLeft(ctx, player, 0, rules.summonPityN);
   const rows = rules.gachaKinds.map((k, i): GachaRowModel => {

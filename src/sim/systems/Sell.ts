@@ -2,8 +2,12 @@
  * 타워 판매·개발자 변환 (T-2, 사용자 요청 "타워는 이동기능과 50%가격으로 판매, 동일 등급 다른 타워로 변환 기능(개발자용)").
  *
  * - `sellTower {x, y}`: 칸 (x, y)의 내 타워를 팔고 판매가를 받는다. 판매가 = 가치 × sell.rateBp(50%) 내림,
- *   가치 = 소환 비용(할인 전) × 등급 배율 (노말 1·레어 3·유니크 9·히어로 27·레전드 81·신 = 레전드, game.json sell.gradeMul),
- *   히든 = 조합 재료 3개 가치의 합 (rules.towerValues). 노말 50원 · 레어 150원 · 유니크 450원 · 히어로 1,350원 · 레전드 4,050원.
+ *   가치 = 노말 가치(game.json sell.baseValue — V2.0 PR-A부터 소환 비용과 따로) × 등급 배율 (노말 1·레어 3·유니크 9·히어로 27·레전드 81·
+ *   신 = 레전드, game.json sell.gradeMul), 히든 = 조합 재료 가치의 합 (rules.towerValues). 노말 15원 · 레어 45원 · 유니크 135원 ·
+ *   히어로 405원 · 레전드 1,215원.
+ *   **되팔기 돈벌이 없음 (V2.0 PR-A, 검토 H2)**: 일반 소환이 낼 수 있는 등급(노말·레어 직행·신 — rules.summonOutcomeGrades)은
+ *   판매가가 늘 **그 주인의 지금 소환 비용 − 1원** 이하 (`sellPriceFor`). 소환 비용은 할인 카드를 모두 받아도 기본 22원 아래로 안 내려가고
+ *   소환할수록 오르므로, 어떤 할인·확률 상태에서도 소환 → 판매는 한 번마다 1원 이상 잃는다.
  *   타워를 지우고 칸을 비운다 (승급 재료로 사라질 때와 같다 → 오라·특색·투사체는 다음 틱부터 그 타워 없이).
  *   '승급의 축복' 선택이 걸려 있던 타워면 그 선택도 지운다. 판 돈은 '번 돈'(goldEarned)이 아니고 카드 '황금 손'도 받지 않는다
  *   (가치의 절반이라 소환·승급을 되파는 돈벌이가 되지 않는다). 판 수 state.sells (처음 판매 때 생김).
@@ -21,12 +25,33 @@ import { mulBp } from '../Fixed';
 import { ATTACK_COST, isTower, topTowerAt, towerAt, towersAt, type Tower } from '../entities/Tower';
 import type { MatchContext } from '../state';
 import { GACHA_RANK, gradeRank } from '../rules';
+import { summonCost } from './Summon';
 
 export type SellFail = 'phase' | 'noTower' | 'notOwner';
 
-/** 타워 id의 판매가 (원) = 가치 × 판매 비율 내림. 모르는 타워는 0. */
+/** 타워 id의 표 판매가 (원) = 가치 × 판매 비율 내림. 모르는 타워는 0. 실제 판매가는 sellPriceFor (소환 비용 상한). */
 export function sellPrice(rules: MatchContext['rules'], towerId: string): number {
   return mulBp(rules.towerValues.get(towerId) ?? 0, rules.sellRateBp);
+}
+
+/**
+ * 실제 판매가 (원, V2.0 PR-A): 표 판매가, 단 일반 소환이 낼 수 있는 등급(rules.summonOutcomeGrades)이면 주인의 지금 소환 비용 − 1 이하.
+ * 판매 명령·정보 패널·자동 판매가 모두 이 값을 쓴다.
+ */
+export function sellPriceFor(ctx: Pick<MatchContext, 'rules' | 'state'>, towerId: string, owner: number): number {
+  const price = sellPrice(ctx.rules, towerId);
+  const grade = ctx.rules.towers.get(towerId)?.grade;
+  if (!grade || !ctx.rules.summonOutcomeGrades.includes(grade)) return price;
+  const cap = summonCost(ctx, owner) - 1;
+  return price > cap ? (cap > 0 ? cap : 0) : price;
+}
+
+/**
+ * 자동 판매 대상이 되는 소환 사건인가 (피드백 #46 + 검토 L4): 그 플레이어의 일반 소환만 — 개발자 놓기(debug)·소환 도박(gacha) 결과는
+ * 팔지 않는다 (도박에 돈을 더 내고 고른 결과를 바로 되파는 일이 없게).
+ */
+export function isAutoSellSummon(ev: Readonly<Record<string, string | number | boolean | undefined>>, player: number): boolean {
+  return ev.player === player && ev.debug !== true && ev.gacha === undefined;
 }
 
 export type SellCheck = { ok: true; tower: Tower; price: number } | { ok: false; reason: SellFail };
@@ -38,7 +63,7 @@ export function sellCheck(ctx: MatchContext, world: World, player: number, x: nu
   const tower = topTowerAt(world, x, y);
   if (!tower) return { ok: false, reason: 'noTower' };
   if (tower.owner !== player) return { ok: false, reason: 'notOwner' };
-  return { ok: true, tower, price: sellPrice(ctx.rules, tower.tower) };
+  return { ok: true, tower, price: sellPriceFor(ctx, tower.tower, tower.owner) };
 }
 
 /** 자동 판매 기준 등급 (이 등급 이하를 판다). */

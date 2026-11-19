@@ -15,7 +15,7 @@ export function withCommas(n: number): string {
   return sign + out;
 }
 
-/** 돈 부족 (소환): "100원이 필요해요" — 비용은 데이터(game.json summon.cost)에서 */
+/** 돈 부족 (소환): "22원이 필요해요" — 비용은 지금 소환 비용(Summon.summonCost, game.json summon)에서 */
 export function needGoldForSummon(cost: number): string {
   return `${withCommas(cost)}원이 필요해요`;
 }

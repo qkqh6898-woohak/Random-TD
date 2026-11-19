@@ -411,14 +411,14 @@ test('강화·미션 (일반 시작): 준비 단계에서 열기 · 시트는 �
   const cell = await inScene(page, (s) => s.match.map.buildable[5]!, null);
   await tapTile(page, cell[0], cell[1]);
   await expect.poll(async () => (await myTowers(page)).length).toBe(1);
-  // 돈 부족: 850원 → 100+150+200+250 = 700 → 150원, 다음 300원은 차감 없음
+  // 돈 부족: 928원(1,000 − 강화 50 − 소환 22, V2.0 PR-A) → 100+150+200+250 = 700 → 228원, 다음 300원은 차감 없음
   await page.getByTestId('menu-upgrade').click();
   for (let i = 0; i < 4; i++) {
     const before = await inScene(page, (s) => s.match.state.gold, null);
     await page.getByTestId('upgrade-buy-normal').click();
     await expect.poll(() => inScene(page, (s) => s.match.state.gold, null)).toBeLessThan(before);
   }
-  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(150);
+  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(228);
   // 알림은 1.6초 뒤 사라진다 → 생길 때 글자를 기록 (바쁜 컴퓨터에서 확인 전에 사라지지 않게)
   await page.evaluate(() => {
     const w = window as unknown as { __toasts: string[] };
@@ -429,7 +429,7 @@ test('강화·미션 (일반 시작): 준비 단계에서 열기 · 시트는 �
   });
   await page.getByTestId('upgrade-buy-normal').click();
   await page.waitForTimeout(400);
-  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(150);
+  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(228);
   expect(await inScene(page, (s) => s.match.state.upgrades[0]![0], null)).toBe(5);
   await expect.poll(() => page.evaluate(() => (window as unknown as { __toasts: string[] }).__toasts.some((t) => t.includes('원이 더 필요해요')))).toBe(true);
   expect(errors).toEqual([]);
