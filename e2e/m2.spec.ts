@@ -36,7 +36,7 @@ type SceneLike = {
     mobCount(): number;
     map: { buildable: [number, number][] };
     rules: { towerOrder: string[] };
-    world: { enqueue(c: unknown): { ok: boolean } };
+    world: { enqueue(c: unknown): { ok: boolean }; setCommandFilter(f: null): void };
   };
   renderedTowerCount: number;
   renderedProjectileCount: number;
@@ -341,6 +341,8 @@ test('검토 반영: 느린 프레임(한 번에 5틱)에도 소환 연출과 "1
   const r = await page.evaluate(() => {
     const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
     const before = { fx: s.summonEffects, tick: s.match.tick };
+    // 예전 칸 지정 summon(리플레이용)은 일반 판에서 거절된다 (V2 L2) — 이 시험(칸·돈을 정확히 맞춤)에서만 거절 필터를 끈다
+    s.match.world.setCommandFilter(null);
     s.match.world.enqueue({ type: 'summon', x: 1, y: 2 });
     s.update(s.time.now, 300);
     return { fx: s.summonEffects - before.fx, ticks: s.match.tick - before.tick, towers: s.match.towers().length };

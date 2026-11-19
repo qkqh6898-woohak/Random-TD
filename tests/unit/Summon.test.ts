@@ -170,7 +170,7 @@ describe('summon 명령', () => {
 
   it('플레이어별 소환 난수: P0이 몇 번 소환해도 P1의 결과 수열은 같다', () => {
     const run = (p0Summons: number): string[] => {
-      const m = createMatch(data, { seed: 99, mode: 'infinite', players: 2 });
+      const m = createMatch(data, { seed: 99, mode: 'infinite', players: 2, legacyCommands: true });
       m.state.gold = 100_000;
       const tiles = m.map.buildable;
       let k = 0;

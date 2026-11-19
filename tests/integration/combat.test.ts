@@ -104,7 +104,7 @@ describe('결정성', () => {
 
   it('실행된 명령 기록을 새 판에 그대로 넣으면 끝 해시가 같다 (리플레이 재료)', () => {
     const a = trace(31337);
-    const m = createMatch(arenaData, { seed: 31337, mode: 'infinite' }); // trace()와 같은 시험장 맵
+    const m = createMatch(arenaData, { seed: 31337, mode: 'infinite', legacyCommands: true }); // trace()와 같은 시험장 맵
     for (const c of a.commands) expect(m.world.enqueue(c).ok).toBe(true);
     m.stepN(6000);
     expect(m.hash()).toBe(a.final);

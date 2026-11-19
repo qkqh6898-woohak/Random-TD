@@ -183,7 +183,7 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
 ];
 
 function build(spec: (typeof SPECS)[number]): ReplayFile {
-  const m = createMatch(data, spec.match);
+  const m = createMatch(data, { ...spec.match, legacyCommands: true }); // 봇이 예전 명령을 쓴다 (V2 L2)
   runBot(m, spec.bot);
   return recordReplay(data, m, { name: spec.name, note: spec.note });
 }
@@ -312,7 +312,7 @@ describe('기록 → 재생', () => {
   });
 
   it('명령 하나를 바꾸면 그 뒤 첫 주기 해시에서 어긋남을 찾는다', () => {
-    const m = createMatch(data, { seed: 5, mode: 'infinite' });
+    const m = createMatch(data, { seed: 5, mode: 'infinite', legacyCommands: true });
     runBot(m, { endTick: 3000 });
     const file = recordReplay(data, m, { name: 'tamper', checkpointTicks: 100 });
     const i = file.commands.findIndex((c) => c.type === 'summon' && Number(c.tick) > 100);
@@ -325,7 +325,7 @@ describe('기록 → 재생', () => {
   });
 
   it('잘못된 파일은 재생 전에 거절 (버전·명령·순서·끝 틱)', () => {
-    const m = createMatch(data, { seed: 5, mode: 'infinite' });
+    const m = createMatch(data, { seed: 5, mode: 'infinite', legacyCommands: true });
     runBot(m, { endTick: 400 });
     const file = recordReplay(data, m, { name: 'v' });
     expect(validateReplay(file)).toBeNull();
