@@ -713,14 +713,16 @@ test('기본 5종: 이름표 없이 나란히 흑백 캡처해도 서로 다르�
   const { ux, uy } = pair!;
   await place(page, [[ux, uy + 1, 'stonegolem']]);
   const golem = (await myTowers(page)).find((t) => t.tx === ux && t.ty === uy + 1)!;
-  await expect.poll(() => inScene(page, (s, id) => s.towerLayer.artScaleOf(id), golem.id)).toBeGreaterThan(1); // v0.1.17: 노말 골렘 ≈1.04 (등급 배율 × 1.4, 이웃과 무관)
+  // V2.0 PR-A: 혼자 칸 너비 60~80% — 노말 골렘(looks ≈0.9) ≈0.71배, 머리 끝이 제 칸 위 경계 언저리 (예전 ≈1.04배는 위 칸 아래 1/3까지 올라왔다)
+  await expect.poll(() => inScene(page, (s, id) => s.towerLayer.artScaleOf(id), golem.id)).toBeGreaterThan(0.65);
+  expect(await inScene(page, (s, id) => s.towerLayer.artScaleOf(id), golem.id)).toBeLessThan(0.8);
   const n0 = (await myTowers(page)).length;
-  // 위 칸이 빈 배치 칸일 때: 골렘 머리 중 위 칸 아래쪽 1/3(크기 1 높이)을 누르면 골렘 (위 칸에 소환되지 않음)
+  // 골렘 머리(제 칸 위쪽)를 누르면 골렘 (위 칸에 소환되지 않음)
   await page.waitForTimeout(400);
-  await tapTile(page, ux, uy, 0.35);
+  await tapTile(page, ux, uy + 1, -0.4);
   await expect.poll(() => inScene(page, (s) => s.selectedTowerId, null)).toBe(golem.id);
   expect((await myTowers(page)).length).toBe(n0);
-  await tapTile(page, ux, uy, 0.35); // 다시 눌러 패널 닫기
+  await tapTile(page, ux, uy + 1, -0.4); // 다시 눌러 패널 닫기
   await expect.poll(() => inScene(page, (s) => s.selectedTowerId, null)).toBeNull();
   // F10-4 검토: 빈 위 칸의 가운데를 누르면 (골렘 머리가 그려져 있어도) 그 칸에 소환된다 — 칸 테두리가 숨어 있어 가운데가 소환 자리
   // G-1 칸 무더기: 노말 5종이 이미 판 위에 있어 새 타워는 같은 캐릭터 칸에 쌓일 수 있다 (사용자 결정) → '하나 늘었고 위 칸 또는 같은 캐릭터 칸'

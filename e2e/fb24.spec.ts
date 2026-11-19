@@ -31,7 +31,7 @@ for (const width of [412, 320]) {
     await expect(dlg).toBeVisible();
     const grades = dlg.locator('[data-testid="grade-guide-grades"] li');
     await expect(grades).toHaveCount(7);
-    expect(await grades.evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.grade))).toEqual(['normal', 'rare', 'unique', 'hero', 'legend', 'hidden', 'god']);
+    expect(await grades.evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.grade))).toEqual(['normal', 'rare', 'unique', 'hero', 'legend', 'god', 'hidden']);
     await expect(grades.nth(4)).toContainText('★★★★★');
     await expect(grades.nth(4)).toContainText('레전드');
     await expect(dlg.getByTestId('grade-guide-rules')).toContainText('3개 → 다음 등급');
