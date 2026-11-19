@@ -357,3 +357,9 @@ export function abandonedRunToast(info: { run: { stage: number }; credited: bool
   if (info?.credited) return `게임 규칙이 바뀌어 진행 중이던 판(${info.run.stage}단계)은 여기서 끝났어요. 그 판의 보상은 받았어요.`;
   return '업데이트로 진행 중이던 판은 이어 할 수 없어요. 계정·설정·전투 기록은 그대로예요.';
 }
+
+/**
+ * 업데이트 창의 저장 안내 (V2 M3). 예전 '저장한 판과 기록은 그대로예요'는 진행 중 판에 대해 틀렸다.
+ * 지금 규칙(V2 M2): 앱 버전만 바뀌면 이어 하고, 게임 규칙(SIM_VERSION)·데이터가 바뀐 업데이트면 그 판은 정산(보상 지급) 뒤 끝난다.
+ */
+export const UPDATE_SAVE_NOTE = '계정·기록은 그대로예요. 진행 중인 판은 이어 할 수 있고, 게임 규칙이 바뀐 업데이트면 그때까지의 보상을 받고 끝나요.';

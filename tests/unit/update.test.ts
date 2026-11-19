@@ -2,7 +2,10 @@
  * U-1 앱 안 업데이트 — 웹 쪽 규칙 (src/update): 자바 사건 읽기, 상태 기계(idle → checking → available → downloading → installing / error),
  * 한 실행에 한 번 확인, 다리가 없으면 아무것도 안 함, 다리 호출 실패는 오류 상태로(게임은 그대로).
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { UPDATE_SAVE_NOTE } from '../../src/ui/messages';
 import { UpdateService, findBridge, type NativeUpdateBridge, type UpdateHost } from '../../src/update/UpdateService';
 import {
   cleanNotes,
@@ -251,5 +254,14 @@ describe('화면 글', () => {
     expect(errorMessage('network')).toContain('인터넷');
     expect(errorMessage('aborted')).toBe('업데이트를 취소했어요');
     expect(errorMessage('digest')).toContain('지웠어요');
+  });
+
+  it('V2 M3: 업데이트 창 저장 안내는 진행 중 판이 끝날 수 있음을 말한다 (예전 \'저장한 판과 기록은 그대로\'는 거짓)', () => {
+    expect(UPDATE_SAVE_NOTE).toContain('계정·기록은 그대로');
+    expect(UPDATE_SAVE_NOTE).toContain('게임 규칙이 바뀐 업데이트면');
+    expect(UPDATE_SAVE_NOTE).toContain('보상');
+    const src = readFileSync(join(__dirname, '..', '..', 'src', 'ui', 'screens', 'UpdateDialog.ts'), 'utf8');
+    expect(src).not.toContain('저장한 판과 기록은 그대로');
+    expect(src.match(/UPDATE_SAVE_NOTE/g)?.length).toBe(3); // import 1 + 내려받기 전·설치 확인 2
   });
 });

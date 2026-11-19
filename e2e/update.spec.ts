@@ -77,7 +77,7 @@ test.describe('U-1 앱 안 업데이트', () => {
     await expect(notes).toContainText('• U-1 자동 릴리스·앱 안 업데이트');
     await expect(notes).toContainText('바뀐 점');
     await expect(notes).not.toContainText('Assets의 APK');
-    await expect(page.getByTestId('update-status')).toHaveText('내려받기 14.0MB · 저장한 판과 기록은 그대로예요');
+    await expect(page.getByTestId('update-status')).toHaveText('내려받기 14.0MB · 계정·기록은 그대로예요. 진행 중인 판은 이어 할 수 있고, 게임 규칙이 바뀐 업데이트면 그때까지의 보상을 받고 끝나요.');
     await expect(page.getByTestId('update-progress')).toBeHidden();
     await expect(page.getByTestId('update-now')).toBeVisible();
     // 창이 화면 안에 들어오고 버튼이 손가락 크기

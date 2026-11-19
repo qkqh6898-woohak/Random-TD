@@ -10,6 +10,7 @@
  * 타이틀 창(.title-dialog)과 같은 모양. 뒤로 가기는 nativeBack이 열린 <dialog>를 닫는다 → close 사건 → 나중에/취소.
  */
 import { h } from '../dom';
+import { UPDATE_SAVE_NOTE } from '../messages';
 import type { UpdateService } from '../../update/UpdateService';
 import { cleanNotes, errorMessage, formatMb, progressPercent, type UpdateState } from '../../update/updateModel';
 
@@ -71,7 +72,7 @@ export function mountUpdateDialog(service: UpdateService, host: UpdateDialogHost
     progress.setAttribute('aria-valuenow', String(pct));
     switch (s.kind) {
       case 'available':
-        status.textContent = `내려받기 ${formatMb(offer.size)} · 저장한 판과 기록은 그대로예요`;
+        status.textContent = `내려받기 ${formatMb(offer.size)} · ${UPDATE_SAVE_NOTE}`;
         setActions(
           'available',
           button('나중에', 'update-later', () => service.later()),
@@ -96,7 +97,7 @@ export function mountUpdateDialog(service: UpdateService, host: UpdateDialogHost
         break;
       case 'installing':
         status.textContent = s.confirm
-          ? '설치 화면에서 [업데이트]를 눌러 주세요. 저장한 판과 기록은 그대로예요.'
+          ? `설치 화면에서 [업데이트]를 눌러 주세요. ${UPDATE_SAVE_NOTE}`
           : '설치 화면을 여는 중이에요…';
         setActions('installing', button('닫기', 'update-close', () => service.later()));
         break;
