@@ -349,7 +349,9 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
           'div',
           { class: `wave-node is-${n.state}${passed ? ' is-passed' : ''}`, attrs: { role: 'listitem', 'data-wave': String(n.wave) } },
           h('span', { class: 'wave-num', text: String(n.wave) }),
-          h('span', { class: 'wave-reward', text: n.reward }),
+          // 보상 글자는 칸이 좁아(🔥가 더해진 3~4가지 보상은 어느 폭에서나) 두 줄이 된다 — 항목('💰 2,000')마다 끊기지 않는 묶음이라
+          // '🃏 / 12'처럼 아이콘과 숫자가 갈리지 않고 항목 사이에서만 줄이 바뀐다 (글자 내용은 그대로, 칸 높이 44px 안)
+          h('span', { class: 'wave-reward' }, ...n.reward.split(' · ').flatMap((part, i) => [...(i > 0 ? [' · '] : []), h('span', { class: 'wave-chunk', text: part })])),
           action,
         ),
       );

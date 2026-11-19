@@ -421,6 +421,10 @@
   min-width: 0;
 }
 
+.wave-chunk {
+  white-space: nowrap;
+}
+
 .wave-claim {
   min-height: max(9cqw, 44px);
   padding: 1cqw 2.6cqw;

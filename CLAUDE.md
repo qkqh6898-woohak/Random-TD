@@ -109,7 +109,8 @@ android/               자바 WebView 앱 + 앱 안 업데이트 (UpdateLogic·U
 - `main`에 푸시하면 `.github/workflows/android.yml`이 자동으로: 버전 정하기(`tools/release-version.mjs` — package.json 버전이 가장 높은 `android-v*` 태그보다 크면 그대로, 아니면 가장 높은 태그의 patch + 1. versionCode = major·1e6 + minor·1e3 + patch, Manifest versionCode보다 커야 함) → 테스트·검사·웹 빌드 → 자바 단위 검사(`android/check-java.sh`) → 서명 전 APK → **서명**(Environment `android-release`, main만) → 릴리스 `android-v<버전>`(APK + `SHA256SUMS`, 노트 = 이전 태그 이후 커밋 제목).
 - **APK를 만들지 않는 푸시**: `docs/**`, `**/*.md`, `.github/**`만 바뀐 푸시 (paths-ignore).
 - 서명 키는 GitHub Secret에만 있다. 키 저장소·`*.jks`·`*.p12`·`android/.signing/`·`tmp/`·`release/*.html`은 커밋하지 않는다. 서명 인증서 SHA-256은 `04:22:43:4C:…:D0:2A` (바뀌면 기존 앱 위에 업데이트가 안 된다).
-- 저장 형식·앱 버전·데이터가 바뀌면 진행 중이던 판은 이어 할 수 없다(`MatchSaves.updateMismatch`) — 계정·설정·기록은 유지.
+- **진행 중 판과 업데이트** (V2 검토 M2): 진행 중 판 저장의 지문 = 저장 형식(`MATCH_SAVE_FORMAT`) + **`SIM_VERSION`**(`src/sim/version.ts`) + 데이터 지문(`dataFingerprint`). 앱 버전은 적어만 둔다 → **화면·문구만 바뀐 릴리스는 진행 중 판을 그대로 이어 한다.** 형식·SIM_VERSION·데이터 지문 중 하나라도 다르면(또는 되살리기가 실패하면) 그 판은 **정산(보상 지급, runId로 한 번만) 뒤** 버린다(`MatchSaves.updateMismatch` → `settleAbandonedRun`) — 계정·설정·기록은 유지.
+- **`SIM_VERSION`을 +1 하는 때** (하나라도 해당): ① `src/sim/` 코드가 같은 상태·같은 명령에서 다른 결과를 냄(리플레이 해시가 바뀌어 `npm run replays`로 다시 만든 커밋은 언제나) ② 판 상태(`MatchState`)·엔티티 모양이 바뀜(필드 추가·삭제·뜻 변경) ③ 명령 모양·처리 순서가 바뀜. **올리지 않는 때**: `src/view`·`src/ui`·`src/meta`·소리·그림·문서만 바뀜, JSON 수치만 바뀜(데이터 지문이 알아서 다름). **헷갈리면 올린다** (손해는 '이어 하기' 한 번뿐).
 
 ## 7. 피드백 에이전트 (Claude 관리형 에이전트)
 
