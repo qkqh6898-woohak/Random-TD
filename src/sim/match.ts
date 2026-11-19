@@ -160,6 +160,16 @@ export class Match {
     return this.ctx.state.phase === 'defeat';
   }
 
+  /** 캠페인 클리어 (V2 L5: 마지막 단계를 끝까지 버팀) */
+  get victory(): boolean {
+    return this.ctx.state.phase === 'victory';
+  }
+
+  /** 판이 끝났다 (패배 또는 클리어) */
+  get ended(): boolean {
+    return this.ctx.state.phase !== 'playing';
+  }
+
   hash(): number {
     return this.world.hash();
   }
