@@ -143,8 +143,9 @@ for (const [w, h] of [
         return null;
       });
       const scales = await sim(page, (s) => s.match.towers().map((t) => s.towerLayer.artScaleOf(t.id) ?? 0));
-      // v0.1.17: 크기는 이웃과 무관하게 등급 배율로만 (높은 등급 ≈1.4~1.75) — 큰 캐릭터 머리는 여전히 위 칸으로 올라간다
-      expect(Math.max(...scales), '큰 캐릭터는 1.4배 이상').toBeGreaterThanOrEqual(1.4);
+      // V2.0 PR-A: 크기는 이웃과 무관하게 등급 배율로만 — 혼자 칸 너비 60~80% (돌 골렘·용 소환사 ≈0.71~0.78배). 머리 끝은 위 칸 경계 언저리
+      expect(Math.max(...scales), '큰 캐릭터도 칸 안 크기 (0.7~0.9배)').toBeGreaterThanOrEqual(0.7);
+      expect(Math.max(...scales)).toBeLessThan(0.9);
       const empty = cells.filter(([x, y]) => (x + y) % 2 !== 0);
       // 바로 아래에 큰 타워가 있는 빈 칸·0번 줄 빈 칸이 있어야 의미가 있다
       const has = (x: number, y: number) => filled.some(([fx, fy]) => fx === x && fy === y);
@@ -225,8 +226,8 @@ for (const [w, h] of [
         if (w === 412 && i === Math.floor(picks.length / 2)) await shot(page, 'B1-info-panel-big');
         await page.locator('[data-action="panel-close"]').click();
         await expect(page.getByTestId('tower-panel')).toHaveCount(0);
-        // 커진 머리 (위 칸까지 올라온 부분): 위 칸이 길·장식이면 0.8칸 위, 위 칸이 빈 소환 칸이면 크기 1 머리 높이(0.62칸 위)
-        const headDy = c.openAbove ? -0.8 : -0.62;
+        // 머리 끝 바로 아래 (V2.0 PR-A: 그림이 칸의 60~80%라 머리 끝은 칸 위 경계 언저리 — 실제 크기 배수로 계산해 누른다)
+        const headDy = 0.3 - HEAD_ABOVE_FOOT * scale + 0.06;
         if (c.openAbove) headTaps++;
         await tap(page, c.x, c.y, 0.15, headDy);
         await expect.poll(() => sim(page, (s) => s.selectedTowerId), { message: `${c.y}줄 머리 (${headDy})` }).toBe(t.id);
