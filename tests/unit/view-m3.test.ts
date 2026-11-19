@@ -271,13 +271,13 @@ describe('타워 정보 패널 (M3-11, UI.md 4.4)', () => {
     expect(span.bottom).toBeCloseTo(0.475, 2);
   });
 
-  it('전투 확대는 등급 배율로 정하고(이웃과 무관, v0.1.17), HUD에 맞춰서만 줄어든다', () => {
-    expect(battleFigureScale(1.25, false, 5)).toBeCloseTo(1.575, 6);
-    expect(battleFigureScale(1.25, true, 5)).toBeCloseTo(1.575, 6);
-    const headroom = 1.5;
-    const scale = battleFigureScale(1, false, headroom);
-    expect(scale).toBeGreaterThan(1);
-    expect(FOOT_OFFSET_TILES - towerFigureSpanTiles(scale).top).toBeCloseTo(headroom);
+  it('전투 확대는 등급 배율로 정하고(이웃과 무관, v0.1.17 · V2.0 PR-A 칸의 60~80%), HUD 앞에서도 그대로', () => {
+    // look 1.25 → 너비 0.6 + (0.55/0.8) × 0.2 = 0.7375칸 → 그림 배율 ÷ 0.92
+    expect(battleFigureScale(1.25, false, 5)).toBeCloseTo(0.7375 / 0.92, 6);
+    expect(battleFigureScale(1.25, true, 5)).toBeCloseTo(0.7375 / 0.92, 6);
+    const scale = battleFigureScale(1, false, 1.5);
+    expect(scale).toBeLessThan(1);
+    expect(FOOT_OFFSET_TILES - towerFigureSpanTiles(scale).top).toBeLessThan(1.5);
   });
 });
 
