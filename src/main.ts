@@ -34,6 +34,8 @@ import { applyTheme } from './ui/theme';
 import { fitStageToWindow, watchViewport } from './ui/stage';
 import { readUrlOptions, type GameContext } from './view/context';
 import { createGame, resizeGame } from './view/game';
+import { createLoadingController, type LoadingController } from './ui/loading/LoadingController';
+import { bindLoading } from './ui/loading/bindLoading';
 
 function must<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
@@ -42,6 +44,7 @@ function must<T extends HTMLElement>(id: string): T {
 }
 
 function boot(): void {
+  document.getElementById('rtd-boot-placeholder')?.remove();
   // 한 파일 빌드에서도 내장된 PNG로 앱 대표 얼굴을 표시한다.
   document.querySelector<HTMLLinkElement>('link[rel="icon"]')?.setAttribute('href', assetUrl('assets/ui/app-192.png'));
   const touchIcon = document.createElement('link');
@@ -51,8 +54,10 @@ function boot(): void {
   applyTheme();
   const ui = new UiRoot(must('ui-root'));
   let game: Phaser.Game | null = null;
+  let loading: LoadingController | null = null;
 
   const showFatal = (e: unknown, phase: FatalPhase): void => {
+    loading?.destroy();
     console.error(e);
     // 같은 예외가 매 프레임 반복되지 않게 게임 루프를 멈춘다
     game?.loop.sleep();
@@ -67,6 +72,13 @@ function boot(): void {
     return;
   }
 
+  // PR-C preview is a development-only page, never a game menu entry.
+  const loadingPreview = new URLSearchParams(location.search).get('loading-preview');
+  if (import.meta.env.DEV && (loadingPreview === 'startup' || loadingPreview === 'transition')) {
+    import('./ui/loading/preview').then(({ mountLoadingPreview }) => mountLoadingPreview(document.body, must('app'), loadingPreview)).catch((e: unknown) => showFatal(e, 'boot'));
+    return;
+  }
+
   if (new URLSearchParams(location.search).get('gallery') === '1') {
     // 캐릭터 갤러리 (?gallery=1): 게임(Phaser)을 만들지 않고 DOM 갤러리만 띄운다 — 기존 게임 흐름과 무관
     startGallery().catch((e: unknown) => showFatal(e, 'boot'));
@@ -74,6 +86,7 @@ function boot(): void {
   }
 
   try {
+    loading = createLoadingController(document.body, must('app'), `v${__APP_VERSION__}`);
     const data = loadGameData();
     // 캐릭터 외형 데이터도 시작할 때 검사한다 → 틀리면 첫 그림(타이틀 장면) 안 'run' 오류가 아니라 'boot' 오류 (DataError: 파일 + 필드 경로)
     allLooks();
@@ -126,6 +139,9 @@ function boot(): void {
     const fit = fitStageToWindow(window, stage);
     const g = createGame(must('game'), ctx, fit.gameH);
     game = g;
+    bindLoading(g.events, loading);
+    // Phaser may finish synchronously when every asset is already embedded/cached.
+    if (ui.has('screen')) loading.completeStartup();
     watchViewport(window, () => resizeGame(g, fitStageToWindow(window, stage)));
     if (import.meta.env.DEV || url.debug) {
       // 개발 서버·개발자 모드 확인용 (E2E에서 장면 상태를 볼 때도 사용)

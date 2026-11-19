@@ -1,0 +1,21 @@
+{
+  "source_base": "68052a7e429d139eaa1d1ca2560ddbcb83981da5",
+  "parent_branch": "design/v2-pr-b",
+  "parent_commit": "3eb907ae668d59f3727a8ea59bed799f13e773fe",
+  "artwork": [
+    {
+      "file": "public/assets/ui/v2/loading/pattern.svg",
+      "sha256": "11533b8e04f5fb0c4f6f2d54ef5211323d9f4cfd49c7431a1ba863c92f4223ae",
+      "authorship": "Original vector pattern drawn for PR-C; generic dice/star/pickaxe/coin; 12% opacity."
+    }
+  ],
+  "existing_art_reused": [
+    "public/assets/characters/miner.webp",
+    "public/assets/ui/v2/heroes.svg"
+  ],
+  "sunburst": "CSS hard-stop bands in yellow/cream; no bitmap or external dependency",
+  "logo": "Original HTML text logo of this repository, using the bundled Jua font; no reference logo copied",
+  "font": "Reuse PR-B local Jua WOFF and its OFL license; no new font assets",
+  "hangul_glyphs_checked": 55,
+  "missing_glyphs": []
+}
