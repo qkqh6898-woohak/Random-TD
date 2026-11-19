@@ -29,13 +29,13 @@ test('피드백 #62: 새 게임을 시작하면 자동 판매·필살기 자동�
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
   await expect.poll(() => saved(page)).toBe(true);
 
-  // 판 안에서 세 스위치를 켜고, 눌러서 바로 승급은 끈다
+  // 판 안에서 세 스위치를 켜고, 눌러서 바로 승급도 켠다 (v0.1.16부터 기본 꺼짐 — 조작 취향은 판을 넘어 남는지 본다)
   await page.locator('[data-action="pause"]').click();
   await expectSwitches(page, false);
   for (const id of SWITCHES) await page.getByTestId(id).click();
   await page.getByTestId('pause-tap-merge').click();
   await expectSwitches(page, true);
-  await expect(page.getByTestId('pause-tap-merge')).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByTestId('pause-tap-merge')).toHaveAttribute('aria-checked', 'true');
 
   // 로비로 → [이어 하기]: 같은 판이라 켜진 그대로
   await page.locator('[data-action="exit"]').click();
@@ -45,14 +45,14 @@ test('피드백 #62: 새 게임을 시작하면 자동 판매·필살기 자동�
   await page.locator('[data-action="pause"]').click();
   await expectSwitches(page, true);
 
-  // 로비로 → [새 게임]: 세 스위치는 꺼짐, 눌러서 바로 승급은 끈 그대로
+  // 로비로 → [새 게임]: 세 스위치는 꺼짐, 눌러서 바로 승급은 켠 그대로
   await page.locator('[data-action="exit"]').click();
   await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
   await page.locator('[data-action="pause"]').click();
   await expectSwitches(page, false);
-  await expect(page.getByTestId('pause-tap-merge')).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByTestId('pause-tap-merge')).toHaveAttribute('aria-checked', 'true');
   const st = await page.evaluate(() => JSON.parse(localStorage.getItem('rtd.settings') ?? '{}'));
-  expect(st).toMatchObject({ autoSellNormal: false, autoSellRare: false, ultAuto: false, tapMerge: false });
+  expect(st).toMatchObject({ autoSellNormal: false, autoSellRare: false, ultAuto: false, tapMerge: true });
   expect(errors).toEqual([]);
 });
