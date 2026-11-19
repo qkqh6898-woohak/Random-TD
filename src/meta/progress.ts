@@ -188,6 +188,19 @@ export function progressNeedsBackup(raw: string | null): boolean {
   }
 }
 
+/** 이 앱보다 새 형식의 계정 저장인가 (v > PROGRESS_VERSION) — ProgressStore가 읽기 전용으로 연다 (검토 M4) */
+export function progressIsNewer(raw: string | null): boolean {
+  if (raw === null) return false;
+  try {
+    const o: unknown = JSON.parse(raw);
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return false;
+    const v = (o as { v?: unknown }).v;
+    return nonNegInt(v) && v > PROGRESS_VERSION;
+  } catch {
+    return false;
+  }
+}
+
 /** parseProgress가 아는 최상위 필드 (나머지는 그대로 들고 다닌다 — 새 앱이 더한 필드를 옛 앱이 지우지 않게, 검토 M4) */
 const KNOWN_KEYS: ReadonlySet<string> = new Set([
   'v', 'seed', 'rolls', 'level', 'xp', 'gold', 'gems', 'flame', 'heroes', 'bestWave', 'claimedWaves', 'recruit', 'recruitSummons', 'totals', 'daily', 'achievements', 'rewardedRuns',
@@ -719,10 +732,13 @@ export function claimAllQuests(state: ProgressState, pd: ProgressionData, data: 
     if (g) got.push(g);
   };
   // 카드 보상으로 새 영웅이 생기면 '영웅 레벨 합계' 업적이 새로 끝날 수 있어 받을 것이 없을 때까지 돈다 (받을 때마다 하나씩 줄어 끝난다)
+  // 한 바퀴에 아무것도 못 받았으면 멈춘다 (검토 L1 — 셀 수는 있는데 받을 수 없는 퀘스트가 생겨도 끝없이 돌지 않게)
   while (claimableQuests(state, pd, today) > 0) {
+    const before = got.length;
     for (const q of dailyQuests(state, pd, today)) if (q.done && !q.claimed) add(claimQuest(state, pd, data, q.quest.id, today));
     add(claimDailyBonus(state, pd, data, today));
     for (const q of achievementQuests(state, pd)) if (q.done && !q.claimed) add(claimQuest(state, pd, data, q.quest.id, today));
+    if (got.length === before) break;
   }
   return got.length === 0 ? null : mergeGrants(got);
 }

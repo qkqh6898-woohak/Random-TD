@@ -198,4 +198,26 @@ describe('검토 M4: 저장을 잃지 않는다', () => {
     expect(saved.newCurrency).toBe(3);
     expect(st.getItem(`${PROGRESS_KEY}.bak.${NOW().getTime()}`)).not.toBeNull();
   });
+
+  it('V2 통합 (fixes-notes M4 ①②): 새 형식 저장은 읽기 전용 — 정산·레벨업을 해도 기기 저장은 원문 그대로 · 정상 저장은 그대로면 다시 쓰지 않음', () => {
+    const s = { ...(fresh() as unknown as Record<string, unknown>), v: 99, flame: 55, gold: 7, newCurrency: 3 };
+    const raw = JSON.stringify(s);
+    const st = new MemoryStorage();
+    st.setItem(PROGRESS_KEY, raw);
+    const store = new ProgressStore(st, pd, data, { seed: 4, now: NOW });
+    expect(store.readOnly).toBe(true);
+    store.settle({ runId: 'ro-1', seed: 1, mode: 'infinite', stage: 20, bossKills: 1, summons: 3, merges: 1, dev: false });
+    expect(store.state.gold).toBeGreaterThan(7); // 이번 실행 메모리에는 들어가지만
+    expect(st.getItem(PROGRESS_KEY)).toBe(raw); // 기기에는 쓰지 않는다
+    // 정상(지금 형식) 저장: 읽기 전용 아님, 읽은 값이 그대로면 쓰지 않는다
+    const st2 = new MemoryStorage();
+    const ok = new ProgressStore(st2, pd, data, { seed: 4, now: NOW });
+    expect(ok.readOnly).toBe(false);
+    const written = st2.getItem(PROGRESS_KEY)!;
+    let writes = 0;
+    const counting = { getItem: (k: string) => st2.getItem(k), setItem: (k: string, v: string) => { writes++; st2.setItem(k, v); }, removeItem: (k: string) => st2.removeItem(k) };
+    new ProgressStore(counting as never, pd, data, { seed: 4, now: NOW });
+    expect(writes).toBe(0);
+    expect(st2.getItem(PROGRESS_KEY)).toBe(written);
+  });
 });

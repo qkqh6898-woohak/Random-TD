@@ -393,6 +393,19 @@ describe('퀘스트', () => {
     expect(claimAllQuests(all, pd, data, TODAY)).toBeNull();
     expect(all).toEqual(before);
   });
+  it('V2 L1: 셀 수는 있는데 받을 수 없는 퀘스트(일일·업적 id 겹침을 검사 없이 넣음)가 있어도 모두 받기가 끝난다', () => {
+    const bad = structuredClone(pd);
+    const id = bad.quests.daily[0]!.id;
+    bad.quests.achievements[0]!.id = id; // parseProgression이 거절하는 데이터를 강제로
+    const s = fresh();
+    refreshDaily(s, TODAY);
+    s.daily.claimed = [id]; // 일일은 이미 받음 → claimQuest(id)는 일일 쪽만 보고 null
+    for (const k of Object.keys(s.totals) as (keyof typeof s.totals)[]) s.totals[k] = 1_000_000;
+    expect(achievementQuests(s, bad).find((q) => q.quest.id === id)).toMatchObject({ done: true, claimed: false });
+    expect(claimableQuests(s, bad, TODAY)).toBeGreaterThan(0);
+    claimAllQuests(s, bad, data, TODAY); // 예전에는 여기서 끝없이 돌았다
+    expect(s.achievements).not.toContain(id);
+  });
   it('모두 받기: 일일 일부만 끝났으면 보너스는 받지 않는다', () => {
     const s = fresh();
     refreshDaily(s, TODAY);

@@ -9,6 +9,8 @@
  * - 바뀔 때마다 바로 쓴다. 쓰기 실패는 삼킨다 (메모리 사본으로 이어 감 — BrowserStorage).
  * - 검토 M4: 저장 글자를 읽을 수 없거나(망가짐) 이 앱보다 새 형식이면, 덮어쓰기 전에 원본을 `<키>.bak.<시각>`에 백업한다.
  *   모르는 최상위 필드·데이터에 없는 타워의 영웅 기록은 parseProgress가 그대로 들고 다닌다.
+ *   이 앱보다 새 형식(v > PROGRESS_VERSION)이면 **읽기 전용** — 이번 실행의 변화는 메모리에만 두고 기기에 쓰지 않는다
+ *   (새 앱의 뜻으로 적힌 필드를 옛 앱이 다시 쓰지 않게, V2 통합 — fixes-notes M4 ①). 처음 읽은 값이 그대로면 다시 쓰지 않는다(②).
  */
 import type { GameData, TowerData } from '../data/load';
 import { ACCOUNT_KEY } from './account';
@@ -30,6 +32,7 @@ import {
   levelUpHero,
   lockedHiddenIds,
   parseProgress,
+  progressIsNewer,
   progressNeedsBackup,
   refreshDaily,
   serializeProgress,
@@ -85,6 +88,8 @@ export class ProgressStore {
   readonly state: ProgressState;
   /** 처음 만든 계정인가 (저장 키가 없었음) */
   readonly created: boolean;
+  /** 이 앱보다 새 형식의 저장 — 기기에 쓰지 않는다 (검토 M4) */
+  readonly readOnly: boolean;
   private readonly listeners = new Set<() => void>();
   private readonly now: () => Date;
 
@@ -112,9 +117,10 @@ export class ProgressStore {
         // 백업 실패는 게임을 막지 않는다
       }
     }
+    this.readOnly = progressIsNewer(raw);
     this.state = parseProgress(raw, pd, data, seed, opts.dev ? {} : readLegacy(storage));
     refreshDaily(this.state, this.today());
-    this.save();
+    if (serializeProgress(this.state) !== raw) this.save();
   }
 
   today(): string {
@@ -132,6 +138,7 @@ export class ProgressStore {
   }
 
   private save(): void {
+    if (this.readOnly) return;
     try {
       this.storage.setItem(this.key, serializeProgress(this.state));
     } catch {
