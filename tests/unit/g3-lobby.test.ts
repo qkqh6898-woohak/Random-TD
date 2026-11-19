@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { loadGameData } from '../../src/data/load';
 import { loadProgression } from '../../src/meta/progressionData';
 import { newProgress, settleMatch } from '../../src/meta/progress';
-import { fragmentRows, grantLine, heroDetail, heroGrid, heroesReady, settlementView, tabOf, topBar, waveRoad } from '../../src/ui/lobby/lobbyModel';
+import { codexReady, fragmentRows, grantLine, heroDetail, heroGrid, heroesReady, settlementView, tabOf, topBar, waveRoad } from '../../src/ui/lobby/lobbyModel';
 
 const data = loadGameData();
 const pd = loadProgression(data);
@@ -41,6 +41,25 @@ describe('영웅 격자', () => {
     const card = heroGrid(s, pd, data, 'heroes', 'grade').owned.find((c) => c.id === 'miner')!;
     expect(card).toMatchObject({ need: 2, cards: 2, ready: true });
     expect(heroesReady(s, pd, data)).toBe(1);
+  });
+  it('V2 L7: 배지 규칙 하나 — 영웅 점 = 지금 레벨업(카드 + 🔥 불꽃) 가능한 보유 영웅, 도감 점 = 해방 가능한 잠긴 리미티드 (두 번 세지 않음)', () => {
+    const s = fresh();
+    s.heroes.miner!.cards = 2;
+    s.flame = 0; // 카드는 모였지만 불꽃이 없다
+    expect(heroesReady(s, pd, data)).toBe(0);
+    expect(heroGrid(s, pd, data, 'heroes', 'grade').canLevel).toBe(0);
+    s.flame = 1_000;
+    expect(heroesReady(s, pd, data)).toBe(1);
+    // 잠긴 리미티드 하나에 조각이 모임 → 도감 점 1, 영웅 점은 그대로 (리미티드 목록의 ▲는 뜬다)
+    const hidden = data.towers.towers.find((t) => t.grade === 'hidden')!;
+    s.heroes[hidden.id] = { level: 0, cards: pd.hidden.unlockFragments };
+    expect(codexReady(s, pd, data)).toBe(1);
+    expect(fragmentRows(s, pd, data).filter((r) => r.canUnlock).length).toBe(1);
+    expect(heroesReady(s, pd, data)).toBe(1);
+    expect(heroGrid(s, pd, data, 'mythic', 'grade').unowned.find((c) => c.id === hidden.id)!.ready).toBe(true);
+    // 해방한 리미티드는 레벨업 규칙으로 센다
+    s.heroes[hidden.id] = { level: 1, cards: 0 };
+    expect(codexReady(s, pd, data)).toBe(0);
   });
 });
 

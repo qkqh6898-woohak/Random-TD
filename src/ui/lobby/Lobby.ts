@@ -34,6 +34,7 @@ import {
   heroDetail,
   heroGrid,
   heroesReady,
+  codexReady,
   rewardText,
   topBar,
   waveRoad,
@@ -863,7 +864,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       shop: 0,
       heroes: heroesReady(s, pd, data),
       battle: waveRoad(s, pd).ready + claimableQuests(s, pd, progress.today()) + (s.recruit >= pd.recruit.goal ? 1 : 0),
-      codex: fragmentRows(s, pd, data).filter((r) => r.canUnlock).length,
+      codex: codexReady(s, pd, data),
       locked: 0,
     };
     const campaignOpen = pd.modes[0] ? modeUnlocked(s, pd.modes[0]) : false;

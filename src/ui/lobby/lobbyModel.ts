@@ -65,6 +65,19 @@ function deckIds(data: Pick<GameData, 'decks'>): Set<string> {
   return new Set([...b.normal, ...b.rare, ...b.unique, ...b.hero, ...b.legend]);
 }
 
+/**
+ * 배지 규칙 한 곳 (검토 L7): '지금 바로 할 수 있는 일'만 센다.
+ * - 레벨업: 보유 + checkLevelUp 'ok'(카드 + 🔥 불꽃) — 영웅 ▲ · [영웅] 탭 점 · [⬆ 모두 레벨업 N]이 같이 쓴다.
+ * - 해방: 잠긴 리미티드 + checkUnlock 'ok'(조각) — [도감] 탭 점만 센다 (영웅 탭 점과 두 번 세지 않음). 카드의 ▲는 해방에도 뜬다.
+ */
+export function heroLevelUpReady(state: ProgressState, pd: ProgressionData, t: TowerData): boolean {
+  return heroEntry(state, t.id).level >= 1 && checkLevelUp(state, pd, t) === 'ok';
+}
+
+export function heroUnlockReady(state: ProgressState, pd: ProgressionData, t: TowerData): boolean {
+  return checkUnlock(state, pd, t) === 'ok';
+}
+
 export function heroCard(state: ProgressState, pd: ProgressionData, t: TowerData, deck: ReadonlySet<string>): HeroCardModel {
   const e = heroEntry(state, t.id);
   const owned = e.level >= 1;
@@ -82,7 +95,7 @@ export function heroCard(state: ProgressState, pd: ProgressionData, t: TowerData
     cards: e.cards,
     need,
     // V2.0 PR-A: ▲·탭 배지·[모두 레벨업 N]이 같은 규칙 — 레벨업은 checkLevelUp(카드 + 🔥 불꽃) 'ok', 잠긴 리미티드는 조각이 모였을 때
-    ready: locked ? need !== null && e.cards >= need : owned && checkLevelUp(state, pd, t) === 'ok',
+    ready: locked ? heroUnlockReady(state, pd, t) : heroLevelUpReady(state, pd, t),
     locked,
     inDeck: deck.has(t.id),
     max: owned && cost === null,
@@ -92,7 +105,7 @@ export function heroCard(state: ProgressState, pd: ProgressionData, t: TowerData
 export interface HeroGridModel {
   owned: HeroCardModel[];
   unowned: HeroCardModel[];
-  /** 지금 바로 레벨업(카드 + 🔥 불꽃)·해방할 수 있는 영웅 수 (탭 빨간 점, ▲와 같은 규칙) */
+  /** 지금 바로 레벨업(카드 + 🔥 불꽃)·해방할 수 있는 영웅 수 (이 목록의 ▲ 수) */
   ready: number;
   /** 지금 바로(카드 + 🔥 불꽃) 레벨업할 수 있는 보유 영웅 수 — [⬆ 모두 레벨업 N] (= 보유 영웅의 ▲ 수) */
   canLevel: number;
@@ -109,13 +122,18 @@ export function heroGrid(state: ProgressState, pd: ProgressionData, data: Pick<G
   const owned = cards.filter((c) => c.owned).sort(sort === 'level' ? byLevel : sort === 'ready' ? byReady : byGrade);
   const unowned = cards.filter((c) => !c.owned).sort(byGrade);
   const towers = new Map(data.towers.towers.map((t) => [t.id, t]));
-  const canLevel = owned.filter((c) => checkLevelUp(state, pd, towers.get(c.id) as TowerData) === 'ok').length;
+  const canLevel = owned.filter((c) => heroLevelUpReady(state, pd, towers.get(c.id) as TowerData)).length;
   return { owned, unowned, ready: cards.filter((c) => c.ready).length, canLevel };
 }
 
-/** 영웅 + 리미티드 탭 모두에서 카드가 모인 영웅 수 */
+/** [영웅] 탭 점: 영웅 + 리미티드 탭에서 지금 레벨업할 수 있는 보유 영웅 수 (해방은 [도감] 점 — codexReady) */
 export function heroesReady(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers' | 'decks'>): number {
-  return heroGrid(state, pd, data, 'heroes', 'grade').ready + heroGrid(state, pd, data, 'mythic', 'grade').ready;
+  return data.towers.towers.filter((t) => heroLevelUpReady(state, pd, t)).length;
+}
+
+/** [도감] 탭 점: 지금 해방할 수 있는 잠긴 리미티드 수 */
+export function codexReady(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers'>): number {
+  return data.towers.towers.filter((t) => heroUnlockReady(state, pd, t)).length;
 }
 
 export interface HeroDetailModel extends HeroCardModel {
@@ -249,7 +267,7 @@ export function fragmentRows(state: ProgressState, pd: ProgressionData, data: Pi
         have: e.cards,
         need: pd.hidden.unlockFragments,
         unlocked: e.level >= 1,
-        canUnlock: e.level < 1 && e.cards >= pd.hidden.unlockFragments,
+        canUnlock: heroUnlockReady(state, pd, t),
         recipe: (t.recipe ?? []).map((r) => names.get(r) ?? r),
       };
     });
