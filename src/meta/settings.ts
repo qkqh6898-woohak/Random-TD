@@ -8,7 +8,10 @@
  * - revealHidden '히든 미션 조건 보기' (개발자 도구): 미션 시트가 히든 미션 이름·조건을 '???' 대신 보여 준다.
  * - autoSellNormal '노말 자동 판매' · autoSellRare '레어 이하 자동 판매' (피드백 #46, 기본 꺼짐): 방금 소환된 타워가 그 등급 이하면
  *   화면이 바로 sellTower 명령을 보낸다 (둘 다 켜면 레어 이하). 키가 없는 예전 값은 꺼짐.
- * - 피드백 #62: 판 안 전략 스위치(MATCH_SETTING_KEYS = 필살기 자동·노말 자동 판매·레어 이하 자동 판매)는 새 판을 시작하면
+ * - autoMergeNormal '노말' · autoMergeRare '레어 이하' · autoMergeUnique '유니크 이하' 자동 승급 (피드백 #63, 기본 꺼짐, 셋 중 하나만 고름):
+ *   그 등급 이하의 가득 찬 무더기가 생기면 화면이 평소 mergeStack 명령을 보낸다 (sim 규칙 그대로 — 연쇄도 손으로 누른 승급과 같다).
+ *   자동 판매와 겹치는 등급은 판매보다 승급이 먼저 (autoSellMinRank: 그 등급은 팔지 않는다). 키가 없는 v2 값은 꺼짐 (저장 형식 v2 그대로).
+ * - 피드백 #62: 판 안 전략 스위치(MATCH_SETTING_KEYS = 필살기 자동·노말 자동 판매·레어 이하 자동 판매·자동 승급 셋)는 새 판을 시작하면
  *   기본값(꺼짐)으로 돌아간다 (resetMatchSettings, 이어 하기는 그대로). 조작·화면 취향은 판을 넘어 남는다.
  * 망가진 값은 버리고 기본값. 화면 설정이라 sim·리플레이와 무관하다.
  */
@@ -27,9 +30,50 @@ export interface Settings {
   autoSellNormal: boolean;
   /** 피드백 #46 '레어 이하 자동 판매' */
   autoSellRare: boolean;
+  /** 피드백 #63 자동 승급 '노말' · '레어 이하' · '유니크 이하' (화면은 하나만 켠다, 여럿이 켜져 있으면 가장 높은 등급) */
+  autoMergeNormal: boolean;
+  autoMergeRare: boolean;
+  autoMergeUnique: boolean;
 }
 
-export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({ tapMerge: false, effectsOff: false, revealHidden: false, ultAuto: false, autoSellNormal: false, autoSellRare: false });
+export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
+  tapMerge: false,
+  effectsOff: false,
+  revealHidden: false,
+  ultAuto: false,
+  autoSellNormal: false,
+  autoSellRare: false,
+  autoMergeNormal: false,
+  autoMergeRare: false,
+  autoMergeUnique: false,
+});
+
+/** 자동 승급 기준 등급 (이 등급 이하를 승급한다) */
+export type AutoMergeGrade = 'normal' | 'rare' | 'unique';
+
+/** 자동 승급 설정 키 — 낮은 등급부터 (등급 번호 = 자리 + 1, sim rules.gradeRank와 같다: 노말 1 · 레어 2 · 유니크 3) */
+export const AUTO_MERGE_KEYS = ['autoMergeNormal', 'autoMergeRare', 'autoMergeUnique'] as const satisfies readonly (keyof Settings)[];
+const AUTO_MERGE_GRADES: readonly AutoMergeGrade[] = ['normal', 'rare', 'unique'];
+
+/** 자동 승급 기준 등급 번호: 켜진 것 중 가장 높은 등급 (노말 1 · 레어 2 · 유니크 3), 모두 꺼짐이면 0. */
+export function autoMergeRank(s: Readonly<Settings>): number {
+  for (let i = AUTO_MERGE_KEYS.length - 1; i >= 0; i--) if (s[AUTO_MERGE_KEYS[i] as (typeof AUTO_MERGE_KEYS)[number]]) return i + 1;
+  return 0;
+}
+
+/** 일시정지 메뉴에서 자동 승급 하나를 고른 값 (다른 둘은 꺼짐). null = 모두 꺼짐. */
+export function autoMergeChoice(grade: AutoMergeGrade | null): Pick<Settings, (typeof AUTO_MERGE_KEYS)[number]> {
+  const i = grade === null ? -1 : AUTO_MERGE_GRADES.indexOf(grade);
+  return { autoMergeNormal: i === 0, autoMergeRare: i === 1, autoMergeUnique: i === 2 };
+}
+
+/**
+ * 자동 판매가 팔기 시작하는 등급 번호 (피드백 #63 × #46): 자동 승급이 맡는 등급(autoMergeRank 이하)은 팔지 않는다 —
+ * 3개를 모아 승급하려는 등급을 소환하자마자 팔면 승급이 영영 안 되기 때문. 판매 상한(autoSellGrade)은 그대로.
+ */
+export function autoSellMinRank(s: Readonly<Settings>): number {
+  return autoMergeRank(s) + 1;
+}
 
 /** 자동 판매 기준 등급 (이 등급 이하를 판다): 레어 이하가 켜져 있으면 'rare', 노말만이면 'normal', 둘 다 꺼짐이면 null. */
 export function autoSellGrade(s: Readonly<Settings>): 'normal' | 'rare' | null {
@@ -38,7 +82,7 @@ export function autoSellGrade(s: Readonly<Settings>): 'normal' | 'rare' | null {
 }
 
 /** 피드백 #62: 새 판을 시작하면 기본값으로 돌아가는 판 안 스위치 */
-export const MATCH_SETTING_KEYS = ['ultAuto', 'autoSellNormal', 'autoSellRare'] as const satisfies readonly (keyof Settings)[];
+export const MATCH_SETTING_KEYS = ['ultAuto', 'autoSellNormal', 'autoSellRare', ...AUTO_MERGE_KEYS] as const satisfies readonly (keyof Settings)[];
 
 export interface SettingsStore {
   get(): Readonly<Settings>;

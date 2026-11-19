@@ -54,7 +54,7 @@ import { NATIVE_PAUSE_EVENT, setBackHandler } from '../../ui/nativeBack';
 import { isBuildable } from '../../sim/map';
 import type { MatchMode } from '../../sim/state';
 import { NO_MODS, effectiveStats, towerRange } from '../../sim/stats';
-import { fullStacks, mergeableStackGroups, sameKindTowers, stackMergeCheck } from '../../sim/systems/Merge';
+import { autoMergeStacks, fullStacks, mergeableStackGroups, sameKindTowers, stackMergeCheck, type MergeGroup } from '../../sim/systems/Merge';
 import { hasRoom, summonStackCheck } from '../../sim/systems/Board';
 import { isPaused, moveCheck } from '../../sim/systems/Move';
 import { auraCovers, auraRadiusOf, auraSpecOf, computeAuras, towerBonus } from '../../sim/systems/Aura';
@@ -62,7 +62,8 @@ import { towerLevel } from '../../sim/abilities';
 import { METEOR_FX } from '../../sim/abilities/archmage';
 import { rankSummonTiles, summonCheck, summonCost } from '../../sim/systems/Summon';
 import { autoSellTiles, convertTargets, sellCheck, sellPrice } from '../../sim/systems/Sell';
-import { autoSellGrade, resetMatchSettings } from '../../meta/settings';
+import { AUTO_MERGE_KEYS, autoMergeChoice, autoMergeRank, autoSellGrade, autoSellMinRank, resetMatchSettings, type AutoMergeGrade } from '../../meta/settings';
+import { gradeRank } from '../../sim/rules';
 import { effectsOff, onEffectsChange, setEffectsOff } from '../effects';
 import { autoSummonInterval } from '../../ui/hold';
 import { createDevSheet, type DevSheetView } from '../../ui/sheets/DevSheet';
@@ -436,6 +437,8 @@ export class GameScene extends Phaser.Scene {
   private autoSummonTick = -1;
   /** 일꾼 고용 명령을 넣은 틱 (꾹 누르기 중 실행 전 명령을 두 번 넣지 않게, 피드백 #66) */
   private hireQueuedTick = -1;
+  /** 자동 승급(피드백 #63) mergeStack 명령을 넣은 틱 (실행되기 전에는 다음을 넣지 않는다 — 같은 무더기를 두 번 보내 승급 실패 알림이 뜨지 않게) */
+  private autoMergeQueuedTick = -1;
   /** 패널 [↔ 이동] 모드: 옮길 타워 */
   private moveMode: { id: number; tx: number; ty: number } | null = null;
   /** 판매 확인 (히어로 이상: 이 시각까지 한 번 더 누르면 판매) */
@@ -546,6 +549,7 @@ export class GameScene extends Phaser.Scene {
     this.groundPress = null;
     this.autoSummonTick = -1;
     this.hireQueuedTick = -1;
+    this.autoMergeQueuedTick = -1;
     this.moveMode = null;
     this.sellConfirm = null;
     this.convertOpen = false;
@@ -2298,9 +2302,12 @@ export class GameScene extends Phaser.Scene {
       }
     }
     // 피드백 #46 자동 판매: 방금 소환된 기준 등급 이하 타워를 평소 판매 명령으로 (리플레이에 남는다)
+    // 피드백 #63: 자동 승급이 맡는 등급(그 이하)은 팔지 않는다 — 판매보다 승급이 먼저 (autoSellMinRank)
     const sellGrade = autoSellGrade(this.ctx.settings.get());
     if (sellGrade && summonedIds.length > 0 && !this.gameOver) {
-      for (const [x, y] of autoSellTiles(this.match.ctx, this.match.world, LOCAL_PLAYER, summonedIds, sellGrade)) this.match.world.enqueue({ type: 'sellTower', x, y });
+      const minRank = autoSellMinRank(this.ctx.settings.get());
+      const ids = minRank > 1 ? summonedIds.filter((id) => this.towerGradeRank(id) >= minRank) : summonedIds;
+      for (const [x, y] of autoSellTiles(this.match.ctx, this.match.world, LOCAL_PLAYER, ids, sellGrade)) this.match.world.enqueue({ type: 'sellTower', x, y });
     }
     // 치명타를 먼저, 같은 종류는 큰 피해부터 프레임 한도만큼.
     if (hitTexts.length > 0) {
@@ -2341,8 +2348,10 @@ export class GameScene extends Phaser.Scene {
    * 한 프레임에 여러 종류가 한꺼번에 승급 가능해지면 알림 하나로 합친다 (알림이 쌓여 맵 위쪽 줄을 가리지 않게).
    */
   private checkMergeReady(): void {
-    const groups = mergeableStackGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
+    // 피드백 #63: 자동 승급이 맡는 무더기는 곧 승급되므로 [⏫ 모두 승급] 수·'승급 가능!' 알림·첫 승급 안내에서 뺀다 (버튼이 한 프레임씩 깜빡이지 않게)
+    const groups = this.manualMergeGroups();
     this.mergeReadyCount = groups.length;
+    this.sendAutoMerge();
     const now = new Set(groups.map((g) => g.tower));
     const fresh = groups.filter((g) => !this.mergeReadyKinds.has(g.tower));
     this.mergeReadyKinds = now;
@@ -2351,6 +2360,36 @@ export class GameScene extends Phaser.Scene {
     if (this.guide !== null || this.guideWillOpen()) return;
     this.mergeReadyToasts++;
     this.ctx.ui.toast(mergeReadyToast(fresh.map((g) => this.towerNames.get(g.tower) ?? g.tower)));
+  }
+
+  /** 타워 엔티티의 등급 번호 (rules.gradeRank, 없으면 0). */
+  private towerGradeRank(id: number): number {
+    const e = this.match.world.entities.get(id);
+    const g = e && e.kind === 'tower' ? this.match.rules.towers.get(String(e.tower))?.grade : undefined;
+    return g ? gradeRank(g) : 0;
+  }
+
+  /** 손으로 승급할 무더기 묶음: 승급 가능한 묶음 중 자동 승급(피드백 #63)이 맡지 않는 것 (자동 승급이 꺼져 있으면 전부). */
+  private manualMergeGroups(): MergeGroup[] {
+    const groups = mergeableStackGroups(this.match.ctx, this.match.world, LOCAL_PLAYER);
+    const rank = autoMergeRank(this.ctx.settings.get());
+    if (rank <= 0) return groups;
+    return groups.filter((g) => this.towerGradeRank(g.first.id) > rank);
+  }
+
+  /**
+   * 자동 승급 (피드백 #63, 일시정지 메뉴 '자동 승급'): 기준 등급 이하의 가득 찬 무더기(바닥 ID 순 첫째)에 평소 mergeStack 명령 —
+   * sim 규칙·명령 종류는 그대로라 리플레이에 그대로 남고 연쇄도 손으로 누른 승급과 같다. 앞 명령이 실행된 다음 틱에 다음 무더기.
+   * 일시정지·판 끝·타워를 끄는 중·이동 모드에서는 보내지 않는다 (손가락 아래 타워가 사라지지 않게).
+   */
+  private sendAutoMerge(): void {
+    const rank = autoMergeRank(this.ctx.settings.get());
+    if (rank <= 0 || this.paused || this.gameOver || this.press?.dragging || this.moveMode) return;
+    if (this.autoMergeQueuedTick === this.match.tick) return;
+    const st = autoMergeStacks(this.match.ctx, this.match.world, LOCAL_PLAYER, rank)[0];
+    const bottom = st?.[0];
+    if (!bottom) return;
+    if (this.match.world.enqueue({ type: 'mergeStack', x: bottom.tx, y: bottom.ty }).ok) this.autoMergeQueuedTick = this.match.tick;
   }
 
   /** 화면 흔들림을 써도 되는가: 연출 끄기(T-2)가 아니고 일시정지 메뉴 '화면 흔들림'이 켜짐(A-1, 기본 = 동작 줄이기가 아니면 켜짐). */
@@ -2465,6 +2504,11 @@ export class GameScene extends Phaser.Scene {
         onAutoSellNormal: (on) => this.ctx.settings.set('autoSellNormal', on),
         autoSellRare: this.ctx.settings.get().autoSellRare,
         onAutoSellRare: (on) => this.ctx.settings.set('autoSellRare', on),
+        autoMerge: (['normal', 'rare', 'unique'] as const)[autoMergeRank(this.ctx.settings.get()) - 1] ?? null,
+        onAutoMerge: (grade: AutoMergeGrade | null) => {
+          const c = autoMergeChoice(grade);
+          for (const k of AUTO_MERGE_KEYS) this.ctx.settings.set(k, c[k]);
+        },
         // 도움말 다시 보기 (F10): 계정 기록을 지우고 이 판에서도 다시 띄울 수 있게
         onHelpAgain: () => {
           this.ctx.account.resetGuides();
@@ -2654,7 +2698,8 @@ export class GameScene extends Phaser.Scene {
   /** 첫 승급 안내를 지금 띄울 차례인가 (계정에서 아직 안 봤고, 이 판에서 끝내지 않았고, 승급 가능한 묶음이 있음). */
   private guideWillOpen(): boolean {
     if (this.guide || this.guideDone || this.gameOver || this.ctx.account.guideSeen(GUIDE_FIRST_MERGE)) return false;
-    return mergeableStackGroups(this.match.ctx, this.match.world, LOCAL_PLAYER).length > 0;
+    // 피드백 #63: 자동 승급이 맡는 무더기는 곧 승급되므로 안내하지 않는다 (안내는 기록 없이 다음 기회로)
+    return this.manualMergeGroups().length > 0;
   }
 
   /**
@@ -2689,7 +2734,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     if (!this.guideWillOpen()) return;
-    const first = mergeableStackGroups(this.match.ctx, world, LOCAL_PLAYER)[0];
+    const first = this.manualMergeGroups()[0];
     if (!first) return;
     this.guide = { kind: first.tower, anchorId: first.first.id, step: 1 };
     this.guideCard = createGuideCard({

@@ -2,6 +2,7 @@
  * 피드백 #62 '새 게임을 시작했을 때 이전 게임 설정을 초기화하기(노말 자동판매, 레어 판매 등)':
  * 판에서 [노말 자동 판매]·[레어 이하 자동 판매]·[필살기 자동]을 켜고 로비로 → [이어 하기]는 켜진 그대로,
  * [새 게임]으로 시작하면 세 스위치가 모두 꺼져 있다. [눌러서 바로 승급](조작 취향)은 새 판에도 그대로.
+ * 피드백 #63: [자동 승급](유니크 이하)도 같은 규칙 — 이어 하기는 그대로, 새 게임은 꺼짐.
  */
 import { expect, test, type Page } from '@playwright/test';
 import { clickStart } from './title';
@@ -19,6 +20,8 @@ function saved(page: Page): Promise<boolean> {
 
 async function expectSwitches(page: Page, on: boolean): Promise<void> {
   for (const id of SWITCHES) await expect(page.getByTestId(id)).toHaveAttribute('aria-checked', String(on));
+  // 피드백 #63 자동 승급: 켰으면 '유니크 이하'만 눌린 상태, 아니면 셋 다 꺼짐
+  for (const g of ['normal', 'rare', 'unique']) await expect(page.getByTestId(`pause-auto-merge-${g}`)).toHaveAttribute('aria-pressed', String(on && g === 'unique'));
 }
 
 test('피드백 #62: 새 게임을 시작하면 자동 판매·필살기 자동이 꺼지고, 이어 하기는 그대로', async ({ page }) => {
@@ -29,13 +32,15 @@ test('피드백 #62: 새 게임을 시작하면 자동 판매·필살기 자동�
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
   await expect.poll(() => saved(page)).toBe(true);
 
-  // 판 안에서 세 스위치를 켜고, 눌러서 바로 승급은 끈다
+  // 판 안에서 세 스위치를 켜고, 눌러서 바로 승급은 기본값(v0.1.16부터 꺼짐)과 반대로 켠다 — 조작 취향은 새 판에도 남아야 한다
+  // (PR #67은 바로 승급 기본 켜짐이던 main에서 만들어져 '끈다'를 기대했다 → v0.1.16 기본값에 맞춤)
   await page.locator('[data-action="pause"]').click();
   await expectSwitches(page, false);
   for (const id of SWITCHES) await page.getByTestId(id).click();
+  await page.getByTestId('pause-auto-merge-unique').click();
   await page.getByTestId('pause-tap-merge').click();
   await expectSwitches(page, true);
-  await expect(page.getByTestId('pause-tap-merge')).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByTestId('pause-tap-merge')).toHaveAttribute('aria-checked', 'true');
 
   // 로비로 → [이어 하기]: 같은 판이라 켜진 그대로
   await page.locator('[data-action="exit"]').click();
@@ -45,14 +50,14 @@ test('피드백 #62: 새 게임을 시작하면 자동 판매·필살기 자동�
   await page.locator('[data-action="pause"]').click();
   await expectSwitches(page, true);
 
-  // 로비로 → [새 게임]: 세 스위치는 꺼짐, 눌러서 바로 승급은 끈 그대로
+  // 로비로 → [새 게임]: 세 스위치는 꺼짐, 눌러서 바로 승급은 켠 그대로
   await page.locator('[data-action="exit"]').click();
   await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
   await page.locator('[data-action="pause"]').click();
   await expectSwitches(page, false);
-  await expect(page.getByTestId('pause-tap-merge')).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByTestId('pause-tap-merge')).toHaveAttribute('aria-checked', 'true');
   const st = await page.evaluate(() => JSON.parse(localStorage.getItem('rtd.settings') ?? '{}'));
-  expect(st).toMatchObject({ autoSellNormal: false, autoSellRare: false, ultAuto: false, tapMerge: false });
+  expect(st).toMatchObject({ autoSellNormal: false, autoSellRare: false, ultAuto: false, tapMerge: true, autoMergeNormal: false, autoMergeRare: false, autoMergeUnique: false });
   expect(errors).toEqual([]);
 });

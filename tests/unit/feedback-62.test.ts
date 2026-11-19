@@ -31,8 +31,8 @@ describe('resetMatchSettings (새 판 시작)', () => {
     expect(s.get()).toEqual({ ...DEFAULT_SETTINGS, tapMerge: false, effectsOff: true, revealHidden: true });
   });
 
-  it('초기화 대상은 판 안 스위치 세 개, 기본값은 모두 꺼짐', () => {
-    expect([...MATCH_SETTING_KEYS].sort()).toEqual(['autoSellNormal', 'autoSellRare', 'ultAuto']);
+  it('초기화 대상은 판 안 스위치 (피드백 #63 자동 승급 셋 포함), 기본값은 모두 꺼짐', () => {
+    expect([...MATCH_SETTING_KEYS].sort()).toEqual(['autoMergeNormal', 'autoMergeRare', 'autoMergeUnique', 'autoSellNormal', 'autoSellRare', 'ultAuto']);
     for (const k of MATCH_SETTING_KEYS) expect(DEFAULT_SETTINGS[k]).toBe(false);
   });
 

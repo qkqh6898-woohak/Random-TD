@@ -4,6 +4,8 @@
  * T-2: 설정 한 줄 '눌러서 바로 승급' (켜짐: 승급할 수 있는 타워를 누르면 바로 승급 / 꺼짐: 패널을 연다). 저장은 Game 장면이 한다.
  * G-1: 설정 한 줄 '필살기 자동' (켜짐: 필살기가 차면 Game이 바로 ult 명령).
  * 피드백 #46: 설정 두 줄 '노말 자동 판매' · '레어 이하 자동 판매' (켜짐: 방금 소환된 그 등급 이하 타워를 Game이 바로 sellTower).
+ * 피드백 #63: 설정 한 줄 '자동 승급' — [노말] [레어 이하] [유니크 이하] 중 하나 (다시 누르면 꺼짐). 켜면 그 등급 이하의 가득 찬 무더기를
+ *   Game이 바로 mergeStack. 자동 판매와 겹치는 등급은 팔지 않고 승급한다.
  * F10: [❔ 도움말 다시 보기] — 계정에 기록된 '본 도움말'(첫 승급 안내)을 지워, 다음에 승급할 수 있게 되면 다시 안내한다.
  * A-1 (Codex 갈래 M6-10·M6-11에서 옮김): '효과음 크기' 0~100% (5% 단위, 0 = 음소거) + [미리 듣기], '화면 흔들림' 켜짐/꺼짐 — 둘 다 기기에 저장.
  *   열 때 자동 저장했으면 아래 글을 '자동 저장했어요 · 로비에서 이어 할 수 있어요'로.
@@ -15,6 +17,7 @@ import { h } from '../dom';
 import type { UiView } from '../root';
 import { feedbackButton, type FeedbackDialogView } from './FeedbackDialog';
 import { gradeGuideButton, type GradeGuideDialogView } from './GradeGuideDialog';
+import type { AutoMergeGrade } from '../../meta/settings';
 
 export interface PauseMenuOptions {
   onResume: () => void;
@@ -30,6 +33,9 @@ export interface PauseMenuOptions {
   onAutoSellNormal?: (on: boolean) => void;
   autoSellRare?: boolean;
   onAutoSellRare?: (on: boolean) => void;
+  /** 피드백 #63 '자동 승급' 지금 기준 등급 (null = 꺼짐)과 바꿀 때. undefined면 줄도 없다 */
+  autoMerge?: AutoMergeGrade | null;
+  onAutoMerge?: (grade: AutoMergeGrade | null) => void;
   /** [❔ 도움말 다시 보기] (F10). 없으면 버튼도 없다 */
   onHelpAgain?: () => void;
   /** 메뉴를 열며 자동 저장했다 (A-1) */
@@ -72,6 +78,50 @@ function switchRow(name: string, desc: string, value: boolean, testId: string, o
     { class: 'pause-setting' },
     h('div', { class: 'pause-setting-main' }, h('div', { class: 'pause-setting-name', text: name }), h('div', { class: 'pause-setting-desc', text: desc })),
     sw,
+  );
+}
+
+/** 자동 승급 고르기 (피드백 #63): 이름·설명 + [노말] [레어 이하] [유니크 이하] — 하나만 켜지고, 켜진 것을 다시 누르면 꺼짐. */
+export const AUTO_MERGE_OPTIONS: readonly { grade: AutoMergeGrade; label: string }[] = [
+  { grade: 'normal', label: '노말' },
+  { grade: 'rare', label: '레어 이하' },
+  { grade: 'unique', label: '유니크 이하' },
+];
+
+function autoMergeRow(initial: AutoMergeGrade | null, onChange: (grade: AutoMergeGrade | null) => void): HTMLElement {
+  let cur = initial;
+  const chips = AUTO_MERGE_OPTIONS.map((o) =>
+    h('button', {
+      class: 'btn dv-switch pause-switch pause-merge-chip',
+      attrs: { type: 'button', 'aria-pressed': 'false', 'data-grade': o.grade, 'data-testid': `pause-auto-merge-${o.grade}`, 'aria-label': `${o.label} 자동 승급` },
+      text: o.label,
+    }),
+  );
+  const show = (): void => {
+    for (const [i, c] of chips.entries()) {
+      const on = AUTO_MERGE_OPTIONS[i]!.grade === cur;
+      c.setAttribute('aria-pressed', String(on));
+      c.classList.toggle('is-on', on);
+    }
+  };
+  for (const [i, c] of chips.entries()) {
+    c.addEventListener('click', () => {
+      const g = AUTO_MERGE_OPTIONS[i]!.grade;
+      cur = cur === g ? null : g;
+      show();
+      onChange(cur);
+    });
+  }
+  show();
+  return h(
+    'div',
+    { class: 'pause-setting pause-setting-merge', attrs: { role: 'group', 'aria-label': '자동 승급', 'data-testid': 'pause-auto-merge' } },
+    h(
+      'div',
+      { class: 'pause-setting-main' },
+      h('div', { class: 'pause-setting-name' }, '자동 승급 ', h('span', { class: 'pause-setting-desc pause-merge-desc', text: '3개가 모이면 바로 · 자동 판매보다 먼저' })),
+      h('div', { class: 'pause-merge-chips' }, ...chips),
+    ),
   );
 }
 
@@ -134,6 +184,7 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
     opts.autoSellRare !== undefined
       ? switchRow('레어 이하 자동 판매', '소환된 노말·레어를 바로 팔아요', opts.autoSellRare, 'pause-auto-sell-rare', (v) => opts.onAutoSellRare?.(v))
       : null;
+  const mergeRow = opts.autoMerge !== undefined ? autoMergeRow(opts.autoMerge, (g) => opts.onAutoMerge?.(g)) : null;
   const volume = opts.effectVolume !== undefined ? volumeRow(opts, opts.effectVolume) : null;
   const shakeRow =
     opts.screenShake !== undefined ? switchRow('화면 흔들림', '보스·큰 승급 때 화면을 흔들어요', opts.screenShake, 'pause-screen-shake', (v) => opts.onScreenShake?.(v)) : null;
@@ -160,6 +211,7 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
       h('h2', { class: 'pause-title', text: '일시정지', attrs: { id: 'pause-title' } }),
       resume,
       tapRow,
+      mergeRow,
       ultRow,
       sellNormalRow,
       sellRareRow,

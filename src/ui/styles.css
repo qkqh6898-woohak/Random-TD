@@ -792,9 +792,10 @@ body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 3cqw;
+  /* 피드백 #63: '자동 승급' 줄이 늘어 412×915에서도 [로비로]까지 한 화면에 들어가게 줄 사이 3 → 2cqw, 위아래 안쪽 여백 6 → 4cqw */
+  gap: 2cqw;
   min-width: 60cqw;
-  padding: 6cqw 7cqw;
+  padding: 4cqw 7cqw;
   background: var(--panel);
   border: 0.4cqw solid var(--panel-line);
   border-radius: 4cqw;
@@ -2964,6 +2965,30 @@ body {
   font-size: 3.6cqw;
 }
 
+/* 피드백 #63: 설정 줄 위아래 여백 2 → 1.4cqw (412×915에서 메뉴 전체가 한 화면에) */
+.pause-panel > .pause-setting {
+  padding-block: 1.4cqw;
+}
+
+/* 피드백 #63 '자동 승급': 이름 옆 짧은 설명, 아래에 [노말] [레어 이하] [유니크 이하] 한 줄 (하나만 켜짐) */
+.pause-merge-desc {
+  margin-left: 1cqw;
+  font-weight: 400;
+}
+.pause-merge-chips {
+  display: flex;
+  gap: 1.6cqw;
+  margin-top: 1cqw;
+}
+.pause-panel .pause-merge-chip {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: max(9cqw, 40px);
+  padding-inline: 1cqw;
+  font-size: 3.4cqw;
+  white-space: nowrap;
+}
+
 /* 켜고 끄는 버튼 (일시정지 메뉴·개발자 도구) */
 .dv-switch {
   flex-shrink: 0;
@@ -4337,6 +4362,15 @@ body {
   }
   .pause-setting-desc {
     display: none;
+  }
+  .pause-panel > .pause-setting {
+    padding-block: 0.6cqw;
+  }
+  .pause-panel .pause-merge-chip {
+    font-size: 3.6cqw;
+  }
+  .pause-merge-chips {
+    margin-top: 0.4cqw;
   }
   .pause-volume-controls {
     margin-top: 0.4cqw;

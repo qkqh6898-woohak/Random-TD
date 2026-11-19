@@ -28,6 +28,7 @@ import { godChanceFor, placeTower } from './Summon';
 import { joinableStack } from './Board';
 import { ownerBonus } from '../abilities';
 import { chanceBonus } from '../chances';
+import { gradeRank } from '../rules';
 
 /** 승급 실패 이유: 판이 끝남 / 그 칸에 타워가 없음 / 남의 타워 / 승급할 수 없는 등급(레전드·신·히든) / 같은 종류가 모자람 */
 export type MergeFail = 'phase' | 'noTower' | 'notOwner' | 'maxGrade' | 'count';
@@ -333,6 +334,19 @@ export function mergeAllStacks(ctx: MatchContext, world: World, player: number):
   }
   world.emit('mergeAllStacks', { player, steps: out.length });
   return out;
+}
+
+/**
+ * 자동 승급할 무더기 (피드백 #63, 화면 설정 '자동 승급'이 읽는다 — 상태를 바꾸지 않음): 승급할 수 있는 내 가득 찬 무더기 중
+ * 등급 번호(rules.gradeRank: 노말 1 · 레어 2 · 유니크 3 · 히어로 4)가 maxRank 이하인 것, 바닥 ID 순. 판이 끝났으면 빈 목록.
+ * 화면은 첫째 칸에 평소 mergeStack 명령을 보낸다 (리플레이에 그대로 남는다 — 새 명령 종류 없음).
+ */
+export function autoMergeStacks(ctx: MatchContext, world: World, player: number, maxRank: number): Tower[][] {
+  if (ctx.state.phase !== 'playing' || maxRank <= 0) return [];
+  return fullStacks(ctx, world, player).filter((st) => {
+    const g = ctx.rules.towers.get((st[0] as Tower).tower)?.grade;
+    return g !== undefined && gradeRank(g) <= maxRank;
+  });
 }
 
 /**
