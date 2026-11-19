@@ -209,10 +209,12 @@ describe('G-2 캐릭터 겉모습: 등급 받침대·별 배지·종족 문장',
     }
   });
 
-  it('받침대 너비: 2배 그림이면 칸 안에서 커지고(≤ 0.95칸), 붙은 1.4배면 작게', () => {
-    expect(PEDESTAL_WIDTH_TILES * pedestalScaleFor(2)).toBeLessThanOrEqual(0.96);
-    expect(PEDESTAL_WIDTH_TILES * pedestalScaleFor(2)).toBeGreaterThan(0.9);
-    expect(pedestalScaleFor(1.4)).toBeLessThan(pedestalScaleFor(2));
+  it('받침대 너비 (V2.0 PR-A 그림 칸의 60~80%): 노말은 하한(0.66칸), 리미티드(배율 0.87)는 그림 너비만큼(≈0.81칸), 등급이 높을수록 크다', () => {
+    expect(pedestalScaleFor(0.65)).toBe(0.85);
+    expect(PEDESTAL_WIDTH_TILES * pedestalScaleFor(0.87)).toBeGreaterThan(0.78);
+    expect(PEDESTAL_WIDTH_TILES * pedestalScaleFor(0.87)).toBeLessThanOrEqual(0.85);
+    expect(pedestalScaleFor(0.8)).toBeLessThan(pedestalScaleFor(0.87));
+    expect(pedestalScaleFor(0.87)).toBeGreaterThan(1);
     expect(pedestalScaleFor(0.5)).toBe(0.85);
     expect(pedestalScaleFor(9)).toBe(1.22);
     // 1.22배여도 받침대 아래 끝은 칸 아래 경계 근처 (칸 중심 +0.52칸 이하)

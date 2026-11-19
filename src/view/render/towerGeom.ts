@@ -49,12 +49,17 @@ export const STAR_BADGE_W_TILES = 0.72;
 export const FIGURE_BOTTOM_TILES = FOOT_OFFSET_TILES + (PEDESTAL_WIDTH_TILES * PEDESTAL_BOUNDS.bottom) / (PEDESTAL_BOUNDS.right - PEDESTAL_BOUNDS.left);
 
 /**
+ * 받침대가 그림 크기를 따라가는 비율. V2.0 PR-A: 혼자 그림이 칸의 60~80%(배율 ≈0.65~0.87, 예전의 약 절반)라 0.6 → 1.2 —
+ * 노말·레어는 하한 0.85(0.66칸), 신 ≈1.0, 리미티드 ≈1.04(0.81칸, 그림 너비와 비슷) → 높은 등급 받침대가 조금 크다 (G-2 의도 그대로).
+ */
+export const PEDESTAL_PER_ART = 1.2;
+/**
  * G-2 받침대 너비 배수: 2배 캐릭터 발밑에 가려 등급 받침대가 안 보이던 것 → 그림 크기를 조금 따라 키운다 (붙어 있으면 작게).
  * 0.85~1.22배 × 0.78칸 — 2배 그림이면 약 0.94칸(칸 안), 1.4배(붙음)면 약 0.66칸.
  * 받침대 아래 끝은 1.22배여도 칸 중심 +0.51칸(칸 아래 경계 +0.5에서 0.01칸) — 탭 판정은 칸 그대로라 영향 없음.
  */
 export function pedestalScaleFor(artScale: number): number {
-  return Math.min(1.22, Math.max(0.85, artScale * 0.6));
+  return Math.min(1.22, Math.max(0.85, artScale * PEDESTAL_PER_ART));
 }
 
 /** 대기 동작(위아래 흔들림·숨쉬기·고유 동작 뜀·등장 넘침)으로 더 올라가는 여유 (칸 배수) */
