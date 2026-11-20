@@ -83,8 +83,15 @@ export class BootScene extends Phaser.Scene {
     const label = this.add
       .text(this.scale.width / 2, this.scale.height / 2, '', { fontFamily: '-apple-system, "Noto Sans KR", "Malgun Gothic", sans-serif', fontSize: '44px', color: '#f7f3e9' })
       .setOrigin(0.5);
-    this.load.on(Phaser.Loader.Events.PROGRESS, (p: number) => label.setText(`그림 불러오는 중 ${Math.round(p * 100)}%`));
-    this.load.once(Phaser.Loader.Events.COMPLETE, () => label.destroy());
+    const onProgress = (p: number): void => {
+      label.setText(`그림 불러오는 중 ${Math.round(p * 100)}%`);
+      this.game.events.emit('rtd:loading-progress', p);
+    };
+    this.load.on(Phaser.Loader.Events.PROGRESS, onProgress);
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+      this.load.off(Phaser.Loader.Events.PROGRESS, onProgress);
+      label.destroy();
+    });
   }
 
   create(): void {
@@ -193,6 +200,7 @@ export class BootScene extends Phaser.Scene {
     // 전투 탭이면 처리하지 않음 → 앱이 닫힌다 (G-3)
     setBackHandler(this.lobby ? () => this.lobby?.back() ?? false : null);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game.events.emit('rtd:scene-loading');
       this.ctx.update?.setTitleVisible(false);
       this.scale.off(Phaser.Scale.Events.RESIZE, this.onResize, this);
       this.lobby = null;

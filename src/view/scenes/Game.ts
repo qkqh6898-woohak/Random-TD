@@ -646,6 +646,7 @@ export class GameScene extends Phaser.Scene {
     window.addEventListener(NATIVE_PAUSE_EVENT, this.onNativePause);
     setBackHandler(() => this.goBack());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game.events.emit('rtd:scene-loading');
       // 타이틀로 나가거나 다시 하기: 진행 중이면 마지막 상태를 남긴다 (패배한 판은 이미 지움)
       if (!this.gameOver) this.saveMatch();
       window.removeEventListener('pagehide', this.onPageHide);
