@@ -1,4 +1,5 @@
 /**
+ * PR-D: V2 shared chrome/camp, menu, and view-only new-game speed. Subpanels remain G-3.
  * 로비 (G-3, docs/UI.md 12장): 부팅 뒤 첫 화면 — 예전 타이틀 자리 (타이틀 그림은 Phaser Boot 장면이 뒤에 그대로 깐다).
  *
  * 구성
@@ -19,6 +20,10 @@
  */
 import { h } from '../dom';
 import { GRADE_NAMES } from '../../data/grades';
+import { assetUrl } from '../../assets';
+import { createButton, createCurrencyBar, createIcon, createProgress, formatCompactNumber, loadDesignFont, type DesignIcon } from '../design-system';
+import { availableSpeeds, nextSpeed } from '../hud/speed';
+import './lobbyV2.css';
 import { artIcon } from '../artIcon';
 import type { UiArt } from '../../art/uiIcons';
 import type { UiView } from '../root';
@@ -71,7 +76,7 @@ export interface LobbyOptions {
   progress: ProgressStore;
   keyArt?: boolean;
   /** [빠른 시작] → 무한 모드 */
-  onStart: () => void;
+  onStart: (speed?: number) => void;
   /** 캠페인 테마 1 (캠페인 탭이 열렸을 때 · 개발자 [캠페인 1]) */
   onCampaign: () => void;
   /** 개발자 모드: [캠페인 1 (디버그)]·[🛠 +재화] */
@@ -93,12 +98,12 @@ export interface LobbyView extends UiView {
   back(): boolean;
 }
 
-const NAV: Record<LobbyTab, { icon: string; label: string }> = {
-  shop: { icon: '🛒', label: '상점' },
-  heroes: { icon: '🦸', label: '영웅' },
-  battle: { icon: '⚔️', label: '전투' },
-  codex: { icon: '📖', label: '도감' },
-  locked: { icon: '🔒', label: '캠페인' },
+const NAV: Record<LobbyTab, { icon: DesignIcon; label: string }> = {
+  shop: { icon: 'shop', label: '상점' },
+  heroes: { icon: 'heroes', label: '영웅' },
+  battle: { icon: 'battle', label: '전투' },
+  codex: { icon: 'codex', label: '도감' },
+  locked: { icon: 'campaign', label: '캠페인' },
 };
 
 const fmt = (n: number): string => n.toLocaleString('ko-KR');
@@ -128,6 +133,9 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   let heroSort: HeroSort = 'grade';
   let detailId: string | null = null;
   let questTab: 'daily' | 'achievements' = 'daily';
+  let selectedSpeed = 1;
+  const speeds = availableSpeeds(data.game.speeds, progress.state.level, opts.debug, data.game.devSpeeds);
+  void loadDesignFont().catch(() => { /* System font remains usable offline if the bundled font fails. */ });
   const startButtons: HTMLButtonElement[] = [];
   const lockAll = (): void => {
     for (const b of startButtons) b.disabled = true;
@@ -194,28 +202,37 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
 
   // ---------- 위 띠 ----------
   const top = h('header', { class: 'lobby-top', attrs: { 'data-testid': 'lobby-top' } });
+  function wallet(kind: 'gold' | 'diamond', label: string, value: number, testid: string): HTMLElement {
+    const bar = createCurrencyBar({ kind, label, value });
+    bar.dataset.testid = testid;
+    bar.setAttribute('role', 'group');
+    bar.querySelector('.rtd-currency-value')?.setAttribute('aria-hidden', 'true');
+    bar.setAttribute('aria-label', `${label} ${value.toLocaleString('ko-KR')}`);
+    return bar;
+  }
   function renderTop(): void {
     const t = topBar(progress.state, pd);
     top.replaceChildren(
       h(
         'div',
-        { class: 'lobby-profile', attrs: { 'data-testid': 'lobby-profile', 'aria-label': `계정 레벨 ${t.level}, 경험치 ${t.xp}/${t.xpNeed}` } },
-        h('span', { class: 'lobby-avatar', attrs: { 'aria-hidden': 'true' } }, h('span', { class: 'lobby-avatar-lv', text: String(t.level) })),
+        { class: 'lobby-profile', attrs: { 'data-testid': 'lobby-profile', role: 'group', 'aria-label': `계정 레벨 ${t.level}, 경험치 ${t.xp}/${t.xpNeed}` } },
+        h('span', { class: 'lobby-avatar', attrs: { 'aria-hidden': 'true' } }, portrait('miner', '광부', 'lobby-avatar-art'), h('span', { class: 'lobby-avatar-lv', text: String(t.level) })),
         h(
           'span',
           { class: 'lobby-xp' },
+          h('span', { class: 'lobby-profile-name', text: '원정대' }),
           h('span', { class: 'lobby-xp-text', text: `Lv ${t.level}`, attrs: { 'data-testid': 'lobby-level' } }),
-          h('span', { class: 'lobby-xpbar' }, h('span', { class: 'lobby-xpfill', attrs: { style: `width:${Math.round(t.xpRatio * 100)}%` } })),
+          createProgress(t.xpRatio * 100, `계정 경험치 ${t.xp}/${t.xpNeed}`, 'experience'),
           h('span', { class: 'lobby-xp-num', text: `${fmt(t.xp)}/${fmt(t.xpNeed)}` }),
         ),
       ),
       h(
         'div',
         { class: 'lobby-wallet' },
-        h('span', { class: 'lobby-coin', attrs: { 'data-testid': 'lobby-gold', 'aria-label': `골드 ${t.gold}` } }, h('span', { class: 'lobby-coin-icon', text: '💰', attrs: { 'aria-hidden': 'true' } }), fmt(t.gold)),
-        h('span', { class: 'lobby-coin is-gem', attrs: { 'data-testid': 'lobby-gems', 'aria-label': `보석 ${t.gems}` } }, h('span', { class: 'lobby-coin-icon', text: '💎', attrs: { 'aria-hidden': 'true' } }), fmt(t.gems)),
-        // V2.0 PR-A 🔥 불꽃: 영웅 레벨업에만 쓴다
-        h('span', { class: 'lobby-coin is-flame', attrs: { 'data-testid': 'lobby-flame', 'aria-label': `불꽃 ${t.flame}` } }, h('span', { class: 'lobby-coin-icon', text: '🔥', attrs: { 'aria-hidden': 'true' } }), fmt(t.flame)),
+        wallet('gold', '골드', t.gold, 'lobby-gold'),
+        wallet('diamond', '보석', t.gems, 'lobby-gems'),
+        // Preserve PR-A's existing flame binding and emoji. No new flame asset/API connection.
+        h('span', { class: 'lobby-coin is-flame', attrs: { 'data-testid': 'lobby-flame', role: 'group', 'aria-label': `불꽃 ${t.flame}` } }, h('span', { class: 'lobby-coin-icon', text: '🔥', attrs: { 'aria-hidden': 'true' } }), h('span', { class: 'lobby-flame-value', text: formatCompactNumber(t.flame), attrs: { 'aria-hidden': 'true' } })),
       ),
     );
   }
@@ -244,7 +261,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       ok.disabled = true;
       lockAll();
       dialog.close();
-      opts.onStart();
+      opts.onStart(selectedSpeed);
     });
   }
 
@@ -274,15 +291,17 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
           on: {
             click: () => {
               lockAll();
-              opts.onStart();
+              opts.onStart(selectedSpeed);
             },
           },
         },
         h('span', { class: 'btn-icon', text: '▶', attrs: { 'aria-hidden': 'true' } }),
-        h('span', { text: '빠른 시작' }),
+        h('span', { text: '빠른 시작!' }),
+        h('small', { class: 'lobby-start-note', text: '무한 모드' }),
       );
   startButtons.push(start);
   const below: HTMLButtonElement[] = [];
+  let debugCampaign: HTMLButtonElement | null = null;
   if (confirmNew) {
     const b = h('button', {
       class: 'btn btn-campaign btn-new-game',
@@ -309,7 +328,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       h('span', { class: 'btn-icon', text: '🏰', attrs: { 'aria-hidden': 'true' } }),
       h('span', { text: '캠페인 1 (디버그)' }),
     );
-    below.push(b);
+    debugCampaign = b;
     startButtons.push(b);
   }
 
@@ -368,61 +387,83 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     });
   }
 
+  function rail(icon: DesignIcon, label: string, detail: string, action: string, onClick: () => void, count = 0): HTMLButtonElement {
+    const b = createButton({ label, variant: 'icon', icon, onClick });
+    b.classList.add('lobby-side-btn');
+    b.dataset.action = action;
+    b.setAttribute('aria-label', `${label} · ${detail}${count > 0 ? ` · 받을 항목 ${count}개` : ''}`);
+    if (action === 'quests' || action === 'recruit') b.setAttribute('aria-haspopup', 'dialog');
+    b.append(h('small', { class: 'lobby-rail-detail', text: detail }));
+    const notice = badge(count);
+    if (notice) b.append(notice);
+    return b;
+  }
+
   function renderSide(): void {
     const s = progress.state;
     const quests = claimableQuests(s, pd, progress.today());
-    const recruitPct = Math.min(100, Math.round((s.recruit / pd.recruit.goal) * 100));
+    const recruit = rail('heroes', '영웅 모집', `${Math.min(s.recruit, pd.recruit.goal)}/${pd.recruit.goal}`, 'recruit', () => openRecruit(), s.recruit >= pd.recruit.goal ? 1 : 0);
+    recruit.querySelector('.lobby-rail-detail')?.setAttribute('data-testid', 'recruit-gauge');
     side.replaceChildren(
-      h(
-        'button',
-        { class: 'btn lobby-side-btn', attrs: { type: 'button', 'data-action': 'quests', 'aria-haspopup': 'dialog', 'aria-label': '퀘스트' }, on: { click: () => openQuests() } },
-        h('span', { class: 'lobby-side-icon', text: '📜', attrs: { 'aria-hidden': 'true' } }),
-        h('span', { text: '퀘스트' }),
-        badge(quests),
-      ),
-      h(
-        'button',
-        { class: 'btn lobby-side-btn', attrs: { type: 'button', 'data-action': 'recruit', 'aria-haspopup': 'dialog', 'aria-label': `영웅 모집 ${s.recruit}/${pd.recruit.goal}` }, on: { click: () => openRecruit() } },
-        h('span', { class: 'lobby-side-icon', text: '🎺', attrs: { 'aria-hidden': 'true' } }),
-        h('span', { text: '영웅 모집' }),
-        h('span', { class: 'lobby-gauge', attrs: { 'aria-hidden': 'true' } }, h('span', { class: 'lobby-gauge-fill', attrs: { style: `width:${recruitPct}%` } })),
-        h('small', { class: 'lobby-gauge-text', text: `${Math.min(s.recruit, pd.recruit.goal)}/${pd.recruit.goal}`, attrs: { 'data-testid': 'recruit-gauge' } }),
-        badge(s.recruit >= pd.recruit.goal ? 1 : 0),
-      ),
+      rail('quests', '퀘스트', '일일 · 업적', 'quests', () => openQuests(), quests),
+      recruit,
     );
-    const rightKids: HTMLElement[] = [];
-    if (recordsDialog) {
-      rightKids.push(
-        h(
-          'button',
-          { class: 'btn lobby-side-btn', attrs: { type: 'button', 'data-action': 'records', 'aria-haspopup': 'dialog', 'aria-label': '기록' }, on: { click: () => recordsDialog.showModal() } },
-          h('span', { class: 'lobby-side-icon', text: '🏆', attrs: { 'aria-hidden': 'true' } }),
-          h('span', { text: '기록' }),
-        ),
-      );
-    }
-    if (settingsDlg) {
-      rightKids.push(
-        h(
-          'button',
-          { class: 'btn lobby-side-btn', attrs: { type: 'button', 'data-action': 'settings', 'aria-haspopup': 'dialog', 'aria-label': '설정' }, on: { click: () => settingsDlg.dialog.showModal() } },
-          h('span', { class: 'lobby-side-icon', text: '⚙️', attrs: { 'aria-hidden': 'true' } }),
-          h('span', { text: '설정' }),
-        ),
-      );
-    }
-    if (opts.debug) {
-      rightKids.push(
-        h(
-          'button',
-          { class: 'btn lobby-side-btn', attrs: { type: 'button', 'data-action': 'dev-grant', 'aria-label': '개발자 재화 추가' }, on: { click: () => progress.devGrant() } },
-          h('span', { class: 'lobby-side-icon', text: '🛠', attrs: { 'aria-hidden': 'true' } }),
-          h('span', { text: '+재화' }),
-        ),
-      );
-    }
-    sideR.replaceChildren(...rightKids);
+    sideR.replaceChildren(
+      rail('codex', GRADE_NAMES.hidden, '조각 수집', 'open-codex', () => select('codex'), codexReady(s, pd, data)),
+      rail('shop', '카드 상점', '골드 · 보석', 'open-shop', () => select('shop')),
+    );
   }
+
+  // Menu uses a native dialog so Escape/Android back and modal focus retain the existing behavior.
+  const menuDlg = dialogShell('lobby-menu-title', '원정 메뉴', 'lobby-menu');
+  menuDlg.dialog.classList.add('lobby-menu-dialog');
+  const menuButton = createButton({ label: '메뉴', variant: 'pill', icon: 'menu', onClick: () => {
+    menuButton.setAttribute('aria-expanded', 'true');
+    menuDlg.dialog.showModal();
+  } });
+  menuButton.dataset.action = 'lobby-menu';
+  menuButton.setAttribute('aria-haspopup', 'dialog');
+  menuButton.setAttribute('aria-controls', 'lobby-menu-dialog');
+  menuButton.setAttribute('aria-expanded', 'false');
+  menuDlg.dialog.id = 'lobby-menu-dialog';
+  menuDlg.dialog.addEventListener('close', () => { menuButton.setAttribute('aria-expanded', 'false'); if (!el.querySelector('dialog[open]')) menuButton.focus(); });
+  const menuItems: HTMLElement[] = [];
+  function menuItem(icon: DesignIcon, label: string, action: string, onClick: () => void): void {
+    const button = createButton({ label, icon, variant: 'secondary', onClick: () => { menuDlg.dialog.close(); onClick(); } });
+    button.dataset.action = action;
+    button.setAttribute('aria-haspopup', 'dialog');
+    menuItems.push(button);
+  }
+  if (recordsDialog) menuItem('stats', '기록', 'records', () => recordsDialog.showModal());
+  if (settingsDlg) menuItem('settings', '설정', 'settings', () => settingsDlg.dialog.showModal());
+  if (opts.debug) {
+    const debug = createButton({ label: '+재화', variant: 'pill', onClick: () => progress.devGrant() });
+    debug.dataset.action = 'dev-grant';
+    menuItems.push(debug);
+  }
+  menuDlg.body.replaceChildren(...menuItems);
+  const toolbar = h('div', { class: 'lobby-toolbar' }, h('span', { class: 'lobby-location', text: '원정대 야영지' }), menuButton);
+  const speedButton = createButton({ label: '새 게임 배속 ×1', variant: 'pill', onClick: () => {
+    selectedSpeed = nextSpeed(selectedSpeed, speeds);
+    const label = `새 게임 배속 ×${selectedSpeed}`;
+    speedButton.querySelector('.rtd-button-label')!.textContent = label;
+    speedButton.setAttribute('aria-label', label);
+  } });
+  speedButton.dataset.action = 'lobby-speed';
+  speedButton.setAttribute('aria-describedby', 'lobby-speed-hint');
+  const auxiliaries = h('div', { class: 'lobby-aux' },
+    createButton({ label: '영웅 준비', variant: 'pill', onClick: () => select('heroes') }),
+    createButton({ label: '웨이브 보상', variant: 'pill', onClick: () => {
+      const target = road.querySelector<HTMLElement>('.is-ready') ?? road.querySelector<HTMLElement>('.wave-here');
+      if (target) road.scrollTop = Math.max(0, target.offsetTop - road.clientHeight / 2 + target.offsetHeight / 2);
+      road.focus({ preventScroll: true });
+    } }),
+  );
+  auxiliaries.append(...below);
+  road.tabIndex = 0;
+  const camp = h('div', { class: 'lobby-camp', attrs: { 'aria-hidden': 'true' } },
+    h('span', { class: 'lobby-camp-halo' }), portrait('miner', '광부', 'lobby-camp-hero'),
+    h('span', { class: 'lobby-camp-caption', text: '오늘도 한 걸음 더!' }));
 
   const battlePanel = h(
     'section',
@@ -434,9 +475,10 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       h('h1', { class: 'title-name', text: '운빨 디펜스' }),
       h('span', { class: 'title-crest title-crest-right', attrs: { 'aria-hidden': 'true' } }),
     ),
-    h('div', { class: 'lobby-middle' }, side, h('div', { class: 'wave-column' }, bestLabel, road), sideR),
-    // [빠른 시작] 아래 한 줄은 늘 같은 높이 → [새 게임]·[캠페인 1(디버그)]이 있어도 [빠른 시작] 자리가 같다 (없으면 다음 웨이브 보상 안내)
-    h('div', { class: 'title-actions lobby-actions' }, start, h('div', { class: `title-debug lobby-below${below.length > 1 ? ' is-pair' : ''}` }, ...(below.length > 0 ? below : [nextHint]))),
+    h('div', { class: 'lobby-middle' }, side, h('div', { class: 'wave-column' }, camp, bestLabel, road), sideR),
+    // Saved/new-game controls share the auxiliary row; the primary keeps the same position.
+    h('div', { class: 'title-actions lobby-actions' }, auxiliaries, start,
+      nextHint, h('div', { class: `lobby-followup${debugCampaign ? ' has-debug' : ''}` }, speedButton, debugCampaign), h('small', { class: 'lobby-speed-hint', attrs: { id: 'lobby-speed-hint' }, text: saved ? '이어 하기는 저장된 배속을 사용해요' : '입장 비용 없이 바로 출발해요' })),
   );
 
   // ---------- 영웅 탭 ----------
@@ -860,6 +902,14 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   const nav = h('nav', { class: 'lobby-nav', attrs: { 'aria-label': '로비 메뉴', 'data-testid': 'lobby-nav' } });
   const panels: Record<LobbyTab, HTMLElement> = { shop: shopPanel, heroes: heroesPanel, battle: battlePanel, codex: codexPanel, locked: lockedPanel };
 
+  function navIcon(icon: DesignIcon): HTMLElement {
+    const image = createIcon(icon);
+    const wrapper = h('span', { class: `lobby-nav-icon${icon === 'shop' ? ' ui-art-icon' : ''}`, attrs: { 'aria-hidden': 'true', ...(icon === 'shop' ? { 'data-art-icon': 'shop' } : {}) } }, image);
+    image.addEventListener('load', () => wrapper.classList.add('is-loaded'));
+    image.addEventListener('error', () => wrapper.classList.remove('is-loaded'));
+    return wrapper;
+  }
+
   function renderNav(): void {
     const s = progress.state;
     const counts: Record<LobbyTab, number> = {
@@ -873,15 +923,15 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     nav.replaceChildren(
       ...LOBBY_TABS.map((id) => {
         const item = NAV[id];
-        const icon = id === 'locked' && campaignOpen ? '🏰' : item.icon;
+        const icon = item.icon;
         return h(
           'button',
           {
             class: `lobby-nav-btn${tab === id ? ' is-on' : ''}${id === 'battle' ? ' is-main' : ''}`,
-            attrs: { type: 'button', 'data-tab': id, 'aria-current': tab === id ? 'page' : 'false', 'aria-label': item.label },
+            attrs: { type: 'button', 'data-tab': id, 'aria-current': tab === id ? 'page' : 'false', 'aria-label': `${item.label}${id === 'locked' && !campaignOpen ? ' · 잠김' : ''}${counts[id] > 0 ? ` · 받을 항목 ${counts[id]}개` : ''}` },
             on: { click: () => select(id) },
           },
-          id === 'shop' ? artIcon('shop', icon, 'lobby-nav-icon') : h('span', { class: 'lobby-nav-icon', text: icon, attrs: { 'aria-hidden': 'true' } }),
+          navIcon(icon),
           h('span', { class: 'lobby-nav-label', text: item.label }),
           badge(counts[id]),
         );
@@ -908,10 +958,11 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   const el = h(
     'div',
     {
-      class: `screen lobby-screen title-screen${opts.keyArt ? ' has-keyart' : ''}`,
-      attrs: { 'data-screen': 'title', 'data-lobby': '1', 'data-keyart': opts.keyArt ? '1' : '0', 'data-tab': tab },
+      class: `rtd-v2 screen lobby-screen lobby-v2 title-screen${opts.keyArt ? ' has-keyart' : ''}`,
+      attrs: { style: `--lobby-backdrop:url("${assetUrl('assets/ui/v2/lobby/camp.svg')}")`, 'data-screen': 'title', 'data-lobby': '1', 'data-keyart': opts.keyArt ? '1' : '0', 'data-tab': tab },
     },
     top,
+    toolbar,
     body,
     h('div', { class: 'title-version lobby-version', text: opts.version }),
     nav,
@@ -922,6 +973,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     questDlg.dialog,
     recruitDlg.dialog,
     settingsDlg?.dialog ?? null,
+    menuDlg.dialog,
     // 설정 창 위에 여는 창 → 문서 순서도 맨 끝 (nativeBack이 마지막 열린 창부터 닫는다)
     opts.settings?.feedback?.el ?? null,
   );

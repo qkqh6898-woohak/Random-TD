@@ -293,6 +293,8 @@ interface PressState {
 
 export interface GameSceneData {
   seed: number;
+  /** PR-D view-only choice; saved matches always keep their own speed. */
+  initialSpeed?: number;
   mode?: MatchMode;
   /** 캠페인 테마 (기본 1) */
   theme?: number;
@@ -372,7 +374,7 @@ export class GameScene extends Phaser.Scene {
   private summonFxCount = 0;
   /** 만든 승급 연출 수 (E2E 확인용) */
   private mergeFxCount = 0;
-  private sceneData: Required<Omit<GameSceneData, 'saved'>> = { seed: 0, mode: 'infinite', theme: 1 };
+  private sceneData: Required<Omit<GameSceneData, 'saved' | 'initialSpeed'>> = { seed: 0, mode: 'infinite', theme: 1 };
   /** 판 식별자 · 마지막 저장 토큰 · 마지막 저장 시점 (A-1 자동 저장) */
   private runId = '';
   private saveToken: string | null = null;
@@ -510,7 +512,8 @@ export class GameScene extends Phaser.Scene {
     this.tickMeter.reset();
     this.speeds = availableSpeeds(config.speeds, this.ctx.accountLevel, this.ctx.debug, config.devSpeeds);
     // 이어 하기면 저장한 배속 (지금 쓸 수 있는 배속이 아니면 ×1)
-    const startSpeed = saved && this.speeds.includes(saved.speed) ? saved.speed : 1;
+    const requestedSpeed = saved ? saved.speed : data?.initialSpeed ?? 1;
+    const startSpeed = this.speeds.includes(requestedSpeed) ? requestedSpeed : 1;
     this.clock = new TickClock({ speed: startSpeed, maxFrameMs: config.maxFrameMs });
     this.resumeSpeed = startSpeed;
     this.runId = saved?.runId ?? newRunId();
