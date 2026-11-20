@@ -143,14 +143,14 @@ describe('등장 시간 (DEV_PLAN M1-4 완료 조건)', () => {
 });
 
 describe('몹 스탯 적용', () => {
-  it('슬라임 1단계: 체력 120, 방어 0, 속도 1500, 보상 3원 (V2.0 PR-A 3 + ⌊s/4⌋)', () => {
+  it('슬라임 1단계: 체력 120, 방어 0, 속도 1500, 보상 5원 (V2 사용자 결정 D 5 + ⌊s/4⌋)', () => {
     const match = infinite(1);
     runToStage(match, 1);
     const mob = listMobs(match.world)[0]!;
-    expect(mob).toMatchObject({ mob: 'slime', stage: 1, hp: 120, maxHp: 120, armor: 0, magicRes: 0, speed: 1500, reward: 3, lifeDamage: 1, legion: 'plague', invisible: false });
+    expect(mob).toMatchObject({ mob: 'slime', stage: 1, hp: 120, maxHp: 120, armor: 0, magicRes: 0, speed: 1500, reward: 5, lifeDamage: 1, legion: 'plague', invisible: false });
   });
 
-  it('체력 배율·방어 성장·보상 배율: 30단계 암흑 골렘 = 3748 × 2, 방어 96, 보상 10원', () => {
+  it('체력 배율·방어 성장·보상 배율: 30단계 암흑 골렘 = 3748 × 2, 방어 96, 보상 12원', () => {
     const match = infinite(1);
     match.state.stage = 30;
     const golem = addMob(match, 'golem');
@@ -159,7 +159,7 @@ describe('몹 스탯 적용', () => {
     expect(golem.magicRes).toBe(0);
     expect(golem.speed).toBe(1200);
     expect(golem.ccResistBp).toBe(2000);
-    expect(golem.reward).toBe(10);
+    expect(golem.reward).toBe(12);
   });
 
   it('곱한 뒤 내림: 41단계 박쥐 체력 8740 × 0.6 = 5244, 마저 15 × 1.82 = 27.3 → 27', () => {
@@ -176,7 +176,7 @@ describe('몹 스탯 적용', () => {
     match.state.stage = 35;
     const thief = addMob(match, 'thief');
     expect(thief.invisible).toBe(true);
-    expect(thief.reward).toBe(22);
+    expect(thief.reward).toBe(26);
   });
 
   it('캠페인 테마 보정: 테마 1은 ×1 (+0)', () => {
@@ -197,8 +197,8 @@ describe('암흑 고블린 떼 (1칸 = 3마리)', () => {
     expect(mobs.map((m) => m.swarmIndex)).toEqual([0, 1, 2]);
     expect(mobs.every((m) => m.progress === 0)).toBe(true);
     expect(match.mobCount()).toBe(3);
-    // 체력 ×0.35, 보상 ×0.4 내림: 40단계 HP 8093 → 2832, 보상 13 × 0.4 = 5
-    expect(mobs[0]).toMatchObject({ hp: 2832, reward: 5, speed: 2600 });
+    // 체력 ×0.35, 보상 ×0.4 내림: 40단계 HP 8093 → 2832, 보상 15 × 0.4 = 6
+    expect(mobs[0]).toMatchObject({ hp: 2832, reward: 6, speed: 2600 });
     const ev = match.world.drainEvents().find((e) => e.type === 'spawn');
     expect(ev).toMatchObject({ mob: 'goblin', count: 3 });
   });

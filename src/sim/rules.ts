@@ -7,7 +7,7 @@
  * 성장 곡선 (ENEMIES.md 2장, BALANCE.md 1·3장):
  *  - 기준 체력 HP(s): curves.json 표 (tools/precompute-curves.mjs가 거듭제곱으로 미리 계산)
  *  - 방어력·마법 저항: mulBp(기본값, armorMulBp[s]) + armorFlat[s]  (= 기본값 × (1 + 0.02s) 내림 + max(0, s − 100))
- *  - 처치 보상: mulBp(base + ⌊s / perStages⌋, rewardMulBp)  (= (3 + ⌊s/4⌋) × 배율 내림 — V2.0 PR-A, 예전 (10 + ⌊s/10⌋))
+ *  - 처치 보상: mulBp(base + ⌊s / perStages⌋, rewardMulBp)  (= (5 + ⌊s/4⌋) × 배율 내림 — V2 사용자 결정 D, PR-A는 3 + ⌊s/4⌋, 예전 (10 + ⌊s/10⌋))
  *  - 표 끝(maxStage = 500)을 넘는 단계는 마지막 값을 쓴다 (HP(500) ≈ 9.6×10¹³. 실제로 닿을 일이 없는 단계).
  *
  * 타워 (M2, towers.json → TowerStats):

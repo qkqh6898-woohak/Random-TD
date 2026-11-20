@@ -41,7 +41,7 @@ describe('타워가 있는 무한 모드', () => {
     runToStage(bare, 6);
     expect(withTowers.state.kills).toBeGreaterThan(30);
     expect(withTowers.state.gold).toBe(690 + withTowers.state.goldEarned); // 남은 돈 + 처치 보상 + 특색 돈 + 이자
-    // 1~5단계 슬라임 = 3·4원(V2.0 PR-A 3 + ⌊s/4⌋) + 광부 특색(공격마다 1% 확률 +5원, M3-9)이 번 돈 + 단계 이자 (피드백 #10)
+    // 1~5단계 슬라임 = 5·6원(V2 사용자 결정 D 5 + ⌊s/4⌋) + 광부 특색(공격마다 1% 확률 +5원, M3-9)이 번 돈 + 단계 이자 (피드백 #10)
     const events = withTowers.world.drainEvents();
     const sum = (type: string): number => events.filter((e) => e.type === type).reduce((a, e) => a + Number(e.amount), 0);
     const killGold = events.filter((e) => e.type === 'kill').reduce((a, e) => a + Number(e.reward), 0);

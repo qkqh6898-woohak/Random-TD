@@ -267,7 +267,7 @@ describe('투사체 (M2-5)', () => {
     const evs = m.world.drainEvents();
     expect(evs.filter((e) => e.type === 'kill')).toHaveLength(1);
     expect(evs.filter((e) => e.type === 'miss')).toHaveLength(1);
-    expect(m.state.gold).toBe(1003); // 처치 보상 3원 (V2.0 PR-A 3 + ⌊s/4⌋)
+    expect(m.state.gold).toBe(1005); // 처치 보상 5원 (V2 사용자 결정 D 5 + ⌊s/4⌋)
     expect(m.state.kills).toBe(1);
   });
 });
@@ -279,9 +279,9 @@ describe('처치·보상과 패배 판정 순서', () => {
     placeTower(m.world, 'goblin', 0, 4, 0);
     m.step();
     expect(m.mobCount()).toBe(0);
-    expect(m.state.gold).toBe(1003); // 처치 보상 3원 (V2.0 PR-A 3 + ⌊s/4⌋)
+    expect(m.state.gold).toBe(1005); // 처치 보상 5원 (V2 사용자 결정 D 5 + ⌊s/4⌋)
     const kill = m.world.drainEvents().find((e) => e.type === 'kill');
-    expect(kill).toMatchObject({ id: mob.id, reward: 3, ...positionAt(m.map.path, 3000) });
+    expect(kill).toMatchObject({ id: mob.id, reward: 5, ...positionAt(m.map.path, 3000) });
   });
 
   it('같은 틱에 몹 수가 한도를 넘어도 그 틱의 처치가 먼저 반영된다 (UI.md 9장)', () => {

@@ -264,7 +264,7 @@ async function labels(page: Page): Promise<{ labels: string[]; coins: number }> 
   });
 }
 
-test('자동 공격: 몹을 잡으면 피해 숫자·+3원·동전이 뜨고 돈이 늘어 더 소환한다 (M2 스크린샷)', async ({ page }) => {
+test('자동 공격: 몹을 잡으면 피해 숫자·+5원·동전이 뜨고 돈이 늘어 더 소환한다 (M2 스크린샷)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=42');
   await setGold(page, 310); // V2.0 PR-A: 10번 소환 = 310원
@@ -276,16 +276,16 @@ test('자동 공격: 몹을 잡으면 피해 숫자·+3원·동전이 뜨고 돈
   await page.getByRole('button', { name: '배속' }).click(); // ×2
   await expect.poll(async () => (await labels(page)).labels.filter((l) => /^\d+$/.test(l)).length, { timeout: 8000 }).toBeGreaterThan(0);
   await expect.poll(async () => (await view(page)).kills, { timeout: 15000 }).toBeGreaterThan(2);
-  // 처치하면 '+3원'(V2.0 PR-A 1단계 처치 보상 3 + ⌊1/4⌋)이 떠오르거나 동전이 날아간다
+  // 처치하면 '+5원'(V2 사용자 결정 D 1단계 처치 보상 5 + ⌊1/4⌋)이 떠오르거나 동전이 날아간다
   await expect.poll(async () => {
     const l = await labels(page);
-    return l.labels.some((t) => /^\+\d+원$/.test(t)) || l.coins > 0; // 슬라임 +3원 · 고블린 떼(×0.4) +1원
+    return l.labels.some((t) => /^\+\d+원$/.test(t)) || l.coins > 0; // 슬라임 +5원 · 고블린 떼(×0.4) +2원
   }, { timeout: 15000 }).toBe(true);
-  // 멈추고 비교: 돈 = 번 돈 = 처치 × 3원 (1단계 슬라임) + 광부 특색 돈(+5원씩, M3b), HUD 돈 = sim 돈
+  // 멈추고 비교: 돈 = 번 돈 = 처치 × 5원 (1단계 슬라임) + 광부 특색 돈(+5원씩, M3b), HUD 돈 = sim 돈
   await page.getByRole('button', { name: '일시정지' }).click();
   const v = await view(page);
   expect(v.gold).toBe(v.goldEarned);
-  const extra = v.goldEarned - v.kills * 3;
+  const extra = v.goldEarned - v.kills * 5;
   expect(extra).toBeGreaterThanOrEqual(0);
   expect(extra % 5).toBe(0);
   await expect(page.getByTestId('hud-gold')).toHaveText(won(v.gold));
