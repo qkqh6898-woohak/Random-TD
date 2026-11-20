@@ -248,21 +248,21 @@ final class Updater {
             if (declared > UpdateLogic.MAX_APK_BYTES || (declared > 0 && declared != r.apkSize)) {
                 throw new IOException("Content-Length " + declared);
             }
-            long received = 0;
+            long count = 0;
             long lastSent = 0;
             byte[] buf = new byte[64 * 1024];
             try (InputStream in = c.getInputStream(); OutputStream out = new FileOutputStream(apk)) {
                 int n;
                 while ((n = in.read(buf)) != -1) {
                     if (cancelled) throw new Cancelled();
-                    received += n;
-                    if (received > UpdateLogic.MAX_APK_BYTES || received > r.apkSize) throw new IOException("너무 큼");
+                    count += n;
+                    if (count > UpdateLogic.MAX_APK_BYTES || count > r.apkSize) throw new IOException("너무 큼");
                     md.update(buf, 0, n);
                     out.write(buf, 0, n);
                     long now = SystemClock.uptimeMillis();
                     if (now - lastSent >= PROGRESS_INTERVAL_MS) {
                         lastSent = now;
-                        final long got = received;
+                        final long got = count;
                         post(new Runnable() { @Override public void run() {
                             received = got;
                             sink.send(UpdateLogic.jsonObject("type", "progress", "received", got, "total", r.apkSize));
@@ -272,7 +272,7 @@ final class Updater {
                 out.flush();
             }
             if (cancelled) throw new Cancelled();
-            final long done = received;
+            final long done = count;
             post(new Runnable() { @Override public void run() {
                 received = done;
                 sink.send(UpdateLogic.jsonObject("type", "progress", "received", done, "total", r.apkSize));
