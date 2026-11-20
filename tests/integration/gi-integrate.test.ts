@@ -1,6 +1,6 @@
 /**
- * G 통합 (G-1 신화 조합 × G-3 히든 해방): 계정(ProgressStore)의 잠긴 히든이 판 입력(MatchOptions.lockedHidden)을 거쳐
- * sim ctx → Craft.craftPlan / [신화] 도감 줄까지 실제로 흐르는지, 조각 수가 도감 문구에 들어가는지.
+ * G 통합 (G-1 리미티드 조합 × G-3 히든 해방): 계정(ProgressStore)의 잠긴 히든이 판 입력(MatchOptions.lockedHidden)을 거쳐
+ * sim ctx → Craft.craftPlan / [리미티드] 도감 줄까지 실제로 흐르는지, 조각 수가 도감 문구에 들어가는지.
  */
 import { describe, expect, it } from 'vitest';
 import { MemoryStorage } from '../../src/save/storage';
@@ -14,7 +14,7 @@ import { arena, command, data, eventsOf } from '../helpers/match';
 
 const pd = loadProgression(data);
 
-describe('G 통합: 계정 잠긴 신화 → 판 조합 잠김 · 도감 조각 표시', () => {
+describe('G 통합: 계정 잠긴 리미티드 → 판 조합 잠김 · 도감 조각 표시', () => {
   it('새 계정은 히든이 모두 잠겨 판 입력으로 들어가고, 재료가 모여도 craft가 locked · 도감 줄 "🔒 해방 필요 (조각 n/20)"', () => {
     const store = new ProgressStore(new MemoryStorage(), pd, data, { seed: 3, now: () => new Date(2026, 10, 17, 9) });
     store.state.heroes.goldking = { level: 0, cards: 7 };
@@ -37,7 +37,7 @@ describe('G 통합: 계정 잠긴 신화 → 판 조합 잠김 · 도감 조각 
     expect(row.note).not.toMatch(/[一-鿿]/);
   });
 
-  it('해방한 신화는 판에서 조합할 수 있고 조각 표시가 없다 · 개발자 판은 잠그지 않는다', () => {
+  it('해방한 리미티드는 판에서 조합할 수 있고 조각 표시가 없다 · 개발자 판은 잠그지 않는다', () => {
     const store = new ProgressStore(new MemoryStorage(), pd, data, { seed: 4, now: () => new Date(2026, 10, 17, 9) });
     store.state.heroes.goldking = { level: 0, cards: pd.hidden.unlockFragments };
     expect(store.unlock('goldking')).toBe('ok');

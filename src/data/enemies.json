@@ -4,7 +4,7 @@
   "hp": "1~20: 120*1.151^(s-1); 21~50: HP(20)*1.08^(s-20); 51~100: HP(50)*1.06^(s-50); 101~: HP(100)*1.05^(s-100)",
   "armor": "기본 방어력 * (1 + 0.02*s) + max(0, s-100)  (마법 저항도 동일)",
   "reduction": "피해 감소율 = A / (A + 100), A = max(0, 방어력*(1-관통%) - 고정 관통)",
-  "reward": "(10 + floor(s/10)) * rewardMul"
+  "reward": "(5 + floor(s/4)) * rewardMul"
  },
  "growth": {
   "note": "단계별 성장 수치 (ENEMIES.md 2장, BALANCE.md 1·3장). tools/precompute-curves.mjs가 이 값으로 src/data/curves.json(단계 0~maxStage 표)을 만든다. hp: HP(1)=base, 구간 from부터 rate배씩 (앞 구간 끝 값 × rate^(s-(from-1))). armor: 기본값 × (1 + perStage × s) + max(0, s - flatFrom) × flatPerStage. reward: (base + floor(s / perStages)) × 몹 rewardMul",
@@ -36,8 +36,8 @@
    "flatPerStage": 1
   },
   "reward": {
-   "base": 10,
-   "perStages": 10
+   "base": 5,
+   "perStages": 4
   }
  },
  "mobs": [

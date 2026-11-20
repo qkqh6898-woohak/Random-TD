@@ -137,7 +137,7 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
   },
   {
     name: 'r5-menu',
-    note: '무한 모드 debug, 히든·레전드 안쪽 블록 + 강화(전설·관통·공속·치명) + 100원 도박 5초마다 + 도전 1~10단계(쌍둥이·동결·투명·무적) + 미션 모두 받기 (M5 검토 반영)',
+    note: '무한 모드 debug, 레전드 안쪽 블록(V2.0 PR-A 리미티드 강화로 바꿈) + 강화(전설·관통·공속·치명) + 100원 도박 5초마다 + 도전 1~10단계(쌍둥이·동결·투명·무적) + 미션 모두 받기 (M5 검토 반영)',
     match: { seed: 8, mode: 'infinite', debug: true, levels: [allLv(data.decks.base, 15)] },
     bot: {
       endTick: 1200 + 10 * 1200,
@@ -154,12 +154,13 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
       ],
       gamble: { t: 1, every: 100 },
       pickCard: 0,
-      debugTowers: [[2, 1, t('celestial')], [3, 6, t('celestial')], ...innerRing(['infiniteblade', 'warlord', 'goldking', 'archmage', 'fortuna'])],
+      // V2.0 PR-A: 리미티드 공격력 ×4.5 → 리미티드(천상의 궁수 둘·무한의 검·황금 왕)면 도전 보스가 동결 전에 잡혀 감지는 예언자·그림자 암살자, 안쪽은 레전드로
+      debugTowers: [[2, 1, t('prophet')], [3, 6, t('assassin')], ...innerRing(['spearsgod', 'warlord', 'tycoon', 'archmage', 'fortuna'])],
     },
   },
   {
     name: 'r7-g1',
-    note: 'G-1 게임 시스템: 무한 모드 debug, 무더기 소환·연쇄 승급·무더기 이동 + 행운 소환 도박 10초마다 + 필살기(찬 타워부터) + 신화 조합(재료가 모이면) + 3택 1·보스 카드 첫 장, 히어로 3종을 먼저 놓음 — 15단계',
+    note: 'G-1 게임 시스템: 무한 모드 debug, 무더기 소환·연쇄 승급·무더기 이동 + 행운 소환 도박 10초마다 + 필살기(찬 타워부터) + 리미티드 조합(재료가 모이면) + 3택 1·보스 카드 첫 장, 히어로 3종을 먼저 놓음 — 15단계',
     match: { seed: 17, mode: 'infinite', debug: true },
     bot: {
       endTick: 1200 + 15 * 1200,
@@ -173,7 +174,7 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
         [2, 3, t('swordsaint')],
         [3, 4, t('chronomancer')],
         [2, 2, t('scholar')],
-        // 신화 '황금 왕' 재료 (광부·상인·연금술사)
+        // 리미티드 '황금 왕' 재료 (광부·상인·연금술사)
         [3, 5, t('miner')],
         [4, 5, t('merchant')],
         [4, 6, t('alchemist')],
@@ -183,7 +184,7 @@ const SPECS: { name: string; note: string; match: MatchOptions; bot: BotOptions 
 ];
 
 function build(spec: (typeof SPECS)[number]): ReplayFile {
-  const m = createMatch(data, spec.match);
+  const m = createMatch(data, { ...spec.match, legacyCommands: true }); // 봇이 예전 명령을 쓴다 (V2 L2)
   runBot(m, spec.bot);
   return recordReplay(data, m, { name: spec.name, note: spec.note });
 }
@@ -312,7 +313,7 @@ describe('기록 → 재생', () => {
   });
 
   it('명령 하나를 바꾸면 그 뒤 첫 주기 해시에서 어긋남을 찾는다', () => {
-    const m = createMatch(data, { seed: 5, mode: 'infinite' });
+    const m = createMatch(data, { seed: 5, mode: 'infinite', legacyCommands: true });
     runBot(m, { endTick: 3000 });
     const file = recordReplay(data, m, { name: 'tamper', checkpointTicks: 100 });
     const i = file.commands.findIndex((c) => c.type === 'summon' && Number(c.tick) > 100);
@@ -325,7 +326,7 @@ describe('기록 → 재생', () => {
   });
 
   it('잘못된 파일은 재생 전에 거절 (버전·명령·순서·끝 틱)', () => {
-    const m = createMatch(data, { seed: 5, mode: 'infinite' });
+    const m = createMatch(data, { seed: 5, mode: 'infinite', legacyCommands: true });
     runBot(m, { endTick: 400 });
     const file = recordReplay(data, m, { name: 'v' });
     expect(validateReplay(file)).toBeNull();

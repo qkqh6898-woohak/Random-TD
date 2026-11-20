@@ -7,7 +7,7 @@
  * 성장 곡선 (ENEMIES.md 2장, BALANCE.md 1·3장):
  *  - 기준 체력 HP(s): curves.json 표 (tools/precompute-curves.mjs가 거듭제곱으로 미리 계산)
  *  - 방어력·마법 저항: mulBp(기본값, armorMulBp[s]) + armorFlat[s]  (= 기본값 × (1 + 0.02s) 내림 + max(0, s − 100))
- *  - 처치 보상: mulBp(base + ⌊s / perStages⌋, rewardMulBp)  (= (10 + ⌊s/10⌋) × 배율 내림)
+ *  - 처치 보상: mulBp(base + ⌊s / perStages⌋, rewardMulBp)  (= (5 + ⌊s/4⌋) × 배율 내림 — V2 사용자 결정 D, PR-A는 3 + ⌊s/4⌋, 예전 (10 + ⌊s/10⌋))
  *  - 표 끝(maxStage = 500)을 넘는 단계는 마지막 값을 쓴다 (HP(500) ≈ 9.6×10¹³. 실제로 닿을 일이 없는 단계).
  *
  * 타워 (M2, towers.json → TowerStats):
@@ -18,6 +18,7 @@
  *  - M3: 공격 형태 값(광역 반경 → 단위, 관통·연쇄·다중 → 마리 수), 관통·치명타(bp), 감지. 공속 한도·관통 최대·연쇄 감소 등
  *    전투 규칙 수치는 game.json combat, 승급 개수는 game.json merge (MatchRules).
  */
+import { GRADE_RANK } from '../data/grades';
 import { DECK_GRADES, deckIssues, type DeckData } from '../data/deck';
 import type {
   BossData,
@@ -130,7 +131,15 @@ export interface CardStats {
 }
 
 /** 소환 도박 결과 등급 순위 (G-1): 꽝 0 · 노말 1 · 레어 2 · 유니크 3 · 히어로 4 · 레전드 5 · 신 6. 천장 '이상' 비교에 쓴다 */
-export const GACHA_RANK: Readonly<Record<GachaGrade, number>> = Object.freeze({ none: 0, normal: 1, rare: 2, unique: 3, hero: 4, legend: 5, god: 6 });
+export const GACHA_RANK: Readonly<Record<GachaGrade, number>> = Object.freeze({
+  none: 0,
+  normal: GRADE_RANK.normal,
+  rare: GRADE_RANK.rare,
+  unique: GRADE_RANK.unique,
+  hero: GRADE_RANK.hero,
+  legend: GRADE_RANK.legend,
+  god: GRADE_RANK.god,
+});
 
 /** 소환 도박 한 종류 (G-1) — 확률은 bp. */
 export interface GachaKindStats {
@@ -144,7 +153,7 @@ export interface GachaKindStats {
   readonly pityRank: number;
 }
 
-/** 신화(히든) 조합 하나 (G-1 도감): 결과 타워 id와 재료 (같은 재료가 여럿일 수 있다) */
+/** 리미티드(히든) 조합 하나 (G-1 도감): 결과 타워 id와 재료 (같은 재료가 여럿일 수 있다) */
 export interface RecipeStats {
   readonly id: string;
   readonly materials: readonly string[];
@@ -346,8 +355,12 @@ export interface MatchRules {
   readonly towers: ReadonlyMap<string, TowerStats>;
   /** 신 타워 id (towers.json 순서). 소환·승급 때 신 판정에 걸리면 이 중 균등 */
   readonly godTowers: readonly string[];
-  /** 소환 비용 (원) */
+  /** 소환 기본 비용 (원, 첫 소환) */
   readonly summonCost: number;
+  /** 일반 소환 1번마다 오르는 비용 (원, V2.0 PR-A) */
+  readonly summonCostStep: number;
+  /** 소환 비용 최대 (원) */
+  readonly summonCostMax: number;
   /** 신 타워 확률 (bp, 0.01% = 1) */
   readonly godChanceBp: number;
   /** 투사체 속도 (단위/틱). 12칸/초 = 600 */
@@ -438,8 +451,8 @@ export interface MatchRules {
   readonly cardById: ReadonlyMap<string, CardStats>;
   readonly cardOfferSize: number;
   readonly cardRareBp: number;
-  /** 카드 '소환 할인'의 최소 소환 비용 (원, 카드가 없으면 기본 비용) */
-  readonly summonCostMin: number;
+  /** 카드 '소환 할인' 합의 최대 (bp, 카드가 없으면 0) */
+  readonly summonDiscountMaxBp: number;
   // ---- M5 ----
   /** 판 내 강화 (명령 upgrade {k}의 k 순서: 등급 강화 → 능력치 강화 → 초월 → 소환 확률 → 인원 한도) */
   readonly upgrades: readonly UpgradeRule[];
@@ -479,6 +492,8 @@ export interface MatchRules {
   readonly sellRateBp: number;
   /** 타워 id → 판매 가치 (원, 판매가 = 가치 × sellRateBp 내림) */
   readonly towerValues: ReadonlyMap<string, number>;
+  /** 일반 소환이 낼 수 있는 등급 (노말·레어 직행·신 — Summon.rollSummon). 이 등급의 판매가는 ⌊(지금 소환 비용 − 1) ÷ 2⌋ 이하 (쌍둥이 소환까지) (V2.0 PR-A) */
+  readonly summonOutcomeGrades: readonly Grade[];
   /** 개발자 도구 확률 조정: 한 번에 바뀌는 값 (bp)과 이름 목록 (game.json devChances 순서) */
   readonly devChanceStepBp: number;
   readonly devChanceKeys: readonly string[];
@@ -496,7 +511,7 @@ export interface MatchRules {
   readonly gachaKinds: readonly GachaKindStats[];
   /** 종족 id (towers.json factions 순서, 명령 gacha {f}의 f) */
   readonly factionOrder: readonly string[];
-  /** 신화 조합 (towers.json의 히든 타워 순서, 명령 craft {r}의 r) */
+  /** 리미티드 조합 (towers.json의 히든 타워 순서, 명령 craft {r}의 r) */
   readonly recipes: readonly RecipeStats[];
   /** 3택 1 강화 선택: from단계부터 every단계마다 (보스 단계 제외) */
   readonly pickFrom: number;
@@ -686,6 +701,8 @@ export function buildMatchRules(data: GameData): MatchRules {
     towers,
     godTowers: Object.freeze(data.towers.towers.filter((t) => t.grade === 'god').map((t) => t.id)),
     summonCost: game.summon.cost,
+    summonCostStep: game.summon.costStep,
+    summonCostMax: game.summon.costMax,
     godChanceBp: bp(game.summon.godChance),
     projectileSpeed: projectileUnitsPerSec / TICK_HZ,
     baseDeck: freezeDeck(data.decks.base),
@@ -760,7 +777,7 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
   | 'cardById'
   | 'cardOfferSize'
   | 'cardRareBp'
-  | 'summonCostMin'
+  | 'summonDiscountMaxBp'
 > {
   const { enemies, game, cards: cardsFile, campaign } = data;
   const bosses = new Map<string, BossStats>();
@@ -772,7 +789,8 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
   const cyc = enemies.bossCycle;
   const cards = cardsFile.cards.map((c) => {
     const e = c.effect;
-    const ratio = e.type === 'atkPct' || e.type === 'quake' || e.type === 'mobSlow' || e.type === 'goldPct' || e.type === 'apsPct' || e.type === 'ultCharge';
+    const ratio =
+      e.type === 'atkPct' || e.type === 'quake' || e.type === 'mobSlow' || e.type === 'goldPct' || e.type === 'apsPct' || e.type === 'ultCharge' || e.type === 'summonDiscount';
     return Object.freeze({
       id: c.id,
       name: c.name,
@@ -780,7 +798,7 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
       desc: c.desc,
       type: e.type,
       value: ratio ? bp(e.value ?? 0) : int(`cards.json ${c.id}.effect.value`, e.value ?? 0),
-      limit: e.type === 'mobSlow' ? bp(e.max ?? 0) : int(`cards.json ${c.id}.effect.min`, e.min ?? 0),
+      limit: e.type === 'mobSlow' || e.type === 'summonDiscount' ? bp(e.max ?? 0) : int(`cards.json ${c.id}.effect.min`, e.min ?? 0),
       ticks: e.seconds === undefined ? 0 : secondsToTicksExact(e.seconds),
       pools: Object.freeze([...(c.pools ?? ['boss'])]),
     } satisfies CardStats);
@@ -833,7 +851,7 @@ function buildM4Rules(data: GameData, mobOrder: readonly string[]): Pick<
     cardById: new Map(cards.map((c) => [c.id, c])),
     cardOfferSize: cardsFile.offerSize,
     cardRareBp: bp(cardsFile.rareChance),
-    summonCostMin: cards.find((c) => c.type === 'summonDiscount')?.limit ?? game.summon.cost,
+    summonDiscountMaxBp: cards.find((c) => c.type === 'summonDiscount')?.limit ?? 0,
   };
 }
 
@@ -1018,7 +1036,8 @@ function buildM5Rules(data: GameData): Pick<
 }
 
 /**
- * 타워 판매 가치 (원, T-2): 소환 비용 × 등급 배율 (노말 1·레어 3·유니크 9·히어로 27·레전드 81·신 = game.json sell.gradeMul),
+ * 타워 판매 가치 (원, T-2): 노말 가치(game.json sell.baseValue — V2.0 PR-A부터 소환 비용과 따로) × 등급 배율
+ * (노말 1·레어 3·유니크 9·히어로 27·레전드 81·신 = game.json sell.gradeMul),
  * 히든 = 조합 재료 가치의 합. 거듭제곱은 데이터 표(gradeMul)로 — sim에서 계산하지 않는다.
  */
 export function buildTowerValues(data: Pick<GameData, 'towers' | 'game'>): Map<string, number> {
@@ -1028,7 +1047,7 @@ export function buildTowerValues(data: Pick<GameData, 'towers' | 'game'>): Map<s
   const base = (id: string): number => {
     const t = byId.get(id);
     if (!t || t.grade === 'hidden') return 0;
-    return game.summon.cost * game.sell.gradeMul[t.grade];
+    return game.sell.baseValue * game.sell.gradeMul[t.grade];
   };
   for (const t of towers.towers) {
     if (t.grade !== 'hidden') out.set(t.id, base(t.id));
@@ -1038,20 +1057,27 @@ export function buildTowerValues(data: Pick<GameData, 'towers' | 'game'>): Map<s
 }
 
 /** T-2 규칙 (자동 소환·판매·개발자 확률 조정). */
-function buildT2Rules(data: GameData): Pick<MatchRules, 'autoSummonRadius' | 'sellRateBp' | 'towerValues' | 'devChanceStepBp' | 'devChanceKeys'> {
+function buildT2Rules(
+  data: GameData,
+): Pick<MatchRules, 'autoSummonRadius' | 'sellRateBp' | 'towerValues' | 'summonOutcomeGrades' | 'devChanceStepBp' | 'devChanceKeys'> {
   const { game } = data;
   return {
     autoSummonRadius: int('game.json summon.autoRadius', game.summon.autoRadius),
     sellRateBp: int('game.json sell.rateBp', game.sell.rateBp),
     towerValues: buildTowerValues(data),
+    summonOutcomeGrades: Object.freeze(['normal', 'rare', ...(data.towers.towers.some((t) => t.grade === 'god') ? (['god'] as const) : [])] as Grade[]),
     devChanceStepBp: int('game.json devChances.stepBp', game.devChances.stepBp),
     devChanceKeys: Object.freeze(game.devChances.list.map((c) => c.key)),
   };
 }
 
-/** 등급 → 소환 도박 순위 (히든은 레전드와 같은 칸으로 본다 — 천장 비교에만 쓴다). */
+/**
+ * 등급 → 등급 번호 (src/data/grades.ts GRADE_RANK: 노말 1 … 신 6 · 리미티드(hidden) 7, 꽝 0).
+ * 천장·자동 판매·자동 승급 비교에 쓴다. V2.0 PR-A: 예전엔 히든을 레전드(5)와 같게 봤다 — 소환·도박은 히든을 내지 않고
+ * 자동 판매·승급 기준은 유니크 이하라 동작은 같다.
+ */
 export function gradeRank(grade: Grade | GachaGrade): number {
-  return grade === 'hidden' ? GACHA_RANK.legend : GACHA_RANK[grade];
+  return grade === 'none' ? 0 : GRADE_RANK[grade];
 }
 
 /** 타워 데이터 → 필살기 종류 (game.json ultimate.rules 중 처음 맞는 것). */
@@ -1065,7 +1091,7 @@ export function ultKindFor(rules: GameData['game']['ultimate']['rules'], t: Pick
   return 'nuke';
 }
 
-/** G-1 규칙 (칸 쌓기·연쇄 승급·천장·소환 도박·신화 조합·3택 1·필살기). */
+/** G-1 규칙 (칸 쌓기·연쇄 승급·천장·소환 도박·리미티드 조합·3택 1·필살기). */
 function buildG1Rules(data: GameData): Pick<
   MatchRules,
   'stackMax' | 'unitCap' | 'mergeChainMax' | 'summonPityN' | 'summonPityRank' | 'gachaKinds' | 'factionOrder' | 'recipes' | 'pickFrom' | 'pickEvery' | 'ult'

@@ -1,7 +1,7 @@
 /**
  * 캐릭터 필살기 (G-1, game.json ultimate).
  *
- * - 충전: 등급이 ultimate.grades에 있는 타워(히어로·레전드·신·신화)는 공격 1번마다 게이지(Tower.ult, bp)가
+ * - 충전: 등급이 ultimate.grades에 있는 타워(히어로·레전드·신·리미티드)는 공격 1번마다 게이지(Tower.ult, bp)가
  *   ⌊10000 ÷ 공격 수⌋ × (1 + 카드 '투지' 합)만큼 찬다 (Combat). 10000이면 가득. 승급·조합으로 새로 생긴 타워는 0부터.
  * - 명령 `ult {id}`: 내 타워 id의 게이지가 가득이면 필살기 → 게이지 0, 'ult' 사건 {player, id, tower, kind, x, y, r, count}.
  *   못 쓰면 'ultFail' {player, id, reason}. 종류는 타워 데이터로 정한다 (rules.ult.kindOf, game.json ultimate.rules 중 처음 맞는 것):

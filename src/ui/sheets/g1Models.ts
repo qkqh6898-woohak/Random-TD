@@ -1,12 +1,13 @@
 /**
- * G-1 바텀 시트 내용 (순수 함수, DOM 없음 → 단위 테스트): [소환] 시트 (일반 소환 + 소환 도박 4종 + 천장) · [신화] 도감 시트.
+ * G-1 바텀 시트 내용 (순수 함수, DOM 없음 → 단위 테스트): [소환] 시트 (일반 소환 + 소환 도박 4종 + 천장) · [리미티드] 도감 시트.
  * 값은 sim 상태를 읽기만 한다 (명령은 Game 장면이 보낸다).
  */
 import type { GachaGrade, TowerData } from '../../data/load';
 import { isHiddenLocked } from '../../sim/unlocks';
 import type { World } from '../../sim/World';
 import { BP_ONE } from '../../sim/Fixed';
-import { GACHA_RANK, type MatchRules } from '../../sim/rules';
+import { GACHA_RANK, gradeRank, type MatchRules } from '../../sim/rules';
+import { GRADE_NAMES } from '../../data/grades';
 import type { MatchContext } from '../../sim/state';
 import { pityLeft, summonStackCheck } from '../../sim/systems/Board';
 import { gachaCheck, gachaOdds } from '../../sim/systems/Gacha';
@@ -16,17 +17,8 @@ import { pityText } from '../messages';
 import { pctText } from './sheetModels';
 import { withCommas } from '../hud/hudModel';
 
-/** 소환 도박 결과 등급 → 한국어 (꽝 포함). 히든은 '신화' (G-1 화면 이름). */
-export const GACHA_GRADE_NAMES: Readonly<Record<GachaGrade | 'hidden', string>> = {
-  none: '꽝',
-  normal: '노말',
-  rare: '레어',
-  unique: '유니크',
-  hero: '히어로',
-  legend: '레전드',
-  god: '신',
-  hidden: '신화',
-};
+/** 소환 도박 결과 등급 → 한국어 (꽝 포함). 등급 이름은 src/data/grades.ts (히든 = '리미티드'). */
+export const GACHA_GRADE_NAMES: Readonly<Record<GachaGrade | 'hidden', string>> = { none: '꽝', ...GRADE_NAMES };
 
 /** 순위 → 등급 이름 (천장 글자 '레어 확정'). */
 export function rankName(rank: number): string {
@@ -80,7 +72,7 @@ export function summonSheetModel(
   display: readonly { icon: string; desc: string }[],
 ): SummonSheetModel {
   const { rules } = ctx;
-  const cost = summonCost(ctx);
+  const cost = summonCost(ctx, player);
   const nFail = summonStackCheck(ctx, world, player);
   const nLeft = pityLeft(ctx, player, 0, rules.summonPityN);
   const rows = rules.gachaKinds.map((k, i): GachaRowModel => {
@@ -115,7 +107,7 @@ export function summonSheetModel(
   };
 }
 
-// ---------------------------------------------------------------- 💠 신화 도감
+// ---------------------------------------------------------------- 💠 리미티드 도감
 
 export interface CodexMaterial {
   id: string;
@@ -162,18 +154,18 @@ export function newlyDiscovered(rules: Pick<MatchRules, 'recipes'>, owned: Reado
   return rules.recipes.filter((r) => !found.has(r.id) && recipeReady(r.materials, owned)).map((r) => r.id);
 }
 
-/** [신화] 도감 시트 모델. */
+/** [리미티드] 도감 시트 모델. */
 export function codexSheetModel(
   ctx: MatchContext,
   world: World,
   player: number,
   towers: readonly TowerData[],
   found: ReadonlySet<string>,
-  /** G-3: 신화 조각 (가진 수 / 해방에 드는 수). 없으면 '🔒 해방 필요'만 */
+  /** G-3: 리미티드 조각 (가진 수 / 해방에 드는 수). 없으면 '🔒 해방 필요'만 */
   fragments?: (towerId: string) => { have: number; need: number } | null,
 ): CodexSheetModel {
   const names = new Map(towers.map((t) => [t.id, t.name]));
-  const rank = new Map(towers.map((t) => [t.id, t.grade === 'hidden' ? 7 : GACHA_RANK[t.grade]]));
+  const rank = new Map(towers.map((t) => [t.id, gradeRank(t.grade)]));
   const owned = ownedCounts(world, player);
   let ready = 0;
   const rows = ctx.rules.recipes.map((rc, r): CodexRowModel => {

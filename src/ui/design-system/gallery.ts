@@ -7,7 +7,7 @@ import { createButton, createCurrencyBar, createGradeCard, createIcon, createNot
 import './gallery.css';
 
 const ICON_LABELS: Record<DesignIcon, string> = {
-  shop: '상점', heroes: '영웅', battle: '전투', codex: '도감', campaign: '캠페인', friends: '친구', mail: '우편', menu: '메뉴', quests: '퀘스트', settings: '설정', mission: '미션', stats: '통계', speed: '배속', chat: '채팅', sell: '판매', delete: '삭제', pause: '일시정지', info: '정보', close: '닫기', gold: '골드', diamond: '다이아', flame: '불꽃', energy: '에너지', 'battle-coin': '전투 코인', luck: '행운석', upgrade: '강화', plus: '더하기', mythic: '신화', roulette: '룰렛',
+  shop: '상점', heroes: '영웅', battle: '전투', codex: '도감', campaign: '캠페인', friends: '친구', mail: '우편', menu: '메뉴', quests: '퀘스트', settings: '설정', mission: '미션', stats: '통계', speed: '배속', chat: '채팅', sell: '판매', delete: '삭제', pause: '일시정지', info: '정보', close: '닫기', gold: '골드', diamond: '다이아', flame: '불꽃', energy: '에너지', 'battle-coin': '전투 코인', luck: '행운석', upgrade: '강화', plus: '더하기', mythic: GRADE_NAMES.hidden, roulette: '룰렛',
 };
 const section = (n: string, title: string, description: string, ...body: HTMLElement[]) => h('section', { class: 'rtd-gallery-section' },
   h('header', {}, h('span', { class: 'rtd-gallery-index', text: n }), h('h2', { text: title })), h('p', { class: 'rtd-gallery-description', text: description }), ...body);
@@ -27,7 +27,7 @@ export async function mountDesignGallery(host: HTMLElement): Promise<void> {
   const cardGrid = grid('cards', ...cards.map(([grade, name, id], i) => createGradeCard({ grade, name, level: i + 1, progress: 25 + i * 10, progressLabel: `${name} 조각 수집 진행`, portrait: assetUrl(`assets/characters/${id}.webp`), owned: true, notification: i === 0, onClick: () => {
     details.replaceChildren(h('h3', { text: name }), h('p', { class: 'rtd-detail-grade', text: `등급 · ${GRADE_NAMES[grade]}` }), h('p', { text: '등급 이름과 색을 함께 표시합니다.' }));
     detailPopup.open();
-  } })), createGradeCard({ grade: 'hidden', name: '미보유 예시', level: 1, progress: 0, progressLabel: '미보유 조각', portrait: assetUrl('assets/characters/elemental.webp'), owned: false, onClick: () => { details.replaceChildren(h('p', { text: '신화 · 미보유' })); detailPopup.open(); } }));
+  } })), createGradeCard({ grade: 'hidden', name: '미보유 예시', level: 1, progress: 0, progressLabel: '미보유 조각', portrait: assetUrl('assets/characters/elemental.webp'), owned: false, onClick: () => { details.replaceChildren(h('p', { text: `${GRADE_NAMES.hidden} · 미보유` })); detailPopup.open(); } }));
   const toggleDotHost = h('span', { class: 'rtd-gallery-dot-host' }, createIcon('mail'), createNotificationDot(true));
   let dotVisible = true;
   const toggler = createButton({ label: '알림 표시 전환', variant: 'pill', onClick: () => { dotVisible = !dotVisible; toggleDotHost.lastElementChild?.replaceWith(createNotificationDot(dotVisible)); report(dotVisible ? '알림 점 표시' : '알림 점 숨김'); } });
@@ -52,11 +52,11 @@ export async function mountDesignGallery(host: HTMLElement): Promise<void> {
       section('01', '손끝에 닿는 버튼', '같은 모양과 눌림으로 다음 행동을 알려줍니다.', primary,
         row(createButton({ label: '강화', variant: 'secondary', icon: 'upgrade', onClick: () => report('강화 버튼 선택') }), createButton({ label: '난이도 변경', variant: 'pill', onClick: () => report('보조 버튼 선택') })),
         grid('events', createButton({ label: '퀘스트', variant: 'icon', icon: 'quests', notification: true, selected: true, timer: '2일 남음', onClick: () => openPopup('pinned') }), createButton({ label: '우편', variant: 'icon', icon: 'mail', notification: true, onClick: () => report('우편 버튼 선택') }), createButton({ label: '친구', variant: 'icon', icon: 'friends', onClick: () => report('친구 버튼 선택') })),
-        row(createButton({ label: '신화', variant: 'mode', icon: 'mythic' }), createButton({ label: '룰렛', variant: 'mode', icon: 'roulette' }), createButton({ label: '닫기', variant: 'close', icon: 'close' })),
+        row(createButton({ label: GRADE_NAMES.hidden, variant: 'mode', icon: 'mythic' }), createButton({ label: '룰렛', variant: 'mode', icon: 'roulette' }), createButton({ label: '닫기', variant: 'close', icon: 'close' })),
         grid('states', createButton({ label: '소환', cost: '100' }), disabled),
         h('p', { class: 'rtd-gallery-note', text: '비활성 상태 · 여섯 버튼 모두 같은 입력 규칙을 사용합니다.' }),
         row(createButton({ label: '강화', variant: 'secondary', icon: 'upgrade', disabled: true }), createButton({ label: '잠김', variant: 'pill', disabled: true }), createButton({ label: '닫기', variant: 'close', icon: 'close', disabled: true })),
-        row(createButton({ label: '퀘스트', variant: 'icon', icon: 'quests', disabled: true }), createButton({ label: '신화', variant: 'mode', icon: 'mythic', disabled: true }))),
+        row(createButton({ label: '퀘스트', variant: 'icon', icon: 'quests', disabled: true }), createButton({ label: GRADE_NAMES.hidden, variant: 'mode', icon: 'mythic', disabled: true }))),
       section('02', '일곱 빛깔 캐릭터 카드', '기존 등급 순서와 이름을 유지합니다. 카드를 누르면 등급을 글자로도 확인할 수 있습니다.', cardGrid),
       section('03', '작고 명확한 신호', '알림 표시와 가능 횟수는 화면에서 전달받은 값만 보여줍니다.', row(toggleDotHost, toggler), row(createUpgradeArrow(), createNumberBadge(3), h('span', { text: '강화 가능' }))),
       section('04', '가볍게 읽는 재화', '10,800 → 10.8K · 1,200,000 → 1.2M', grid('currencies', ...([

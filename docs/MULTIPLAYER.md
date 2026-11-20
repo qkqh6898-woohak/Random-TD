@@ -2,6 +2,7 @@
 
 > 버전: v0.6 · 관련: [ARCHITECTURE.md](ARCHITECTURE.md), [DEV_PLAN.md](DEV_PLAN.md) M0·M12·M13
 > 목표: 지금은 **안드로이드 1인용**으로 쓰고, 나중에 **아이폰 사용자와 2인 협동·대결**을 붙일 수 있게 처음부터 구조를 맞춰 둔다.
+> **지금 코드 (V2.0 PR-A 확인)**: 멀티 화면·네트워크 코드(`src/net/`)·PWA(아이폰 웹앱)는 **없다**. 있는 것은 sim 준비뿐 — 플레이어별 배열(`state.perks/mods/pity/summonCount …[p]`), `game.json maxPlayers 2`, `Tower.owner`, 리플레이 `players`. 화면은 `LOCAL_PLAYER = 0`. 앱의 네트워크 코드는 자바 `Updater`(업데이트)와 피드백 주소 열기뿐 ([ARCHITECTURE.md](ARCHITECTURE.md) 4장). 돈(`state.gold`)·소환 할인은 아직 판 하나라 멀티 때 플레이어별로 나눠야 한다.
 
 ---
 

@@ -187,7 +187,7 @@ export function cardFlip(progress: number): { scaleX: number; front: boolean } {
   return { scaleX: Math.max(0.04, Math.sin((k * Math.PI) / 2)), front };
 }
 
-/** 승급 연출에서 튀어 오르는 등급 별 수: 노말 1 ~ 레전드 5, 신·신화 5 (가장 화려하게) */
+/** 승급 연출에서 튀어 오르는 등급 별 수: 노말 1 ~ 레전드 5, 신·리미티드 5 (가장 화려하게) */
 export function mergeStarCount(grade: string): number {
   const n: Record<string, number> = { normal: 1, rare: 2, unique: 3, hero: 4, legend: 5, god: 5, hidden: 5 };
   return n[grade] ?? 1;

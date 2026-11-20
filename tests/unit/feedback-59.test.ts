@@ -1,6 +1,6 @@
 /**
  * 피드백 #59 제안 (제목만, 본문·판 기록 JSON 없음 → 리플레이 재현 대상 없음. 대신 바뀐 판을 replay.ts로 기록·재생해 결정성 확인):
- *  1. 신화 해방 필요 조각 20 → 5개 (progression.json hidden.unlockFragments)
+ *  1. 리미티드 해방 필요 조각 20 → 5개 (progression.json hidden.unlockFragments)
  *  2. 스테이지(웨이브 길) 보상 100까지 — 이미 10~100웨이브 10개 이정표가 있어 데이터 확인만
  *  3. 단계 이자 상한 100 → 10,000원 (game.json interest.max)
  *  4. 기본 인원 한도 +10명: 20 → 30 (game.json board.unitCap)
@@ -20,7 +20,7 @@ const rules = buildMatchRules(data);
 const pd = loadProgression(data);
 
 describe('피드백 #59', () => {
-  it('1. 신화 해방에 조각 5개', () => {
+  it('1. 리미티드 해방에 조각 5개', () => {
     expect(pd.hidden.unlockFragments).toBe(5);
   });
 

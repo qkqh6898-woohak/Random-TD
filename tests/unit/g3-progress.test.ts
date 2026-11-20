@@ -72,6 +72,12 @@ describe('데이터 (progression.json)', () => {
     bad3.matchRewards.cardsByStage = [[10, 5], [5, 6]];
     expect(() => parseProgression(bad3, data)).toThrow(/오름차순/);
   });
+  it('V2 L1: 일일과 업적이 같은 id를 쓰면 거절 (목록을 합쳐서 검사 — 같은 id 업적은 받을 수 없고 모두 받기가 끝나지 않음)', () => {
+    const bad = structuredClone(pd);
+    bad.quests.achievements[0]!.id = bad.quests.daily[0]!.id;
+    expect(() => parseProgression(bad, data)).toThrow(/quests\.achievements\[0\]\.id.*겹친다/s);
+    expect(new Set([...pd.quests.daily, ...pd.quests.achievements].map((q) => q.id)).size).toBe(pd.quests.daily.length + pd.quests.achievements.length);
+  });
 });
 
 describe('계정 레벨', () => {
@@ -94,9 +100,9 @@ describe('계정 레벨', () => {
 });
 
 describe('판 보상 표', () => {
-  it('단계·보스·최고 기록 → 경험치·골드·카드·조각 (0단계 패배는 없음)', () => {
-    expect(matchRewardSpec(pd, 0, 0, false)).toEqual({ xp: 0, gold: 0, cards: 0, fragments: 0 });
-    expect(matchRewardSpec(pd, 20, 2, true)).toEqual({ xp: 200 + 100 + 100, gold: 400 + 200, cards: 8, fragments: 2 });
+  it('단계·보스·최고 기록 → 경험치·골드·🔥 불꽃·카드·조각 (0단계 패배는 없음)', () => {
+    expect(matchRewardSpec(pd, 0, 0, false)).toEqual({ xp: 0, gold: 0, flame: 0, cards: 0, fragments: 0 });
+    expect(matchRewardSpec(pd, 20, 2, true)).toEqual({ xp: 200 + 100 + 100, gold: 400 + 200, flame: 40 + 20, cards: 8, fragments: 2 });
     expect(cardsForStage(pd, 1)).toBe(2);
     expect(cardsForStage(pd, 9)).toBe(3);
     expect(cardsForStage(pd, 49)).toBe(14);
@@ -154,26 +160,28 @@ describe('판 보상 표', () => {
 });
 
 describe('영웅 레벨업', () => {
-  it('비용 표: 등급별 카드 %(올림, 최소 1)·골드 %(내림), 최대 레벨이면 없음', () => {
-    expect(levelUpCost(pd, 'normal', 1)).toEqual({ cards: 2, gold: 100 });
-    expect(levelUpCost(pd, 'rare', 2)).toEqual({ cards: 3, gold: 225 });
-    expect(levelUpCost(pd, 'legend', 1)).toEqual({ cards: 1, gold: 400 });
-    expect(levelUpCost(pd, 'hero', 14)).toEqual({ cards: 30, gold: 9900 });
-    expect(levelUpCost(pd, 'hidden', 3)).toEqual({ cards: 2, gold: 1000 });
+  it('비용 표: 등급별 카드 %(올림, 최소 1)·🔥 불꽃 %(내림, V2.0 PR-A — 예전 골드 표 ÷ 10), 최대 레벨이면 없음', () => {
+    expect(levelUpCost(pd, 'normal', 1)).toEqual({ cards: 2, flame: 10 });
+    expect(levelUpCost(pd, 'rare', 2)).toEqual({ cards: 3, flame: 22 });
+    expect(levelUpCost(pd, 'legend', 1)).toEqual({ cards: 1, flame: 40 });
+    expect(levelUpCost(pd, 'hero', 14)).toEqual({ cards: 30, flame: 990 });
+    expect(levelUpCost(pd, 'hidden', 3)).toEqual({ cards: 2, flame: 100 });
     expect(levelUpCost(pd, 'normal', 15)).toBeNull();
     expect(levelUpCost(pd, 'normal', 0)).toBeNull();
   });
-  it('카드 + 골드를 쓰고 레벨이 오른다 / 부족·미보유·최대면 그대로', () => {
+  it('카드 + 🔥 불꽃을 쓰고 레벨이 오른다 (골드는 그대로) / 부족·미보유·최대면 그대로', () => {
     const s = fresh();
     const miner = tower('miner');
     expect(checkLevelUp(s, pd, miner)).toBe('cards');
     s.heroes.miner!.cards = 5;
-    s.gold = 50;
-    expect(levelUpHero(s, pd, miner)).toBe('gold');
-    s.gold = 1000;
+    s.flame = 5;
+    expect(levelUpHero(s, pd, miner)).toBe('flame');
+    s.flame = 100;
+    const gold = s.gold;
     expect(levelUpHero(s, pd, miner)).toBe(2);
     expect(s.heroes.miner).toEqual({ level: 2, cards: 3 });
-    expect(s.gold).toBe(900);
+    expect(s.flame).toBe(90);
+    expect(s.gold).toBe(gold);
     expect(levelUpHero(s, pd, tower('drummer'))).toBe('notOwned');
     s.heroes.miner = { level: 15, cards: 999 };
     expect(levelUpHero(s, pd, miner)).toBe('max');
@@ -209,7 +217,7 @@ describe('영웅 레벨업', () => {
   });
 });
 
-describe('히든(신화) 영웅 해방', () => {
+describe('히든(리미티드) 영웅 해방', () => {
   const hidden = data.towers.towers.filter((t) => t.grade === 'hidden');
   it('처음엔 히든 12종 모두 잠김, 조각 unlockFragments개(피드백 #59: 5개)로 해방(조각 소비) → 잠긴 목록에서 빠짐', () => {
     const s = fresh();
@@ -385,6 +393,19 @@ describe('퀘스트', () => {
     expect(claimAllQuests(all, pd, data, TODAY)).toBeNull();
     expect(all).toEqual(before);
   });
+  it('V2 L1: 셀 수는 있는데 받을 수 없는 퀘스트(일일·업적 id 겹침을 검사 없이 넣음)가 있어도 모두 받기가 끝난다', () => {
+    const bad = structuredClone(pd);
+    const id = bad.quests.daily[0]!.id;
+    bad.quests.achievements[0]!.id = id; // parseProgression이 거절하는 데이터를 강제로
+    const s = fresh();
+    refreshDaily(s, TODAY);
+    s.daily.claimed = [id]; // 일일은 이미 받음 → claimQuest(id)는 일일 쪽만 보고 null
+    for (const k of Object.keys(s.totals) as (keyof typeof s.totals)[]) s.totals[k] = 1_000_000;
+    expect(achievementQuests(s, bad).find((q) => q.quest.id === id)).toMatchObject({ done: true, claimed: false });
+    expect(claimableQuests(s, bad, TODAY)).toBeGreaterThan(0);
+    claimAllQuests(s, bad, data, TODAY); // 예전에는 여기서 끝없이 돌았다
+    expect(s.achievements).not.toContain(id);
+  });
   it('모두 받기: 일일 일부만 끝났으면 보너스는 받지 않는다', () => {
     const s = fresh();
     refreshDaily(s, TODAY);
@@ -444,7 +465,7 @@ describe('저장 · 마이그레이션', () => {
     expect(st.getItem('rtd.account')).toBe(acc);
     expect(st.getItem('rtd.records')).toBe(rec);
     expect(st.getItem('rtd.settings')).toBe('{"v":1,"tapMerge":false}');
-    expect(JSON.parse(st.getItem(PROGRESS_KEY)!).v).toBe(1);
+    expect(JSON.parse(st.getItem(PROGRESS_KEY)!).v).toBe(2); // V2.0 PR-A 형식 2 (🔥 불꽃)
     // 다시 열면 저장된 값 (옮기지 않음)
     st.setItem('rtd.account', JSON.stringify({ v: 1, level: 9 }));
     const again = new ProgressStore(st, pd, data, { seed: 2 });
@@ -463,7 +484,7 @@ describe('저장 · 마이그레이션', () => {
     expect(dev.state.gold).toBeGreaterThan(10000);
     expect(dev.matchOptions(true).lockedHidden).toBeUndefined();
   });
-  it('망가진 값은 새 계정, 틀린 필드만 기본값, 모르는 타워는 버리고 새 타워는 미보유', () => {
+  it('망가진 값은 새 계정, 틀린 필드만 기본값, 모르는 타워 기록은 그대로 들고 다니고(검토 M4) 새 타워는 미보유', () => {
     expect(parseProgress('{', pd, data, 1).level).toBe(1);
     expect(parseProgress('[]', pd, data, 1).gold).toBe(pd.account.startGold);
     const s = fresh();
@@ -477,7 +498,7 @@ describe('저장 · 마이그레이션', () => {
     expect(back.gold).toBe(4321);
     expect(back.gems).toBe(0);
     expect(back.claimedWaves).toEqual([10, 20]);
-    expect(back.heroes.ghost).toBeUndefined();
+    expect(back.heroes.ghost).toEqual({ level: 3, cards: 1 }); // V2.0 PR-A 검토 M4: 데이터에서 빠진 타워도 버리지 않는다
     expect(back.heroes.drummer).toEqual({ level: 0, cards: 0 });
     expect(back.heroes.miner).toEqual({ level: 1, cards: 0 });
   });

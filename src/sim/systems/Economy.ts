@@ -2,7 +2,7 @@
  * 경제 (DEV_PLAN M2-2, GDD 3장).
  *
  * - 시작 자금 1000원 (game.json match.startGold, createMatch가 넣는다).
- * - 소환 비용 100원 (game.json summon.cost). 돈이 모자라면 아무것도 바뀌지 않는다.
+ * - 소환 비용 22원부터 소환마다 +2원, 최대 200원 (game.json summon.cost·costStep·costMax, Summon.summonCost — V2.0 PR-A). 돈이 모자라면 아무것도 바뀌지 않는다.
  * - 일반 몹 처치 보상 = (10 + ⌊s/10⌋) × 몹 보상 배율, 내림 (rules.killReward). s = 몹이 나온 단계 → 10단계 슬라임 = 11원.
  *   보상은 몹이 나올 때 계산해 Mob.reward에 들어 있다 (Spawn). 처치하면 그대로 받는다.
  * - 보유금 상한 없음. 카드 '황금 손'(M4-7, +25%씩)은 earnGold가 모든 돈 획득에 곱한다 (내림). 종족 시너지 돈 보너스(M7)도 여기에.

@@ -16,18 +16,24 @@ export const data: GameData = loadGameData();
  */
 export const arenaData: GameData = { ...data, maps: { ...data.maps, circle: circleV1 as unknown as MapData } };
 
+/**
+ * 규칙 테스트 판은 예전 명령(summon·merge·mergeAll·move)도 받는다 (그 규칙 함수를 시험하므로). 일반 판(화면)은 받지 않는다 — V2 L2.
+ * 일반 판의 거절을 시험할 때는 extra에 { legacyCommands: false }.
+ */
+const LEGACY: Partial<MatchOptions> = { legacyCommands: true };
+
 /** 무한 판 (시험장 맵 = 예전 순환의 정원 v1 — 칸 좌표를 쓰는 규칙 테스트용) */
 export function infinite(seed = 1, extra: Partial<MatchOptions> = {}): Match {
-  return createMatch(arenaData, { seed, mode: 'infinite', ...extra });
+  return createMatch(arenaData, { seed, mode: 'infinite', ...LEGACY, ...extra });
 }
 
 /** 무한 판 (실제 게임 맵 = 순환의 정원 v2) */
 export function realInfinite(seed = 1, extra: Partial<MatchOptions> = {}): Match {
-  return createMatch(data, { seed, mode: 'infinite', ...extra });
+  return createMatch(data, { seed, mode: 'infinite', ...LEGACY, ...extra });
 }
 
 export function campaign(theme = 1, seed = 1): Match {
-  return createMatch(data, { seed, mode: 'campaign', theme });
+  return createMatch(data, { seed, mode: 'campaign', theme, ...LEGACY });
 }
 
 /** 지금 단계 기준으로 몹 한 마리를 바로 넣는다 (등장 시스템을 거치지 않음). */

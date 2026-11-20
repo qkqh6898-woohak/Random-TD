@@ -36,7 +36,7 @@ type SceneLike = {
     mobCount(): number;
     map: { buildable: [number, number][] };
     rules: { towerOrder: string[] };
-    world: { enqueue(c: unknown): { ok: boolean } };
+    world: { enqueue(c: unknown): { ok: boolean }; setCommandFilter(f: null): void };
   };
   renderedTowerCount: number;
   renderedProjectileCount: number;
@@ -99,6 +99,14 @@ async function tilePoint(page: Page, tx: number, ty: number): Promise<{ x: numbe
 }
 
 /** 칸을 탭한다 (소환 연타 0.1초 간격을 지키게 조금 쉰다). */
+/** 판 돈을 정한다 (V2.0 PR-A: 소환 비용이 22원부터 오르므로 '10번 소환 = 0원' 시험은 돈을 310원으로 맞춘다). */
+async function setGold(page: Page, gold: number): Promise<void> {
+  await page.evaluate((g) => {
+    const s = (window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } }).__rtd.game.scene.getScene('Game') as SceneLike;
+    s.match.state.gold = g;
+  }, gold);
+}
+
 async function tapTile(page: Page, tx: number, ty: number): Promise<void> {
   const p = await tilePoint(page, tx, ty);
   await page.touchscreen.tap(p.x, p.y);
@@ -130,19 +138,20 @@ const CELLS = 24;
 /** 인원 한도 (G-1 game.json board.unitCap, 피드백 #59로 20 → 30) — 🗼 n/한도 */
 const CAP = 30;
 
-test('빈 배치 칸 탭 → 소환: 타워가 보이고 돈 1,000 → 900원, 🗼 1/32 / 경로·타워 칸 탭은 아무 일 없음', async ({ page }) => {
+test('빈 배치 칸 탭 → 소환: 타워가 보이고 돈 1,000 → 978원(V2.0 PR-A 첫 소환 22원), 🗼 1/32 / 경로·타워 칸 탭은 아무 일 없음', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
   await expect(page.getByTestId('hud-towers')).toHaveText(`0/${CAP}`);
-  // T-2: 비용은 [🎲 소환 100원] 버튼이 보여 준다 (안내 글자는 칸이 가득 찼을 때만)
-  await expect(page.getByTestId('hud-summon')).toContainText('100원');
+  // T-2: 비용은 [🎲 소환 22원] 버튼이 보여 준다 (안내 글자는 칸이 가득 찼을 때만) · V2.0 PR-A: 소환마다 +2원
+  await expect(page.getByTestId('hud-summon')).toContainText('22원');
   await expect(page.getByTestId('hud-hint')).toHaveText('');
   await tapTile(page, 1, 2);
-  await expect(page.getByTestId('hud-gold')).toHaveText('900원');
+  await expect(page.getByTestId('hud-gold')).toHaveText('978원');
   await expect(page.getByTestId('hud-towers')).toHaveText(`1/${CAP}`);
+  await expect(page.getByTestId('hud-summon')).toContainText('24원');
   let v = await view(page);
   expect(v.towers).toBe(1);
-  expect(v.gold).toBe(900);
+  expect(v.gold).toBe(978);
   await expect.poll(async () => (await view(page)).renderedTowers).toBe(1);
   const t = await page.evaluate(() => {
     const s = (window as unknown as { __rtd: { game: { scene: { getScene(k: string): unknown } } } }).__rtd.game.scene.getScene('Game') as SceneLike;
@@ -157,14 +166,15 @@ test('빈 배치 칸 탭 → 소환: 타워가 보이고 돈 1,000 → 900원, �
   await page.waitForTimeout(200);
   v = await view(page);
   expect(v.towers).toBe(1);
-  expect(v.gold).toBe(900);
+  expect(v.gold).toBe(978);
   await expect(page.locator('.toast')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
-test('돈 부족: 10번 소환해 0원 → 11번째 탭은 "100원이 필요해요" 알림, 안내가 빨갛게', async ({ page }) => {
+test('돈 부족: 10번 소환해 0원 → 11번째 탭은 "42원이 필요해요" 알림, 안내가 빨갛게', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page);
+  await setGold(page, 310); // V2.0 PR-A: 22 + 24 + … + 40원 = 10번 소환
   for (const [x, y] of RING.slice(0, 10)) await tapTile(page, x, y);
   await expect(page.getByTestId('hud-gold')).toHaveText('0원');
   // G-1: 🗼 = 내 타워 인원 / 인원 한도
@@ -173,7 +183,7 @@ test('돈 부족: 10번 소환해 0원 → 11번째 탭은 "100원이 필요해�
   await expect(page.getByTestId('hud-hint')).toHaveClass(/is-short/);
   await expect(page.getByTestId('hud-summon')).toHaveClass(/is-off/);
   await tapTile(page, 4, 4);
-  await expect(page.locator('.toast', { hasText: '100원이 필요해요' })).toBeVisible();
+  await expect(page.locator('.toast', { hasText: '42원이 필요해요' })).toBeVisible();
   const v = await view(page);
   expect(v.towers).toBe(10);
   expect(v.summons).toBe(10);
@@ -181,7 +191,7 @@ test('돈 부족: 10번 소환해 0원 → 11번째 탭은 "100원이 필요해�
   // 연타해도 같은 알림이 쌓이지 않는다
   await tapTile(page, 4, 4);
   await tapTile(page, 2, 6);
-  await expect(page.locator('.toast', { hasText: '100원이 필요해요' })).toHaveCount(1);
+  await expect(page.locator('.toast', { hasText: '42원이 필요해요' })).toHaveCount(1);
   await shot(page, 'M2-no-gold');
   expect(errors).toEqual([]);
 });
@@ -254,9 +264,10 @@ async function labels(page: Page): Promise<{ labels: string[]; coins: number }> 
   });
 }
 
-test('자동 공격: 몹을 잡으면 피해 숫자·+10원·동전이 뜨고 돈이 늘어 더 소환한다 (M2 스크린샷)', async ({ page }) => {
+test('자동 공격: 몹을 잡으면 피해 숫자·+5원·동전이 뜨고 돈이 늘어 더 소환한다 (M2 스크린샷)', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=42');
+  await setGold(page, 310); // V2.0 PR-A: 10번 소환 = 310원
   for (const [x, y] of RING.slice(0, 10)) await tapTile(page, x, y);
   await expect(page.getByTestId('hud-gold')).toHaveText('0원');
   // 1단계 시작 직후로 빨리 감고, 그다음은 실제 시간으로 (최근 사건만 연출이 생긴다)
@@ -265,24 +276,24 @@ test('자동 공격: 몹을 잡으면 피해 숫자·+10원·동전이 뜨고 �
   await page.getByRole('button', { name: '배속' }).click(); // ×2
   await expect.poll(async () => (await labels(page)).labels.filter((l) => /^\d+$/.test(l)).length, { timeout: 8000 }).toBeGreaterThan(0);
   await expect.poll(async () => (await view(page)).kills, { timeout: 15000 }).toBeGreaterThan(2);
-  // 처치하면 '+10원'이 떠오르거나 동전이 날아간다
+  // 처치하면 '+5원'(V2 사용자 결정 D 1단계 처치 보상 5 + ⌊1/4⌋)이 떠오르거나 동전이 날아간다
   await expect.poll(async () => {
     const l = await labels(page);
-    return l.labels.includes('+10원') || l.coins > 0;
+    return l.labels.some((t) => /^\+\d+원$/.test(t)) || l.coins > 0; // 슬라임 +5원 · 고블린 떼(×0.4) +2원
   }, { timeout: 15000 }).toBe(true);
-  // 멈추고 비교: 돈 = 번 돈 = 처치 × 10원 (1단계 슬라임) + 광부 특색 돈(+5원씩, M3b), HUD 돈 = sim 돈
+  // 멈추고 비교: 돈 = 번 돈 = 처치 × 5원 (1단계 슬라임) + 광부 특색 돈(+5원씩, M3b), HUD 돈 = sim 돈
   await page.getByRole('button', { name: '일시정지' }).click();
   const v = await view(page);
   expect(v.gold).toBe(v.goldEarned);
-  const extra = v.goldEarned - v.kills * 10;
+  const extra = v.goldEarned - v.kills * 5;
   expect(extra).toBeGreaterThanOrEqual(0);
   expect(extra % 5).toBe(0);
   await expect(page.getByTestId('hud-gold')).toHaveText(won(v.gold));
   await page.getByRole('button', { name: '계속' }).click();
 
-  // 4단계까지: 번 돈으로 4번 더 소환 (탭)
+  // 4단계까지: 번 돈으로 4번 더 소환 (탭) — 42 + 44 + 46 + 48 = 180원
   await fastForward(page, 4800 - (await view(page)).tick);
-  expect((await view(page)).gold).toBeGreaterThanOrEqual(400);
+  expect((await view(page)).gold).toBeGreaterThanOrEqual(180);
   for (const [x, y] of RING.slice(10, 14)) await tapTile(page, x, y);
   await expect.poll(async () => (await view(page)).towers).toBe(14);
   await expect.poll(async () => (await view(page)).renderedTowers).toBe(14);
@@ -301,46 +312,63 @@ test('자동 공격: 몹을 잡으면 피해 숫자·+10원·동전이 뜨고 �
 /** 페이지 안에서 Game 장면을 꺼내는 코드 (page.evaluate 안에서만 쓴다). */
 type W = { __rtd: { game: { scene: { getScene(k: string): unknown } } } };
 
-test('검토 반영: 타워 머리(위 칸으로 삐져나온 헬멧·별)를 탭해도 위 칸에 소환되지 않는다', async ({ page }) => {
+test('검토 반영: 타워 머리(그려진 헬멧·별)를 탭해도 위 칸에 소환되지 않는다 · V2.0 PR-A 머리가 칸 안이면 위 칸은 바로 소환', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=7');
   await tapTile(page, 1, 4);
   await expect(page.getByTestId('hud-towers')).toHaveText(`1/${CAP}`);
   await expect.poll(async () => (await view(page)).renderedTowers).toBe(1);
-  // (1, 4) 칸 위쪽 경계에서 0.12칸·0.25칸 위 = 캐릭터 헬멧·별이 그려진 자리 (리뷰 재현: 여기를 누르면 위 칸 (1, 3)에 소환됐다)
-  for (const up of [0.12, 0.25]) {
-    const p = await page.evaluate(
-      ([dy]) => {
+  // 머리 끝이 칸 위 경계보다 얼마나 위인가 (칸 배수): 발밑 = 칸 중심 + 0.3, 머리 끝 = 발밑 − 1.136 × 그림 배율.
+  // V2.0 PR-A: 노말은 그림 배율 ≈0.64~0.71이라 머리 끝이 칸 안 (예전 ≈0.98배는 칸 위로 0.3칸쯤 삐져나왔다)
+  const scale = await page.evaluate(() => {
+    const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike & { towerLayer: { artScaleOf(id: number): number | undefined } };
+    return s.towerLayer.artScaleOf(s.match.towers()[0]!.id) ?? 0;
+  });
+  const protrude = (0.3 + 0.776 + 0.06) * scale - 0.8;
+  expect(scale).toBeGreaterThan(0.6);
+  expect(scale).toBeLessThan(0.75);
+  // 그려진 머리 자리 (삐져나왔으면 그 가운데, 아니면 칸 위 경계 바로 아래) → 위 칸 (1, 3)에 소환되지 않는다
+  const dy = protrude > 0.02 ? protrude / 2 : -0.05;
+  const point = async (up: number) =>
+    page.evaluate(
+      ([d]) => {
         const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
         const L = s.mapLayout;
         const r = document.getElementById('stage')!.getBoundingClientRect();
         const k = r.width / 1080;
-        return { x: r.left + (L.originX + 1.5 * L.tile) * k, y: r.top + (L.originY + (4 - dy!) * L.tile) * k };
+        return { x: r.left + (L.originX + 1.5 * L.tile) * k, y: r.top + (L.originY + (4 - d!) * L.tile) * k };
       },
       [up] as const,
     );
-    await page.touchscreen.tap(p.x, p.y);
-    await page.waitForTimeout(150);
-  }
+  const p = await point(dy);
+  await page.touchscreen.tap(p.x, p.y);
+  await page.waitForTimeout(200);
   let v = await view(page);
   expect(v.towers).toBe(1);
-  expect(v.gold).toBe(900);
+  expect(v.gold).toBe(978);
+  // 칸 안 머리를 눌렀으면 그 타워의 정보 패널이 열린다 → 닫고 계속
+  const close = page.locator('[data-action="panel-close"]');
+  if (await close.count()) await close.click();
+  await expect(page.getByTestId('tower-panel')).toHaveCount(0);
   // 위 칸 가운데는 그대로 소환된다
   await tapTile(page, 1, 3);
   await expect(page.getByTestId('hud-towers')).toHaveText(`2/${CAP}`);
   v = await view(page);
-  expect(v.gold).toBe(800);
+  expect(v.gold).toBe(954); // 22 + 24
   expect(errors).toEqual([]);
 });
 
-test('검토 반영: 느린 프레임(한 번에 5틱)에도 소환 연출과 "100원이 필요해요" 알림이 빠지지 않는다', async ({ page }) => {
+test('검토 반영: 느린 프레임(한 번에 5틱)에도 소환 연출과 "42원이 필요해요" 알림이 빠지지 않는다', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=42');
+  await setGold(page, 310); // V2.0 PR-A: 10번 소환 = 310원
   // 소환 명령을 넣고 같은 동기 구간에서 300ms짜리 프레임 하나를 돌린다 (maxFrameMs 250 → 5틱).
   // 예전에는 '최근 3틱' 사건만 연출해서, 첫 틱에 실행된 소환의 빛 기둥·등장 동작이 사라졌다.
   const r = await page.evaluate(() => {
     const s = (window as unknown as W).__rtd.game.scene.getScene('Game') as SceneLike;
     const before = { fx: s.summonEffects, tick: s.match.tick };
+    // 예전 칸 지정 summon(리플레이용)은 일반 판에서 거절된다 (V2 L2) — 이 시험(칸·돈을 정확히 맞춤)에서만 거절 필터를 끈다
+    s.match.world.setCommandFilter(null);
     s.match.world.enqueue({ type: 'summon', x: 1, y: 2 });
     s.update(s.time.now, 300);
     return { fx: s.summonEffects - before.fx, ticks: s.match.tick - before.tick, towers: s.match.towers().length };
@@ -362,7 +390,7 @@ test('검토 반영: 느린 프레임(한 번에 5틱)에도 소환 연출과 "1
     s.match.world.enqueue({ type: 'summon', x: 4, y: 6 });
     s.update(s.time.now, 300);
   });
-  await expect(page.locator('.toast', { hasText: '100원이 필요해요' })).toBeVisible();
+  await expect(page.locator('.toast', { hasText: '42원이 필요해요' })).toBeVisible();
   expect((await view(page)).towers).toBe(10);
   expect(errors).toEqual([]);
 });

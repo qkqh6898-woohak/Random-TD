@@ -166,7 +166,8 @@ export interface ReplayResult {
 export function playReplay(data: GameData, file: ReplayFile, opts: { onStep?: (match: Match) => void } = {}): ReplayResult {
   const err = validateReplay(file);
   if (err) throw new Error(`리플레이 ${file.name ?? '?'}: ${err}`);
-  const match = createMatch(data, replayMatchOptions(file));
+  // 예전 리플레이(칸 무더기 전 명령)도 그대로 재생 (V2 L2 — 일반 판은 예전 명령을 받지 않는다)
+  const match = createMatch(data, { ...replayMatchOptions(file), legacyCommands: true });
   for (const c of file.commands) {
     const r = match.world.enqueue(c as unknown as CommandInput);
     if (!r.ok) throw new Error(`리플레이 ${file.name}: 명령을 예약할 수 없다 (${r.reason})`);
@@ -220,7 +221,7 @@ export function recordReplay(data: GameData, match: Match, info: { name: string;
   const every = info.checkpointTicks ?? DEFAULT_CHECKPOINT_TICKS;
   const draft = replaySnapshot(match, { name: info.name, note: info.note, dataHash: dataFingerprint(data) });
   // 다시 돌리며 주기 해시를 모은다
-  const again = createMatch(data, replayMatchOptions(draft));
+  const again = createMatch(data, { ...replayMatchOptions(draft), legacyCommands: true });
   for (const c of draft.commands) {
     const r = again.world.enqueue(c as unknown as CommandInput);
     if (!r.ok) throw new Error(`리플레이 기록 ${info.name}: ${r.reason}`);

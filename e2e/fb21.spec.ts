@@ -47,7 +47,7 @@ test('피드백 #21: 맵 캐릭터 테두리 = 등급 색 (받침대와 같은 �
   await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
   await expect.poll(() => sim(page, (s) => s.mapLayout.tile)).toBeGreaterThan(0);
-  // 노말·레어·유니크·히어로·레전드·신·신화
+  // 노말·레어·유니크·히어로·레전드·신·리미티드
   const ids = ['miner', 'merchant', 'icemage', 'summoner', 'dragoncaller', 'fate', 'elemental'];
   await sim(
     page,

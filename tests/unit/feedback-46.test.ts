@@ -88,7 +88,7 @@ describe('autoSellTiles', () => {
     for (const [x, y] of tiles) m.world.enqueue({ type: 'sellTower', x, y });
     m.step();
     expect(eventsOf(m, 'sell').map((e) => e.grade)).toEqual(new Array(normals).fill('normal'));
-    expect(m.state.gold).toBe(goldBefore + normals * 50);
+    expect(m.state.gold).toBe(goldBefore + normals * 15); // V2.0 PR-A 노말 판매가 15원
     // 남은 내 타워에는 노말이 없다
     for (const [x, y] of m.map.buildable) {
       for (const t of towersAt(m.world, x, y)) expect(m.rules.towers.get(t.tower)?.grade).not.toBe('normal');

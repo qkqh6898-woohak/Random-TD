@@ -6,9 +6,11 @@
  * - 개발자 모드 판(debug)이나 치트를 쓴 판(debugUsed)은 남기지 않는다 — 기록은 실제로 해 본 결과만.
  * - 판 식별자(runId)로 같은 판을 두 번 세지 않는다 (이어 한 판도 저장에 runId가 실려 한 번만).
  * - 키 `rtd.records`. v0.1.7(Codex 갈래) 기기는 `random-td.battle-records`(형식 v1·v2)에 남아 있으므로 새 키가 없으면 그것을 읽는다.
- * - 진행 중인 판 저장(MatchSaves)과 따로 둔다. 망가진 값은 빈 기록으로.
+ * - 진행 중인 판 저장(MatchSaves)과 따로 둔다. 망가진 칸·항목만 버리고(V2 L3), 더 높은 형식(새 앱이 쓴 기록)은 덮어쓰지 않는다.
  */
 import type { Match } from '../sim/match';
+import type { MatchRules } from '../sim/rules';
+import type { AbandonedRun } from './MatchSaves';
 import { bossForStage } from '../sim/systems/BossSchedule';
 import { TICK_HZ } from '../sim/World';
 import type { KeyValueStorage } from './storage';
@@ -51,32 +53,55 @@ export function emptyRecord(): BattleRecord {
   return { version: VERSION, bestStage: 0, bossClears: {}, bestChallenge: 0, recent: [] };
 }
 
-/** 저장 글자 → 기록 (순수). 형식 v1(최근 판 없음)·v2를 읽고, 망가졌으면 빈 기록. */
+/**
+ * 저장 글자 → 기록 (순수). 형식 v1(최근 판 없음)·v2를 읽는다. JSON이 아니면 빈 기록.
+ * V2 검토 L3: 예전엔 칸 하나만 이상해도 통째로 빈 기록이 되고 다음 패배 때 그 빈 기록을 덮어써 최고 기록이 사라졌다 →
+ * 이상한 칸·항목만 버린다 (최고 단계·최고 도전이 이상하면 0, 보스 처치 단계는 1 이상 정수이면서 최고 단계 이하인 것만, 최근 판은 맞는 것만).
+ */
 export function parseRecord(raw: string | null): BattleRecord {
-  if (raw === null) return emptyRecord();
+  return parseRecordInfo(raw).record;
+}
+
+/** parseRecord + 지금 모르는 더 높은 형식인가 (future — 그런 기록은 읽기만 하고 덮어쓰지 않는다, V2 L3). */
+export function parseRecordInfo(raw: string | null): { record: BattleRecord; future: boolean } {
+  if (raw === null) return { record: emptyRecord(), future: false };
+  let r: Record<string, unknown>;
   try {
-    const r = JSON.parse(raw) as Omit<Partial<BattleRecord>, 'version'> & { version?: number };
-    if ((r.version !== 1 && r.version !== VERSION) || !nonNegInt(r.bestStage) || !nonNegInt(r.bestChallenge)) return emptyRecord();
-    const clears = r.bossClears;
-    if (!clears || typeof clears !== 'object' || Array.isArray(clears)) return emptyRecord();
-    const best = r.bestStage;
-    if (!Object.values(clears).every((s) => Number.isSafeInteger(s) && s > 0 && s <= best)) return emptyRecord();
-    const recent = r.version === VERSION && Array.isArray(r.recent) ? r.recent.filter(validRun).slice(0, RECENT_LIMIT) : [];
-    return { version: VERSION, bestStage: best, bossClears: { ...clears }, bestChallenge: r.bestChallenge, recent };
+    const v = JSON.parse(raw) as unknown;
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return { record: emptyRecord(), future: false };
+    r = v as Record<string, unknown>;
   } catch {
-    return emptyRecord();
+    return { record: emptyRecord(), future: false };
   }
+  const future = typeof r.version === 'number' && r.version > VERSION;
+  const best = nonNegInt(r.bestStage) ? r.bestStage : 0;
+  const bossClears: Record<string, number> = {};
+  const clears = r.bossClears;
+  if (clears && typeof clears === 'object' && !Array.isArray(clears)) {
+    for (const [id, st] of Object.entries(clears as Record<string, unknown>)) {
+      if (Number.isSafeInteger(st) && (st as number) > 0 && (st as number) <= best) bossClears[id] = st as number;
+    }
+  }
+  const recent = r.version !== 1 && Array.isArray(r.recent) ? r.recent.filter(validRun).slice(0, RECENT_LIMIT) : [];
+  return {
+    record: { version: VERSION, bestStage: best, bossClears, bestChallenge: nonNegInt(r.bestChallenge) ? r.bestChallenge : 0, recent },
+    future,
+  };
 }
 
 export class BattleRecords {
   constructor(private readonly storage: KeyValueStorage) {}
 
   read(): BattleRecord {
+    return this.readInfo().record;
+  }
+
+  private readInfo(): { record: BattleRecord; future: boolean } {
     try {
       const raw = this.storage.getItem(RECORDS_KEY) ?? this.storage.getItem(LEGACY_RECORDS_KEY);
-      return parseRecord(raw);
+      return parseRecordInfo(raw);
     } catch {
-      return emptyRecord();
+      return { record: emptyRecord(), future: false };
     }
   }
 
@@ -87,28 +112,62 @@ export class BattleRecords {
   complete(match: Match, runId: string): { bestStage: number; newBest: boolean } | null {
     const { rules, state, world } = match;
     if (!match.defeated || state.mode !== 'infinite' || state.debug || state.debugUsed || world.players !== 1) return null;
-    const record = this.read();
-    if (record.recent.some((r) => r.id === runId)) return { bestStage: record.bestStage, newBest: false };
-    const newBest = state.stage > record.bestStage;
-    record.bestStage = Math.max(record.bestStage, state.stage);
-    record.bestChallenge = Math.max(record.bestChallenge, state.challengeBest);
+    return this.record(rules, {
+      runId,
+      mode: state.mode,
+      theme: state.theme,
+      stage: state.stage,
+      bossesKilled: state.bossesKilled,
+      challengeBest: state.challengeBest,
+      durationSeconds: Math.floor((state.defeatTick + 1) / TICK_HZ),
+    });
+  }
+
+  /**
+   * 업데이트로 버린 진행 중 판을 기록한다 (V2 M2a — MatchSaves.onAbandoned). 패배 판과 같은 조건(일반 1인 무한 모드)만, 게임 시간 = 저장한 틱.
+   * rules = 지금 데이터의 규칙 (보스 주기·보스 id — 데이터가 바뀌었으면 근사값).
+   */
+  completeAbandoned(rules: MatchRules, run: Pick<AbandonedRun, 'runId' | 'mode' | 'theme' | 'players' | 'stage' | 'bossesKilled' | 'challengeBest' | 'tick' | 'dev'>): { bestStage: number; newBest: boolean } | null {
+    if (run.mode !== 'infinite' || run.dev || run.players !== 1) return null;
+    return this.record(rules, {
+      runId: run.runId,
+      mode: run.mode,
+      theme: run.theme,
+      stage: run.stage,
+      bossesKilled: run.bossesKilled,
+      challengeBest: run.challengeBest,
+      durationSeconds: Math.floor(run.tick / TICK_HZ),
+    });
+  }
+
+  private record(
+    rules: MatchRules,
+    r: { runId: string; mode: string; theme: number; stage: number; bossesKilled: number; challengeBest: number; durationSeconds: number },
+  ): { bestStage: number; newBest: boolean } | null {
+    const { record, future } = this.readInfo();
+    if (record.recent.some((x) => x.id === r.runId)) return { bestStage: record.bestStage, newBest: false };
+    const newBest = r.stage > record.bestStage;
+    record.bestStage = Math.max(record.bestStage, r.stage);
+    record.bestChallenge = Math.max(record.bestChallenge, r.challengeBest);
     // 보스를 잡아야 다음 보스 단계로 넘어간다 (못 잡으면 제한 시간 패배) → 처치 수 × 주기까지의 보스 단계가 처치한 단계
-    const lastCleared = Math.min(state.stage, state.bossesKilled * rules.bossEvery);
+    const lastCleared = Math.min(r.stage, r.bossesKilled * rules.bossEvery);
     const ids: string[] = [];
     for (let stage = rules.bossEvery; stage <= lastCleared; stage += rules.bossEvery) {
-      const boss = bossForStage(rules, state.mode, state.theme, stage);
+      const boss = bossForStage(rules, r.mode, r.theme, stage);
       if (!boss) continue;
       if (!ids.includes(boss.id)) ids.push(boss.id);
       record.bossClears[boss.id] = Math.max(record.bossClears[boss.id] ?? 0, stage);
     }
     const run: RunResult = {
-      id: runId,
-      stage: state.stage,
-      durationSeconds: Math.floor((state.defeatTick + 1) / TICK_HZ),
+      id: r.runId,
+      stage: r.stage,
+      durationSeconds: r.durationSeconds,
       bossIds: ids,
-      bestChallenge: state.challengeBest,
+      bestChallenge: r.challengeBest,
     };
     record.recent = [run, ...record.recent].slice(0, RECENT_LIMIT);
+    // 더 새 앱이 쓴 기록(모르는 형식)은 덮어쓰지 않는다 (V2 L3 — 이 판은 화면 결과만, 기록은 새 앱이 그대로 갖고 있음)
+    if (future) return { bestStage: record.bestStage, newBest };
     try {
       this.storage.setItem(RECORDS_KEY, JSON.stringify(record));
     } catch {

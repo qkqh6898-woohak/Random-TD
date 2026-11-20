@@ -7,7 +7,7 @@
   "hero": 600,
   "legend": 2100,
   "god": 9000,
-  "hidden": 4500
+  "hidden": 20250
  },
  "notes": "atk=물리 공격력, matk=마법 공격력, tatk=고정 피해. aps=초당 공격 횟수, range=사거리(칸), shapeValue=광역 반경 또는 관통/연쇄/다중 수. design.ratio=등급 기준 DPS 대비 목표 전투력. 특색 수치 params는 [Lv1, Lv15]. 특색 수치 params는 [Lv1, Lv15] 배열(타워 레벨로 균등 보간) 또는 레벨과 무관한 상수. 초 단위 값은 0.05초(1틱) 단위, 비율은 0~1 소수 (M3b: 능력 모듈 src/sim/abilities/<id>.ts가 읽는다). lore·role = 캐릭터 설명 두 문장(정보 패널·캐릭터 카드, 화면 전용): lore = 어떤 인물인가, role = 전투에서 하는 일 (원문 docs/art/tower_descs.json).",
  "towers": [
@@ -2299,8 +2299,8 @@
     "ratio": 0.9,
     "shapeFactor": 4.0
    },
-   "atk": 330,
-   "matk": 330,
+   "atk": 1485,
+   "matk": 1485,
    "tatk": 0,
    "faction": "alliance",
    "element": "multi"
@@ -2341,7 +2341,7 @@
     "ratio": 0.55,
     "shapeFactor": 1.0
    },
-   "atk": 2550,
+   "atk": 11475,
    "matk": 0,
    "tatk": 0,
    "faction": "alliance",
@@ -2384,7 +2384,7 @@
     "ratio": 1.2,
     "shapeFactor": 1.0
    },
-   "atk": 2250,
+   "atk": 10125,
    "matk": 0,
    "tatk": 0,
    "faction": "alliance",
@@ -2427,7 +2427,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 2700,
+   "matk": 12150,
    "tatk": 0,
    "faction": "alliance",
    "element": null
@@ -2470,7 +2470,7 @@
     "ratio": 1.0,
     "shapeFactor": 3.25
    },
-   "atk": 1380,
+   "atk": 6210,
    "matk": 0,
    "tatk": 0,
    "faction": "alliance",
@@ -2513,7 +2513,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 2700,
+   "matk": 12150,
    "tatk": 0,
    "faction": "alliance",
    "element": null
@@ -2556,7 +2556,7 @@
     "ratio": 0.7,
     "shapeFactor": 1.0
    },
-   "atk": 1500,
+   "atk": 6750,
    "matk": 0,
    "tatk": 0,
    "faction": "alliance",
@@ -2604,7 +2604,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 1155,
+   "matk": 5197.5,
    "tatk": 0,
    "faction": "alliance",
    "element": "poison"
@@ -2645,7 +2645,7 @@
     "ratio": 0.8,
     "shapeFactor": 4.0
    },
-   "atk": 1800,
+   "atk": 8100,
    "matk": 0,
    "tatk": 0,
    "faction": "alliance",
@@ -2689,7 +2689,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 2550,
+   "matk": 11475,
    "tatk": 0,
    "faction": "alliance",
    "element": null
@@ -2731,7 +2731,7 @@
     "shapeFactor": 1.0
    },
    "atk": 0,
-   "matk": 2250,
+   "matk": 10125,
    "tatk": 0,
    "faction": "alliance",
    "element": null
@@ -2773,7 +2773,7 @@
     "shapeFactor": 3.21
    },
    "atk": 0,
-   "matk": 1185,
+   "matk": 5332.5,
    "tatk": 0,
    "faction": "alliance",
    "element": "lightning"

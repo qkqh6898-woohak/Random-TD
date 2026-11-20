@@ -1,6 +1,7 @@
 /**
  * 고르기 창 내용 (순수 함수, DOM 없음 → 단위 테스트): 보스 카드 묶음·승급의 축복 선택 → 제목·선택지 글자.
  */
+import { GRADE_NAMES as ALL_GRADE_NAMES } from '../../data/grades';
 import type { CardOffer, MergePick } from '../../sim/state';
 import type { MatchRules } from '../../sim/rules';
 import { CARD_PICK_TITLE, MERGE_PICK_TITLE, PICK_CARD_TITLE, pickCardSub } from '../messages';
@@ -70,7 +71,7 @@ export function cardChoiceModel(rules: Pick<MatchRules, 'cardById' | 'bossEvery'
 }
 
 /** 등급 → 한국어 */
-const GRADE_NAMES: Readonly<Record<string, string>> = { normal: '노말', rare: '레어', unique: '유니크', hero: '히어로', legend: '레전드', god: '신', hidden: '신화' };
+const GRADE_NAMES: Readonly<Record<string, string>> = ALL_GRADE_NAMES;
 
 /** 승급의 축복 선택 → 고르기 창 (0 = 지금 결과 그대로, 1 = 다른 결과). */
 export function mergeChoiceModel(rules: Pick<MatchRules, 'towers'>, pick: MergePick, currentTower: string): ChoiceModel {

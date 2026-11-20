@@ -1,5 +1,5 @@
 /**
- * G-1 게임 시스템 (sim 규칙): 칸 무더기(한 칸에 같은 타워 최대 3개) · 연쇄 승급 · 소환 도박 4종 · 천장 · 3택 1 강화 선택 · 필살기 · 신화 조합.
+ * G-1 게임 시스템 (sim 규칙): 칸 무더기(한 칸에 같은 타워 최대 3개) · 연쇄 승급 · 소환 도박 4종 · 천장 · 3택 1 강화 선택 · 필살기 · 리미티드 조합.
  * 시험장(arena) = 예전 순환의 정원 v1(배치 71칸) — 칸 좌표가 흔들리지 않게. 진행도 3000 = 칸 (4, 1), 그 옆 (4, 2) 타워와 1칸.
  */
 import { describe, expect, it } from 'vitest';
@@ -52,7 +52,8 @@ describe('데이터 (G-1)', () => {
     for (const k of rules.gachaKinds) expect(k.outcomes.reduce((a, o) => a + o.bp, 0)).toBe(BP_ONE);
     expect(rules.factionOrder).toHaveLength(7);
     expect(rules.recipes).toHaveLength(12);
-    expect(gradeRank('hidden')).toBe(GACHA_RANK.legend);
+    expect(gradeRank('hidden')).toBe(7); // V2.0 PR-A: 리미티드 = 가장 높은 등급 (예전엔 레전드와 같은 칸)
+    expect(gradeRank('hidden')).toBeGreaterThan(gradeRank('god'));
   });
 
   it('필살기 종류: 광역 → 폭격, 지원·경제 → 가속, 마법 → 기절, 그 밖 → 폭격 (히어로 이상만)', () => {
@@ -313,7 +314,7 @@ describe('소환 도박 4종 · 천장', () => {
     }
   });
 
-  it('신화 도박 천장: 25번 레전드 없이 → 다음은 레전드 이상, 카운터 0', () => {
+  it('레전드 도박 천장: 25번 레전드 없이 → 다음은 레전드 이상, 카운터 0', () => {
     const m = arena(29);
     m.state.gold = 1_000_000;
     m.state.pity[0]![4] = 25;
@@ -450,7 +451,7 @@ describe('필살기', () => {
   });
 });
 
-describe('신화 조합 (craft)', () => {
+describe('리미티드 조합 (craft)', () => {
   it('재료가 모두 판 위에 있으면 만든다: 재료는 사라지고 결과는 비게 되는 첫 재료 칸 · craft 사건', () => {
     const m = arena(45);
     const r = rules.recipes.findIndex((x) => x.id === 'goldking');
@@ -494,7 +495,7 @@ describe('신화 조합 (craft)', () => {
     expect(towersAt(m.world, p[0]![0], p[0]![1]).map((t) => t.id)).toEqual([miners[0]!.id, miners[1]!.id]);
   });
 
-  it('G-3 잠긴 신화 (isHiddenLocked): 재료가 모여도 locked로 실패, 도감에 🔒 해방 필요 (조각 n/20) · 기본(목록 없음)은 모두 열림', async () => {
+  it('G-3 잠긴 리미티드 (isHiddenLocked): 재료가 모여도 locked로 실패, 도감에 🔒 해방 필요 (조각 n/20) · 기본(목록 없음)은 모두 열림', async () => {
     const { isHiddenLocked } = await import('../../src/sim/unlocks');
     const { codexSheetModel } = await import('../../src/ui/sheets/g1Models');
     const m = arena(51);
@@ -589,6 +590,7 @@ describe('G-1 화면 모델 (순수)', () => {
   it('소환 시트: 확률 줄·천장 글자·버튼 상태', async () => {
     const { summonSheetModel, oddsLine } = await import('../../src/ui/sheets/g1Models');
     const m = realInfinite(61);
+    m.state.gold = 5000; // V2.0 PR-A: 레전드 도박 2,000원
     const factions = rules.factionOrder.map((id) => ({ id, name: id, color: '#fff' }));
     const model = summonSheetModel(m.ctx, m.world, 0, factions, 2, data.game.summonGamble.kinds);
     expect(model.normal.pity).toBe('천장까지 30회 (레어)');
@@ -608,7 +610,7 @@ describe('G-1 화면 모델 (순수)', () => {
     expect(oddsLine([{ grade: 'none', bp: 0 }, { grade: 'rare', bp: 10000 }])).toBe('레어 100%');
   });
 
-  it('신화 도감: 발견 전 ??? + 힌트 재료 하나, 발견하면 이름·재료·[제작], 재료가 모이면 새로 발견', async () => {
+  it('리미티드 도감: 발견 전 ??? + 힌트 재료 하나, 발견하면 이름·재료·[제작], 재료가 모이면 새로 발견', async () => {
     const { codexSheetModel, hintMaterial, newlyDiscovered } = await import('../../src/ui/sheets/g1Models');
     const m = arena(63);
     const towers = data.towers.towers;

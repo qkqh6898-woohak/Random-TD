@@ -14,12 +14,12 @@ test('피드백 #31: [⬆ 모두 레벨업] · 정렬 [레벨업 가능]', async
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await openLobby(page);
-  // 광부: 카드 5장(Lv1→2: 2장·100, Lv2→3: 3장·150), 궁수: 카드 2장(Lv1→2), 골드 1,000
+  // 광부: 카드 5장(Lv1→2: 2장·🔥10, Lv2→3: 3장·🔥15), 궁수: 카드 2장(Lv1→2), 🔥 불꽃 100 (V2.0 PR-A, 예전 골드 1,000)
   await page.evaluate(() => {
     const p = JSON.parse(localStorage.getItem('rtd.progress')!);
     p.heroes.miner.cards = 5;
     p.heroes.archer.cards = 2;
-    p.gold = 1000;
+    p.flame = 100;
     localStorage.setItem('rtd.progress', JSON.stringify(p));
   });
   await openLobby(page);
@@ -49,13 +49,13 @@ test('피드백 #31: [⬆ 모두 레벨업] · 정렬 [레벨업 가능]', async
   await page.waitForTimeout(300);
   await page.screenshot({ path: 'docs/screens/FB31-heroes.png', animations: 'disabled' });
   await all.click();
-  // 광부 Lv3 (100 + 150), 궁수 Lv2 (100) → 골드 650
+  // 광부 Lv3 (10 + 15), 궁수 Lv2 (10) → 불꽃 65
   await expect(page.locator('.hero-card[data-hero="miner"]')).toHaveAttribute('data-level', '3');
   await expect(page.locator('.hero-card[data-hero="archer"]')).toHaveAttribute('data-level', '2');
   await expect(all).toBeDisabled();
   await expect(all).toHaveText('⬆ 모두 레벨업');
-  const after = await page.evaluate(() => JSON.parse(localStorage.getItem('rtd.progress')!) as { gold: number; heroes: Record<string, { level: number; cards: number }> });
-  expect(after.gold).toBe(650);
+  const after = await page.evaluate(() => JSON.parse(localStorage.getItem('rtd.progress')!) as { flame: number; heroes: Record<string, { level: number; cards: number }> });
+  expect(after.flame).toBe(65);
   expect(after.heroes.miner).toEqual({ level: 3, cards: 0 });
   expect(after.heroes.archer).toEqual({ level: 2, cards: 0 });
   expect(errors).toEqual([]);

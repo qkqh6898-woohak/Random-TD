@@ -61,7 +61,7 @@ import { auraCovers, auraRadiusOf, auraSpecOf, computeAuras, towerBonus } from '
 import { towerLevel } from '../../sim/abilities';
 import { METEOR_FX } from '../../sim/abilities/archmage';
 import { rankSummonTiles, summonCheck, summonCost } from '../../sim/systems/Summon';
-import { autoSellTiles, convertTargets, sellCheck, sellPrice } from '../../sim/systems/Sell';
+import { autoSellTiles, convertTargets, isAutoSellSummon, sellCheck, sellPriceFor } from '../../sim/systems/Sell';
 import { AUTO_MERGE_KEYS, autoMergeChoice, autoMergeRank, autoSellGrade, autoSellMinRank, resetMatchSettings, type AutoMergeGrade } from '../../meta/settings';
 import { gradeRank } from '../../sim/rules';
 import { effectsOff, onEffectsChange, setEffectsOff } from '../effects';
@@ -171,6 +171,7 @@ import {
   ultText,
   SUMMON_NO_FIT,
   UNIT_CAP_FULL,
+  MERGE_PICK_FULL,
 } from '../../ui/messages';
 import { createChoicePanel, type ChoicePanelView } from '../../ui/panels/ChoicePanel';
 import { cardChoiceModel, mergeChoiceModel } from '../../ui/panels/choiceModel';
@@ -181,7 +182,7 @@ import { quickModel, quickPlacement } from '../../ui/panels/towerQuickModel';
 import { createCharacterCard } from '../../ui/panels/CharacterCard';
 import { characterCardModel } from '../../ui/panels/characterCardModel';
 import { createHud, type HudView } from '../../ui/hud/Hud';
-import { bossHudInput, buildHudModel, deckDetectNames, defeatText, formatStage, legionNameMap, stageToastText, type DefeatBossInfo } from '../../ui/hud/hudModel';
+import { bossHudInput, buildHudModel, deckDetectNames, gameEndText, formatStage, legionNameMap, stageToastText, type DefeatBossInfo } from '../../ui/hud/hudModel';
 import { availableSpeeds, nextSpeed } from '../../ui/hud/speed';
 import { createGameOverScreen } from '../../ui/screens/GameOverScreen';
 import { matchResultOf } from '../../meta/matchResult';
@@ -545,6 +546,8 @@ export class GameScene extends Phaser.Scene {
     this.sheet = null;
     this.sheetKind = null;
     this.slots = new Map();
+    // 검토 L8: 다시 하기(scene.restart)는 같은 장면 객체를 쓴다 — 지난 판의 '이 틱에 궁극기 보냄' 기록이 새 판(틱 0부터)에 남지 않게
+    this.ultSent = new Map();
     this.upgradeQueuedTick = -1;
     this.groundPress = null;
     this.autoSummonTick = -1;
@@ -870,10 +873,10 @@ export class GameScene extends Phaser.Scene {
     return this.background?.currentKey ?? null;
   }
 
-  /** 틱 n번 실행. 마지막 틱 직전의 진행도를 기억해 보간에 쓴다. 패배하면 그 자리에서 멈춘다. */
+  /** 틱 n번 실행. 마지막 틱 직전의 진행도를 기억해 보간에 쓴다. 판이 끝나면(패배·캠페인 클리어) 그 자리에서 멈춘다. */
   private runTicks(n: number): void {
     for (let i = 0; i < n; i++) {
-      if (this.match.defeated) break;
+      if (this.match.ended) break;
       if (i === n - 1) {
         this.prevProgress.clear();
         for (const m of this.match.mobs()) this.prevProgress.set(m.id, m.progress);
@@ -892,7 +895,7 @@ export class GameScene extends Phaser.Scene {
    */
   debugFastForward(ticks: number): number {
     let done = 0;
-    while (done < ticks && !this.match.defeated) {
+    while (done < ticks && !this.match.ended) {
       this.match.step();
       done++;
     }
@@ -1142,7 +1145,7 @@ export class GameScene extends Phaser.Scene {
       this.closePanel();
       return;
     }
-    let fail = summonCheck(this.match.ctx, this.match.world, tx, ty);
+    let fail = summonCheck(this.match.ctx, this.match.world, tx, ty, LOCAL_PLAYER);
     // G-1 인원 한도: 빈 칸이어도 내 타워가 한도만큼이면 소환하지 않는다
     if (fail === null && summonStackCheck(this.match.ctx, this.match.world, LOCAL_PLAYER) === 'cap') fail = 'cap';
     // 빈 땅 (T-2): 누르고 있으면 0.3초 뒤부터 자동 칸에 연속 소환 (맵 안이면 배치 칸이 아니어도)
@@ -1151,7 +1154,7 @@ export class GameScene extends Phaser.Scene {
     if (inMap) this.groundPress = { pointer, downMs: now, downX: pointer.worldX, downY: pointer.worldY, auto: false, lastMs: now, hint };
     // 길·빈 땅을 짧게 누르면 배치 칸을 잠깐 보여준다 (T-3: 평소에는 칸을 숨김). 맵 안은 뗄 때(꾹 눌러 연속 소환이면 안 보임), 맵 밖은 바로
     else if (hint) this.buildHintAt = now;
-    const action = decideTap(fail, tx, ty, summonCost(this.match.ctx));
+    const action = decideTap(fail, tx, ty, summonCost(this.match.ctx, LOCAL_PLAYER));
     if (action.kind === 'summon') {
       if (!tapAllowed(this.lastTapMs, now)) return;
       this.lastTapMs = now;
@@ -1181,7 +1184,7 @@ export class GameScene extends Phaser.Scene {
       return 'stop';
     }
     if (fail === 'gold') {
-      this.ctx.ui.toast(needGoldForSummon(summonCost(ctx)));
+      this.ctx.ui.toast(needGoldForSummon(summonCost(ctx, LOCAL_PLAYER)));
       return 'stop';
     }
     if (fail === 'cap') {
@@ -1615,7 +1618,7 @@ export class GameScene extends Phaser.Scene {
       stunned: this.match.tick < t.stunUntil,
       penMaxBp: rules.penMaxBp,
       sell: {
-        price: sellPrice(rules, t.tower),
+        price: sellPriceFor(this.match.ctx, t.tower, t.owner),
         confirming: this.sellConfirm !== null && this.sellConfirm.id === t.id && performance.now() < this.sellConfirm.untilMs,
       },
     });
@@ -1776,10 +1779,11 @@ export class GameScene extends Phaser.Scene {
     let lastStage: { stage: number; boss: boolean } | null = null;
     /** 이번 프레임에 보스 등장 배너를 띄웠다 → 'N단계 보스 단계!' 알림은 생략 (배너가 단계까지 보여 준다) */
     let bossArrived = false;
-    let defeated = false;
+    /** 판이 끝남 (패배 또는 캠페인 클리어 — V2 L5) */
+    let ended = false;
     const now = this.match.tick;
     const frameStart = this.frameStartTick;
-    const cost = summonCost(this.match.ctx);
+    const cost = summonCost(this.match.ctx, LOCAL_PLAYER);
     let texts = 0;
     let heals = 0;
     let sparks = 0;
@@ -1828,8 +1832,11 @@ export class GameScene extends Phaser.Scene {
         case 'stageStart':
           lastStage = { stage: Number(ev.stage), boss: ev.boss === true };
           break;
+        case 'victory':
+          ended = true;
+          break;
         case 'defeat':
-          defeated = true;
+          ended = true;
           if (ev.reason === 'bossTime') {
             // 이번 판 기록 (개발자 도구): 시간 초과 때 남은 보스 체력
             const b = bossHudInput(this.match.rules, this.legionNames, this.match.state, this.match.mobs(), this.match.tick);
@@ -1840,7 +1847,7 @@ export class GameScene extends Phaser.Scene {
           if (ev.player === LOCAL_PLAYER) recordRunEvent(this.runLog, { type: 'readyNow', tick: ev.tick, left: Number(ev.left) });
           break;
         case 'summon':
-          if (ev.player === LOCAL_PLAYER && ev.debug !== true) summonedIds.push(Number(ev.id));
+          if (isAutoSellSummon(ev, LOCAL_PLAYER)) summonedIds.push(Number(ev.id));
           if (ev.player === LOCAL_PLAYER) recordRunEvent(this.runLog, { type: 'summon', tick: ev.tick, stage: stageNow });
           if (ev.god === true && eventFxVisible('rare', ev.tick, now, frameStart)) {
             this.ctx.ui.toast(godDescends(this.ctx.data.towers.towers.find((t) => t.id === ev.tower)?.name ?? String(ev.tower)), 2400);
@@ -1914,7 +1921,7 @@ export class GameScene extends Phaser.Scene {
               const [a, b] = xy.split(',');
               return { tx: Number(a), ty: Number(b) };
             });
-          // G-2 연출 + G-1 신화 조합: 신화(히든) 초상 카드, 빛은 금빛이 잘 보이게 레전드 색
+          // G-2 연출 + G-1 리미티드 조합: 리미티드(히든) 초상 카드, 빛은 금빛이 잘 보이게 레전드 색
           this.fx.mergeSuck(from, { tx: Number(ev.x), ty: Number(ev.y), color: hexToInt(GRADE_COLORS.legend), grade: 'hidden', towerId: id });
           this.ctx.audio.play('merge');
           this.shake(260, 0.006);
@@ -2209,6 +2216,10 @@ export class GameScene extends Phaser.Scene {
             else this.slots.set(t, { startMs: this.time.now - SLOT_SPIN_MS, result, revealedMs: null });
           }
           break;
+        case 'mergePickFail':
+          // V2 H1: 무더기 안 결과를 바꾸려는데 옮길 칸이 없음 → 바꾸지 않고 축복 1회를 돌려받음 (창은 선택이 사라져 닫힌다)
+          if (ev.player === LOCAL_PLAYER && ev.reason === 'full') this.ctx.ui.toast(MERGE_PICK_FULL);
+          break;
         case 'gambleFail': {
           if (ev.player !== LOCAL_PLAYER) break;
           {
@@ -2341,7 +2352,7 @@ export class GameScene extends Phaser.Scene {
     }
     if (lastStage) this.previewBoss(lastStage.stage);
     this.checkMergeReady();
-    if (defeated) this.showGameOver();
+    if (ended) this.showGameOver();
   }
 
   /**
@@ -2445,16 +2456,17 @@ export class GameScene extends Phaser.Scene {
     this.ctx.ui.clearToasts();
     if (this.paused) this.paused = false;
     this.clock.speed = 0;
-    const text = defeatText(this.match.state, this.defeatBossInfo());
+    // 패배 또는 캠페인 클리어 (V2 L5) — 화면·정산은 같고 제목·사유만 다르다
+    const text = gameEndText(this.match.state, this.match.victory ? null : this.defeatBossInfo());
     // 전투 기록 (A-1, 일반 무한 판만) + 끝난 판의 자동 저장 지우기
     const best = this.ctx.records.complete(this.match, this.runId);
-    // G-3 판 정산 (경험치·골드·영웅 카드·신화 조각·최고 웨이브) — 같은 판은 한 번만
+    // G-3 판 정산 (경험치·골드·영웅 카드·리미티드 조각·최고 웨이브) — 같은 판은 한 번만
     const settled = this.ctx.progress?.settle(matchResultOf(this.match, this.runId)) ?? null;
     if (this.saveToken !== null) this.ctx.saves.clear(this.saveToken);
     this.saveToken = null;
     // 개발자 모드: 이번 판 기록을 패배 화면에도 보이고 '지난 판'에 남긴다 (F10-4 검토, 결정 6 — 패배 화면이 🛠를 덮음)
     const log = this.ctx.debug ? this.runLogRows : undefined;
-    this.savePastRun('패배');
+    this.savePastRun(text.victory ? '클리어' : '패배');
     this.ctx.ui.show(
       'screen',
       createGameOverScreen({
@@ -2466,7 +2478,7 @@ export class GameScene extends Phaser.Scene {
         onExit: () => this.scene.start(SCENE_BOOT),
       }),
     );
-    this.game.events.emit('rtd:game-over', { stage: this.match.state.stage, reason: this.match.state.defeatReason });
+    this.game.events.emit('rtd:game-over', { stage: this.match.state.stage, reason: this.match.state.defeatReason, victory: text.victory });
   }
 
   /** 일시정지 메뉴 열기: 게임 시간을 멈춘다 (배속 0). */
@@ -2517,7 +2529,7 @@ export class GameScene extends Phaser.Scene {
         },
         // FB-1: 💬 피드백 보내기 — 일시정지 중이라 틱이 멈춰 있다 (판 기록 = 지금 틱까지, 첨부 기본 켜짐)
         feedback: createSceneFeedback(this.ctx, () => matchFeedbackSnapshot(this.ctx, this.match, this.resumeSpeed > 0 ? this.resumeSpeed : 1, this.resumed), true),
-        // 피드백 #24: 📘 등급·조합 설명 (조합식은 [신화] 도감과 같은 공개 규칙)
+        // 피드백 #24: 📘 등급·조합 설명 (조합식은 [리미티드] 도감과 같은 공개 규칙)
         gradeGuide: createGradeGuideDialog(() =>
           gradeGuideModel({ baseDps: this.ctx.data.towers.baseDps, mergeCount: this.match.rules.mergeCount, godChanceBp: this.match.rules.godChanceBp, codex: this.codexModel() }),
         ),
@@ -2807,7 +2819,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** 개발자 모드: 이번 판 기록을 '지난 판'(최근 3판, 세션)에 한 번 남긴다 — 소환을 한 판만 (그냥 들어왔다 나간 판은 빼고). */
-  private savePastRun(how: '패배' | '나감'): void {
+  private savePastRun(how: '패배' | '나감' | '클리어'): void {
     if (!this.ctx.debug || this.runLogSaved || !this.match || this.runLog.firstSummonTick === null) return;
     this.runLogSaved = true;
     const st = this.match.state;
@@ -2830,7 +2842,7 @@ export class GameScene extends Phaser.Scene {
           // G-1 사용자 결정: 🗼 = 내 타워 인원 / 인원 한도 (game.json board.unitCap + 카드)
           towerCount: unitCount(this.match.world, LOCAL_PLAYER),
           buildableCount: unitCap(this.match.ctx, LOCAL_PLAYER),
-          summonCost: summonCost(this.match.ctx),
+          summonCost: summonCost(this.match.ctx, LOCAL_PLAYER),
           mergeReady: this.mergeReadyCount,
           workerMax: this.match.rules.workerMax,
           workerCost: this.match.rules.workerCost,
@@ -3082,7 +3094,7 @@ export class GameScene extends Phaser.Scene {
     return 'spun';
   }
 
-  // ---------------------------------------------------------------- G-1 소환 도박 · 신화 · 필살기
+  // ---------------------------------------------------------------- G-1 소환 도박 · 리미티드 · 필살기
 
   /** [소환] 시트 모델 */
   private summonModel(): SummonSheetModel {
@@ -3091,9 +3103,9 @@ export class GameScene extends Phaser.Scene {
     return summonSheetModel(this.match.ctx, this.match.world, LOCAL_PLAYER, factions, this.gachaFaction, this.ctx.data.game.summonGamble.kinds);
   }
 
-  /** [신화] 도감 모델 */
+  /** [리미티드] 도감 모델 */
   private codexModel(): CodexSheetModel {
-    // G-3 계정 조각 수 → 잠긴 신화 줄 '🔒 해방 필요 (조각 n/20)'
+    // G-3 계정 조각 수 → 잠긴 리미티드 줄 '🔒 해방 필요 (조각 n/20)'
     const progress = this.ctx.progress;
     const fragments = progress ? (id: string) => progress.fragmentsOf(id) : undefined;
     return codexSheetModel(this.match.ctx, this.match.world, LOCAL_PLAYER, this.ctx.data.towers.towers, this.ctx.account.codexFound(), fragments);
@@ -3117,7 +3129,7 @@ export class GameScene extends Phaser.Scene {
     return true;
   }
 
-  /** [제작]: 신화 조합 명령 */
+  /** [제작]: 리미티드 조합 명령 */
   private sendCraft(r: number): void {
     if (this.paused || this.gameOver) return;
     const plan = craftPlan(this.match.ctx, this.match.world, LOCAL_PLAYER, r);
@@ -3137,7 +3149,7 @@ export class GameScene extends Phaser.Scene {
     if (this.match.world.enqueue({ type: 'ult', id }).ok) this.ultSent.set(id, this.match.tick);
   }
 
-  /** 매 프레임: HUD 필살기 칩·목록, '필살기 자동'이면 찬 것을 바로 보낸다, 메뉴 배지, 신화 발견 기록. */
+  /** 매 프레임: HUD 필살기 칩·목록, '필살기 자동'이면 찬 것을 바로 보낸다, 메뉴 배지, 리미티드 발견 기록. */
   private syncG1(): void {
     const ctx = this.match.ctx;
     const world = this.match.world;
@@ -3151,7 +3163,7 @@ export class GameScene extends Phaser.Scene {
         return { id: t.id, name: this.towerNames.get(t.tower) ?? t.tower, icon: kinds[k].icon, ultName: kinds[k].name };
       }),
     );
-    // 신화 발견 (사용자 규칙: 재료를 한꺼번에 가졌을 때). 치트를 쓸 수 있는 판은 계정에 남기지 않는다 (히든 미션과 같은 규칙)
+    // 리미티드 발견 (사용자 규칙: 재료를 한꺼번에 가졌을 때). 치트를 쓸 수 있는 판은 계정에 남기지 않는다 (히든 미션과 같은 규칙)
     if (!this.match.state.debug && !this.match.state.debugUsed && this.match.tick % 10 === 0) {
       for (const id of newlyDiscovered(this.match.rules, ownedCounts(world, LOCAL_PLAYER), this.ctx.account.codexFound())) {
         if (this.ctx.account.recordCodex(id)) this.ctx.ui.toast(craftReadyText(this.towerNames.get(id) ?? id), 2600);

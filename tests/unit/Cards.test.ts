@@ -121,17 +121,22 @@ describe('카드 효과 12종', () => {
     expect(boss.hp).toBe(5000);
   });
 
-  it('소환 할인: 100 → 80 → 60 → 50 (최소 50원)', () => {
+  it('소환 할인 (V2.0 PR-A 비율): 100번 소환한 뒤 200 → 160 → 120 → 100 (합 최대 50%), 처음 22원은 그대로', () => {
     const m = arena(1);
+    expect(summonCost(m.ctx)).toBe(22);
+    m.state.summonCount[0] = 100;
     const costs: number[] = [summonCost(m.ctx)];
     for (let i = 0; i < 3; i++) {
       applyCard(m.ctx, m.world, 0, card('summonDiscount'), 1);
       costs.push(summonCost(m.ctx));
     }
-    expect(costs).toEqual([100, 80, 60, 50]);
+    expect(costs).toEqual([200, 160, 120, 100]);
+    m.state.gold = 1000;
     const g0 = m.state.gold;
     summonAt(m, 0, 0);
-    expect(g0 - m.state.gold).toBe(50);
+    expect(g0 - m.state.gold).toBe(100);
+    m.state.summonCount[0] = 0;
+    expect(summonCost(m.ctx)).toBe(22); // 기본 비용 아래로는 안 내려감
   });
 
   it('끈끈이: 몹 이동속도 −15%씩, 최대 −45%, 보스에게는 없음', () => {
@@ -192,7 +197,7 @@ describe('카드 효과 12종', () => {
     const towers = listTowers(m.world);
     expect(towers).toHaveLength(2);
     expect(towers[0]!.tower).toBe(towers[1]!.tower);
-    expect(g0 - m.state.gold).toBe(100);
+    expect(g0 - m.state.gold).toBe(22);
     expect(m.state.summons).toBe(1);
     // 가장 가까운 빈 칸: (3,0)·(5,0) 중 배치 칸 순서가 앞인 (3,0)
     expect([towers[1]!.tx, towers[1]!.ty]).toEqual([3, 0]);
@@ -210,20 +215,21 @@ describe('카드 효과 12종', () => {
     expect(godChanceFor(m.ctx, 0)).toBe(rules.godChanceBp * 5);
   });
 
-  it('황금 손: 모든 돈 획득 +25% (처치 보상 10원 → 12원)', () => {
+  it('황금 손: 모든 돈 획득 +25% (28단계 처치 보상 10원 → 12원)', () => {
     const m = arena(1);
     applyCard(m.ctx, m.world, 0, card('goldHand'), 1);
     expect(m.state.goldPctBp).toBe(2500);
     const mob = mobAt(m, 'slime', 3000);
     mob.hp = 1;
+    mob.reward = 10; // 28단계 처치 보상 (V2.0 PR-A 3 + ⌊28/4⌋) — 1단계 3원은 ×1.25 해도 3원이라 보이지 않는다
     const g0 = m.state.gold;
     summonAt(m, 4, 2);
     m.stepN(3);
     expect(listMobs(m.world)).toHaveLength(0);
-    // 소환 −100 + 처치 10 × 1.25 = 12 (광부면 특색 돈도 곱해지므로 처치 보상 사건으로 확인)
+    // 소환 −22 + 처치 10 × 1.25 = 12 (광부면 특색 돈도 곱해지므로 처치 보상 사건으로 확인)
     const kill = eventsOf(m, 'kill')[0];
     expect(kill?.reward).toBe(12);
-    expect(m.state.gold).toBeGreaterThanOrEqual(g0 - 100 + 12);
+    expect(m.state.gold).toBeGreaterThanOrEqual(g0 - 22 + 12);
   });
 });
 

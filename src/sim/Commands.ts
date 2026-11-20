@@ -83,7 +83,7 @@ export type CommandPayload =
   | { type: 'moveStack'; fx: number; fy: number; tx: number; ty: number }
   /** 소환 도박 (G-1): game.json summonGamble.kinds의 k번째, f = 종족 번호 (종족 소환만, 나머지는 0) */
   | { type: 'gacha'; k: number; f: number }
-  /** 신화 조합 (G-1 도감): rules.recipes의 r번째 (towers.json의 히든 타워 순서) */
+  /** 리미티드 조합 (G-1 도감): rules.recipes의 r번째 (towers.json의 히든 타워 순서) */
   | { type: 'craft'; r: number }
   /** 필살기 (G-1): 내 타워 엔티티 id의 게이지가 가득이면 발동 */
   | { type: 'ult'; id: number };

@@ -8,6 +8,10 @@ import type { UiView } from '../root';
 import type { SettlementView } from '../lobby/lobbyModel';
 
 export interface GameOverOptions {
+  /** 큰 제목 (기본 '패배'. 캠페인 클리어면 '테마 n 클리어!' — V2 L5) */
+  title?: string;
+  /** 클리어 화면 (제목 색만 다름) */
+  victory?: boolean;
   /** 큰 제목 아래 한 줄 (예: '8단계에서 몹이 150마리를 넘었어요') */
   reason: string;
   /** 기록 (예: '최고 8단계') */
@@ -16,7 +20,7 @@ export interface GameOverOptions {
   tip?: string;
   /** 개발자 모드만 (F10-4 검토, 결정 6): '이번 판 기록' 줄 — 패배 화면이 🛠를 덮어도 첫 소환·첫 승급·보스 시각·남은 체력을 읽을 수 있게 */
   log?: readonly { label: string; value: string }[];
-  /** G-3 판 정산 (경험치·골드·보석·영웅 카드·신화 조각·최고 웨이브). 없으면 줄 없음 */
+  /** G-3 판 정산 (경험치·골드·보석·영웅 카드·리미티드 조각·최고 웨이브). 없으면 줄 없음 */
   rewards?: SettlementView;
   onRetry: () => void;
   onExit: () => void;
@@ -36,7 +40,7 @@ function reasonLine(reason: string): HTMLElement {
   return h('p', { class: 'gameover-reason' }, ...kids);
 }
 
-/** 정산 상자 (G-3): 최고 웨이브 · 경험치 바 · 골드/보석 · 카드(등급 색, 새 영웅 NEW) · 조각 */
+/** 정산 상자 (G-3): 최고 웨이브 · 경험치 바 · 골드/보석/🔥 불꽃(V2.0 PR-A) · 카드(등급 색, 새 영웅 NEW) · 조각 */
 function rewardsBox(r: SettlementView): HTMLElement {
   const chips: HTMLElement[] = [];
   const chip = (icon: string, text: string, testid: string): HTMLElement =>
@@ -44,6 +48,7 @@ function rewardsBox(r: SettlementView): HTMLElement {
   chips.push(chip('⭐', `경험치 +${r.xp.toLocaleString('ko-KR')}`, 'go-xp'));
   chips.push(chip('💰', `+${r.gold.toLocaleString('ko-KR')}`, 'go-gold'));
   if (r.gems > 0) chips.push(chip('💎', `+${r.gems.toLocaleString('ko-KR')}`, 'go-gems'));
+  if (r.flame > 0) chips.push(chip('🔥', `+${r.flame.toLocaleString('ko-KR')}`, 'go-flame'));
   const cardTotal = r.cards.reduce((a, c) => a + c.n, 0);
   const fragTotal = r.fragments.reduce((a, c) => a + c.n, 0);
   return h(
@@ -78,7 +83,7 @@ function rewardsBox(r: SettlementView): HTMLElement {
         )
       : null,
     fragTotal > 0
-      ? h('div', { class: 'go-frags', attrs: { 'data-testid': 'go-frags' } }, `🧩 신화 조각 ${r.fragments.map((f) => `${f.name} +${f.n}`).join(' · ')}`)
+      ? h('div', { class: 'go-frags', attrs: { 'data-testid': 'go-frags' } }, `🧩 리미티드 조각 ${r.fragments.map((f) => `${f.name} +${f.n}`).join(' · ')}`)
       : null,
     r.recruitGain > 0 ? h('div', { class: 'go-recruit', text: `영웅 모집 게이지 +${r.recruitGain}` }) : null,
   );
@@ -104,13 +109,13 @@ export function createGameOverScreen(opts: GameOverOptions): UiView {
   const el = h(
     'div',
     {
-      class: 'screen gameover-screen',
+      class: `screen gameover-screen${opts.victory ? ' is-victory' : ''}`,
       attrs: { 'data-screen': 'gameover', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'gameover-title' },
     },
     h(
       'div',
       { class: 'pause-panel gameover-panel' },
-      h('h2', { class: 'gameover-title', text: '패배', attrs: { id: 'gameover-title' } }),
+      h('h2', { class: 'gameover-title', text: opts.title ?? '패배', attrs: { id: 'gameover-title', 'data-testid': 'gameover-title' } }),
       reasonLine(opts.reason),
       h('p', { class: 'gameover-record', text: opts.record }),
       opts.rewards ? rewardsBox(opts.rewards) : null,

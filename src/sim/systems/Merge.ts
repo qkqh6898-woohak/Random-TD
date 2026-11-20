@@ -15,17 +15,18 @@
  * - 행운의 여신(M3-9)이 판 위에 있으면 2등급 상승 판정 (Deck.rollMerge ②). 확률은 승급하기 전 판 위 타워로 정한다.
  * - 카드 (M4-7): '신의 눈길' = 신 확률 ×3. '승급의 축복' = 남은 횟수만큼 승급마다 결과 2개 중 선택 — 결과 타워는 바로 놓이고
  *   같은 등급의 다른 타워 하나(alt, 같은 흐름에서 결과를 뺀 덱 등급 중 균등)를 고를 수 있는 선택(state.mergePicks)이 생긴다
- *   ('mergeChoice' 사건). `pickMerge {id, pick}` 명령: pick 1 = 그 자리 타워를 alt로 바꿈(새 판 내 스택), 0 = 그대로. 신 결과면 선택이 없다
+ *   ('mergeChoice' 사건). `pickMerge {id, pick}` 명령: pick 1 = 그 타워를 alt로 바꿈(새 판 내 스택 — 무더기 안이면 alt 무더기·빈 칸으로 옮기고, 자리가 없으면 거절, V2 H1), 0 = 그대로. 신 결과면 선택이 없다
  *   (축복도 쓰지 않음). 결과 타워가 다시 승급 재료로 사라지면 그 선택도 사라진다.
  * 승급 개수(3)는 game.json merge.count.
  */
 import type { World } from '../World';
 import { streamSummon } from '../World';
-import { ATTACK_COST, isTower, towerStacks, towersAt, type Tower } from '../entities/Tower';
+import { ATTACK_COST, isTower, isUniformStack, towerStacks, towersAt, type Tower } from '../entities/Tower';
+import { tileCenter } from '../map';
 import { canMergeGrade, isDeckGrade, rollMerge } from '../Deck';
 import type { MatchContext } from '../state';
 import { godChanceFor, placeTower } from './Summon';
-import { joinableStack } from './Board';
+import { freePad, joinableStack } from './Board';
 import { ownerBonus } from '../abilities';
 import { chanceBonus } from '../chances';
 import { gradeRank } from '../rules';
@@ -194,12 +195,16 @@ export function mergeAll(ctx: MatchContext, world: World, player: number, x: num
   return out;
 }
 
-/** 승급의 축복 고르기 실패 이유: 판이 끝남 / 그 선택이 없음 / 타워가 없음 */
-export type MergePickFail = 'phase' | 'none' | 'gone';
+/** 승급의 축복 고르기 실패 이유: 판이 끝남 / 그 선택이 없음 / 타워가 없음 / 바꾼 타워를 놓을 자리가 없음 (V2 H1) */
+export type MergePickFail = 'phase' | 'none' | 'gone' | 'full';
 
 /**
- * pickMerge 명령 (카드 '승급의 축복'): 결과 타워 id의 선택을 정한다. pick 1 = alt로 바꿈 (같은 엔티티·같은 칸, 판 내 스택·타이머 새로),
- * pick 0 = 처음 결과 그대로. 성공하면 true ('mergePicked' 사건), 실패하면 false ('mergePickFail').
+ * pickMerge 명령 (카드 '승급의 축복'): 결과 타워 id의 선택을 정한다. pick 1 = alt로 바꿈 (같은 엔티티, 판 내 스택·타이머 새로),
+ * pick 0 = 처음 결과 그대로. 성공하면 true ('mergePicked' 사건 {…, changed, moved}), 실패하면 false ('mergePickFail').
+ *
+ * V2 검토 H1 (한 칸 = 한 타워): 결과 타워가 혼자인 칸이면 그 자리에서 바꾼다 (예전과 같음). 무더기(2개 이상) 안이면 바꾼 타워를
+ * ① alt 타워의 덜 찬 내 무더기(바닥 ID 순 첫째) → ② 빈 배치 칸(자동 소환 칸)으로 옮긴다 (moved = true).
+ * 둘 다 없으면 바꾸지 않고 'mergePickFail' { reason: 'full' } — 선택은 사라지고(창이 닫힘) 축복 1회는 돌려준다 (perks.mergeChoices + 1).
  */
 export function pickMerge(ctx: MatchContext, world: World, player: number, id: number, pick: number): boolean {
   const { state } = ctx;
@@ -214,7 +219,22 @@ export function pickMerge(ctx: MatchContext, world: World, player: number, id: n
   state.mergePicks.splice(i, 1);
   const e = world.entities.get(id);
   if (!e || !isTower(e) || e.owner !== player) return fail('gone');
+  let moved = false;
   if (pick === 1) {
+    if (towersAt(world, e.tx, e.ty).length > 1) {
+      const to = joinableStack(ctx, world, player, choice.alt) ?? freePad(ctx, world, null);
+      if (!to) {
+        const perks = state.perks[player];
+        if (perks) perks.mergeChoices += 1;
+        return fail('full');
+      }
+      const c = tileCenter(to[0], to[1]);
+      e.tx = to[0];
+      e.ty = to[1];
+      e.x = c.x;
+      e.y = c.y;
+      moved = true;
+    }
     e.tower = choice.alt;
     e.atkAcc = ATTACK_COST;
     e.remDmg = 0;
@@ -222,7 +242,7 @@ export function pickMerge(ctx: MatchContext, world: World, player: number, id: n
     e.stacks = 0;
     e.stackTarget = 0;
   }
-  world.emit('mergePicked', { player, id, tower: e.tower, x: e.tx, y: e.ty, changed: pick === 1 });
+  world.emit('mergePicked', { player, id, tower: e.tower, x: e.tx, y: e.ty, changed: pick === 1, moved });
   return true;
 }
 
@@ -238,7 +258,7 @@ export function stackOn(world: World, x: number, y: number): Tower[] {
 
 /**
  * 칸 (x, y)의 무더기를 승급할 수 있는지 (G-1: 같은 타워가 merge.count(= board.stackMax)개 쌓인 칸만 승급한다).
- * 순서: 판 진행 중 → 타워 있음 → 내 타워 → 승급할 수 있는 등급 → 칸이 가득 참.
+ * 순서: 판 진행 중 → 타워 있음 → 내 타워 → 승급할 수 있는 등급 → 칸이 가득 참 + 모두 같은 타워.
  */
 export function stackMergeCheck(ctx: MatchContext, world: World, player: number, x: number, y: number): { ok: true; stack: Tower[] } | { ok: false; reason: StackMergeFail } {
   if (ctx.state.phase !== 'playing') return { ok: false, reason: 'phase' };
@@ -249,7 +269,8 @@ export function stackMergeCheck(ctx: MatchContext, world: World, player: number,
   const stats = ctx.rules.towers.get(anchor.tower);
   if (!stats) throw new Error(`없는 타워: ${anchor.tower}`);
   if (!canMergeGrade(stats.grade)) return { ok: false, reason: 'maxGrade' };
-  if (stack.length < ctx.rules.mergeCount) return { ok: false, reason: 'stack' };
+  // 칸이 덜 찼거나, 다른 타워가 섞였으면 무더기가 아니다 (V2 H1 — 섞인 칸이 다른 타워를 재료로 먹지 않게)
+  if (stack.length < ctx.rules.mergeCount || !isUniformStack(stack)) return { ok: false, reason: 'stack' };
   return { ok: true, stack };
 }
 
@@ -258,7 +279,7 @@ export function fullStacks(ctx: MatchContext, world: World, player: number, kind
   const out: Tower[][] = [];
   for (const list of towerStacks(world).values()) {
     const first = list[0] as Tower;
-    if (first.owner !== player || list.length < ctx.rules.mergeCount) continue;
+    if (first.owner !== player || list.length < ctx.rules.mergeCount || !isUniformStack(list)) continue;
     if (kind !== undefined && first.tower !== kind) continue;
     const g = ctx.rules.towers.get(first.tower)?.grade;
     if (!g || !canMergeGrade(g)) continue;

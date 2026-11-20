@@ -1,10 +1,10 @@
 /**
  * G-3 로비·영웅 수집·성장 E2E (휴대폰 412×915, 내비 360·320):
  *  a. 로비: 최고 웨이브 · 웨이브 길(10웨이브마다 보상 받기) · [빠른 시작] → 전투
- *  b. 영웅 탭: 모든 타워가 [영웅]/[신화] 격자에 (보유 / 보유하지 않음), [등급 순]/[레벨 순]
+ *  b. 영웅 탭: 모든 타워가 [영웅]/[리미티드] 격자에 (보유 / 보유하지 않음), [등급 순]/[레벨 순]
  *  c. 레벨업: 카드 + 골드를 쓰고 Lv이 오르며, 다음 판 입력(MatchOptions.levels)에 들어간다
  *  d. 패배 → 정산(경험치·골드·카드·조각) 표시, 로비 최고 웨이브·골드 갱신, 같은 판은 한 번만, 일일 퀘스트 받기
- *  e. 신화 조각: 5개(피드백 #59, 예전 20) 모은 히든 영웅을 [해방] → 잠긴 목록(MatchOptions.lockedHidden)에서 빠짐
+ *  e. 리미티드 조각: 5개(피드백 #59, 예전 20) 모은 히든 영웅을 [해방] → 잠긴 목록(MatchOptions.lockedHidden)에서 빠짐
  *  f. 아래 메뉴 5칸이 412·360·320에서 한 줄, 44px 이상, 가로 넘침 없음
  *  g. 안드로이드 뒤로 가기: 창 → [전투] 탭 → 앱 종료(처리 안 함)
  * 스크린샷 (deviceScaleFactor 1): docs/screens/G3-{lobby,heroes,hero-detail,gameover-rewards,codex-fragments}.png
@@ -108,7 +108,7 @@ test('G-3 a. 로비: 최고 웨이브 · 웨이브 길 보상 받기 · [빠른 
   expect(errors).toEqual([]);
 });
 
-test('G-3 b. 영웅 탭: 모든 타워 격자 · [영웅]/[신화] · 정렬 · 상점에서 카드 사기', async ({ page }) => {
+test('G-3 b. 영웅 탭: 모든 타워 격자 · [영웅]/[리미티드] · 정렬 · 상점에서 카드 사기', async ({ page }) => {
   const errors = collectErrors(page);
   await openLobby(page);
   await patchProgress(page, "p.heroes.miner.level = 6; p.heroes.archer.level = 4; p.heroes.miner.cards = 9;");
@@ -132,7 +132,7 @@ test('G-3 b. 영웅 탭: 모든 타워 격자 · [영웅]/[신화] · 정렬 · 
   await expect(owned.nth(0).locator('img.hero-portrait')).toHaveCount(1);
   await page.waitForTimeout(300);
   await shot(page, 'G3-heroes');
-  // [신화]: 히든 12 + 신 3, 모두 보유하지 않음 · 히든은 잠김
+  // [리미티드]: 히든 12 + 신 3, 모두 보유하지 않음 · 히든은 잠김
   await page.locator('[data-hero-tab="mythic"]').click();
   await expect(page.getByTestId('hero-grid-owned').locator('.hero-card')).toHaveCount(0);
   await expect(unowned).toHaveCount(15);
@@ -147,10 +147,10 @@ test('G-3 b. 영웅 탭: 모든 타워 격자 · [영웅]/[신화] · 정렬 · 
   expect(errors).toEqual([]);
 });
 
-test('G-3 c. 레벨업: 카드 + 골드를 쓰고, 다음 판 입력에 영웅 레벨이 들어간다', async ({ page }) => {
+test('G-3 c. 레벨업: 카드 + 🔥 불꽃(V2.0 PR-A, 예전 골드)을 쓰고, 다음 판 입력에 영웅 레벨이 들어간다', async ({ page }) => {
   const errors = collectErrors(page);
   await openLobby(page);
-  await patchProgress(page, 'p.heroes.miner.cards = 5; p.gold = 1000;');
+  await patchProgress(page, 'p.heroes.miner.cards = 5; p.flame = 100;');
   await page.locator('.lobby-nav [data-tab="heroes"]').click();
   const miner = page.locator('.hero-card[data-hero="miner"]');
   await expect(miner.getByTestId('hero-up')).toBeVisible();
@@ -166,8 +166,8 @@ test('G-3 c. 레벨업: 카드 + 골드를 쓰고, 다음 판 입력에 영웅 �
   await expect(page.getByTestId('hero-detail-level')).toHaveText('Lv 2');
   await expect(page.getByTestId('hero-detail-cards')).toHaveText('🃏 카드 3/3');
   await expect(page.getByTestId('hero-detail-bonus')).toHaveText('전투 공격력 +4% → +8%');
-  await expect(page.getByTestId('lobby-gold')).toContainText('900');
-  // 카드 3장 · 골드 900 → 한 번 더 (Lv2 → 3: 카드 3, 골드 150)
+  await expect(page.getByTestId('lobby-flame')).toContainText('90');
+  // 카드 3장 · 불꽃 90 → 한 번 더 (Lv2 → 3: 카드 3, 불꽃 15)
   await page.getByTestId('hero-levelup').click();
   await expect(page.getByTestId('hero-detail-level')).toHaveText('Lv 3');
   await expect(page.getByTestId('hero-levelup')).toBeDisabled();
@@ -245,7 +245,7 @@ test('G-3 d. 패배 → 정산 표시 · 최고 웨이브 갱신 · 한 번만 �
   expect(errors).toEqual([]);
 });
 
-test('G-3 e. 신화 조각 5개 → [해방] → 다음 판 잠긴 목록에서 빠짐', async ({ page }) => {
+test('G-3 e. 리미티드 조각 5개 → [해방] → 다음 판 잠긴 목록에서 빠짐', async ({ page }) => {
   const errors = collectErrors(page);
   await openLobby(page);
   await page.locator('.lobby-nav [data-tab="codex"]').click();
@@ -273,7 +273,7 @@ test('G-3 e. 신화 조각 5개 → [해방] → 다음 판 잠긴 목록에서 
   await expect(page.getByTestId('codex-count')).toHaveText('해방 1/12');
   await expect(page.locator(`.codex-row[data-hero="${id}"]`)).toHaveClass(/is-unlocked/);
   expect((await progress(page)).heroes[id]).toEqual({ level: 1, cards: 0 });
-  // 영웅 탭 [신화]에도 보유로
+  // 영웅 탭 [리미티드]에도 보유로
   await page.locator('.lobby-nav [data-tab="heroes"]').click();
   await page.locator('[data-hero-tab="mythic"]').click();
   await expect(page.getByTestId('hero-grid-owned').locator(`.hero-card[data-hero="${id}"]`)).toHaveCount(1);

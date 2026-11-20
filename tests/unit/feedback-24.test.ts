@@ -13,16 +13,16 @@ const rules = buildMatchRules(data);
 const base = { baseDps: data.towers.baseDps, mergeCount: rules.mergeCount, godChanceBp: rules.godChanceBp };
 
 describe('피드백 #24 등급·조합 설명', () => {
-  it('등급 순서 낮음 → 높음 (baseDps 순) · 색·별·얻는 법', () => {
+  it('등급 순서 낮음 → 높음 (V2.0 PR-A: 신 < 리미티드, src/data/grades.ts) · 색·별·얻는 법', () => {
     const m = gradeGuideModel(base);
-    expect(m.rows.map((r) => r.name)).toEqual(['노말', '레어', '유니크', '히어로', '레전드', '신화', '신']);
-    expect(m.rows.map((r) => r.stars)).toEqual(['★', '★★', '★★★', '★★★★', '★★★★★', '💠', '👑']);
+    expect(m.rows.map((r) => r.name)).toEqual(['노말', '레어', '유니크', '히어로', '레전드', '신', '리미티드']);
+    expect(m.rows.map((r) => r.stars)).toEqual(['★', '★★', '★★★', '★★★★', '★★★★★', '👑', '💠']);
     for (const r of m.rows) expect(r.color).toBe(GRADE_COLORS[r.grade]);
     const how = Object.fromEntries(m.rows.map((r) => [r.grade, r.how]));
     expect(how.normal).toBe('소환');
     expect(how.rare).toBe('노말 3개 승급');
     expect(how.legend).toBe('히어로 3개 승급 · 더 승급 안 돼요');
-    expect(how.god).toBe('소환·승급할 때 0.01% · 신화 도박');
+    expect(how.god).toBe('소환·승급할 때 0.01% · 레전드 도박');
     expect(how.hidden).toBe('정해진 재료 3종으로 제작');
   });
 
@@ -33,7 +33,7 @@ describe('피드백 #24 등급·조합 설명', () => {
     expect(m.rows.find((r) => r.grade === 'god')!.how).toContain('0.25%');
   });
 
-  it('신화 조합식: 도감과 같은 공개 규칙 (발견 전 ??? + 힌트 재료 하나, 발견하면 전체)', () => {
+  it('리미티드 조합식: 도감과 같은 공개 규칙 (발견 전 ??? + 힌트 재료 하나, 발견하면 전체)', () => {
     const m = arena(24);
     const towers = data.towers.towers;
     const none = gradeGuideModel({ ...base, codex: codexSheetModel(m.ctx, m.world, 0, towers, new Set()) });

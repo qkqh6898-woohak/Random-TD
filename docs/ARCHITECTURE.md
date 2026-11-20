@@ -1,7 +1,8 @@
-# 운빨 디펜스 — 기술 구조와 자동 업데이트 설계
+# 운빨 디펜스 — 기술 구조와 앱 안 업데이트
 
-> 버전: v0.1 · 작성일: 2026-11-14
-> 목표: **오프라인으로 플레이**하고, 인터넷은 **업데이트할 때만** 쓴다. 업데이트는 앱이 스스로 확인하고 적용한다.
+> 버전: v0.2 (V2.0 PR-A에서 코드에 맞춰 다시 씀, 2026-11-19) · 처음 작성 2026-11-14
+> 목표: **오프라인으로 플레이**하고, 인터넷은 **업데이트 확인·받기와 피드백 보내기(브라우저)** 때만 쓴다.
+> 이 문서는 **지금 코드가 하는 일**을 적는다. 처음 계획(Capacitor 번들 라이브 업데이트·`latest.json`·자동 롤백)은 5장 '구현하지 않은 예전 계획'에 요약만 남겼다.
 
 ---
 
@@ -9,203 +10,112 @@
 
 | 영역 | 선택 | 이유 |
 |------|------|------|
-| 게임 엔진 | Phaser 3 | 2D 모바일 게임에 적합. 브라우저에서 바로 테스트 가능 |
-| 언어 | TypeScript | 타워·미션 수가 많아 타입 검사가 버그를 줄여줌 |
-| 빌드 | Vite | 빠른 개발 서버와 작은 결과물 |
-| 앱 포장 | Capacitor (Android) + PWA (아이폰) | 같은 웹 코드를 안드로이드는 앱으로, 아이폰은 사파리 웹앱으로 ([MULTIPLAYER.md](MULTIPLAYER.md) 1장) |
-| 게임 로직 | 결정적 고정 틱(20Hz) 시뮬레이션, 정수 연산, 명령 패턴 | 리플레이·밸런스 시뮬레이터·멀티 동기화의 기반 |
-| 자동 업데이트 | 웹 번들 라이브 업데이트 (예: `@capgo/capacitor-updater` 자체 호스팅 모드) | 앱 재설치 없이 게임 코드와 데이터 교체 |
-| 업데이트 배포 | GitHub Actions + GitHub Releases | 태그만 붙이면 빌드와 배포가 자동으로 진행됨 |
-| 테스트 | Vitest (로직), Playwright (화면) | 합성 확률, 경제 계산 등을 자동 검증 |
-
-> 라이브러리 API는 구현 시점의 최신 문서를 확인해서 맞춘다.
+| 게임 엔진 | Phaser 3 (`phaser@3.90.0` 고정) | 2D 모바일 게임에 적합. 브라우저에서 바로 테스트 가능 |
+| 언어 | TypeScript (strict) | 타워·미션 수가 많아 타입 검사가 버그를 줄여줌 |
+| 빌드 | Vite (+ 한 파일 빌드 `npm run build:single`) | 빠른 개발 서버와 작은 결과물 |
+| UI | DOM 오버레이 (`src/ui/`, 프레임워크 없음) | 한글이 선명하고 만들기 쉬움 |
+| 앱 포장 | **자바 WebView 앱** (`android/` — `GameActivity` + 자바 다리 `RandomTDNative`). Capacitor·PWA는 쓰지 않는다 | 의존성 없이 APK 하나 |
+| 게임 로직 | 결정적 고정 틱(20Hz) 시뮬레이션, 정수 연산, 명령 패턴 (`src/sim/`) | 리플레이·밸런스 봇·(나중) 멀티 동기화의 기반 |
+| 앱 안 업데이트 | **APK 통째 업데이트** (자바 `UpdateLogic`·`Updater` + PackageInstaller) | 웹 번들만 바꾸는 방식보다 단순하고 서명으로 안전 |
+| 배포 | GitHub Actions `android.yml` (`main` 푸시) → 서명 → GitHub Releases (`android-v<버전>`) | 사람 손 없이 매 푸시 릴리스 |
+| 테스트 | Vitest (로직·리플레이·봇), Playwright (화면, 로컬에서만) | 확률·경제·화면 흐름 자동 검증 |
 
 ---
 
-## 2. 폴더 구조 (계획)
+## 2. 폴더 구조 (지금 코드)
 
 ```
 Random-TD/
-├─ docs/                    기획서, 구조 문서
 ├─ src/
-│  ├─ main.ts               진입점 (업데이트 확인 → 게임 시작)
-│  ├─ config/               화면 크기, 상수
-│  ├─ data/                 ★ 밸런스·콘텐츠 데이터 (JSON) — 업데이트로 가장 자주 바뀜
-│  │  ├─ towers.json        ✅ 타워 65종 스탯·종족·원소·특색(Lv1~15)·각성 + 종족 시너지·앙숙·원소 정의
-│  │  ├─ decks.json         기본 덱, 추천 덱, 덱 규칙(등급별 5종, 특색 최소 수)
-│  │  ├─ enemies.json       ✅ 몹 13종, 보스 5종, 도전 보스 10종, 조합 편대 6종, 등장 구성
-│  │  ├─ campaign.json      ✅ 캠페인 테마 10개, 발판 보상·지원금, 배경 구간
-│  │  ├─ story.json         챕터 대화, 보스 대사, 앙숙 말풍선 (M11)
-│  │  ├─ cards.json         보스 효과 카드 12장
-│  │  ├─ grades.json        등급 배율, 소환·신 확률
-│  │  ├─ recipes.json       히든 조합식
-│  │  ├─ mobs.json          몹 종류, 체력 공식 계수
-│  │  ├─ stages.json        단계 시간, 몹 수, 보스 단계
-│  │  ├─ challenges.json    도전 단계표
-│  │  ├─ upgrades.json      강화 비용·효과
-│  │  ├─ gamble.json        도박 배율표
-│  │  ├─ missions.json      일반·히든 미션
-│  │  ├─ account.json       계정 경험치·레벨 공식, 레벨업 보상
-│  │  ├─ shop.json          계정 상점 영구 효과, 조각 상자
-│  │  ├─ tower_growth.json  타워 레벨업 비용(조각·행운석), 도감 수집 보너스
-│  │  ├─ talents.json       계정 특성 트리
-│  │  ├─ unlocks.json       계정 레벨별 해금
-│  │  ├─ gamble_mastery.json 도박 숙련도·잭팟
-│  │  ├─ attendance.json    출석 7일 주기·월간 누적 보상
-│  │  ├─ account_missions.json 일일·주간 미션 풀
-│  │  ├─ achievements.json  업적·칭호
-│  │  ├─ animations.json    타워·몹별 대기/공격/특색 동작 정의
-│  │  └─ maps/              ✅ crossroads.json(사거리 미로), circle.json(순환의 정원) 작성됨
-│  │                        (스테이지 맵은 직각 회전 5번 이상 자동 검사)
-│  ├─ core/                 게임 상태, 시드 난수(RNG), 이벤트 버스
-│  ├─ systems/              게임 규칙 (화면과 분리 → 단위 테스트 가능)
-│  │  ├─ SpawnSystem.ts     몹 생성, 단계 진행
-│  │  ├─ CombatSystem.ts    공격, 피해, 버프
-│  │  ├─ SummonSystem.ts    소환, 승급, 히든 조합
-│  │  ├─ EconomySystem.ts   돈, 일꾼
-│  │  ├─ ChallengeSystem.ts 도전, 쿨타임
-│  │  ├─ UpgradeSystem.ts   강화, 도박
-│  │  ├─ MissionSystem.ts   미션 진행 추적
-│  │  ├─ AccountSystem.ts   판 종료 정산, 레벨업, 해금, 특성, 상점
-│  │  ├─ TowerGrowthSystem.ts 조각, 타워 레벨·각성, 도감 보너스
-│  │  └─ DailySystem.ts     출석, 일일·주간 미션 (기기 날짜 기준, 시간 역행 방지)
-│  ├─ scenes/               Phaser 장면 (타이틀, 게임, 도감, 설정, 결과)
-│  ├─ ui/                   HUD, 하단 세션 탭, 바텀 시트 팝업
-│  ├─ save/                 SaveService, 저장 형식 마이그레이션
-│  └─ update/               ★ UpdateService (자동 업데이트)
-├─ public/assets/
-│  ├─ characters/<타워id>/  파츠 SVG (head, body, arm_l, arm_r, weapon, prop, awaken_*)
-│  ├─ mobs/                몹 파츠
-│  └─ sfx/                 사운드
-├─ tests/                   Vitest 테스트
-├─ android/                 Capacitor가 생성하는 Android 프로젝트
-├─ .github/workflows/
-│  └─ release.yml           태그 푸시 → 빌드 → 업데이트 파일 배포
-└─ package.json
+│  ├─ main.ts        진입점: 데이터 검사(loadGameData) → 저장소(rtd.*) → Phaser
+│  ├─ sim/           결정적 규칙 (World·Commands·rules·state·match·replay·hash, entities/, systems/, abilities/, bosses/) — Phaser·DOM·window 없음
+│  ├─ view/          Phaser 장면(scenes/Boot·Game)·그리기(render/)·입력(input/)·viewport
+│  ├─ ui/            DOM 오버레이 (hud, lobby, sheets, panels, screens, guide, gallery, theme)
+│  ├─ meta/          판 밖 성장 (progress·progressStore·progressionData, account, settings, matchResult)
+│  ├─ save/          저장 (storage = KeyValueStorage + localStorage, MatchSaves, BattleRecords, ScreenShake)
+│  ├─ update/        앱 안 업데이트 화면 쪽 (UpdateService = 자바 다리와 대화, updateModel)
+│  ├─ feedback/      게임 안 피드백 → 미리 채운 GitHub 이슈 URL
+│  ├─ art/  audio/   그림(WebP 연결 + 절차 그림 대체)·WebAudio 합성
+│  └─ data/          JSON (towers·enemies·campaign·game·cards·decks·missions·progression·characterLooks·curves·maps/) + load.ts·grades.ts
+├─ public/assets/    WebP 그림 (characters·backgrounds·cutins·title·ui)
+├─ android/          자바 WebView 앱, UpdateLogic·Updater·InstallReceiver, build-apk.sh·setup-sdk.sh·check-java.sh, test/
+├─ tools/            검사·생성 (check-determinism, precompute-curves, gen_tables.py, release-version, build-single, sim(자리만))
+├─ tests/  e2e/      Vitest · Playwright
+└─ docs/             기획·구조 문서
 ```
 
 ### 2.1 설계 원칙
 
 1. **데이터 주도**: 수치와 콘텐츠는 전부 `src/data/*.json`에 둔다. 밸런스 조정이나 타워·미션 추가는 코드 수정 없이 데이터만 바꾸면 되도록 한다.
-2. **규칙과 화면 분리**: `systems/`는 Phaser를 모른다. 덕분에 확률이나 경제 계산을 테스트로 검증할 수 있다.
-3. **시드 난수**: 모든 랜덤은 `core/RNG` 한 곳을 거친다. 같은 시드면 같은 결과가 나와서 버그를 재현할 수 있다.
-4. **네트워크 격리**: 인터넷을 쓰는 코드는 `update/`와 `net/`(멀티, 사용자가 켰을 때만) 폴더에만 둔다. 광고, 분석, 로그인은 넣지 않는다.
+2. **규칙과 화면 분리**: `src/sim/`은 Phaser·DOM을 모른다. 덕분에 확률이나 경제 계산을 테스트로 검증할 수 있다.
+3. **시드 난수**: sim의 모든 랜덤은 `src/sim/Rng`(플레이어·용도별 흐름)를 거친다. 판 밖 보상은 계정 시드 + 굴림 번호. 같은 시드면 같은 결과가 나와서 버그를 재현할 수 있다.
+4. **네트워크 격리**: 인터넷을 쓰는 코드는 자바 `Updater`(업데이트)뿐이고, 웹은 `src/update/`로 다리와만 이야기한다. 피드백은 브라우저로 주소를 연다. 멀티(`net/`)는 아직 없다. 광고, 분석, 로그인은 넣지 않는다.
 5. **결정성**: `src/sim/`은 시드 난수·틱 번호·정수 연산만 쓴다 (`tools/check-determinism.mjs`가 검사). 렌더는 sim 상태를 읽기만 한다.
-6. **데이터 검사**: `tools/gen_tables.py --check`가 CI에서 돈다. 타워 수·특색 수·조합식·전투력 범위·등장 구성 합계를 검사한다.
+6. **데이터 검사**: `npm run check`(타입·결정성·곡선·`tools/gen_tables.py --check`)가 CI에서 돈다. 타워 수·특색 수·조합식·전투력 범위·등장 구성 합계를 검사한다.
 
 ---
 
-## 3. 자동 업데이트 설계
+## 3. 앱 안 업데이트 (U-1, 지금 코드)
 
-### 3.1 두 종류의 업데이트
-
-| 종류 | 무엇이 바뀌나 | 적용 방법 | 예시 |
-|------|-------------|----------|------|
-| **번들 업데이트** (대부분) | 게임 코드, 데이터 JSON, 이미지, 사운드 | 앱이 자동으로 다운로드하고 다음 실행 때 적용. **재설치 없음** | 밸런스 조정, 새 타워, 새 미션, 버그 수정 |
-| **네이티브 업데이트** (드묾) | Capacitor 플러그인, 안드로이드 설정, 권한 | 새 APK 다운로드 → 설치 화면에서 사용자가 [설치] 터치 | 진동·알림 기능 추가 |
-
-> Android는 보안 정책상 APK를 사용자 확인 없이 설치할 수 없다. 대신 네이티브 업데이트는 드물게만 필요하도록 구조를 짠다.
-
-### 3.2 버전 규칙
+### 3.1 흐름
 
 ```
-앱 버전:     1.4.2
-             │ │ └─ 패치: 밸런스·버그 수정 (번들)
-             │ └─── 마이너: 콘텐츠 추가 (번들)
-             └───── 메이저: 네이티브 변경 (APK 재설치 필요)
-nativeVersion: 1   ← APK에 고정된 숫자. 네이티브가 바뀔 때만 +1
-saveVersion:   3   ← 저장 형식 버전. 바뀌면 마이그레이션 추가
+앱 실행 → 로비(타이틀)가 보임 (Boot 장면 → UpdateService.setTitleVisible(true))
+  └─ 이번 실행에서 처음이면 한 번 확인: window.RandomTDNative.checkUpdate()
+       자바 UpdateLogic: GET https://api.github.com/repos/qkqh6898-woohak/Random-TD/releases/latest (인증 없음 = 공개 저장소)
+         · 태그 android-v<x.y.z> 의 버전 > 설치된 versionName 이면 새 버전
+         · 자산 Random-TD_Offline_v<x.y.z>.apk (최대 64MB) + SHA-256 (자산 digest 또는 SHA256SUMS)
+         · 허용 호스트만: api.github.com · github.com · objects/release-assets.githubusercontent.com
+       결과는 window.__rtdUpdate(사건) → updateModel.reduceUpdate → 로비 창(UpdateDialog, testid update-*)
+  └─ [지금 업데이트] → startUpdate(): Updater가 받기 → SHA-256 확인 → PackageInstaller (출처 권한이 없으면 설정 열기)
 ```
 
-### 3.3 업데이트 매니페스트 (`latest.json`)
+- 창은 로비에서만 뜬다 (전투 중에는 안 뜸). 실패·오프라인·브라우저(다리 없음)는 조용히 넘어간다 — 게임에 영향 없음.
+- 설정의 [업데이트 확인] 버튼·자동 확인 끄기는 **없다** (실행당 1회 자동 확인뿐).
 
-```json
-{
-  "version": "1.4.2",
-  "minNativeVersion": 1,
-  "bundleUrl": "https://.../bundle-1.4.2.zip",
-  "sha256": "9f2c...e1",
-  "apkUrl": "https://.../random-td-1.0.0.apk",
-  "notes": ["궁수 사거리 +10%", "히든 미션 2개 추가"],
-  "publishedAt": "2026-12-01T10:00:00Z"
-}
-```
+### 3.2 버전 규칙 (`tools/release-version.mjs`, CI가 정함)
 
-### 3.4 동작 흐름
+- package.json 버전이 가장 높은 `android-v*` 태그보다 크면 그대로 (사람이 2.0.0처럼 올린 경우), 아니면 가장 높은 태그의 patch + 1.
+- versionCode = major × 1,000,000 + minor × 1,000 + patch (minor·patch < 1000), AndroidManifest versionCode보다 커야 한다 → 늘 단조 증가.
+- 저장소의 package.json은 0.1.9 그대로이고 CI 작업 폴더에서만 덮어쓴다.
 
-```
-앱 실행
-  │
-  ├─ 1. 현재 번들로 게임 즉시 시작 (오프라인이어도 문제없음)
-  │
-  └─ 2. 백그라운드에서 업데이트 확인 (5초 안에 응답 없으면 조용히 포기)
-        │
-        ├─ 인터넷 없음 / 최신 버전 → 아무것도 안 함
-        │
-        ├─ 새 버전 있음 + minNativeVersion ≤ 내 nativeVersion
-        │     → 번들 zip 다운로드 → sha256 검증 → 대기 슬롯에 저장
-        │     → 토스트 알림 "업데이트 준비됨 (다음 실행 시 적용)"
-        │     → 다음 실행 때 새 번들로 시작
-        │
-        └─ 새 버전 있음 + minNativeVersion > 내 nativeVersion
-              → 팝업 "새 앱 설치가 필요합니다" [다운로드] → APK 설치 화면
-```
+### 3.3 저장 데이터 보호 (지금 규칙)
 
-- 게임 중에는 번들을 바꾸지 않는다. 진행 중인 판이 끊기지 않게 하기 위해서다.
-- 설정 화면의 **[업데이트 확인]** 버튼으로 직접 확인할 수도 있다.
-- 자동 확인은 설정에서 끌 수 있다 (기본: 켬).
+- **진행 중 판** (`rtd.match`·`.dev`, `MatchSaves`): 형식(`MATCH_SAVE_FORMAT`)·앱 버전(빌드 때 package.json)·데이터 지문(dataHash) 중 하나라도 다르면 **버린다** (`updateMismatch`) → 로비 알림 '업데이트로 진행 중이던 판은 이어 할 수 없어요'. 이어 하기 대신 새 판.
+- **계정** (`rtd.progress`, 형식 v2 — V2.0 PR-A 🔥 불꽃): `parseProgress`가 필드별로 관대하게 읽는다(틀린 필드만 기본값, 없는 필드는 이전 규칙 — 예: v1이면 불꽃 legacyFlame 한 번). 모르는 최상위 필드·데이터에 없는 타워 기록은 그대로 들고 다닌다. 읽을 수 없거나 이 앱보다 새 형식이면 덮어쓰기 전에 `rtd.progress.bak.<시각>`에 백업한다.
+- **설정·기록·효과음·흔들림** (`rtd.settings` v2, `rtd.records` v2 …): 필드별 기본값으로 읽는다. 마이그레이션 폴더(`save/migrations/`)·업데이트 전 자동 전체 백업은 없다.
 
-### 3.5 안전장치 (자동 롤백)
-
-1. 새 번들로 실행되면 게임이 정상 로딩된 뒤 `notifyAppReady()`를 호출한다.
-2. 10초 안에 호출되지 않으면(새 번들이 깨진 경우) **이전 번들로 자동 복구**하고, 그 버전은 건너뛴다.
-3. 기기에는 항상 "현재 번들 + 직전 번들" 2개를 보관한다.
-4. sha256이 다르면 설치하지 않는다 (다운로드가 손상됐거나 변조된 경우).
-
-### 3.6 저장 데이터 보호
-
-- 저장 파일에 `saveVersion`을 기록한다.
-- 새 번들이 더 높은 `saveVersion`을 쓰면, 로딩할 때 `save/migrations/`의 변환 함수를 순서대로 적용한다 (v1→v2→v3).
-- 변환 전 원본을 백업해 두고, 변환에 실패하면 원본으로 되돌린다.
-- 도감, 기록, 설정, **계정(레벨·행운석·상점 구매)**은 업데이트 후에도 유지된다.
-- 계정 데이터는 되돌릴 수 없으므로, 업데이트 적용 직전에 저장 파일 전체를 자동 백업한다.
-
-### 3.7 배포 자동화 (GitHub Actions)
+### 3.4 배포 자동화 (`.github/workflows/android.yml`)
 
 ```
-개발자: git tag v1.4.2 && git push --tags
-   ↓
-release.yml
-  1. 테스트 실행 (실패하면 중단)
-  2. vite build → dist/ → bundle-1.4.2.zip
-  3. sha256 계산 → latest.json 생성
-  4. 업데이트 저장소에 업로드 (3.8 참고)
-   ↓
-휴대폰: 다음 실행 때 자동 감지
+main 푸시 (docs/**, **/*.md, .github/**만 바뀐 푸시는 제외)
+  build: 버전 정하기 → npm ci·test·check·build → android/check-java.sh → setup-sdk + build-apk → Random-TD_Offline_v<버전>-unsigned.apk
+  sign (main만, Environment android-release): apksigner v2+v3 → 서명 인증서 SHA-256 04:22:43:4C:…:D0:2A 확인 → SHA256SUMS
+  publish: gh release create android-v<버전> (APK + SHA256SUMS, 노트 = 이전 태그 이후 커밋 제목)
 ```
 
-### 3.8 업데이트 파일 보관 위치
+- **깨면 안 되는 것**: 앱 ID `com.woohak.randomtd`, 서명 인증서, 태그 `android-v<x.y.z>`, 자산 이름 `Random-TD_Offline_v<x.y.z>.apk`, `SHA256SUMS`, 자바 다리 메서드 이름·`__rtdUpdate` 사건 모양 — 이미 설치된 앱의 UpdateLogic이 이 이름을 찾는다.
+- CI(`ci.yml`)는 모든 브랜치에서 test·check·build. E2E는 CI에 없다(로컬).
 
-Random-TD 저장소는 **비공개**라서, 그 저장소의 Releases 파일은 로그인(토큰) 없이 내려받을 수 없다. 그래서 아래처럼 나눈다.
+### 3.5 업데이트 파일 보관 위치
 
-| 방식 | 내용 | 장단점 |
-|------|------|--------|
-| **① 공개 업데이트 전용 저장소 (채택)** | 소스는 비공개 `Random-TD`에 두고, 빌드 결과물(zip, latest.json, apk)만 공개 저장소 `Random-TD-updates`의 Releases에 올린다 | 소스 코드는 비공개로 유지되고, 앱에 비밀 토큰을 넣지 않아도 된다. 저장소를 하나 더 만들어야 함 |
-| ② 앱에 읽기 전용 토큰 내장 | 비공개 저장소 Releases를 토큰으로 내려받는다 | 저장소 1개로 끝나지만, APK가 유출되면 토큰과 소스가 노출됨 |
-| ③ Random-TD 공개 전환 | 소스 저장소 Releases를 그대로 사용 | 가장 간단하지만 소스가 공개됨 |
-
-- 매니페스트 주소(고정): `https://github.com/<owner>/Random-TD-updates/releases/latest/download/latest.json`
-- Actions가 업데이트 저장소에 업로드하려면, `Random-TD` 저장소 Secrets에 `UPDATES_REPO_TOKEN`(업데이트 저장소에만 쓰기 권한이 있는 Fine-grained 토큰)이 필요하다.
-
----
+- 소스 저장소 `Random-TD`가 **공개**라 그 저장소의 Releases를 인증 없이 그대로 쓴다 (별도 업데이트 저장소·토큰 없음).
 
 ## 4. 네트워크 정책
 
 | 항목 | 정책 |
 |------|------|
 | 게임 플레이 | 네트워크 사용 안 함 |
-| 업데이트 확인 | 앱 시작 시 1회 + 수동 버튼. `latest.json` 1개 요청 |
-| 업데이트 다운로드 | 새 버전이 있을 때만 |
-| 멀티 모드 | 사용자가 [함께하기]를 눌렀을 때만. 같은 Wi-Fi 직접 연결 또는 방 코드 중계 ([MULTIPLAYER.md](MULTIPLAYER.md)) |
+| 업데이트 확인 | 로비가 보일 때 실행당 1회 (자바가 GitHub releases/latest 하나 요청) |
+| 업데이트 다운로드 | [지금 업데이트]를 눌렀을 때만 |
+| 피드백 | [💬 피드백 보내기] → 미리 채운 GitHub 이슈 주소를 **브라우저로** 연다 (앱이 직접 보내지 않음, 토큰 없음) |
+| 멀티 모드 | **아직 없음** (`src/net/` 없음, [MULTIPLAYER.md](MULTIPLAYER.md)는 계획) |
 | 광고, 분석, 계정, 랭킹 | 없음 |
 | 보내는 정보 | 없음 (요청에 개인정보·기기정보를 담지 않음) |
+
+---
+
+## 5. 구현하지 않은 예전 계획 (참고)
+
+- Capacitor + `@capgo/capacitor-updater` 웹 번들 라이브 업데이트, `latest.json` 매니페스트(minNativeVersion·bundleUrl), 새 번들 자동 롤백(`notifyAppReady`), 태그 푸시 `release.yml`, 공개 업데이트 전용 저장소 `Random-TD-updates`·`UPDATES_REPO_TOKEN`, `saveVersion` + `save/migrations/` 순서 변환·업데이트 전 자동 백업, 설정 [업데이트 확인]·자동 확인 끄기, 계획 폴더 구조(`config/ core/ systems/ scenes/`, `grades.json`·`recipes.json`·`talents.json` …, 파츠 SVG).
+- 지금은 위 1~4장 방식을 쓴다 (APK 통째 업데이트가 단순하고, 서명 확인으로 안전하며, 자바 다리만으로 충분했다).

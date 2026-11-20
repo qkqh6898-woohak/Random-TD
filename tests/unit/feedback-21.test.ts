@@ -18,7 +18,7 @@ function rgb(hex: string): [number, number, number] {
 }
 
 describe('피드백 #21 등급별 캐릭터 테두리 색', () => {
-  it('받침대·별 배지와 같은 등급 색 (신화는 금테)', () => {
+  it('받침대·별 배지와 같은 등급 색 (리미티드는 금테)', () => {
     for (const g of GRADES) expect(gradeOutlineColor(g), g).toBe(g === 'hidden' ? COLORS.hiddenRim : GRADE_COLORS[g]);
   });
 

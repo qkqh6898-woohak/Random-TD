@@ -17,7 +17,7 @@ MS = json.load(open(ROOT / "src/data/missions.json", encoding="utf-8"))["mission
 G = json.load(open(ROOT / "src/data/game.json", encoding="utf-8"))
 towers = T["towers"]; BASE = T["baseDps"]
 GRADES = ["normal", "rare", "unique", "hero", "legend", "god", "hidden"]
-GK = {"normal": "노말", "rare": "레어", "unique": "유니크", "hero": "히어로", "legend": "레전드", "god": "신", "hidden": "히든"}
+GK = {"normal": "노말", "rare": "레어", "unique": "유니크", "hero": "히어로", "legend": "레전드", "god": "신", "hidden": "리미티드"}
 GS = {"normal": "N", "rare": "R", "unique": "U", "hero": "H", "legend": "L", "god": "G", "hidden": "X"}
 SHAPE = {"single": "단일", "melee": "근접 단일", "aoe": "광역", "melee_aoe": "근접 광역", "pierce": "관통", "chain": "연쇄", "multi": "다중", "global": "전체"}
 DMG = {"physical": "물리", "magic": "마법", "hybrid": "혼합", "true": "고정"}
@@ -88,6 +88,12 @@ for t in towers:
     if t.get("recipe"):
         for rid in t["recipe"]:
             if rid not in byid: errors.append(f"{t['name']} 조합 재료 {rid} 없음")
+# V2.0 PR-A 등급 순서 (src/data/grades.ts): 노말 < … < 레전드 < 신 < 리미티드(hidden) — 등급 기준 DPS가 오름차순,
+# 리미티드는 가장 약한 것도 가장 강한 신보다 전투력 지수(power)가 높다.
+for a, b in zip(GRADES, GRADES[1:]):
+    if not BASE[a] < BASE[b]: errors.append(f"baseDps 순서: {GK[a]} {BASE[a]} < {GK[b]} {BASE[b]} 이어야 함")
+_gods = [power(t) for t in towers if t["grade"] == "god"]; _lim = [power(t) for t in towers if t["grade"] == "hidden"]
+if _gods and _lim and not min(_lim) > max(_gods): errors.append(f"리미티드 최소 전투력 {min(_lim):.0f} ≤ 신 최대 {max(_gods):.0f}")
 detect = [t["name"] for t in towers if t["detect"] != "none" and t["grade"] in need_special]
 if len(detect) < 6: errors.append("감지 타워가 너무 적음")
 mobids = {m["id"] for m in E["mobs"]}
@@ -169,9 +175,9 @@ if ART.get("themes", 0) > len(C["themes"]): errors.append(f"art.themes {ART.get(
 PG = json.load(open(ROOT / "src/data/progression.json", encoding="utf-8"))
 _hl = PG["heroes"]
 if _hl["maxLevel"] > G["towerLevel"]["max"]: errors.append(f"progression.json heroes.maxLevel {_hl['maxLevel']} > game.json towerLevel.max {G['towerLevel']['max']}")
-for _k in ("cards", "gold"):
+for _k in ("cards", "flame"):  # V2.0 PR-A: 영웅 레벨업 = 카드 + 🔥 불꽃 (예전 골드)
     if len(_hl[_k]) != _hl["maxLevel"] - 1: errors.append(f"progression.json heroes.{_k} 길이 {len(_hl[_k])} ≠ maxLevel − 1")
-for _k in ("gradeCardPct", "gradeGoldPct"):
+for _k in ("gradeCardPct", "gradeFlamePct"):
     for _g in GRADES:
         if _g not in _hl[_k]: errors.append(f"progression.json heroes.{_k}.{_g} 없음")
 _waves = [m["wave"] for m in PG["waveRoad"]["milestones"]]
@@ -182,6 +188,9 @@ _qids = [q["id"] for q in PG["quests"]["daily"] + PG["quests"]["achievements"]]
 if len(_qids) != len(set(_qids)): errors.append("progression.json 퀘스트 id가 겹침")
 for _it in PG["shop"]:
     if len(_it["price"]) != 1 or list(_it["price"])[0] not in ("gold", "gems"): errors.append(f"progression.json 상점 {_it['id']}: 가격은 gold·gems 중 하나만 (게임 안 화폐)")
+    if "flame" in _it: errors.append(f"progression.json 상점 {_it['id']}: 🔥 불꽃은 상점에서 팔지 않는다 (판 결과로만 — V2.0 PR-A)")
+# V2.0 PR-A 🔥 불꽃: 판 정산으로 얻는다 (웨이브당·보스당 둘 다 0이면 레벨업이 막힌다)
+if PG["matchRewards"]["flamePerStage"] + PG["matchRewards"]["flamePerBoss"] <= 0: errors.append("progression.json matchRewards: 판 정산 불꽃이 0")
 
 # ---------- 표 생성 ----------
 def fmt(x):
@@ -216,7 +225,7 @@ def tower_table(g):
     return "\n".join(rows)
 
 def recipe_table():
-    rows = ["| 히든 타워 | 조합식 (N 노말 · R 레어 · U 유니크 · H 히어로 · L 레전드) |", "|------|------|"]
+    rows = ["| 리미티드 타워 | 조합식 (N 노말 · R 레어 · U 유니크 · H 히어로 · L 레전드) |", "|------|------|"]
     for t in towers:
         if t.get("recipe"):
             parts = [f"{byid[r]['name']}({GS[byid[r]['grade']]})" for r in t["recipe"]]

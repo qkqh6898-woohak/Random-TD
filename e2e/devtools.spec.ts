@@ -247,13 +247,13 @@ test.describe('한 파일 빌드 (npm run build:single → release/운빨디펜�
     expect(await page.evaluate(() => typeof (window as unknown as { __RTD_ASSETS__?: unknown }).__RTD_ASSETS__)).toBe('object');
     await clickStart(page);
     await expect(page.locator('[data-screen="game"]')).toBeVisible();
-    // 빈 칸 (2, 4)를 눌러 소환 → 돈 1,000 → 900원, 타워 1개 (순환의 정원 v2 고리 안쪽 블록)
+    // 빈 칸 (2, 4)를 눌러 소환 → 돈 1,000 → 978원(V2.0 PR-A 첫 소환 22원), 타워 1개 (순환의 정원 v2 고리 안쪽 블록)
     const p = await sim(page, (s) => s.mapLayout);
     const box = await page.locator('#stage').boundingBox();
     const k = box!.width / 1080;
     await page.touchscreen.tap(box!.x + (p.originX + 2.5 * p.tile) * k, box!.y + (p.originY + 4.5 * p.tile) * k);
     await expect.poll(() => sim(page, (s) => s.match.towers().length)).toBe(1);
-    await expect(page.getByTestId('hud-gold')).toHaveText('900원');
+    await expect(page.getByTestId('hud-gold')).toHaveText('978원');
     // 개발자 도구
     const skip = page.getByRole('button', { name: '다음 단계로 즉시 이동' });
     await expect(skip).toBeVisible();

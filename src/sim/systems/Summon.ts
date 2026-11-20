@@ -1,7 +1,10 @@
 /**
  * 소환 (DEV_PLAN M2-1, GDD 4.3).
  *
- * - `summon` 명령: 빈 배치 칸 (x, y) + 소환 비용(100원) → 그 칸에 타워 하나.
+ * - `summon` 명령: 빈 배치 칸 (x, y) + 소환 비용 → 그 칸에 타워 하나.
+ * - 소환 비용 (V2.0 PR-A, docs/v2/economy.md): 기본 22원 + 그 플레이어가 지금까지 한 일반 소환 1번마다 +2원, 최대 200원
+ *   (game.json summon.cost·costStep·costMax). 웨이브가 바뀌어도 초기화하지 않는다. 횟수 = state.summonCount[플레이어]
+ *   (돈을 낸 일반 소환만 — 쌍둥이 덤·소환 도박은 세지 않는다).
  *   명령은 화면이 미리 검사해서 보내지만, 실행 틱에 **다시 검사**한다 (같은 틱에 같은 칸 명령이 둘 와도 하나만 된다).
  *   실패하면 상태를 바꾸지 않고 난수도 쓰지 않으며 `summonFail` 사건 { reason }을 낸다.
  * - 판정 순서 (GDD 4.3): ① 신 타워 0.01% (덱과 무관, 신 3종 중 균등) → ② 레어 직행 (행운의 여신 3% → 10%, M3-9 + 소환 확률 강화, 피드백 #27. 특성·카드는 뒤에서 더함)
@@ -9,7 +12,7 @@
  *   난수는 **플레이어별 소환 흐름**(`p{n}.summon`)만 쓴다 → 한 사람의 소환이 다른 사람·몹 등장 순서에 영향을 주지 않는다.
  *   신 판정은 확률과 상관없이 매번 난수 1개를 쓴다 (난수 사용 횟수가 데이터 확률에 따라 달라지지 않게).
  * - 신 타워는 지금 일반 타워처럼 공격만 한다 (전용 능력·강림 연출은 뒤 마일스톤).
- * - 카드 (M4-7): 소환 비용 = 100 − '소환 할인' 합 (최소 50원) · '신의 눈길' = 신 확률 ×3 · '행운의 소환' = 남은 횟수만큼 ②에서 무조건 레어
+ * - 카드 (M4-7): 소환 비용 = 위 비용 × (1 − '소환 할인' 합%, 합 최대 카드 max) 내림, 기본 비용 아래로는 내려가지 않는다 · '신의 눈길' = 신 확률 ×3 · '행운의 소환' = 남은 횟수만큼 ②에서 무조건 레어
  *   (난수는 같은 순서: 신 1개 → 레어 고르기 1개) · '쌍둥이 소환' = 시간 안에 소환하면 같은 타워를 가장 가까운 빈 배치 칸에 하나 더
  *   (빈 칸이 있을 때만, 돈은 한 번, 소환 횟수도 한 번).
  */
@@ -41,7 +44,7 @@ export function towerCount(world: World): number {
  * 칸 (x, y)에 소환할 수 있는지 (화면의 미리 검사와 명령 실행이 같이 쓴다). 되면 null.
  * 순서: 판 진행 중 → 배치 칸 → 비어 있음(모든 칸이 차 있으면 'full') → 돈.
  */
-export function summonCheck(ctx: MatchContext, world: World, x: number, y: number): SummonFail | null {
+export function summonCheck(ctx: MatchContext, world: World, x: number, y: number, player = 0): SummonFail | null {
   if (ctx.state.phase !== 'playing') return 'phase';
   if (!isBuildable(ctx.map, x, y)) return 'notBuildable';
   let count = 0;
@@ -52,17 +55,37 @@ export function summonCheck(ctx: MatchContext, world: World, x: number, y: numbe
     if (e.tx === x && e.ty === y) occupied = true;
   }
   if (occupied) return count >= ctx.map.buildable.length ? 'full' : 'occupied';
-  if (!canAfford(ctx.state, summonCost(ctx))) return 'gold';
+  if (!canAfford(ctx.state, summonCost(ctx, player))) return 'gold';
   return null;
 }
 
-/** 지금 소환 비용 (원): 기본 100 − 카드 '소환 할인' 합, 카드의 최소 비용(50) 아래로는 내려가지 않는다 (기본이 더 싸면 기본). */
-export function summonCost(ctx: Pick<MatchContext, 'rules' | 'state'>): number {
-  const base = ctx.rules.summonCost;
-  if (ctx.state.summonDiscount <= 0) return base;
-  const min = ctx.rules.summonCostMin < base ? ctx.rules.summonCostMin : base;
-  const v = base - ctx.state.summonDiscount;
-  return v < min ? min : v;
+/** 그 플레이어가 지금까지 돈을 내고 한 일반 소환 횟수 (소환 비용 계산용, V2.0 PR-A). */
+export function summonCountOf(state: Pick<MatchContext['state'], 'summonCount'>, player: number): number {
+  return state.summonCount[player] ?? 0;
+}
+
+/** 할인 전 소환 비용 (원): 기본 + 횟수 × 증가분, 최대 costMax. */
+export function summonBaseCost(rules: Pick<MatchRules, 'summonCost' | 'summonCostStep' | 'summonCostMax'>, count: number): number {
+  const v = rules.summonCost + rules.summonCostStep * count;
+  return v > rules.summonCostMax ? rules.summonCostMax : v;
+}
+
+/**
+ * 지금 소환 비용 (원, V2.0 PR-A): 할인 전 비용(summonBaseCost) − 내림(할인 전 비용 × 카드 '소환 할인' 합 bp),
+ * 단 기본 비용(summon.cost) 아래로는 내려가지 않는다 → 노말 판매가(가치 × 판매율)가 늘 이보다 낮다 (되팔기 돈벌이 없음).
+ */
+export function summonCost(ctx: Pick<MatchContext, 'rules' | 'state'>, player = 0): number {
+  const raw = summonBaseCost(ctx.rules, summonCountOf(ctx.state, player));
+  const disc = ctx.state.summonDiscountBp;
+  if (disc <= 0) return raw;
+  const v = raw - mulBp(raw, disc);
+  return v < ctx.rules.summonCost ? ctx.rules.summonCost : v;
+}
+
+/** 소환 한 번을 셈 (돈을 낸 일반 소환 직후). */
+export function noteSummonPaid(state: MatchContext['state'], player: number): void {
+  while (state.summonCount.length <= player) state.summonCount.push(0);
+  state.summonCount[player] = (state.summonCount[player] ?? 0) + 1;
 }
 
 /** 그 플레이어의 신 타워 확률 (bp): 기본(개발자 확률 조정 'god'이 있으면 그 값) × 카드 '신의 눈길' 배율. */
@@ -196,13 +219,14 @@ export function autoSummonTile(
 
 /** summon 명령 실행. 성공하면 놓인 타워, 실패하면 null (summonFail 사건). */
 export function summon(ctx: MatchContext, world: World, player: number, x: number, y: number): Tower | null {
-  const fail = summonCheck(ctx, world, x, y);
+  const fail = summonCheck(ctx, world, x, y, player);
   if (fail) {
     world.emit('summonFail', { player, x, y, reason: fail });
     return null;
   }
   const deck = ctx.decks[player] ?? ctx.rules.baseDeck;
-  spendGold(ctx.state, summonCost(ctx));
+  spendGold(ctx.state, summonCost(ctx, player));
+  noteSummonPaid(ctx.state, player);
   const perks = ctx.state.perks[player];
   const forceRare = (perks?.rareSummons ?? 0) > 0;
   const roll = rollSummon(world.rng(streamSummon(player)), ctx.rules, deck, summonRareChance(ctx, world, player), {

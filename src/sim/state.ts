@@ -9,7 +9,8 @@ import type { Deck, MatchRules, ThemeMods } from './rules';
 import type { PlayerMods } from './stats';
 
 export type MatchMode = 'infinite' | 'campaign';
-export type MatchPhase = 'playing' | 'defeat';
+/** 판 진행: 진행 중 / 패배 / 캠페인 클리어 (V2 L5 — 마지막 단계를 버티면 'victory') */
+export type MatchPhase = 'playing' | 'defeat' | 'victory';
 /** 패배 이유: 무한 = 몹 수 초과, 캠페인 = 목숨 0, 공통 = 보스 제한 시간 초과(M4-6), 캠페인 = 보스 출구 도달 */
 export type DefeatReason = '' | 'mobLimit' | 'lives' | 'bossTime' | 'bossLeak';
 
@@ -138,8 +139,10 @@ export interface MatchState {
   cardOffers: CardOffer[];
   /** 지금까지 고른 카드 id (고른 순) */
   cardsPicked: string[];
-  /** 카드 '소환 할인' 합 (원) */
-  summonDiscount: number;
+  /** 카드 '소환 할인' 합 (bp, 합 최대 카드 max — V2.0 PR-A: 예전엔 정액 원) */
+  summonDiscountBp: number;
+  /** 플레이어별 돈을 내고 한 일반 소환 횟수 (소환 비용 = 기본 + 횟수 × 증가분, V2.0 PR-A). 웨이브가 바뀌어도 그대로 */
+  summonCount: number[];
   /** 카드 '끈끈이' 몹 이동속도 감소 합 (bp, 최대 45%) */
   mobSlowBp: number;
   /** 카드 '황금 손' 돈 획득 증가 합 (bp) */
@@ -205,7 +208,7 @@ export interface MatchState {
   unitCapBonus: number[];
   /** 지금까지 한 소환 도박 수 (꽝 포함, 모든 플레이어) */
   gachas: number;
-  /** 지금까지 만든 신화(히든) 수 */
+  /** 지금까지 만든 리미티드(히든) 수 */
   crafts: number;
   /** 지금까지 쓴 필살기 수 */
   ults: number;
@@ -232,7 +235,7 @@ export interface MatchContext {
    */
   readonly accountLevels: readonly number[];
   /**
-   * 플레이어별 잠긴 히든(신화) 타워 id (G-3 히든 영웅 해방). 판 시작 때 정해진 입력 (해시 밖, 리플레이에 기록). 빈 집합 = 모두 열림.
+   * 플레이어별 잠긴 히든(리미티드) 타워 id (G-3 히든 영웅 해방). 판 시작 때 정해진 입력 (해시 밖, 리플레이에 기록). 빈 집합 = 모두 열림.
    * 조합 규칙은 sim/unlocks.ts `isHiddenLocked`로 읽는다.
    */
   readonly lockedHidden: readonly ReadonlySet<string>[];
