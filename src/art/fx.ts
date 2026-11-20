@@ -143,7 +143,7 @@ function starPath(c: CanvasRenderingContext2D, cx: number, cy: number, r: number
 
 const RAINBOW = ['#ff6b6b', '#ffb347', '#ffe66d', '#7ee081', '#6ec6ff', '#a78bfa', '#ff8ad8'];
 
-/** 등급 테 색 (신 = 무지개 그라데이션, 신화(hidden) = 금) */
+/** 등급 테 색 (신 = 무지개 그라데이션, 리미티드(hidden) = 금) */
 function gradeStroke(c: CanvasRenderingContext2D, grade: Grade, w: number): string | CanvasGradient {
   if (grade === 'god') {
     const g = c.createLinearGradient(0, 0, w, w);

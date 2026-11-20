@@ -105,7 +105,7 @@ describe('G-2 소환·승급 초상 카드', () => {
     }
   });
 
-  it('승급 등급 별: 노말 1 ~ 레전드 5, 신·신화 5', () => {
+  it('승급 등급 별: 노말 1 ~ 레전드 5, 신·리미티드 5', () => {
     expect(GRADES.map((g) => mergeStarCount(g))).toEqual([1, 2, 3, 4, 5, 5, 5]);
     expect(mergeStarCount('???')).toBe(1);
   });
@@ -168,7 +168,7 @@ function recorder(): { ctx: CanvasRenderingContext2D; box: { l: number; r: numbe
 }
 
 describe('G-2 캐릭터 겉모습: 등급 받침대·별 배지·종족 문장', () => {
-  it('등급 7종의 받침대 장식이 모두 다르다 (노말 → 신·신화)', () => {
+  it('등급 7종의 받침대 장식이 모두 다르다 (노말 → 신·리미티드)', () => {
     expect(new Set(GRADES.map((g) => GRADE_STYLE[g].deco)).size).toBe(7);
     expect(GRADES.map((g) => GRADE_STYLE[g].stars)).toEqual([1, 2, 3, 4, 5, 1, 1]);
     // 유니크 이상만 빛 고리
@@ -209,10 +209,12 @@ describe('G-2 캐릭터 겉모습: 등급 받침대·별 배지·종족 문장',
     }
   });
 
-  it('받침대 너비: 2배 그림이면 칸 안에서 커지고(≤ 0.95칸), 붙은 1.4배면 작게', () => {
-    expect(PEDESTAL_WIDTH_TILES * pedestalScaleFor(2)).toBeLessThanOrEqual(0.96);
-    expect(PEDESTAL_WIDTH_TILES * pedestalScaleFor(2)).toBeGreaterThan(0.9);
-    expect(pedestalScaleFor(1.4)).toBeLessThan(pedestalScaleFor(2));
+  it('받침대 너비 (V2.0 PR-A 그림 칸의 60~80%): 노말은 하한(0.66칸), 리미티드(배율 0.87)는 그림 너비만큼(≈0.81칸), 등급이 높을수록 크다', () => {
+    expect(pedestalScaleFor(0.65)).toBe(0.85);
+    expect(PEDESTAL_WIDTH_TILES * pedestalScaleFor(0.87)).toBeGreaterThan(0.78);
+    expect(PEDESTAL_WIDTH_TILES * pedestalScaleFor(0.87)).toBeLessThanOrEqual(0.85);
+    expect(pedestalScaleFor(0.8)).toBeLessThan(pedestalScaleFor(0.87));
+    expect(pedestalScaleFor(0.87)).toBeGreaterThan(1);
     expect(pedestalScaleFor(0.5)).toBe(0.85);
     expect(pedestalScaleFor(9)).toBe(1.22);
     // 1.22배여도 받침대 아래 끝은 칸 아래 경계 근처 (칸 중심 +0.52칸 이하)

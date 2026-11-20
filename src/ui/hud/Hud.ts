@@ -20,7 +20,7 @@
  *   열린 시트의 메뉴는 강조. 보스 막대 자리는 도전 보스 막대와 같이 쓴다: 하나만 있으면 그것이 자리를 다 쓰고,
  *   보스와 도전이 겹치면 반씩 두 줄 (UI.md 9장 '체력바 2줄') — 자리 높이는 그대로라 맵이 움직이지 않는다.
  *
- * G-1: 하단 메뉴 = [💠 신화] [✨ 소환] [🎰 도박] [⬆ 강화] + 작은 [⚔] [📋] (+ 개발자 [🛠]) — 도전·미션은 아이콘·배지만 (좁은 화면 넘침 방지).
+ * G-1: 하단 메뉴 = [💠 리미티드] [✨ 소환] [🎰 도박] [⬆ 강화] + 작은 [⚔] [📋] (+ 개발자 [🛠]) — 도전·미션은 아이콘·배지만 (좁은 화면 넘침 방지).
  *   피드백 #26: 위 띠 아래 맵 오른쪽 위에 [⏫ 모두 승급 n] (승급할 무더기가 있을 때만, onMergeAll).
  *   피드백 #65: 승급 버튼은 이것 하나 — 한 번 누르면 전체 승급, 꾹 누르면 누르는 동안 새로 찬 무더기도 계속 (mergeAllHoldDelay).
  *   1줄 ⏸ 앞 [⚡ n] 필살기 칩 (찬 캐릭터가 있을 때만): 누르면 찬 캐릭터 목록 + [모두 발동] (onUlt·onUltAll).
@@ -118,7 +118,7 @@ export interface HudView extends UiView {
   setReady(state: 'hidden' | 'ready' | 'sent'): void;
   /** 첫 승급 안내 (F10): [⏫ 모두 승급] 버튼을 반짝여 강조 (피드백 #65 전에는 아래 띠 [⬆ 승급 가능]) */
   setMergeGuide(on: boolean): void;
-  /** G-1: 하단 메뉴 [신화]·[소환]·[도박] 배지 (alert = 강조) */
+  /** G-1: 하단 메뉴 [리미티드]·[소환]·[도박] 배지 (alert = 강조) */
   setG1Badges(b: { mythic: string; mythicAlert: boolean; summon: string; summonAlert: boolean; gamble: string }): void;
   /** G-1: 필살기가 찬 캐릭터 (빈 배열이면 칩·목록 숨김) */
   setUlts(list: readonly UltEntry[]): void;
@@ -314,7 +314,7 @@ export function createHud(opts: HudOptions): HudView {
   const choiceSlot = h('span', { class: 'hud-choice-slot', attrs: { 'data-testid': 'hud-choice-slot' } });
   const towersItem = h('span', { class: 'hud-item hud-towers' }, h('span', { class: 'hud-label', text: '🗼', attrs: { 'aria-hidden': 'true' } }), towersEl);
   // FB-25: 돈·인원은 위 HUD에 고정하고 아래에는 고용·승급·카드 조작만 둔다.
-  // + 큰 버튼 묶음 [💠 신화] [🎲 소환] [🎰 도박] / 소환 아래 넓은 [⬆ 강화] — 도전·미션은 맵 오른쪽 둥근 버튼
+  // + 큰 버튼 묶음 [💠 리미티드] [🎲 소환] [🎰 도박] / 소환 아래 넓은 [⬆ 강화] — 도전·미션은 맵 오른쪽 둥근 버튼
   const bottomBand = h(
     'div',
     { class: 'hud-bottom is-g1' },
@@ -362,11 +362,11 @@ export function createHud(opts: HudOptions): HudView {
     menuBtns.set(kind, { btn, badge });
     return btn;
   };
-  // G-1 사용자 결정: [신화] [소환] [도박] [강화] 탭 + 도전·미션(·개발)은 작은 아이콘 버튼
+  // G-1 사용자 결정: [리미티드] [소환] [도박] [강화] 탭 + 도전·미션(·개발)은 작은 아이콘 버튼
   const menuBar = h(
     'div',
     { class: 'hud-menu is-g1', attrs: { role: 'toolbar', 'aria-label': '조작 버튼' } },
-    menuItem('mythic', '💠', '신화'),
+    menuItem('mythic', '💠', '리미티드'),
     summonBtn,
     menuItem('gamble', '🎰', '도박'),
     menuItem('upgrade', '⬆', '강화'),

@@ -286,6 +286,31 @@ public final class UpdateLogic {
         return b.toString();
     }
 
+    /**
+     * 웹이 다시 확인(check)했을 때 지금 상태를 되살리는 사건들 (V2 검토 L6). 받는 중·설치 중에 WebView가 다시 읽히면(렌더러 재시작 등)
+     * 웹은 'checking'에서 시작하고 제안(available)이 있어야 진행·설치 사건을 받는다 — 그래서 제안부터 지금 단계까지 순서대로 보낸다.
+     * phase: "available" · "permission" · "downloading"(verifying = 크기·해시 확인 중) · "installing"(confirm = 시스템 확인 창이 떠 있음).
+     * 그 밖의 상태는 빈 목록 (다시 확인하지 않는 상태는 부르는 쪽이 판단).
+     */
+    public static List<String> resyncEvents(String phase, String version, String current, String notes, long size, long received,
+            boolean verifying, boolean confirm) {
+        List<String> out = new ArrayList<>();
+        boolean known = "available".equals(phase) || "permission".equals(phase) || "downloading".equals(phase) || "installing".equals(phase);
+        if (!known) return out;
+        out.add(jsonObject("type", "available", "version", version, "current", current, "notes", notes, "size", size));
+        if ("permission".equals(phase)) {
+            out.add(jsonObject("type", "permission"));
+        } else if ("downloading".equals(phase)) {
+            long got = Math.max(0L, Math.min(received, size));
+            out.add(jsonObject("type", "progress", "received", got, "total", size));
+            if (verifying) out.add(jsonObject("type", "verifying"));
+        } else if ("installing".equals(phase)) {
+            out.add(jsonObject("type", "progress", "received", size, "total", size));
+            out.add(confirm ? jsonObject("type", "installing", "step", "confirm") : jsonObject("type", "installing"));
+        }
+        return out;
+    }
+
     /** 키 순서를 지키는 작은 JSON 객체 만들기 (값: String·Long·Integer·Boolean·null) */
     public static String jsonObject(Object... keyValues) {
         if (keyValues.length % 2 != 0) throw new IllegalArgumentException("키·값 짝");

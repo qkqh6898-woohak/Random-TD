@@ -57,7 +57,7 @@ for (const width of [412, 320]) {
     expect(f.right).toBeLessThanOrEqual(width + 0.5);
 
     // 규칙·비용·확률 글자 그대로
-    await expect(page.getByTestId('gacha-buy-faction')).toHaveText('200원');
+    await expect(page.getByTestId('gacha-buy-faction')).toHaveText('400원'); // V2.0 PR-A 소환 도박 ×2
     await expect(page.getByTestId('gacha-odds-faction')).toHaveText(/노말\s70% · 레어\s30%/);
     await expect(page.getByTestId('gacha-pity-faction')).toHaveText('천장까지 10회 (레어)');
 

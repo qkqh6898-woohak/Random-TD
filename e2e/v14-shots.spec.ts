@@ -61,7 +61,7 @@ async function startWithStacks(page: Page): Promise<[number, number][]> {
       put(10, 'archmage', 2); // 레전드 2
       put(12, 'goblin', 1); // 노말 1
       put(14, 'fate', 1); // 신 1
-      put(17, 'elemental', 1); // 신화 1
+      put(17, 'elemental', 1); // 리미티드 1
       put(19, 'merchant', 3); // 레어 3
       s.match.state.gold = 12_345;
       s.debugFastForward(1);
@@ -118,7 +118,7 @@ test('V14 로비 영웅', async ({ page }) => {
     const p = JSON.parse(localStorage.getItem('rtd.progress')!);
     p.heroes.miner.cards = 5;
     p.heroes.archer.cards = 2;
-    p.gold = 1000;
+    p.flame = 100;
     localStorage.setItem('rtd.progress', JSON.stringify(p));
   });
   await page.goto('/');

@@ -7,6 +7,10 @@
  *   예전 키는 지우거나 바꾸지 않는다 (전투 기록·효과음·화면 흔들림·설정·판 저장 그대로).
  * - 날짜(일일 퀘스트)는 기기 시계의 지역 날짜 'YYYY-MM-DD' — sim 밖이라 Date를 쓸 수 있다 (테스트는 now를 넣는다).
  * - 바뀔 때마다 바로 쓴다. 쓰기 실패는 삼킨다 (메모리 사본으로 이어 감 — BrowserStorage).
+ * - 검토 M4: 저장 글자를 읽을 수 없거나(망가짐) 이 앱보다 새 형식이면, 덮어쓰기 전에 원본을 `<키>.bak.<시각>`에 백업한다.
+ *   모르는 최상위 필드·데이터에 없는 타워의 영웅 기록은 parseProgress가 그대로 들고 다닌다.
+ *   이 앱보다 새 형식(v > PROGRESS_VERSION)이면 **읽기 전용** — 이번 실행의 변화는 메모리에만 두고 기기에 쓰지 않는다
+ *   (새 앱의 뜻으로 적힌 필드를 옛 앱이 다시 쓰지 않게, V2 통합 — fixes-notes M4 ①). 처음 읽은 값이 그대로면 다시 쓰지 않는다(②).
  */
 import type { GameData, TowerData } from '../data/load';
 import { ACCOUNT_KEY } from './account';
@@ -28,6 +32,8 @@ import {
   levelUpHero,
   lockedHiddenIds,
   parseProgress,
+  progressIsNewer,
+  progressNeedsBackup,
   refreshDaily,
   serializeProgress,
   settleMatch,
@@ -82,6 +88,8 @@ export class ProgressStore {
   readonly state: ProgressState;
   /** 처음 만든 계정인가 (저장 키가 없었음) */
   readonly created: boolean;
+  /** 이 앱보다 새 형식의 저장 — 기기에 쓰지 않는다 (검토 M4) */
+  readonly readOnly: boolean;
   private readonly listeners = new Set<() => void>();
   private readonly now: () => Date;
 
@@ -102,9 +110,17 @@ export class ProgressStore {
     this.created = raw === null;
     const seed = opts.seed ?? accountSeedFrom(`${this.now().getTime()}:${Math.random()}`);
     // 개발자 계정은 일반 계정 기록을 옮기지 않는다 (따로 시작)
+    if (progressNeedsBackup(raw)) {
+      try {
+        storage.setItem(`${this.key}.bak.${this.now().getTime()}`, raw as string);
+      } catch {
+        // 백업 실패는 게임을 막지 않는다
+      }
+    }
+    this.readOnly = progressIsNewer(raw);
     this.state = parseProgress(raw, pd, data, seed, opts.dev ? {} : readLegacy(storage));
     refreshDaily(this.state, this.today());
-    this.save();
+    if (serializeProgress(this.state) !== raw) this.save();
   }
 
   today(): string {
@@ -122,6 +138,7 @@ export class ProgressStore {
   }
 
   private save(): void {
+    if (this.readOnly) return;
     try {
       this.storage.setItem(this.key, serializeProgress(this.state));
     } catch {
@@ -157,7 +174,7 @@ export class ProgressStore {
   }
 
   /**
-   * 신화(히든) 조각: 가진 수 / 해방에 드는 수 (G-1 [신화] 도감의 '🔒 해방 필요 (조각 n/20)').
+   * 리미티드(히든) 조각: 가진 수 / 해방에 드는 수 (G-1 [리미티드] 도감의 '🔒 해방 필요 (조각 n/20)').
    * 히든이 아니거나 이미 해방했으면 null.
    */
   fragmentsOf(id: string): { have: number; need: number } | null {
@@ -231,10 +248,11 @@ export class ProgressStore {
     return r;
   }
 
-  /** 개발자 모드 로비 [🛠 +재화]: 골드·보석·카드·조각 (개발자 계정 슬롯에만) */
+  /** 개발자 모드 로비 [🛠 +재화]: 골드·보석·🔥 불꽃·카드·조각 (개발자 계정 슬롯에만) */
   devGrant(): void {
     this.state.gold += 10000;
     this.state.gems += 1000;
+    this.state.flame += 1000;
     for (const t of this.data.towers.towers) {
       const e = (this.state.heroes[t.id] ??= { level: 0, cards: 0 });
       e.cards += t.grade === 'hidden' ? this.pd.hidden.unlockFragments : 20;

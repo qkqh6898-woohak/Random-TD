@@ -15,7 +15,7 @@ export function withCommas(n: number): string {
   return sign + out;
 }
 
-/** 돈 부족 (소환): "100원이 필요해요" — 비용은 데이터(game.json summon.cost)에서 */
+/** 돈 부족 (소환): "22원이 필요해요" — 비용은 지금 소환 비용(Summon.summonCost, game.json summon)에서 */
 export function needGoldForSummon(cost: number): string {
   return `${withCommas(cost)}원이 필요해요`;
 }
@@ -50,7 +50,7 @@ export function mergeReadyToast(names: string | readonly string[]): string {
 export function mergeFailText(reason: string, count: number): string | null {
   if (reason === 'count') return `같은 타워가 ${count}개 있어야 승급할 수 있어요`;
   if (reason === 'stack') return `같은 타워 ${count}개가 한 칸에 모여야 승급해요`;
-  if (reason === 'maxGrade') return '레전드는 승급할 수 없어요 (신화 재료)';
+  if (reason === 'maxGrade') return '레전드는 승급할 수 없어요 (리미티드 재료)';
   return null;
 }
 
@@ -326,25 +326,43 @@ export function gachaFailText(reason: string, short: number): string | null {
 /** G-1 인원 한도 */
 export const UNIT_CAP_FULL = '인원이 가득 찼어요 — 승급으로 줄여 보세요';
 
+/** 승급의 축복 [바꾸기]: 바꾼 타워를 옮길 자리가 없어 그대로 둠 (V2 H1 — sim 'mergePickFail' reason 'full', 축복 1회는 돌려줌) */
+export const MERGE_PICK_FULL = '옮길 자리가 없어 바꾸지 못했어요 — 축복을 돌려받았어요';
+
 /** 필살기 알림 */
 export function ultText(towerName: string, ultName: string, count: number): string {
   return count > 0 ? `${towerName}의 ${ultName}! (${count})` : `${towerName}의 ${ultName}!`;
 }
 
-/** 신화 조합 알림 */
+/** 리미티드 조합 알림 */
 export function craftText(name: string, first: boolean): string {
-  return first ? `💠 신화 ${name} 탄생! 도감에 기록했어요` : `💠 신화 ${name} 탄생!`;
+  return first ? `💠 리미티드 ${name} 탄생! 도감에 기록했어요` : `💠 리미티드 ${name} 탄생!`;
 }
 
-/** 신화 재료가 모두 모였을 때 */
+/** 리미티드 재료가 모두 모였을 때 */
 export function craftReadyText(name: string): string {
-  return `💠 ${name} 재료가 모였어요 — [신화]에서 만들어요`;
+  return `💠 ${name} 재료가 모였어요 — [리미티드]에서 만들어요`;
 }
 
-/** 신화 조합 실패 → 글자 */
+/** 리미티드 조합 실패 → 글자 */
 export function craftFailText(reason: string): string | null {
-  if (reason === 'locked') return '아직 해방하지 않은 신화예요';
+  if (reason === 'locked') return '아직 해방하지 않은 리미티드예요';
   if (reason === 'material') return '재료가 모자라요';
   if (reason === 'full') return BOARD_FULL;
   return null;
 }
+
+/**
+ * 업데이트로 진행 중 판을 이어 할 수 없을 때 타이틀 알림 (V2 M2a — 버리기 전에 정산). credited = 이번에 보상을 줬음.
+ * 정산하지 못했으면(값이 이상한 옛 저장·이미 받은 판) 예전 문구.
+ */
+export function abandonedRunToast(info: { run: { stage: number }; credited: boolean } | null): string {
+  if (info?.credited) return `게임 규칙이 바뀌어 진행 중이던 판(${info.run.stage}단계)은 여기서 끝났어요. 그 판의 보상은 받았어요.`;
+  return '업데이트로 진행 중이던 판은 이어 할 수 없어요. 계정·설정·전투 기록은 그대로예요.';
+}
+
+/**
+ * 업데이트 창의 저장 안내 (V2 M3). 예전 '저장한 판과 기록은 그대로예요'는 진행 중 판에 대해 틀렸다.
+ * 지금 규칙(V2 M2): 앱 버전만 바뀌면 이어 하고, 게임 규칙(SIM_VERSION)·데이터가 바뀐 업데이트면 그 판은 정산(보상 지급) 뒤 끝난다.
+ */
+export const UPDATE_SAVE_NOTE = '계정·기록은 그대로예요. 진행 중인 판은 이어 할 수 있고, 게임 규칙이 바뀐 업데이트면 그때까지의 보상을 받고 끝나요.';

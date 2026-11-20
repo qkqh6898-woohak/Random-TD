@@ -1,7 +1,8 @@
 /**
  * 판 밖 성장 규칙 (G-3 로비·영웅 수집·성장, docs/PROGRESSION.md 13장). 순수 함수 — 저장소·화면·Date와 무관 (날짜는 부르는 쪽이 넘긴다).
  *
- * 상태(ProgressState)는 계정 하나의 판 밖 진행: 계정 레벨·경험치, 골드·보석(게임 안에서만 얻음), 영웅별 레벨·카드(히든은 조각),
+ * 상태(ProgressState)는 계정 하나의 판 밖 진행: 계정 레벨·경험치, 골드·보석(게임 안에서만 얻음), 🔥 불꽃(V2.0 PR-A — 영웅 레벨업에만 쓴다),
+ * 영웅별 레벨·카드(히든은 조각),
  * 무한 모드 최고 웨이브·받은 웨이브 길 보상, 영웅 모집 게이지, 누적·오늘 기록, 받은 퀘스트·업적, 보상을 준 판.
  *
  * 무작위(카드 영웅 고르기·조각 대상): Math.random을 쓰지 않는다.
@@ -12,14 +13,20 @@
  *  - `heroMatchLevels(state, pd, data)` → MatchOptions.levels[플레이어] (타워 id → Lv, 2 이상만). sim이 레벨당 공격력
  *    (game.json towerLevel.atkPerLevel = +4%)과 특색 수치 보간(Lv1 → Lv15)을 적용한다. 리플레이·판 저장 입력에 기록된다.
  *  - `lockedHiddenIds(state, data)` → MatchOptions.lockedHidden[플레이어]. sim `isHiddenLocked(ctx, player, id)`로 읽는다.
- *  - `isHiddenUnlocked(state, id)` — 화면(신화 도감)용.
+ *  - `isHiddenUnlocked(state, id)` — 화면(리미티드 도감)용.
  */
 import type { GameData, Grade, TowerData } from '../data/load';
 import { Rng, deriveSeed } from '../sim/Rng';
 import { fnv1a32 } from '../sim/hash';
 import type { ProgressionData, QuestData, QuestStat, RewardSpec, ShopItemData } from './progressionData';
 
-export const PROGRESS_VERSION = 1;
+/**
+ * 저장 형식 버전. 2 = V2.0 PR-A 🔥 불꽃(flame) 추가. 1 → 2 이전: flame이 없으면 progression.json account.legacyFlame을 한 번 준다
+ * (예전 계정은 영웅 레벨업에 골드를 썼으므로 막히지 않게 — 다른 재화는 건드리지 않는다). 2 이상인데 flame이 틀리면 0.
+ */
+export const PROGRESS_VERSION = 2;
+/** 불꽃이 처음 생긴 저장 형식 버전 */
+export const FLAME_VERSION = 2;
 /** 같은 판에 보상을 두 번 주지 않게 남겨 두는 최근 판 수 */
 export const REWARDED_RUNS_KEEP = 20;
 
@@ -58,6 +65,8 @@ export interface ProgressState {
   xp: number;
   gold: number;
   gems: number;
+  /** 🔥 불꽃 (V2.0 PR-A): 판 결과로 얻고 영웅 레벨업에만 쓴다 */
+  flame: number;
   heroes: Record<string, HeroEntry>;
   /** 무한 모드 최고 웨이브 (일반 판) */
   bestWave: number;
@@ -78,6 +87,7 @@ export interface Grant {
   xp: number;
   gold: number;
   gems: number;
+  flame: number;
   cards: { id: string; n: number; isNew: boolean }[];
   fragments: { id: string; n: number }[];
   /** 이번에 오른 계정 레벨들 */
@@ -112,7 +122,7 @@ export function emptyStats(): StatBlock {
 }
 
 function emptyGrant(): Grant {
-  return { xp: 0, gold: 0, gems: 0, cards: [], fragments: [], levelUps: [] };
+  return { xp: 0, gold: 0, gems: 0, flame: 0, cards: [], fragments: [], levelUps: [] };
 }
 
 /** 영웅 수집에 나오는 타워 (모든 등급, 데이터 순서) */
@@ -136,6 +146,7 @@ export function newProgress(pd: ProgressionData, data: Pick<GameData, 'decks' | 
     xp: 0,
     gold: pd.account.startGold,
     gems: pd.account.startGems,
+    flame: pd.account.startFlame,
     heroes,
     bestWave: best,
     claimedWaves: [],
@@ -162,8 +173,43 @@ function readStats(v: unknown): StatBlock {
 }
 
 /**
+ * 저장 글자를 읽을 수 없는가 (JSON이 아님·객체가 아님·버전이 없거나 틀림) 또는 이 앱보다 새 형식인가 (검토 M4) —
+ * 그렇다면 저장소가 덮어쓰기 전에 원본을 옆 키에 백업한다 (ProgressStore). 키가 없으면(null) false.
+ */
+export function progressNeedsBackup(raw: string | null): boolean {
+  if (raw === null) return false;
+  try {
+    const o: unknown = JSON.parse(raw);
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return true;
+    const v = (o as { v?: unknown }).v;
+    return !nonNegInt(v) || v < 1 || v > PROGRESS_VERSION;
+  } catch {
+    return true;
+  }
+}
+
+/** 이 앱보다 새 형식의 계정 저장인가 (v > PROGRESS_VERSION) — ProgressStore가 읽기 전용으로 연다 (검토 M4) */
+export function progressIsNewer(raw: string | null): boolean {
+  if (raw === null) return false;
+  try {
+    const o: unknown = JSON.parse(raw);
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return false;
+    const v = (o as { v?: unknown }).v;
+    return nonNegInt(v) && v > PROGRESS_VERSION;
+  } catch {
+    return false;
+  }
+}
+
+/** parseProgress가 아는 최상위 필드 (나머지는 그대로 들고 다닌다 — 새 앱이 더한 필드를 옛 앱이 지우지 않게, 검토 M4) */
+const KNOWN_KEYS: ReadonlySet<string> = new Set([
+  'v', 'seed', 'rolls', 'level', 'xp', 'gold', 'gems', 'flame', 'heroes', 'bestWave', 'claimedWaves', 'recruit', 'recruitSummons', 'totals', 'daily', 'achievements', 'rewardedRuns',
+]);
+
+/**
  * 저장 글자 → 상태. 없으면 새 계정(legacy 값 옮김), 망가졌으면 새 계정, 필드 하나가 틀리면 그 필드만 기본값.
- * 모르는 타워(데이터에서 빠짐)는 버리고 새 타워는 미보유로 채운다. 버전 1 (예전 형식 없음 — 처음 만든 형식).
+ * 데이터에 없는 타워 id의 영웅 기록과 모르는 최상위 필드는 버리지 않고 그대로 들고 다닌다 (검토 M4 — id가 데이터에 돌아오면 다시 쓰인다).
+ * 새 타워는 미보유로 채운다. 버전 1 → 2: 🔥 불꽃이 없으면 account.legacyFlame을 한 번 준다 (FLAME_VERSION).
  */
 export function parseProgress(raw: string | null, pd: ProgressionData, data: Pick<GameData, 'decks' | 'towers'>, seed: number, legacy: { level?: number; bestWave?: number } = {}): ProgressState {
   const fresh = newProgress(pd, data, seed, legacy);
@@ -183,17 +229,28 @@ export function parseProgress(raw: string | null, pd: ProgressionData, data: Pic
     const e = src[t.id] as Partial<HeroEntry> | undefined;
     heroes[t.id] = e && typeof e === 'object' ? { level: Math.min(intOr(e.level, 0), pd.heroes.maxLevel), cards: intOr(e.cards, 0) } : (fresh.heroes[t.id] as HeroEntry);
   }
+  for (const id of Object.keys(src).sort()) {
+    if (Object.hasOwn(heroes, id)) continue;
+    const e = src[id] as Partial<HeroEntry> | undefined;
+    if (e && typeof e === 'object') heroes[id] = { level: Math.min(intOr(e.level, 0), pd.heroes.maxLevel), cards: intOr(e.cards, 0) };
+  }
+  const extras: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(o)) if (!KNOWN_KEYS.has(k)) extras[k] = v;
+  const savedV = o.v as number;
+  const flame = nonNegInt(o.flame) ? o.flame : savedV < FLAME_VERSION ? pd.account.legacyFlame : 0;
   const d = (o.daily && typeof o.daily === 'object' ? o.daily : {}) as Partial<Record<keyof DailyState, unknown>>;
   const totals = readStats(o.totals);
   const bestWave = Math.max(intOr(o.bestWave, 0), totals.bestWave);
   return {
-    v: PROGRESS_VERSION,
+    ...extras,
+    v: Math.max(PROGRESS_VERSION, savedV),
     seed: intOr(o.seed, fresh.seed) >>> 0,
     rolls: intOr(o.rolls, 0),
     level: intOr(o.level, 1, 1),
     xp: intOr(o.xp, 0),
     gold: intOr(o.gold, 0),
     gems: intOr(o.gems, 0),
+    flame,
     heroes,
     bestWave,
     claimedWaves: Array.isArray(o.claimedWaves) ? [...new Set(o.claimedWaves.filter(nonNegInt))].sort((a, b) => a - b) : [],
@@ -248,18 +305,18 @@ export function heroEntry(state: ProgressState, id: string): HeroEntry {
   return state.heroes[id] ?? { level: 0, cards: 0 };
 }
 
-/** Lv level → level+1 비용. 최대 레벨이면 null */
-export function levelUpCost(pd: ProgressionData, grade: Grade, level: number): { cards: number; gold: number } | null {
+/** Lv level → level+1 비용 (영웅 카드 + 🔥 불꽃, V2.0 PR-A — 예전엔 골드). 최대 레벨이면 null */
+export function levelUpCost(pd: ProgressionData, grade: Grade, level: number): { cards: number; flame: number } | null {
   if (level < 1 || level >= pd.heroes.maxLevel) return null;
   const baseCards = pd.heroes.cards[level - 1] as number;
-  const baseGold = pd.heroes.gold[level - 1] as number;
+  const baseFlame = pd.heroes.flame[level - 1] as number;
   return {
     cards: Math.max(1, Math.ceil((baseCards * pd.heroes.gradeCardPct[grade]) / 100)),
-    gold: Math.floor((baseGold * pd.heroes.gradeGoldPct[grade]) / 100),
+    flame: Math.floor((baseFlame * pd.heroes.gradeFlamePct[grade]) / 100),
   };
 }
 
-export type LevelUpCheck = 'ok' | 'notOwned' | 'max' | 'cards' | 'gold';
+export type LevelUpCheck = 'ok' | 'notOwned' | 'max' | 'cards' | 'flame';
 
 export function checkLevelUp(state: ProgressState, pd: ProgressionData, tower: Pick<TowerData, 'id' | 'grade'>): LevelUpCheck {
   const e = heroEntry(state, tower.id);
@@ -267,18 +324,18 @@ export function checkLevelUp(state: ProgressState, pd: ProgressionData, tower: P
   const cost = levelUpCost(pd, tower.grade, e.level);
   if (!cost) return 'max';
   if (e.cards < cost.cards) return 'cards';
-  if (state.gold < cost.gold) return 'gold';
+  if (state.flame < cost.flame) return 'flame';
   return 'ok';
 }
 
-/** 레벨업 (카드 + 골드). 성공하면 새 레벨, 못 하면 이유 */
+/** 레벨업 (카드 + 🔥 불꽃). 성공하면 새 레벨, 못 하면 이유. 영웅 ▲·탭 배지·[모두 레벨업 N]이 모두 이 규칙(checkLevelUp)을 쓴다 */
 export function levelUpHero(state: ProgressState, pd: ProgressionData, tower: Pick<TowerData, 'id' | 'grade'>): number | Exclude<LevelUpCheck, 'ok'> {
   const why = checkLevelUp(state, pd, tower);
   if (why !== 'ok') return why;
   const e = state.heroes[tower.id] as HeroEntry;
-  const cost = levelUpCost(pd, tower.grade, e.level) as { cards: number; gold: number };
+  const cost = levelUpCost(pd, tower.grade, e.level) as { cards: number; flame: number };
   e.cards -= cost.cards;
-  state.gold -= cost.gold;
+  state.flame -= cost.flame;
   e.level += 1;
   return e.level;
 }
@@ -286,16 +343,16 @@ export function levelUpHero(state: ProgressState, pd: ProgressionData, tower: Pi
 export interface LevelUpAllResult {
   /** 오른 영웅 (주어진 순서), 레벨 from → to */
   ups: { id: string; from: number; to: number }[];
-  gold: number;
+  flame: number;
   cards: number;
 }
 
 /**
  * 피드백 #31 모두 레벨업: 주어진 순서로 돌아가며 한 레벨씩 올리고, 더 못 올릴 때까지 반복한다
- * (골드가 모자라도 앞 영웅이 다 가져가지 않게). 결과는 하나씩 누른 것과 같다.
+ * (불꽃이 모자라도 앞 영웅이 다 가져가지 않게). 결과는 하나씩 누른 것과 같다.
  */
 export function levelUpAllHeroes(state: ProgressState, pd: ProgressionData, towers: readonly Pick<TowerData, 'id' | 'grade'>[]): LevelUpAllResult {
-  const gold0 = state.gold;
+  const flame0 = state.flame;
   const from = new Map<string, { level: number; cards: number }>();
   let changed = true;
   while (changed) {
@@ -317,7 +374,7 @@ export function levelUpAllHeroes(state: ProgressState, pd: ProgressionData, towe
     ups.push({ id: t.id, from: b.level, to: e.level });
     cards += b.cards - e.cards;
   }
-  return { ups, gold: gold0 - state.gold, cards };
+  return { ups, flame: flame0 - state.flame, cards };
 }
 
 export function heroLevelSum(state: ProgressState): number {
@@ -354,7 +411,7 @@ export function heroAtkBonuses(state: ProgressState, pd: ProgressionData, data: 
 }
 
 // ---------------------------------------------------------------------------
-// 히든(신화) 영웅 해방
+// 히든(리미티드) 영웅 해방
 // ---------------------------------------------------------------------------
 
 /** 히든 영웅이 해방됐는가. 히든이 아니면 늘 true */
@@ -481,6 +538,10 @@ export function applyReward(
     state.gems += spec.gems;
     grant.gems += spec.gems;
   }
+  if (spec.flame) {
+    state.flame += spec.flame;
+    grant.flame += spec.flame;
+  }
   if (spec.cards) addCards(state, data, rollCards(rng.fork('cards'), data, weights, spec.cards), grant);
   if (spec.fragments) addCards(state, data, rollFragments(rng.fork('fragments'), state, data, spec.fragments), grant);
   return grant;
@@ -497,13 +558,14 @@ export function cardsForStage(pd: ProgressionData, stage: number): number {
   return n;
 }
 
-/** 판 결과 → 보상 미리 계산 (상태를 바꾸지 않는 수치만: 경험치·골드·카드 장수·조각 수) */
-export function matchRewardSpec(pd: ProgressionData, stage: number, bossKills: number, newBest: boolean): { xp: number; gold: number; cards: number; fragments: number } {
+/** 판 결과 → 보상 미리 계산 (상태를 바꾸지 않는 수치만: 경험치·골드·🔥 불꽃·카드 장수·조각 수) */
+export function matchRewardSpec(pd: ProgressionData, stage: number, bossKills: number, newBest: boolean): { xp: number; gold: number; flame: number; cards: number; fragments: number } {
   const r = pd.matchRewards;
-  if (stage < r.minStage) return { xp: 0, gold: 0, cards: 0, fragments: 0 };
+  if (stage < r.minStage) return { xp: 0, gold: 0, flame: 0, cards: 0, fragments: 0 };
   return {
     xp: r.xpPerStage * stage + r.xpPerBoss * bossKills + (newBest ? r.xpNewBest : 0),
     gold: r.goldPerStage * stage + r.goldPerBoss * bossKills,
+    flame: r.flamePerStage * stage + r.flamePerBoss * bossKills,
     cards: cardsForStage(pd, stage),
     fragments: r.fragmentsPerBoss * bossKills,
   };
@@ -523,7 +585,7 @@ function addStats(block: StatBlock, r: MatchResult): void {
 }
 
 /**
- * 판 정산 (패배 화면): 경험치·골드·영웅 카드·신화 조각, 최고 웨이브, 누적·오늘 기록, 모집 게이지.
+ * 판 정산 (패배 화면): 경험치·골드·🔥 불꽃(도달 웨이브 × flamePerStage + 보스 × flamePerBoss)·영웅 카드·리미티드 조각, 최고 웨이브, 누적·오늘 기록, 모집 게이지.
  * 같은 runId는 한 번만 (두 번째는 null). today = 기기 날짜 'YYYY-MM-DD' (오늘 기록, 과거로 돌린 시계면 오늘 기록은 세지 않음).
  */
 export function settleMatch(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers'>, result: MatchResult, today: string): MatchSettlement | null {
@@ -535,7 +597,7 @@ export function settleMatch(state: ProgressState, pd: ProgressionData, data: Pic
   const rng = new Rng(matchRewardSeed(result));
   const grant = emptyGrant();
   addXp(state, pd, spec.xp, grant);
-  applyReward(state, pd, data, { gold: spec.gold, cards: spec.cards, fragments: spec.fragments }, rng, pd.matchRewards.cardGradeWeights, grant);
+  applyReward(state, pd, data, { gold: spec.gold, flame: spec.flame, cards: spec.cards, fragments: spec.fragments }, rng, pd.matchRewards.cardGradeWeights, grant);
   if (result.mode === 'infinite') state.bestWave = Math.max(state.bestWave, stage);
   addStats(state.totals, result);
   if (refreshDaily(state, today)) addStats(state.daily.stats, result);
@@ -670,10 +732,13 @@ export function claimAllQuests(state: ProgressState, pd: ProgressionData, data: 
     if (g) got.push(g);
   };
   // 카드 보상으로 새 영웅이 생기면 '영웅 레벨 합계' 업적이 새로 끝날 수 있어 받을 것이 없을 때까지 돈다 (받을 때마다 하나씩 줄어 끝난다)
+  // 한 바퀴에 아무것도 못 받았으면 멈춘다 (검토 L1 — 셀 수는 있는데 받을 수 없는 퀘스트가 생겨도 끝없이 돌지 않게)
   while (claimableQuests(state, pd, today) > 0) {
+    const before = got.length;
     for (const q of dailyQuests(state, pd, today)) if (q.done && !q.claimed) add(claimQuest(state, pd, data, q.quest.id, today));
     add(claimDailyBonus(state, pd, data, today));
     for (const q of achievementQuests(state, pd)) if (q.done && !q.claimed) add(claimQuest(state, pd, data, q.quest.id, today));
+    if (got.length === before) break;
   }
   return got.length === 0 ? null : mergeGrants(got);
 }
@@ -685,6 +750,7 @@ function mergeGrants(got: Grant[]): Grant {
     total.xp += g.xp;
     total.gold += g.gold;
     total.gems += g.gems;
+    total.flame += g.flame;
     total.levelUps.push(...g.levelUps);
     for (const c of g.cards) {
       const t = total.cards.find((x) => x.id === c.id);

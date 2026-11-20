@@ -72,6 +72,10 @@ final class Updater {
     private String expectedSha256;
     private boolean awaitingPermission;
     private volatile boolean cancelled;
+    /** 다시 확인(check)할 때 되살릴 진행 상태 (V2 L6, UI 스레드에서만): 받은 바이트 · 확인 중 · 시스템 설치 확인 창이 떠 있음 */
+    private long received;
+    private boolean verifying;
+    private boolean installConfirm;
 
     Updater(Activity activity, Sink sink) {
         this.activity = activity;
@@ -82,8 +86,10 @@ final class Updater {
     // ------------------------------------------------------------------ 웹에서 (UI 스레드)
 
     void check() {
-        if (state == State.AVAILABLE && release != null) {
-            sendAvailable();
+        // 받는 중·설치 중·권한 대기 중에 웹이 다시 읽혔으면(렌더러 재시작 등) 제안부터 지금 단계까지 다시 보낸다 (V2 L6 —
+        // 예전엔 조용히 돌아가 웹이 'checking'에 멈춘 채 진행 사건을 모두 버리고, 나중에 시스템 설치 창만 갑자기 떴다)
+        if (release != null && (state == State.AVAILABLE || state == State.PERMISSION || state == State.DOWNLOADING || state == State.INSTALLING)) {
+            resync();
             return;
         }
         if (state != State.IDLE && state != State.NO_UPDATE && state != State.FAILED) return;
@@ -176,6 +182,9 @@ final class Updater {
     private void download() {
         state = State.DOWNLOADING;
         cancelled = false;
+        received = 0;
+        verifying = false;
+        installConfirm = false;
         final UpdateLogic.Release r = release;
         final String expected = expectedSha256;
         final File dir = new File(activity.getCacheDir(), "updates");
@@ -190,7 +199,10 @@ final class Updater {
                 if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("캐시 폴더");
                 apk = new File(dir, "update.apk");
                 String actual = fetchToFile(r, apk);
-                post(new Runnable() { @Override public void run() { sink.send(UpdateLogic.jsonObject("type", "verifying")); } });
+                post(new Runnable() { @Override public void run() {
+                    verifying = true;
+                    sink.send(UpdateLogic.jsonObject("type", "verifying"));
+                }});
                 if (apk.length() != r.apkSize) throw new VerifyFailed("크기 " + apk.length() + " ≠ " + r.apkSize);
                 if (!UpdateLogic.hexEquals(actual, expected)) throw new VerifyFailed("SHA-256 다름");
                 checkArchive(apk, pkg, r.version, installedCode);
@@ -199,6 +211,7 @@ final class Updater {
                 installing = true;
                 post(new Runnable() { @Override public void run() {
                     state = State.INSTALLING;
+                    verifying = false;
                     sink.send(UpdateLogic.jsonObject("type", "installing"));
                 }});
                 install(apk, pkg);
@@ -235,29 +248,35 @@ final class Updater {
             if (declared > UpdateLogic.MAX_APK_BYTES || (declared > 0 && declared != r.apkSize)) {
                 throw new IOException("Content-Length " + declared);
             }
-            long received = 0;
+            long count = 0;
             long lastSent = 0;
             byte[] buf = new byte[64 * 1024];
             try (InputStream in = c.getInputStream(); OutputStream out = new FileOutputStream(apk)) {
                 int n;
                 while ((n = in.read(buf)) != -1) {
                     if (cancelled) throw new Cancelled();
-                    received += n;
-                    if (received > UpdateLogic.MAX_APK_BYTES || received > r.apkSize) throw new IOException("너무 큼");
+                    count += n;
+                    if (count > UpdateLogic.MAX_APK_BYTES || count > r.apkSize) throw new IOException("너무 큼");
                     md.update(buf, 0, n);
                     out.write(buf, 0, n);
                     long now = SystemClock.uptimeMillis();
                     if (now - lastSent >= PROGRESS_INTERVAL_MS) {
                         lastSent = now;
-                        final long got = received;
-                        post(new Runnable() { @Override public void run() { sink.send(UpdateLogic.jsonObject("type", "progress", "received", got, "total", r.apkSize)); } });
+                        final long got = count;
+                        post(new Runnable() { @Override public void run() {
+                            received = got;
+                            sink.send(UpdateLogic.jsonObject("type", "progress", "received", got, "total", r.apkSize));
+                        }});
                     }
                 }
                 out.flush();
             }
             if (cancelled) throw new Cancelled();
-            final long done = received;
-            post(new Runnable() { @Override public void run() { sink.send(UpdateLogic.jsonObject("type", "progress", "received", done, "total", r.apkSize)); } });
+            final long done = count;
+            post(new Runnable() { @Override public void run() {
+                received = done;
+                sink.send(UpdateLogic.jsonObject("type", "progress", "received", done, "total", r.apkSize));
+            }});
             return UpdateLogic.toHex(md.digest());
         } finally {
             c.disconnect();
@@ -322,7 +341,10 @@ final class Updater {
                 }
             }
             if (u == null) return;
-            if (shown) u.sink.send(UpdateLogic.jsonObject("type", "installing", "step", "confirm"));
+            if (shown) {
+                u.installConfirm = true;
+                u.sink.send(UpdateLogic.jsonObject("type", "installing", "step", "confirm"));
+            }
             else u.failNow("install", "확인 창 없음");
             return;
         }
@@ -392,6 +414,18 @@ final class Updater {
     }
 
     // ------------------------------------------------------------------ 도우미
+
+    /** 지금 상태를 처음부터 다시 보낸다 (check 중복·웹 다시 읽기, V2 L6). 사건 목록은 UpdateLogic.resyncEvents (JVM 검사). */
+    private void resync() {
+        UpdateLogic.Release r = release;
+        String phase = state == State.PERMISSION ? "permission"
+                : state == State.DOWNLOADING ? "downloading"
+                : state == State.INSTALLING ? "installing"
+                : "available";
+        for (String json : UpdateLogic.resyncEvents(phase, r.version, installedVersionName(), r.notes, r.apkSize, received, verifying, installConfirm)) {
+            sink.send(json);
+        }
+    }
 
     private void sendAvailable() {
         UpdateLogic.Release r = release;

@@ -51,7 +51,7 @@ export interface BotOptions {
 
 export function greedyBot(d: GameData, seed: number, maxStage: number, opts: BotOptions = {}): BotResult {
   const levels = opts.level ? [Object.fromEntries(Object.values(d.decks.base).flat().map((id) => [id, opts.level as number]))] : undefined;
-  const m: Match = createMatch(d, { seed, mode: 'infinite', ...(levels ? { levels } : {}), ...(opts.stageGold ? { debug: true } : {}) });
+  const m: Match = createMatch(d, { seed, mode: 'infinite', legacyCommands: true, ...(levels ? { levels } : {}), ...(opts.stageGold ? { debug: true } : {}) });
   let goldStage = 0;
   const tiles = preferredTiles(m);
   const w = m.world;

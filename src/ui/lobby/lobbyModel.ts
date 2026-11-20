@@ -1,7 +1,8 @@
 /**
- * 로비 화면 모델 (G-3, 순수 — DOM 없음): 영웅 카드 목록·정렬, 웨이브 길, 신화 조각, 상단 바, 정산 요약.
+ * 로비 화면 모델 (G-3, 순수 — DOM 없음): 영웅 카드 목록·정렬, 웨이브 길, 리미티드 조각, 상단 바, 정산 요약.
  * 화면(Lobby.ts·GameOverScreen.ts)은 이 모델을 그리기만 한다. 수치는 progression.json · towers.json에서.
  */
+import { GRADE_NAMES, GRADE_RANK } from '../../data/grades';
 import type { GameData, Grade, TowerData } from '../../data/load';
 import { GRADE_COLORS } from '../../art/palette';
 import type { ProgressionData } from '../../meta/progressionData';
@@ -20,20 +21,10 @@ import {
   type ProgressState,
 } from '../../meta/progress';
 
-export const GRADE_KO: Readonly<Record<Grade, string>> = Object.freeze({
-  normal: '노말',
-  rare: '레어',
-  unique: '유니크',
-  hero: '히어로',
-  legend: '레전드',
-  god: '신',
-  hidden: '신화',
-});
+/** 등급 이름 — 정답은 src/data/grades.ts (V2.0 PR-A 통일, 예전 이 파일의 표는 지움) */
+export const GRADE_KO: Readonly<Record<Grade, string>> = GRADE_NAMES;
 
-/** 등급 순 (높은 등급이 앞) */
-const GRADE_RANK: Readonly<Record<Grade, number>> = Object.freeze({ hidden: 7, god: 6, legend: 5, hero: 4, unique: 3, rare: 2, normal: 1 });
-
-/** 영웅 탭: [영웅] 노말~레전드 / [신화] 히든(신화)·신 */
+/** 영웅 탭: [영웅] 노말~레전드 / [리미티드] 히든(리미티드)·신 */
 export type HeroTab = 'heroes' | 'mythic';
 /** 'ready' = 피드백 #31 레벨업 가능(카드가 모인 영웅) 먼저 */
 export type HeroSort = 'grade' | 'level' | 'ready';
@@ -74,6 +65,19 @@ function deckIds(data: Pick<GameData, 'decks'>): Set<string> {
   return new Set([...b.normal, ...b.rare, ...b.unique, ...b.hero, ...b.legend]);
 }
 
+/**
+ * 배지 규칙 한 곳 (검토 L7): '지금 바로 할 수 있는 일'만 센다.
+ * - 레벨업: 보유 + checkLevelUp 'ok'(카드 + 🔥 불꽃) — 영웅 ▲ · [영웅] 탭 점 · [⬆ 모두 레벨업 N]이 같이 쓴다.
+ * - 해방: 잠긴 리미티드 + checkUnlock 'ok'(조각) — [도감] 탭 점만 센다 (영웅 탭 점과 두 번 세지 않음). 카드의 ▲는 해방에도 뜬다.
+ */
+export function heroLevelUpReady(state: ProgressState, pd: ProgressionData, t: TowerData): boolean {
+  return heroEntry(state, t.id).level >= 1 && checkLevelUp(state, pd, t) === 'ok';
+}
+
+export function heroUnlockReady(state: ProgressState, pd: ProgressionData, t: TowerData): boolean {
+  return checkUnlock(state, pd, t) === 'ok';
+}
+
 export function heroCard(state: ProgressState, pd: ProgressionData, t: TowerData, deck: ReadonlySet<string>): HeroCardModel {
   const e = heroEntry(state, t.id);
   const owned = e.level >= 1;
@@ -90,7 +94,8 @@ export function heroCard(state: ProgressState, pd: ProgressionData, t: TowerData
     owned,
     cards: e.cards,
     need,
-    ready: need !== null && e.cards >= need,
+    // V2.0 PR-A: ▲·탭 배지·[모두 레벨업 N]이 같은 규칙 — 레벨업은 checkLevelUp(카드 + 🔥 불꽃) 'ok', 잠긴 리미티드는 조각이 모였을 때
+    ready: locked ? heroUnlockReady(state, pd, t) : heroLevelUpReady(state, pd, t),
     locked,
     inDeck: deck.has(t.id),
     max: owned && cost === null,
@@ -100,9 +105,9 @@ export function heroCard(state: ProgressState, pd: ProgressionData, t: TowerData
 export interface HeroGridModel {
   owned: HeroCardModel[];
   unowned: HeroCardModel[];
-  /** 레벨업 카드가 모인 영웅 수 (탭 빨간 점) */
+  /** 지금 바로 레벨업(카드 + 🔥 불꽃)·해방할 수 있는 영웅 수 (이 목록의 ▲ 수) */
   ready: number;
-  /** 지금 바로(카드 + 골드) 레벨업할 수 있는 영웅 수 — [⬆ 모두 레벨업 N] */
+  /** 지금 바로(카드 + 🔥 불꽃) 레벨업할 수 있는 보유 영웅 수 — [⬆ 모두 레벨업 N] (= 보유 영웅의 ▲ 수) */
   canLevel: number;
 }
 
@@ -117,13 +122,18 @@ export function heroGrid(state: ProgressState, pd: ProgressionData, data: Pick<G
   const owned = cards.filter((c) => c.owned).sort(sort === 'level' ? byLevel : sort === 'ready' ? byReady : byGrade);
   const unowned = cards.filter((c) => !c.owned).sort(byGrade);
   const towers = new Map(data.towers.towers.map((t) => [t.id, t]));
-  const canLevel = owned.filter((c) => checkLevelUp(state, pd, towers.get(c.id) as TowerData) === 'ok').length;
+  const canLevel = owned.filter((c) => heroLevelUpReady(state, pd, towers.get(c.id) as TowerData)).length;
   return { owned, unowned, ready: cards.filter((c) => c.ready).length, canLevel };
 }
 
-/** 영웅 + 신화 탭 모두에서 카드가 모인 영웅 수 */
+/** [영웅] 탭 점: 영웅 + 리미티드 탭에서 지금 레벨업할 수 있는 보유 영웅 수 (해방은 [도감] 점 — codexReady) */
 export function heroesReady(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers' | 'decks'>): number {
-  return heroGrid(state, pd, data, 'heroes', 'grade').ready + heroGrid(state, pd, data, 'mythic', 'grade').ready;
+  return data.towers.towers.filter((t) => heroLevelUpReady(state, pd, t)).length;
+}
+
+/** [도감] 탭 점: 지금 해방할 수 있는 잠긴 리미티드 수 */
+export function codexReady(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers'>): number {
+  return data.towers.towers.filter((t) => heroUnlockReady(state, pd, t)).length;
 }
 
 export interface HeroDetailModel extends HeroCardModel {
@@ -135,7 +145,7 @@ export interface HeroDetailModel extends HeroCardModel {
   /** 지금 레벨의 전투 공격력 보너스 % 글자 ('+8%') · 다음 레벨 */
   bonus: string;
   nextBonus: string | null;
-  cost: { cards: number; gold: number } | null;
+  cost: { cards: number; flame: number } | null;
   check: LevelUpCheck;
   /** 잠긴 히든: 해방 가능 */
   canUnlock: boolean;
@@ -189,11 +199,13 @@ export interface TopBarModel {
   xpRatio: number;
   gold: number;
   gems: number;
+  /** 🔥 불꽃 (V2.0 PR-A) */
+  flame: number;
 }
 
 export function topBar(state: ProgressState, pd: ProgressionData): TopBarModel {
   const need = xpToNext(pd, state.level);
-  return { level: state.level, xp: state.xp, xpNeed: need, xpRatio: Math.min(1, state.xp / need), gold: state.gold, gems: state.gems };
+  return { level: state.level, xp: state.xp, xpNeed: need, xpRatio: Math.min(1, state.xp / need), gold: state.gold, gems: state.gems, flame: state.flame };
 }
 
 export interface WaveNode {
@@ -213,10 +225,11 @@ export interface WaveRoadModel {
   ready: number;
 }
 
-export function rewardText(r: { gold?: number; gems?: number; cards?: number; fragments?: number }): string {
+export function rewardText(r: { gold?: number; gems?: number; flame?: number; cards?: number; fragments?: number }): string {
   const parts: string[] = [];
   if (r.gold) parts.push(`💰 ${r.gold.toLocaleString('ko-KR')}`);
   if (r.gems) parts.push(`💎 ${r.gems.toLocaleString('ko-KR')}`);
+  if (r.flame) parts.push(`🔥 ${r.flame.toLocaleString('ko-KR')}`);
   if (r.cards) parts.push(`🃏 ${r.cards}`);
   if (r.fragments) parts.push(`🧩 ${r.fragments}`);
   return parts.join(' · ');
@@ -229,7 +242,7 @@ export function waveRoad(state: ProgressState, pd: ProgressionData): WaveRoadMod
 }
 
 // ---------------------------------------------------------------------------
-// 신화 조각 (도감/카드 탭)
+// 리미티드 조각 (도감/카드 탭)
 // ---------------------------------------------------------------------------
 
 export interface FragmentRow {
@@ -254,7 +267,7 @@ export function fragmentRows(state: ProgressState, pd: ProgressionData, data: Pi
         have: e.cards,
         need: pd.hidden.unlockFragments,
         unlocked: e.level >= 1,
-        canUnlock: e.level < 1 && e.cards >= pd.hidden.unlockFragments,
+        canUnlock: heroUnlockReady(state, pd, t),
         recipe: (t.recipe ?? []).map((r) => names.get(r) ?? r),
       };
     });
@@ -268,6 +281,7 @@ export interface GrantView {
   xp: number;
   gold: number;
   gems: number;
+  flame: number;
   levelUps: number[];
   cards: { id: string; name: string; n: number; grade: Grade; color: string; isNew: boolean }[];
   fragments: { id: string; name: string; n: number }[];
@@ -279,6 +293,7 @@ export function grantView(g: Grant, data: Pick<GameData, 'towers'>): GrantView {
     xp: g.xp,
     gold: g.gold,
     gems: g.gems,
+    flame: g.flame,
     levelUps: [...g.levelUps],
     cards: g.cards.map((c) => {
       const t = tower.get(c.id);
@@ -294,6 +309,7 @@ export function grantLine(g: GrantView): string {
   const parts: string[] = [];
   if (g.gold) parts.push(`💰 ${g.gold.toLocaleString('ko-KR')}`);
   if (g.gems) parts.push(`💎 ${g.gems.toLocaleString('ko-KR')}`);
+  if (g.flame) parts.push(`🔥 ${g.flame.toLocaleString('ko-KR')}`);
   const cards = g.cards.reduce((a, c) => a + c.n, 0);
   if (cards) parts.push(`🃏 ${cards}장`);
   const frags = g.fragments.reduce((a, c) => a + c.n, 0);

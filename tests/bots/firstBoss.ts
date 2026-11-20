@@ -159,7 +159,7 @@ function decide(m: Match, strategy: Strategy, summons: number, opts: FirstBossOp
 
 /** 한 판: 10단계 보스를 잡거나 패배할 때까지. */
 export function runFirstBoss(d: GameData, seed: number, strategy: Strategy, opts: FirstBossOptions = {}, bossStage = 10): FirstBossResult {
-  const m = createMatch(d, { seed, mode: 'infinite' });
+  const m = createMatch(d, { seed, mode: 'infinite', legacyCommands: true });
   const w = m.world;
   let summons = 0;
   let merges = 0;

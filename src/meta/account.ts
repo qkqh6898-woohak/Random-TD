@@ -1,8 +1,8 @@
 /**
  * 계정 정보 (판 밖, M5에서는 최소한만): 계정 레벨과 히든 미션 영구 기록.
  *
- * - 계정 레벨: 도박 1000원 테이블(Lv7)·10000원 테이블(Lv20)·×3 배속(Lv12) 해금에 쓴다 (GDD 7.2, UI.md 4.2).
- *   경험치·레벨 오르기는 M8(계정 성장)에서 붙인다. 그 전에는 저장된 값이 없으면 1.
+ * - 계정 레벨: 예전 저장 자리. **정답은 이제 rtd.progress** (src/meta/progress.ts — G-3부터 처음 한 번 여기서 옮김). 도박 1000원(Lv7)·10000원(Lv20)
+ *   테이블 해금에 쓴다 (배속은 모두 Lv1부터 — 예전 '×3 배속 Lv12'는 없다).
  *   판은 시작할 때 이 값을 MatchOptions.accountLevels로 받는다 (판 도중에는 바뀌지 않는 입력, 리플레이에 기록).
  * - 히든 미션 영구 기록 (GDD 8장 '히든은 ???로 표시, 달성 시 공개 + 영구 기록'): 한 번 달성한 히든 미션 id. 다음 판부터
  *   미션 시트 히든 탭에 이름이 보인다. 판 안 상태(sim)가 아니라 화면이 missionDone 사건을 받아 기록한다.
@@ -29,14 +29,14 @@ export interface AccountStore {
   markGuide(id: string): boolean;
   /** 본 도움말 기록을 모두 지운다 ([도움말 다시 보기]) */
   resetGuides(): void;
-  /** G-1 신화 도감: 발견한 조합(결과 타워 id) */
+  /** G-1 리미티드 도감: 발견한 조합(결과 타워 id) */
   codexFound(): ReadonlySet<string>;
   /** 조합 발견 기록. 새로 기록했으면 true */
   recordCodex(id: string): boolean;
 }
 
 /**
- * 신화 도감 한 칸 (G-1). 조합마다 객체로 두어 나중에 값을 더할 수 있게 한다
+ * 리미티드 도감 한 칸 (G-1). 조합마다 객체로 두어 나중에 값을 더할 수 있게 한다
  * (G-3 '조각 모아 히든 영웅 해방'의 잠김/해방 표시 등 — 모르는 필드는 읽을 때 그대로 둔다).
  */
 export interface CodexEntry {
@@ -50,7 +50,7 @@ interface AccountSave {
   level: number;
   hidden: string[];
   guides: string[];
-  /** G-1 신화 도감 (조합 id → 칸). 예전 저장에는 없다 → 빈 객체 */
+  /** G-1 리미티드 도감 (조합 id → 칸). 예전 저장에는 없다 → 빈 객체 */
   codex: Record<string, CodexEntry>;
 }
 

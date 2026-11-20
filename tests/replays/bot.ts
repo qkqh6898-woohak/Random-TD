@@ -6,7 +6,7 @@
  * - 처음에 debugTowers를 debug 명령으로 놓는다 (debug 판만).
  * - M4: workers까지는 돈이 되면 일꾼을 먼저 고용, pickCard가 있으면 보스 카드를 그 번호로 고른다 (1초마다 한 가지 행동).
  * - G-1 stacks (옵션): 예전 summon·merge·move 대신 무더기 명령 summonAuto·mergeStack(연쇄)·moveStack, gacha [k, f, every]면 그 소환 도박,
- *   필살기가 찬 타워가 있으면 ult, 신화 조합 재료가 모이면 craft.
+ *   필살기가 찬 타워가 있으면 ult, 리미티드 조합 재료가 모이면 craft.
  * - M5 (옵션이 있을 때만 — 예전 리플레이는 그대로): 받을 미션이 있으면 모두 받기, 도전이 비어 있으면 시작할 수 있는 가장 높은
  *   단계 시작, upgrades 순서대로 목표 레벨까지 강화, gamble.every틱마다 그 테이블 도박. debugGold면 처음에 돈을 더한다 (debug 판).
  */
@@ -51,7 +51,7 @@ export interface BotOptions {
   upgrades?: [number, number][];
   /** M5: every틱마다 테이블 t에 도박 (돈이 되면) */
   gamble?: { t: number; every: number };
-  /** G-1: 무더기 명령 (summonAuto·mergeStack·moveStack) + 필살기·신화 조합 */
+  /** G-1: 무더기 명령 (summonAuto·mergeStack·moveStack) + 필살기·리미티드 조합 */
   stacks?: boolean;
   /** G-1: every틱마다 소환 도박 k (종족 f) */
   gacha?: { k: number; f: number; every: number };

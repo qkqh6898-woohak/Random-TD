@@ -1,11 +1,11 @@
 /**
- * 💠 신화 시트 (G-1 하단 메뉴 [신화]): 신화(히든) 조합 도감 12종 + [제작].
+ * 💠 리미티드 시트 (G-1 하단 메뉴 [리미티드]): 리미티드(히든) 조합 도감 12종 + [제작].
  *
  * - 줄: 초상화 · 이름 · 재료 칩 (판 위에 있으면 ✓) · [제작].
  *   발견 전 조합은 초상화를 실루엣(검게)으로, 이름 '???', 재료는 힌트 하나(등급이 가장 높은 재료)만 이름 — 나머지 '???'.
  * - 발견 = 만들었거나 재료를 한꺼번에 가졌을 때 (계정에 영구 기록 — src/meta/account.ts codex).
  * - [제작]은 발견한 조합에서 재료가 모두 판 위에 있고 놓을 칸이 있을 때만 켜진다 → onCraft(r) → Game이 craft 명령.
- * - G-3 잠긴 신화(해방 전)는 줄 아래 '🔒 해방 필요 (조각 n/20)' + [제작] 꺼짐.
+ * - G-3 잠긴 리미티드(해방 전)는 줄 아래 '🔒 해방 필요 (조각 n/20)' + [제작] 꺼짐.
  * 값은 g1Models.codexSheetModel(순수), 여기서는 그리기만.
  */
 import { h } from '../dom';
@@ -23,7 +23,7 @@ export interface MythicSheetView extends BottomSheetView<never> {
 }
 
 export function createMythicSheet(opts: MythicSheetOptions, first: CodexSheetModel): MythicSheetView {
-  const sheet = createBottomSheet<never>({ kind: 'mythic', title: '💠 신화 도감', onClose: opts.onClose });
+  const sheet = createBottomSheet<never>({ kind: 'mythic', title: '💠 리미티드 도감', onClose: opts.onClose });
   const summary = h('span', { class: 'my-summary', attrs: { 'data-testid': 'mythic-summary' } });
   sheet.extra.append(summary);
   const note = h('div', { class: 'bs-note', text: '재료가 모두 판 위에 있으면 만들 수 있어요 · 만들거나 재료를 한꺼번에 모으면 도감에 기록돼요' });

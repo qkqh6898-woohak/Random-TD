@@ -387,8 +387,8 @@ test('강화·미션 (일반 시작): 준비 단계에서 열기 · 시트는 �
   await page.waitForTimeout(700);
   expect(Number(await page.locator('[data-screen="game"]').getAttribute('data-tick'))).toBeGreaterThan(t0);
   await shot(page, 'F10-ui-upgrade');
-  // 피드백 #23: 등급 강화 이름이 등급 표기 그대로 ('레전드·신·신화 강화'가 가장 길다) — 이름 줄이 버튼과 겹치지 않는다
-  for (const [id, name] of [['normal', '노말·레어 강화'], ['hero', '유니크·히어로 강화'], ['legend', '레전드·신·신화 강화']] as const) {
+  // 피드백 #23: 등급 강화 이름이 등급 표기 그대로 ('레전드·신·리미티드 강화'가 가장 길다) — 이름 줄이 버튼과 겹치지 않는다
+  for (const [id, name] of [['normal', '노말·레어 강화'], ['hero', '유니크·히어로 강화'], ['legend', '레전드·신·리미티드 강화']] as const) {
     const r = page.getByTestId(`upgrade-row-${id}`);
     await expect(r.locator('.up-name')).toContainText(name);
     const right = await r.locator('.up-name > *').evaluateAll((els) => Math.max(...els.map((e) => e.getBoundingClientRect().right)));
@@ -411,14 +411,14 @@ test('강화·미션 (일반 시작): 준비 단계에서 열기 · 시트는 �
   const cell = await inScene(page, (s) => s.match.map.buildable[5]!, null);
   await tapTile(page, cell[0], cell[1]);
   await expect.poll(async () => (await myTowers(page)).length).toBe(1);
-  // 돈 부족: 850원 → 100+150+200+250 = 700 → 150원, 다음 300원은 차감 없음
+  // 돈 부족: 928원(1,000 − 강화 50 − 소환 22, V2.0 PR-A) → 100+150+200+250 = 700 → 228원, 다음 300원은 차감 없음
   await page.getByTestId('menu-upgrade').click();
   for (let i = 0; i < 4; i++) {
     const before = await inScene(page, (s) => s.match.state.gold, null);
     await page.getByTestId('upgrade-buy-normal').click();
     await expect.poll(() => inScene(page, (s) => s.match.state.gold, null)).toBeLessThan(before);
   }
-  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(150);
+  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(228);
   // 알림은 1.6초 뒤 사라진다 → 생길 때 글자를 기록 (바쁜 컴퓨터에서 확인 전에 사라지지 않게)
   await page.evaluate(() => {
     const w = window as unknown as { __toasts: string[] };
@@ -429,7 +429,7 @@ test('강화·미션 (일반 시작): 준비 단계에서 열기 · 시트는 �
   });
   await page.getByTestId('upgrade-buy-normal').click();
   await page.waitForTimeout(400);
-  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(150);
+  expect(await inScene(page, (s) => s.match.state.gold, null)).toBe(228);
   expect(await inScene(page, (s) => s.match.state.upgrades[0]![0], null)).toBe(5);
   await expect.poll(() => page.evaluate(() => (window as unknown as { __toasts: string[] }).__toasts.some((t) => t.includes('원이 더 필요해요')))).toBe(true);
   expect(errors).toEqual([]);
@@ -438,6 +438,8 @@ test('강화·미션 (일반 시작): 준비 단계에서 열기 · 시트는 �
 test('미션 (일반 시작): 소환 10회 → 배지 "1 받기" → 받을 것이 맨 위 → [받기] 연타해도 +100원 한 번 / [모두 받기] 연타도 한 번', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=12');
+  // V2.0 PR-A: 소환 비용 22원부터 +2원 → 10번 = 310원으로 돈을 맞춘다 (예전 1,000원 = 100원 × 10)
+  await inScene(page, (s) => { s.match.state.gold = 310; return null; }, null);
   for (let i = 0; i < 10; i++) {
     await page.getByTestId('hud-summon').click();
     await expect.poll(async () => (await myTowers(page)).length).toBe(i + 1);
@@ -664,7 +666,8 @@ test('기본 5종: 이름표 없이 나란히 흑백 캡처해도 서로 다르�
   });
   console.log('기본 5종 흑백 실루엣', JSON.stringify(sil));
   // 면적 하한 0.1: F10-4 실측 0.12~0.31, A-1에서 맵 위아래 여백을 없애 칸이 커진(135 → 141px) 뒤 고블린 0.116 (외곽선 두께가 정수 px로 반올림됨)
-  for (const a of sil.area) expect(a).toBeGreaterThan(0.1);
+  // V2.0 PR-A: 혼자 그림이 칸의 60~80%로 작아져(예전 ≈98%) 자른 상자 안 면적도 줄었다 (실측 최소 ≈0.099) → 하한 0.05
+  for (const a of sil.area) expect(a).toBeGreaterThan(0.05);
   for (const x of sil.xor) expect(x).toBeGreaterThan(0.2);
   // 다섯 장이 서로 충분히 다르다 (흑백 평균 차이)
   const diffs = await sheet.evaluate(async () => {
@@ -710,14 +713,16 @@ test('기본 5종: 이름표 없이 나란히 흑백 캡처해도 서로 다르�
   const { ux, uy } = pair!;
   await place(page, [[ux, uy + 1, 'stonegolem']]);
   const golem = (await myTowers(page)).find((t) => t.tx === ux && t.ty === uy + 1)!;
-  await expect.poll(() => inScene(page, (s, id) => s.towerLayer.artScaleOf(id), golem.id)).toBeGreaterThan(1); // v0.1.17: 노말 골렘 ≈1.04 (등급 배율 × 1.4, 이웃과 무관)
+  // V2.0 PR-A: 혼자 칸 너비 60~80% — 노말 골렘(looks ≈0.9) ≈0.71배, 머리 끝이 제 칸 위 경계 언저리 (예전 ≈1.04배는 위 칸 아래 1/3까지 올라왔다)
+  await expect.poll(() => inScene(page, (s, id) => s.towerLayer.artScaleOf(id), golem.id)).toBeGreaterThan(0.65);
+  expect(await inScene(page, (s, id) => s.towerLayer.artScaleOf(id), golem.id)).toBeLessThan(0.8);
   const n0 = (await myTowers(page)).length;
-  // 위 칸이 빈 배치 칸일 때: 골렘 머리 중 위 칸 아래쪽 1/3(크기 1 높이)을 누르면 골렘 (위 칸에 소환되지 않음)
+  // 골렘 머리(제 칸 위쪽)를 누르면 골렘 (위 칸에 소환되지 않음)
   await page.waitForTimeout(400);
-  await tapTile(page, ux, uy, 0.35);
+  await tapTile(page, ux, uy + 1, -0.4);
   await expect.poll(() => inScene(page, (s) => s.selectedTowerId, null)).toBe(golem.id);
   expect((await myTowers(page)).length).toBe(n0);
-  await tapTile(page, ux, uy, 0.35); // 다시 눌러 패널 닫기
+  await tapTile(page, ux, uy + 1, -0.4); // 다시 눌러 패널 닫기
   await expect.poll(() => inScene(page, (s) => s.selectedTowerId, null)).toBeNull();
   // F10-4 검토: 빈 위 칸의 가운데를 누르면 (골렘 머리가 그려져 있어도) 그 칸에 소환된다 — 칸 테두리가 숨어 있어 가운데가 소환 자리
   // G-1 칸 무더기: 노말 5종이 이미 판 위에 있어 새 타워는 같은 캐릭터 칸에 쌓일 수 있다 (사용자 결정) → '하나 늘었고 위 칸 또는 같은 캐릭터 칸'

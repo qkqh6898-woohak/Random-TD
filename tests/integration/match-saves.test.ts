@@ -11,6 +11,7 @@ import type { CommandInput } from '../../src/sim/Commands';
 import { createMatch } from '../../src/sim/match';
 import { matchInputs, recordReplay, replayMatchOptions, type ReplayFile } from '../../src/sim/replay';
 import { OPTIONAL_STATE_KEYS } from '../../src/sim/state';
+import { SIM_VERSION } from '../../src/sim/version';
 import { arenaData, command, data, infinite, summonAt } from '../helpers/match';
 
 const DIR = join(__dirname, '..', 'replays');
@@ -53,8 +54,9 @@ describe('저장 → 되살리기', () => {
     expect(saved.match.world.queue.peekNextSeq(0)).toBe(match.world.queue.peekNextSeq(0));
     expect(saved.match.world.entities.nextId).toBe(match.world.entities.nextId);
 
+    // 되살린 판은 일반 판이라 예전 명령(summon)을 받지 않는다 (V2 L2) → 무더기 소환으로 이어 간다
     for (const game of [match, saved.match]) {
-      command(game, { type: 'summon', x: 5, y: 2 });
+      command(game, { type: 'summonPad', x: 5, y: 2 });
       game.stepN(380);
     }
     expect(saved.match.hash()).toBe(match.hash());
@@ -69,7 +71,7 @@ describe('저장 → 되살리기', () => {
     match.stepN(300);
     store.write(match, 1, null, 'r');
     const resumed = store.read()!.match;
-    summonAt(resumed, 3, 2);
+    command(resumed, { type: 'summonPad', x: 3, y: 2 });
     resumed.stepN(200);
     // recordReplay가 0틱부터 다시 돌려 끝 해시를 비교한다 (다르면 에러)
     const file = recordReplay(arenaData, resumed, { name: 'resume' });
@@ -83,7 +85,7 @@ describe('저장 → 되살리기', () => {
       const file = JSON.parse(readFileSync(join(DIR, f), 'utf8')) as ReplayFile;
       const checkpoints = new Map(file.checkpoints.map(([t, h]) => [t, h]));
       const cuts = [Math.floor(file.endTick / 3), Math.floor((file.endTick * 2) / 3)];
-      let match = createMatch(data, replayMatchOptions(file));
+      let match = createMatch(data, { ...replayMatchOptions(file), legacyCommands: true });
       for (const c of file.commands) expect(match.world.enqueue(c as unknown as CommandInput).ok).toBe(true);
       const store = new MatchSaves(data, new MemoryStorage(), { version: VERSION, dev: file.debug });
       let token: string | null = null;
@@ -117,7 +119,7 @@ describe('저장 → 되살리기', () => {
     const cp = savedCheckpoint(match.world.checkpointView(), 1);
     expect(cp.executed).toEqual([]);
     expect(savedCheckpoint(match.world.checkpointView()).executed.length).toBe(2);
-    const fresh = createMatch(arenaData, replayMatchOptions(matchInputs(match)));
+    const fresh = createMatch(arenaData, { ...replayMatchOptions(matchInputs(match)), legacyCommands: true });
     fresh.world.restoreCheckpoint(JSON.parse(JSON.stringify(cp)), OPTIONAL_STATE_KEYS);
     expect(fresh.hash()).toBe(match.hash());
     for (const g of [match, fresh]) {
@@ -166,7 +168,7 @@ describe('지문·슬롯·손상', () => {
     expect(decodeSave('{"a":1}')).toBeNull();
   });
 
-  it('손상된 저장·다른 데이터·다른 앱 버전·다른 형식은 버리고 슬롯을 지운다 (게임은 새 판으로)', () => {
+  it('손상된 저장·다른 데이터·다른 규칙 버전·다른 형식은 버리고 슬롯을 지운다 (게임은 새 판으로)', () => {
     const { store, storage } = saves();
     store.write(infinite(13), 1, null, 'x');
     const raw = storage.getItem(MATCH_SLOT)!;
@@ -188,11 +190,11 @@ describe('지문·슬롯·손상', () => {
     expect(other.discardedByUpdate).toBe(false);
     expect(storage.getItem(MATCH_SLOT)).toBeNull();
 
-    // 앱 버전이 바뀜
+    // sim 규칙 버전이 바뀜 (V2 M2b — 앱 버전만 바뀐 것은 이어 한다: tests/integration/v2-m2-sim-version.test.ts)
     store.write(infinite(13), 1, null, 'x');
-    const newer = new MatchSaves(arenaData, storage, { version: '9.9.9', dev: false });
+    const newer = new MatchSaves(arenaData, storage, { version: '9.9.9', dev: false, simVersion: SIM_VERSION + 1 });
     expect(newer.read()).toBeNull();
-    expect(newer.lastDiscard).toContain('앱 버전');
+    expect(newer.lastDiscard).toContain('규칙 버전');
     expect(newer.discardedByUpdate).toBe(true);
 
     // 형식이 다른 옛 저장 (Codex 갈래 v0.1.7 모양) — 머리가 없다

@@ -8,17 +8,26 @@ import { CHIBI_BOUNDS, PEDESTAL_BOUNDS } from '../../art/chibiBounds';
 /** 캐릭터 높이 (칸 배수) */
 export const FIGURE_TILES = 1.1;
 /**
- * 전투 화면 확대 배율 (v0.1.17, 사용자 '혼자 있는 신·신화도 최대 크기' · 피드백 #36·#66 '주변 유닛 유무에 따라 크기가 변하는 것 없애기'):
- * 예전엔 혼자 ×2 · 이웃이 있으면 ×1.4라 이웃이 생기거나 팔릴 때마다 크기가 바뀌었고, 혼자 있는 신화(등급 배율 1.5)는 ×3 = 칸 약 2.8개 너비였다.
- * 이제 이웃과 무관하게 등급 배율(characterLooks scale, 노말 0.7 ~ 신화 1.5)로만 정한다:
- *   배율 ≤ 1 (노말·레어·유니크) → ×BATTLE_FIGURE_SCALE(1.4), 1을 넘는 부분(히어로 이상)은 FIGURE_TOP_SLOPE(0.7)배로만 커진다
- *   → 노말 ≈0.98 · 레어 ≈1.15 · 유니크 ≈1.32 · 히어로 ≈1.44 · 레전드 ≈1.53 · 신 ≈1.64 · 신화 ≈1.75 (등급 순서 그대로, 신화 반폭 ≈0.8칸).
+ * 혼자 있는 칸의 전투 그림 크기 (V2.0 PR-A 사용자 결정 '혼자 있는 유닛 = 2~3개 무더기일 때 크기', 목표 '유닛 ≈ 칸의 70%'):
+ * 그림 너비(칸 배수) = 등급 배율(characterLooks scale)의 1차식 — look 0.7(노말 가운데) → 칸의 60%, look 1.5(리미티드 가운데) → 80%.
+ * 너비 = 그림 배율 × 2 × STACK_HALF_W_PER_ART(0.46칸) 이므로 그림 배율 = 너비 ÷ 0.92.
+ *   → 노말 ≈0.59~0.65칸 · 레어 ≈0.62~0.64 · 유니크 ≈0.65~0.67 · 히어로 ≈0.68~0.70 · 레전드 ≈0.71~0.73 · 신 ≈0.75~0.77 · 리미티드 ≈0.79~0.81
+ *     (등급 가운데 평균 ≈0.70칸 = 목표 70%). 이웃·무더기와 무관 (v0.1.17 피드백 #36·#66 그대로).
+ * 예전(v0.1.17): 배율 ≤ 1은 ×1.4, 넘는 부분 ×0.7 → 칸의 85~164%로 이웃 칸을 덮었다.
  */
-export const BATTLE_FIGURE_SCALE = 1.4;
-export const FIGURE_TOP_SLOPE = 0.7;
+export const SOLO_WIDTH_LOW = { look: 0.7, width: 0.6 } as const;
+export const SOLO_WIDTH_HIGH = { look: 1.5, width: 0.8 } as const;
+/** 그림 배율 1일 때 그림 너비 (칸 배수) = 2 × stackGeom.STACK_HALF_W_PER_ART (순환 import를 피해 값으로 둔다 — b1 테스트가 같은지 확인) */
+export const ART_WIDTH_PER_SCALE = 0.92;
 /** 등급 배율(looks scale) → 전투 그림 배율 (이웃·무더기·HUD 여백 전) */
 export function figureArtScale(lookScale: number): number {
-  return lookScale <= 1 ? lookScale * BATTLE_FIGURE_SCALE : BATTLE_FIGURE_SCALE + (lookScale - 1) * FIGURE_TOP_SLOPE;
+  const t = (lookScale - SOLO_WIDTH_LOW.look) / (SOLO_WIDTH_HIGH.look - SOLO_WIDTH_LOW.look);
+  const width = SOLO_WIDTH_LOW.width + t * (SOLO_WIDTH_HIGH.width - SOLO_WIDTH_LOW.width);
+  return width / ART_WIDTH_PER_SCALE;
+}
+/** 혼자 있는 칸의 그림 너비 (칸 배수) */
+export function soloWidthTiles(lookScale: number): number {
+  return figureArtScale(lookScale) * ART_WIDTH_PER_SCALE;
 }
 /** 발밑 위치: 칸 중심에서 아래로 (칸 배수) */
 export const FOOT_OFFSET_TILES = 0.3;
@@ -40,12 +49,17 @@ export const STAR_BADGE_W_TILES = 0.72;
 export const FIGURE_BOTTOM_TILES = FOOT_OFFSET_TILES + (PEDESTAL_WIDTH_TILES * PEDESTAL_BOUNDS.bottom) / (PEDESTAL_BOUNDS.right - PEDESTAL_BOUNDS.left);
 
 /**
+ * 받침대가 그림 크기를 따라가는 비율. V2.0 PR-A: 혼자 그림이 칸의 60~80%(배율 ≈0.65~0.87, 예전의 약 절반)라 0.6 → 1.2 —
+ * 노말·레어는 하한 0.85(0.66칸), 신 ≈1.0, 리미티드 ≈1.04(0.81칸, 그림 너비와 비슷) → 높은 등급 받침대가 조금 크다 (G-2 의도 그대로).
+ */
+export const PEDESTAL_PER_ART = 1.2;
+/**
  * G-2 받침대 너비 배수: 2배 캐릭터 발밑에 가려 등급 받침대가 안 보이던 것 → 그림 크기를 조금 따라 키운다 (붙어 있으면 작게).
  * 0.85~1.22배 × 0.78칸 — 2배 그림이면 약 0.94칸(칸 안), 1.4배(붙음)면 약 0.66칸.
  * 받침대 아래 끝은 1.22배여도 칸 중심 +0.51칸(칸 아래 경계 +0.5에서 0.01칸) — 탭 판정은 칸 그대로라 영향 없음.
  */
 export function pedestalScaleFor(artScale: number): number {
-  return Math.min(1.22, Math.max(0.85, artScale * 0.6));
+  return Math.min(1.22, Math.max(0.85, artScale * PEDESTAL_PER_ART));
 }
 
 /** 대기 동작(위아래 흔들림·숨쉬기·고유 동작 뜀·등장 넘침)으로 더 올라가는 여유 (칸 배수) */

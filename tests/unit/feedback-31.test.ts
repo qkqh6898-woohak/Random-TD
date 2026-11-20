@@ -17,10 +17,10 @@ const fresh = () => newProgress(pd, data, 7);
 const tower = (id: string) => data.towers.towers.find((t) => t.id === id)!;
 
 describe('피드백 #31: 영웅 모두 레벨업', () => {
-  it('하나씩 누른 것과 같은 결과 (돌아가며 한 레벨씩), 골드·카드 합계를 돌려준다', () => {
+  it('하나씩 누른 것과 같은 결과 (돌아가며 한 레벨씩), 🔥 불꽃·카드 합계를 돌려준다 (V2.0 PR-A: 골드 → 불꽃)', () => {
     const a = fresh();
-    a.gold = 1000;
-    a.heroes.miner = { level: 1, cards: 20 }; // Lv1→2 카드 2·100골드, 2→3 3·150, 3→4 4·200 …
+    a.flame = 100;
+    a.heroes.miner = { level: 1, cards: 20 }; // Lv1→2 카드 2·불꽃 10, 2→3 3·15, 3→4 4·20 …
     a.heroes.archer = { level: 1, cards: 2 };
     const b = structuredClone(a);
     const order = [tower('miner'), tower('archer')];
@@ -37,36 +37,36 @@ describe('피드백 #31: 영웅 모두 레벨업', () => {
       { id: 'miner', from: 1, to: a.heroes.miner!.level },
       { id: 'archer', from: 1, to: 2 },
     ]);
-    expect(r.gold).toBe(1000 - a.gold);
+    expect(r.flame).toBe(100 - a.flame);
     expect(r.cards).toBe(20 - a.heroes.miner!.cards + 2);
     expect(checkLevelUp(a, pd, tower('miner'))).not.toBe('ok');
   });
 
-  it('골드가 모자라면 앞 영웅이 다 가져가지 않고 돌아가며 한 레벨씩', () => {
+  it('불꽃이 모자라면 앞 영웅이 다 가져가지 않고 돌아가며 한 레벨씩', () => {
     const s = fresh();
-    s.gold = 200;
+    s.flame = 20;
     s.heroes.miner = { level: 1, cards: 50 };
     s.heroes.archer = { level: 1, cards: 50 };
     const r = levelUpAllHeroes(s, pd, [tower('miner'), tower('archer')]);
     expect(s.heroes.miner!.level).toBe(2);
     expect(s.heroes.archer!.level).toBe(2);
-    expect(s.gold).toBe(0);
+    expect(s.flame).toBe(0);
     expect(r.ups).toHaveLength(2);
   });
 
   it('올릴 영웅이 없으면 아무것도 바꾸지 않는다 (보유하지 않음·최고 레벨 포함)', () => {
     const s = fresh();
-    s.gold = 99999;
+    s.flame = 99999;
     s.heroes.miner = { level: pd.heroes.maxLevel, cards: 999 };
     const before = structuredClone(s);
     const r = levelUpAllHeroes(s, pd, [tower('miner'), tower('drummer')]);
-    expect(r).toEqual({ ups: [], gold: 0, cards: 0 });
+    expect(r).toEqual({ ups: [], flame: 0, cards: 0 });
     expect(s).toEqual(before);
   });
 
   it('저장소: 지금 탭에 보이는 순서(id 목록)대로 올리고 한 번 저장·알림, 다른 탭은 그대로', () => {
     const store = new ProgressStore(new MemoryStorage(), pd, data, { seed: 7, now: () => new Date(2026, 10, 17) });
-    store.state.gold = 100000;
+    store.state.flame = 100000;
     store.state.heroes.miner = { level: 1, cards: 4 };
     const hidden = data.towers.towers.find((t) => t.grade === 'hidden')!;
     store.state.heroes[hidden.id] = { level: 1, cards: 10 };
@@ -82,16 +82,17 @@ describe('피드백 #31: 영웅 모두 레벨업', () => {
     expect(calls).toBe(1);
   });
 
-  it('탭 버튼 수 = 지금 바로 올릴 수 있는 영웅 수 (카드 + 골드)', () => {
+  it('탭 버튼 수 = 지금 바로 올릴 수 있는 영웅 수 (카드 + 🔥 불꽃) · ▲·탭 배지도 같은 규칙 (V2.0 PR-A)', () => {
     const s = fresh();
-    s.gold = 100;
+    s.flame = 10;
     s.heroes.miner = { level: 1, cards: 2 };
     s.heroes.archer = { level: 1, cards: 2 };
     const g = heroGrid(s, pd, data, 'heroes', 'grade');
     expect(g.ready).toBe(2);
     expect(g.canLevel).toBe(2);
-    s.gold = 0;
+    s.flame = 0;
     expect(heroGrid(s, pd, data, 'heroes', 'grade').canLevel).toBe(0);
+    expect(heroGrid(s, pd, data, 'heroes', 'grade').ready).toBe(0); // 예전엔 카드만 보고 ▲가 떠 버튼과 어긋났다
   });
 });
 

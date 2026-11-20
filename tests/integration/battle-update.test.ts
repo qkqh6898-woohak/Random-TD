@@ -33,10 +33,11 @@ describe('일반 플레이 전투 업데이트', () => {
     expect(m.state.nextStageTick - m.state.stageStartTick).toBe(1200);
   });
 
-  it('기본 공격력은 65종의 물리·마법·고정 피해 모두 정확히 +50% (0 유지)', () => {
+  it('기본 공격력은 65종의 물리·마법·고정 피해 모두 정확히 +50% (0 유지) · 리미티드는 그 위에 ×4.5 (V2.0 PR-A 가장 강한 등급)', () => {
     for (const t of data.towers.towers) {
       const old = baseline.attacks[t.id as keyof typeof baseline.attacks];
-      for (const key of ['atk', 'matk', 'tatk'] as const) expect(t[key]).toBeCloseTo(old[key] * 1.5, 6);
+      const mul = t.grade === 'hidden' ? 1.5 * 4.5 : 1.5;
+      for (const key of ['atk', 'matk', 'tatk'] as const) expect(t[key]).toBeCloseTo(old[key] * mul, 6);
     }
   });
 

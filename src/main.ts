@@ -22,6 +22,8 @@ import { onEffectsChange, setEffectsOff } from './view/effects';
 import { defaultStorage } from './save/storage';
 import { MatchSaves } from './save/MatchSaves';
 import { BattleRecords } from './save/BattleRecords';
+import { settleAbandonedRun } from './save/settleAbandoned';
+import { buildMatchRules, type MatchRules } from './sim/rules';
 import { ScreenShake } from './save/ScreenShake';
 import { EffectAudio } from './audio/EffectAudio';
 import { prefersReducedMotion } from './ui/motion';
@@ -102,6 +104,8 @@ function boot(): void {
     // 앱 안 업데이트 (U-1): 다리가 없으면(브라우저·PWA) null → 아무것도 하지 않음. 실패해도 게임은 그대로
     const update = UpdateService.fromWindow(window);
     if (update) mountUpdateDialog(update, ui);
+    const records = new BattleRecords(storage);
+    let rules: MatchRules | null = null;
     const ctx: GameContext = {
       data,
       ui,
@@ -114,8 +118,13 @@ function boot(): void {
       account,
       progress,
       settings,
-      saves: new MatchSaves(data, storage, { version: __APP_VERSION__, dev: url.debug }),
-      records: new BattleRecords(storage),
+      saves: new MatchSaves(data, storage, {
+        version: __APP_VERSION__,
+        dev: url.debug,
+        // V2 M2a: 업데이트로 이어 할 수 없게 된 판은 버리기 전에 정산 (보상·최고 웨이브·전투 기록, runId로 한 번만)
+        onAbandoned: (run) => settleAbandonedRun(run, { progress, records, rules: () => (rules ??= buildMatchRules(data)) }),
+      }),
+      records,
       screenShake: new ScreenShake(storage, () => prefersReducedMotion(window)),
       audio,
       version: __APP_VERSION__,

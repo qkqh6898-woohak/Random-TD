@@ -1,12 +1,13 @@
 /**
  * 📘 등급·조합 설명 창 모델 (피드백 #24 '설명 버튼을 눌러 성급(등급) 표기나 조합식을 볼 수 있으면'). 순수 함수 (DOM 없음 → 단위 테스트).
  *
- * - 등급 줄: 낮음 → 높음. 순서는 towers.json baseDps(등급 기준 DPS)로 정한다 → 노말 < 레어 < 유니크 < 히어로 < 레전드 < 신화 < 신.
- *   색 = GRADE_COLORS, 별 = gradeStars(★ × n · 신 👑 · 신화 💠), 얻는 법 = 승급 규칙(game.json merge.count)·신 확률(summon.godChance).
- * - 신화 조합식: [신화] 도감 모델(codexSheetModel)을 그대로 쓴다 → 발견 전 조합은 '???' + 힌트 재료 하나 (도감과 같은 공개 규칙).
+ * - 등급 줄: 낮음 → 높음. 순서는 src/data/grades.ts GRADES 한 곳(V2.0 PR-A) → 노말 < 레어 < 유니크 < 히어로 < 레전드 < 신 < 리미티드.
+ *   towers.json baseDps도 같은 순서다(tests/unit/grades.test.ts).
+ *   색 = GRADE_COLORS, 별 = gradeStars(★ × n · 신 👑 · 리미티드 💠), 얻는 법 = 승급 규칙(game.json merge.count)·신 확률(summon.godChance).
+ * - 리미티드 조합식: [리미티드] 도감 모델(codexSheetModel)을 그대로 쓴다 → 발견 전 조합은 '???' + 힌트 재료 하나 (도감과 같은 공개 규칙).
  */
 import { GRADE_COLORS } from '../../art/palette';
-import type { Grade } from '../../data/load';
+import { GRADES, type Grade } from '../../data/grades';
 import { BP_ONE } from '../../sim/Fixed';
 import { nextGrade } from '../../sim/Deck';
 import { GRADE_NAMES, gradeStars } from '../panels/towerPanelModel';
@@ -40,13 +41,13 @@ export interface GradeGuideModel {
 }
 
 export interface GradeGuideInput {
-  /** towers.json baseDps (등급 순서) */
+  /** towers.json baseDps (V2.0 PR-A부터 순서는 GRADES로 정한다 — 호환용 입력, 쓰지 않음) */
   baseDps: Readonly<Record<Grade, number>>;
   /** game.json merge.count */
   mergeCount: number;
   /** 신 확률 bp (rules.godChanceBp) */
   godChanceBp: number;
-  /** [신화] 도감 모델 — 없으면 조합식 목록 없음 */
+  /** [리미티드] 도감 모델 — 없으면 조합식 목록 없음 */
   codex?: CodexSheetModel;
 }
 
@@ -57,14 +58,14 @@ function pct(bp: number): string {
 
 export function gradeGuideModel(input: GradeGuideInput): GradeGuideModel {
   const n = input.mergeCount;
-  const grades = (Object.keys(GRADE_NAMES) as Grade[]).slice().sort((a, b) => input.baseDps[a] - input.baseDps[b]);
+  const grades: readonly Grade[] = GRADES;
   const prevOf = new Map<Grade, Grade>();
   for (const g of grades) {
     const next = nextGrade(g);
     if (next) prevOf.set(next, g);
   }
   const howOf = (g: Grade): string => {
-    if (g === 'god') return `소환·승급할 때 ${pct(input.godChanceBp)} · 신화 도박`;
+    if (g === 'god') return `소환·승급할 때 ${pct(input.godChanceBp)} · 레전드 도박`;
     if (g === 'hidden') return '정해진 재료 3종으로 제작';
     const prev = prevOf.get(g);
     const tail = nextGrade(g) ? '' : ' · 더 승급 안 돼요';
@@ -73,8 +74,8 @@ export function gradeGuideModel(input: GradeGuideInput): GradeGuideModel {
   const rows = grades.map((g): GradeGuideRow => ({ grade: g, name: GRADE_NAMES[g], color: GRADE_COLORS[g], stars: gradeStars(g), how: howOf(g) }));
   const rules = [
     `승급: 같은 캐릭터·같은 등급 ${n}개 → 다음 등급 1개 (덱의 다음 등급 중 무작위)`,
-    `레전드·신·신화는 승급할 수 없어요 · 승급할 때 ${pct(input.godChanceBp)} 확률로 신`,
-    '신화: 재료 3종이 모두 판 위에 있으면 [💠 신화]에서 [제작] · 만들거나 재료를 한꺼번에 모으면 조합식이 공개돼요',
+    `레전드·신·리미티드는 승급할 수 없어요 · 승급할 때 ${pct(input.godChanceBp)} 확률로 신`,
+    '리미티드: 재료 3종이 모두 판 위에 있으면 [💠 리미티드]에서 [제작] · 만들거나 재료를 한꺼번에 모으면 조합식이 공개돼요',
   ];
   const recipes = (input.codex?.rows ?? []).map(
     (r): GradeGuideRecipe => ({ id: r.id, name: `💠 ${r.found ? r.name : '???'}`, formula: r.materials.map((m) => m.name).join(' + '), found: r.found }),

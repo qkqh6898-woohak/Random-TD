@@ -352,11 +352,13 @@ describe('M2 데이터: 덱·소환·전투', () => {
   const decksOf = (raw: RawGameData): Json => raw.decks as Json;
   const gameOf = (raw: RawGameData): Json => raw.game as Json;
 
-  it('decks.json 기본 덱: 등급별 5종, 소환 비용 100원, 투사체 12칸/초', () => {
+  it('decks.json 기본 덱: 등급별 5종, 소환 비용 22원(+2원씩 최대 200원 — V2.0 PR-A), 투사체 12칸/초', () => {
     const data = loadGameData();
     expect(data.decks.perGrade).toBe(5);
     expect(data.decks.base.normal).toEqual(['miner', 'goblin', 'archer', 'apprentice', 'warrior']);
-    expect(data.game.summon.cost).toBe(100);
+    expect(data.game.summon.cost).toBe(22);
+    expect(data.game.summon.costStep).toBe(2);
+    expect(data.game.summon.costMax).toBe(200);
     expect(data.game.combat.projectileSpeed).toBe(12);
   });
 
@@ -445,12 +447,12 @@ describe('M4 데이터: 몹 특성·보스·편대·카드', () => {
     expect(issuesOf(() => buildGameData(raw)).some((i) => i.path === 'formations[0].hint')).toBe(true);
   });
 
-  it('카드: 효과 종류마다 필요한 수치 (없는 값·정수 아님·소환 최소 비용)', () => {
+  it('카드: 효과 종류마다 필요한 수치 (없는 값·정수 아님·소환 할인 합 최대 — V2.0 PR-A 비율 할인)', () => {
     const raw = rawCopy();
     const cards = cardsOf(raw);
     delete (cards[1]!.effect as Json).value; // 긴급 자금
     (cards[2]!.effect as Json).value = 2.5; // 행운의 소환 횟수
-    delete (cards[5]!.effect as Json).min; // 소환 할인
+    delete (cards[5]!.effect as Json).max; // 소환 할인
     (cards[0]!.effect as Json).type = 'nuke';
     const issues = issuesOf(() => buildGameData(raw));
     expect(issues.some((i) => i.file === 'cards.json' && i.path === 'cards[0].effect.type')).toBe(true);
@@ -458,11 +460,11 @@ describe('M4 데이터: 몹 특성·보스·편대·카드', () => {
     const cards2 = cardsOf(raw2);
     delete (cards2[1]!.effect as Json).value;
     (cards2[2]!.effect as Json).value = 2.5;
-    delete (cards2[5]!.effect as Json).min;
+    delete (cards2[5]!.effect as Json).max;
     const issues2 = issuesOf(() => buildGameData(raw2));
     expect(issues2.some((i) => i.path === 'cards[1].effect.value')).toBe(true);
     expect(issues2.some((i) => i.path === 'cards[2].effect.value' && i.message.includes('정수'))).toBe(true);
-    expect(issues2.some((i) => i.path === 'cards[5].effect.min')).toBe(true);
+    expect(issues2.some((i) => i.path === 'cards[5].effect.max')).toBe(true);
   });
 
   it('보스 패턴 수치가 잘못되면 판을 만들 때 경로가 든 에러', () => {

@@ -1,14 +1,14 @@
 /**
- * 신화 조합 (G-1 도감, GDD 4.7 히든 조합 — 화면 이름 '신화'). towers.json 히든 타워의 recipe가 조합식이다.
+ * 리미티드 조합 (G-1 도감, GDD 4.7 히든 조합 — 화면 이름 '리미티드'). towers.json 히든 타워의 recipe가 조합식이다.
  *
  * - 명령 `craft {r}`: r번째 조합 (rules.recipes = towers.json의 히든 타워 순서). 재료 타워가 **모두 내 판 위에** 있어야 한다
  *   (같은 재료가 여럿이면 그 수만큼 — 고블린 대왕은 고블린 3개).
  * - 재료 고르기: 재료 순서대로, 그 종류의 내 타워 중 가장 나중에 소환된 것(ID가 큰 것)부터. 고른 재료는 모두 사라진다.
- * - 결과 칸: 재료를 지워 **비게 되는 칸** 중 재료 순서가 가장 앞인 칸 → 같은 신화의 덜 찬 무더기 → 자동 빈 칸. 셋 다 없으면 실패 'full'
+ * - 결과 칸: 재료를 지워 **비게 되는 칸** 중 재료 순서가 가장 앞인 칸 → 같은 리미티드의 덜 찬 무더기 → 자동 빈 칸. 셋 다 없으면 실패 'full'
  *   (상태·난수를 바꾸지 않는다). 난수는 쓰지 않는다.
  * - 성공: 'craft' 사건 {player, r, id, tower, x, y, removed: "x,y;…"} — 화면이 도감에 '발견'을 남긴다 (계정 저장, src/meta/account.ts).
  *   state.crafts += 1. 실패: 'craftFail' {player, r, reason}.
- * - G-3 히든 해방: 잠긴 신화는 재료가 모여도 'locked' (src/sim/unlocks.ts isHiddenLocked — 이 갈래에서는 늘 열림).
+ * - G-3 히든 해방: 잠긴 리미티드는 재료가 모여도 'locked' (src/sim/unlocks.ts isHiddenLocked — 이 갈래에서는 늘 열림).
  */
 import type { World } from '../World';
 import { isTower, type Tower } from '../entities/Tower';
@@ -17,7 +17,7 @@ import { freePad, joinableStack } from './Board';
 import { placeTower } from './Summon';
 import { isHiddenLocked } from '../unlocks';
 
-/** 조합 실패 이유: 판이 끝남 / 없는 조합 / 아직 해방하지 않은 신화 (G-3) / 재료가 모자람 / 결과를 놓을 칸이 없음 */
+/** 조합 실패 이유: 판이 끝남 / 없는 조합 / 아직 해방하지 않은 리미티드 (G-3) / 재료가 모자람 / 결과를 놓을 칸이 없음 */
 export type CraftFail = 'phase' | 'unknown' | 'locked' | 'material' | 'full';
 
 export type CraftPlan = { ok: true; materials: Tower[]; at: readonly [number, number] } | { ok: false; reason: CraftFail };
@@ -70,7 +70,7 @@ export function craftPlan(ctx: MatchContext, world: World, player: number, r: nu
   return { ok: true, materials: chosen, at };
 }
 
-/** craft 명령 실행. 성공하면 만든 신화 타워, 실패하면 null ('craftFail'). */
+/** craft 명령 실행. 성공하면 만든 리미티드 타워, 실패하면 null ('craftFail'). */
 export function craft(ctx: MatchContext, world: World, player: number, r: number): Tower | null {
   const plan = craftPlan(ctx, world, player, r);
   if (!plan.ok) {

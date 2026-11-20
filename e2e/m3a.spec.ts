@@ -354,8 +354,8 @@ test('느린 탭: 캐릭터 얼굴·머리를 0.4초 누르고 움직이지 않�
   ]);
   const before = await towers(page);
   const lower = before.find((t) => t.ty === 4)!;
-  // 칸 중심보다 0.25칸 위(얼굴), 0.6칸 위(머리 — 위 칸에 삐져나온 부분)
-  for (const dy of [-0.25, -0.6]) {
+  // 칸 중심보다 0.25칸 위(얼굴), 0.4칸 위(머리 끝 언저리 — V2.0 PR-A: 그림이 칸의 60~80%라 머리가 위 칸으로 거의 안 나온다, 예전 0.6칸)
+  for (const dy of [-0.25, -0.4]) {
     const p = await tilePoint(page, lower.tx, lower.ty, dy);
     await page.mouse.move(p.x, p.y);
     await page.mouse.down();

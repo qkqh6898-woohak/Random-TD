@@ -21,7 +21,7 @@ interface SceneLike {
     tick: number;
     state: { stage: number; gold: number; workers: number; upgrades: number[][]; nextStageTick: number; defeatTick: number; debug: boolean; mode: string };
     rules: { towerOrder: string[]; bossTimeTicks: number };
-    world: { enqueue(c: unknown): { ok: boolean }; emit(type: string, data?: unknown): void };
+    world: { enqueue(c: unknown): { ok: boolean }; emit(type: string, data?: unknown): void; setCommandFilter(f: null): void };
     towers(): { tower: string; tx: number; ty: number }[];
     map: { buildable: [number, number][] };
     mobs(): { boss?: boolean }[];
@@ -410,6 +410,8 @@ test.describe('A-1 화면 흔들림·소환 연출', () => {
         const used = new Set(m.towers().map((k) => `${k.tx},${k.ty}`));
         // G-1 마당 맵(24칸): 남은 빈 칸 모두 (12칸 이상)
         const free = m.map.buildable.filter(([x, y]) => !used.has(`${x},${y}`));
+        // 예전 칸 지정 summon(리플레이용)은 일반 판에서 거절된다 (V2 L2) — 이 연출 시험에서만 거절 필터를 끈다
+        m.world.setCommandFilter(null);
         for (const [x, y] of free) m.world.enqueue({ type: 'summon', x, y });
         return { free: free.length, pads: m.map.buildable.length };
       },

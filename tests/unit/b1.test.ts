@@ -52,17 +52,17 @@ describe('B-1 큰 캐릭터 탭 판정: 빈 소환 칸이 먼저', () => {
 });
 
 describe('B-1 전투 확대 배수', () => {
-  it('v0.1.17: 이웃과 무관하게 등급 배율로만(×1.4, 1 넘는 부분은 ×0.7) · 머리가 HUD를 넘지 않게 줄이되 캐릭터 크기보다 작게는 안 함', () => {
-    expect(battleFigureScale(1, false, 10)).toBeCloseTo(1.4, 6);
-    expect(battleFigureScale(1, true, 10)).toBeCloseTo(1.4, 6); // 이웃이 있어도 같다 (피드백 #36·#66)
-    // 신화(1.5)는 예전 혼자 ×2 = 3.0 → 1.75, 노말(0.7)은 0.98 — 등급 순서는 그대로
-    expect(battleFigureScale(1.5, false, 10)).toBeCloseTo(1.75, 6);
-    expect(battleFigureScale(0.7, false, 10)).toBeCloseTo(0.98, 6);
-    // 0번 줄: 발밑에서 HUD까지 1.3칸 → 머리 끝이 HUD 아래 끝에 딱 맞게
-    const s = battleFigureScale(1, false, 1.3);
+  it('V2.0 PR-A: 이웃과 무관하게 등급 배율로만 — 혼자 칸 너비 = 노말(0.7) 60% ~ 리미티드(1.5) 80% · HUD 앞에서 줄이는 규칙은 그대로', () => {
+    expect(battleFigureScale(1, false, 10)).toBeCloseTo(0.675 / 0.92, 6); // 너비 0.6 + (0.3/0.8) × 0.2 = 0.675칸
+    expect(battleFigureScale(1, true, 10)).toBeCloseTo(0.675 / 0.92, 6); // 이웃이 있어도 같다 (피드백 #36·#66)
+    expect(battleFigureScale(1.5, false, 10)).toBeCloseTo(0.8 / 0.92, 6);
+    expect(battleFigureScale(0.7, false, 10)).toBeCloseTo(0.6 / 0.92, 6);
+    // 새 크기는 늘 캐릭터 크기(looks scale)보다 작아 HUD 앞에서도 줄지 않는다 (머리 끝 = 발밑 위 1.14칸 × 배율 < 1칸)
+    expect(battleFigureScale(1, false, 0.5)).toBeCloseTo(0.675 / 0.92, 6);
+    expect(FOOT_OFFSET_TILES - towerFigureSpanTiles(battleFigureScale(1.54, false, 10)).top).toBeLessThan(1.02);
+    // 등급 배율이 1보다 큰 그림(예전 규칙)이면 HUD 아래 끝에 딱 맞게 줄인다 — 함수 규칙 자체는 그대로
+    const s = Math.min(1.4, Math.max(1, 1.3 / (FOOT_OFFSET_TILES - towerFigureSpanTiles(1).top)));
     expect(FOOT_OFFSET_TILES - towerFigureSpanTiles(s).top).toBeCloseTo(1.3, 6);
-    // 자리가 아주 없어도 캐릭터 크기(HF-2 looks scale)는 지킨다
-    expect(battleFigureScale(1.25, false, 0.2)).toBe(1.25);
   });
 });
 
@@ -105,14 +105,37 @@ describe('B-1 이웃 붙음 판정 (TowerLayer.sync·expectedScale 공용, 검�
   });
 });
 
-describe('v0.1.17 혼자 있는 높은 등급 크기 상한 (사용자 요청 · 피드백 #36·#66)', () => {
-  it('신·신화도 그림 반폭이 1칸을 넘지 않고(이웃 칸을 절반 넘게 덮지 않음), 등급이 높을수록 크다', async () => {
-    const { figureArtScale } = await import('../../src/view/render/towerGeom');
+describe('V2.0 PR-A 혼자 있는 유닛 = 2~3개 무더기 크기 (칸의 약 70%)', () => {
+  it('등급 가운데 기준 노말 ≈60% → 리미티드 ≈80%, 평균 ≈70%, 등급이 높을수록 크다, 모두 칸 안', async () => {
+    const { figureArtScale, soloWidthTiles, ART_WIDTH_PER_SCALE } = await import('../../src/view/render/towerGeom');
     const { STACK_HALF_W_PER_ART } = await import('../../src/view/render/stackGeom');
-    const looks = [0.7, 0.82, 0.94, 1.06, 1.18, 1.34, 1.5]; // 노말 … 신화 (characterLooks 등급 구간 가운데)
-    const arts = looks.map(figureArtScale);
-    for (let i = 1; i < arts.length; i++) expect(arts[i]!).toBeGreaterThan(arts[i - 1]!);
-    expect(arts[arts.length - 1]! * STACK_HALF_W_PER_ART).toBeLessThan(1); // 신화 반폭 ≈ 0.8칸 (예전 혼자 ×2 = 약 1.38칸)
-    expect(figureArtScale(1.54) * STACK_HALF_W_PER_ART).toBeLessThan(1);
+    expect(ART_WIDTH_PER_SCALE).toBeCloseTo(2 * STACK_HALF_W_PER_ART, 9);
+    const looks = [0.7, 0.82, 0.94, 1.06, 1.18, 1.34, 1.5]; // 노말 … 리미티드 (characterLooks 등급 구간 가운데)
+    const widths = looks.map(soloWidthTiles);
+    for (let i = 1; i < widths.length; i++) expect(widths[i]!).toBeGreaterThan(widths[i - 1]!);
+    expect(widths[0]).toBeCloseTo(0.6, 6);
+    expect(widths[6]).toBeCloseTo(0.8, 6);
+    const avg = widths.reduce((a, b) => a + b, 0) / widths.length;
+    expect(avg).toBeGreaterThan(0.67);
+    expect(avg).toBeLessThan(0.73);
+    // 데이터 끝 값 (노말 0.66 · 리미티드 1.54)도 칸 안 (반폭 < 0.5칸)
+    expect(figureArtScale(1.54) * STACK_HALF_W_PER_ART).toBeLessThan(0.5);
+    expect(soloWidthTiles(0.66)).toBeGreaterThan(0.55);
+  });
+
+  it('무더기 2·3개도 칸 너비 상한 그대로(절대값) · 혼자보다 크지 않다', async () => {
+    const { figureArtScale } = await import('../../src/view/render/towerGeom');
+    const { stackArtScale, stackSlot, stackMaxArt } = await import('../../src/view/render/stackGeom');
+    for (const look of [0.66, 0.9, 1.18, 1.54]) {
+      const solo = figureArtScale(look);
+      for (const n of [2, 3]) {
+        for (let i = 0; i < n; i++) {
+          const slot = stackSlot(i, n);
+          const art = stackArtScale(solo, slot);
+          expect(art).toBeLessThanOrEqual(solo + 1e-9);
+          expect(art).toBeLessThanOrEqual(stackMaxArt(Math.abs(slot.dx)) + 1e-9);
+        }
+      }
+    }
   });
 });

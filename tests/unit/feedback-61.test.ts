@@ -1,7 +1,7 @@
 /**
  * 피드백 #61 (제목만, 본문·판 기록 JSON 없음 → 리플레이 재현 대상 없음):
  *  1. 웨이브 보상(웨이브 길)을 1000웨이브까지 — progression.json waveRoad.milestones (판 밖 메타라 sim·리플레이와 무관)
- *  2. 신화 해방을 누르면 목록이 맨 위로 굴러가는 버그 — 화면 쪽, e2e/fb61.spec.ts
+ *  2. 리미티드 해방을 누르면 목록이 맨 위로 굴러가는 버그 — 화면 쪽, e2e/fb61.spec.ts
  */
 import { describe, expect, it } from 'vitest';
 import { claimAllMilestones, newProgress, readyMilestones } from '../../src/meta/progress';
@@ -13,9 +13,9 @@ const pd = loadProgression(data);
 const ms = pd.waveRoad.milestones;
 
 describe('피드백 #61 웨이브 길 1000웨이브까지', () => {
-  it('10웨이브마다 10 ~ 1000 (100개), 1~100웨이브 보상은 예전 그대로', () => {
+  it('10웨이브마다 10 ~ 1000 (100개), 1~100웨이브 보상은 예전 그대로 (+ V2.0 PR-A 🔥 불꽃 = 골드의 1/20)', () => {
     expect(ms.map((m) => m.wave)).toEqual(Array.from({ length: 100 }, (_, i) => (i + 1) * 10));
-    expect(ms[0]!.reward).toEqual({ gold: 300, cards: 3 });
+    expect(ms[0]!.reward).toEqual({ gold: 300, flame: 15, cards: 3 });
     expect(ms[9]!.reward).toEqual({ gems: 200, fragments: 10 });
   });
 

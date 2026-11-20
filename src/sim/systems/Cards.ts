@@ -10,7 +10,7 @@
  * - 효과 (cards.json effect.type):
  *   atkPct 그 플레이어 모든 타워 공격력 +20% (PlayerMods.atkPctBp) · goldPerBoss 즉시 500원 × 보스 번호 ·
  *   rareSummons 다음 소환 5회 레어 · workerMul 일꾼 수입 배율 +1 · quake 맵 위 몹(보스 제외, 드러난 몹) 지금 체력 −30% (내림, 죽지 않음) ·
- *   summonDiscount 소환 비용 −20원 (최소 50원) · mobSlow 몹(보스 제외) 이동속도 −15% (합 최대 −45%) · freeWorkers 일꾼 +2 (최대 무시) ·
+ *   summonDiscount 소환 비용 −20% (합 최대 50%, 기본 비용 아래로는 안 내려감 — V2.0 PR-A) · mobSlow 몹(보스 제외) 이동속도 −15% (합 최대 −45%) · freeWorkers 일꾼 +2 (최대 무시) ·
  *   mergeChoice 다음 승급 3회는 결과 2개 중 선택 · twinSummon 30초 동안 소환하면 같은 타워 하나 더 · godMul 신 타워 확률 ×3 (다시 고르면 +2배) ·
  *   goldPct 모든 돈 획득 +25%.
  * - '몹'은 보스가 아닌 몹으로 읽었다 (ENEMIES.md가 하수인 = 몹, 대장 = 보스로 나눠 쓰고, 그래야 대지진 카드를 다음 보스용으로 아껴 두는 꼼수가 없다).
@@ -118,9 +118,12 @@ export function applyCard(ctx: MatchContext, world: World, player: number, card:
       world.emit('quake', { player, count: n });
       break;
     }
-    case 'summonDiscount':
-      state.summonDiscount += card.value;
+    case 'summonDiscount': {
+      // V2.0 PR-A: 할인은 비율(bp), 합 최대 card.limit (소환 비용이 횟수로 오르므로 정액 할인 대신)
+      const v = state.summonDiscountBp + card.value;
+      state.summonDiscountBp = v > card.limit ? card.limit : v;
       break;
+    }
     case 'mobSlow': {
       const v = state.mobSlowBp + card.value;
       state.mobSlowBp = v > card.limit ? card.limit : v;

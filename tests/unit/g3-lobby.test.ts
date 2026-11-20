@@ -1,18 +1,18 @@
 /**
- * G-3 로비 화면 모델 (순수): 영웅 격자·정렬·탭, 상세(비용·보너스), 웨이브 길, 신화 조각, 정산 요약.
+ * G-3 로비 화면 모델 (순수): 영웅 격자·정렬·탭, 상세(비용·보너스), 웨이브 길, 리미티드 조각, 정산 요약.
  */
 import { describe, expect, it } from 'vitest';
 import { loadGameData } from '../../src/data/load';
 import { loadProgression } from '../../src/meta/progressionData';
 import { newProgress, settleMatch } from '../../src/meta/progress';
-import { fragmentRows, grantLine, heroDetail, heroGrid, heroesReady, settlementView, tabOf, topBar, waveRoad } from '../../src/ui/lobby/lobbyModel';
+import { codexReady, fragmentRows, grantLine, heroDetail, heroGrid, heroesReady, settlementView, tabOf, topBar, waveRoad } from '../../src/ui/lobby/lobbyModel';
 
 const data = loadGameData();
 const pd = loadProgression(data);
 const fresh = () => newProgress(pd, data, 7);
 
 describe('영웅 격자', () => {
-  it('[영웅] 탭 = 노말~레전드 50종, [신화] 탭 = 히든 12 + 신 3, 모든 타워가 어느 한 탭에', () => {
+  it('[영웅] 탭 = 노말~레전드 50종, [리미티드] 탭 = 히든 12 + 신 3, 모든 타워가 어느 한 탭에', () => {
     const s = fresh();
     const a = heroGrid(s, pd, data, 'heroes', 'grade');
     const b = heroGrid(s, pd, data, 'mythic', 'grade');
@@ -42,6 +42,25 @@ describe('영웅 격자', () => {
     expect(card).toMatchObject({ need: 2, cards: 2, ready: true });
     expect(heroesReady(s, pd, data)).toBe(1);
   });
+  it('V2 L7: 배지 규칙 하나 — 영웅 점 = 지금 레벨업(카드 + 🔥 불꽃) 가능한 보유 영웅, 도감 점 = 해방 가능한 잠긴 리미티드 (두 번 세지 않음)', () => {
+    const s = fresh();
+    s.heroes.miner!.cards = 2;
+    s.flame = 0; // 카드는 모였지만 불꽃이 없다
+    expect(heroesReady(s, pd, data)).toBe(0);
+    expect(heroGrid(s, pd, data, 'heroes', 'grade').canLevel).toBe(0);
+    s.flame = 1_000;
+    expect(heroesReady(s, pd, data)).toBe(1);
+    // 잠긴 리미티드 하나에 조각이 모임 → 도감 점 1, 영웅 점은 그대로 (리미티드 목록의 ▲는 뜬다)
+    const hidden = data.towers.towers.find((t) => t.grade === 'hidden')!;
+    s.heroes[hidden.id] = { level: 0, cards: pd.hidden.unlockFragments };
+    expect(codexReady(s, pd, data)).toBe(1);
+    expect(fragmentRows(s, pd, data).filter((r) => r.canUnlock).length).toBe(1);
+    expect(heroesReady(s, pd, data)).toBe(1);
+    expect(heroGrid(s, pd, data, 'mythic', 'grade').unowned.find((c) => c.id === hidden.id)!.ready).toBe(true);
+    // 해방한 리미티드는 레벨업 규칙으로 센다
+    s.heroes[hidden.id] = { level: 1, cards: 0 };
+    expect(codexReady(s, pd, data)).toBe(0);
+  });
 });
 
 describe('영웅 상세', () => {
@@ -49,7 +68,7 @@ describe('영웅 상세', () => {
     const s = fresh();
     s.heroes.miner = { level: 3, cards: 10 };
     const d = heroDetail(s, pd, data, 'miner')!;
-    expect(d.cost).toEqual({ cards: 4, gold: 200 });
+    expect(d.cost).toEqual({ cards: 4, flame: 20 }); // V2.0 PR-A: 골드 → 🔥 불꽃
     expect(d.bonus).toBe('+8%');
     expect(d.nextBonus).toBe('+12%');
     expect(d.check).toBe('ok');
@@ -73,10 +92,10 @@ describe('위 띠 · 웨이브 길 · 조각', () => {
     expect(r.best).toBe(23);
     expect(r.next).toBe(30);
     expect(r.ready).toBe(2);
-    expect(r.nodes[0]).toMatchObject({ wave: 10, state: 'ready', reward: '💰 300 · 🃏 3' });
+    expect(r.nodes[0]).toMatchObject({ wave: 10, state: 'ready', reward: '💰 300 · 🔥 15 · 🃏 3' });
     expect(r.nodes[2]!.state).toBe('locked');
   });
-  it('신화 조각 줄: 12종, 해방 가능 표시', () => {
+  it('리미티드 조각 줄: 12종, 해방 가능 표시', () => {
     const s = fresh();
     const rows = fragmentRows(s, pd, data);
     expect(rows).toHaveLength(12);

@@ -1,7 +1,7 @@
 import type { Grade } from '../../data/load';
 import { COLORS, GRADE_COLORS } from '../palette';
 
-/** 등급 띠는 받침대/배지와 같은 색. 신화의 검은 면은 금색 테두리로 구별한다. */
+/** 등급 띠는 받침대/배지와 같은 색. 리미티드의 검은 면은 금색 테두리로 구별한다. */
 export function gradeOutlineColor(grade: Grade): string {
   return grade === 'hidden' ? COLORS.hiddenRim : GRADE_COLORS[grade];
 }

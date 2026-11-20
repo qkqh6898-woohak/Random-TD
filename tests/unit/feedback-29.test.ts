@@ -29,7 +29,7 @@ describe('피드백 #29 종족 소환 줄 작게', () => {
     const row = model.rows.find((r) => r.id === 'faction')!;
     const kind = data.game.summonGamble.kinds.find((k: { id: string }) => k.id === 'faction')!;
     expect(row.cost).toBe(kind.cost);
-    expect(row.costText).toBe('200원');
+    expect(row.costText).toBe('400원'); // V2.0 PR-A 소환 도박 ×2
     expect(row.odds.replace(/\u00a0/g, ' ')).toBe('노말 70% · 레어 30%');
     expect(row.pity).toBe('천장까지 10회 (레어)');
   });

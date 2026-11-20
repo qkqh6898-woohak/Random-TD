@@ -138,3 +138,14 @@ export function towerStacks(world: World): Map<string, Tower[]> {
   }
   return out;
 }
+
+/**
+ * 무더기가 한 타워로만 이루어졌는가 (G-1 '한 칸 = 한 타워', V2 검토 H1 뒷받침). 승급·합류 검사는 이것이 참인 칸만 무더기로 본다
+ * — 어떤 경로로든 섞인 칸이 생겨도 다른 타워를 재료로 먹거나 새 타워가 끼어들지 않게.
+ */
+export function isUniformStack(list: readonly Tower[]): boolean {
+  const first = list[0];
+  if (!first) return false;
+  for (const t of list) if (t.tower !== first.tower || t.owner !== first.owner) return false;
+  return true;
+}
