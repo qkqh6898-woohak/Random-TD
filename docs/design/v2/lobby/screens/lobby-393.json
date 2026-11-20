@@ -1,0 +1,58 @@
+{
+  "overflow": [],
+  "badButtons": [],
+  "clipped": [],
+  "missingArt": [],
+  "selected": [
+    "battle"
+  ],
+  "inactiveLabelOpacity": [
+    "0",
+    "0",
+    "0",
+    "0"
+  ],
+  "startRatio": 0.5499761450381679,
+  "contrast": [
+    {
+      "name": "lobby-profile-name",
+      "ratio": 7.069423915221599
+    },
+    {
+      "name": "lobby-location",
+      "ratio": 12.276506168651034
+    },
+    {
+      "name": "lobby-rail-detail",
+      "ratio": 13.68798230295477
+    },
+    {
+      "name": "lobby-rail-detail",
+      "ratio": 13.68798230295477
+    },
+    {
+      "name": "wave-best-label",
+      "ratio": 12.276506168651034
+    },
+    {
+      "name": "wave-here",
+      "ratio": 12.869063120909047
+    },
+    {
+      "name": "lobby-rail-detail",
+      "ratio": 13.68798230295477
+    },
+    {
+      "name": "lobby-rail-detail",
+      "ratio": 13.68798230295477
+    },
+    {
+      "name": "btn btn-primary btn-start lobby-start",
+      "ratio": 9.915261104889264
+    },
+    {
+      "name": "lobby-next",
+      "ratio": 12.276506168651034
+    }
+  ]
+}

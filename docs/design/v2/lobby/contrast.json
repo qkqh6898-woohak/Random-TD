@@ -1,0 +1,47 @@
+{
+  "method": "WCAG sRGB contrast of declared solid pairs; rendered samples separately in screens/*.json. Notification uses the contiguous 1.5px outline. Disabled pair excludes inherited opacity and is not claimed as rendered AA.",
+  "pairs": [
+    {
+      "name": "primary",
+      "foreground": "#3B2314",
+      "backgroundOrOutline": "#F7D23E",
+      "ratio": 9.915
+    },
+    {
+      "name": "profile",
+      "foreground": "#FFFFFF",
+      "backgroundOrOutline": "#7A4E36",
+      "ratio": 7.069
+    },
+    {
+      "name": "paper",
+      "foreground": "#3B2314",
+      "backgroundOrOutline": "#F3EBD3",
+      "ratio": 12.277
+    },
+    {
+      "name": "selected tab",
+      "foreground": "#3B2314",
+      "backgroundOrOutline": "#C1A58E",
+      "ratio": 6.293
+    },
+    {
+      "name": "secondary",
+      "foreground": "#FFFFFF",
+      "backgroundOrOutline": "#3E4A7A",
+      "ratio": 8.518
+    },
+    {
+      "name": "disabled colors",
+      "foreground": "#5C493E",
+      "backgroundOrOutline": "#D2CCC2",
+      "ratio": 5.31
+    },
+    {
+      "name": "outlined notification text",
+      "foreground": "#FFFFFF",
+      "backgroundOrOutline": "#3B2314",
+      "ratio": 14.619
+    }
+  ]
+}

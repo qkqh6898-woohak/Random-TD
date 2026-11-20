@@ -141,7 +141,7 @@ export class BootScene extends Phaser.Scene {
         progress,
         keyArt,
         debug: this.ctx.debug,
-        onStart: () => this.startGame('infinite'),
+        onStart: (speed) => this.startGame('infinite', speed),
         onCampaign: () => this.startGame('campaign'),
         saved: saved
           ? {
@@ -259,8 +259,8 @@ export class BootScene extends Phaser.Scene {
     cam.setZoom(zoom).centerOn(GAME_WIDTH / 2, GAME_HEIGHT / 2);
   }
 
-  private startGame(mode: MatchMode): void {
-    const data: GameSceneData = { seed: this.ctx.seed ?? randomSeed(), mode, theme: 1 };
+  private startGame(mode: MatchMode, initialSpeed = 1): void {
+    const data: GameSceneData = { seed: this.ctx.seed ?? randomSeed(), mode, theme: 1, initialSpeed };
     this.toGame(data);
   }
 
