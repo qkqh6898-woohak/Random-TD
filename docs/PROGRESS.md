@@ -1671,3 +1671,27 @@
 - **리플레이 해시 변화 없음** (`npm run replays` 안 함).
 - **나중에(다른 갈래 소유 파일)**: M4(progressStore 백업·모르는 필드 보존), L1 루프 끊기, L4(자동 판매가 도박 결과를 팖), L7(배지 규칙), L8(ultSent 초기화), H1 'full' 알림, L5 클리어 화면, CLAUDE.md 6장 SIM_VERSION 문구 — 정확한 변경은 fixes-notes 표.
 - **완료 조건**: Vitest **108파일 1,575 통과 · 3 건너뜀**, `npm run check`·`npm run build`·`bash android/check-java.sh` 통과. **관련 E2E**(`E2E_PORT=5181`, 127개: related-e2e.sh 68052a7 결과 + smoke·update·g1·m4·m5·t2·f10·b1·devtools·g3·gi + m3a·g2·g2-shots) — 다시 돌려 모두 통과, 단 `m2:257`·`m3a:236`·`m5:159`·`m5:236` 4개는 **고치기 전 68052a7에서도 같은 자리에서 실패**(부하 load 7~8에서 잠깐 뜨는 알림·배너를 놓침, 내 변경과 무관). 다시 찍힌 스크린샷은 되돌림. 전체 E2E는 v2/pr-a와 합친 뒤.
+
+## V2 통합 (PR-A + 고침 1차) (갈래 `v2/integration` = `v2/pr-a` 5b80093 + `v2/fixes` 5551524)
+
+> 조정자 요청: 끝난 두 갈래를 합치고, 고침 1차가 '다른 갈래 소유 파일'이라 남긴 일(docs/v2/fixes-notes.md 맨 아래)을 마친다. 저장 형식·sim 규칙이 바뀌는 큰 묶음 → 전체 E2E.
+
+- **합치기** (V2-I1, 병합 커밋): 충돌은 `docs/PROGRESS.md` 한 곳(두 기록 모두 남김). 코드(match·state·Board·messages·progressionData·e2e m2/a1·테스트)는 자동 병합 — 두 갈래가 같은 줄을 고친 곳이 없었다. PR-A가 더한 테스트·E2E는 예전 명령(summon·merge·mergeAll·move)을 새로 쓰지 않아 고침 1차의 L2 필터(`legacyCommands`)에 걸리는 곳이 없었고, a1·m2의 '이 시험에서만 필터 끄기'와 PR-A의 m2 경제 기대값(22원·310원 등)은 다른 줄이라 둘 다 그대로.
+- **SIM_VERSION 1 → 2** (V2-I2): PR-A(소환 비용 22원 + 2원·판매가 분리·`summonCount` 판 상태 해시)와 고침 1차(H1·L2·L5) 규칙을 합친 첫 판. `src/sim/version.ts`에 기록 줄.
+- **리플레이 다시 기록 안 함**: 합친 뒤 저장된 리플레이 8개가 모두 그대로 통과(PR-A가 다시 기록한 해시 = 합친 규칙의 해시). 고침 1차 규칙은 저장된 리플레이에 닿지 않는다 — pickMerge 없음(H1), 비개발자 리플레이는 예전 명령을 안 쓰고 재생은 `legacyCommands`(L2), 50단계까지 가는 리플레이 없음(L5).
+- **남은 일 마침**:
+  - M2a × 불꽃: 버린 판 정산은 `progress.settle(MatchResult)`를 그대로 쓰므로 PR-A의 🔥(2 × 웨이브 + 10 × 보스)도 함께 들어간다 — 테스트 `v2-m2-sim-version` '버린 판 정산도 🔥 불꽃을 준다 — 같은 판은 한 번만'.
+  - M4 빈틈 (V2-I3): PR-A가 백업(망가짐·새 형식)·모르는 필드 보존은 했지만 새 형식(v > 2)도 계속 썼다 → `ProgressStore.readOnly`(`progressIsNewer`): 이번 실행 변화는 메모리에만, 기기 저장은 원문 그대로. 생성자는 읽은 값이 그대로면 다시 쓰지 않음. `flame.test.ts`.
+  - L1 (V2-I3): `claimAllQuests`가 한 바퀴에 받은 것이 없으면 멈춤 — 겹친 id를 검사 없이 넣은 상태 테스트(고치기 전엔 끝나지 않음을 확인).
+  - L7 (V2-I4): PR-A가 ▲·탭 점·[모두 레벨업]을 `checkLevelUp`(카드 + 불꽃)으로 맞췄고, 남은 것 = 해방 가능한 잠긴 리미티드를 [영웅] 점과 [도감] 점이 두 번 세던 것 → `heroLevelUpReady`·`heroUnlockReady`·`codexReady` 한 곳, [영웅] 점은 레벨업만, [도감] 점은 해방만(리미티드 목록의 ▲는 해방에도 뜸). `g3-lobby.test.ts`.
+  - L4: PR-A 방식(자동 판매가 소환 도박 결과를 팔지 않음, `isAutoSellSummon`) 그대로.
+  - L5 화면 · H1 화면 · L8 · Boot (V2-I5): Game.ts가 `match.ended`로 멈추고 'victory' 사건이면 같은 결과 화면에 제목 **'테마 n 클리어!'**(`hudModel.gameEndText`, 금색 `.is-victory`), 정산은 패배와 같은 `matchResultOf` → `progress.settle`, 개발자 '지난 판'에 '클리어'. `mergePickFail 'full'` → 알림 '옮길 자리가 없어 바꾸지 못했어요 — 축복을 돌려받았어요'(`MERGE_PICK_FULL`). `create()`에서 `ultSent` 초기화. 되살리기 실패로 버리고 보상을 준 판도 타이틀 알림. 테스트 `v2-l5-campaign-end` 화면 2개 + E2E `t3-screen` 'V2 L5'(개발자 ⏭로 50단계 → 결과 화면 제목·정산 상자·판 멈춤).
+  - CLAUDE.md 6장 (V2-I6): 앱 버전 문구 → SIM_VERSION 규칙(앱 버전만 바뀐 릴리스는 이어 함 · 형식/SIM_VERSION/데이터 지문이 다르면 정산(한 번) 뒤 버림 · 올리는 때/안 올리는 때/헷갈리면 올림).
+  - 웨이브 길 보상 글자 (V2-I6): 재 보니 320px만이 아니라 cqw 글꼴이라 **모든 폭에서** 3~4가지 보상(🔥 포함)이 두 줄(필요 폭 106~157px, 칸 90px — 한 줄로 넣으려면 길 칸을 다시 짜야 함). 칸 높이(44px)는 그대로라 겹침은 없고, 항목마다 nowrap 묶음으로 '🃏 / 12'처럼 아이콘과 숫자가 갈리지 않게만 고침.
+- **테스트 바꾼 것**: 새 테스트만 더함 — `v2-m2-sim-version`(불꽃 한 번), `flame`(M4 읽기 전용·다시 안 씀), `g3-progress`(L1), `g3-lobby`(L7), `v2-l5-campaign-end`(화면 2개), E2E `t3-screen` 'V2 L5'. 기존 기대값 변경 없음.
+- **완료 조건**: Vitest **111파일 1,611 통과 · 3 건너뜀**, `npm run check`(타입·결정성 79파일·곡선·데이터)·`npm run build`·`bash android/check-java.sh`(UpdateLogicTest·FeedbackLinksTest) 통과.
+  **전체 E2E** (`E2E_PORT=5183`, 235개): 도중에 컨테이너가 다시 시작되어 두 번에 나눠 돌았다.
+  - 1차: 1~202번(a1 … smoke·t2 첫 테스트)까지 **200 통과 · 2 건너뜀 · 실패 0**에서 끊김.
+  - 2차: 나머지 = `t2.spec.ts` 전부 + `t3-screen`·`update`·`v14-shots`·`v19-shots` 34개 → **30 통과 · 4 건너뜀 · 실패 0** (7.6분).
+  - 합계(t2 첫 테스트 중복 빼고) **235개 중 229 통과 · 6 건너뜀(SAVE_SCREENS 스크린샷 테스트) · 실패 0** — 다시 돌린 흔들림 없음. E2E가 다시 찍은 스크린샷(docs/screens·docs/art/feedback-design)은 되돌림.
+- **남은 문제 · 사용자 확인**: 캠페인 클리어는 아직 판 밖 진행(챕터 해금·클리어 기록)에 남지 않는다 — 계정에는 패배 화면과 같은 정산(웨이브·보스 보상)만 들어간다(캠페인 진행 저장은 M6 몫, 캠페인 버튼은 여전히 개발자 전용). 새 형식 계정 저장(앱을 낮춘 경우)은 이번 실행 동안 바뀐 것이 저장되지 않는다(백업은 남음) — 다운그레이드는 versionCode로 막혀 실제로는 드묾. 웨이브 길 보상 한 줄 배치는 길 칸 디자인을 다시 짤 때.
