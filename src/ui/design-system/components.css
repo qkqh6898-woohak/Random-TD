@@ -1,5 +1,7 @@
 .rtd-v2 *, .rtd-v2 *::before, .rtd-v2 *::after { box-sizing: border-box; }
-.rtd-v2 :is(button, input) { font: inherit; }
+/* V2-R21 (PR-D 검토 🔴): 바탕 규칙은 특정도 0(:where) — 글꼴을 따로 정하지 않은 단추만 물려받고, 예전 .btn 등 글꼴 규칙이 있는
+   화면(영웅 상세·상점·대화 창·일시정지·시트)은 그 글꼴 그대로. V2 부품은 자기 글꼴을 직접 정한다. */
+:where(.rtd-v2) :where(button, input) { font: inherit; }
 .rtd-v2 button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; cursor: pointer; }
 .rtd-v2 button:disabled { cursor: default; }
 .rtd-v2 :focus-visible { outline: 3px solid var(--rtd-outline); outline-offset: 4px; box-shadow: 0 0 0 6px var(--rtd-paper); }
