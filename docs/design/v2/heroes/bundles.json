@@ -1,0 +1,40 @@
+{
+  "production": {
+    "lobby": {
+      "inert": false,
+      "icons": 15,
+      "missing": 0,
+      "font": true,
+      "backgroundDecoded": true,
+      "backgroundInline": false
+    },
+    "game": {
+      "inert": false,
+      "speed": 16,
+      "gold": "978원"
+    },
+    "httpRequests": 247,
+    "externalRequests": [],
+    "errors": []
+  },
+  "singleHttp": {
+    "lobby": {
+      "inert": false,
+      "icons": 15,
+      "missing": 0,
+      "font": true,
+      "backgroundDecoded": true,
+      "backgroundInline": true
+    },
+    "game": {
+      "inert": false,
+      "speed": 16,
+      "gold": "978원"
+    },
+    "embeddedAssets": 278,
+    "httpRequests": 1,
+    "externalRequests": [],
+    "errors": []
+  },
+  "scope": "Local integration of PR-E 949b63f and field-context 3fc73be, validation commit d7ccb86"
+}

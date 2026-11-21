@@ -1759,4 +1759,4 @@
 - 실제 종합 레벨과 개별 영웅의 전투 적용 보너스 범위를 안내한다. 공통 합산 버프/경제를 만들지 않고 기존 heroAtkBonuses의 상한·설정을 읽는다. 카드 수량은 표시만 K/M, 접근성 이름은 정확한 정수다.
 - 320/360/393/412px, 44px/최소12px, 짧은 화면 스크롤/안전영역/reduced-motion, native 성장 안내/초점 복귀/뒤로 가기. 기존 data-action/testid와 레벨업 비용/명령을 보존한다.
 - 새 이미지·폰트·아이콘 없이 PR-B 자산과 기존 캐릭터를 재사용한다. sim/meta/save/data/ID/Android/CI는 수정하지 않는다. 전투 칸 투명화는 별도 design/field-context로 분리한다.
-- 검증 및 인계: [PR-E](design/v2/heroes/PR-E.md), validation.json과 네 폭 캡처/배치 측정. 최종 실행 수치는 검증 완료 뒤 기록한다.
+- 검증 및 인계: [PR-E](design/v2/heroes/PR-E.md), validation.json과 네 폭 캡처/배치 측정. 전체 Canvas 회귀는 E+필드를 임시 로컬 통합한 d7ccb86에서 273개를 세 묶음으로 순차 실행해 262통과·5실패·6건너뜀이다. 수집/실행 ID 누락·중복0, 검사 전후 소스 해시 동일. 실제 배포 브랜치들은 분리하며 통합 작업본은 푸시하지 않는다. 실패는 기존 main에서 재현한 HUD 배너 예약 높이 4건과 환경의 file:// 관리자 차단 1건이다. 기존 HUD/file 검사 기대값은 바꾸지 않았다. HTTP 단일 HTML 확인을 file:// 통과로 세지 않는다.

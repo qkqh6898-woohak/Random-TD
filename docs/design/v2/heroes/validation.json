@@ -1,7 +1,7 @@
 {
   "baseMain": "3abfda6e943a5c0bccbb2a0710c80ceac00f57e9",
   "parent": "c12af1fcfc1c4de5fd415857e3d2405abe5b9e16",
-  "implementation": "acb5787",
+  "implementation": "949b63f",
   "unit": {
     "files": 114,
     "passed": 1632,
@@ -28,12 +28,28 @@
     ]
   },
   "screens": "screens/{heroes,mythic}-{320,360,393,412}.png + info-short-320.png + pressed.png",
-  "fullRegression": "pending combined local integration check with independent field-context branch",
+  "fullRegression": {
+    "scope": "Local validation merge of V2 PR-E 949b63f and independent field-context 3fc73be; delivery branches remain separate. No main merge/push/release.",
+    "commit": "d7ccb86469dfa4d7fadfe56cc6013e7662af78fe",
+    "sourceHash": "2c3d439d236978688f4c11fab55f2e83444166dda69b20f373cfd491df9c32f1",
+    "collected": 273,
+    "summary": {
+      "passed": 262,
+      "failed": 5,
+      "skipped": 6,
+      "flaky": 0
+    },
+    "report": "regression.json",
+    "missingIds": [],
+    "duplicateIds": []
+  },
   "physicalAndroid": "not tested",
   "mainPushedOrMerged": false,
   "contrast": {
     "samples": 161,
     "minimum": 6.478645438933269,
     "outlinedText": "foreground versus rendered 1.5px outline; other text versus actual ancestor surface"
-  }
+  },
+  "patchApplyCheck": "passed on clean parent worktree",
+  "combinedProductionAndSingleHttp": "passed; bundles.json"
 }
