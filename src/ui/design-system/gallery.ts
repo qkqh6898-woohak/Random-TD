@@ -28,10 +28,10 @@ export async function mountDesignGallery(host: HTMLElement): Promise<void> {
     details.replaceChildren(h('h3', { text: name }), h('p', { class: 'rtd-detail-grade', text: `등급 · ${GRADE_NAMES[grade]}` }), h('p', { text: '등급 이름과 색을 함께 표시합니다.' }));
     detailPopup.open();
   } })), createGradeCard({ grade: 'hidden', name: '미보유 예시', level: 1, progress: 0, progressLabel: '미보유 조각', portrait: assetUrl('assets/characters/elemental.webp'), owned: false, onClick: () => { details.replaceChildren(h('p', { text: `${GRADE_NAMES.hidden} · 미보유` })); detailPopup.open(); } }));
-  const toggleDotHost = h('span', { class: 'rtd-gallery-dot-host' }, createIcon('mail'), createNotificationDot(true));
+  const toggleDotHost = h('span', { class: 'rtd-gallery-dot-host' }, createIcon('mail', { art: null }), createNotificationDot(true));
   let dotVisible = true;
   const toggler = createButton({ label: '알림 표시 전환', variant: 'pill', onClick: () => { dotVisible = !dotVisible; toggleDotHost.lastElementChild?.replaceWith(createNotificationDot(dotVisible)); report(dotVisible ? '알림 점 표시' : '알림 점 숨김'); } });
-  const iconGrid = grid('icons', ...DESIGN_ICONS.map(id => h('div', { class: 'rtd-gallery-icon-cell', attrs: { 'data-icon-name': id } }, createIcon(id), h('span', { text: ICON_LABELS[id] }))));
+  const iconGrid = grid('icons', ...DESIGN_ICONS.map(id => h('div', { class: 'rtd-gallery-icon-cell', attrs: { 'data-icon-name': id } }, createIcon(id, { art: null }), h('span', { text: ICON_LABELS[id] }))));
   const primary = createButton({ label: '빠른 시작!', cost: '에너지 5', onClick: () => report('빠른 시작 버튼을 눌렀습니다. 게임 상태는 바뀌지 않습니다.') });
   primary.dataset.testid = 'v2-primary';
   const disabled = createButton({ label: '소환', cost: '100', disabled: true, onClick: () => report('실행되면 안 되는 비활성 버튼') });

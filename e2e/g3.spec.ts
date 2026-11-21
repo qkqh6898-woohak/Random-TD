@@ -90,8 +90,10 @@ test('G-3 a. 로비: 최고 웨이브 · 웨이브 길 보상 받기 · [빠른 
   await expect(grant).toBeVisible();
   await expect(grant).toContainText('웨이브 보상 4개');
   await expect(grant.locator('.grant-card')).not.toHaveCount(0);
-  await expect(grant).toContainText('💰 +900');
-  await expect(grant).toContainText('💎 +80');
+  // ART-2: 💰·💎는 V2 재화 아이콘 그림 + 숫자
+  await expect(grant.getByTestId('grant-gold')).toHaveText('+900');
+  await expect(grant.getByTestId('grant-gold').locator('[data-icon="cur-gold"]')).toBeVisible();
+  await expect(grant.getByTestId('grant-gems')).toHaveText('+80');
   await page.getByTestId('grant-dialog-close').click();
   await expect(page.getByTestId('lobby-gold')).toContainText('1,900');
   await expect(page.locator('.wave-node.is-ready')).toHaveCount(0);
@@ -205,7 +207,8 @@ test('G-3 d. 패배 → 정산 표시 · 최고 웨이브 갱신 · 한 번만 �
   await expect(rewards).toContainText('새 기록!');
   // 20단계 · 보스 1 · 새 기록: 경험치 200 + 50 + 100, 골드 400 + 100, 카드 8장, 조각 1
   await expect(page.getByTestId('go-xp')).toHaveText('⭐경험치 +350');
-  await expect(page.getByTestId('go-gold')).toHaveText('💰+500');
+  await expect(page.getByTestId('go-gold')).toHaveText('+500'); // ART-2: 💰는 아이콘 그림
+  await expect(page.getByTestId('go-gold').locator('[data-icon="cur-gold"]')).toBeVisible();
   await expect(page.getByTestId('go-cards')).toHaveAttribute('aria-label', '영웅 카드 8장');
   await expect(page.getByTestId('go-frags')).toContainText('+1');
   await expect(rewards).toContainText('계정 Lv 3');
@@ -225,14 +228,14 @@ test('G-3 d. 패배 → 정산 표시 · 최고 웨이브 갱신 · 한 번만 �
   const q = page.getByTestId('quest-dialog');
   await expect(q).toBeVisible();
   await page.getByTestId('quest-claim-d-play').click();
-  await expect(page.getByTestId('grant-dialog')).toContainText('💰 +200');
+  await expect(page.getByTestId('grant-dialog').getByTestId('grant-gold')).toHaveText('+200');
   await page.getByTestId('grant-dialog-close').click();
   for (const id of ['d-wave', 'd-summon', 'd-merge']) {
     await page.getByTestId(`quest-claim-${id}`).click();
     await page.getByTestId('grant-dialog-close').click();
   }
   await page.getByTestId('quest-claim-bonus').click();
-  await expect(page.getByTestId('grant-dialog')).toContainText('💎 +20');
+  await expect(page.getByTestId('grant-dialog').getByTestId('grant-gems')).toHaveText('+20');
   await page.getByTestId('grant-dialog-close').click();
   expect((await progress(page)).daily.claimed).toEqual(['d-merge', 'd-play', 'd-summon', 'd-wave']);
   // 업적 탭: 보스 3마리는 아직 (1/3)

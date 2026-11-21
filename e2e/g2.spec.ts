@@ -99,7 +99,7 @@ test.describe('G-2 a. V2 갈색·종이 테마', () => {
       await clickStart(page);
       await expect(page.locator('[data-screen="game"]')).toBeVisible();
       await expect.poll(() => sim(page, (s) => s.mapLayout.tile)).toBeGreaterThan(0);
-      await expect(page.locator('[data-art-icon="summon"]')).toHaveClass(/is-loaded/);
+      await expect.poll(() => page.locator('[data-testid="hud-summon"] [data-icon="hud-summon"]').evaluate((e) => (e as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
 
       const look = await page.evaluate(() => {
         const cs = (sel: string, pseudo?: string) => getComputedStyle(document.querySelector(sel)!, pseudo);
@@ -118,7 +118,7 @@ test.describe('G-2 a. V2 갈색·종이 테마', () => {
           bottomBg: cs('.hud-bottom').backgroundImage,
           menuBg: cs('.hud-menu').backgroundImage,
           mapFrame: cs('#game', '::after').boxShadow,
-          summonIcon: document.querySelector<HTMLImageElement>('[data-art-icon="summon"] img')!.getAttribute('src'),
+          summonIcon: document.querySelector<HTMLImageElement>('[data-testid="hud-summon"] [data-icon="hud-summon"]')!.getAttribute('src'),
           summonText: (document.querySelector('[data-testid="hud-summon"]')! as HTMLElement).innerText,
           pointer: [cs('.hud-bar', '::before').pointerEvents, cs('.hud-bottom', '::before').pointerEvents, cs('#game', '::after').pointerEvents],
         };
@@ -132,7 +132,7 @@ test.describe('G-2 a. V2 갈색·종이 테마', () => {
       expect(look.summonColor).toBe('rgb(247, 210, 62)');
       expect(look.upgradeColor).toBe('rgb(62, 74, 122)');
       expect(look.ornaments).toEqual(['none', 'none', 'none']);
-      expect(look.summonIcon).toContain('assets/ui/summon.webp'); // FB-18: 힉스필드 캐릭터 그림
+      expect(look.summonIcon).toContain('assets/ui/icons/hud-summon.webp'); // ART-2: 힉스필드 V2 아이콘 그림
       expect(look.bottomBg).toBe('none');
       expect(look.menuBg).toBe('none'); // Flat V2 surfaces, not the retired golden stripe.
       expect(look.mapFrame).toContain('rgba(232, 182, 74');

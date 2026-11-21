@@ -7,6 +7,7 @@
  * <dialog>라 안드로이드 뒤로 가기(nativeBack)·Esc가 닫는다. UI 루트가 pointer-events none이라 창에서 다시 켠다(src/ui/screens/feedback.css — main.ts가 불러옴).
  */
 import { h } from '../dom';
+import { uiIcon } from '../uiIcons';
 import type { ReplayFile } from '../../sim/replay';
 import {
   FEEDBACK_CATEGORIES,
@@ -43,12 +44,16 @@ export interface FeedbackDialogView {
 
 /** [💬 피드백 보내기] 버튼 (로비 설정·일시정지 메뉴 공용) */
 export function feedbackButton(view: FeedbackDialogView, cls: string): HTMLButtonElement {
-  return h('button', {
-    class: `btn feedback-open ${cls}`,
-    text: '💬 피드백 보내기',
-    attrs: { type: 'button', 'aria-haspopup': 'dialog', 'data-testid': 'feedback-open', 'aria-label': '피드백 보내기' },
-    on: { click: () => view.open() },
-  });
+  return h(
+    'button',
+    {
+      class: `btn feedback-open ${cls}`,
+      attrs: { type: 'button', 'aria-haspopup': 'dialog', 'data-testid': 'feedback-open', 'aria-label': '피드백 보내기' },
+      on: { click: () => view.open() },
+    },
+    uiIcon('ui-chat'),
+    '피드백 보내기',
+  );
 }
 
 export function createFeedbackDialog(opts: FeedbackDialogOptions): FeedbackDialogView {

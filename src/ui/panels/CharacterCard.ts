@@ -5,6 +5,7 @@
  */
 import { h } from '../dom';
 import type { UiView } from '../root';
+import { uiIcon } from '../uiIcons';
 import type { CharacterCardModel } from './characterCardModel';
 import type { StatCell } from './towerPanelModel';
 
@@ -26,12 +27,15 @@ function statSpan(c: StatCell): HTMLElement {
 
 export function createCharacterCard(opts: CharacterCardOptions): UiView {
   const m = opts.model;
-  const close = h('button', {
-    class: 'btn btn-chip cc-close',
-    attrs: { type: 'button', 'aria-label': '닫기', 'data-action': 'card-close' },
-    text: '✕',
-    on: { click: () => opts.onClose() },
-  });
+  const close = h(
+    'button',
+    {
+      class: 'btn btn-chip cc-close',
+      attrs: { type: 'button', 'aria-label': '닫기', 'data-action': 'card-close' },
+      on: { click: () => opts.onClose() },
+    },
+    uiIcon('ui-close'),
+  );
   const portrait = opts.portrait
     ? h('img', { class: 'cc-portrait', attrs: { src: opts.portrait, alt: `${m.name} 그림`, draggable: 'false', 'data-testid': 'cc-portrait' } })
     : h('div', { class: 'cc-portrait cc-portrait-empty', text: m.stars, attrs: { 'data-testid': 'cc-portrait' } });

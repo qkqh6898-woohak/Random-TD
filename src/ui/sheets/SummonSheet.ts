@@ -10,6 +10,7 @@
  */
 import { h } from '../dom';
 import { attachHoldRepeat, type HoldHandle } from '../hold';
+import { glyphOrIcon } from '../uiIcons';
 import { createBottomSheet, type BottomSheetView } from './BottomSheet';
 import type { GachaRowModel, SummonSheetModel } from './g1Models';
 
@@ -64,7 +65,7 @@ export function createSummonPane(opts: Omit<SummonSheetOptions, 'onClose'>, firs
   const nRow = h(
     'div',
     { class: 'up-row sm-row', attrs: { 'data-testid': 'summon-row-normal' } },
-    h('span', { class: 'up-icon', text: '🎲', attrs: { 'aria-hidden': 'true' } }),
+    glyphOrIcon('🎲', 'up-icon'),
     h(
       'div',
       { class: 'up-main' },
@@ -113,7 +114,7 @@ export function createSummonPane(opts: Omit<SummonSheetOptions, 'onClose'>, firs
     const root = h(
       'div',
       { class: `up-row sm-row${r.faction ? ' sm-row-secondary' : ''}`, attrs: { 'data-testid': `gacha-row-${r.id}` } },
-      h('span', { class: 'up-icon', text: r.icon, attrs: { 'aria-hidden': 'true' } }),
+      glyphOrIcon(r.icon, 'up-icon'),
       h('div', { class: 'up-main' }, h('div', { class: 'up-name' }, h('span', { text: r.name })), r.faction ? null : h('div', { class: 'up-effect', text: r.desc }), odds, pity),
       btn,
       ...extra,

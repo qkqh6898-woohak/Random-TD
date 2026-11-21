@@ -13,6 +13,7 @@
  *    · [캠페인]: 계정 레벨로 열리는 모드 자리 (열리면 테마 1)
  *  - 아래 메뉴 5칸: 상점 · 영웅 · 전투 · 도감 · 캠페인 (320px에서도 한 줄)
  *
+ * ART-2: 재화·아래 메뉴·옆 버튼·상점 상품·받은 보상 칩의 아이콘은 V2 힉스필드 그림(src/ui/uiIcons.ts). 글자 라벨·aria-label은 그대로.
  * 창은 모두 <dialog> → 안드로이드 뒤로 가기는 nativeBack이 맨 위 창부터 닫고, 그다음 `back()`이 [전투] 탭으로, 그다음 앱 종료.
  * 예전 타이틀 선택자(`data-screen="title"`, `data-action="start"`·`resume-match`·`new-game`·`campaign`·`records`)는 그대로 둔다
  * — E2E 도우미(e2e/title.ts clickStart)·기존 스펙이 같은 버튼을 누른다.
@@ -27,8 +28,7 @@ import './lobbyV2.css';
 import './heroesV2.css';
 import './detailsV2.css';
 import { heroCollectionSummary } from './heroCollectionModel';
-import { artIcon } from '../artIcon';
-import type { UiArt } from '../../art/uiIcons';
+import { SHOP_ICONS, uiIcon, type UiIconId } from '../uiIcons';
 import type { UiView } from '../root';
 import type { GameData } from '../../data/load';
 import type { ProgressStore } from '../../meta/progressStore';
@@ -112,12 +112,12 @@ export interface LobbyView extends UiView {
   back(): boolean;
 }
 
-const NAV: Record<LobbyTab, { icon: DesignIcon; label: string }> = {
-  shop: { icon: 'shop', label: '상점' },
-  heroes: { icon: 'heroes', label: '영웅' },
-  battle: { icon: 'battle', label: '전투' },
-  codex: { icon: 'codex', label: '도감' },
-  locked: { icon: 'campaign', label: '캠페인' },
+const NAV: Record<LobbyTab, { icon: DesignIcon; art: UiIconId; glyph: string; label: string }> = {
+  shop: { icon: 'shop', art: 'nav-shop', glyph: '🛒', label: '상점' },
+  heroes: { icon: 'heroes', art: 'nav-heroes', glyph: '🦸', label: '영웅' },
+  battle: { icon: 'battle', art: 'nav-battle', glyph: '⚔️', label: '전투' },
+  codex: { icon: 'codex', art: 'nav-codex', glyph: '📖', label: '도감' },
+  locked: { icon: 'campaign', art: 'nav-campaign', glyph: '🔒', label: '캠페인' },
 };
 
 const fmt = (n: number): string => n.toLocaleString('ko-KR');
@@ -214,9 +214,11 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
 
   function grantBody(v: GrantView, testid = 'grant-body'): HTMLElement {
     const chips: HTMLElement[] = [];
-    if (v.gold) chips.push(h('span', { class: 'go-chip', text: `💰 +${fmt(v.gold)}` }));
-    if (v.gems) chips.push(h('span', { class: 'go-chip', text: `💎 +${fmt(v.gems)}` }));
-    if (v.flame) chips.push(h('span', { class: 'go-chip', text: `🔥 +${fmt(v.flame)}` }));
+    const coin = (icon: UiIconId, n: number, testid: string): HTMLElement =>
+      h('span', { class: 'go-chip', attrs: { 'data-testid': testid } }, uiIcon(icon, { className: 'go-chip-icon' }), `+${fmt(n)}`);
+    if (v.gold) chips.push(coin('cur-gold', v.gold, 'grant-gold'));
+    if (v.gems) chips.push(coin('cur-gems', v.gems, 'grant-gems'));
+    if (v.flame) chips.push(coin('cur-flame', v.flame, 'grant-flame'));
     if (v.xp) chips.push(h('span', { class: 'go-chip', text: `⭐ +${fmt(v.xp)}` }));
     if (v.levelUps.length) chips.push(h('span', { class: 'go-chip', text: `계정 Lv ${v.levelUps[v.levelUps.length - 1]}` }));
     return h(
@@ -239,7 +241,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
             ),
           )
         : null,
-      v.fragments.length ? h('p', { class: 'grant-frags', text: `🧩 ${v.fragments.map((f) => `${f.name} +${f.n}`).join(' · ')}` }) : null,
+      v.fragments.length ? h('p', { class: 'grant-frags' }, uiIcon('shop-fragments'), v.fragments.map((f) => `${f.name} +${f.n}`).join(' · ')) : null,
     );
   }
 
@@ -274,8 +276,8 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
         { class: 'lobby-wallet' },
         wallet('gold', '골드', t.gold, 'lobby-gold'),
         wallet('diamond', '보석', t.gems, 'lobby-gems'),
-        // Preserve PR-A's existing flame binding and emoji. No new flame asset/API connection.
-        h('span', { class: 'lobby-coin is-flame', attrs: { 'data-testid': 'lobby-flame', role: 'group', 'aria-label': `불꽃 ${t.flame}` } }, h('span', { class: 'lobby-coin-icon', text: '🔥', attrs: { 'aria-hidden': 'true' } }), h('span', { class: 'lobby-flame-value', text: formatCompactNumber(t.flame), attrs: { 'aria-hidden': 'true' } })),
+        // PR-A 🔥 불꽃 (영웅 레벨업에만 씀): PR-B 재화 바 API는 없으니 같은 자리 모양 + ART-2 힉스필드 그림(못 읽으면 🔥)
+        h('span', { class: 'lobby-coin is-flame', attrs: { 'data-testid': 'lobby-flame', role: 'group', 'aria-label': `불꽃 ${t.flame}` } }, uiIcon('cur-flame', { className: 'lobby-coin-icon', fallback: '🔥' }), h('span', { class: 'lobby-flame-value', text: formatCompactNumber(t.flame), attrs: { 'aria-hidden': 'true' } })),
       ),
     );
   }
@@ -430,8 +432,8 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     });
   }
 
-  function rail(icon: DesignIcon, label: string, detail: string, action: string, onClick: () => void, count = 0): HTMLButtonElement {
-    const b = createButton({ label, variant: 'icon', icon, onClick });
+  function rail(icon: DesignIcon, art: UiIconId, label: string, detail: string, action: string, onClick: () => void, count = 0): HTMLButtonElement {
+    const b = createButton({ label, variant: 'icon', icon, iconArt: art, onClick });
     b.classList.add('lobby-side-btn');
     b.dataset.action = action;
     b.setAttribute('aria-label', `${label} · ${detail}${count > 0 ? ` · 받을 항목 ${count}개` : ''}`);
@@ -447,15 +449,15 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     const quests = claimableQuests(s, pd, progress.today());
     // 피드백 #76: 게이지 글자·빨간 점은 recruitDialogModel/recruitReady 한 곳 (여러 번 받을 수 있으면 그 수)
     const rm = recruitDialogModel(s, pd);
-    const recruit = rail('heroes', '영웅 모집', rm.progressText, 'recruit', () => openRecruit(), recruitReady(s, pd));
+    const recruit = rail('heroes', 'side-recruit', '영웅 모집', rm.progressText, 'recruit', () => openRecruit(), recruitReady(s, pd));
     recruit.querySelector('.lobby-rail-detail')?.setAttribute('data-testid', 'recruit-gauge');
     side.replaceChildren(
-      rail('quests', '퀘스트', '일일 · 업적', 'quests', () => openQuests(), quests),
+      rail('quests', 'side-quests', '퀘스트', '일일 · 업적', 'quests', () => openQuests(), quests),
       recruit,
     );
     sideR.replaceChildren(
-      rail('codex', GRADE_NAMES.hidden, '조각 수집', 'open-codex', () => select('codex'), codexReady(s, pd, data)),
-      rail('shop', '카드 상점', '골드 · 보석', 'open-shop', () => select('shop')),
+      rail('codex', 'nav-codex', GRADE_NAMES.hidden, '조각 수집', 'open-codex', () => select('codex'), codexReady(s, pd, data)),
+      rail('shop', 'nav-shop', '카드 상점', '골드 · 보석', 'open-shop', () => select('shop')),
     );
   }
 
@@ -473,13 +475,13 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   menuDlg.dialog.id = 'lobby-menu-dialog';
   menuDlg.dialog.addEventListener('close', () => { menuButton.setAttribute('aria-expanded', 'false'); if (!el.querySelector('dialog[open]')) menuButton.focus(); });
   const menuItems: HTMLElement[] = [];
-  function menuItem(icon: DesignIcon, label: string, action: string, onClick: () => void): void {
-    const button = createButton({ label, icon, variant: 'secondary', onClick: () => { menuDlg.dialog.close(); onClick(); } });
+  function menuItem(icon: DesignIcon, label: string, action: string, onClick: () => void, iconArt?: UiIconId): void {
+    const button = createButton({ label, icon, iconArt, variant: 'secondary', onClick: () => { menuDlg.dialog.close(); onClick(); } });
     button.dataset.action = action;
     button.setAttribute('aria-haspopup', 'dialog');
     menuItems.push(button);
   }
-  if (recordsDialog) menuItem('stats', '기록', 'records', () => recordsDialog.showModal());
+  if (recordsDialog) menuItem('stats', '기록', 'records', () => recordsDialog.showModal(), 'side-records');
   if (settingsDlg) menuItem('settings', '설정', 'settings', () => settingsDlg.dialog.showModal());
   if (opts.debug) {
     const debug = createButton({ label: '+재화', variant: 'pill', onClick: () => progress.devGrant() });
@@ -685,6 +687,11 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
 
   // ---------- 상점 탭 ----------
   const shopPanel = h('section', { class: 'lobby-panel lobby-shop', attrs: { 'data-panel': 'shop', 'aria-label': '상점' } });
+  /** ART-2 (피드백 #16): 상품 id → V2 아이콘. 표에 없는 새 상품은 데이터의 icon 이모지 그대로 */
+  const shopIcon = (id: string, glyph: string): HTMLElement => {
+    const icon = SHOP_ICONS[id];
+    return icon ? uiIcon(icon, { className: 'shop-icon', fallback: glyph }) : h('span', { class: 'shop-icon', text: glyph, attrs: { 'aria-hidden': 'true' } });
+  };
   function renderShop(): void {
     const s = progress.state;
     shopPanel.replaceChildren(
@@ -700,20 +707,24 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
           return h(
             'div',
             { class: 'shop-item', attrs: { 'data-item': it.id } },
-            artIcon(it.id as UiArt, it.icon, 'shop-icon'),
+            shopIcon(it.id, it.icon),
             h('span', { class: 'shop-text' }, h('strong', { text: it.name }), h('small', { text: it.desc })),
-            h('button', {
-              class: `btn ${afford ? 'btn-primary' : ''} shop-buy`,
-              text: gold !== undefined ? `💰 ${fmt(gold)}` : `💎 ${fmt(gems ?? 0)}`,
-              attrs: { type: 'button', 'data-testid': `shop-buy-${it.id}`, 'aria-label': `${it.name} 사기`, ...(afford ? {} : { disabled: '' }) },
-              on: {
-                click: () => {
-                  const r = progress.buy(it.id);
-                  if (typeof r === 'string') opts.toast(r === 'gold' ? '골드가 모자라요' : r === 'gems' ? '보석이 모자라요' : '살 수 없어요');
-                  else showGrant(it.name, r);
+            h(
+              'button',
+              {
+                class: `btn ${afford ? 'btn-primary' : ''} shop-buy`,
+                attrs: { type: 'button', 'data-testid': `shop-buy-${it.id}`, 'aria-label': `${it.name} 사기`, ...(afford ? {} : { disabled: '' }) },
+                on: {
+                  click: () => {
+                    const r = progress.buy(it.id);
+                    if (typeof r === 'string') opts.toast(r === 'gold' ? '골드가 모자라요' : r === 'gems' ? '보석이 모자라요' : '살 수 없어요');
+                    else showGrant(it.name, r);
+                  },
                 },
               },
-            }),
+              uiIcon(gold !== undefined ? 'cur-gold' : 'cur-gems'),
+              gold !== undefined ? fmt(gold) : fmt(gems ?? 0),
+            ),
           );
         }),
       ),
@@ -983,9 +994,11 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   const nav = h('nav', { class: 'lobby-nav', attrs: { 'aria-label': '로비 메뉴', 'data-testid': 'lobby-nav' } });
   const panels: Record<LobbyTab, HTMLElement> = { shop: shopPanel, heroes: heroesPanel, battle: battlePanel, codex: codexPanel, locked: lockedPanel };
 
-  function navIcon(icon: DesignIcon): HTMLElement {
-    const image = createIcon(icon);
-    const wrapper = h('span', { class: `lobby-nav-icon${icon === 'shop' ? ' ui-art-icon' : ''}`, attrs: { 'aria-hidden': 'true', ...(icon === 'shop' ? { 'data-art-icon': 'shop' } : {}) } }, image);
+  function navIcon(item: (typeof NAV)[LobbyTab], locked: boolean): HTMLElement {
+    // ART-2 힉스필드 그림이 기준, 못 읽으면 PR-B 벡터(createIcon의 대체 주소)
+    const image = createIcon(item.icon, { art: item.art });
+    const wrapper = h('span', { class: `lobby-nav-icon${locked ? ' is-locked' : ''}`, attrs: { 'aria-hidden': 'true' } }, image);
+    if (locked) wrapper.append(h('span', { class: 'lobby-nav-lock', text: '🔒' }));
     image.addEventListener('load', () => wrapper.classList.add('is-loaded'));
     image.addEventListener('error', () => wrapper.classList.remove('is-loaded'));
     return wrapper;
@@ -1004,15 +1017,16 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     nav.replaceChildren(
       ...LOBBY_TABS.map((id) => {
         const item = NAV[id];
-        const icon = item.icon;
+        // 캠페인 탭: 잠겨 있으면 회색 그림·자물쇠(.is-locked) · 그림을 못 읽으면 PR-B 벡터 그림
+        const locked = id === 'locked' && !campaignOpen;
         return h(
           'button',
           {
-            class: `lobby-nav-btn${tab === id ? ' is-on' : ''}${id === 'battle' ? ' is-main' : ''}`,
-            attrs: { type: 'button', 'data-tab': id, 'aria-current': tab === id ? 'page' : 'false', 'aria-label': `${item.label}${id === 'locked' && !campaignOpen ? ' · 잠김' : ''}${counts[id] > 0 ? ` · 받을 항목 ${counts[id]}개` : ''}` },
+            class: `lobby-nav-btn${tab === id ? ' is-on' : ''}${id === 'battle' ? ' is-main' : ''}${locked ? ' is-locked' : ''}`,
+            attrs: { type: 'button', 'data-tab': id, 'aria-current': tab === id ? 'page' : 'false', 'aria-label': `${item.label}${locked ? ' · 잠김' : ''}${counts[id] > 0 ? ` · 받을 항목 ${counts[id]}개` : ''}` },
             on: { click: () => select(id) },
           },
-          navIcon(icon),
+          navIcon(item, locked),
           h('span', { class: 'lobby-nav-label', text: item.label }),
           badge(counts[id]),
         );

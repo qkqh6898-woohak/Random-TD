@@ -24,18 +24,18 @@
  *   피드백 #26: 위 띠 아래 맵 오른쪽 위에 [⏫ 모두 승급 n] (승급할 무더기가 있을 때만, onMergeAll).
  *   피드백 #65: 승급 버튼은 이것 하나 — 한 번 누르면 전체 승급, 꾹 누르면 누르는 동안 새로 찬 무더기도 계속 (mergeAllHoldDelay).
  *   1줄 ⏸ 앞 [⚡ n] 필살기 칩 (찬 캐릭터가 있을 때만): 누르면 찬 캐릭터 목록 + [모두 발동] (onUlt·onUltAll).
+ * ART-2: 하단 메뉴·소환·일꾼·모두 승급·배속·⏸·돈 아이콘은 V2 힉스필드 그림(src/ui/uiIcons.ts) — 그림을 못 읽으면 같은 자리에 예전 이모지.
  * 값 계산은 hudModel.ts(순수 함수, 단위 테스트)에서 하고, 여기서는 바뀐 글자만 DOM에 쓴다.
  * HUD는 sim을 읽기만 한다. 배속은 화면 설정(TickClock), 돈 추가·단계 건너뛰기(debug)는 명령으로 보낸다.
  * 루트의 data-tick 속성 = 지금 틱 (E2E가 게임 시간이 흐르는지 볼 때 쓴다, 화면에는 안 보임).
  */
-import { WORKER_PORTRAIT, workerPortraitFallback } from '../../art/worker';
-import { artIcon } from '../artIcon';
 import { h } from '../dom';
 import { createButton, createIcon, createPopup, type DesignIcon } from '../design-system';
 import { HOLD_DELAY_MS, attachHoldRepeat, mergeAllHoldDelay, skipRepeatDelay, type HoldHandle } from '../hold';
 import type { UiView } from '../root';
 import { goldGainLabels, livesDropped, type HudModel } from './hudModel';
 import type { SheetKind } from '../sheets/sheetModels';
+import { uiIcon, type UiIconId } from '../uiIcons';
 
 /** 하트 깨짐 연출 길이 (ms) — styles.css `heart-break`와 같게 */
 export const HEART_BREAK_MS = 600;
@@ -45,6 +45,14 @@ export const GOLD_GAIN_MS = 700;
 export const GOLD_GAIN_MAX = 4;
 /** 꾹 누르는 동안 승급할 무더기가 없을 때 [⏫ 모두 승급] 글자 (피드백 #65) */
 const MERGE_ALL_HOLD_LABEL = '⏫ 모두 승급';
+/** ART-2: 하단 메뉴 종류 → V2 아이콘 (없는 종류 = 개발 [🛠]는 글자 그대로) */
+const MENU_ICONS: Partial<Record<SheetKind, UiIconId>> = {
+  mythic: 'hud-limited',
+  gamble: 'hud-gamble',
+  upgrade: 'hud-upgrade',
+  challenge: 'hud-challenge',
+  mission: 'hud-mission',
+};
 
 export interface HudOptions {
   onSpeed: () => void;
@@ -173,12 +181,18 @@ export function createHud(opts: HudOptions): HudView {
   const countBar = h('span', { class: 'hud-count-bar', attrs: { 'aria-hidden': 'true' } }, countFill);
   const countItem = h('span', { class: 'hud-item hud-count' }, countIcon, countBar, countEl);
   const goldEl = h('span', { class: 'hud-value hud-gold', attrs: { 'data-testid': 'hud-gold', ...off }, text: '0원' });
-  const speedBtn = h('button', {
-    class: 'btn btn-chip hud-speed',
-    attrs: { type: 'button', 'data-action': 'speed', 'aria-label': '배속' },
-    text: '×1',
-    on: { click: () => opts.onSpeed() },
-  });
+  // ART-2: [⏩ ×1] — 아이콘은 꾸밈, 글자(×n)는 따로 span (setText가 아이콘을 지우지 않게)
+  const speedText = h('span', { class: 'hud-speed-text', text: '×1' });
+  const speedBtn = h(
+    'button',
+    {
+      class: 'btn btn-chip hud-speed',
+      attrs: { type: 'button', 'data-action': 'speed', 'aria-label': '배속' },
+      on: { click: () => opts.onSpeed() },
+    },
+    uiIcon('ui-speed', { className: 'hud-speed-icon' }),
+    speedText,
+  );
   // G-1 필살기 칩 + 목록 (찬 캐릭터가 있을 때만)
   const ultChip = h('button', {
     class: 'btn btn-chip hud-ult',
@@ -187,11 +201,17 @@ export function createHud(opts: HudOptions): HudView {
   });
   // 피드백 #26: 맵 오른쪽 위 [⏫ 모두 승급 n] — 위 띠 아래에 떠 있어(absolute) 띠 높이·맵 위치를 바꾸지 않는다
   // 피드백 #65: 하나뿐인 승급 버튼. 짧게 = 한 번 모두 승급, 꾹 = 누르는 동안 되풀이
-  const mergeAllBtn = h('button', {
-    class: 'btn btn-chip hud-merge-all',
-    attrs: { type: 'button', 'data-action': 'merge-all-stacks', 'data-testid': 'hud-merge-all', hidden: '' },
-    text: '',
-  });
+  // ART-2: 아이콘(hud-merge) + 글자 span — 글자의 '⏫ '는 아이콘이 대신한다
+  const mergeAllLabel = h('span', { class: 'hud-merge-all-label', text: '' });
+  const mergeAllBtn = h(
+    'button',
+    {
+      class: 'btn btn-chip hud-merge-all',
+      attrs: { type: 'button', 'data-action': 'merge-all-stacks', 'data-testid': 'hud-merge-all', hidden: '' },
+    },
+    uiIcon('hud-merge', { className: 'hud-merge-icon' }),
+    mergeAllLabel,
+  );
   const mergeAllHold: HoldHandle | null = opts.onMergeAll
     ? attachHoldRepeat(mergeAllBtn, () => opts.onMergeAll?.() ?? false, { delay: mergeAllHoldDelay })
     : null;
@@ -204,12 +224,15 @@ export function createHud(opts: HudOptions): HudView {
     ultChip.classList.toggle('is-on', on);
   };
   ultChip.addEventListener('click', () => setUltOpen(!ultOpen));
-  const pauseBtn = h('button', {
-    class: 'btn btn-chip hud-pause',
-    attrs: { type: 'button', 'data-action': 'pause', 'aria-label': '일시정지' },
-    text: '⏸',
-    on: { click: () => opts.onPause() },
-  });
+  const pauseBtn = h(
+    'button',
+    {
+      class: 'btn btn-chip hud-pause',
+      attrs: { type: 'button', 'data-action': 'pause', 'aria-label': '일시정지' },
+      on: { click: () => opts.onPause() },
+    },
+    uiIcon('ui-pause', { className: 'hud-ctl-icon' }),
+  );
   // 개발자 전용 ⏭는 2줄(배속 옆)에 둔다: 1줄에 넣으면 보스 배지·세 자리 몹 수와 함께 넘쳐 ⏸가 잘린다
   // 누를 때마다 다음 단계가 바로 시작되고, 길게 누르면 초당 4번 (T-1)
   const skipBtn = opts.onSkipStage
@@ -245,7 +268,7 @@ export function createHud(opts: HudOptions): HudView {
   const bannerTime = h('span', { class: 'hud-banner-time', attrs: { 'data-testid': 'hud-boss-time', role: 'timer', 'aria-live': 'off' }, text: '' });
   // 일꾼 (2줄): 👷 3/10
   const workersEl = h('span', { class: 'hud-value', attrs: { 'data-testid': 'hud-workers', 'aria-label': '일꾼 수', ...off }, text: '0/0' });
-  const workersItem = h('span', { class: 'hud-item hud-workers' }, h('img', { class: 'hud-worker-art', attrs: { src: WORKER_PORTRAIT, alt: '', 'aria-hidden': 'true' }, on: { error: workerPortraitFallback } }), workersEl);
+  const workersItem = h('span', { class: 'hud-item hud-workers' }, uiIcon('hud-worker', { className: 'hud-worker-art' }), workersEl);
   const bannerEl = h('div', { class: 'hud-banner', attrs: { 'data-testid': 'hud-boss', hidden: '' } }, bannerFill, bannerText, bannerTime);
   // 도전 보스 막대 (M5): 보스 막대와 같은 자리
   const chalFill = h('div', { class: 'hud-banner-fill', attrs: { 'data-testid': 'hud-challenge-hp', 'aria-hidden': 'true' } });
@@ -271,7 +294,7 @@ export function createHud(opts: HudOptions): HudView {
   const goldItem = h(
     'span',
     { class: 'hud-item hud-gold-item' },
-    h('span', { class: 'hud-label', text: '💰', attrs: { 'aria-hidden': 'true' } }),
+    uiIcon('cur-gold', { className: 'hud-label hud-gold-icon' }),
     goldEl,
     gainLayer,
   );
@@ -289,7 +312,7 @@ export function createHud(opts: HudOptions): HudView {
       class: 'btn btn-chip hud-summon',
       attrs: { type: 'button', 'data-action': 'summon', 'data-testid': 'hud-summon', 'aria-label': '소환 (꾹 누르면 연속)' },
     },
-    artIcon('summon', '🎲', 'hud-summon-character'),
+    uiIcon('hud-summon', { className: 'hud-summon-character' }),
     h('span', { class: 'hud-summon-word', text: '소환' }),
     summonCost,
     summonPity,
@@ -301,7 +324,8 @@ export function createHud(opts: HudOptions): HudView {
     : null;
   if (!opts.onSummon) summonBtn.hidden = true;
   const hireLabel = h('span', { text: '' });
-  const hireArt = h('img', { class: 'hud-worker-art', attrs: { src: WORKER_PORTRAIT, alt: '', 'aria-hidden': 'true' }, on: { error: workerPortraitFallback } });
+  // ART-2 (피드백 #18): 일꾼 초상 대신 V2 아이콘 (광부 모자·곡괭이)
+  const hireArt = uiIcon('hud-worker', { className: 'hud-worker-art' });
   const hireBtn = h('button', {
     class: 'btn btn-chip hud-hire',
     attrs: { type: 'button', 'data-action': 'hire', 'data-testid': 'hud-hire', 'aria-label': '일꾼 고용' },
@@ -350,6 +374,12 @@ export function createHud(opts: HudOptions): HudView {
   );
   // 하단 메뉴 (M5, UI.md 4.1): 메뉴 이름 + 배지 두 줄
   const menuBtns = new Map<SheetKind, { btn: HTMLButtonElement; badge: HTMLElement }>();
+  // ART-2: 큰 칸은 캐릭터 크기 그림(hud-menu-character), 작은 둥근 버튼(도전·미션)은 버튼을 채우는 아이콘. 아이콘이 없는 종류(개발)는 글자
+  const menuIcon = (kind: SheetKind, glyph: string, mini: boolean): HTMLElement => {
+    const id = MENU_ICONS[kind];
+    if (!id) return h('span', { class: 'hud-menu-icon', text: glyph, attrs: { 'aria-hidden': 'true' } });
+    return uiIcon(id, { className: mini ? 'hud-menu-icon' : 'hud-menu-character', fallback: glyph });
+  };
   const menuItem = (kind: SheetKind, icon: string, label: string, mini = false): HTMLButtonElement => {
     const badge = h('span', { class: 'hud-menu-badge', attrs: { 'data-testid': `menu-badge-${kind}`, ...off } });
     const btn = h(
@@ -359,7 +389,7 @@ export function createHud(opts: HudOptions): HudView {
         attrs: { type: 'button', 'data-testid': `menu-${kind}`, 'data-action': `menu-${kind}`, 'aria-label': label },
         on: { click: () => opts.onMenu?.(kind) },
       },
-      h('span', { class: 'hud-menu-label' }, kind === 'mythic' || kind === 'gamble' || kind === 'upgrade' ? artIcon(kind, icon, 'hud-menu-character') : h('span', { class: 'hud-menu-icon', text: icon, attrs: { 'aria-hidden': 'true' } }), h('span', { class: 'hud-menu-word', text: label })),
+      h('span', { class: 'hud-menu-label' }, menuIcon(kind, icon, mini), h('span', { class: 'hud-menu-word', text: label })),
       badge,
     );
     menuBtns.set(kind, { btn, badge });
@@ -419,9 +449,13 @@ export function createHud(opts: HudOptions): HudView {
   window.addEventListener('pointerdown', dismissMenu);
   window.addEventListener('keydown', escapeMenu, true);
   bottomBand.append(menuWrap);
+  // PR-G V2 자리(크기 CSS .battle-v2 … .rtd-icon) + ART-2 힉스필드 그림 (못 읽으면 PR-B 벡터) — 사용자 결정 '아이콘은 힉스필드'
   pauseBtn.replaceChildren(createIcon('pause'));
-  goldItem.querySelector('.hud-label')?.replaceChildren(createIcon('battle-coin'));
-  for (const kind of ['challenge', 'mission', 'dev'] as const) menuBtns.get(kind)?.btn.querySelector('.hud-menu-icon')?.replaceChildren(createIcon(kind === 'challenge' ? 'battle' : kind === 'mission' ? 'mission' : 'settings'));
+  goldItem.querySelector('.hud-gold-icon')?.replaceWith(h('span', { class: 'hud-label', attrs: { 'aria-hidden': 'true' } }, createIcon('battle-coin', { art: 'cur-gold' })));
+  for (const kind of ['challenge', 'mission', 'dev'] as const) {
+    const icon = kind === 'challenge' ? createIcon('battle', { art: 'hud-challenge' }) : createIcon(kind === 'mission' ? 'mission' : 'settings');
+    menuBtns.get(kind)?.btn.querySelector('.hud-menu-icon')?.replaceWith(h('span', { class: 'hud-menu-icon', attrs: { 'aria-hidden': 'true' } }, icon));
+  }
   const dock = h('div', { class: 'hud-dock' }, sideBar, bottomBand, menuBar);
   const el = h('div', { class: 'hud-root hud-v2', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band, dock, stats.el);
 
@@ -551,7 +585,7 @@ export function createHud(opts: HudOptions): HudView {
         hintEl.classList.toggle('is-short', !m.summonAffordable);
         summonBtn.classList.toggle('is-off', !m.summonAffordable);
       }
-      setText(speedBtn, 'speed', m.speed);
+      setText(speedText, 'speed', m.speed);
       if (last.bossBanner !== m.bossBanner) {
         if (m.bossBanner) {
           bannerText.textContent = m.bossBanner;
@@ -676,8 +710,10 @@ export function createHud(opts: HudOptions): HudView {
     setMergeAll(text) {
       // 피드백 #65: 꾹 누르는 동안은 승급할 게 잠깐 없어도 버튼을 남긴다 (숨기면 손가락 아래에서 사라져 꾹 누르기가 끊긴다)
       const shown = text === '' && mergeAllHold?.active ? MERGE_ALL_HOLD_LABEL : text;
-      if (mergeAllBtn.textContent === shown) return;
-      mergeAllBtn.textContent = shown;
+      // ART-2: '⏫ '는 아이콘이 보여 준다 → 글자 span에는 나머지만 (모델 글자 mergeAllButton은 그대로)
+      const label = shown.replace(/^⏫\s*/, '');
+      if (mergeAllLabel.textContent === label && mergeAllBtn.hidden === (shown === '')) return;
+      mergeAllLabel.textContent = label;
       mergeAllBtn.setAttribute('aria-label', text === '' ? '모두 승급' : `모두 승급 (승급 가능 ${text.replace(/\D+/g, '')}칸)`);
       mergeAllBtn.hidden = shown === '';
     },

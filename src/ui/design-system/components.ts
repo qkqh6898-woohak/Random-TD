@@ -2,6 +2,7 @@ import type { Grade } from '../../data/load';
 import { GRADE_NAMES } from '../panels/towerPanelModel';
 import { h } from '../dom';
 import { createIcon, type DesignIcon } from './icons';
+import type { UiIconId } from '../uiIcons';
 import { formatCompactNumber } from './format';
 
 /** All state comes from the caller; no save, reward, affordability or unlock decisions here. */
@@ -15,6 +16,8 @@ export interface ButtonProps {
   label: string;
   variant?: 'primary' | 'secondary' | 'pill' | 'icon' | 'mode' | 'close';
   icon?: DesignIcon;
+  /** ART-2 힉스필드 그림을 따로 고를 때 (기본 = DESIGN_ICON_ART[icon], null = PR-B 벡터만) */
+  iconArt?: UiIconId | null;
   cost?: string;
   disabled?: boolean;
   notification?: boolean;
@@ -29,7 +32,7 @@ export function createButton(props: ButtonProps): HTMLButtonElement {
   button.disabled = props.disabled ?? false;
   button.classList.toggle('is-selected', props.selected ?? false);
   const icon = props.icon ?? (variant === 'close' ? 'close' : undefined);
-  button.append(h('span', { class: 'rtd-button-face' }, icon ? createIcon(icon) : null, h('span', { class: 'rtd-button-label', text: props.label })));
+  button.append(h('span', { class: 'rtd-button-face' }, icon ? createIcon(icon, { art: props.iconArt }) : null, h('span', { class: 'rtd-button-label', text: props.label })));
   if (props.cost !== undefined) button.append(h('span', { class: 'rtd-button-cost', text: props.cost }));
   if (props.selected && props.timer) button.append(h('span', { class: 'rtd-button-timer', text: props.timer }));
   if (props.notification) button.append(createNotificationDot(true));

@@ -254,7 +254,7 @@ test('모두 승급 (G-1 연쇄): 가득 찬 칸이 여럿이면 한 번에 이�
   }
   await page.waitForTimeout(200);
   expect(await inScene(page, (s) => ({ ...s.mapLayout }), null)).toEqual(layout0);
-  await expect(readyBtn).toHaveText(`⏫ 모두 승급 ${fulls.length}`);
+  await expect(readyBtn).toHaveText(`모두 승급 ${fulls.length}`); // ART-2: ⏫는 아이콘 그림 [data-icon="hud-merge"]
   // 한 번 누르면 패널 없이 가득 찬 무더기가 모두 승급
   await readyBtn.click();
   await expect.poll(async () => inScene(page, (s) => s.match.state.merges, null)).toBeGreaterThanOrEqual(fulls.length);

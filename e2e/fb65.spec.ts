@@ -71,7 +71,8 @@ test('아래 띠(일꾼 옆)에 승급 버튼이 없고, 오른쪽 위 [⏫ 모�
     [9, 'miner', 2],
   ]);
   await expect(btn).toBeVisible();
-  await expect(btn).toHaveText('⏫ 모두 승급 3');
+  await expect(btn.locator('[data-icon="hud-merge"]')).toBeVisible(); // ART-2: ⏫는 V2 아이콘 그림
+  await expect(btn).toHaveText('모두 승급 3');
   // 일꾼 옆(아래 띠)에는 승급 버튼이 없다 — 화면 전체에서 승급 HUD 버튼은 이것 하나
   await expect(page.getByTestId('hud-merge-ready')).toHaveCount(0);
   await expect(page.locator('.hud-bottom button', { hasText: /승급|⬆/ })).toHaveCount(0);
@@ -105,7 +106,7 @@ test('꾹 누르기: 누르는 동안 새로 가득 찬 무더기도 계속 승�
   // 누르고 있는 동안은 승급할 게 없어도 버튼이 남는다 (손가락 아래에서 사라지지 않게)
   await page.waitForTimeout(700);
   await expect(btn).toBeVisible();
-  await expect(btn).toHaveText('⏫ 모두 승급');
+  await expect(btn).toHaveText('모두 승급');
   // 누르고 있는 동안 새 무더기가 차면 또 승급
   await put(page, [
     [4, 'archer', 3],
@@ -118,7 +119,7 @@ test('꾹 누르기: 누르는 동안 새로 가득 찬 무더기도 계속 승�
   // 손을 뗀 뒤에는 새 무더기가 차도 저절로 승급하지 않는다
   const m2 = await inScene(page, (s) => s.match.state.merges, null);
   await put(page, [[12, 'goblin', 3]]);
-  await expect(btn).toHaveText('⏫ 모두 승급 1');
+  await expect(btn).toHaveText('모두 승급 1');
   await page.waitForTimeout(800);
   expect(await inScene(page, (s) => s.match.state.merges, null)).toBe(m2);
   expect(errors).toEqual([]);

@@ -1,4 +1,7 @@
-/** 고용 일꾼 전용 그림: 노란 안전모·파란 멜빵·공구 가방. 전투 타워와 분리. */
+/**
+ * 고용 일꾼 전용 그림: 노란 안전모·파란 멜빵·공구 가방. 전투 타워와 분리.
+ * ART-2: main의 HUD는 V2 아이콘 uiIcon('hud-worker')를 쓴다 — 이 초상·대체 SVG는 다른 갈래 호환용으로 남김 (주소는 같은 V2 아이콘).
+ */
 import { uiArtUrl } from './uiIcons';
 
 export const WORKER_PORTRAIT = uiArtUrl('worker');
