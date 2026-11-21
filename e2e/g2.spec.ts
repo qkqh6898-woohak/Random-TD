@@ -11,6 +11,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { clickStart } from './title';
+import { E2E_MATCH_SWITCHES_OFF } from './seed';
 
 type Stats = { active: number; shown: number; peak: number; portals: number; silhouettes: number; stars: number };
 type Pres = { pedestal: string; stars: string; emblem: string; shadow: string; pedestalScale: number };
@@ -52,7 +53,7 @@ async function sim<T, A = null>(page: Page, fn: (s: SceneLike, a: A) => T, arg: 
 }
 
 async function start(page: Page, query = '?debug=1&seed=42', settings: Record<string, unknown> = {}): Promise<void> {
-  await page.addInitScript((s) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false, ...s })), settings);
+  await page.addInitScript((s) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false, ...s })), { ...E2E_MATCH_SWITCHES_OFF, ...settings });
   await page.goto(`/${query}`);
   await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();

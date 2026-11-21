@@ -12,9 +12,17 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
+import { E2E_MATCH_SWITCHES_OFF, E2E_SETTINGS_SEED } from './seed';
 
 test.use({ storageState: { cookies: [], origins: [] } });
 test.describe.configure({ timeout: 180_000 });
+// 사용자 결정 FB-AD·Q: 빈 저장소면 새 판이 자동 승급(유니크 이하)·필살기 자동 켜짐으로 시작해 노말 무더기를 바로 승급한다 →
+// 이 파일은 손 승급 안내를 보므로 그 둘만 끈 설정(e2e/seed.ts)으로 시작한다 (계정은 여전히 새 계정)
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript((seed) => {
+    if (!localStorage.getItem('rtd.settings')) localStorage.setItem('rtd.settings', seed);
+  }, E2E_SETTINGS_SEED);
+});
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 
@@ -273,7 +281,7 @@ test('새 플레이어 (디버그 없이): 추천 칸 소환 → 준비 완료 �
 
 test('두 묶음이 함께 준비되면: 다른 묶음 타워를 누르면 안내가 옮겨 가고(바로 승급 안 함), 아래 띠에 승급 버튼 없음(피드백 #65) · 소환·일꾼 자리는 그대로 · [확인]로 닫기', async ({ page }) => {
   const errors = collectErrors(page);
-  await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true }))); // 피드백 #17: 바로 승급은 이제 기본 꺼짐 — 이 테스트는 켠 플레이어
+  await page.addInitScript((off) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true, ...off })), E2E_MATCH_SWITCHES_OFF); // 피드백 #17: 바로 승급은 이제 기본 꺼짐 — 이 테스트는 켠 플레이어
   await start(page, '?debug=1&seed=7');
   // 승급할 무더기가 없을 때의 [🎲 소환]·[👷 일꾼] 자리
   const summon = page.getByTestId('hud-summon');

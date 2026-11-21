@@ -6,6 +6,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
+import { E2E_MATCH_SWITCHES_OFF } from './seed';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 
@@ -218,7 +219,7 @@ test('제한 시간 패배: "박쥐 여왕을 90초 안에 잡지 못했어요 �
 test('연출 끄기(개발자)여도 예고·비행 글자는 그대로, 360px에서 넘치지 않음', async ({ page }) => {
   test.slow();
   await page.setViewportSize({ width: 360, height: 800 });
-  await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true, effectsOff: true })));
+  await page.addInitScript((off) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true, effectsOff: true, ...off })), E2E_MATCH_SWITCHES_OFF);
   const errors = collectErrors(page);
   await start(page, '?dev=1&seed=7');
   await expect(page.locator('#ui-root')).toHaveClass(/fx-off/);

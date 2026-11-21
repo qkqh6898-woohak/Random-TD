@@ -6,6 +6,8 @@
  * 피드백 #46: 설정 두 줄 '노말 자동 판매' · '레어 이하 자동 판매' (켜짐: 방금 소환된 그 등급 이하 타워를 Game이 바로 sellTower).
  * 피드백 #63: 설정 한 줄 '자동 승급' — [노말] [레어 이하] [유니크 이하] 중 하나 (다시 누르면 꺼짐). 켜면 그 등급 이하의 가득 찬 무더기를
  *   Game이 바로 mergeStack. 자동 판매와 겹치는 등급은 팔지 않고 승급한다.
+ * 사용자 결정 (FB-AD · Q): 자동 승급(유니크 이하)·필살기 자동은 새 판 기본 켜짐 → 자동 판매 줄 설명이 지금 자동 승급 등급을 따라
+ *   '팔지 않아요'를 알려 준다 (autoSellDesc — 자동 승급이 맡는 등급은 자동 판매가 팔지 않는다).
  * F10: [❔ 도움말 다시 보기] — 계정에 기록된 '본 도움말'(첫 승급 안내)을 지워, 다음에 승급할 수 있게 되면 다시 안내한다.
  * A-1 (Codex 갈래 M6-10·M6-11에서 옮김): '효과음 크기' 0~100% (5% 단위, 0 = 음소거) + [미리 듣기], '화면 흔들림' 켜짐/꺼짐 — 둘 다 기기에 저장.
  *   열 때 자동 저장했으면 아래 글을 '자동 저장했어요 · 로비에서 이어 할 수 있어요'로.
@@ -21,7 +23,7 @@ import { h } from '../dom';
 import type { UiView } from '../root';
 import { feedbackButton, type FeedbackDialogView } from './FeedbackDialog';
 import { gradeGuideButton, type GradeGuideDialogView } from './GradeGuideDialog';
-import type { AutoMergeGrade } from '../../meta/settings';
+import { DEFAULT_SETTINGS, autoMergeRank, autoSellGrade, type AutoMergeGrade, type MatchSettingGroupId, type Settings } from '../../meta/settings';
 
 export interface PauseMenuOptions {
   onResume: () => void;
@@ -76,6 +78,32 @@ export function fancyEffectsOn(effectsOff: boolean): boolean {
 /** '✨ 화려한 효과' 스위치 켜짐 여부 → 저장값 effectsOff (결정 M) */
 export function effectsOffFromSwitch(on: boolean): boolean {
   return !on;
+}
+
+/** 사용자 결정 R: 로비 설정 '새 판을 시작하면 기본값으로' 체크 박스 이름 — '(기본 …)'은 DEFAULT_SETTINGS에서 만든다. */
+export const MATCH_RESET_NAMES: Readonly<Record<MatchSettingGroupId, string>> = { ult: '필살기 자동', autoSell: '자동 판매', autoMerge: '자동 승급' };
+
+/** 그 묶음의 기본값 글자 ('켜짐' · '꺼짐' · '노말' · '레어 이하' · '유니크 이하') */
+export function matchDefaultText(id: MatchSettingGroupId, d: Readonly<Settings> = DEFAULT_SETTINGS): string {
+  if (id === 'ult') return d.ultAuto ? '켜짐' : '꺼짐';
+  if (id === 'autoSell') {
+    const g = autoSellGrade(d);
+    return g === null ? '꺼짐' : g === 'rare' ? '레어 이하' : '노말';
+  }
+  const r = autoMergeRank(d);
+  return r === 0 ? '꺼짐' : (AUTO_MERGE_OPTIONS[r - 1]?.label ?? '꺼짐');
+}
+
+/** 체크 박스 글자: '필살기 자동 (기본 켜짐)' */
+export function matchResetLabel(id: MatchSettingGroupId, d: Readonly<Settings> = DEFAULT_SETTINGS): string {
+  return `${MATCH_RESET_NAMES[id]} (기본 ${matchDefaultText(id, d)})`;
+}
+
+/** 사용자 결정 (FB-AD) 자동 판매 줄 설명: 자동 승급이 맡는 등급은 팔지 않는다 (settings.autoSellMinRank와 같은 규칙). */
+export function autoSellDesc(kind: 'normal' | 'rare', merge: AutoMergeGrade | null): string {
+  if (kind === 'normal') return merge === null ? '소환된 노말을 바로 팔아요' : '자동 승급 중이라 노말은 팔지 않아요';
+  if (merge === null) return '소환된 노말·레어를 바로 팔아요';
+  return merge === 'normal' ? '소환된 레어만 팔아요 · 노말은 자동 승급' : '자동 승급 중이라 팔지 않아요';
 }
 
 /** 볼륨 글자 ('음소거' · '40%') */
@@ -203,17 +231,27 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
   const ultRow = opts.ultAuto !== undefined ? switchRow('필살기 자동', '필살기가 차면 바로 써요', opts.ultAuto, 'pause-ult-auto', (v) => opts.onUltAuto?.(v)) : null;
   const sellNormalRow =
     opts.autoSellNormal !== undefined
-      ? switchRow('노말 자동 판매', '소환된 노말을 바로 팔아요', opts.autoSellNormal, 'pause-auto-sell-normal', (v) => opts.onAutoSellNormal?.(v))
+      ? switchRow('노말 자동 판매', autoSellDesc('normal', opts.autoMerge ?? null), opts.autoSellNormal, 'pause-auto-sell-normal', (v) => opts.onAutoSellNormal?.(v))
       : null;
   const sellRareRow =
     opts.autoSellRare !== undefined
-      ? switchRow('레어 이하 자동 판매', '소환된 노말·레어를 바로 팔아요', opts.autoSellRare, 'pause-auto-sell-rare', (v) => opts.onAutoSellRare?.(v))
+      ? switchRow('레어 이하 자동 판매', autoSellDesc('rare', opts.autoMerge ?? null), opts.autoSellRare, 'pause-auto-sell-rare', (v) => opts.onAutoSellRare?.(v))
       : null;
   const effectsRow =
     opts.effectsOff !== undefined
       ? switchRow(EFFECTS_LABEL, EFFECTS_DESC, fancyEffectsOn(opts.effectsOff), 'pause-effects-off', (on) => opts.onEffectsOff?.(effectsOffFromSwitch(on)))
       : null;
-  const mergeRow = opts.autoMerge !== undefined ? autoMergeRow(opts.autoMerge, (g) => opts.onAutoMerge?.(g)) : null;
+  const mergeRow =
+    opts.autoMerge !== undefined
+      ? autoMergeRow(opts.autoMerge, (g) => {
+          // 자동 판매 줄 설명도 새 자동 승급 등급에 맞춘다 (FB-AD)
+          const n = sellNormalRow?.querySelector('.pause-setting-desc');
+          const r = sellRareRow?.querySelector('.pause-setting-desc');
+          if (n) n.textContent = autoSellDesc('normal', g);
+          if (r) r.textContent = autoSellDesc('rare', g);
+          opts.onAutoMerge?.(g);
+        })
+      : null;
   const volume = opts.effectVolume !== undefined ? volumeRow(opts, opts.effectVolume) : null;
   const shakeRow =
     opts.screenShake !== undefined ? switchRow('화면 흔들림', '보스·큰 승급 때 화면을 흔들어요', opts.screenShake, 'pause-screen-shake', (v) => opts.onScreenShake?.(v)) : null;

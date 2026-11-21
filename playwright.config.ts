@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test';
+import { E2E_ACCOUNT_SEED, E2E_SETTINGS_SEED } from './e2e/seed';
 
 // 구현 에이전트는 5173, 리뷰 에이전트는 E2E_PORT=5181~5189를 쓴다 (CLAUDE.md 5장).
 const port = Number(process.env.E2E_PORT ?? 5173);
@@ -27,9 +28,18 @@ export default defineConfig({
     locale: 'ko-KR',
     // F10: 기존 스펙은 '첫 승급 안내를 이미 본 계정'으로 시작한다 (안내 카드·탭 결과 칸 바꾸기가 예전 흐름을 바꾸지 않게).
     // 새 플레이어 흐름은 e2e/f10.spec.ts가 빈 저장소로(test.use storageState 비움) 확인한다.
+    // 사용자 결정 FB-AD·Q·R: 기존 스펙은 '자동 승급·필살기 자동이 꺼진 판'으로 시작한다 (e2e/seed.ts). 켜진 기본값은 e2e/fb-auto-defaults.spec.ts.
     storageState: {
       cookies: [],
-      origins: [{ origin: baseURL, localStorage: [{ name: 'rtd.account', value: JSON.stringify({ v: 1, level: 1, hidden: [], guides: ['firstMerge'] }) }] }],
+      origins: [
+        {
+          origin: baseURL,
+          localStorage: [
+            { name: 'rtd.account', value: E2E_ACCOUNT_SEED },
+            { name: 'rtd.settings', value: E2E_SETTINGS_SEED },
+          ],
+        },
+      ],
     },
     trace: 'off',
     screenshot: 'off',

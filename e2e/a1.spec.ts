@@ -9,6 +9,7 @@
  * 스크린샷 (SAVE_SCREENS=1): docs/screens/A1-title.png · A1-records.png · A1-pause.png · A1-dice.png (412×915, deviceScaleFactor 1).
  */
 import { expect, test, type Page } from '@playwright/test';
+import { E2E_MATCH_SWITCHES_OFF, E2E_SETTINGS_SEED } from './seed';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 
@@ -450,7 +451,7 @@ test.describe('A-1 화면 흔들림·소환 연출', () => {
   });
 
   test('?dev=1 연출 끄기면 초상 카드도 없다', async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true, effectsOff: true, revealHidden: false })));
+    await page.addInitScript((off) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true, effectsOff: true, revealHidden: false, ...off })), E2E_MATCH_SWITCHES_OFF);
     await openTitle(page, '?dev=1&seed=42');
     await page.getByRole('button', { name: '시작' }).click();
     await waitGame(page);
@@ -463,6 +464,12 @@ test.describe('A-1 화면 흔들림·소환 연출', () => {
 
 test.describe('A-1b 뒤로 가기: 장면 넘어가는 중·첫 승급 안내', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
+  // 사용자 결정 FB-AD·Q: 손 승급 안내를 보므로 자동 승급·필살기 자동만 끈 설정으로 (계정은 새 계정)
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript((seed) => {
+      if (!localStorage.getItem('rtd.settings')) localStorage.setItem('rtd.settings', seed);
+    }, E2E_SETTINGS_SEED);
+  });
 
   test('[시작] 직후(타이틀 → 전투 넘어가는 중) 뒤로 가기는 삼키고, 첫 승급 안내 카드는 일시정지보다 먼저 닫힌다', async ({ page }) => {
     test.slow();

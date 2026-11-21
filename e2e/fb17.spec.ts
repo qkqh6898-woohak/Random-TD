@@ -5,6 +5,7 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 import { clickStart } from './title';
+import { E2E_MATCH_SWITCHES_OFF } from './seed';
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -94,7 +95,7 @@ async function fullStack(page: Page): Promise<[number, number]> {
 
 for (const [name, settings] of [
   ['새 플레이어(설정 없음)', null],
-  ['예전 v1 저장값(바로 승급 켜짐)', JSON.stringify({ v: 1, tapMerge: true })],
+  ['예전 v1 저장값(바로 승급 켜짐)', JSON.stringify({ v: 1, tapMerge: true, ...E2E_MATCH_SWITCHES_OFF })],
 ] as const) {
   test(`#17 ${name}: 가득 찬 무더기를 누르면 승급하지 않고 정보창 → [⬆ 승급]으로 승급`, async ({ page }) => {
     const errors = collectErrors(page);

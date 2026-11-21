@@ -6,6 +6,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { clickStart } from './title';
+import { E2E_MATCH_SWITCHES_OFF } from './seed';
 
 const TAG = process.env.G2_SHOT ?? 'after';
 const DIR = 'docs/screens';
@@ -22,7 +23,7 @@ async function shot(page: Page, name: string) {
   await page.screenshot({ path: `${DIR}/G2-${TAG}-${name}.png` });
 }
 async function start(page: Page) {
-  await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false })));
+  await page.addInitScript((off) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false, ...off })), E2E_MATCH_SWITCHES_OFF);
   await page.goto('/?debug=1&seed=42');
   await page.waitForTimeout(1500);
   await shot(page, 'title');

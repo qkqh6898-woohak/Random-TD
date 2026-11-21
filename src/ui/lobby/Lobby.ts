@@ -27,7 +27,8 @@ import type { ProgressStore } from '../../meta/progressStore';
 import { achievementQuests, claimableQuests, dailyBonusReady, dailyQuests, modeUnlocked, type Grant, type QuestView } from '../../meta/progress';
 import { createRecordsDialog, type BattleRecordsView } from '../screens/BattleRecordsDialog';
 import { feedbackButton, type FeedbackDialogView } from '../screens/FeedbackDialog';
-import { EFFECTS_LABEL, effectsOffFromSwitch, fancyEffectsOn } from '../screens/PauseMenu';
+import { EFFECTS_LABEL, effectsOffFromSwitch, fancyEffectsOn, matchResetLabel } from '../screens/PauseMenu';
+import { MATCH_SETTING_GROUPS, type MatchSettingGroupId } from '../../meta/settings';
 import {
   fragmentRows,
   grantLine,
@@ -70,6 +71,9 @@ export interface LobbySettings {
   onEffectsOff?: (off: boolean) => void;
   /** 💬 피드백 보내기 창 (FB-1) — 설정 창에 [💬 피드백 보내기] 버튼, 창은 로비 끝에 붙인다 */
   feedback?: FeedbackDialogView;
+  /** 사용자 결정 R: '새 판을 시작하면 기본값으로' 묶음별 체크 (true = 새 판마다 기본값). 없으면 칸도 없다 */
+  matchReset?: Readonly<Record<MatchSettingGroupId, boolean>>;
+  onMatchReset?: (id: MatchSettingGroupId, on: boolean) => void;
 }
 
 export interface LobbyOptions {
@@ -120,6 +124,28 @@ function dialogShell(id: string, title: string, testid: string, ...body: (Node |
     if (ev.target === dialog) dialog.close();
   });
   return { dialog, body: content, title: titleEl };
+}
+
+/** 사용자 결정 R 체크 박스 testid */
+const MATCH_RESET_TESTID: Readonly<Record<MatchSettingGroupId, string>> = { ult: 'lobby-reset-ult', autoSell: 'lobby-reset-autosell', autoMerge: 'lobby-reset-automerge' };
+
+/**
+ * 사용자 결정 R: '새 판을 시작하면 기본값으로' — 판 안 스위치 묶음(필살기 자동 · 자동 판매 · 자동 승급)마다 진짜 체크 박스.
+ * 체크 = 새 판마다 기본값(피드백 #62 동작), 해제 = 지난 판에서 고른 값이 다음 새 판에도 남는다. 줄 전체가 눌리는 곳(44px 이상).
+ */
+function matchResetBox(initial: Readonly<Record<MatchSettingGroupId, boolean>>, onChange: (id: MatchSettingGroupId, on: boolean) => void): HTMLElement {
+  return h(
+    'fieldset',
+    { class: 'lobby-reset', attrs: { 'data-testid': 'lobby-match-reset' } },
+    h('legend', { class: 'lobby-reset-title', text: '새 판을 시작하면 기본값으로' }),
+    ...MATCH_SETTING_GROUPS.map((g) => {
+      const box = h('input', { attrs: { type: 'checkbox', 'data-testid': MATCH_RESET_TESTID[g.id] } });
+      box.checked = initial[g.id];
+      box.addEventListener('change', () => onChange(g.id, box.checked));
+      return h('label', { class: 'lobby-reset-row' }, box, h('span', { text: matchResetLabel(g.id) }));
+    }),
+    h('p', { class: 'lobby-reset-note', text: '끄면 지난 판에서 고른 값이 다음 판에도 남아요' }),
+  );
 }
 
 function badge(n: number): HTMLElement | null {
@@ -892,6 +918,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       toggle('눌러서 바로 승급', st.tapMerge, 'lobby-tap-merge', st.onTapMerge),
       // 결정 M: '✨ 화려한 효과' 켜짐 = 효과 보임 = effectsOff false
       ...(st.effectsOff !== undefined ? [toggle(EFFECTS_LABEL, fancyEffectsOn(st.effectsOff), 'lobby-effects-off', (on) => st.onEffectsOff?.(effectsOffFromSwitch(on)))] : []),
+      ...(st.matchReset ? [matchResetBox(st.matchReset, (id, on) => st.onMatchReset?.(id, on))] : []),
       ...(st.feedback ? [feedbackButton(st.feedback, 'lobby-feedback')] : []),
       h('p', { class: 'lobby-note', text: `버전 ${opts.version} · 저장은 이 기기에만 있어요.` }),
     );

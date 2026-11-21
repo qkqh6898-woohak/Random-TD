@@ -1359,3 +1359,45 @@
     animation: none;
   }
 }
+
+/* 사용자 결정 R: 설정 창 '새 판을 시작하면 기본값으로' 체크 박스 (줄 전체가 눌리는 곳, 44px 이상) */
+.lobby-reset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6cqw;
+  margin: 0;
+  padding: 1.6cqw 3cqw 2cqw;
+  border: 0.3cqw solid var(--panel-line);
+  border-radius: 2.4cqw;
+  min-width: 0;
+}
+
+.lobby-reset-title {
+  padding: 0 1.4cqw;
+  font-size: 3.6cqw;
+  font-weight: 800;
+}
+
+.lobby-reset-row {
+  display: flex;
+  align-items: center;
+  gap: 2.6cqw;
+  min-height: 44px;
+  font-size: 3.6cqw;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lobby-reset-row input {
+  flex: 0 0 auto;
+  width: max(5.6cqw, 22px);
+  height: max(5.6cqw, 22px);
+  margin: 0;
+  accent-color: var(--gold, #f5c84b);
+}
+
+.lobby-reset-note {
+  margin: 0;
+  font-size: 3cqw;
+  color: var(--text-dim);
+}
