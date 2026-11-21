@@ -27,7 +27,7 @@ import type { ProgressStore } from '../../meta/progressStore';
 import { achievementQuests, claimableQuests, dailyBonusReady, dailyQuests, modeUnlocked, type Grant, type QuestView } from '../../meta/progress';
 import { createRecordsDialog, type BattleRecordsView } from '../screens/BattleRecordsDialog';
 import { feedbackButton, type FeedbackDialogView } from '../screens/FeedbackDialog';
-import { EFFECTS_OFF_LABEL } from '../screens/PauseMenu';
+import { EFFECTS_LABEL, effectsOffFromSwitch, fancyEffectsOn } from '../screens/PauseMenu';
 import {
   fragmentRows,
   grantLine,
@@ -65,9 +65,9 @@ export interface LobbySettings {
   onScreenShake: (on: boolean) => void;
   tapMerge: boolean;
   onTapMerge: (on: boolean) => void;
-  /** 피드백 #75 '✨ 효과 끄기' (일시정지 메뉴와 같은 계정 설정). 없으면 줄도 없다 */
+  /** 피드백 #75 저장값 effectsOff (일시정지 메뉴와 같은 계정 설정). 화면 스위치 '✨ 화려한 효과'는 반대로 보인다 (결정 M). 없으면 줄도 없다 */
   effectsOff?: boolean;
-  onEffectsOff?: (on: boolean) => void;
+  onEffectsOff?: (off: boolean) => void;
   /** 💬 피드백 보내기 창 (FB-1) — 설정 창에 [💬 피드백 보내기] 버튼, 창은 로비 끝에 붙인다 */
   feedback?: FeedbackDialogView;
 }
@@ -890,7 +890,8 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       h('div', { class: 'lobby-setting' }, h('span', {}, '효과음 크기 ', volText), vol),
       toggle('화면 흔들림', st.screenShake, 'lobby-shake', st.onScreenShake),
       toggle('눌러서 바로 승급', st.tapMerge, 'lobby-tap-merge', st.onTapMerge),
-      ...(st.effectsOff !== undefined ? [toggle(EFFECTS_OFF_LABEL, st.effectsOff, 'lobby-effects-off', (v) => st.onEffectsOff?.(v))] : []),
+      // 결정 M: '✨ 화려한 효과' 켜짐 = 효과 보임 = effectsOff false
+      ...(st.effectsOff !== undefined ? [toggle(EFFECTS_LABEL, fancyEffectsOn(st.effectsOff), 'lobby-effects-off', (on) => st.onEffectsOff?.(effectsOffFromSwitch(on)))] : []),
       ...(st.feedback ? [feedbackButton(st.feedback, 'lobby-feedback')] : []),
       h('p', { class: 'lobby-note', text: `버전 ${opts.version} · 저장은 이 기기에만 있어요.` }),
     );

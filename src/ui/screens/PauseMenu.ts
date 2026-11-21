@@ -11,7 +11,8 @@
  *   열 때 자동 저장했으면 아래 글을 '자동 저장했어요 · 로비에서 이어 할 수 있어요'로.
  * 피드백 #24: [📘 등급·조합 설명] — 등급 순서(색·별)와 승급·리미티드 조합 방법 창(<dialog>, GradeGuideDialog).
  * FB-1: [💬 피드백 보내기] — 피드백 창(<dialog>, 판 기록 첨부 기본 켜짐)은 메뉴 화면에 붙는다.
- * 피드백 #75: 설정 '✨ 효과 끄기' (켜짐: 보스 컷인·소환/승급/대박 반짝임·화면 흔들림·피해 숫자·입자를 끈다, 정보는 그대로).
+ * 피드백 #75: 설정 '✨ 화려한 효과' (꺼짐: 보스 컷인·소환/승급/대박 반짝임·화면 흔들림·피해 숫자·입자를 끈다, 정보는 그대로).
+ *   결정 M: 처음 이름 '✨ 효과 끄기: 켜짐'이 이중 부정이라 화면 이름만 뒤집었다 — 스위치 켜짐 = 효과 보임 = 저장값 effectsOff false.
  *   예전엔 개발자 도구에만 있던 '연출 끄기'와 같은 계정 설정(effectsOff)이라 새 판에도 그대로 남는다. 저장은 Game 장면이 한다.
  *   메뉴가 한 화면을 넘지 않게 '화면 흔들림'과 한 줄에 반씩 놓는다 (자동 판매 줄 바로 아래).
  * 메뉴가 열려 있는 동안 게임 시간은 멈춘다 (Game 장면이 TickClock 배속을 0으로).
@@ -39,9 +40,9 @@ export interface PauseMenuOptions {
   /** 피드백 #63 '자동 승급' 지금 기준 등급 (null = 꺼짐)과 바꿀 때. undefined면 줄도 없다 */
   autoMerge?: AutoMergeGrade | null;
   onAutoMerge?: (grade: AutoMergeGrade | null) => void;
-  /** 피드백 #75 '✨ 효과 끄기' 지금 값과 바꿀 때. 없으면 줄도 없다 */
+  /** 피드백 #75 저장값 effectsOff (true = 효과 끔)와 바꿀 때. 화면 스위치 '✨ 화려한 효과'는 이 값의 반대로 보인다 (결정 M). 없으면 줄도 없다 */
   effectsOff?: boolean;
-  onEffectsOff?: (on: boolean) => void;
+  onEffectsOff?: (off: boolean) => void;
   /** [❔ 도움말 다시 보기] (F10). 없으면 버튼도 없다 */
   onHelpAgain?: () => void;
   /** 메뉴를 열며 자동 저장했다 (A-1) */
@@ -59,9 +60,23 @@ export interface PauseMenuOptions {
   gradeGuide?: GradeGuideDialogView;
 }
 
-/** 피드백 #75 '✨ 효과 끄기' 이름·설명 (일시정지 메뉴·로비 설정 같은 글자) */
-export const EFFECTS_OFF_LABEL = '✨ 효과 끄기';
-export const EFFECTS_OFF_DESC = '컷인·반짝임·흔들림·피해 숫자를 꺼요 (정보는 그대로)';
+/**
+ * 피드백 #75 '✨ 화려한 효과' 이름·설명 (일시정지 메뉴·로비 설정 같은 글자).
+ * 결정 M: 스위치는 '효과가 보이는가'를 보여 준다 — 켜짐 = 효과 보임(저장값 effectsOff false, 기본), 꺼짐 = 효과 끔(effectsOff true).
+ * 저장 키·기본값·형식은 그대로라 화면에서만 뒤집는다 (fancyEffectsOn / effectsOffFromSwitch).
+ */
+export const EFFECTS_LABEL = '✨ 화려한 효과';
+export const EFFECTS_DESC = '컷인·반짝임·흔들림·피해 숫자 (꺼도 정보는 그대로)';
+
+/** 저장값 effectsOff → '✨ 화려한 효과' 스위치 켜짐 여부 (결정 M) */
+export function fancyEffectsOn(effectsOff: boolean): boolean {
+  return !effectsOff;
+}
+
+/** '✨ 화려한 효과' 스위치 켜짐 여부 → 저장값 effectsOff (결정 M) */
+export function effectsOffFromSwitch(on: boolean): boolean {
+  return !on;
+}
 
 /** 볼륨 글자 ('음소거' · '40%') */
 export function volumeText(volume: number): string {
@@ -195,7 +210,9 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
       ? switchRow('레어 이하 자동 판매', '소환된 노말·레어를 바로 팔아요', opts.autoSellRare, 'pause-auto-sell-rare', (v) => opts.onAutoSellRare?.(v))
       : null;
   const effectsRow =
-    opts.effectsOff !== undefined ? switchRow(EFFECTS_OFF_LABEL, EFFECTS_OFF_DESC, opts.effectsOff, 'pause-effects-off', (v) => opts.onEffectsOff?.(v)) : null;
+    opts.effectsOff !== undefined
+      ? switchRow(EFFECTS_LABEL, EFFECTS_DESC, fancyEffectsOn(opts.effectsOff), 'pause-effects-off', (on) => opts.onEffectsOff?.(effectsOffFromSwitch(on)))
+      : null;
   const mergeRow = opts.autoMerge !== undefined ? autoMergeRow(opts.autoMerge, (g) => opts.onAutoMerge?.(g)) : null;
   const volume = opts.effectVolume !== undefined ? volumeRow(opts, opts.effectVolume) : null;
   const shakeRow =
@@ -227,7 +244,7 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
       ultRow,
       sellNormalRow,
       sellRareRow,
-      // 피드백 #75: '화면 흔들림'과 '✨ 효과 끄기'는 한 줄에 반씩 (412×915에서 메뉴 전체가 한 화면에 남게 — 설명 글은 숨김)
+      // 피드백 #75: '화면 흔들림'과 '✨ 화려한 효과'는 한 줄에 반씩 (412×915에서 메뉴 전체가 한 화면에 남게 — 설명 글은 숨김)
       shakeRow && effectsRow ? h('div', { class: 'pause-setting-pair', attrs: { 'data-testid': 'pause-fx-pair' } }, shakeRow, effectsRow) : (shakeRow ?? effectsRow),
       volume,
       help,

@@ -1,7 +1,8 @@
 /**
  * 피드백 #75 '이펙트 끄기 버튼 / 효과 끄기 버튼' + #76 '영웅모집 보상받고 창 안닫히게 · 10배 한번에 받기'.
  *
- * #75: 개발자 도구에만 있던 '연출 끄기'(effectsOff)를 일반 설정 '✨ 효과 끄기'로 — 계정 설정(rtd.settings v2) 그대로, 새 판에도 남는다.
+ * #75: 개발자 도구에만 있던 '연출 끄기'(effectsOff)를 일반 설정으로 — 계정 설정(rtd.settings v2) 그대로, 새 판에도 남는다.
+ *      결정 M: 화면 이름은 '✨ 화려한 효과' (켜짐 = 효과 보임 = effectsOff false). 저장값은 그대로 effectsOff.
  * #76: 모집 게이지는 목표를 넘어 쌓인다 → 받을 수 있는 횟수 = ⌊게이지 / goal⌋. [10번 한 번에 받기]는 그중 최대 multiClaim번을
  *      한 번 받기(claimRecruit)를 되풀이해 받고(같은 난수 순서), 보상을 합쳐 한 번 저장한다.
  */
@@ -14,6 +15,7 @@ import { DEFAULT_SETTINGS, MATCH_SETTING_KEYS, SETTINGS_KEY, createSettingsStore
 import { MemoryStorage } from '../../src/save/storage';
 import { effectsOff, onEffectsChange, saveEffectsOff, setEffectsOff } from '../../src/view/effects';
 import { grantView, recruitDialogModel, recruitReady, recruitResultText } from '../../src/ui/lobby/lobbyModel';
+import { EFFECTS_DESC, EFFECTS_LABEL, effectsOffFromSwitch, fancyEffectsOn } from '../../src/ui/screens/PauseMenu';
 import progressionJson from '../../src/data/progression.json';
 
 const data = loadGameData();
@@ -26,7 +28,19 @@ const fresh = (recruit = 0): ProgressState => {
 };
 const cardSum = (g: Grant): number => g.cards.reduce((a, c) => a + c.n, 0);
 
-describe('피드백 #75 ✨ 효과 끄기 (계정 설정 effectsOff)', () => {
+describe('피드백 #75 효과 끔 (계정 설정 effectsOff, 화면 이름 ✨ 화려한 효과)', () => {
+  it("결정 M: 화면 이름 '✨ 화려한 효과' — 이중 부정 없음, 스위치 켜짐 = 효과 보임 = effectsOff false (기본은 켜짐으로 보인다)", () => {
+    expect(EFFECTS_LABEL).toBe('✨ 화려한 효과');
+    expect(EFFECTS_LABEL).not.toContain('끄기');
+    expect(EFFECTS_DESC).not.toContain('꺼요');
+    expect(fancyEffectsOn(DEFAULT_SETTINGS.effectsOff)).toBe(true);
+    expect(fancyEffectsOn(false)).toBe(true);
+    expect(fancyEffectsOn(true)).toBe(false);
+    expect(effectsOffFromSwitch(true)).toBe(false);
+    expect(effectsOffFromSwitch(false)).toBe(true);
+    for (const off of [false, true]) expect(effectsOffFromSwitch(fancyEffectsOn(off))).toBe(off);
+  });
+
   it('기본 꺼짐(효과 켜짐) · 키가 없는 v1·v2 저장값도 꺼짐 · 저장된 켜짐은 그대로 읽힌다 (형식 v2 그대로, 지우지 않음)', () => {
     expect(DEFAULT_SETTINGS.effectsOff).toBe(false);
     expect(parseSettings(null).effectsOff).toBe(false);

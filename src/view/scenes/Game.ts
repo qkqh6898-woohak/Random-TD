@@ -2516,9 +2516,9 @@ export class GameScene extends Phaser.Scene {
         onAutoSellNormal: (on) => this.ctx.settings.set('autoSellNormal', on),
         autoSellRare: this.ctx.settings.get().autoSellRare,
         onAutoSellRare: (on) => this.ctx.settings.set('autoSellRare', on),
-        // 피드백 #75: ✨ 효과 끄기 (계정 설정 — 새 판에도 남는다, 개발자 도구 '연출 끄기'와 같은 값)
+        // 피드백 #75: ✨ 화려한 효과 (저장값 effectsOff, 결정 M) (계정 설정 — 새 판에도 남는다, 개발자 도구 '연출 끄기'와 같은 값)
         effectsOff: effectsOff(),
-        onEffectsOff: (on) => saveEffectsOff(this.ctx.settings, on),
+        onEffectsOff: (off) => saveEffectsOff(this.ctx.settings, off),
         autoMerge: (['normal', 'rare', 'unique'] as const)[autoMergeRank(this.ctx.settings.get()) - 1] ?? null,
         onAutoMerge: (grade: AutoMergeGrade | null) => {
           const c = autoMergeChoice(grade);
