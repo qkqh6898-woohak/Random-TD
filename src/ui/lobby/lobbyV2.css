@@ -135,3 +135,7 @@
 @container (max-width: 360px) {
   .lobby-v2 .lobby-wallet .rtd-currency-value, .lobby-v2 .lobby-flame-value { font-size: 14px; }
 }
+/* V2-R21 (PR-D 검토 🟡): 잠긴 캠페인 탭은 회색 그림 + 작은 자물쇠로 잠김이 보이게 (aria-label에도 '· 잠김') */
+.lobby-v2 .lobby-nav-icon { position: relative; }
+.lobby-v2 .lobby-nav-icon.is-locked .rtd-icon { filter: grayscale(1) brightness(.8); opacity: .75; }
+.lobby-v2 .lobby-nav-lock { position: absolute; right: -6px; bottom: -4px; font-size: 16px; line-height: 1; filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)); pointer-events: none; }
