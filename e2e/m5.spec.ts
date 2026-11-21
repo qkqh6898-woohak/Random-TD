@@ -162,10 +162,26 @@ test('바텀 시트: 하단 메뉴 → 55%, 손잡이를 끌어 85%, 게임은 �
   await expect(page.getByTestId('menu-challenge')).toBeVisible();
   await expect(page.getByTestId('menu-badge-challenge')).toHaveText('1 가능');
   await expect(page.getByTestId('menu-badge-upgrade')).toHaveText('Lv 0');
+  // v0.1.22: 도전 시트는 맵 높이의 절반까지로 줄었다 (바로 아래 검사 · 320px 60%는 e2e/v22-screens) → 55%·85% 일반 시트 동작은 미션 시트로 본다
   await page.getByTestId('menu-challenge').click();
-  const sheet = page.getByTestId('sheet-challenge');
+  await expect(page.getByTestId('sheet-challenge')).toBeVisible();
+  {
+    const fieldH = await page.evaluate(() => {
+      const s = (window as any).__rtd.game.scene.getScene('Game'), L = s.mapLayout, k = document.getElementById('stage')!.getBoundingClientRect().width / 1080;
+      return s.match.map.height * L.tile * k;
+    });
+    await page.waitForTimeout(300);
+    const ch = (await page.getByTestId('sheet-challenge').boundingBox())!;
+    expect(ch.height).toBeLessThanOrEqual(fieldH * 0.5 + 1);
+    const menu0 = (await page.locator('.hud-menu').boundingBox())!;
+    expect(Math.abs(ch.y + ch.height - menu0.y)).toBeLessThan(2);
+  }
+  await page.getByTestId('menu-challenge').click();
+  await expect(page.getByTestId('sheet-challenge')).toHaveCount(0);
+  await page.getByTestId('menu-mission').click();
+  const sheet = page.getByTestId('sheet-mission');
   await expect(sheet).toBeVisible();
-  await expect(page.getByTestId('menu-challenge')).toHaveClass(/is-on/);
+  await expect(page.getByTestId('menu-mission')).toHaveClass(/is-on/);
   const st = await stageBox(page);
   await page.waitForTimeout(300);
   let box = (await sheet.boundingBox())!;
@@ -202,7 +218,7 @@ test('바텀 시트: 하단 메뉴 → 55%, 손잡이를 끌어 85%, 게임은 �
   // 다른 메뉴 → 그 시트로 바뀜, 같은 메뉴 → 닫힘
   await page.getByTestId('menu-upgrade').click();
   await expect(page.getByTestId('sheet-upgrade')).toBeVisible();
-  await expect(page.getByTestId('sheet-challenge')).toHaveCount(0);
+  await expect(page.getByTestId('sheet-mission')).toHaveCount(0);
   await page.getByTestId('menu-upgrade').click();
   await expect(page.getByTestId('sheet-upgrade')).toHaveCount(0);
   expect(await inScene(page, (s) => s.sheetOpen, null)).toBeNull();
@@ -224,10 +240,11 @@ test('바텀 시트: 하단 메뉴 → 55%, 손잡이를 끌어 85%, 게임은 �
   expect(halfToast.y + halfToast.height).toBeLessThan(halfSheet.y);
   await page.getByTestId('sheet-close').click();
   // 맵 터치로 닫기: 시트 위쪽 맵 칸을 눌러도 소환되지 않고 시트만 닫힌다
+  const chSheet = page.getByTestId('sheet-challenge');
   await page.getByTestId('menu-challenge').click();
-  await expect(sheet).toBeVisible();
+  await expect(chSheet).toBeVisible();
   await tapTile(page, 3, 1);
-  await expect(sheet).toHaveCount(0);
+  await expect(chSheet).toHaveCount(0);
   expect(await inScene(page, (s) => s.match.towers().length, null)).toBe(0);
   await expect(page.getByTestId('menu-challenge')).not.toHaveClass(/is-on/);
   expect(errors).toEqual([]);

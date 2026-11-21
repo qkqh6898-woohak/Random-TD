@@ -491,25 +491,31 @@ test('일반 주소: 개발자 UI 없음 ([🛠 개발]·[🛠 변환]·⏭), �
   await expect(page.getByTestId('tp-sell')).toHaveText('💰 판매 +11원'); // V2.0 PR-A: 1번 소환 뒤 비용 24원 → 노말 상한 ⌊23/2⌋
   await expect(page.locator('[data-action="convert"]')).toHaveCount(0);
   await shot(page, 'T2-play-panel');
-  // 패널 버튼(승급·이동·판매)이 412px 안에 들어간다 — 접기 2단계부터는 두 줄이 한 줄로 합쳐져 줄 상자(.tp-actions-2)가 없다(display: contents)
-  //   (HF-3: 캐릭터 설명 두 줄이 생겨 패널이 길어졌으므로 맵 가운데 칸 타워는 합친 한 줄일 수 있다 → 버튼마다 잰다)
-  for (const sel of ['[data-action="merge"]', '[data-action="merge-all"]', '[data-action="move"]', '[data-testid="tp-sell"]']) {
+  // 패널 버튼(승급·이동·판매·닫기)이 412px 안에 들어간다 · 터치 44px
+  //   v0.1.22 B①: 버튼은 모두 머리줄 한 줄 [⬆ 승급] [↔ 이동] [판매] [✕] — 예전 [⬆⬆ 모두 승급] 버튼은 [⬆ 승급] 꾹 누르기가 됐다
+  //   (data-action="merge-all"은 화면 읽기·키보드용으로 숨겨 남김 → 상자 검사 대신 붙어 있고 숨었는지 본다)
+  for (const sel of ['[data-action="merge"]', '[data-action="move"]', '[data-testid="tp-sell"]', '[data-action="panel-close"]']) {
     const r = await page.locator(sel).boundingBox();
     expect(r, sel).not.toBeNull();
     expect(r!.x + r!.width, sel).toBeLessThanOrEqual(412);
     expect(r!.height, sel).toBeGreaterThanOrEqual(44);
   }
-  // 피드백 #30: 판매는 머리 줄(초상·이름 줄) 안 작은 칩 — 승급·이동 버튼보다 위, [↔ 이동]보다 좁고, 승급 버튼 줄에는 없다
+  await expect(page.locator('[data-action="merge-all"]')).toHaveCount(1);
+  await expect(page.locator('[data-action="merge-all"]')).toHaveClass(/tp-sr/);
+  // 피드백 #30: 판매는 머리 줄(초상·이름 줄) 안 작은 칩 · v0.1.22: 승급·이동 오른쪽, ✕ 왼쪽 (같은 줄), 아래 버튼 줄은 없다
   await expect(page.locator('.tp-head [data-testid="tp-sell"]')).toBeVisible();
-  await expect(page.locator('.tp-act-wrap [data-testid="tp-sell"]')).toHaveCount(0);
+  await expect(page.locator('.tp-act-wrap, .tp-actions')).toHaveCount(0);
   // v0.1.14 통합: 화면 전체에 판매 버튼은 이 하나뿐 (FB-D1 #30 머리 줄 — PR #51 칸 위 [✕ 판매]는 뺐다)
   await expect(page.locator('[data-action="sell"]:visible, [data-testid="tq-sell"]')).toHaveCount(1);
   const sellBox = (await page.getByTestId('tp-sell').boundingBox())!;
   const mergeBox = (await page.locator('[data-action="merge"]').boundingBox())!;
+  const moveBox = (await page.locator('[data-action="move"]').boundingBox())!;
   const closeBox = (await page.locator('[data-action="panel-close"]').boundingBox())!;
-  expect(sellBox.y + sellBox.height).toBeLessThanOrEqual(mergeBox.y);
-  expect(sellBox.width).toBeLessThan(mergeBox.width);
+  expect(mergeBox.x + mergeBox.width).toBeLessThanOrEqual(moveBox.x + 0.5);
+  expect(moveBox.x + moveBox.width).toBeLessThanOrEqual(sellBox.x + 0.5);
   expect(sellBox.x + sellBox.width).toBeLessThanOrEqual(closeBox.x);
+  for (const b of [mergeBox, moveBox, closeBox]) expect(Math.abs(b.y - sellBox.y)).toBeLessThan(2);
+  expect(sellBox.width).toBeLessThan(mergeBox.width);
   expect(await page.getByTestId('tp-sell').evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
   // 히든 미션은 ??? 그대로 (저장값이 있어도 개발자 모드가 아니면 쓰지 않음)
   await page.locator('[data-action="panel-close"]').click();
