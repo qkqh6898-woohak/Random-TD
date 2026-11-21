@@ -25,6 +25,7 @@ import { createButton, createGradeCard, createNumberBadge, createPopup, createUp
 import { availableSpeeds, nextSpeed } from '../hud/speed';
 import './lobbyV2.css';
 import './heroesV2.css';
+import './detailsV2.css';
 import { heroCollectionSummary } from './heroCollectionModel';
 import { artIcon } from '../artIcon';
 import type { UiArt } from '../../art/uiIcons';
@@ -111,10 +112,12 @@ const NAV: Record<LobbyTab, { icon: DesignIcon; label: string }> = {
 const fmt = (n: number): string => n.toLocaleString('ko-KR');
 
 function dialogShell(id: string, title: string, testid: string, ...body: (Node | null)[]): { dialog: HTMLDialogElement; body: HTMLElement; title: HTMLElement } {
-  const close = h('button', { class: 'btn lobby-close', text: '닫기', attrs: { type: 'button', 'data-testid': `${testid}-close` } });
+  const close = createButton({ label: '닫기', variant: 'close', icon: 'close' });
+  close.classList.add('lobby-close');
+  close.dataset.testid = `${testid}-close`;
   const titleEl = h('h2', { attrs: { id }, text: title });
   const content = h('div', { class: 'lobby-dialog-body' }, ...body);
-  const dialog = h('dialog', { class: 'title-dialog lobby-dialog', attrs: { 'aria-labelledby': id, 'data-testid': testid } }, h('header', { class: 'lobby-dialog-head' }, titleEl, close), content);
+  const dialog = h('dialog', { class: 'rtd-v2 title-dialog lobby-dialog lobby-popup-v2', attrs: { 'aria-labelledby': id, 'data-testid': testid } }, h('header', { class: 'lobby-dialog-head' }, titleEl, close), content);
   close.addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', (ev) => {
     if (ev.target === dialog) dialog.close();
