@@ -7,6 +7,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { clickStart } from './title';
+import { E2E_MATCH_SWITCHES_OFF } from './seed';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 test.describe.configure({ timeout: 150_000 });
@@ -202,7 +203,7 @@ test('마당 맵: 6×8 가운데 4×6 마당 24칸 + 둘레 고리, 24칸을 유
 
 test('칸 무더기: 가득 찬 칸을 누르면 연쇄 승급 (알림 ×n) · 패널 이름 ×n · 끌어서 무더기 통째 이동', async ({ page }) => {
   const errors = collectErrors(page);
-  await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true }))); // 피드백 #17: 바로 승급은 이제 기본 꺼짐 — 이 테스트는 켠 플레이어
+  await page.addInitScript((off) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true, ...off })), E2E_MATCH_SWITCHES_OFF); // 피드백 #17: 바로 승급은 이제 기본 꺼짐 — 이 테스트는 켠 플레이어
   await start(page);
   const pads = await inScene(page, (s) => s.match.map.buildable, null);
   const [a, b, c] = [pads[10]!, pads[11]!, pads[16]!];

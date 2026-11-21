@@ -358,3 +358,64 @@ test('G-3 g. 뒤로 가기: 열린 창 → [전투] 탭 → 처리 안 함(앱 �
   expect(await back(page)).toBe(true);
   await expect(page.locator('[data-screen="title"]')).toHaveAttribute('data-tab', 'battle');
 });
+
+test('피드백 #76 영웅 모집: 보상을 받아도 창이 열려 있고, [10번 한 번에 받기]로 여러 번을 한 번에', async ({ page }) => {
+  const errors = collectErrors(page);
+  await openLobby(page);
+  // 게이지가 목표를 넘어 쌓인 계정: 30 × 3 + 5 = 받을 수 있는 모집 3번
+  await patchProgress(page, 'p.recruit = 95;');
+  const gems0 = (await progress(page)).gems;
+  await expect(page.getByTestId('recruit-gauge')).toHaveText('30/30');
+  await expect(page.locator('[data-action="recruit"] .lobby-badge')).toBeVisible();
+  await page.locator('[data-action="recruit"]').click();
+  const dlg = page.getByTestId('recruit-dialog');
+  await expect(dlg).toBeVisible();
+  await expect(page.getByTestId('recruit-count')).toHaveText('받을 수 있는 모집 3번');
+  await expect(page.getByTestId('recruit-claim')).toBeEnabled();
+  await expect(page.getByTestId('recruit-claim-10')).toHaveText('10번 한 번에 받기 (가능 3)');
+  await expect(page.getByTestId('recruit-claim-10')).toBeEnabled();
+
+  // 한 번 받기: 창은 그대로, 받은 것은 창 안 '방금 받은 보상'에, 횟수·버튼이 그 자리에서 바뀐다 (받은 창은 따로 뜨지 않음)
+  await page.getByTestId('recruit-claim').click();
+  await expect(dlg).toBeVisible();
+  await expect(page.getByTestId('grant-dialog')).toBeHidden();
+  await expect(page.getByTestId('recruit-result-line')).toHaveText('영웅 카드 ×5 · 💎 +10');
+  await expect(page.getByTestId('recruit-result').locator('.grant-card')).not.toHaveCount(0);
+  await expect(page.getByTestId('recruit-count')).toHaveText('받을 수 있는 모집 2번');
+  await expect(page.getByTestId('recruit-claim-10')).toHaveText('10번 한 번에 받기 (가능 2)');
+  expect((await progress(page)).gems).toBe(gems0 + 10);
+
+  // 10번 한 번에 받기 → 남은 2번을 한 번에 (합친 요약), 창은 그대로, 버튼은 모두 꺼짐, 빨간 점도 사라짐
+  await page.getByTestId('recruit-claim-10').click();
+  await expect(dlg).toBeVisible();
+  await expect(page.getByTestId('recruit-result-line')).toHaveText('모집 2번 · 영웅 카드 ×10 · 💎 +20');
+  await expect(page.getByTestId('recruit-count')).toHaveText('받을 수 있는 모집이 없어요');
+  await expect(page.getByTestId('recruit-progress')).toHaveText('5/30');
+  await expect(page.getByTestId('recruit-claim')).toBeDisabled();
+  await expect(page.getByTestId('recruit-claim')).toHaveText('게이지를 채워 주세요');
+  await expect(page.getByTestId('recruit-claim-10')).toBeDisabled();
+  await expect(page.getByTestId('recruit-claim-10')).toHaveText('10번 한 번에 받기 (가능 0)');
+  const after = await progress(page);
+  expect(after.gems).toBe(gems0 + 30);
+  expect((after as unknown as { recruit: number }).recruit).toBe(5);
+
+  // 닫기로만 닫힌다 → 옆 버튼 게이지·빨간 점이 같은 규칙으로
+  await page.getByTestId('recruit-dialog-close').click();
+  await expect(dlg).toBeHidden();
+  await expect(page.getByTestId('recruit-gauge')).toHaveText('5/30');
+  await expect(page.locator('[data-action="recruit"] .lobby-badge')).toHaveCount(0);
+
+  // 15번 쌓인 계정: 10번만 받고 5번 남음
+  await patchProgress(page, 'p.recruit = 450;');
+  await page.locator('[data-action="recruit"]').click();
+  await expect(page.getByTestId('recruit-claim-10')).toHaveText('10번 한 번에 받기 (가능 15)');
+  await page.getByTestId('recruit-claim-10').click();
+  await expect(page.getByTestId('recruit-result-line')).toHaveText('모집 10번 · 영웅 카드 ×50 · 💎 +100');
+  await expect(page.getByTestId('recruit-count')).toHaveText('받을 수 있는 모집 5번');
+  await expect(page.getByTestId('recruit-claim-10')).toHaveText('10번 한 번에 받기 (가능 5)');
+  // 바깥(배경) 누르기·Esc로도 닫힌다
+  await page.keyboard.press('Escape');
+  await expect(dlg).toBeHidden();
+  await expect(page.locator('[data-action="recruit"] .lobby-badge')).toBeVisible();
+  expect(errors).toEqual([]);
+});

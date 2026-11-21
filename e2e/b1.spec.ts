@@ -14,6 +14,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { clickStart } from './title';
+import { E2E_MATCH_SWITCHES_OFF } from './seed';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 /** towerGeom: 발밑 ~ 머리 끝(대기 동작 여유 포함) = 1.136칸 × 크기 배수, 발밑 = 칸 중심 + 0.3칸, 받침대 아래 = +0.475칸 */
@@ -69,7 +70,7 @@ async function shot(page: Page, name: string): Promise<void> {
 
 /** 이 파일은 정보 패널을 본다 → '눌러서 바로 승급'을 끄고 시작 (같은 타워 셋을 눌러도 승급되지 않게). */
 async function start(page: Page, query = '?debug=1&seed=42', settings: Record<string, unknown> = {}): Promise<void> {
-  await page.addInitScript((s) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false, ...s })), settings);
+  await page.addInitScript((s) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false, ...s })), { ...E2E_MATCH_SWITCHES_OFF, ...settings });
   await page.goto(`/${query}`);
   await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();

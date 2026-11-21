@@ -6,18 +6,24 @@
  * 피드백 #46: 설정 두 줄 '노말 자동 판매' · '레어 이하 자동 판매' (켜짐: 방금 소환된 그 등급 이하 타워를 Game이 바로 sellTower).
  * 피드백 #63: 설정 한 줄 '자동 승급' — [노말] [레어 이하] [유니크 이하] 중 하나 (다시 누르면 꺼짐). 켜면 그 등급 이하의 가득 찬 무더기를
  *   Game이 바로 mergeStack. 자동 판매와 겹치는 등급은 팔지 않고 승급한다.
+ * 사용자 결정 (FB-AD · Q): 자동 승급(유니크 이하)·필살기 자동은 새 판 기본 켜짐 → 자동 판매 줄 설명이 지금 자동 승급 등급을 따라
+ *   '팔지 않아요'를 알려 준다 (autoSellDesc — 자동 승급이 맡는 등급은 자동 판매가 팔지 않는다).
  * F10: [❔ 도움말 다시 보기] — 계정에 기록된 '본 도움말'(첫 승급 안내)을 지워, 다음에 승급할 수 있게 되면 다시 안내한다.
  * A-1 (Codex 갈래 M6-10·M6-11에서 옮김): '효과음 크기' 0~100% (5% 단위, 0 = 음소거) + [미리 듣기], '화면 흔들림' 켜짐/꺼짐 — 둘 다 기기에 저장.
  *   열 때 자동 저장했으면 아래 글을 '자동 저장했어요 · 로비에서 이어 할 수 있어요'로.
  * 피드백 #24: [📘 등급·조합 설명] — 등급 순서(색·별)와 승급·리미티드 조합 방법 창(<dialog>, GradeGuideDialog).
  * FB-1: [💬 피드백 보내기] — 피드백 창(<dialog>, 판 기록 첨부 기본 켜짐)은 메뉴 화면에 붙는다.
+ * 피드백 #75: 설정 '✨ 화려한 효과' (꺼짐: 보스 컷인·소환/승급/대박 반짝임·화면 흔들림·피해 숫자·입자를 끈다, 정보는 그대로).
+ *   결정 M: 처음 이름 '✨ 효과 끄기: 켜짐'이 이중 부정이라 화면 이름만 뒤집었다 — 스위치 켜짐 = 효과 보임 = 저장값 effectsOff false.
+ *   예전엔 개발자 도구에만 있던 '연출 끄기'와 같은 계정 설정(effectsOff)이라 새 판에도 그대로 남는다. 저장은 Game 장면이 한다.
+ *   메뉴가 한 화면을 넘지 않게 '화면 흔들림'과 한 줄에 반씩 놓는다 (자동 판매 줄 바로 아래).
  * 메뉴가 열려 있는 동안 게임 시간은 멈춘다 (Game 장면이 TickClock 배속을 0으로).
  */
 import { h } from '../dom';
 import type { UiView } from '../root';
 import { feedbackButton, type FeedbackDialogView } from './FeedbackDialog';
 import { gradeGuideButton, type GradeGuideDialogView } from './GradeGuideDialog';
-import type { AutoMergeGrade } from '../../meta/settings';
+import { DEFAULT_SETTINGS, autoMergeRank, autoSellGrade, type AutoMergeGrade, type MatchSettingGroupId, type Settings } from '../../meta/settings';
 
 export interface PauseMenuOptions {
   onResume: () => void;
@@ -36,6 +42,9 @@ export interface PauseMenuOptions {
   /** 피드백 #63 '자동 승급' 지금 기준 등급 (null = 꺼짐)과 바꿀 때. undefined면 줄도 없다 */
   autoMerge?: AutoMergeGrade | null;
   onAutoMerge?: (grade: AutoMergeGrade | null) => void;
+  /** 피드백 #75 저장값 effectsOff (true = 효과 끔)와 바꿀 때. 화면 스위치 '✨ 화려한 효과'는 이 값의 반대로 보인다 (결정 M). 없으면 줄도 없다 */
+  effectsOff?: boolean;
+  onEffectsOff?: (off: boolean) => void;
   /** [❔ 도움말 다시 보기] (F10). 없으면 버튼도 없다 */
   onHelpAgain?: () => void;
   /** 메뉴를 열며 자동 저장했다 (A-1) */
@@ -51,6 +60,50 @@ export interface PauseMenuOptions {
   feedback?: FeedbackDialogView;
   /** 📘 등급·조합 설명 창 (피드백 #24). 없으면 버튼도 없다 */
   gradeGuide?: GradeGuideDialogView;
+}
+
+/**
+ * 피드백 #75 '✨ 화려한 효과' 이름·설명 (일시정지 메뉴·로비 설정 같은 글자).
+ * 결정 M: 스위치는 '효과가 보이는가'를 보여 준다 — 켜짐 = 효과 보임(저장값 effectsOff false, 기본), 꺼짐 = 효과 끔(effectsOff true).
+ * 저장 키·기본값·형식은 그대로라 화면에서만 뒤집는다 (fancyEffectsOn / effectsOffFromSwitch).
+ */
+export const EFFECTS_LABEL = '✨ 화려한 효과';
+export const EFFECTS_DESC = '컷인·반짝임·흔들림·피해 숫자 (꺼도 정보는 그대로)';
+
+/** 저장값 effectsOff → '✨ 화려한 효과' 스위치 켜짐 여부 (결정 M) */
+export function fancyEffectsOn(effectsOff: boolean): boolean {
+  return !effectsOff;
+}
+
+/** '✨ 화려한 효과' 스위치 켜짐 여부 → 저장값 effectsOff (결정 M) */
+export function effectsOffFromSwitch(on: boolean): boolean {
+  return !on;
+}
+
+/** 사용자 결정 R: 로비 설정 '새 판을 시작하면 기본값으로' 체크 박스 이름 — '(기본 …)'은 DEFAULT_SETTINGS에서 만든다. */
+export const MATCH_RESET_NAMES: Readonly<Record<MatchSettingGroupId, string>> = { ult: '필살기 자동', autoSell: '자동 판매', autoMerge: '자동 승급' };
+
+/** 그 묶음의 기본값 글자 ('켜짐' · '꺼짐' · '노말' · '레어 이하' · '유니크 이하') */
+export function matchDefaultText(id: MatchSettingGroupId, d: Readonly<Settings> = DEFAULT_SETTINGS): string {
+  if (id === 'ult') return d.ultAuto ? '켜짐' : '꺼짐';
+  if (id === 'autoSell') {
+    const g = autoSellGrade(d);
+    return g === null ? '꺼짐' : g === 'rare' ? '레어 이하' : '노말';
+  }
+  const r = autoMergeRank(d);
+  return r === 0 ? '꺼짐' : (AUTO_MERGE_OPTIONS[r - 1]?.label ?? '꺼짐');
+}
+
+/** 체크 박스 글자: '필살기 자동 (기본 켜짐)' */
+export function matchResetLabel(id: MatchSettingGroupId, d: Readonly<Settings> = DEFAULT_SETTINGS): string {
+  return `${MATCH_RESET_NAMES[id]} (기본 ${matchDefaultText(id, d)})`;
+}
+
+/** 사용자 결정 (FB-AD) 자동 판매 줄 설명: 자동 승급이 맡는 등급은 팔지 않는다 (settings.autoSellMinRank와 같은 규칙). */
+export function autoSellDesc(kind: 'normal' | 'rare', merge: AutoMergeGrade | null): string {
+  if (kind === 'normal') return merge === null ? '소환된 노말을 바로 팔아요' : '자동 승급 중이라 노말은 팔지 않아요';
+  if (merge === null) return '소환된 노말·레어를 바로 팔아요';
+  return merge === 'normal' ? '소환된 레어만 팔아요 · 노말은 자동 승급' : '자동 승급 중이라 팔지 않아요';
 }
 
 /** 볼륨 글자 ('음소거' · '40%') */
@@ -178,13 +231,27 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
   const ultRow = opts.ultAuto !== undefined ? switchRow('필살기 자동', '필살기가 차면 바로 써요', opts.ultAuto, 'pause-ult-auto', (v) => opts.onUltAuto?.(v)) : null;
   const sellNormalRow =
     opts.autoSellNormal !== undefined
-      ? switchRow('노말 자동 판매', '소환된 노말을 바로 팔아요', opts.autoSellNormal, 'pause-auto-sell-normal', (v) => opts.onAutoSellNormal?.(v))
+      ? switchRow('노말 자동 판매', autoSellDesc('normal', opts.autoMerge ?? null), opts.autoSellNormal, 'pause-auto-sell-normal', (v) => opts.onAutoSellNormal?.(v))
       : null;
   const sellRareRow =
     opts.autoSellRare !== undefined
-      ? switchRow('레어 이하 자동 판매', '소환된 노말·레어를 바로 팔아요', opts.autoSellRare, 'pause-auto-sell-rare', (v) => opts.onAutoSellRare?.(v))
+      ? switchRow('레어 이하 자동 판매', autoSellDesc('rare', opts.autoMerge ?? null), opts.autoSellRare, 'pause-auto-sell-rare', (v) => opts.onAutoSellRare?.(v))
       : null;
-  const mergeRow = opts.autoMerge !== undefined ? autoMergeRow(opts.autoMerge, (g) => opts.onAutoMerge?.(g)) : null;
+  const effectsRow =
+    opts.effectsOff !== undefined
+      ? switchRow(EFFECTS_LABEL, EFFECTS_DESC, fancyEffectsOn(opts.effectsOff), 'pause-effects-off', (on) => opts.onEffectsOff?.(effectsOffFromSwitch(on)))
+      : null;
+  const mergeRow =
+    opts.autoMerge !== undefined
+      ? autoMergeRow(opts.autoMerge, (g) => {
+          // 자동 판매 줄 설명도 새 자동 승급 등급에 맞춘다 (FB-AD)
+          const n = sellNormalRow?.querySelector('.pause-setting-desc');
+          const r = sellRareRow?.querySelector('.pause-setting-desc');
+          if (n) n.textContent = autoSellDesc('normal', g);
+          if (r) r.textContent = autoSellDesc('rare', g);
+          opts.onAutoMerge?.(g);
+        })
+      : null;
   const volume = opts.effectVolume !== undefined ? volumeRow(opts, opts.effectVolume) : null;
   const shakeRow =
     opts.screenShake !== undefined ? switchRow('화면 흔들림', '보스·큰 승급 때 화면을 흔들어요', opts.screenShake, 'pause-screen-shake', (v) => opts.onScreenShake?.(v)) : null;
@@ -215,8 +282,9 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
       ultRow,
       sellNormalRow,
       sellRareRow,
+      // 피드백 #75: '화면 흔들림'과 '✨ 화려한 효과'는 한 줄에 반씩 (412×915에서 메뉴 전체가 한 화면에 남게 — 설명 글은 숨김)
+      shakeRow && effectsRow ? h('div', { class: 'pause-setting-pair', attrs: { 'data-testid': 'pause-fx-pair' } }, shakeRow, effectsRow) : (shakeRow ?? effectsRow),
       volume,
-      shakeRow,
       help,
       opts.gradeGuide ? gradeGuideButton(opts.gradeGuide) : null,
       opts.feedback ? feedbackButton(opts.feedback, 'pause-feedback') : null,

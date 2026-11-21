@@ -8,6 +8,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { clickStart } from './title';
+import { E2E_MATCH_SWITCHES_OFF } from './seed';
 
 test.skip(process.env.SAVE_SCREENS !== '1', 'SAVE_SCREENS=1일 때만');
 test.describe.configure({ timeout: 150_000 });
@@ -41,7 +42,7 @@ async function shot(page: Page, name: string): Promise<void> {
 
 async function startWithStacks(page: Page): Promise<[number, number][]> {
   // 눌러서 바로 승급을 끈다 → 가득 찬 무더기를 눌러도 패널이 열린다
-  await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false })));
+  await page.addInitScript((off) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false, ...off })), E2E_MATCH_SWITCHES_OFF);
   await page.goto('/?dev=1&seed=42');
   await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();

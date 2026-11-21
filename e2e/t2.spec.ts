@@ -7,6 +7,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
+import { E2E_MATCH_SWITCHES_OFF } from './seed';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 test.describe.configure({ timeout: 150_000 });
@@ -138,7 +139,7 @@ async function shot(page: Page, name: string): Promise<void> {
 
 test('눌러서 바로 승급: 승급 가능한 타워를 누르면 패널 없이 그 칸에서 승급, 못 하면 패널, 설정을 끄면 패널', async ({ page }) => {
   const errors = collectErrors(page);
-  await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true }))); // 피드백 #17: 바로 승급은 이제 기본 꺼짐 — 이 테스트는 켠 플레이어
+  await page.addInitScript((off) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true, ...off })), E2E_MATCH_SWITCHES_OFF); // 피드백 #17: 바로 승급은 이제 기본 꺼짐 — 이 테스트는 켠 플레이어
   await start(page);
   const normals = await idsOfGrade(page, 'normal');
   const cells = await freeCells(page, 4);
@@ -471,13 +472,14 @@ test('🛠 개발자 도구: 연출 끄기(피해 숫자 없음·저장), 확률
   expect(errors).toEqual([]);
 });
 
-test('일반 주소: 개발자 UI 없음 ([🛠 개발]·[🛠 변환]·⏭), 판매·이동·[🎲 소환]은 있음, 저장된 연출 끄기도 쓰지 않음', async ({ page }) => {
+test('일반 주소: 개발자 UI 없음 ([🛠 개발]·[🛠 변환]·⏭), 판매·이동·[🎲 소환]은 있음, 저장된 개발자 설정(히든 조건 보기)은 쓰지 않음 · 효과 끄기는 따른다(#75)', async ({ page }) => {
   const errors = collectErrors(page);
-  await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true, effectsOff: true, revealHidden: true })));
+  await page.addInitScript((off) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true, effectsOff: true, revealHidden: true, ...off })), E2E_MATCH_SWITCHES_OFF);
   await start(page, '?seed=42');
   await expect(page.getByTestId('menu-dev')).toHaveCount(0);
   await expect(page.locator('[data-action="skip-stage"]')).toHaveCount(0);
-  await expect(page.locator('#ui-root')).not.toHaveClass(/fx-off/);
+  // 피드백 #75: 효과 끄기는 이제 일반 설정 ('✨ 효과 끄기') — 일반 주소에서도 저장값을 따른다 (예전엔 개발자 모드에서만)
+  await expect(page.locator('#ui-root')).toHaveClass(/fx-off/);
   await expect(page.getByTestId('hud-summon')).toBeVisible();
   // 타워 하나 소환 → 패널: 이동·판매는 있고 변환은 없다
   await page.getByTestId('hud-summon').click();

@@ -32,6 +32,8 @@ import { abandonedRunToast } from '../../ui/messages';
 import { buildRecordsView } from '../../ui/screens/BattleRecordsDialog';
 import { setBackHandler } from '../../ui/nativeBack';
 import { baseFeedbackInfo, createSceneFeedback } from '../feedbackInfo';
+import { effectsOff, saveEffectsOff } from '../effects';
+import { MATCH_SETTING_GROUPS, type MatchSettingGroupId } from '../../meta/settings';
 
 interface TitleTower {
   towerId: string;
@@ -166,6 +168,15 @@ export class BootScene extends Phaser.Scene {
           },
           tapMerge: this.ctx.settings.get().tapMerge,
           onTapMerge: (on) => this.ctx.settings.set('tapMerge', on),
+          // 피드백 #75: ✨ 화려한 효과 (저장값 effectsOff — 스위치 켜짐 = 효과 보임, 결정 M) (일시정지 메뉴와 같은 계정 설정)
+          effectsOff: effectsOff(),
+          onEffectsOff: (off) => saveEffectsOff(this.ctx.settings, off),
+          // 사용자 결정 R: 새 판을 시작하면 기본값으로 돌릴 판 안 스위치 묶음 (계정 취향, 기본 모두 체크 = 피드백 #62)
+          matchReset: Object.fromEntries(MATCH_SETTING_GROUPS.map((g) => [g.id, this.ctx.settings.get()[g.flag]])) as Record<MatchSettingGroupId, boolean>,
+          onMatchReset: (id, on) => {
+            const g = MATCH_SETTING_GROUPS.find((x) => x.id === id);
+            if (g) this.ctx.settings.set(g.flag, on);
+          },
           // FB-1: 로비에는 진행 중인 판이 없다 → 판 기록 없이 게임 정보만
           feedback: createSceneFeedback(this.ctx, () => ({ info: baseFeedbackInfo(this.ctx, '로비') }), false),
         },

@@ -2975,6 +2975,29 @@ body {
   padding-block: 1.4cqw;
 }
 
+/* 피드백 #75: '화면 흔들림' | '✨ 화려한 효과' 한 줄에 반씩 — 줄을 하나 더 늘리지 않으려고 설명 글은 숨긴다 (이름·켜짐/꺼짐만) */
+.pause-setting-pair {
+  display: flex;
+  gap: 1.6cqw;
+}
+.pause-setting-pair > .pause-setting {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 1.4cqw;
+  padding: 1.4cqw 1.2cqw 1.4cqw 2cqw;
+}
+.pause-setting-pair .pause-setting-name {
+  font-size: 3.4cqw;
+  white-space: nowrap;
+}
+.pause-setting-pair .pause-setting-desc {
+  display: none;
+}
+.pause-panel .pause-setting-pair .pause-switch {
+  min-width: 13cqw;
+  padding-inline: 1.4cqw;
+}
+
 /* 피드백 #63 '자동 승급': 이름 옆 짧은 설명, 아래에 [노말] [레어 이하] [유니크 이하] 한 줄 (하나만 켜짐) */
 .pause-merge-desc {
   margin-left: 1cqw;

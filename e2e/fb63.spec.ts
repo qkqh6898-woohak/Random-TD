@@ -1,6 +1,7 @@
 /**
  * 피드백 #63 '레어 이하 자동 승급, 유니크 이하 자동 승급... 기능 넣기' (휴대폰 412×915):
- * 일시정지 메뉴 '자동 승급' 줄 [노말] [레어 이하] [유니크 이하] (하나만, 다시 누르면 꺼짐, 기본 꺼짐) → 켜면 그 등급 이하의 가득 찬 무더기를
+ * 일시정지 메뉴 '자동 승급' 줄 [노말] [레어 이하] [유니크 이하] (하나만, 다시 누르면 꺼짐; 실제 기본은 유니크 이하(사용자 결정 Q)지만
+ * 이 파일은 E2E 기본 시드(e2e/seed.ts)로 꺼진 채 시작 — 켜진 기본값은 e2e/fb-auto-defaults.spec.ts) → 켜면 그 등급 이하의 가득 찬 무더기를
  * 화면이 평소 mergeStack 명령으로 바로 승급 (리플레이에 남는 보통 명령), 그 위 등급은 손으로 ([⏫ 모두 승급 n]은 그 위 등급만 센다).
  * 자동 판매와 겹치는 등급은 팔지 않고 승급한다. 메뉴는 한 화면 안.
  */
@@ -68,7 +69,7 @@ async function start(page: Page, errors: string[]): Promise<void> {
   await expect(page.locator('[data-screen="game"]')).toBeVisible();
 }
 
-test('자동 승급: 메뉴 줄(기본 꺼짐·하나만·한 화면 안) → 레어 이하는 바로 승급, 유니크 무더기는 손으로 ([⏫ 모두 승급 1])', async ({ page }) => {
+test('자동 승급: 메뉴 줄(시드 꺼짐·하나만·한 화면 안) → 레어 이하는 바로 승급, 유니크 무더기는 손으로 ([⏫ 모두 승급 1])', async ({ page }) => {
   const errors: string[] = [];
   await start(page, errors);
   const chip = (g: string) => page.getByTestId(`pause-auto-merge-${g}`);

@@ -8,6 +8,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { clickStart } from './title';
 import { mkdirSync } from 'node:fs';
+import { E2E_MATCH_SWITCHES_OFF } from './seed';
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -72,7 +73,7 @@ async function tilePoint(page: Page, tx: number, ty: number): Promise<{ x: numbe
 
 async function start(page: Page): Promise<void> {
   // 눌러서 바로 승급을 끈다 → 가득 찬 무더기를 눌러도 패널(과 작은 버튼)이 열린다
-  await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false })));
+  await page.addInitScript((off) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false, ...off })), E2E_MATCH_SWITCHES_OFF);
   await page.goto('/?dev=1&seed=42');
   await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();

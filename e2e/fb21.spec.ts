@@ -9,6 +9,7 @@ import { mkdirSync } from 'node:fs';
 import { clickStart } from './title';
 import { gradeOutlineColor } from '../src/art/characters/gradeOutline';
 import type { Grade } from '../src/data/load';
+import { E2E_MATCH_SWITCHES_OFF } from './seed';
 
 type Pres = { pedestal: string; body: string | null };
 type SceneLike = {
@@ -42,7 +43,7 @@ function rgb(hex: string): [number, number, number] {
 test('피드백 #21: 맵 캐릭터 테두리 = 등급 색 (받침대와 같은 색, 등급 7종이 서로 다름)', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false })));
+  await page.addInitScript((off) => localStorage.setItem('rtd.settings', JSON.stringify({ v: 1, tapMerge: false, ...off })), E2E_MATCH_SWITCHES_OFF);
   await page.goto('/?debug=1&seed=42');
   await clickStart(page);
   await expect(page.locator('[data-screen="game"]')).toBeVisible();

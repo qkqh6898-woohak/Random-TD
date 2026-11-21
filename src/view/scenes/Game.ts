@@ -65,7 +65,7 @@ import { rankSummonTiles, summonCheck, summonCost } from '../../sim/systems/Summ
 import { autoSellTiles, convertTargets, isAutoSellSummon, sellCheck, sellPriceFor } from '../../sim/systems/Sell';
 import { AUTO_MERGE_KEYS, autoMergeChoice, autoMergeRank, autoSellGrade, autoSellMinRank, resetMatchSettings, type AutoMergeGrade } from '../../meta/settings';
 import { gradeRank } from '../../sim/rules';
-import { effectsOff, onEffectsChange, setEffectsOff } from '../effects';
+import { effectsOff, onEffectsChange, saveEffectsOff } from '../effects';
 import { autoSummonInterval } from '../../ui/hold';
 import { createDevSheet, type DevSheetView } from '../../ui/sheets/DevSheet';
 import { devChanceModel, hiddenRecipeRows, nextChanceBp, type DevTab } from '../../ui/sheets/devModels';
@@ -2554,6 +2554,9 @@ export class GameScene extends Phaser.Scene {
         onAutoSellNormal: (on) => this.ctx.settings.set('autoSellNormal', on),
         autoSellRare: this.ctx.settings.get().autoSellRare,
         onAutoSellRare: (on) => this.ctx.settings.set('autoSellRare', on),
+        // 피드백 #75: ✨ 화려한 효과 (저장값 effectsOff, 결정 M) (계정 설정 — 새 판에도 남는다, 개발자 도구 '연출 끄기'와 같은 값)
+        effectsOff: effectsOff(),
+        onEffectsOff: (off) => saveEffectsOff(this.ctx.settings, off),
         autoMerge: (['normal', 'rare', 'unique'] as const)[autoMergeRank(this.ctx.settings.get()) - 1] ?? null,
         onAutoMerge: (grade: AutoMergeGrade | null) => {
           const c = autoMergeChoice(grade);
@@ -2959,10 +2962,7 @@ export class GameScene extends Phaser.Scene {
           tab: this.devTab,
           effectsOff: effectsOff(),
           revealHidden: settings.get().revealHidden,
-          onEffects: (off) => {
-            setEffectsOff(off);
-            settings.set('effectsOff', off);
-          },
+          onEffects: (off) => saveEffectsOff(settings, off),
           onRevealHidden: (on) => settings.set('revealHidden', on),
           onChance: (key, dir) => this.stepChance(key, dir),
           onResetChances: () => {

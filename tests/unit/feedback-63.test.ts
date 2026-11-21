@@ -1,8 +1,8 @@
 /**
  * 피드백 #63 — '레어 이하 자동 승급, 유니크 이하 자동 승급... 기능 넣기' (이슈 제목만, 판 기록 JSON 없음 → 리플레이 재현 대상 없음).
- * 화면 설정 '자동 승급'(노말 / 레어 이하 / 유니크 이하, 기본 꺼짐)을 켜면 화면이 그 등급 이하의 가득 찬 무더기에 **평소 mergeStack 명령**을
+ * 화면 설정 '자동 승급'(노말 / 레어 이하 / 유니크 이하, 기본 유니크 이하 — 사용자 결정 Q, 예전 기본 꺼짐)을 켜면 화면이 그 등급 이하의 가득 찬 무더기에 **평소 mergeStack 명령**을
  * 보낸다 → sim 규칙·명령 종류는 그대로, 리플레이에는 명령이 그대로 남는다. 자동 판매(피드백 #46)와 겹치는 등급은 판매보다 승급이 먼저
- * (그 등급은 팔지 않는다). 새 판을 시작하면 자동 판매처럼 꺼짐으로 돌아간다(피드백 #62).
+ * (그 등급은 팔지 않는다). 새 판을 시작하면 자동 판매처럼 기본값으로 돌아간다(피드백 #62).
  */
 import { describe, expect, it } from 'vitest';
 import {
@@ -28,6 +28,8 @@ import { playReplay, recordReplay, replayToJson } from '../../src/sim/replay';
 import { arena, arenaData, command, infinite } from '../helpers/match';
 
 const S = (o: Partial<Settings>): Settings => ({ ...DEFAULT_SETTINGS, ...o });
+/** 자동 승급이 모두 꺼진 설정 위에 o (사용자 결정 Q로 기본값이 유니크 이하라, 등급 계산 검사는 꺼짐에서 시작) */
+const OFF = (o: Partial<Settings>): Settings => ({ ...DEFAULT_SETTINGS, ...autoMergeChoice(null), ...o });
 
 function stack(m: Match, id: string, pad: number, n: number, owner = 0): Tower[] {
   const [x, y] = m.map.buildable[pad]!;
@@ -37,9 +39,11 @@ function stack(m: Match, id: string, pad: number, n: number, owner = 0): Tower[]
 }
 
 describe('자동 승급 설정 (rtd.settings v2에 필드만 추가)', () => {
-  it('기본 꺼짐 · 키가 없는 v2 저장값도 꺼짐 · 불리언이 아니면 꺼짐 · 켠 값은 읽힌다', () => {
-    for (const k of AUTO_MERGE_KEYS) expect(DEFAULT_SETTINGS[k]).toBe(false);
-    expect(parseSettings(null)).toMatchObject({ autoMergeNormal: false, autoMergeRare: false, autoMergeUnique: false });
+  it('기본 유니크 이하만 켜짐(사용자 결정 Q) · 키가 없는 v2 저장값도 기본값 · 불리언이 아니면 기본값 · 저장된 값은 읽힌다', () => {
+    expect(Object.fromEntries(AUTO_MERGE_KEYS.map((k) => [k, DEFAULT_SETTINGS[k]]))).toEqual(autoMergeChoice('unique'));
+    expect(parseSettings(null)).toMatchObject({ autoMergeNormal: false, autoMergeRare: false, autoMergeUnique: true });
+    // 플레이어가 끈 값(모두 false)도 그대로 읽힌다
+    expect(parseSettings('{"v":2,"autoMergeNormal":false,"autoMergeRare":false,"autoMergeUnique":false}')).toEqual(OFF({}));
     // v0.1.18까지의 v2 저장값 (자동 승급 키 없음) — 다른 값은 그대로
     expect(parseSettings('{"v":2,"tapMerge":true,"autoSellRare":true}')).toEqual(S({ tapMerge: true, autoSellRare: true }));
     expect(parseSettings('{"v":2,"autoMergeRare":"yes","autoMergeUnique":1}')).toEqual(S({}));
@@ -49,11 +53,12 @@ describe('자동 승급 설정 (rtd.settings v2에 필드만 추가)', () => {
   });
 
   it('autoMergeRank: 켜진 것 중 가장 높은 등급 번호 (노말 1 · 레어 2 · 유니크 3), 모두 꺼짐이면 0', () => {
-    expect(autoMergeRank(S({}))).toBe(0);
-    expect(autoMergeRank(S({ autoMergeNormal: true }))).toBe(1);
-    expect(autoMergeRank(S({ autoMergeRare: true }))).toBe(2);
-    expect(autoMergeRank(S({ autoMergeUnique: true }))).toBe(3);
-    expect(autoMergeRank(S({ autoMergeNormal: true, autoMergeUnique: true }))).toBe(3);
+    expect(autoMergeRank(OFF({}))).toBe(0);
+    expect(autoMergeRank(OFF({ autoMergeNormal: true }))).toBe(1);
+    expect(autoMergeRank(OFF({ autoMergeRare: true }))).toBe(2);
+    expect(autoMergeRank(OFF({ autoMergeUnique: true }))).toBe(3);
+    expect(autoMergeRank(OFF({ autoMergeNormal: true, autoMergeUnique: true }))).toBe(3);
+    expect(autoMergeRank(DEFAULT_SETTINGS)).toBe(3);
     // 등급 번호는 sim rules.gradeRank와 같다
     expect([gradeRank('normal'), gradeRank('rare'), gradeRank('unique')]).toEqual([1, 2, 3]);
   });
@@ -64,7 +69,7 @@ describe('자동 승급 설정 (rtd.settings v2에 필드만 추가)', () => {
     expect(autoMergeChoice(null)).toEqual({ autoMergeNormal: false, autoMergeRare: false, autoMergeUnique: false });
   });
 
-  it('새 판을 시작하면 자동 판매처럼 꺼짐으로 (피드백 #62 규칙), 바로 승급은 그대로', () => {
+  it('새 판을 시작하면 기본값(유니크 이하)으로 (피드백 #62 규칙 · 사용자 결정 Q), 바로 승급은 그대로', () => {
     for (const k of AUTO_MERGE_KEYS) expect(MATCH_SETTING_KEYS).toContain(k);
     const st = new MemoryStorage();
     const s = createSettingsStore(st);
@@ -73,16 +78,18 @@ describe('자동 승급 설정 (rtd.settings v2에 필드만 추가)', () => {
     s.set('autoMergeNormal', true);
     resetMatchSettings(s);
     expect(s.get()).toEqual(S({ tapMerge: true }));
-    expect(JSON.parse(st.getItem(SETTINGS_KEY) ?? '{}')).toMatchObject({ v: 2, autoMergeNormal: false, autoMergeUnique: false });
+    expect(JSON.parse(st.getItem(SETTINGS_KEY) ?? '{}')).toMatchObject({ v: 2, autoMergeNormal: false, autoMergeRare: false, autoMergeUnique: true });
   });
 });
 
 describe('자동 판매와 함께 (승급이 먼저)', () => {
   it('autoSellMinRank: 자동 승급이 맡는 등급은 팔지 않는다 — 판매는 그보다 높은 등급부터', () => {
-    expect(autoSellMinRank(S({ autoSellRare: true }))).toBe(1);
-    expect(autoSellMinRank(S({ autoSellRare: true, autoMergeNormal: true }))).toBe(2);
-    expect(autoSellMinRank(S({ autoSellRare: true, autoMergeRare: true }))).toBe(3);
-    expect(autoSellMinRank(S({ autoSellNormal: true, autoMergeUnique: true }))).toBe(4);
+    expect(autoSellMinRank(OFF({ autoSellRare: true }))).toBe(1);
+    expect(autoSellMinRank(OFF({ autoSellRare: true, autoMergeNormal: true }))).toBe(2);
+    expect(autoSellMinRank(OFF({ autoSellRare: true, autoMergeRare: true }))).toBe(3);
+    expect(autoSellMinRank(OFF({ autoSellNormal: true, autoMergeUnique: true }))).toBe(4);
+    // 기본값(결정 Q 유니크 이하 자동 승급) 그대로면 노말·레어 자동 판매는 팔 등급이 없다 (판매 상한 ≤ 2 < 시작 4)
+    expect(autoSellMinRank(S({ autoSellNormal: true, autoSellRare: true }))).toBe(4);
   });
 });
 
