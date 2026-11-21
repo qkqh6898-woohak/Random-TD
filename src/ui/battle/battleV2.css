@@ -238,7 +238,7 @@
 .battle-v2 .gameover-panel .go-rewards { background:#FFF8E6; border:1px solid #9C8266; box-shadow:none; color:var(--rtd-outline); }
 .battle-v2 .gameover-panel :is(.go-best,.go-level-text,.go-card-n,.go-frags,.go-recruit) { color:var(--rtd-outline); }
 .battle-v2 .gameover-panel .go-chip { background:#E4D5B7; color:var(--rtd-outline); border:1px solid #9C8266; box-shadow:none; }
-.battle-v2 .gameover-panel .go-card { background:color-mix(in srgb, var(--grade-color) 18%, #FFF8E6); color:var(--rtd-outline); }
+.battle-v2 .gameover-panel .go-card { background:#FFF8E6; color:var(--rtd-outline); }
 .battle-v2 .gameover-panel .go-xpbar { background:#D9D0B8; }
 .battle-v2 .gameover-panel .go-card-new { background:var(--rtd-danger-ink); color:white; font-size:12px; }
 /* V2-R21 (#81 검토 🟠9·6): 일시정지 효과음 값은 종이 위 진한 글자 · 하단 메뉴 배지 12px 이상 (예전 .hud-menu.is-g1 2.4cqw가 이겨 9.9px/7.7px) */
