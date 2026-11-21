@@ -52,14 +52,21 @@ export function createProgress(value: number, label: string, variant: 'progress'
 
 export interface CardProps {
   grade: Grade; name: string; level: number; progress: number; progressLabel: string;
-  portrait: string; owned: boolean; notification?: boolean; onClick?: () => void;
+  portrait: string | null; owned: boolean; progressText?: string; notification?: boolean; onClick?: () => void;
 }
 export function createGradeCard(props: CardProps): HTMLButtonElement {
   const gradeName = GRADE_NAMES[props.grade];
   const el = h('button', { class: `rtd-card${props.owned ? '' : ' is-unowned'}`, attrs: { type: 'button', 'data-grade': props.grade, 'aria-label': `${props.name} · ${gradeName} · ${props.owned ? `Lv.${props.level}` : '미보유'}${props.notification ? ' · 새 알림' : ''}` }, on: { click: () => props.onClick?.() } });
-  const art = h('img', { class: 'rtd-card-portrait', attrs: { src: props.portrait, alt: '', 'aria-hidden': 'true', draggable: 'false' } });
+  const art = props.portrait
+    ? h('img', { class: 'rtd-card-portrait', attrs: { src: props.portrait, alt: '', 'aria-hidden': 'true', draggable: 'false' } })
+    : h('span', { class: 'rtd-card-portrait is-text', text: props.name.slice(0, 1), attrs: { 'aria-hidden': 'true' } });
+  const progress = createProgress(props.progress, props.progressLabel);
+  if (props.progressText !== undefined) {
+    progress.classList.add('rtd-card-progress');
+    progress.append(h('span', { class: 'rtd-card-count', text: props.progressText, attrs: { 'aria-hidden': 'true' } }));
+  }
   el.append(h('span', { class: 'rtd-card-face' }, props.grade === 'hidden' ? h('span', { class: 'rtd-card-ribbon', text: '★', attrs: { 'aria-hidden': 'true' } }) : null,
-    art, h('span', { class: 'rtd-card-level', text: props.owned ? `Lv.${props.level}` : '미보유' }), createProgress(props.owned ? props.progress : 0, props.progressLabel)), h('span', { class: 'rtd-card-name', text: props.name }));
+    art, h('span', { class: 'rtd-card-level', text: props.owned ? `Lv.${props.level}` : '미보유' }), progress), h('span', { class: 'rtd-card-name', text: props.name }));
   if (props.notification) el.append(createNotificationDot(true));
   return el;
 }

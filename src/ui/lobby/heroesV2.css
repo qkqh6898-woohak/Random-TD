@@ -1,0 +1,47 @@
+/* PR-E: collection only. All progression/affordability/grade names remain in the existing models. */
+.lobby-v2[data-tab='heroes'] { background: var(--rtd-bg); }
+.lobby-v2 .heroes-v2 { padding: 8px calc(12px + var(--lobby-safe-right)) 0 calc(12px + var(--lobby-safe-left)); gap: 8px; }
+.lobby-v2 .heroes-v2 .lobby-panel-head { margin: 0; gap: 8px; }
+.lobby-v2 .heroes-v2 .lobby-panel-title { color: white; font: 22px/1.2 var(--rtd-title-font); -webkit-text-stroke: 1.5px var(--rtd-outline); paint-order: stroke fill; white-space: nowrap; }
+.lobby-v2 .heroes-v2 .lobby-segs { gap: 6px; }
+.lobby-v2 .heroes-v2 .lobby-seg { padding: 4px 8px; font: 14px/1.25 var(--rtd-title-font); }
+.lobby-v2 .heroes-v2 .lobby-seg.is-on { color: var(--rtd-outline); background: var(--rtd-primary); border-color: var(--rtd-outline); box-shadow: inset 0 2px #FFF4AD, 0 2px var(--rtd-outline); }
+.lobby-v2 .hero-summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: none; padding: 6px 8px; border: 2px solid var(--rtd-outline); border-radius: 10px; background: var(--rtd-panel); color: white; }
+.lobby-v2 .hero-summary p { margin: 0; font: 14px/1.45 var(--rtd-title-font); }
+.lobby-v2 .hero-summary strong { color: var(--rtd-number); font: 16px/1.4 var(--rtd-title-font); }
+.lobby-v2 .hero-summary .rtd-button { flex: none; }
+.lobby-v2 .heroes-v2 .lobby-sortbar { margin: 0; gap: 8px; flex: none; }
+.lobby-v2 .heroes-v2 .lobby-count { color: white; font: 14px/1.3 var(--rtd-body-font); }
+.lobby-v2 .heroes-v2 .hero-levelup-all { min-height: 44px; padding: 4px 10px; font: 14px/1.2 var(--rtd-title-font); }
+.lobby-v2 .heroes-v2 .hero-levelup-all .rtd-button-label { display: inline-flex; align-items: center; gap: 5px; }
+.lobby-v2 .heroes-v2 .rtd-number-badge { min-width: 26px; min-height: 26px; font-size: 16px; }
+.lobby-v2 .heroes-v2 .hero-sorts .lobby-segs { width: 100%; }
+.lobby-v2 .heroes-v2 .hero-sorts .lobby-seg { flex: 1 1 0; min-width: 0; }
+.lobby-v2 .heroes-v2 .lobby-scroll { container-type: inline-size; padding: 6px 3px 12px; scrollbar-width: thin; }
+/* 4c + 3×0.08c = W. gap = W×0.08/4.24 = 1.886792cqw of the collection. */
+.lobby-v2 .heroes-v2 .hero-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 1.886792cqw; }
+.lobby-v2 .heroes-v2 .hero-card { display: block; min-width: 44px; padding: 0; border: 0; border-radius: 8px; background: transparent; box-shadow: none; overflow: visible; color: white; font-family: var(--rtd-title-font); filter: none; transition: transform 160ms cubic-bezier(.2,1.8,.6,1),filter 100ms ease; }
+.lobby-v2 .heroes-v2 .rtd-card-face { display: grid; grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr) 14px 22px; justify-content: stretch; gap: 0; align-items: center; aspect-ratio: 1/1.15; padding: 0 3px 1px; }
+.lobby-v2 .heroes-v2 .rtd-card-portrait { position: static; width: 90%; height: 100%; max-height: 13.56132cqw; min-height: 0; margin: auto; object-position: center; }
+.lobby-v2 .heroes-v2 .hero-card-lv { position: static; justify-self: center; max-width: 100%; margin: 0; padding: 0 3px; border-radius: 4px; color: white; background: var(--rtd-panel); font: 12px/14px var(--rtd-title-font); }
+.lobby-v2 .heroes-v2 .rtd-card-progress { width: 100%; height: 22px; margin: 0; border-radius: 4px; }
+.lobby-v2 .heroes-v2 .hero-card-num { color: white; font: 12px/18px var(--rtd-title-font); }
+.lobby-v2 .heroes-v2 .hero-card-name { display: block; margin-top: 6px; padding: 0; min-height: 32px; color: white; font: 12px/1.3 var(--rtd-title-font); white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; -webkit-text-stroke: 1.5px var(--rtd-outline); paint-order: stroke fill; }
+.lobby-v2 .heroes-v2 .hero-up { position: absolute; top: 2px; right: 1px; width: 20px; height: 24px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; animation: rtd-upgrade-bounce 1s ease-in-out infinite; z-index: 3; }
+.lobby-v2 .heroes-v2 .hero-up .rtd-icon { width: 20px; height: 24px; }
+.lobby-v2 .heroes-v2 .hero-card.is-unowned { filter: none; opacity: 1; }
+.lobby-v2 .heroes-v2 .hero-card.is-unowned .rtd-card-portrait { filter: brightness(0); opacity: 1; }
+.lobby-v2 .heroes-v2 .hero-card.is-unowned .rtd-progress-fill { background: #70695E; box-shadow: none; }
+.lobby-v2 .heroes-v2 .hero-unowned { margin-top: 16px; }
+.lobby-v2 .heroes-v2 .hero-section-title { margin: 0 0 10px; color: white; font: 16px/1.3 var(--rtd-title-font); }
+.lobby-v2 .heroes-v2 .lobby-note { margin: 12px 0 0; color: white; font: 12px/1.5 var(--rtd-body-font); }
+.lobby-v2 .heroes-v2 .hero-card:active { transform: scale(.95); filter: brightness(.96); }
+.lobby-v2 .hero-detail-dialog .hero-detail-grade { color: white; background: var(--rtd-grade-bg); border: 2px solid var(--rtd-grade-border); border-radius: 6px; font: 14px/1.3 var(--rtd-title-font); -webkit-text-stroke: 1.5px var(--rtd-outline); paint-order: stroke fill; }
+.lobby-v2 .hero-growth-copy p { margin: 0 0 12px; color: var(--rtd-outline); font: 14px/1.55 var(--rtd-body-font); }
+@media(prefers-reduced-motion:reduce) { .lobby-v2 .heroes-v2 .hero-card:active { transform: none; } .lobby-v2 .heroes-v2 .hero-up { animation: none; } }
+
+.lobby-v2 .hero-growth-dialog { overflow: visible; }
+.lobby-v2 .hero-growth-dialog .rtd-popup { display: flex; flex-direction: column; max-height: calc(100dvh - 48px - var(--lobby-safe-top) - var(--lobby-safe-bottom)); }
+.lobby-v2 .hero-growth-dialog .rtd-popup-head, .lobby-v2 .hero-growth-dialog .rtd-popup-footer { flex: none; }
+.lobby-v2 .hero-growth-dialog .rtd-popup-paper { display: flex; flex: 1 1 auto; min-height: 0; }
+.lobby-v2 .hero-growth-copy { width: 100%; min-height: 0; overflow: auto; padding: 0 2px; }
