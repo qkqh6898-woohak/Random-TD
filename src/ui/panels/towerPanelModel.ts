@@ -9,10 +9,13 @@
  *   👁 감지: 없음 / 오라 r / 자신
  *   특색: 능력 설명 (특색 타워 25종) / 능력: 능력 설명 (특색이 아니어도 화상·출혈·치명타 같은 능력이 있으면) / 둘 다 없으면 특색: —
  *   보유: n/3
- *   [⬆ 승급] [⬆⬆ 모두 승급] — 같은 종류 3개 이상이고 승급할 수 있는 등급일 때만 켜짐
+ *   머리줄 버튼 (v0.1.22 사용자 결정 B①): [⬆ 승급] [↔ 이동] [판매 +n원] [✕]
+ *     - [⬆ 승급]은 같은 종류 3개 이상이고 승급할 수 있는 등급일 때만 켜짐. 꾹 누르면(0.5초) 판 전체 모두 승급
+ *       (맵 오른쪽 위 [⏫ 모두 승급]과 같은 일 — 이 칸 말고도 승급할 무더기가 있을 때 '꾹 ×n' 표시)
+ *     - 못 하면 차분한 회색 + 이유(aria-label·title — 예전 버튼 아래 안내 줄 자리)
+ *     - 판매가 = sim sellPrice, 히어로 이상 확인 중이면 '한 번 더 누르면 판매' (T-2)
  *   승급 결과 미리 보기: 덱의 다음 등급 5종 이름
  *   대상: 선두 (우선순위 변경은 계정 Lv8, 아직 없음)
- *   [↔ 이동] [💰 판매 +n원] (T-2) — 판매가 = sim sellPrice, 히어로 이상 확인 중이면 '한 번 더 누르면 판매'
  * 타워 레벨은 판의 레벨(MatchContext.levels, 계정 성장 M9 전까지 모두 1)을 보여준다. 공격력·공속에는 오라·레벨 보정이 들어간다 (M3-7).
  */
 import { GRADE_COLORS } from '../../art/palette';
@@ -141,6 +144,11 @@ export interface TowerPanelInput {
   sell?: { price: number; confirming: boolean };
   /** G-1 칸 무더기: 그 칸 타워 수 (2 이상이면 이름 뒤 '×n') */
   stack?: number;
+  /**
+   * 판 위에서 지금 승급할 수 있는 무더기 수 (맵 오른쪽 위 [⏫ 모두 승급 n]과 같은 값). v0.1.22: [⬆ 승급] 꾹 누르기 = 모두 승급(mergeAllStacks).
+   * 생략하면 이 칸만 본다 (승급할 수 있으면 1).
+   */
+  readyStacks?: number;
 }
 
 export interface TowerPanelModel {
@@ -166,7 +174,13 @@ export interface TowerPanelModel {
   mergeAllEnabled: boolean;
   /** 모두 승급하면 몇 번 승급하는가 */
   mergeAllTimes: number;
-  /** 버튼 아래 안내 (레전드 불가 등) */
+  /** 모두 승급하면 승급하는 무더기 수 (판 전체, readyStacks) — 숨은 [모두 승급] 버튼 글자 */
+  mergeAllCount: number;
+  /** [⬆ 승급] 위 '꾹 ×n' 표시 (이 칸 말고도 승급할 무더기가 있어 꾹 누르기가 한 번 승급보다 많을 때만, 아니면 '') */
+  mergeHoldHint: string;
+  /** [⬆ 승급] 버튼 이름 (aria-label·title): 켜짐 '승급' / '승급 · 꾹 누르면 모두 승급 ×n', 꺼짐 '승급할 수 없어요 — 이유' */
+  mergeLabel: string;
+  /** 승급할 수 없는 이유 (레전드 불가 등, 승급 버튼 aria-describedby) — 승급할 수 있으면 '' */
   note: string;
   outcomes: string;
   target: string;
@@ -222,6 +236,7 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
   const tags = data.special > 0 && data.tags.length > 0 ? ` · ${data.tags[0]}` : '';
   const mergeAllTimes = input.owned >= input.mergeCount ? Math.floor(input.owned / input.mergeCount) : 0;
   const ready = input.mergeableGrade && input.owned >= input.mergeCount;
+  const readyStacks = Math.max(0, input.readyStacks ?? (ready ? mergeAllTimes : 0));
   let note = '';
   if (!input.mergeableGrade) note = data.grade === 'legend' ? '레전드는 승급할 수 없어요 (리미티드 재료)' : '이 타워는 승급할 수 없어요';
   else if (!ready) note = `같은 타워 ${input.mergeCount}개가 한 칸에 모이면 승급할 수 있어요`;
@@ -262,8 +277,11 @@ export function buildTowerPanelModel(input: TowerPanelInput): TowerPanelModel {
     owned: `${input.owned}/${input.mergeCount}`,
     ownedReady: ready,
     mergeEnabled: ready,
-    mergeAllEnabled: ready && mergeAllTimes >= 1,
+    mergeAllEnabled: readyStacks >= 1,
     mergeAllTimes,
+    mergeAllCount: readyStacks,
+    mergeHoldHint: ready && readyStacks > 1 ? `꾹 ×${readyStacks}` : '',
+    mergeLabel: ready ? (readyStacks > 1 ? `승급 · 꾹 누르면 모두 승급 ×${readyStacks}` : '승급') : `승급할 수 없어요 — ${note}`,
     note,
     outcomes: input.mergeableGrade ? input.outcomes.join(' · ') : '',
     target: TARGET_NAMES[data.target],

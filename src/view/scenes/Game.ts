@@ -73,6 +73,8 @@ import { createConvertPicker } from '../../ui/panels/ConvertPicker';
 import { GRADE_NAMES, sellNeedsConfirm, shortFactionName } from '../../ui/panels/towerPanelModel';
 import {
   GUIDE_FIRST_MERGE,
+  GUIDE_FIRST_SUMMON,
+  isFirstGame,
   mergeGuideText,
   mergePreview,
   mergeResultText,
@@ -177,6 +179,7 @@ import {
 import { createChoicePanel, type ChoicePanelView } from '../../ui/panels/ChoicePanel';
 import { cardChoiceModel, mergeChoiceModel } from '../../ui/panels/choiceModel';
 import { createTowerPanel, type TowerPanelView } from '../../ui/panels/TowerPanel';
+import { towerPortraitSource } from '../../ui/panels/portraitSource';
 import { buildTowerPanelModel, type TowerPanelModel } from '../../ui/panels/towerPanelModel';
 import { createTowerQuick, type TowerQuickView } from '../../ui/panels/TowerQuick';
 import { quickModel, quickPlacement } from '../../ui/panels/towerQuickModel';
@@ -473,6 +476,8 @@ export class GameScene extends Phaser.Scene {
   private panelSide: 'top' | 'bottom' = 'bottom';
   /** 이 프레임 수가 지나면 '빛나는 칸을 눌러…' 안내 (판 시작 첫 프레임들은 텍스처 굽기로 느려 알림이 보이기 전에 사라졌다) */
   private startHintFrames = 0;
+  /** 이 판이 플레이어의 첫 판인가 (v0.1.22 E① — 추천 칸·'빛나는 칸을 눌러 소환해요'는 첫 판에서만) */
+  private firstGame = false;
   /** 그 안내 알림 (소환하거나 단계가 바뀌면 바로 지운다 — 다른 알림 아래로 쌓여 알림 자리를 넘지 않게) */
   private startHintEl: HTMLElement | null = null;
   /** 이번 판에 띄운 승급 결과 알림 수 (game.json guide.resultToasts) */
@@ -702,6 +707,8 @@ export class GameScene extends Phaser.Scene {
     // 첫 소환 전: 추천 칸이 빛난다 (F10) — 처음 몇 프레임(텍스처 굽기로 느림)이 지난 뒤 짧은 안내 한 번 (좁은 화면에서도 한 줄)
     this.startHintFrames = 3;
     this.startHintEl = null;
+    // v0.1.22 사용자 결정 E①: 추천 칸·안내는 플레이어의 첫 판에서만 (판을 시작할 때 한 번 정한다)
+    this.firstGame = isFirstGame((id) => this.ctx.account.guideSeen(id), this.ctx.progress?.state.totals);
     // 새 판·이어 한 판 모두 바로 한 번 저장 (타이틀에 [이어 하기]가 생긴다)
     this.saveMatch();
     this.cameras.main.fadeIn(200, 13, 18, 32);
@@ -1427,7 +1434,8 @@ export class GameScene extends Phaser.Scene {
     if (!this.panel) {
       this.panel = createTowerPanel({
         onMerge: () => this.sendMerge('merge'),
-        onMergeAll: () => this.sendMerge('mergeAll'),
+        // v0.1.22 B①: [⬆ 승급] 꾹 누르기 = 판 전체 모두 승급 (맵 오른쪽 위 [⏫ 모두 승급]과 같은 mergeAllStacks)
+        onMergeAll: () => void this.sendMergeAll(),
         onClose: () => this.closePanel(),
         onInfo: () => this.openCharacterCard(),
         onMove: () => this.startMoveMode(),
@@ -1584,20 +1592,23 @@ export class GameScene extends Phaser.Scene {
     return t && t.kind === 'tower' ? (t as Tower) : null;
   }
 
-  /** 초상화: 타워 텍스처 → 이미지 주소 (종류마다 한 번). */
+  /**
+   * 초상화 주소 (종류마다 한 번): 바깥 그림 파일 주소(로비와 같음) → 없으면 절차 그림 텍스처를 구운 data URI (v0.1.22 portraitSource).
+   * 쓸 수 없는 주소(빈 'data:,' 등)는 기억하지 않는다 → 다음에 다시 시도.
+   */
   private portraitOf(towerId: string): string | null {
-    if (!this.portraits.has(towerId)) {
-      let url: string | null = null;
-      try {
-        const key = this.towerLayer.textureKey(towerId);
-        const b64 = this.textures.getBase64(key);
-        url = typeof b64 === 'string' && b64.startsWith('data:') ? b64 : null;
-      } catch {
-        url = null;
-      }
-      this.portraits.set(towerId, url);
-    }
-    return this.portraits.get(towerId) ?? null;
+    const cached = this.portraits.get(towerId);
+    if (cached) return cached;
+    const url = towerPortraitSource(towerId, false, {
+      externalLoaded: (key) => this.textures.exists(key),
+      assetUrl,
+      bake: () => {
+        const b64 = this.textures.getBase64(this.towerLayer.textureKey(towerId));
+        return typeof b64 === 'string' ? b64 : null;
+      },
+    });
+    if (url) this.portraits.set(towerId, url);
+    return url;
   }
 
   /** 종족 이름 (towers.json factions, 연합·고대신은 따로) */
@@ -1645,6 +1656,7 @@ export class GameScene extends Phaser.Scene {
       // G-1: 승급은 칸 무더기 단위 — 그 칸 타워 수 (가득 차면 승급)
       owned: towersAt(this.match.world, t.tx, t.ty).length,
       stack: towersAt(this.match.world, t.tx, t.ty).length,
+      readyStacks: this.mergeReadyCount,
       mergeCount: rules.mergeCount,
       mergeableGrade: canMergeGrade(stats.grade),
       outcomes: mergeOutcomes(deck, stats.grade).map((id) => names.get(id) ?? id),
@@ -1987,7 +1999,8 @@ export class GameScene extends Phaser.Scene {
           }
           if (ev.player === LOCAL_PLAYER && def) {
             const name = this.towerNames.get(String(ev.tower)) ?? String(ev.tower);
-            this.ctx.ui.toast(`${def.icon} ${ultText(name, def.name, k === 'rally' ? 0 : Number(ev.count))}`);
+            // v0.1.22 A①: 같은 필살기(폭격·기절·집결)가 잇따르면 한 알림으로 합쳐 '×n' (글자는 가장 최근 타워)
+            this.ctx.ui.toast(`${def.icon} ${ultText(name, def.name, k === 'rally' ? 0 : Number(ev.count))}`, undefined, `ult-${k}`);
           }
           break;
         }
@@ -2709,13 +2722,19 @@ export class GameScene extends Phaser.Scene {
     const { state } = this.match;
     const mine = this.match.towers().filter((t) => t.owner === LOCAL_PLAYER);
     if (state.stage !== 0) this.readySent = false;
-    if (this.startHintFrames > 0 && --this.startHintFrames === 0 && showRecommended(state.phase, state.summons, mine.length)) {
+    // v0.1.22 E①: 첫 판에서 첫 타워를 놓으면 계정에 기록 → 다음 판부터 추천 칸 없음 (이번 판 칸은 타워가 생겨 이미 꺼짐)
+    if (this.firstGame && mine.length > 0) {
+      this.ctx.account.markGuide(GUIDE_FIRST_SUMMON);
+      this.firstGame = false;
+    }
+    const recommendOn = this.firstGame && showRecommended(state.phase, state.summons, mine.length);
+    if (this.startHintFrames > 0 && --this.startHintFrames === 0 && recommendOn) {
       // 첫 소환 또는 1단계 시작까지 남긴다 (F10-4 검토: 2.6초는 판 시작의 느린 프레임 동안 지나가 버려 휴대폰에서 못 볼 수 있었다).
       // 지우기는 사건 처리(소환·단계 시작)와 장면 종료가 한다 — 시간은 안전 상한일 뿐 (준비 60초 + 여유)
       this.startHintEl = this.ctx.ui.toast('빛나는 칸을 눌러 소환해요', START_HINT_MAX_MS);
     }
     // 추천 칸이 꺼지면(첫 타워가 생김 — 소환이든 개발자 배치든) 안내 글자도 지운다
-    if (this.startHintEl && !showRecommended(state.phase, state.summons, mine.length)) {
+    if (this.startHintEl && !recommendOn) {
       this.startHintEl.remove();
       this.startHintEl = null;
     }
@@ -2723,7 +2742,7 @@ export class GameScene extends Phaser.Scene {
     this.hud.setReady(ready);
     this.syncMergeGuide();
     const preview = this.mergePreviewView();
-    const recommended = showRecommended(state.phase, state.summons, mine.length)
+    const recommended = recommendOn
       ? rankSummonTiles(this.match.ctx, this.match.world, this.ctx.data.game.guide.recommendCount)
       : [];
     const rules = this.match.rules;

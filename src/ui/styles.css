@@ -1190,72 +1190,15 @@ body {
   font-weight: 700;
 }
 
-.tp-actions {
-  display: flex;
-  gap: 2cqw;
-}
-
-.tp-actions .btn {
-  flex: 1;
-  min-height: max(11cqw, 44px);
-  font-size: 3.8cqw;
-  padding: 1.4cqw 2cqw;
-}
-
-.tp-merge:not(:disabled),
-.tp-merge-all:not(:disabled) {
+/*
+ * v0.1.22 사용자 결정 B①: 승급·이동·판매·닫기는 모두 머리줄(.tp-head-actions, battleV2.css 끝)에 — 예전 아래 버튼 줄 두 개
+ * ([⬆ 승급] [⬆⬆ 모두 승급] / [↔ 이동] [🛠 변환])와 접기 2단계의 '한 줄로 합치기'는 없앴다. 모두 승급은 [⬆ 승급] 꾹 누르기.
+ */
+.tp-merge:not(:disabled) {
   color: #3b2416;
   background: linear-gradient(180deg, #ffd85a 0%, var(--gold) 55%, var(--gold-deep) 100%);
   border-color: #fff3c4;
   box-shadow: 0 0.8cqw 0 #8a5a00;
-}
-
-.tp-actions .btn:disabled {
-  opacity: 0.55;
-}
-
-/* T-2 버튼 두 줄: [⬆ 승급] [⬆⬆ 모두 승급] / [↔ 이동] [💰 판매 +n원] [🛠 변환] */
-.tp-act-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 1.4cqw;
-}
-
-/* 접기 2단계부터 한 줄로: [⬆ 승급] [⬆⬆ 승급] [↔] [💰 +450원] [🛠] (패널 높이를 버튼 한 줄만큼 아낀다) */
-.tower-panel:is([data-density='2'], [data-density='3'], [data-density='4'], [data-density='5'], [data-density='6']) .tp-act-wrap {
-  flex-direction: row;
-  gap: 1.2cqw;
-}
-
-.tower-panel:is([data-density='2'], [data-density='3'], [data-density='4'], [data-density='5'], [data-density='6']) .tp-act-wrap > .tp-actions {
-  display: contents;
-}
-
-.tower-panel:is([data-density='2'], [data-density='3'], [data-density='4'], [data-density='5'], [data-density='6']) .tp-act-wrap .btn {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: max(9.5cqw, 44px);
-  padding: 0.8cqw 1cqw;
-  font-size: 3.2cqw;
-  white-space: nowrap;
-}
-
-.tower-panel:is([data-density='2'], [data-density='3'], [data-density='4'], [data-density='5'], [data-density='6']) .tp-word {
-  display: none;
-}
-
-/* 둘째 줄: [↔ 이동] [💰 판매 +n원] [🛠 변환] — 승급 줄보다 낮게 */
-/* 버튼 터치 영역 44px 이상 (UI.md 9장) — 한 줄로 합친 접기 단계에서도 (HF-3: 설명 두 줄이 생겨 맵 가운데 타워는 접기 2단계가 흔해졌다) */
-.tp-actions-2 .btn {
-  min-height: max(9.5cqw, 44px);
-  font-size: 3.3cqw;
-  padding: 1cqw 1.4cqw;
-  white-space: nowrap;
-}
-
-.tp-actions-2 .tp-sell {
-  flex: 1.6;
-  color: #ffe27a;
 }
 
 .tp-sell.is-confirm {
@@ -1290,7 +1233,7 @@ body {
  * 1 = 승급 결과·안내 숨김, 2 = 감지·보유/대상 줄 숨김, 3 = 관통·치명 줄 숨김, 4 = 특색 두 줄까지(…), 5 = 특색 한 줄, 6 = 특색도 숨김.
  * 검토 반영: 예전 2단계는 특색 줄을 숨겨 맵 가운데 줄(5·6줄) 타워의 특색 설명을 볼 곳이 없었다 → 특색을 가장 늦게 접는다.
  */
-.tower-panel:not([data-density='0']) :is(.tp-outcomes, .tp-note),
+.tower-panel:not([data-density='0']) .tp-outcomes,
 .tower-panel:is([data-density='2'], [data-density='3'], [data-density='4'], [data-density='5'], [data-density='6']) :is(.tp-detect, .tp-owned-row),
 .tower-panel:is([data-density='3'], [data-density='4'], [data-density='5'], [data-density='6']) .tp-row-pen,
 .tower-panel[data-density='6'] .tp-ability,

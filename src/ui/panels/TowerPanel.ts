@@ -8,11 +8,13 @@
  *   (검토 반영: 특색 설명은 이 패널에서만 보이므로 가장 늦게 접는다 — 예전엔 2단계에서 숨겨 가운데 줄 타워는 볼 수 없었다)
  *
  * - 글자·버튼 상태는 towerPanelModel.ts(순수 함수)가 만들고, 여기서는 바뀐 부분만 DOM에 쓴다.
- * - [⬆ 승급] [⬆⬆ 모두 승급]은 sim 명령(merge/mergeAll)을 보내는 콜백만 부른다 (패널은 sim을 바꾸지 않는다).
- * - T-2: 둘째 줄 [↔ 이동] [💰 판매 +n원] (+ 개발자 모드 [🛠 변환]). 판매는 히어로 이상이면 첫 누름에 '한 번 더 누르면 판매'로
- *   바뀌고 2초 안에 한 번 더 눌러야 팔린다 (확인 상태는 Game 장면이 들고 모델로 넘긴다).
- *   접기 2단계부터는 두 버튼 줄을 한 줄로 합치고 글자를 줄인다 ([⬆ 승급] [⬆⬆ 승급] [↔] [💰 +450원] [🛠]) — 맵 가운데 줄 타워도
- *   특색 줄이 보이게 (패널 높이를 버튼 한 줄만큼 아낀다).
+ * - v0.1.22 사용자 결정 B①: 버튼은 모두 머리줄에 `[⬆ 승급] [↔ 이동] (개발자 [🛠]) [판매] [✕]` — 아래 버튼 줄 두 개와
+ *   '이 타워는 승급할 수 없어요' 안내 줄은 없앴다 (패널이 낮아져 맵을 덜 가림). [⬆ 승급]을 꾹(0.5초) 누르면 모두 승급
+ *   (ui/hold.ts attachLongPress, 누르는 동안 링이 참 · 두 번 이상 승급할 수 있으면 '꾹 ×n' 표시). 화면 읽기·키보드용 [모두 승급]
+ *   버튼(data-action="merge-all")은 보이지 않게 남긴다. 승급할 수 없으면 차분한 회색 + 이유(aria-label·title, tp-note는 숨은 설명).
+ *   콜백은 sim 명령(merge/mergeAll)을 보내기만 한다 (패널은 sim을 바꾸지 않는다).
+ * - T-2: 판매는 히어로 이상이면 첫 누름에 '한 번 더 누르면 판매'로 바뀌고 2초 안에 한 번 더 눌러야 팔린다
+ *   (확인 상태는 Game 장면이 들고 모델로 넘긴다).
  * - ✕·Esc(뒤로가기)로 닫는다. 맵의 빈 곳을 터치해도 닫힌다 (Game 장면).
  * - 캐릭터 그림은 Game 장면이 구운 타워 텍스처를 이미지 주소로 넘겨준다. CSS로 숨쉬기 동작을 반복한다.
  * - HF-3 (두 갈래 합침): '이동 중'·'기절' 표시는 이름 줄에 둔다 (보유·대상 줄은 접기 2단계부터 숨는데, 설명 두 줄과 둘째 버튼 줄이 함께 생겨
@@ -22,11 +24,13 @@
  */
 import { h } from '../dom';
 import type { UiView } from '../root';
+import { attachLongPress } from '../hold';
 import { uiIcon } from '../uiIcons';
 import type { StatCell, TowerPanelModel } from './towerPanelModel';
 
 export interface TowerPanelOptions {
   onMerge: () => void;
+  /** 모두 승급 (v0.1.22: [⬆ 승급] 꾹 누르기·숨은 [모두 승급] — 판 전체 승급할 무더기 모두, 맵 [⏫ 모두 승급]과 같은 일) */
   onMergeAll: () => void;
   onClose: () => void;
   /** [ℹ] 캐릭터 카드 열기 (HF-2) — 없으면 버튼을 숨긴다 */
@@ -148,34 +152,46 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
   const owned = h('b', { class: 'tp-owned', attrs: { 'data-testid': 'tp-owned' } });
   const target = h('span', { class: 'tp-target', attrs: { 'data-testid': 'tp-target' } });
   const pausedEl = h('span', { class: 'tp-paused', text: '이동 중', attrs: { hidden: '' } });
-  const mergeBtn = h('button', {
-    class: 'btn tp-merge',
-    attrs: { type: 'button', 'data-action': 'merge' },
-    text: '⬆ 승급',
-    on: { click: () => opts.onMerge() },
-  });
+  const mergeWord = h('span', { class: 'tp-word', text: '승급' });
+  const mergeHint = h('span', { class: 'tp-hold-hint', attrs: { 'aria-hidden': 'true', 'data-testid': 'tp-hold-hint', hidden: '' } });
+  const mergeBtn = h(
+    'button',
+    {
+      class: 'btn tp-merge',
+      attrs: { type: 'button', 'data-action': 'merge', 'aria-describedby': 'tp-note' },
+    },
+    h('span', { class: 'tp-ico', text: '⬆', attrs: { 'aria-hidden': 'true' } }),
+    mergeWord,
+    mergeHint,
+  );
+  // 화면 읽기·키보드용 [모두 승급] (꾹 누르기와 같은 일) — 눈에는 보이지 않는다
   const mergeAllTimes = h('span', { text: '' });
   const mergeAllBtn = h(
     'button',
     {
-      class: 'btn tp-merge-all',
+      class: 'btn tp-merge-all tp-sr',
       attrs: { type: 'button', 'data-action': 'merge-all', 'aria-label': '모두 승급' },
       on: { click: () => opts.onMergeAll() },
     },
-    h('span', { text: '⬆⬆ ' }),
-    h('span', { class: 'tp-word', text: '모두 ' }),
-    h('span', { text: '승급' }),
+    h('span', { text: '모두 승급' }),
     mergeAllTimes,
   );
+  let canMergeAll = false;
+  const longPress = attachLongPress(mergeBtn, {
+    onTap: () => opts.onMerge(),
+    onLong: () => opts.onMergeAll(),
+    canLong: () => canMergeAll && !mergeBtn.disabled,
+    onHoldChange: (on) => mergeBtn.classList.toggle('is-holding', on),
+  });
   const moveBtn = h(
     'button',
     {
       class: 'btn tp-move',
-      attrs: { type: 'button', 'data-action': 'move', 'aria-label': '타워 이동' },
+      attrs: { type: 'button', 'data-action': 'move', 'aria-label': '타워 이동', title: '타워 이동' },
       on: { click: () => opts.onMove?.() },
     },
-    h('span', { text: '↔' }),
-    h('span', { class: 'tp-word', text: ' 이동' }),
+    h('span', { class: 'tp-ico', text: '↔', attrs: { 'aria-hidden': 'true' } }),
+    h('span', { class: 'tp-word', text: '이동' }),
   );
   const sellBtn = h('button', {
     class: 'btn tp-sell',
@@ -188,14 +204,14 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
         'button',
         {
           class: 'btn tp-convert',
-          attrs: { type: 'button', 'data-action': 'convert', 'aria-label': '같은 등급 다른 타워로 변환 (개발자)' },
+          attrs: { type: 'button', 'data-action': 'convert', 'aria-label': '같은 등급 다른 타워로 변환 (개발자)', title: '변환 (개발자)' },
           on: { click: () => opts.onConvert?.() },
         },
-        h('span', { text: '🛠' }),
-        h('span', { class: 'tp-word', text: ' 변환' }),
+        h('span', { class: 'tp-ico', text: '🛠', attrs: { 'aria-hidden': 'true' } }),
       )
     : null;
-  const note = h('div', { class: 'tp-note', attrs: { 'data-testid': 'tp-note' } });
+  // 승급할 수 없는 이유 — 예전 버튼 아래 안내 줄. 이제 [⬆ 승급]의 숨은 설명(aria-describedby)이다
+  const note = h('div', { class: 'tp-note tp-sr', attrs: { id: 'tp-note', 'data-testid': 'tp-note' } });
   const outcomes = h('div', { class: 'tp-outcomes', attrs: { 'data-testid': 'tp-outcomes' } });
 
   const el = h(
@@ -206,8 +222,9 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       { class: 'tp-head' },
       h('div', { class: 'tp-portrait-wrap' }, portrait, info),
       h('div', { class: 'tp-title' }, h('div', { class: 'tp-name-row' }, stars, name, level, pausedEl), subtitle),
-      sellBtn,
-      close,
+      h('div', { class: 'tp-head-actions' }, mergeBtn, moveBtn, convertBtn, sellBtn, close),
+      mergeAllBtn,
+      note,
     ),
     desc,
     statsEl,
@@ -222,8 +239,6 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       h('span', { class: 'tp-label', text: '대상' }),
       target,
     ),
-    h('div', { class: 'tp-act-wrap' }, h('div', { class: 'tp-actions' }, mergeBtn, mergeAllBtn), h('div', { class: 'tp-actions tp-actions-2' }, moveBtn, convertBtn)),
-    note,
     outcomes,
   );
 
@@ -265,11 +280,15 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
       pausedEl.hidden = !m.paused;
       if (m.paused && pausedEl.textContent !== m.pausedText) pausedEl.textContent = m.pausedText;
       mergeBtn.disabled = !m.mergeEnabled;
+      mergeBtn.setAttribute('aria-label', m.mergeLabel);
+      mergeBtn.title = m.mergeLabel;
+      canMergeAll = m.mergeEnabled && m.mergeAllCount > 1;
+      mergeHint.textContent = m.mergeHoldHint;
+      mergeHint.hidden = m.mergeHoldHint === '';
       mergeAllBtn.disabled = !m.mergeAllEnabled;
-      mergeAllTimes.textContent = m.mergeAllTimes > 1 ? ` ×${m.mergeAllTimes}` : '';
+      mergeAllTimes.textContent = m.mergeAllCount > 1 ? ` ×${m.mergeAllCount}` : '';
       note.textContent = m.note;
-      note.hidden = m.note === '';
-      // 접기 2단계부터는 'tp-word' 글자를 숨긴다 (CSS) → '💰 +450원' · 빨간 '판매'
+      // 머리줄 판매: '판매' 위·'+450원' 아래 두 줄 (💰는 숨김, CSS) · 확인 중이면 빨간 '한 번 더 누르면 판매'
       sellBtn.replaceChildren(
         ...(m.sellConfirming
           ? [h('span', { class: 'tp-word', text: '한 번 더 누르면 ' }), h('span', { text: '판매' })]
@@ -305,6 +324,7 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
     },
     destroy() {
       window.removeEventListener('keydown', onKey);
+      longPress.detach();
     },
   };
 }

@@ -2,6 +2,7 @@
  * 첫 10단계 개선 (F10) 화면 안내의 표시값 — 순수 함수 (DOM·Phaser 없음 → 단위 테스트).
  *
  * - 추천 칸: 첫 소환 전(이 판에 내 타워가 하나도 없고 소환한 적도 없음)에만, 자동 소환과 **같은 점수**(sim rankSummonTiles)의 앞 n칸을 빛낸다.
+ *   v0.1.22 사용자 결정 E①: 플레이어의 **첫 판에서만** (isFirstGame). 그 뒤 판은 시작할 때 칸이 없다 (#79 잘못 누르기 1.2초 안내는 그대로).
  * - [▶ 준비 완료]: 준비 단계(0단계)에서 내 타워가 하나 이상이면 보인다. 누르면 readyNow 명령 → 1단계 바로 시작.
  * - 보유 n/3 배지: 같은 종류(승급할 수 있는 등급)가 mergeCount − 1개(기본 2개)인 내 타워 발밑에 '2/3'.
  * - 승급 미리 보기: 결과가 생길 칸 = 고른(누른) 타워 칸, 재료로 사라질 칸 = sim 규칙 그대로 그 타워를 뺀 같은 종류 중
@@ -16,6 +17,18 @@ import type { Tower } from '../../sim/entities/Tower';
 
 /** 계정 저장소 도움말 id: 첫 승급 안내 */
 export const GUIDE_FIRST_MERGE = 'firstMerge';
+/** 계정 저장소 도움말 id: 첫 판에서 타워를 놓았음 (v0.1.22 — 추천 칸·'빛나는 칸을 눌러 소환해요'는 그 전까지만) */
+export const GUIDE_FIRST_SUMMON = 'firstSummon';
+
+/**
+ * 첫 판인가 (v0.1.22 사용자 결정 E①: 시작할 때 흰 추천 칸은 플레이어의 첫 판에서만). 새 저장 형식 없이 이미 있는 기록으로 정한다:
+ * 계정 도움말 기록(rtd.account guides)에 첫 소환·첫 승급 안내가 없고, 판 밖 누적 기록(rtd.progress totals)에 끝낸 판·소환이 0.
+ * 예전부터 하던 플레이어는 누적 기록이 있어 바로 '첫 판 아님'. [도움말 다시 보기](resetGuides)는 도움말 기록만 지우므로 누적이 있으면 그대로.
+ */
+export function isFirstGame(seen: (guideId: string) => boolean, totals: { matches: number; summons: number } | null | undefined): boolean {
+  if (seen(GUIDE_FIRST_SUMMON) || seen(GUIDE_FIRST_MERGE)) return false;
+  return (totals?.matches ?? 0) === 0 && (totals?.summons ?? 0) === 0;
+}
 
 export interface TileXY {
   tx: number;

@@ -16,6 +16,7 @@
  * UI는 sim 상태를 읽기만 하고, 바꾸려면 명령을 만들어 world.enqueue() 한다 (CLAUDE.md 2장).
  */
 import { h } from './dom';
+import { MAX_VISIBLE_NOTICES, fitFontPx, nextNotice, noticeCountText, type NoticeSlot } from './noticeLane';
 
 export interface UiView {
   el: HTMLElement;
@@ -24,25 +25,31 @@ export interface UiView {
 
 export type LayerName = 'screen' | 'hud' | 'cutin' | 'guide' | 'quick' | 'panel' | 'sheet' | 'modal' | 'card' | 'toast';
 
-/** 배너 줄 글자를 줄일 수 있는 하한 (원래 크기의 비율) */
+/** 배너 줄 글자를 줄일 수 있는 하한 (원래 크기의 비율) — NOTICE_MIN_FONT_PX(12px)보다 작게는 줄이지 않는다 (v0.1.22) */
 const BANNER_MIN_FONT_RATIO = 0.6;
 
 /**
- * 배너의 각 줄(줄바꿈 없음)이 배너 안쪽 폭을 넘으면 그 줄 글자 크기를 폭에 맞게 줄인다 (원래의 60%까지).
- * 레이아웃이 없는 환경(폭 0)에서는 아무것도 하지 않는다.
+ * 배너·알림의 각 줄(줄바꿈 없음)이 안쪽 폭을 넘으면 그 줄 글자 크기를 폭에 맞게 줄인다 (원래의 60%·12px 중 큰 값까지).
+ * 그래도 넘치면 그 줄에 is-clipped를 붙인다 (CSS: 일반 알림은 두 줄, 좁은 알림 줄은 말줄임). 레이아웃이 없는 환경(폭 0)에서는 아무것도 하지 않는다.
  */
-export function fitBannerLines(el: HTMLElement): void {
+export function fitBannerLines(el: HTMLElement, lineSelector?: string): void {
   const cs = getComputedStyle(el);
   const avail = el.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
   if (!(avail > 0)) return;
-  for (const child of Array.from(el.children)) {
-    const line = child as HTMLElement;
+  const lines = lineSelector ? Array.from(el.querySelectorAll<HTMLElement>(lineSelector)) : (Array.from(el.children) as HTMLElement[]);
+  // 합친 수 '×n'은 줄과 나란히 있으므로 그만큼 뺀다
+  const count = el.querySelector<HTMLElement>('.toast-count');
+  const countW = count && count.textContent ? count.offsetWidth + (parseFloat(getComputedStyle(el).columnGap) || 0) : 0;
+  for (const line of lines) {
+    if (line === count) continue;
+    const room = line.classList.contains('toast-text') ? avail - countW : avail;
     const w = line.scrollWidth;
-    if (!(w > avail)) continue;
+    if (!(w > room)) continue;
     const size = parseFloat(getComputedStyle(line).fontSize);
     if (!(size > 0)) continue;
-    const fitted = Math.floor(((size * avail) / w) * 10) / 10;
-    line.style.fontSize = `${Math.max(size * BANNER_MIN_FONT_RATIO, fitted)}px`;
+    const fitted = fitFontPx(size, w, room, BANNER_MIN_FONT_RATIO);
+    line.style.fontSize = `${fitted}px`;
+    if (line.scrollWidth > room + 0.5) line.classList.add('is-clipped');
   }
 }
 
@@ -110,21 +117,35 @@ export class UiRoot {
   }
 
   /**
-   * 짧은 알림 (toast 층, 화면 읽기 프로그램이 읽어 줌). 같은 때 최대 3개, ms 뒤 사라진다.
-   * 알림은 게임 상태를 바꾸지 않는다 (보여주기만).
+   * 짧은 알림 (toast 층, 화면 읽기 프로그램이 읽어 줌). ms 뒤 사라진다. 알림은 게임 상태를 바꾸지 않는다 (보여주기만).
+   * v0.1.22 사용자 결정 A①: **한 줄에 하나만** — 새 알림이 지금 알림을 바꿔 친다. 같은 종류(kind, 기본은 글자)가 떠 있으면
+   * 한 알림으로 합치고 '×n'을 붙인다 (src/ui/noticeLane.ts). 바꿔 칠 때도 새 요소를 붙인다 → 화면 읽기·E2E 관찰자가 새 알림을 본다.
    */
-  toast(text: string, ms = 1600): HTMLElement {
+  toast(text: string, ms = 1600, kind?: string): HTMLElement {
+    const textEl = h('span', { class: 'toast-text', text });
+    const el = h('div', { class: 'toast' }, textEl);
+    return this.pushNotice(el, kind ?? text, ms, () => fitBannerLines(el, '.toast-text'));
+  }
+
+  /** 알림 줄에 하나를 올린다 (바꿔 치기·같은 종류 합치기). */
+  private pushNotice(el: HTMLElement, kind: string, ms: number, fit: () => void): HTMLElement {
     const layer = this.layers.toast;
-    // 같은 글자가 이미 떠 있으면 그것을 지우고 새로 띄운다 (연타해도 같은 알림이 쌓이지 않게)
-    for (const child of [...layer.children]) if (child.textContent === text) child.remove();
-    while (layer.childElementCount >= UiRoot.MAX_TOASTS) layer.firstElementChild?.remove();
-    const el = h('div', { class: 'toast', text });
+    const current = layer.lastElementChild as HTMLElement | null;
+    const slot: NoticeSlot | null = current?.dataset.kind !== undefined ? { kind: current.dataset.kind, count: Number(current.dataset.count) || 1 } : null;
+    const next = nextNotice(slot, kind);
+    el.dataset.kind = next.kind;
+    el.dataset.count = String(next.count);
+    const countText = noticeCountText(next.count);
+    if (countText) {
+      el.classList.add('is-merged');
+      el.append(h('span', { class: 'toast-count', text: countText, attrs: { 'aria-label': `${next.count}번` } }));
+    }
+    while (layer.childElementCount >= MAX_VISIBLE_NOTICES) layer.firstElementChild?.remove();
     layer.append(el);
+    fit();
     setTimeout(() => el.remove(), ms);
     return el;
   }
-
-  private static readonly MAX_TOASTS = 3;
 
   /** 떠 있는 알림·배너를 모두 지운다 (패배·일시정지 화면을 열 때 — 알림 층이 화면 층보다 위라 제목을 가린다, M4 검토 반영). */
   clearToasts(): void {
@@ -145,25 +166,19 @@ export class UiRoot {
 
   /**
    * 배너 알림 (M4): 두 줄(제목 + 힌트) 큰 알림 — 편대 예고(경고 주황)·투명 몹 경고(보라)·보스 이름표(은색)·보스 처치(금색).
-   * 알림 층에 일반 알림과 같이 쌓이고(최대 3개, 같은 글자는 다시 띄움) ms 뒤 사라진다.
+   * 알림 층의 한 줄을 일반 알림과 함께 쓴다 (v0.1.22: 하나만 보임, 같은 글자는 합쳐 ×n) — ms 뒤 사라진다.
    * 줄마다 줄바꿈하지 않고, 배너 폭(92cqw)을 넘는 줄은 글자 크기를 줄여 한 줄에 맞춘다 (fitBannerLines) — 412px에서 편대 예고
    * 제목이 이름 중간에서 끊겨 배너가 3줄(72px)이 되어 맵 0줄을 반 넘게 덮던 것 (검토 반영).
    */
   banner(title: string, sub: string | null, ms = 3200, tone: 'warn' | 'shadow' | 'boss' | 'gold' | 'mission' | 'challenge' | 'merge' = 'warn'): HTMLElement {
-    const layer = this.layers.toast;
     const key = sub ? `${title}\n${sub}` : title;
-    for (const child of [...layer.children]) if ((child as HTMLElement).dataset.key === key) child.remove();
-    while (layer.childElementCount >= UiRoot.MAX_TOASTS) layer.firstElementChild?.remove();
     const el = h(
       'div',
       { class: `toast toast-banner is-${tone}`, attrs: { 'data-key': key, 'data-testid': `banner-${tone}` } },
       h('span', { class: 'toast-title', text: title }),
       sub ? h('span', { class: 'toast-sub', text: sub }) : null,
     );
-    layer.append(el);
-    fitBannerLines(el);
-    setTimeout(() => el.remove(), ms);
-    return el;
+    return this.pushNotice(el, key, ms, () => fitBannerLines(el, '.toast-title, .toast-sub'));
   }
 
   /**
@@ -181,8 +196,8 @@ export class UiRoot {
   }
 
   /**
-   * 알림을 가장 최근 하나만 보이게 (true) / 최대 3개 쌓이게 (false). 위쪽 정보 패널이 열려 있으면 Game 장면이 켠다
-   * → 알림이 HUD 아래 한 줄 자리를 넘쳐 패널 머리줄(이름·별·✕)을 덮지 않는다.
+   * 위쪽 정보 패널이 열려 있음 표시 (Game 장면이 켠다). v0.1.22부터 알림은 언제나 하나만 보여(MAX_VISIBLE_NOTICES) 이 표시는
+   * CSS 안전장치로만 남는다 — 알림이 HUD 아래 한 줄 자리를 넘쳐 패널 머리줄(이름·별·✕)을 덮지 않게.
    */
   setToastSingle(on: boolean): void {
     this.layers.toast.classList.toggle('is-single', on);

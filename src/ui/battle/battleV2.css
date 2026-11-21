@@ -246,3 +246,70 @@
 .battle-v2 .hud-menu.is-g1 .hud-menu-badge, .battle-v2 .hud-side-btns > .hud-menu-btn .hud-menu-badge { font-size:max(12px,2.4cqw); }
 /* 12px 배지가 320px의 좁은 [도박] 칸에서 '잭팟 0/…'로 잘리지 않게 (좌우 여백만 줄임) */
 @container (max-width:360px) { .battle-v2 .hud-menu.is-g1>:is(.is-mythic,.is-gamble) { padding-inline:1px; } .battle-v2 .hud-menu.is-g1 .hud-menu-badge { letter-spacing:-0.2px; } }
+/* ---------- v0.1.22 화면 고침 ---------- */
+/* A① 알림 한 줄: 하나만 보인다(UiRoot.pushNotice). 일반 알림은 글자 + 합친 수 '×n'을 한 줄로 — 넘치면 12px까지 줄이고, 그래도 넘치면 두 줄(12px) */
+.battle-v2 .toast:not(.toast-banner) { flex-direction:row; gap:6px; }
+.battle-v2 .toast .toast-text { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.battle-v2 .toast .toast-text.is-clipped { white-space:normal; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; font-size:12px!important; line-height:1.15; text-align:center; word-break:keep-all; overflow-wrap:anywhere; }
+.battle-v2 :is(.toast-title,.toast-sub) { max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+.battle-v2 .toast { position:relative; }
+.battle-v2 .toast-count { flex:none; padding:0 6px; border-radius:999px; background:var(--rtd-primary); color:var(--rtd-outline); font:700 12px/18px var(--rtd-body-font); text-shadow:none; }
+.battle-v2 .toast-banner > .toast-count { position:absolute; right:-6px; top:-8px; }
+@container (max-width:300px) { .battle-v2 .toast .toast-text.is-clipped { display:block; white-space:nowrap; } }
+/* B① 정보 패널 머리줄 버튼: [초상] 이름·부제 / 그 아래 [⬆ 승급] [↔ 이동] ([🛠]) [판매] [✕] — 아래 버튼 줄 없음 (패널이 낮아짐) */
+.battle-v2 .tp-head { display:grid; grid-template-columns:auto minmax(0,1fr); grid-template-areas:"pic title" "pic acts"; column-gap:8px; row-gap:6px; align-items:center; }
+.battle-v2 .tp-head > .tp-portrait-wrap { grid-area:pic; align-self:start; }
+.battle-v2 .tp-head > .tp-title { grid-area:title; }
+.battle-v2 .tp-head-actions { grid-area:acts; display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:stretch; gap:4px; min-width:0; }
+.battle-v2 .tp-head-actions > .btn { position:relative; flex:none; min-width:44px; min-height:44px; height:44px; margin:0; padding:2px 8px; display:inline-flex; align-items:center; justify-content:center; gap:4px; white-space:nowrap; line-height:1.1; }
+.battle-v2 .tp-head-actions > :is(.tp-merge,.tp-move) { flex:1 1 0; max-width:128px; font-size:16px; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+.battle-v2 .tp-head-actions > .tp-sell { width:auto; min-width:56px; height:44px; padding:2px 6px; font-size:12px; }
+.battle-v2 .tp-head-actions > .tp-close { width:44px; }
+.battle-v2 .tp-head-actions .tp-ico { font-size:16px; line-height:1; }
+/* 승급할 수 없으면 차분한 회색 (빨강은 '모자라요'에만 — V2-R21 #80 🟠10). 이유는 aria-label·title */
+.battle-v2 .tower-panel .tp-head-actions > .tp-merge:disabled { background:var(--rtd-disabled); color:var(--rtd-muted-ink); border-color:#9C8266; box-shadow:none; }
+/* 꾹 눌러 모두 승급: '꾹 ×n' 표시 + 누르는 동안 아래 막대가 0.5초에 찬다 (ui/hold.ts LONG_PRESS_MS) */
+.battle-v2 .tp-hold-hint { position:absolute; top:-9px; right:-4px; padding:0 5px; border:1.5px solid var(--rtd-outline); border-radius:999px; background:var(--rtd-paper); color:var(--rtd-outline); font:700 12px/16px var(--rtd-body-font); pointer-events:none; }
+.battle-v2 .tp-hold-hint[hidden] { display:none; }
+.battle-v2 .tp-merge.is-holding::after { content:''; position:absolute; left:3px; right:3px; bottom:3px; height:4px; border-radius:2px; background:var(--rtd-outline); transform-origin:left center; animation:tp-hold-fill 500ms linear forwards; }
+@keyframes tp-hold-fill { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+@media(prefers-reduced-motion:reduce) { .battle-v2 .tp-merge.is-holding::after { animation-duration:1ms; animation-delay:499ms; transform:scaleX(0); } }
+/* 화면 읽기·키보드 전용 ([모두 승급] 버튼 · 승급 못 하는 이유) — 눈에는 안 보이고 자리도 없다 */
+.tp-sr { position:absolute!important; width:1px!important; height:1px!important; min-width:0!important; min-height:0!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip-path:inset(50%)!important; border:0!important; white-space:nowrap!important; }
+/* 좁은 무대(≤360px): 승급·이동은 그림 위·글자 아래 두 줄 (44px 칸 안) */
+@container (max-width:360px) {
+ .battle-v2 .tp-head { column-gap:6px; }
+ .battle-v2 .tp-head-actions > :is(.tp-merge,.tp-move) { flex-direction:column; gap:0; padding:2px 4px; font-size:12px; }
+ .battle-v2 .tp-head-actions .tp-ico { font-size:14px; }
+ /* 개발자 [🛠 변환]까지 다섯 개는 한 줄에 안 들어간다 → 🛠만 다음 줄로 ([✕]가 밀려 내려가지 않게) */
+ .battle-v2 .tp-head-actions > .tp-convert { order:9; }
+}
+/* 3① 초상이 빈 네모로 보이던 것: 초상 전체를 덮는 [ℹ] 누르기 칸이 V2 버튼 바탕(.battle-v2 … .btn)을 받아 그림을 가렸다 → 투명, ℹ만 모서리에 */
+.battle-v2 .tower-panel .tp-portrait-wrap > .tp-info { background:transparent; border:0; box-shadow:none; padding:0; min-width:44px; min-height:44px; }
+/* 작은 정보 글자 12px 이상 (물리·마법·공속·사거리·범위·방관·마관·치명·특색·보유·대상) — 패널이 낮아진 만큼 키움 */
+.battle-v2 .tower-panel { font-size:max(12px,3.4cqw); }
+.battle-v2 .tower-panel :is(.tp-base,.tp-paused,.tp-level) { font-size:max(12px,2.8cqw); }
+.battle-v2 .tower-panel .tp-owned { font-size:max(13px,3.8cqw); }
+/* 머리줄(나무색) 위 부제·레벨은 밝은 글자 (예전 진갈색 글자는 나무색 위에서 약 1.6:1) */
+.battle-v2 .tp-head :is(.tp-sub,.tp-level) { color:#FFF3DC; }
+/* 4 리미티드 도감 재료 칩 = 재료 등급 색 (V2 [data-grade] 토큰 --rtd-grade-bg): 판 위에 있으면 채운 칩 + ✓, 없으면 종이 바탕 + 등급 색 테두리.
+   글자 대비 4.5:1 이상 — 밝은 바탕(노말·히어로·레전드)은 진갈색, 어두운 바탕(레어·유니크·신·리미티드)은 흰 글자 */
+.battle-v2 .my-mat[data-grade] { border:2px solid var(--rtd-grade-bg); background:#FFF8E6; color:var(--rtd-outline); font-weight:700; line-height:1.3; }
+.battle-v2 .my-mat[data-grade].is-on { background:var(--rtd-grade-bg); color:var(--rtd-outline); border-color:var(--rtd-outline); }
+.battle-v2 .my-mat[data-grade].is-on:is([data-grade='rare'],[data-grade='unique'],[data-grade='god'],[data-grade='hidden']) { color:#FFFFFF; }
+/* 5 보상 선택 창 머리줄이 가려지던 것: 창 전체가 스크롤되면 머리줄이 위로 밀려 맵 쪽으로 사라졌다 → 머리줄 고정, 아래만 스크롤 (높이 상한은 V2-R21 그대로) */
+.battle-v2 .choice-panel { display:flex; flex-direction:column; overflow:hidden; }
+.battle-v2 .choice-panel > .cp-head { flex:none; }
+.battle-v2 .choice-panel > .cp-body { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:6px; overflow-y:auto; overscroll-behavior:contain; }
+.battle-v2 .cp-head .cp-title { overflow:hidden; text-overflow:ellipsis; }
+.battle-v2 .choice-panel.is-peeking > .cp-body { overflow:hidden; }
+/* 6 바텀 시트 위 끝: 손잡이 칸이 종이색 띠로 나무색 머리줄 위에 따로 보이던 것 → 손잡이도 머리줄 나무색 안에 (다른 V2 종이 창처럼 위 끝이 머리줄) */
+.battle-v2 .bsheet > .bs-grip { padding:4px 0 0; background:var(--rtd-wood); border-radius:9px 9px 0 0; }
+.battle-v2 .bsheet > .bs-grip .bs-grip-bar { width:40px; height:4px; background:#FFF3DC99; }
+.battle-v2 .bsheet > .bs-grip + .bs-head { border-radius:0; }
+/* 도전 시트는 보상 선택 창처럼 맵 높이의 절반까지 (360px 이하 60%), 목록은 시트 안에서 스크롤. 끄는 동안(.is-dragging)·85%로 펼치면 예전 그대로 */
+.battle-v2 .bsheet.is-challenge[data-size='half']:not(.is-dragging) { top:auto; height:calc((100% - var(--guide-top,140px) - var(--dock-h,180px)) * .5); }
+@container (max-width:360px) { .battle-v2 .bsheet.is-challenge[data-size='half']:not(.is-dragging) { height:calc((100% - var(--guide-top,140px) - var(--dock-h,180px)) * .6); } }
+.battle-v2 .bsheet.is-challenge > .bs-body { min-height:0; }
+/* 도감 머리줄(나무색) '발견 n/12'도 밝은 글자 (진갈색은 나무색 위 약 2:1) */
+.battle-v2 .bs-head .my-summary { color:#FFF3DC; }

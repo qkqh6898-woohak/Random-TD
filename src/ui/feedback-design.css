@@ -82,7 +82,7 @@
   color: #fff5d6;
   text-shadow: 0 1px 3px #231b20;
 }
-.tp-head > .tp-sell {
+.tp-head-actions > .tp-sell {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -100,10 +100,10 @@
   border-color: rgba(232, 182, 74, 0.45);
   white-space: nowrap;
 }
-.tp-head > .tp-sell:not(.is-confirm) > span:first-child { display: none; }
-.tp-head > .tp-sell .tp-word { display: inline; font-weight: 800; }
-.tp-head > .tp-sell.is-confirm .tp-word { display: block; max-width: 13.5cqw; white-space: normal; font-size: 10px; line-height: 1.1; }
-.tp-head > .tp-sell.is-confirm { color: #fff; background: #a8231b; border-color: #ffc2bb; }
+.tp-head-actions > .tp-sell:not(.is-confirm) > span:first-child { display: none; }
+.tp-head-actions > .tp-sell .tp-word { display: inline; font-weight: 800; }
+.tp-head-actions > .tp-sell.is-confirm .tp-word { display: block; max-width: 13.5cqw; white-space: normal; font-size: 10px; line-height: 1.1; }
+.tp-head-actions > .tp-sell.is-confirm { color: #fff; background: #a8231b; border-color: #ffc2bb; }
 .tp-name { font-size: 4.4cqw; }
 
 /* 종족 소환은 좁은 보조 행. 확률/천장/가격과 7개 종족 선택은 그대로 읽고 누를 수 있다. */

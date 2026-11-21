@@ -1,7 +1,7 @@
 /**
  * 💠 리미티드 시트 (G-1 하단 메뉴 [리미티드]): 리미티드(히든) 조합 도감 12종 + [제작].
  *
- * - 줄: 초상화 · 이름 · 재료 칩 (판 위에 있으면 ✓) · [제작].
+ * - 줄: 초상화 · 이름 · 재료 칩 (판 위에 있으면 ✓ + 채운 칩, 없으면 테두리 칩 — v0.1.22 칩 색은 재료 등급 색) · [제작].
  *   발견 전 조합은 초상화를 실루엣(검게)으로, 이름 '???', 재료는 힌트 하나(등급이 가장 높은 재료)만 이름 — 나머지 '???'.
  * - 발견 = 만들었거나 재료를 한꺼번에 가졌을 때 (계정에 영구 기록 — src/meta/account.ts codex).
  * - [제작]은 발견한 조합에서 재료가 모두 판 위에 있고 놓을 칸이 있을 때만 켜진다 → onCraft(r) → Game이 craft 명령.
@@ -63,7 +63,7 @@ export function createMythicSheet(opts: MythicSheetOptions, first: CodexSheetMod
   }
   let lastSummary = '';
   const paint = (e: RowEls, r: CodexRowModel): void => {
-    const key = `${r.found}|${r.locked}|${r.name}|${r.craftable}|${r.note}|${r.materials.map((m) => `${m.name}:${m.onBoard}`).join(',')}`;
+    const key = `${r.found}|${r.locked}|${r.name}|${r.craftable}|${r.note}|${r.materials.map((m) => `${m.name}:${m.onBoard}:${m.grade ?? ''}`).join(',')}`;
     if (key === e.key) return;
     e.key = key;
     e.root.dataset.found = r.found ? '1' : '0';
@@ -72,7 +72,14 @@ export function createMythicSheet(opts: MythicSheetOptions, first: CodexSheetMod
     e.pic.classList.toggle('is-silhouette', !r.found);
     e.name.textContent = r.found ? `💠 ${r.name}` : '💠 ???';
     e.mats.replaceChildren(
-      ...r.materials.map((m) => h('span', { class: `my-mat${m.onBoard ? ' is-on' : ''}${m.known ? '' : ' is-unknown'}`, text: m.onBoard ? `✓ ${m.name}` : m.name })),
+      // v0.1.22: 칩 색 = 재료 등급 색 (V2 [data-grade] 토큰). 판 위에 있으면 채운 칩 + ✓, 없으면 테두리만 — 이름·등급·있음은 aria-label
+      ...r.materials.map((m) =>
+        h('span', {
+          class: `my-mat${m.onBoard ? ' is-on' : ''}${m.known ? '' : ' is-unknown'}`,
+          text: m.onBoard ? `✓ ${m.name}` : m.name,
+          attrs: { role: 'img', 'aria-label': m.label, title: m.label, ...(m.grade ? { 'data-grade': m.grade } : {}) },
+        }),
+      ),
     );
     e.btn.disabled = !r.craftable;
     e.btn.classList.toggle('is-off', !r.craftable);

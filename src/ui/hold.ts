@@ -138,3 +138,90 @@ export function attachHoldRepeat(btn: HTMLElement, fire: () => boolean, options:
     },
   };
 }
+
+/**
+ * 꾹 누르기 한 번 (v0.1.22 사용자 결정 B①: 정보 패널 [⬆ 승급]을 꾹 누르면 '모두 승급'). 이 시간(ms) 동안 누르고 있으면 onLong.
+ */
+export const LONG_PRESS_MS = 500;
+
+/** 누른 시간 → 할 일 (순수): 꾹 누르기가 허락되고 LONG_PRESS_MS 이상이면 'long', 아니면 'tap' (뗄 때 click이 onTap). */
+export function longPressAction(heldMs: number, canLong: boolean, ms = LONG_PRESS_MS): 'long' | 'tap' {
+  return canLong && heldMs >= ms ? 'long' : 'tap';
+}
+
+export interface LongPressOptions {
+  onTap: () => void;
+  onLong: () => void;
+  /** 지금 꾹 누르기가 뜻이 있는가 (아니면 누르는 동안 표시도 없이 짧게 누르기와 같다) */
+  canLong: () => boolean;
+  /** 누르고 있는 동안 표시 켜기/끄기 (링 채우기 — CSS 애니메이션이 LONG_PRESS_MS 동안 찬다) */
+  onHoldChange?: (on: boolean) => void;
+  ms?: number;
+}
+
+export interface LongPressHandle {
+  detach(): void;
+}
+
+/**
+ * 버튼에 '짧게 = onTap, 꾹(ms) = onLong'을 붙인다. 꾹 누르기가 끝나면 손을 떼며 따라오는 click은 버린다 (두 번 쏘지 않게).
+ * 키보드(Enter·Space)는 click → onTap. 타이머는 화면 전용 (sim 시간과 무관, 명령은 콜백 안에서 큐에 들어간다).
+ */
+export function attachLongPress(btn: HTMLElement, opts: LongPressOptions): LongPressHandle {
+  const ms = opts.ms ?? LONG_PRESS_MS;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  /** 꾹 누르기가 쏜 시각 (그 뒤 1초 안의 click 하나만 버린다 — 손을 떼며 따라오는 click) */
+  let longAt = -Infinity;
+  let holding = false;
+  const setHolding = (on: boolean): void => {
+    if (holding === on) return;
+    holding = on;
+    opts.onHoldChange?.(on);
+  };
+  const cancel = (): void => {
+    clearTimeout(timer);
+    timer = undefined;
+    setHolding(false);
+  };
+  const onDown = (ev: Event): void => {
+    const pe = ev as PointerEvent;
+    if (pe.button !== undefined && pe.button !== 0) return;
+    cancel();
+    longAt = -Infinity;
+    if (!opts.canLong()) return;
+    setHolding(true);
+    timer = setTimeout(() => {
+      timer = undefined;
+      setHolding(false);
+      if (longPressAction(ms, opts.canLong(), ms) !== 'long') return;
+      longAt = Date.now();
+      opts.onLong();
+    }, ms);
+  };
+  const onClick = (ev: Event): void => {
+    if (Date.now() - longAt < 1000) {
+      longAt = -Infinity;
+      ev.preventDefault();
+      return;
+    }
+    opts.onTap();
+  };
+  btn.addEventListener('pointerdown', onDown);
+  btn.addEventListener('pointerup', cancel);
+  btn.addEventListener('pointerleave', cancel);
+  btn.addEventListener('pointercancel', cancel);
+  btn.addEventListener('click', onClick);
+  const noMenu = (e: Event): void => e.preventDefault();
+  btn.addEventListener('contextmenu', noMenu);
+  return {
+    detach() {
+      cancel();
+      btn.removeEventListener('pointerdown', onDown);
+      btn.removeEventListener('pointerup', cancel);
+      btn.removeEventListener('pointerleave', cancel);
+      btn.removeEventListener('pointercancel', cancel);
+      btn.removeEventListener('click', onClick);
+      btn.removeEventListener('contextmenu', noMenu);
+    },
+  };
+}

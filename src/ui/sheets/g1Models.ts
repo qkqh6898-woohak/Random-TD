@@ -2,7 +2,7 @@
  * G-1 바텀 시트 내용 (순수 함수, DOM 없음 → 단위 테스트): [소환] 시트 (일반 소환 + 소환 도박 4종 + 천장) · [리미티드] 도감 시트.
  * 값은 sim 상태를 읽기만 한다 (명령은 Game 장면이 보낸다).
  */
-import type { GachaGrade, TowerData } from '../../data/load';
+import type { GachaGrade, Grade, TowerData } from '../../data/load';
 import { isHiddenLocked } from '../../sim/unlocks';
 import type { World } from '../../sim/World';
 import { BP_ONE } from '../../sim/Fixed';
@@ -117,6 +117,10 @@ export interface CodexMaterial {
   onBoard: boolean;
   /** 이름이 보이는가 (발견했거나 힌트 재료) */
   known: boolean;
+  /** 재료 타워 등급 (v0.1.22: 칩 색 = V2 등급 색 [data-grade]). 이름을 모르면 null */
+  grade: Grade | null;
+  /** 칩 읽어 주기: '화염 마법사 · 레어 · 판 위에 있어요' (색만으로 알리지 않게) */
+  label: string;
 }
 
 export interface CodexRowModel {
@@ -165,6 +169,7 @@ export function codexSheetModel(
   fragments?: (towerId: string) => { have: number; need: number } | null,
 ): CodexSheetModel {
   const names = new Map(towers.map((t) => [t.id, t.name]));
+  const grades = new Map(towers.map((t) => [t.id, t.grade]));
   const rank = new Map(towers.map((t) => [t.id, gradeRank(t.grade)]));
   const owned = ownedCounts(world, player);
   let ready = 0;
@@ -176,7 +181,11 @@ export function codexSheetModel(
       const n = left.get(id) ?? 0;
       if (n > 0) left.set(id, n - 1);
       const known = isFound || i === hint;
-      return { id, name: known ? (names.get(id) ?? id) : '???', onBoard: known && n > 0, known };
+      const name = known ? (names.get(id) ?? id) : '???';
+      const grade = known ? (grades.get(id) ?? null) : null;
+      const onBoard = known && n > 0;
+      const label = known ? `${name} · ${grade ? GRADE_NAMES[grade] : ''} · ${onBoard ? '판 위에 있어요' : '판 위에 없어요'}` : '모르는 재료';
+      return { id, name, onBoard, known, grade, label };
     });
     const plan = craftPlan(ctx, world, player, r);
     const locked = isHiddenLocked(ctx, player, rc.id);

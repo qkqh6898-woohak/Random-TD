@@ -87,8 +87,14 @@ export function createChoicePanel(model: ChoiceModel, onPick: (index: number) =>
     'div',
     { class: `choice-panel is-${model.kind}`, attrs: { role: 'dialog', 'aria-label': model.title, 'data-testid': `choice-${model.kind}` } },
     h('div', { class: 'cp-head' }, h('div', { class: 'cp-head-text' }, h('div', { class: 'cp-title', text: model.title }), battleTime), peek, later),
-    model.sub ? h('div', { class: 'cp-sub', text: model.sub }) : null,
-    h('div', { class: `cp-options cp-n${options.length}` }, ...options),
+    // v0.1.22: 머리줄은 고정, 아래(보조 설명·카드)만 창 안에서 스크롤 — 카드 글자가 커져(휴대폰 글자 크기 등) 창이 넘쳐도
+    // 머리줄(웨이브 시간·[👁 전장 보기]·[나중에])이 밀려 올라가 가려지지 않게
+    h(
+      'div',
+      { class: 'cp-body', attrs: { 'data-testid': 'choice-body' } },
+      model.sub ? h('div', { class: 'cp-sub', text: model.sub }) : null,
+      h('div', { class: `cp-options cp-n${options.length}` }, ...options),
+    ),
   );
   const pillLabel = model.kind === 'card' ? '카드 고르기' : '결과 고르기';
   const pill = h(
