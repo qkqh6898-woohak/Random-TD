@@ -1,0 +1,63 @@
+/* PR-F: presentation of existing lobby panels/dialogs; costs, ownership and callbacks stay in Lobby.ts. */
+.lobby-v2:is([data-tab='shop'],[data-tab='codex'],[data-tab='locked']) { background:var(--rtd-bg); }
+.lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked) { padding:10px calc(12px + var(--lobby-safe-right)) 0 calc(12px + var(--lobby-safe-left)); gap:10px; }
+.lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked) .lobby-panel-title { color:white; font:22px/1.2 var(--rtd-title-font); -webkit-text-stroke:1.5px var(--rtd-outline); paint-order:stroke fill; }
+.lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked) .lobby-note { margin:0; color:white; font:14px/1.5 var(--rtd-body-font); }
+.lobby-v2 :is(.lobby-shop,.lobby-codex) .lobby-count { color:white; font:14px/1.4 var(--rtd-body-font); }
+.lobby-v2 :is(.shop-list,.codex-list) { gap:10px; padding:3px 3px 14px; }
+.lobby-v2 :is(.shop-item,.codex-row,.mode-card) { border:2px solid var(--rtd-outline); border-radius:12px; background:var(--rtd-paper); box-shadow:0 3px var(--rtd-outline); color:var(--rtd-outline); }
+.lobby-v2 :is(.shop-item,.codex-row) { display:grid; grid-template-columns:48px minmax(0,1fr); gap:8px; padding:10px; }
+.lobby-v2 :is(.shop-icon,.codex-art) { grid-row:1 / 3; width:48px; height:56px; margin:auto; border:2px solid var(--rtd-outline); border-radius:8px; background:#D9D0B8; box-shadow:inset 0 2px white; }
+.lobby-v2 :is(.shop-text,.codex-text) { min-width:0; gap:5px; }
+.lobby-v2 :is(.shop-text,.codex-text) strong { font:18px/1.25 var(--rtd-title-font); overflow-wrap:anywhere; }
+.lobby-v2 :is(.shop-text,.codex-text) small { color:var(--rtd-outline); font:12px/1.5 var(--rtd-body-font); overflow-wrap:anywhere; }
+.lobby-v2 :is(.shop-buy,.codex-open,.codex-unlock) { grid-column:2; justify-self:stretch; margin:0; }
+.lobby-v2 .codex-row.is-ready { border-color:var(--rtd-outline); box-shadow:0 3px var(--rtd-outline), inset 0 0 0 2px var(--rtd-progress); }
+.lobby-v2 .codex-row:not(.is-unlocked) .codex-portrait { filter:brightness(0); }
+.lobby-v2 .codex-row:not(.is-unlocked) .codex-art { filter:none; }
+.lobby-v2 :is(.codex-frag-num,.codex-state) { color:var(--rtd-outline); font:700 12px/1.4 var(--rtd-body-font); }
+.lobby-v2 .mode-card { margin:0 0 10px; padding:18px 14px; gap:12px; flex:none; }
+.lobby-v2 .lobby-locked { overflow-y:auto; }
+.lobby-v2 .mode-name { color:var(--rtd-outline); font:24px/1.2 var(--rtd-title-font); }
+.lobby-v2 :is(.mode-desc,.mode-lock) { color:var(--rtd-outline); font:14px/1.5 var(--rtd-body-font); }
+/* Native dialog owns focus, Escape and Android back. Header stays outside the scrolling paper. */
+.lobby-v2 .lobby-popup-v2:not(.lobby-menu-dialog) { width:calc(100% - 24px - var(--lobby-safe-left) - var(--lobby-safe-right)); max-width:480px; max-height:calc(100dvh - 32px - var(--lobby-safe-top) - var(--lobby-safe-bottom)); padding:10px; border:3px solid var(--rtd-outline); border-radius:12px; background:var(--rtd-wood); color:var(--rtd-outline); box-shadow:inset 0 0 0 2px #AD7B58,0 6px #3B231466; overflow:hidden; }
+.lobby-v2 .lobby-popup-v2:not(.lobby-menu-dialog)[open] { display:flex; flex-direction:column; animation:rtd-popup-in 150ms ease-out; }
+.lobby-v2 .lobby-popup-v2::backdrop { background:#0009; }
+.lobby-v2 .lobby-popup-v2 .lobby-dialog-head { flex:none; min-height:56px; padding:0 0 10px; border:0; gap:8px; }
+.lobby-v2 .lobby-popup-v2 .lobby-dialog-head h2 { color:white; font:24px/1.2 var(--rtd-title-font); overflow-wrap:anywhere; -webkit-text-stroke:1.5px var(--rtd-outline); paint-order:stroke fill; }
+.lobby-v2 .lobby-popup-v2 .lobby-close { min-width:44px; width:44px; min-height:44px; padding:8px; flex:none; }
+.lobby-v2 .lobby-popup-v2:not(.lobby-menu-dialog) .lobby-dialog-body { position:relative; margin:0; padding:14px 12px; border:2px solid var(--rtd-outline); border-radius:8px; background:var(--rtd-paper); color:var(--rtd-outline); gap:12px; overscroll-behavior:contain; }
+.lobby-v2 .lobby-popup-v2 :is(p,.lobby-note,.hero-detail-cards,.hero-detail-bonus,.hero-detail-deck,.hero-detail-lore,.hero-detail-role,.hero-detail-ability,.hero-detail-why,.recruit-reward) { color:var(--rtd-outline); font-size:14px; line-height:1.5; }
+.lobby-v2 .lobby-popup-v2 :is(.hero-detail-ability strong,.hero-detail-lv,.recruit-gauge strong) { color:var(--rtd-outline); }
+.lobby-v2 .hero-detail { gap:12px; }
+.lobby-v2 .hero-detail-top { gap:10px; align-items:start; }
+.lobby-v2 .hero-detail-art { width:84px; height:100px; border:2px solid var(--rtd-grade-border); border-radius:10px; background:var(--rtd-grade-bg); box-shadow:0 0 0 2px var(--rtd-outline); }
+.lobby-v2 .hero-detail-info { flex:1; gap:6px; }
+.lobby-v2 .hero-detail-lv { font:22px/1.2 var(--rtd-title-font); }
+.lobby-v2 .hero-stats { grid-template-columns:minmax(0,1fr) minmax(0,1fr); padding:10px; gap:8px; border:1px solid #9C8266; border-radius:8px; background:#E4D5B7; color:var(--rtd-outline); font-size:14px; }
+.lobby-v2 .hero-stats :is(dt,dd) { color:var(--rtd-outline); overflow-wrap:anywhere; }
+.lobby-v2 .hero-detail-actions { padding:8px 0 2px; gap:8px; }
+.lobby-v2 .lobby-popup-v2 .hero-levelup small { font-size:12px; }
+.lobby-v2 :is(.quest-top,.quest-segs) { gap:6px; flex-wrap:wrap; }
+.lobby-v2 .lobby-popup-v2 .quest-row { padding:10px 8px; border:1px solid #9C8266; border-radius:8px; background:#FFF8E6; box-shadow:none; gap:8px; }
+.lobby-v2 .lobby-popup-v2 .quest-row.is-done { border:2px solid var(--rtd-badge); }
+.lobby-v2 .lobby-popup-v2 .quest-row.is-claimed { opacity:1; background:#D9D0B8; }
+.lobby-v2 .lobby-popup-v2 .quest-text strong { font:16px/1.35 var(--rtd-title-font); }
+.lobby-v2 .lobby-popup-v2 .quest-text small { color:var(--rtd-outline); font:12px/1.5 var(--rtd-body-font); }
+.lobby-v2 .lobby-popup-v2 :is(.quest-claim,.quest-claim-all) { min-width:64px; }
+.lobby-v2 .lobby-popup-v2 .recruit-gauge strong { font-size:18px; }
+.lobby-v2 .lobby-popup-v2 :is(.hero-card-bar,.lobby-gauge) { min-height:10px; background:#8B806D; border:1px solid var(--rtd-outline); }
+.lobby-v2 .lobby-popup-v2 :is(.hero-card-fill,.lobby-gauge-fill) { background:var(--rtd-progress); }
+.lobby-v2 .lobby-popup-v2 .grant-card { border:2px solid var(--rtd-outline); background:#E4D5B7; box-shadow:none; border-radius:8px; }
+.lobby-v2 .lobby-popup-v2 :is(.grant-name,.grant-n,.grant-frags,.go-chip) { color:var(--rtd-outline); font-size:12px; }
+.lobby-v2 .lobby-popup-v2 .lobby-setting { font-size:14px; flex-wrap:wrap; }
+/* Existing action elements and handlers are retained; only the visual variants are shared. */
+.lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn:not(.rtd-button) { min-width:44px; min-height:44px; border:2px solid var(--rtd-outline); border-radius:9px; padding:8px 10px; background:var(--rtd-secondary); color:white; font:16px/1.25 var(--rtd-title-font); text-shadow:none; box-shadow:inset 0 2px #ffffff33,0 3px var(--rtd-outline); transition:transform 100ms,filter 100ms; }
+.lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn-primary:not(:disabled),.lobby-v2 .lobby-popup-v2 .lobby-seg.is-on { background:var(--rtd-primary); color:var(--rtd-outline); box-shadow:inset 0 2px #FFF4AD,0 3px var(--rtd-primary-shadow); }
+.lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn:disabled { background:var(--rtd-disabled); color:var(--rtd-danger-ink); box-shadow:0 2px var(--rtd-outline); opacity:1; filter:none; }
+.lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn:active:not(:disabled) { transform:scale(.95); filter:brightness(.96); }
+@media(prefers-reduced-motion:reduce) { .lobby-v2 .lobby-popup-v2[open] { animation:none; } .lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn { transition:none; } .lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn:active { transform:none; } }
+.lobby-v2 .lobby-popup-v2 .grant-name { white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; }
+.lobby-v2 .lobby-popup-v2 .go-chip { background:#E4D5B7; box-shadow:none; border:1px solid #9C8266; }
+.lobby-v2 .lobby-popup-v2 .go-card-new { background:var(--rtd-danger-ink); color:white; font:12px/1.2 var(--rtd-title-font); }
