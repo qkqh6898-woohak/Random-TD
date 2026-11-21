@@ -45,3 +45,13 @@
 .lobby-v2 .hero-growth-dialog .rtd-popup-head, .lobby-v2 .hero-growth-dialog .rtd-popup-footer { flex: none; }
 .lobby-v2 .hero-growth-dialog .rtd-popup-paper { display: flex; flex: 1 1 auto; min-height: 0; }
 .lobby-v2 .hero-growth-copy { width: 100%; min-height: 0; overflow: auto; padding: 0 2px; }
+
+/* V2-R21 (PR-E 검토 🟡): 짧은 무대(320×640 등)에서도 영웅 카드가 두 줄 이상 보이게 머리 부분 간격만 줄인다 (글자 12px·터치 44px 그대로) */
+@container (max-height: 700px) {
+  .lobby-v2[data-tab='heroes'] .lobby-toolbar { min-height: 44px; padding-block: 0; }
+  .lobby-v2 .heroes-v2 { gap: 2px; padding-top: 2px; }
+  .lobby-v2 .hero-summary { padding: 2px 8px; }
+  .lobby-v2 .hero-summary p { line-height: 1.2; }
+  .lobby-v2 .hero-summary strong { line-height: 1.2; }
+  .lobby-v2 .heroes-v2 .lobby-scroll { padding-top: 0; }
+}
