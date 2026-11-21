@@ -1775,6 +1775,10 @@
 - 기존 구매/보상/해방/레벨업/모드 조건과 native dialog/뒤로 가기·선택자는 유지한다. 경제·저장·sim·data·ID·캐릭터·Android·CI는 수정하지 않는다. 새 자산 없이 PR-B 컴포넌트/아이콘/글꼴을 재사용한다.
 - 인계: [PR-F](design/v2/details/PR-F.md), 네 폭 캡처와 validation.json. main 병합·푸시·릴리스 없이 검토 브랜치로 전달한다.
 
+### PR-F 최종 검증
+
+전체 Canvas E2E 284개: 277통과·1실패·6건너뜀. 세 묶음 순차 실행, 누락·중복0, 전후 소스 해시 동일. 실패는 관리형 Chromium의 file:// 정책 차단이며 HTTP 단일 HTML 확인과 구분한다. HUD 겹침4건과 자동 승급 대기 검사는 기존 조건을 유지한 채 이번 통합에서 통과했다. 독립 검사와 통합 범위는 해당 validation.json에 구분했다. main은 변경하지 않는다.
+
 ## V2 PR-G — 전투 UI·자연 필드·메뉴/통계
 
 - PR-F와 필드 #79를 합친 검토 기준 design/v2-battle-base 위에서 진행한다. main3abfda6, main 병합·푸시·릴리스는 하지 않는다.
