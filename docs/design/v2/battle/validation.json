@@ -15,10 +15,6 @@
     "passed": 20,
     "hudExpectationsUnchanged": true
   },
-  "defaultChromium": {
-    "passed": 2,
-    "coverage": "normal 393px UI/menu/stats/mission/upgrade, actual stage/choice/hold-to-see"
-  },
   "finalCanvasUi": {
     "passed": 6,
     "normalPlayerScreens": true
@@ -30,5 +26,15 @@
     "passed": 6,
     "repeatEach": 3,
     "assertion": ">=3 preserved, waits for queued commands"
-  }
+  },
+  "nativeBackFinalCanvas": {
+    "passed": 8,
+    "coverage": "four normal widths, actual choices/peek, short safe-area and existing Android back flows"
+  },
+  "fontNewLabelsMissing": [],
+  "defaultChromiumBeforeNativeFix": {
+    "passed": 2,
+    "coverage": "normal 393px UI/menu/stats/mission/upgrade, actual stage/choice/hold-to-see"
+  },
+  "defaultChromium": "final run pending"
 }

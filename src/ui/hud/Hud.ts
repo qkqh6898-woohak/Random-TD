@@ -95,6 +95,8 @@ export interface HudView extends UiView {
   readonly band: HTMLElement;
   /** HUD 띠 아래 끝 = 무대 위쪽에서 잰 CSS px */
   bandBottom(): number;
+  /** Android back closes the transient menu before other game overlays. */
+  closeTransientMenu(): boolean;
   /** 아래 띠 (타워 수·소환 안내). 크기가 바뀌면 맵 배치를 다시 한다 */
   readonly bottomBand: HTMLElement;
   /** 아래 띠 위쪽 끝 = 무대 위쪽에서 잰 CSS px */
@@ -483,6 +485,11 @@ export function createHud(opts: HudOptions): HudView {
   return {
     el,
     band,
+    closeTransientMenu() {
+      const wasOpen = !menuList.hidden;
+      closeMenu();
+      return wasOpen;
+    },
     bandBottom() {
       return band.getBoundingClientRect().bottom - el.getBoundingClientRect().top;
     },

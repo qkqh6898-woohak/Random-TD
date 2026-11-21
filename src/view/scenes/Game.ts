@@ -819,6 +819,7 @@ export class GameScene extends Phaser.Scene {
       this.resume();
       return true;
     }
+    if (this.hud.closeTransientMenu()) return true;
     if (this.convertOpen) this.closeConvertPicker();
     else if (this.ctx.ui.has('card')) this.ctx.ui.clear('card');
     else if (this.guide) this.endGuide(true);
@@ -2489,6 +2490,7 @@ export class GameScene extends Phaser.Scene {
 
   /** 일시정지 메뉴 열기: 게임 시간을 멈춘다 (배속 0). */
   private pause(): void {
+    this.hud.closeTransientMenu();
     if (this.paused || this.gameOver) return;
     this.paused = true;
     this.cancelPress(this.time.now);
