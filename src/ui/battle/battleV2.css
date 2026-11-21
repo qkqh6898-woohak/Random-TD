@@ -153,7 +153,7 @@
  .battle-v2 .toast-banner .toast-sub { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
 }
 .battle-v2 .ms-row.is-claimed,.battle-v2 .ch-row.is-locked { opacity:1; background:#D9D0B8; }
-.battle-v2 .cp-badge { font-size:12px; }
+.battle-v2 .cp-badge { font-size:12px; color:var(--rtd-white); }
 .battle-v2 .bs-note { font-size:14px; }
 .battle-v2 .hud-menu-btn.is-alert::after { width:10px; height:10px; top:-2px; right:-2px; background:var(--rtd-notification); border:2px solid var(--rtd-outline); box-shadow:inset 2px 2px #ffffff99; }
 .battle-v2 :is(.pause-panel,.gameover-panel) { --text:#3B2314; --text-dim:#5C493E; --gold:#3B2314; border:3px solid var(--rtd-outline); border-radius:12px; background:var(--rtd-paper); color:var(--rtd-outline); box-shadow:0 4px var(--rtd-outline); }

@@ -32,7 +32,7 @@ for(const width of [320,360,393,412])test(`PR-G ${width}px: forest field, contro
 test('PR-G actual stage ribbon, choice wave timer and hold-to-see without picking',async({page})=>{
  await start(page);await page.getByTestId('hud-summon').click();await page.getByTestId('hud-ready').click();await expect(page.getByTestId('wave-ribbon')).toHaveText('WAVE 1');await shot(page,'wave-ribbon');await expect(page.getByTestId('wave-ribbon')).toHaveCount(0,{timeout:3000});
  await scene(page,s=>{for(let i=0;i<4;i++)s.match.world.enqueue({type:'debugSkipStage',tick:s.match.tick+i});s.debugFastForward(8);});
- await expect(page.getByTestId('choice-card')).toBeVisible();await expect(page.getByTestId('choice-battle-time')).toContainText('웨이브 남은 시간');await shot(page,'choice');
+ await expect(page.getByTestId('choice-card')).toBeVisible();await expect(page.getByTestId('choice-battle-time')).toContainText('웨이브 남은 시간');await readable(page,'[data-testid="choice-card"]');await shot(page,'choice');
  const before=await scene(page,s=>s.match.state.cardsPicked.length),peek=page.getByTestId('choice-peek'),b=(await peek.boundingBox())!;
  await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();await expect(page.getByTestId('choice-card')).toHaveClass(/is-peeking/);await shot(page,'choice-peek');expect(await scene(page,s=>s.match.state.cardsPicked.length)).toBe(before);
  await page.mouse.up();await expect(page.getByTestId('choice-card')).not.toHaveClass(/is-peeking/);await page.getByTestId('choice-0').click();await expect.poll(()=>scene(page,s=>s.match.state.cardsPicked.length)).toBe(before+1);

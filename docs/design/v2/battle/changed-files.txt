@@ -1,8 +1,12 @@
 docs/PROGRESS.md
 docs/UI.md
+docs/design/v2/REVIEW.md
 docs/design/v2/battle/PR-G.md
 docs/design/v2/battle/assets.json
+docs/design/v2/battle/bundles.json
 docs/design/v2/battle/changed-files.txt
+docs/design/v2/battle/post-regression.json
+docs/design/v2/battle/regression.json
 docs/design/v2/battle/screens/battle-320.png
 docs/design/v2/battle/screens/battle-360.png
 docs/design/v2/battle/screens/battle-393.png
@@ -37,6 +41,10 @@ docs/design/v2/battle/validation.json
 e2e/battle-update.spec.ts
 e2e/battle-v2.spec.ts
 e2e/fb63.spec.ts
+e2e/g1.spec.ts
+e2e/g2.spec.ts
+e2e/gi.spec.ts
+e2e/m3b.spec.ts
 src/ui/battle/battleV2.css
 src/ui/hud/Hud.ts
 src/ui/panels/ChoicePanel.ts

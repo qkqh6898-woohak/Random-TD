@@ -19,7 +19,21 @@
     "passed": 6,
     "normalPlayerScreens": true
   },
-  "fullRegression": "pending",
+  "fullRegression": {
+    "scope": "V2 PR-G with PR-F f861035 and field #79 ba0d3c8 on design/v2-battle-base. Delivery PR-F and PR-G are separate. No main merge/push/release. Full run at e868a62 before the final badge-text CSS/AA supplement; see post-regression.json for that separately verified follow-up.",
+    "commit": "e868a6280d0f133e17b083511cdc48d6c41a4b65",
+    "sourceHash": "ee766dd93011a352bb89573259b2029a7dd8febb1c3ba9fb9bd8d980cd0be168",
+    "collected": 284,
+    "summary": {
+      "passed": 277,
+      "failed": 1,
+      "skipped": 6,
+      "flaky": 0
+    },
+    "report": "regression.json",
+    "missingIds": [],
+    "duplicateIds": []
+  },
   "physicalAndroid": "not tested",
   "mainPushedOrMerged": false,
   "autoMergeRepeat": {
@@ -58,5 +72,15 @@
     "passed": 20,
     "coverage": "battle-v2 six, g1 three, g2 theme five, gi battle, HUD four, m3b status capture",
     "visualContractChanges": "exact V2 colors/flat surfaces; 44 CSS px default cell with all 24 pads; actual choice-later before state screenshot"
+  },
+  "patchApplyCheck": "passed against clean parent worktree",
+  "combinedProductionAndSingleHttp": "passed, bundles.json",
+  "postRegressionBadge": {
+    "report": "post-regression.json",
+    "canvasPassed": 9,
+    "defaultChoicePassed": 1,
+    "finalSourceHash": "016333ab0492fddb56a1d1b1cfdd0ad1ef75e87029fc22b31a3f31f0df035224",
+    "fullAt": "e868a62",
+    "scope": "G CSS badge text + choice AA guard only, after full run"
   }
 }
