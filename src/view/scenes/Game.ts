@@ -884,7 +884,10 @@ export class GameScene extends Phaser.Scene {
       const cells = this.sheetKind === 'upgrade' && this.upgradeTab !== 'gamble' ? towers : selected ? towers.filter(t => t.tower === selected.tower) : [];
       relevant = [...new Map(cells.map(t => [`${t.tx},${t.ty}`, [t.tx, t.ty] as const])).values()];
     }
-    return fieldContext({ blocked, moving, relevant, buildable: this.match.map.buildable, nowMs: this.time.now, hintAtMs: this.buildHintAt, noFade: effectsOff() });
+    // [↔ 이동] 모드(끄는 중이 아님): 옮길 수 있는 칸 + 지금 칸만 (#79 검토 🟠3 — 막힌 칸까지 칠하지 않게)
+    const mv = moving && this.press?.dragging !== true ? this.moveModeView() : null;
+    const moveTargets: FieldCell[] | null = mv ? [[mv.from.tx, mv.from.ty], ...mv.targets.map((t) => [t.tx, t.ty] as const)] : null;
+    return fieldContext({ blocked, moving, moveTargets, relevant, buildable: this.match.map.buildable, nowMs: this.time.now, hintAtMs: this.buildHintAt, noFade: effectsOff() });
   }
 
   /** 지금 칠하는 조작 칸 (E2E). 평상시·일시정지에는 빈 배열. */

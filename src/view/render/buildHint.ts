@@ -2,7 +2,7 @@
  * 전투 칸 표시 (순수 계산, Phaser 없음 → 단위 테스트). docs/design/field-context/README.md '표시 계약'.
  *
  * 평소(시작 직후·전투 중)에는 칸을 그리지 않는다. 조작 중에만 관련 칸을 보여 준다.
- * - 타워를 끄는 동안 · 패널 [↔ 이동] 모드: 배치 가능한 전체 칸 (alpha 1).
+ * - 타워를 끄는 동안: 배치 가능한 전체 칸 (alpha 1). 패널 [↔ 이동] 모드: 옮길 수 있는 칸 + 지금 칸만 (moveTargets, #79 검토 🟠3).
  * - 타워 선택(판매·승급)·강화 창: 호출한 쪽이 고른 관련 칸 (alpha 1).
  * - 잘못 누르기 안내 (#79 검토): 놓을 수 없는 곳(길·막힌 X 칸·맵 밖 땅)을 짧게 누르면 BUILD_HINT_MS 동안 배치 가능한 전체 칸을
  *   보여 주고, 끝 BUILD_HINT_FADE_MS 동안 서서히 사라진다. 연출 끄기(noFade)면 서서히 사라지지 않고 BUILD_HINT_MS가 지나면 바로 꺼진다.
@@ -37,6 +37,8 @@ export interface FieldContextInput {
   blocked: boolean;
   /** 타워를 끄는 중이거나 [↔ 이동] 모드 */
   moving: boolean;
+  /** [↔ 이동] 모드에서 칠할 칸 (옮길 수 있는 칸 + 지금 칸). 없으면(끄는 중) 배치 가능한 전체 칸 */
+  moveTargets?: readonly FieldCell[] | null;
   /** 선택·강화 상태에서 칠할 칸 (없으면 빈 배열) */
   relevant: readonly FieldCell[];
   /** 맵의 배치 가능한 전체 칸 */
@@ -49,7 +51,7 @@ export interface FieldContextInput {
 /** 지금 칠할 칸과 진하기. 칸이 없으면 alpha 0. */
 export function fieldContext(c: FieldContextInput): { tiles: readonly FieldCell[]; alpha: number } {
   if (c.blocked) return { tiles: [], alpha: 0 };
-  if (c.moving) return { tiles: c.buildable, alpha: 1 };
+  if (c.moving) return { tiles: c.moveTargets ?? c.buildable, alpha: 1 };
   if (c.relevant.length) return { tiles: c.relevant, alpha: 1 };
   const a = buildHintAlpha(c.nowMs, c.hintAtMs, c.noFade);
   return a > 0 ? { tiles: c.buildable, alpha: a } : { tiles: [], alpha: 0 };

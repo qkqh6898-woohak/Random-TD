@@ -161,6 +161,13 @@ describe('전투 칸 표시 · 잘못 누르기 안내 (buildHint.ts, #79 검토
     expect(fieldContext({ ...base, moving: true })).toEqual({ tiles: buildable, alpha: 1 });
     expect(fieldContext({ ...base, relevant: [[2, 2]], hintAtMs: 5000 })).toEqual({ tiles: [[2, 2]], alpha: 1 });
   });
+
+  it('[↔ 이동] 모드: 옮길 수 있는 칸 + 지금 칸만 (#79 검토 🟠3), 끄는 중(moveTargets 없음)은 전체 칸', () => {
+    const targets = [[0, 0], [3, 1]] as const;
+    expect(fieldContext({ ...base, moving: true, moveTargets: targets, hintAtMs: 5000 })).toEqual({ tiles: targets, alpha: 1 });
+    expect(fieldContext({ ...base, moving: true, moveTargets: null })).toEqual({ tiles: buildable, alpha: 1 });
+    expect(fieldContext({ ...base, blocked: true, moving: true, moveTargets: targets })).toEqual({ tiles: [], alpha: 0 });
+  });
 });
 
 describe('모든 타워 공격력 기본 보정 (game.json combat.towerAtkPct, T-3 작은 맵 보정 손잡이)', () => {

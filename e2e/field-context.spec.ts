@@ -41,7 +41,10 @@ for(const width of [320,360,393,412])test(`transparent field ${width}px: idle �
   await expect(page.locator('[data-action="sell"]')).toBeVisible();
   await shot(page,`selected-${width}`);
   await page.locator('[data-action="move"]').click();await hint(page,1);
-  expect(await scene(page,s=>s.fieldHighlights.length)).toBe(cells.length);
+  // #79 검토 🟠3: 이동 모드는 옮길 수 있는 칸 + 지금 칸만 (지금 칸이 첫째, 막힌 칸은 칠하지 않음)
+  const moveView=await scene(page,s=>{const m=s.moveModeView();return [[m.from.tx,m.from.ty],...m.targets.map((t:any)=>[t.tx,t.ty])];});
+  expect(moveView[0]).toEqual(cells[0]);expect(moveView.length).toBeGreaterThan(1);
+  expect(await scene(page,s=>s.fieldHighlights)).toEqual(moveView);
   await shot(page,`move-${width}`);await page.keyboard.press('Escape');await hint(page,0);
   await page.getByTestId('menu-upgrade').click();await hint(page,1);
   expect(await scene(page,s=>s.fieldHighlights)).toEqual([cells[0],cells[1],cells[4]]);
