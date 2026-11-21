@@ -53,5 +53,10 @@
       0
     ],
     "fix": "battle-only app overflow:clip"
+  },
+  "finalV2Contracts": {
+    "passed": 20,
+    "coverage": "battle-v2 six, g1 three, g2 theme five, gi battle, HUD four, m3b status capture",
+    "visualContractChanges": "exact V2 colors/flat surfaces; 44 CSS px default cell with all 24 pads; actual choice-later before state screenshot"
   }
 }

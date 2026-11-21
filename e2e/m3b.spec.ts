@@ -302,6 +302,9 @@ test('M3b 스크린샷: 상태 이상 아이콘·진흙 웅덩이·소환 병사
   expect(await inScene(page, (s) => s.match.state.stage, null)).toBe(15);
   await expect.poll(() => inScene(page, (s) => s.statusIconCount, null), { timeout: 15_000 }).toBeGreaterThan(1);
   await expect.poll(() => inScene(page, (s) => s.renderedPuddleCount + s.renderedSoldierCount, null), { timeout: 20_000 }).toBeGreaterThan(1);
+  // PR-G's readable reward dialog overlaps this cell; collapse it with the actual player control first.
+  await page.getByTestId('choice-later').click();
+  await expect(page.getByTestId('choice-card')).toBeHidden();
   await tapTile(page, 2, 3);
   await expect(page.getByTestId('tower-panel')).toBeVisible();
   await expect.poll(() => inScene(page, (s) => s.selectedAura?.buffed ?? 0, null)).toBeGreaterThan(0);

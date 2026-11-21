@@ -205,3 +205,9 @@
 .battle-v2 .hud-ready::after { top:-12px; bottom:-12px; }
 /* A focused choice in a short letterboxed stage must not scroll the oversized blurred backdrop. */
 #app:has(.battle-v2) { overflow:clip; }
+
+/* Keep SVGs within the 44px side-button face, including the challenge ready badge. */
+.battle-v2 .hud-side-btns .btn { padding:2px; }
+.battle-v2 .hud-side-btns .rtd-icon { width:32px; height:32px; }
+/* The alert may overlap the top edge without extending the horizontal scroll bounds. */
+.battle-v2 .hud-side-btns .hud-menu-btn.is-alert::after { right:0; }

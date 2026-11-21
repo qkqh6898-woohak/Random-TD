@@ -78,13 +78,13 @@ async function watchFx(page: Page): Promise<void> {
 }
 const fxSeen = (page: Page) => page.evaluate(() => (window as unknown as { g2: { names: string[]; dieTex: number; cardTex: string[] } }).g2);
 
-test.describe('G-2 a. 테두리 테마', () => {
+test.describe('G-2 a. V2 갈색·종이 테마', () => {
   for (const vp of [
     { width: 412, height: 915 },
     { width: 360, height: 800 },
     { width: 320, height: 640 },
   ]) {
-    test(`${vp.width}×${vp.height}: 테마·장식이 붙고, 크기는 그대로, 가로 넘침 없음`, async ({ page }) => {
+    test(`${vp.width}×${vp.height}: V2 토큰·평면 색·장식 숨김, 크기는 그대로, 가로 넘침 없음`, async ({ page }) => {
       const errors = collectErrors(page);
       await page.setViewportSize(vp);
       await page.goto('/?debug=1&seed=42');
@@ -105,6 +105,12 @@ test.describe('G-2 a. 테두리 테마', () => {
         return {
           corner: getComputedStyle(document.documentElement).getPropertyValue('--orn-corner-tl'),
           barLine: cs('.hud-bar').borderBottomColor,
+          barBg: cs('.hud-bar').backgroundColor,
+          bottomColor: cs('.hud-bottom').backgroundColor,
+          menuColor: cs('.hud-menu').backgroundColor,
+          summonColor: cs('[data-testid="hud-summon"]').backgroundColor,
+          upgradeColor: cs('[data-testid="menu-upgrade"]').backgroundColor,
+          ornaments: [cs('.hud-bar', '::before').content, cs('.hud-bar', '::after').content, cs('.hud-bottom', '::before').content],
           barOrn: cs('.hud-bar', '::before').backgroundImage,
           barGem: cs('.hud-bar', '::after').backgroundImage,
           bottomOrn: cs('.hud-bottom', '::before').backgroundImage,
@@ -117,11 +123,17 @@ test.describe('G-2 a. 테두리 테마', () => {
         };
       });
       expect(look.corner).toMatch(/^url\("data:image\/svg\+xml/);
-      expect(look.barLine).toBe('rgba(232, 182, 74, 0.85)'); // 금테
-      for (const v of [look.barOrn, look.barGem, look.bottomOrn]) expect(v).toContain('data:image/svg+xml');
+      // PR-G intentionally replaces the legacy gilded HUD with the requested exact V2 surfaces.
+      expect(look.barLine).toBe('rgb(59, 35, 20)');
+      expect(look.barBg).toBe('rgb(122, 78, 54)');
+      expect(look.bottomColor).toBe('rgb(58, 42, 34)');
+      expect(look.menuColor).toBe('rgb(107, 80, 70)');
+      expect(look.summonColor).toBe('rgb(247, 210, 62)');
+      expect(look.upgradeColor).toBe('rgb(62, 74, 122)');
+      expect(look.ornaments).toEqual(['none', 'none', 'none']);
       expect(look.summonIcon).toContain('assets/ui/summon.webp'); // FB-18: 힉스필드 캐릭터 그림
-      expect(look.bottomBg).toContain('gradient');
-      expect(look.menuBg).toContain('data:image/svg+xml'); // 금줄
+      expect(look.bottomBg).toBe('none');
+      expect(look.menuBg).toBe('none'); // Flat V2 surfaces, not the retired golden stripe.
       expect(look.mapFrame).toContain('rgba(232, 182, 74');
       expect(look.summonText).not.toContain('🎲');
       expect(look.summonText).toContain('원');
@@ -185,15 +197,16 @@ test.describe('G-2 a. 테두리 테마', () => {
     });
   }
 
-  test('시트·패널도 금테 판 (모서리 장식)', async ({ page }) => {
+  test('V2 시트는 크림 종이·진갈색 외곽선·3px 선·남색 닫기', async ({ page }) => {
     await start(page);
     await page.getByTestId('menu-upgrade').click();
     const sheet = page.locator('.bsheet');
     await expect(sheet).toBeVisible();
     const bg = await sheet.evaluate((el) => getComputedStyle(el).backgroundImage);
-    expect(bg).toContain('data:image/svg+xml');
-    expect(bg).toContain('gradient');
-    expect(await sheet.evaluate((el) => getComputedStyle(el).borderTopColor)).toBe('rgb(232, 182, 74)');
+    expect(bg).toBe('none');
+    const paper = await sheet.evaluate(el => { const s=getComputedStyle(el); return { bg:s.backgroundColor, line:s.borderTopColor, width:s.borderTopWidth }; });
+    expect(paper).toEqual({ bg:'rgb(243, 235, 211)', line:'rgb(59, 35, 20)', width:'3px' });
+    expect(await sheet.locator('.bs-close').evaluate(el => getComputedStyle(el).backgroundColor)).toBe('rgb(62, 79, 122)');
   });
 
   test('넓은 화면: 양옆 띠는 격자 무늬, 무대는 금테 액자', async ({ page }) => {

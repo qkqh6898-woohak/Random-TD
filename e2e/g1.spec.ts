@@ -132,13 +132,16 @@ async function expectDockFits(page: Page): Promise<void> {
   expect(r.menus).toBeGreaterThanOrEqual(5);
 }
 
-test('마당 맵: 6×8 가운데 4×6 마당 24칸 + 둘레 고리, 칸이 예전(135)보다 1.3배 이상 · 위 HUD WAVE·몹 막대 · 아래 [리미티드][소환][도박]/[강화] · 오른쪽 도전·미션', async ({ page }) => {
+test('마당 맵: 6×8 가운데 4×6 마당 24칸 + 둘레 고리, 24칸을 유지하고 기본 폭의 칸 터치가44px 이상 · 위 HUD WAVE·몹 막대 · 아래 [리미티드][소환][도박]/[강화] · 오른쪽 도전·미션', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?seed=42');
   const L = await inScene(page, (s) => ({ ...s.mapLayout, pads: s.match.map.buildable.length, w: s.match.map.width, h: s.match.map.height }), null);
   expect([L.w, L.h, L.pads]).toEqual([6, 8, 24]);
   await expect(page.getByTestId('hud-stage')).toHaveText('준비');
-  expect(L.tile).toBeGreaterThanOrEqual(Math.round(135 * 1.3));
+  // PR-G replaces the old 1.3x pixel-size layout with a taller accessible HUD/dock.
+  // Keep all 24 cells and require a real 44px touch cell at the default 412px viewport.
+  const stageWidth = (await page.locator('#stage').boundingBox())!.width;
+  expect(L.tile * stageWidth / 1080).toBeGreaterThanOrEqual(44);
   for (const id of ['menu-mythic', 'hud-summon', 'menu-gamble', 'menu-upgrade', 'menu-challenge', 'menu-mission']) await expect(page.getByTestId(id)).toBeVisible();
   await expect(page.getByTestId('menu-mythic')).toContainText('리미티드');
   await expect(page.getByTestId('hud-summon')).toContainText('22원'); // V2.0 PR-A 첫 소환 22원
