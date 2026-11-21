@@ -55,9 +55,14 @@
 /* Existing action elements and handlers are retained; only the visual variants are shared. */
 .lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn:not(.rtd-button) { min-width:44px; min-height:44px; border:2px solid var(--rtd-outline); border-radius:9px; padding:8px 10px; background:var(--rtd-secondary); color:white; font:16px/1.25 var(--rtd-title-font); text-shadow:none; box-shadow:inset 0 2px #ffffff33,0 3px var(--rtd-outline); transition:transform 100ms,filter 100ms; }
 .lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn-primary:not(:disabled),.lobby-v2 .lobby-popup-v2 .lobby-seg.is-on { background:var(--rtd-primary); color:var(--rtd-outline); box-shadow:inset 0 2px #FFF4AD,0 3px var(--rtd-primary-shadow); }
-.lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn:disabled { background:var(--rtd-disabled); color:var(--rtd-danger-ink); box-shadow:0 2px var(--rtd-outline); opacity:1; filter:none; }
+.lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn:disabled { background:var(--rtd-disabled); color:var(--rtd-muted-ink); box-shadow:0 2px var(--rtd-outline); opacity:1; filter:none; }
 .lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn:active:not(:disabled) { transform:scale(.95); filter:brightness(.96); }
 @media(prefers-reduced-motion:reduce) { .lobby-v2 .lobby-popup-v2[open] { animation:none; } .lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn { transition:none; } .lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn:active { transform:none; } }
 .lobby-v2 .lobby-popup-v2 .grant-name { white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; }
 .lobby-v2 .lobby-popup-v2 .go-chip { background:#E4D5B7; box-shadow:none; border:1px solid #9C8266; }
 .lobby-v2 .lobby-popup-v2 .go-card-new { background:var(--rtd-danger-ink); color:white; font:12px/1.2 var(--rtd-title-font); }
+/* V2-R21 (#80 검토 🟠10): 비활성은 차분한 글자, 빨간 글자는 '모자라요'(.is-short: 골드·보석·카드·불꽃·조각 부족)만 */
+.lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn.is-short:disabled { color:var(--rtd-danger-ink); }
+/* V2-R21 (#80 검토 🟠8·9): 설정 스위치 켜짐 = 노랑(꺼짐 = 남색) · 효과음 값 글자는 종이 위 진한 글자 (예전 연노랑 약 1.2:1) */
+.lobby-v2 .lobby-popup-v2 .dv-switch.is-on { background:var(--rtd-primary); color:var(--rtd-outline); }
+.lobby-v2 .lobby-popup-v2 .pause-volume-value { color:var(--rtd-outline); }

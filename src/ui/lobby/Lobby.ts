@@ -629,7 +629,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       action = h(
         'button',
         {
-          class: 'btn btn-primary hero-unlock',
+          class: `btn btn-primary hero-unlock${d.canUnlock ? '' : ' is-short'}`,
           attrs: { type: 'button', 'data-testid': 'hero-unlock', ...(d.canUnlock ? {} : { disabled: '' }) },
           on: {
             click: () => {
@@ -643,7 +643,8 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       action = h(
         'button',
         {
-          class: 'btn btn-primary hero-levelup',
+          // V2-R21 (#80 검토 🟠10): 카드·불꽃이 모자라서 못 누를 때만 빨간 글자(.is-short), 그 밖의 비활성은 차분한 글자
+          class: `btn btn-primary hero-levelup${d.check === 'cards' || d.check === 'flame' ? ' is-short' : ''}`,
           attrs: { type: 'button', 'data-testid': 'hero-levelup', 'aria-label': `레벨업 카드 ${d.cost.cards} 불꽃 ${d.cost.flame}`, ...(d.check === 'ok' ? {} : { disabled: '' }) },
           on: {
             click: () => {
@@ -712,7 +713,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
             h(
               'button',
               {
-                class: `btn ${afford ? 'btn-primary' : ''} shop-buy`,
+                class: `btn ${afford ? 'btn-primary' : 'is-short'} shop-buy`,
                 attrs: { type: 'button', 'data-testid': `shop-buy-${it.id}`, 'aria-label': `${it.name} 사기`, ...(afford ? {} : { disabled: '' }) },
                 on: {
                   click: () => {
@@ -764,7 +765,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
             r.unlocked
               ? h('button', { class: 'btn btn-chip codex-open', text: '보기', attrs: { type: 'button' }, on: { click: () => openDetail(r.id) } })
               : h('button', {
-                  class: `btn btn-chip ${r.canUnlock ? 'btn-primary' : ''} codex-unlock`,
+                  class: `btn btn-chip ${r.canUnlock ? 'btn-primary' : 'is-short'} codex-unlock`,
                   text: '해방',
                   attrs: { type: 'button', 'data-testid': `codex-unlock-${r.id}`, 'aria-label': `${r.name} 해방`, ...(r.canUnlock ? {} : { disabled: '' }) },
                   on: {
