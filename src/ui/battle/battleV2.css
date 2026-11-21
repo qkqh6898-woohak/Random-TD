@@ -213,3 +213,5 @@
 .battle-v2 .hud-side-btns .rtd-icon { width:32px; height:32px; }
 /* The alert may overlap the top edge without extending the horizontal scroll bounds. */
 .battle-v2 .hud-side-btns .hud-menu-btn.is-alert::after { right:0; }
+/* V2-R21: 예전 굵기(700)로 돌아온 일시정지 단추가 320px에서 '도움말 다시 보기'·'유니크 이하'를 자르지 않게 좁은 무대만 14px */
+@container (max-width:360px) { .battle-v2 .pause-panel .btn { font-size:14px; } }
