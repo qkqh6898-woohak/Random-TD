@@ -58,3 +58,6 @@
 .lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn:disabled { background:var(--rtd-disabled); color:var(--rtd-danger-ink); box-shadow:0 2px var(--rtd-outline); opacity:1; filter:none; }
 .lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn:active:not(:disabled) { transform:scale(.95); filter:brightness(.96); }
 @media(prefers-reduced-motion:reduce) { .lobby-v2 .lobby-popup-v2[open] { animation:none; } .lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn { transition:none; } .lobby-v2 :is(.lobby-shop,.lobby-codex,.lobby-locked,.lobby-popup-v2) .btn:active { transform:none; } }
+.lobby-v2 .lobby-popup-v2 .grant-name { white-space:normal; overflow:visible; text-overflow:clip; overflow-wrap:anywhere; }
+.lobby-v2 .lobby-popup-v2 .go-chip { background:#E4D5B7; box-shadow:none; border:1px solid #9C8266; }
+.lobby-v2 .lobby-popup-v2 .go-card-new { background:var(--rtd-danger-ink); color:white; font:12px/1.2 var(--rtd-title-font); }
