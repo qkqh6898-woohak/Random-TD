@@ -31,6 +31,7 @@
 import { WORKER_PORTRAIT, workerPortraitFallback } from '../../art/worker';
 import { artIcon } from '../artIcon';
 import { h } from '../dom';
+import { createButton, createIcon, createPopup, type DesignIcon } from '../design-system';
 import { HOLD_DELAY_MS, attachHoldRepeat, mergeAllHoldDelay, skipRepeatDelay, type HoldHandle } from '../hold';
 import type { UiView } from '../root';
 import { goldGainLabels, livesDropped, type HudModel } from './hudModel';
@@ -379,8 +380,48 @@ export function createHud(opts: HudOptions): HudView {
     menuItem('mission', '📋', '미션', true),
     opts.devMenu ? menuItem('dev', '🛠', '개발', true) : null,
   );
+  const statsCopy = h('dl', { class: 'battle-stats-copy' });
+  const stats = createPopup({ title: '전투 통계', content: statsCopy, variant: 'pinned', primaryLabel: '확인', onPrimary: () => stats.close() });
+  stats.el.dataset.testid = 'battle-stats';
+  stats.el.classList.add('battle-stats-dialog');
+  let statsKey = '';
+  const renderStats = (m: Partial<HudModel>): void => {
+    const rows = [['진행', m.wave], ['남은 시간', m.timer], [m.countKind === 'lives' ? '남은 목숨' : '몬스터', m.count], ['전투 골드', m.gold], ['배치 인원', m.towers], ['일꾼', m.workers], ['배속', m.speed], ['소환 천장', summonPity.textContent ?? '—']];
+    const key = JSON.stringify(rows);
+    if (statsKey === key) return;
+    statsKey = key;
+    statsCopy.replaceChildren(...rows.flatMap(([label, value]) => [h('dt', { text: label ?? '' }), h('dd', { text: value ?? '—' })]));
+  };
+  const menuToggle = createButton({ label: '전투 메뉴', icon: 'menu', variant: 'close' });
+  menuToggle.dataset.testid = 'battle-menu-toggle';
+  menuToggle.setAttribute('aria-expanded', 'false');
+  menuToggle.setAttribute('aria-controls', 'battle-menu-list');
+  const menuList = h('div', { class: 'battle-menu-list', attrs: { id: 'battle-menu-list', 'aria-label': '전투 메뉴', hidden: '' } });
+  const closeMenu = (): void => { menuList.hidden = true; menuToggle.setAttribute('aria-expanded', 'false'); };
+  const menuAction = (label: string, testid: string, icon: DesignIcon, action: () => void): HTMLButtonElement => {
+    const b = createButton({ label, icon, variant: 'pill', onClick: () => { closeMenu(); action(); } });
+    b.dataset.testid = testid;
+    return b;
+  };
+  menuList.append(menuAction('설정·일시정지', 'battle-menu-settings', 'settings', () => opts.onPause()),
+    menuAction('미션', 'battle-menu-mission', 'mission', () => opts.onMenu?.('mission')),
+    menuAction('통계', 'battle-menu-stats', 'stats', () => { menuToggle.focus(); renderStats(last); stats.open(); }));
+  const menuWrap = h('div', { class: 'battle-menu-wrap' }, menuToggle, menuList);
+  menuToggle.addEventListener('click', () => {
+    const open = menuList.hidden;
+    menuList.hidden = !open; menuToggle.setAttribute('aria-expanded', String(open));
+    if (open) menuList.querySelector<HTMLButtonElement>('button')?.focus();
+  });
+  const dismissMenu = (e: Event): void => { if (!menuWrap.contains(e.target as Node)) closeMenu(); };
+  const escapeMenu = (e: KeyboardEvent): void => { if (e.key === 'Escape' && !menuList.hidden) { closeMenu(); menuToggle.focus(); e.stopImmediatePropagation(); } };
+  window.addEventListener('pointerdown', dismissMenu);
+  window.addEventListener('keydown', escapeMenu, true);
+  bottomBand.append(menuWrap);
+  pauseBtn.replaceChildren(createIcon('pause'));
+  goldItem.querySelector('.hud-label')?.replaceChildren(createIcon('battle-coin'));
+  for (const kind of ['challenge', 'mission', 'dev'] as const) menuBtns.get(kind)?.btn.querySelector('.hud-menu-icon')?.replaceChildren(createIcon(kind === 'challenge' ? 'battle' : kind === 'mission' ? 'mission' : 'settings'));
   const dock = h('div', { class: 'hud-dock' }, sideBar, bottomBand, menuBar);
-  const el = h('div', { class: 'hud-root', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band, dock);
+  const el = h('div', { class: 'hud-root hud-v2', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band, dock, stats.el);
 
   let last: Partial<HudModel> = {};
   let readyState: 'hidden' | 'ready' | 'sent' = 'hidden';
@@ -471,6 +512,7 @@ export function createHud(opts: HudOptions): HudView {
       pendingGains.push(amount);
     },
     update(m) {
+      if (stats.el.open) renderStats(m);
       if (pendingGains.length > 0) {
         for (const label of goldGainLabels(pendingGains, GOLD_GAIN_MAX)) showGain(label);
         pendingGains = [];
@@ -639,6 +681,9 @@ export function createHud(opts: HudOptions): HudView {
       if (mergeAllBtn.classList.contains('is-guide') !== on) mergeAllBtn.classList.toggle('is-guide', on);
     },
     destroy() {
+      window.removeEventListener('pointerdown', dismissMenu);
+      window.removeEventListener('keydown', escapeMenu, true);
+      stats.destroy();
       skipHold?.detach();
       skipHold = null;
       summonHold?.detach();

@@ -39,6 +39,7 @@
  * - 맵 배치: DOM HUD(2줄 + 보스 막대 자리)의 실제 높이를 재서 그 아래에 맵을 놓는다 → HUD가 맵 칸을 가리지 않는다.
  *   버튼 최소 44px 때문에 좁은·가로 화면일수록 HUD가 기준 px로 커지므로, 화면 크기가 바뀌면(ResizeObserver) 다시 배치한다.
  */
+import '../../ui/battle/battleV2.css';
 import Phaser from 'phaser';
 import { GRADE_COLORS, hexToInt } from '../../art/palette';
 import type { Grade } from '../../data/load';
@@ -520,6 +521,7 @@ export class GameScene extends Phaser.Scene {
     // 피드백 #62: 새 판이면 지난 판의 자동 판매·필살기 자동을 끈다 (이어 하기는 그대로)
     else resetMatchSettings(this.ctx.settings);
     this.paused = false;
+    this.ctx.ui.el.classList.add('rtd-v2', 'battle-v2');
     this.gameOver = false;
     this.prevProgress = new Map();
     this.prevProjectiles = new Map();
@@ -618,12 +620,12 @@ export class GameScene extends Phaser.Scene {
       this.resizeObserver = new ResizeObserver(() => {
         this.layoutDirty = true;
       });
-      this.resizeObserver.observe(this.hud.band);
-      this.resizeObserver.observe(this.hud.bottomBand);
-      this.resizeObserver.observe(this.hud.menuBar);
-      this.resizeObserver.observe(this.ctx.ui.el);
+      this.resizeObserver.observe(this.hud.band, { box: 'border-box' });
+      this.resizeObserver.observe(this.hud.bottomBand, { box: 'border-box' });
+      this.resizeObserver.observe(this.hud.menuBar, { box: 'border-box' });
+      this.resizeObserver.observe(this.ctx.ui.el, { box: 'border-box' });
       // 알림 한 줄 높이가 바뀌면 (스타일·글꼴이 늦게 적용됨 등) 알림 자리·위쪽 패널 위치를 다시 잰다 (T-3 병합, m3a 알림 겹침)
-      this.resizeObserver.observe(this.ctx.ui.toastProbe);
+      this.resizeObserver.observe(this.ctx.ui.toastProbe, { box: 'border-box' });
     }
     // 화면 크기·방향이 바뀌어 논리 높이가 달라지면 (T-3): 배경을 새 크기로 덮고 맵을 다시 배치
     this.scale.on(Phaser.Scale.Events.RESIZE, this.onResize, this);
@@ -643,6 +645,7 @@ export class GameScene extends Phaser.Scene {
     window.addEventListener(NATIVE_PAUSE_EVENT, this.onNativePause);
     setBackHandler(() => this.goBack());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.ctx.ui.el.classList.remove('battle-v2', 'rtd-v2');
       this.game.events.emit('rtd:scene-loading');
       // 타이틀로 나가거나 다시 하기: 진행 중이면 마지막 상태를 남긴다 (패배한 판은 이미 지움)
       if (!this.gameOver) this.saveMatch();
@@ -1832,6 +1835,7 @@ export class GameScene extends Phaser.Scene {
       const recent = eventFxVisible('bulk', ev.tick, now, frameStart);
       switch (ev.type) {
         case 'stageStart':
+          this.ctx.ui.waveRibbon(Number(ev.stage));
           lastStage = { stage: Number(ev.stage), boss: ev.boss === true };
           break;
         case 'victory':
@@ -2833,8 +2837,7 @@ export class GameScene extends Phaser.Scene {
   private refreshHud(): void {
     // 일시정지 중에도 배속 칩은 계속하면 돌아갈 배속을 보여준다
     const speed = this.paused ? this.resumeSpeed : this.gameOver ? 1 : this.clock.speed;
-    this.hud.update(
-      buildHudModel(
+    const view = buildHudModel(
         {
           state: this.match.state,
           ticksLeft: this.match.ticksToNextStage(),
@@ -2853,8 +2856,9 @@ export class GameScene extends Phaser.Scene {
           menu: menuBadges(this.match.ctx, this.match.tick, LOCAL_PLAYER),
         },
         this.ctx.data.game.hud,
-      ),
-    );
+      );
+    this.hud.update(view);
+    this.choice?.setBattleTime(view.timer);
   }
 
   // ---------------------------------------------------------------- M5 바텀 시트

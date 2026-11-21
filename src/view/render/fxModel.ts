@@ -10,7 +10,7 @@ import { keyframeValue, laggedKeyframeValue } from './towerPose';
 
 export const DAMAGE_COLORS = {
   physical: '#FFFFFF',
-  critical: '#FFB34D',
+  critical: '#4FD8F0',
   magic: '#8FD8FF',
   true: '#FFD84A',
   gold: '#F5B700',

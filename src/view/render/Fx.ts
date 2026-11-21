@@ -513,14 +513,14 @@ export class FxLayer {
     this.scene.tweens.add({ targets: img, displayWidth: L.tile * 0.42, displayHeight: L.tile * 0.42, alpha: 0, duration: 140, onComplete: () => img.destroy() });
   }
 
-  /** 치명타: 짧은 금빛 별 + 대각선 타격선. 실제 시간 180ms, 흔들림 없음. */
+  /** 치명타: 짧은 하늘빛 별 + 대각선 타격선. 실제 시간 180ms, 흔들림 없음. */
   criticalImpact(ux: number, uy: number): void {
     // 동작 줄이기면 커지는 별·타격선도 없다 (숫자 색·크기만으로 치명타를 알린다)
     if (effectsOff() || this.reducedMotion()) return;
     const p = unitsToPx(this.layout, ux, uy);
     const size = this.layout.tile;
     const star = this.track(this.scene.add.image(p.x, p.y - size * 0.15, TEX_SPARK))
-      .setTint(0xffc45c).setDepth(FX_DEPTH + 1).setDisplaySize(size * 0.7, size * 0.7);
+      .setTint(0x4fd8f0).setDepth(FX_DEPTH + 1).setDisplaySize(size * 0.7, size * 0.7);
     const slash = this.track(this.scene.add.rectangle(p.x, p.y - size * 0.15, size * 0.85, size * 0.07, 0xfff4cc))
       .setRotation(-0.65).setDepth(FX_DEPTH + 2);
     this.scene.tweens.add({ targets: star, scaleX: star.scaleX * 1.4, scaleY: star.scaleY * 1.4, alpha: 0, duration: 180, onComplete: () => star.destroy() });

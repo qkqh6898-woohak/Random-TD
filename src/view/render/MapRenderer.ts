@@ -24,11 +24,11 @@ export const MEADOW = {
   ground: 0x4f9a3f,
   groundLight: 0x67b24f,
   tuft: 0x5a9e45,
-  dirt: 0xcaa46c,
-  dirtDark: 0x7a5a34,
-  dirtLight: 0xe2c592,
+  dirt: 0xe9c77a,
+  dirtDark: 0x8a5a32,
+  dirtLight: 0xf3da98,
   pebble: 0xa8844f,
-  chevron: 0x8f6a3d,
+  chevron: 0xbf9c5a,
   rift: 0x9b4dff,
   riftCore: 0x2a0b4d,
   stone: 0x9aa0a6,
@@ -91,7 +91,7 @@ export class MapRenderer {
     private readonly opts: MapRendererOptions,
   ) {
     // 칸 크기만이 아니라 위치도 키에 넣는다: HUD 높이에 따라 같은 칸 크기로 위아래만 달라질 수 있다
-    this.textureKey = `map-natural-${map.id}-${layout.tile}-${layout.originX}-${layout.originY}`;
+    this.textureKey = `map-v2-natural-${map.id}-${layout.tile}-${layout.originX}-${layout.originY}`;
     this.groundKey = `${this.textureKey}-ground`;
   }
 
@@ -127,6 +127,15 @@ export class MapRenderer {
       b.setVisible(this.backdropVisible);
       this.objects.push(b);
     }
+    // Continuous grass and an original forest frame sit above band artwork, below the road.
+    const fieldKey = `${this.textureKey}-v2-field`;
+    if (!this.scene.textures.exists(fieldKey)) {
+      const field = this.scene.make.graphics({}, false);
+      this.drawNaturalField(field, board.w, board.h);
+      field.generateTexture(fieldKey, board.w, board.h);
+      field.destroy();
+    }
+    this.objects.push(this.scene.add.image(board.x, board.y, fieldKey).setOrigin(0).setDepth(-1));
     if (!this.scene.textures.exists(this.textureKey)) {
       const g = this.scene.make.graphics({}, false);
       this.drawRoad(g, board.x, board.y);
@@ -136,6 +145,31 @@ export class MapRenderer {
     this.objects.push(this.scene.add.image(board.x, board.y, this.textureKey).setOrigin(0).setDepth(0));
     this.drawSpawnRift();
     if (this.map.exit) this.drawExitGate(this.map.exit[0], this.map.exit[1]);
+  }
+
+  /** Original flat cartoon field. Decorations use a view-only fixed seed, never buildable cell borders. */
+  private drawNaturalField(g: Phaser.GameObjects.Graphics, w: number, h: number): void {
+    const t = this.layout.tile;
+    const rnd = lcg(seedOf(`v2-field-${this.map.id}`));
+    g.fillStyle(0x3f6b22).fillRoundedRect(0, 0, w, h, t * 0.2);
+    g.fillStyle(0x8a5a32).fillRoundedRect(t * 0.2, t * 0.25, w - t * 0.4, h - t * 0.4, t * 0.15);
+    g.fillStyle(0x7ba83a).fillRoundedRect(t * 0.2, t * 0.2, w - t * 0.4, h - t * 0.45, t * 0.15);
+    for (let i = 0; i < Math.round(w * h / (t * t) * 2); i++) {
+      const x = t * 0.4 + rnd() * (w - t * 0.8), y = t * 0.4 + rnd() * (h - t * 0.8);
+      g.lineStyle(Math.max(2, t * 0.015), 0x95ba52, 0.55);
+      g.lineBetween(x - t * 0.035, y, x, y + t * 0.035);
+      g.lineBetween(x, y + t * 0.035, x + t * 0.04, y - t * 0.02);
+    }
+    const tree = (x: number, y: number): void => {
+      const r = t * (0.20 + rnd() * 0.04), yellow = rnd() < 0.18;
+      g.fillStyle(0x7a4e36).fillRoundedRect(x - r * 0.2, y, r * 0.4, r * 0.95, r * 0.1);
+      const line = Math.max(2, t * 0.025);
+      g.fillStyle(0x3b2314).fillCircle(x, y - r * 0.45, r * 0.8).fillCircle(x - r * 0.4, y + r * 0.05, r * 0.7).fillCircle(x + r * 0.4, y + r * 0.05, r * 0.7);
+      g.fillStyle(yellow ? 0xe8b33a : 0x3f6b22).fillCircle(x, y - r * 0.45, r * 0.8 - line).fillCircle(x - r * 0.4, y + r * 0.05, r * 0.7 - line).fillCircle(x + r * 0.4, y + r * 0.05, r * 0.7 - line);
+      g.fillStyle(yellow ? 0xffd971 : 0x649537).fillEllipse(x - r * 0.2, y - r * 0.55, r, r * 0.25);
+    };
+    for (let x = t * 0.26; x < w; x += t * 0.43) { tree(x, t * 0.26); tree(x, h - t * 0.26); }
+    for (let y = t * 0.65; y < h - t * 0.3; y += t * 0.43) { tree(t * 0.26, y); tree(w - t * 0.26, y); }
   }
 
   /**
@@ -150,7 +184,7 @@ export class MapRenderer {
     this.objects.length = 0;
     this.backdrops = [];
     if (removeTexture) {
-      for (const k of [this.textureKey, this.groundKey]) if (this.scene.textures.exists(k)) this.scene.textures.remove(k);
+      for (const k of [this.textureKey, this.groundKey, `${this.textureKey}-v2-field`]) if (this.scene.textures.exists(k)) this.scene.textures.remove(k);
     }
   }
 

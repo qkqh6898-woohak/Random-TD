@@ -1,0 +1,34 @@
+{
+  "mainBase": "3abfda6",
+  "parentBranch": "design/v2-battle-base",
+  "includesField": "ba0d3c8, PR#79",
+  "includesDetails": "f861035",
+  "unit": {
+    "files": 114,
+    "passed": 1632,
+    "skipped": 5
+  },
+  "check": "passed",
+  "build": "passed",
+  "single": "passed, 18.05MB, 278 assets",
+  "canvasUiAndHud": {
+    "passed": 20,
+    "hudExpectationsUnchanged": true
+  },
+  "defaultChromium": {
+    "passed": 2,
+    "coverage": "normal 393px UI/menu/stats/mission/upgrade, actual stage/choice/hold-to-see"
+  },
+  "finalCanvasUi": {
+    "passed": 6,
+    "normalPlayerScreens": true
+  },
+  "fullRegression": "pending",
+  "physicalAndroid": "not tested",
+  "mainPushedOrMerged": false,
+  "autoMergeRepeat": {
+    "passed": 6,
+    "repeatEach": 3,
+    "assertion": ">=3 preserved, waits for queued commands"
+  }
+}
