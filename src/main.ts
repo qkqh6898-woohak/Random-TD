@@ -79,10 +79,10 @@ function boot(): void {
     // 판 밖 성장 (G-3 로비·영웅 수집): 개발자 모드는 따로 된 계정 슬롯. 계정 레벨도 여기서 (경험치로 오름)
     const progress = new ProgressStore(storage, loadProgression(data), data, { dev: url.debug });
     const settings = createSettingsStore(storage);
-    // 연출 끄기 (개발자 도구, T-2): 개발자 모드에서만 저장값을 쓴다 — 일반 주소는 늘 연출이 켜진 예전 화면
+    // 효과 끄기 (T-2 개발자 도구 → 피드백 #75 일시정지 메뉴·로비 설정 '✨ 효과 끄기'): 계정 설정 저장값을 일반·개발자 모드 모두 쓴다
     // (DOM 애니메이션·전환은 UI 루트의 .fx-off 클래스로 한꺼번에 끈다 — styles.css)
     onEffectsChange((off) => ui.el.classList.toggle('fx-off', off));
-    setEffectsOff(url.debug && settings.get().effectsOff);
+    setEffectsOff(settings.get().effectsOff);
     const audio = new EffectAudio(storage);
     // 효과음은 사람이 누른 입력 안에서만 켠다 (브라우저 자동 재생 규칙, A-1)
     const unlockAudio = (ev: Event): void => {

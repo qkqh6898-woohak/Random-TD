@@ -471,13 +471,14 @@ test('🛠 개발자 도구: 연출 끄기(피해 숫자 없음·저장), 확률
   expect(errors).toEqual([]);
 });
 
-test('일반 주소: 개발자 UI 없음 ([🛠 개발]·[🛠 변환]·⏭), 판매·이동·[🎲 소환]은 있음, 저장된 연출 끄기도 쓰지 않음', async ({ page }) => {
+test('일반 주소: 개발자 UI 없음 ([🛠 개발]·[🛠 변환]·⏭), 판매·이동·[🎲 소환]은 있음, 저장된 개발자 설정(히든 조건 보기)은 쓰지 않음 · 효과 끄기는 따른다(#75)', async ({ page }) => {
   const errors = collectErrors(page);
   await page.addInitScript(() => localStorage.setItem('rtd.settings', JSON.stringify({ v: 2, tapMerge: true, effectsOff: true, revealHidden: true })));
   await start(page, '?seed=42');
   await expect(page.getByTestId('menu-dev')).toHaveCount(0);
   await expect(page.locator('[data-action="skip-stage"]')).toHaveCount(0);
-  await expect(page.locator('#ui-root')).not.toHaveClass(/fx-off/);
+  // 피드백 #75: 효과 끄기는 이제 일반 설정 ('✨ 효과 끄기') — 일반 주소에서도 저장값을 따른다 (예전엔 개발자 모드에서만)
+  await expect(page.locator('#ui-root')).toHaveClass(/fx-off/);
   await expect(page.getByTestId('hud-summon')).toBeVisible();
   // 타워 하나 소환 → 패널: 이동·판매는 있고 변환은 없다
   await page.getByTestId('hud-summon').click();

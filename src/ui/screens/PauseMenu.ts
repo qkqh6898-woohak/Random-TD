@@ -11,6 +11,9 @@
  *   열 때 자동 저장했으면 아래 글을 '자동 저장했어요 · 로비에서 이어 할 수 있어요'로.
  * 피드백 #24: [📘 등급·조합 설명] — 등급 순서(색·별)와 승급·리미티드 조합 방법 창(<dialog>, GradeGuideDialog).
  * FB-1: [💬 피드백 보내기] — 피드백 창(<dialog>, 판 기록 첨부 기본 켜짐)은 메뉴 화면에 붙는다.
+ * 피드백 #75: 설정 '✨ 효과 끄기' (켜짐: 보스 컷인·소환/승급/대박 반짝임·화면 흔들림·피해 숫자·입자를 끈다, 정보는 그대로).
+ *   예전엔 개발자 도구에만 있던 '연출 끄기'와 같은 계정 설정(effectsOff)이라 새 판에도 그대로 남는다. 저장은 Game 장면이 한다.
+ *   메뉴가 한 화면을 넘지 않게 '화면 흔들림'과 한 줄에 반씩 놓는다 (자동 판매 줄 바로 아래).
  * 메뉴가 열려 있는 동안 게임 시간은 멈춘다 (Game 장면이 TickClock 배속을 0으로).
  */
 import { h } from '../dom';
@@ -36,6 +39,9 @@ export interface PauseMenuOptions {
   /** 피드백 #63 '자동 승급' 지금 기준 등급 (null = 꺼짐)과 바꿀 때. undefined면 줄도 없다 */
   autoMerge?: AutoMergeGrade | null;
   onAutoMerge?: (grade: AutoMergeGrade | null) => void;
+  /** 피드백 #75 '✨ 효과 끄기' 지금 값과 바꿀 때. 없으면 줄도 없다 */
+  effectsOff?: boolean;
+  onEffectsOff?: (on: boolean) => void;
   /** [❔ 도움말 다시 보기] (F10). 없으면 버튼도 없다 */
   onHelpAgain?: () => void;
   /** 메뉴를 열며 자동 저장했다 (A-1) */
@@ -52,6 +58,10 @@ export interface PauseMenuOptions {
   /** 📘 등급·조합 설명 창 (피드백 #24). 없으면 버튼도 없다 */
   gradeGuide?: GradeGuideDialogView;
 }
+
+/** 피드백 #75 '✨ 효과 끄기' 이름·설명 (일시정지 메뉴·로비 설정 같은 글자) */
+export const EFFECTS_OFF_LABEL = '✨ 효과 끄기';
+export const EFFECTS_OFF_DESC = '컷인·반짝임·흔들림·피해 숫자를 꺼요 (정보는 그대로)';
 
 /** 볼륨 글자 ('음소거' · '40%') */
 export function volumeText(volume: number): string {
@@ -184,6 +194,8 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
     opts.autoSellRare !== undefined
       ? switchRow('레어 이하 자동 판매', '소환된 노말·레어를 바로 팔아요', opts.autoSellRare, 'pause-auto-sell-rare', (v) => opts.onAutoSellRare?.(v))
       : null;
+  const effectsRow =
+    opts.effectsOff !== undefined ? switchRow(EFFECTS_OFF_LABEL, EFFECTS_OFF_DESC, opts.effectsOff, 'pause-effects-off', (v) => opts.onEffectsOff?.(v)) : null;
   const mergeRow = opts.autoMerge !== undefined ? autoMergeRow(opts.autoMerge, (g) => opts.onAutoMerge?.(g)) : null;
   const volume = opts.effectVolume !== undefined ? volumeRow(opts, opts.effectVolume) : null;
   const shakeRow =
@@ -215,8 +227,9 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
       ultRow,
       sellNormalRow,
       sellRareRow,
+      // 피드백 #75: '화면 흔들림'과 '✨ 효과 끄기'는 한 줄에 반씩 (412×915에서 메뉴 전체가 한 화면에 남게 — 설명 글은 숨김)
+      shakeRow && effectsRow ? h('div', { class: 'pause-setting-pair', attrs: { 'data-testid': 'pause-fx-pair' } }, shakeRow, effectsRow) : (shakeRow ?? effectsRow),
       volume,
-      shakeRow,
       help,
       opts.gradeGuide ? gradeGuideButton(opts.gradeGuide) : null,
       opts.feedback ? feedbackButton(opts.feedback, 'pause-feedback') : null,

@@ -32,6 +32,7 @@ import { abandonedRunToast } from '../../ui/messages';
 import { buildRecordsView } from '../../ui/screens/BattleRecordsDialog';
 import { setBackHandler } from '../../ui/nativeBack';
 import { baseFeedbackInfo, createSceneFeedback } from '../feedbackInfo';
+import { effectsOff, saveEffectsOff } from '../effects';
 
 interface TitleTower {
   towerId: string;
@@ -159,6 +160,9 @@ export class BootScene extends Phaser.Scene {
           },
           tapMerge: this.ctx.settings.get().tapMerge,
           onTapMerge: (on) => this.ctx.settings.set('tapMerge', on),
+          // 피드백 #75: ✨ 효과 끄기 (일시정지 메뉴와 같은 계정 설정)
+          effectsOff: effectsOff(),
+          onEffectsOff: (on) => saveEffectsOff(this.ctx.settings, on),
           // FB-1: 로비에는 진행 중인 판이 없다 → 판 기록 없이 게임 정보만
           feedback: createSceneFeedback(this.ctx, () => ({ info: baseFeedbackInfo(this.ctx, '로비') }), false),
         },
