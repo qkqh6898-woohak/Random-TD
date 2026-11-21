@@ -244,3 +244,5 @@
 /* V2-R21 (#81 검토 🟠9·6): 일시정지 효과음 값은 종이 위 진한 글자 · 하단 메뉴 배지 12px 이상 (예전 .hud-menu.is-g1 2.4cqw가 이겨 9.9px/7.7px) */
 .battle-v2 .pause-panel .pause-volume-value { color:var(--rtd-outline); }
 .battle-v2 .hud-menu.is-g1 .hud-menu-badge, .battle-v2 .hud-side-btns > .hud-menu-btn .hud-menu-badge { font-size:max(12px,2.4cqw); }
+/* 12px 배지가 320px의 좁은 [도박] 칸에서 '잭팟 0/…'로 잘리지 않게 (좌우 여백만 줄임) */
+@container (max-width:360px) { .battle-v2 .hud-menu.is-g1>:is(.is-mythic,.is-gamble) { padding-inline:1px; } .battle-v2 .hud-menu.is-g1 .hud-menu-badge { letter-spacing:-0.2px; } }
