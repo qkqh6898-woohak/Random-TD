@@ -40,3 +40,7 @@ sim/meta/save/data/경제/타워 ID/명령/저장 형식/SIM_VERSION/오디오/�
 새 외부 그림/폰트/캐릭터 없이 기존 WebP·PR-B의 pause/battle-coin/battle/mission/settings/menu/stats/close SVG와 로컬 주아체를 재사용한다. 숲은 MapRenderer.drawNaturalField에서 만든 오리지널 절차 그림이다. 참고 게임의 캐릭터·로고·문구를 복제하지 않는다.
 
 최종 검증은 validation.json/regression.json과 screens에 기록한다. 실제 Android 장치는 별도 통합 검증 대상이다.
+
+누적 단계의 검토 순서와 통합 시 주의점은 [REVIEW.md](../REVIEW.md)에 있다. 검토용 기준 브랜치와 실제 main 배포를 구분하며, 통합은 별도 브랜치에서 Claude가 확인한다.
+
+전체 검사 중 발견한 추가 표시 회귀도 수정했다. 준비 완료 버튼의 2px 테두리 때문에 줄어든 바깥 터치 영역을 확장하고, 종족 소환 보조 이름은14px/주요 이름16px로 기존 크기 차이를 유지한다. 짧은 가로 무대에서 선택창 초점이 `#app`의 흐린 배경 여백까지 스크롤하던 문제는 전투 범위의 `overflow:clip`으로 고친다. 준비 완료 바깥 터치·종족 보조 줄·알림/0줄 터치의 기존 기대값은 유지한다.

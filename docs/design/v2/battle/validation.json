@@ -36,5 +36,22 @@
     "passed": 2,
     "coverage": "normal 393px UI/menu/stats/mission/upgrade, actual stage/choice/hold-to-see"
   },
-  "defaultChromium": "final run pending"
+  "defaultChromium": {
+    "passed": 1,
+    "viewport": 393,
+    "coverage": "final normal-player UI, native menu back, stats, mission, upgrade"
+  },
+  "finalCssRegression": {
+    "passed": 32,
+    "coverage": "battle-v2, f10, fb29, hud-layout; existing assertions preserved"
+  },
+  "landscapeFocusProbe": {
+    "runs": 3,
+    "stageY": [
+      0,
+      0,
+      0
+    ],
+    "fix": "battle-only app overflow:clip"
+  }
 }

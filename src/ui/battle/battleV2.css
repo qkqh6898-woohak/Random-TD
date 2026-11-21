@@ -199,3 +199,9 @@
 .battle-v2 .hud-wave .hud-stage.is-boss { padding:0; border:0; background:transparent; box-shadow:none; }
 @media(max-height:650px) { .battle-v2 .hud-wave { height:44px; } }
 @container(max-width:300px) { .battle-v2 .hud-wave .hud-stage { font-size:12px; } }
+/* Keep the secondary faction row smaller than primary summon options, with legible text. */
+.battle-v2 .sm-row-secondary .up-name { font-size:14px; }
+/* The 2px border consumes part of the legacy pseudo-element hit extension. Keep 10px outside. */
+.battle-v2 .hud-ready::after { top:-12px; bottom:-12px; }
+/* A focused choice in a short letterboxed stage must not scroll the oversized blurred backdrop. */
+#app:has(.battle-v2) { overflow:clip; }
