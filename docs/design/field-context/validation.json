@@ -1,0 +1,12 @@
+{
+  "baseMain":"3abfda6e943a5c0bccbb2a0710c80ceac00f57e9",
+  "unit":{"files":111,"passed":1609,"skipped":5},
+  "check":"passed", "build":"passed",
+  "relatedCanvas":{"passed":16,"files":["field-context.spec.ts","t3-screen.spec.ts","fb27.spec.ts"]},
+  "finalCanvas":{"passed":5,"coverage":"four widths plus missing-background campaign drag; final capture waits for covered background; pause/resume"},
+  "defaultChromium":{"passed":1,"coverage":"320px actual texture alpha and select/move/upgrade/sell/pause/resume"},
+  "textureProof":"Every buildable cell center in actual baked terrain texture has alpha 0 in both maps",
+  "screens":"screens/{idle,selected,move,upgrade}-{320,360,393,412}.png; fallback-{idle,drag,drop}.png",
+  "fullRegression":"pending combined local integration check with V2 PR-E",
+  "physicalAndroid":"not tested", "mainPushedOrMerged":false
+}
