@@ -36,6 +36,7 @@ export function createLoadingController(host: HTMLElement, target: HTMLElement, 
     new Promise<void>((resolve) => setTimeout(resolve, FONT_WAIT_MS)),
   ]).then(() => { fontSettled = true; });
   let finishing = false;
+  let transitionQueued = false;
   if (showStartup) {
     block();
     view = createLoadingView('startup', version);
@@ -50,7 +51,7 @@ export function createLoadingController(host: HTMLElement, target: HTMLElement, 
     transitioning = false;
     if (startupDone) { clearView(); unblock(); }
   };
-  return {
+  const controller: LoadingController = {
     setProgress(value) {
       if (destroyed || startupDone) return;
       progress = loadingProgress(progress, value);
@@ -66,6 +67,8 @@ export function createLoadingController(host: HTMLElement, target: HTMLElement, 
         view?.progress(1);
         clearView();
         unblock();
+        // 글꼴을 기다리는 동안 들어온 화면 전환 요청은 이제 처리한다
+        if (transitionQueued) { transitionQueued = false; controller.beginTransition(); }
       };
       if (fontSettled || !view) { finish(); return; }
       finishing = true;
@@ -73,7 +76,8 @@ export function createLoadingController(host: HTMLElement, target: HTMLElement, 
       void fontGate.then(finish);
     },
     beginTransition() {
-      if (destroyed || !startupDone || transitioning) return;
+      if (destroyed || transitioning) return;
+      if (!startupDone) { if (finishing) transitionQueued = true; return; }
       transitioning = true;
       block();
       delay = setTimeout(() => {
@@ -83,7 +87,7 @@ export function createLoadingController(host: HTMLElement, target: HTMLElement, 
         host.append(view.el);
       }, TRANSITION_DELAY_MS);
     },
-    endTransition,
+    endTransition() { transitionQueued = false; endTransition(); },
     destroy() {
       if (destroyed) return;
       destroyed = true;
@@ -91,4 +95,5 @@ export function createLoadingController(host: HTMLElement, target: HTMLElement, 
       transitioning = false;
     },
   };
+  return controller;
 }

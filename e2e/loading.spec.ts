@@ -168,7 +168,8 @@ test('V2-R21 startup closes only after the V2 font, and a slow font never blocks
   let release!: () => void; const gate = new Promise<void>((r) => { release = r; });
   await page.route('**/assets/fonts/*.woff2', async (route) => { await gate; await route.continue(); });
   try {
-    await page.reload();
+    // 글꼴 요청이 끝나지 않으면 load 사건도 오지 않는다 → DOM까지만 기다린다
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.locator('[data-screen="title"]')).toBeVisible();
     await expect(page.getByTestId('loading-startup')).toHaveCount(0);
     expect(await page.evaluate(() => (window as any).__fontAtClose)).toBe(false);
