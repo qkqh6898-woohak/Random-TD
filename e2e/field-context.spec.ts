@@ -63,3 +63,38 @@ test('campaign fallback terrain remains transparent; real drag shows cells then 
   await expect.poll(()=>scene(page,s=>s.match.towers().map((t:any)=>[t.tx,t.ty]))).toEqual([cells[1]]);await hint(page,0);
   await transparent(page);await shot(page,'fallback-drop');
 });
+// #79 검토: 칸이 숨겨진 뒤에는 B와 X(막힌 칸)·길이 똑같이 보인다 → 놓을 수 없는 곳을 짧게 누르면 BUILD_HINT_MS(1.2초) 동안 배치 칸 전체를 보여 준다.
+const misTapCases: [string, boolean, number[][]][] = [
+  ['campaign crossroads: X cells + road', true, [[3, 7], [6, 1], [3, 3]]],
+  ['circle: road', false, [[0, 3]]],
+];
+for (const [label, campaign, misses] of misTapCases) test(`mis-tap hint ${label}: shows buildable cells ~1.2s, then hides; buildable tap still summons`, async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await start(page, campaign); await hint(page, 0);
+  await scene(page, s => { const [x, y] = s.match.map.buildable[0]; s.match.world.enqueue({ type: 'debugTower', x, y, t: 0 }); s.debugFastForward(1); });
+  await expect.poll(() => scene(page, s => s.match.towers().length)).toBe(1); await hint(page, 0);
+  const total = await scene(page, s => s.match.map.buildable.length as number);
+  for (const cell of misses) {
+    expect(await page.evaluate(([x, y]) => (window as any).__rtd.game.scene.getScene('Game').match.map.buildable.some((c: number[]) => c[0] === x && c[1] === y), cell)).toBe(false);
+    const p = await point(page, cell);
+    await page.touchscreen.tap(p.x, p.y);
+    await expect.poll(() => scene(page, s => s.buildHint)).toBeGreaterThan(0);
+    expect(await scene(page, s => s.fieldHighlights.length)).toBe(total);
+    expect(await scene(page, s => s.match.towers().length)).toBe(1);
+    await expect.poll(() => scene(page, s => s.fieldHighlights.length), { timeout: 5000 }).toBe(0);
+    expect(await scene(page, s => s.buildHint)).toBe(0);
+  }
+  // 일시정지는 안내를 지운다 (계속해도 다시 나타나지 않음)
+  const road = await point(page, misses[misses.length - 1]!);
+  await page.touchscreen.tap(road.x, road.y);
+  await expect.poll(() => scene(page, s => s.buildHint)).toBeGreaterThan(0);
+  await page.getByRole('button', { name: '일시정지', exact: true }).click(); await hint(page, 0);
+  await page.getByRole('button', { name: '계속', exact: true }).click();
+  expect(await scene(page, s => s.buildHint)).toBe(0);
+  // 배치 칸을 누르면 예전처럼 소환되고 안내는 뜨지 않는다
+  const cells = await scene(page, s => s.match.map.buildable as number[][]), free = await point(page, cells[1]!);
+  await page.touchscreen.tap(free.x, free.y);
+  await expect.poll(() => scene(page, s => s.match.towers().length)).toBe(2);
+  expect(await scene(page, s => s.buildHint)).toBe(0);
+  expect(errors).toEqual([]);
+});
