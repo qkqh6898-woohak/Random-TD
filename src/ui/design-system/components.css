@@ -88,3 +88,8 @@
   .rtd-v2, .rtd-v2 *, .rtd-v2 *::before, .rtd-v2 *::after { animation: none !important; transition: none !important; }
   .rtd-v2 .rtd-button:not(:disabled):active, .rtd-v2 .rtd-card:active { transform: none; }
 }
+
+/* Optional PR-E collection slots; existing gallery cards without progressText keep their layout. */
+.rtd-v2 .rtd-card-progress { position: relative; }
+.rtd-v2 .rtd-card-count { position: absolute; inset: 0; display: grid; place-items: center; color: var(--rtd-white); font: 700 12px/1 var(--rtd-body-font); -webkit-text-stroke: 1.5px var(--rtd-outline); paint-order: stroke fill; }
+.rtd-v2 .rtd-card-portrait.is-text { display: grid; place-items: center; font: 24px/1 var(--rtd-title-font); }

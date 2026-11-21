@@ -21,9 +21,11 @@
 import { h } from '../dom';
 import { GRADE_NAMES } from '../../data/grades';
 import { assetUrl } from '../../assets';
-import { createButton, createCurrencyBar, createIcon, createProgress, formatCompactNumber, loadDesignFont, type DesignIcon } from '../design-system';
+import { createButton, createGradeCard, createNumberBadge, createPopup, createUpgradeArrow, createCurrencyBar, createIcon, createProgress, formatCompactNumber, loadDesignFont, type DesignIcon } from '../design-system';
 import { availableSpeeds, nextSpeed } from '../hud/speed';
 import './lobbyV2.css';
+import './heroesV2.css';
+import { heroCollectionSummary } from './heroCollectionModel';
 import { artIcon } from '../artIcon';
 import type { UiArt } from '../../art/uiIcons';
 import type { UiView } from '../root';
@@ -142,6 +144,11 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   };
 
   // ---------- 창들 ----------
+  const growthCopy = h('div', { class: 'hero-growth-copy' });
+  const growthHelp = createPopup({ title: '영웅 성장 안내', variant: 'pinned', content: growthCopy, primaryLabel: '확인', onPrimary: () => growthHelp.close() });
+  growthHelp.el.dataset.testid = 'hero-growth-info';
+  growthHelp.el.classList.add('hero-growth-dialog');
+
   const grantDlg = dialogShell('lobby-grant-title', '받았어요', 'grant-dialog');
   const detailDlg = dialogShell('hero-detail-title', '영웅', 'hero-detail');
   detailDlg.dialog.classList.add('hero-detail-dialog');
@@ -482,69 +489,70 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   );
 
   // ---------- 영웅 탭 ----------
-  const heroesPanel = h('section', { class: 'lobby-panel lobby-heroes', attrs: { 'data-panel': 'heroes', 'aria-label': '영웅' } });
+  const heroesPanel = h('section', { class: 'lobby-panel lobby-heroes heroes-v2', attrs: { 'data-panel': 'heroes', 'aria-label': '영웅' } });
 
   function heroCardEl(c: HeroCardModel): HTMLElement {
-    const label = `${c.name} ${c.gradeName}${c.owned ? ` Lv ${c.level}` : c.locked ? ' 잠김' : ' 보유하지 않음'}`;
-    return h(
-      'button',
-      {
-        class: `hero-card grade-${c.grade}${c.owned ? '' : ' is-unowned'}${c.ready ? ' is-ready' : ''}${c.locked ? ' is-locked' : ''}`,
-        attrs: { type: 'button', style: `--grade-color:${c.color}`, 'data-hero': c.id, 'data-grade': c.grade, 'data-level': String(c.level), 'aria-label': label },
-        on: { click: () => openDetail(c.id) },
-      },
-      h('span', { class: 'hero-card-art' }, portrait(c.id, c.name), c.ready ? h('span', { class: 'hero-up', text: '▲', attrs: { 'aria-hidden': 'true', 'data-testid': 'hero-up' } }) : null),
-      h('span', { class: 'hero-card-lv', text: c.owned ? `Lv ${c.level}` : c.locked ? '🔒' : '—' }),
-      h('span', { class: 'hero-card-name', text: c.name }),
-      h(
-        'span',
-        { class: 'hero-card-count' },
-        h('span', { class: 'hero-card-bar', attrs: { 'aria-hidden': 'true' } }, h('span', { class: 'hero-card-fill', attrs: { style: `width:${c.need ? Math.min(100, Math.round((c.cards / c.need) * 100)) : 100}%` } })),
-        h('span', { class: 'hero-card-num', text: c.max ? 'MAX' : c.need !== null ? `${c.cards}/${c.need}` : `${c.cards}` }),
-      ),
-    );
+    const count = c.max ? 'MAX' : c.need !== null ? `${formatCompactNumber(c.cards)}/${formatCompactNumber(c.need)}` : c.owned ? formatCompactNumber(c.cards) : '미보유';
+    const exactCount = c.need !== null ? `${fmt(c.cards)}/${fmt(c.need)}` : fmt(c.cards);
+    const progressLabel = c.max ? `${c.name} 최고 레벨` : c.locked ? `${c.name} 조각 ${exactCount}` : `${c.name} 카드 ${exactCount}`;
+    const card = createGradeCard({ grade: c.grade, name: c.name, level: c.level, owned: c.owned,
+      portrait: opts.portraitOf(c.id), progress: c.need ? c.cards / c.need * 100 : c.max ? 100 : 0,
+      progressLabel, progressText: count, onClick: () => openDetail(c.id) });
+    card.classList.add('hero-card', `grade-${c.grade}`);
+    card.classList.toggle('is-ready', c.ready);
+    card.classList.toggle('is-locked', c.locked);
+    card.dataset.hero = c.id;
+    card.dataset.level = String(c.level);
+    card.setAttribute('aria-label', `${c.name} · ${c.gradeName} · ${c.owned ? `Lv ${c.level}` : c.locked ? '잠김' : '보유하지 않음'} · ${progressLabel}${c.ready ? c.locked ? ' · 해방 가능' : ' · 레벨업 가능' : ''}`);
+    card.querySelector('.rtd-card-portrait')?.classList.add('hero-portrait');
+    const level = card.querySelector('.rtd-card-level');
+    level?.classList.add('hero-card-lv');
+    if (c.locked && level) level.textContent = '잠김';
+    card.querySelector('.rtd-card-count')?.classList.add('hero-card-num');
+    card.querySelector('.rtd-card-name')?.classList.add('hero-card-name');
+    if (c.ready) {
+      const arrow = createUpgradeArrow(c.locked ? '해방 가능' : '레벨업 가능');
+      arrow.classList.add('hero-up');
+      arrow.dataset.testid = 'hero-up';
+      arrow.setAttribute('aria-hidden', 'true');
+      card.querySelector('.rtd-card-face')?.append(arrow);
+    }
+    return card;
   }
 
   function renderHeroes(): void {
     const g = heroGrid(progress.state, pd, data, heroTab, heroSort);
-    const tabBtn = (id: HeroTab, label: string): HTMLElement =>
-      h('button', {
-        class: `btn btn-chip lobby-seg${heroTab === id ? ' is-on' : ''}`,
-        text: label,
-        attrs: { type: 'button', 'aria-pressed': String(heroTab === id), 'data-hero-tab': id },
-        on: {
-          click: () => {
-            heroTab = id;
-            renderHeroes();
-          },
-        },
-      });
-    const sortBtn = (id: HeroSort, label: string): HTMLElement =>
-      h('button', {
-        class: `btn btn-chip lobby-seg${heroSort === id ? ' is-on' : ''}`,
-        text: label,
-        attrs: { type: 'button', 'aria-pressed': String(heroSort === id), 'data-sort': id },
-        on: {
-          click: () => {
-            heroSort = id;
-            renderHeroes();
-          },
-        },
-      });
+    const summary = heroCollectionSummary(progress.state, pd, data);
+    growthCopy.replaceChildren(
+      h('p', { text: `영웅 종합 레벨은 계정에 기록된 영웅 레벨의 합계예요. 지금은 ${fmt(summary.levelSum)}입니다.` }),
+      h('p', { text: `공격력 보너스는 영웅마다 따로 적용돼요. 레벨이 1 오를 때 그 영웅의 공격력이 ${summary.perLevel} 증가해요.` }),
+      h('p', { text: `현재 보유 영웅의 전투 적용 범위는 ${summary.bonusRange}예요. 종합 레벨이 모든 영웅에게 같은 공격력 보너스를 주지는 않아요.` }),
+      h('p', { text: '초록 화살표는 기존 카드·불꽃 조건을 만족한 레벨업 또는 조각이 모인 리미티드 해방을 뜻해요. 필요한 수치는 영웅 상세에서 확인할 수 있어요.' }),
+    );
+    const tabBtn = (id: HeroTab, label: string): HTMLElement => {
+      const b = createButton({ label, variant: 'pill', selected: heroTab === id, onClick: () => { heroTab = id; renderHeroes(); } });
+      b.classList.add('lobby-seg'); b.classList.toggle('is-on', heroTab === id); b.dataset.heroTab = id;
+      return b;
+    };
+    const sortBtn = (id: HeroSort, label: string): HTMLElement => {
+      const b = createButton({ label, variant: 'pill', selected: heroSort === id, onClick: () => { heroSort = id; renderHeroes(); } });
+      b.classList.add('lobby-seg'); b.classList.toggle('is-on', heroSort === id); b.dataset.sort = id;
+      return b;
+    };
     // 피드백 #31: 지금 탭의 보유 영웅을 보이는 순서대로 모두 레벨업 (돌아가며 한 레벨씩)
-    const levelAll = h('button', {
-      class: `btn btn-chip ${g.canLevel > 0 ? 'btn-primary' : ''} hero-levelup-all`,
-      text: g.canLevel > 0 ? `⬆ 모두 레벨업 ${g.canLevel}` : '⬆ 모두 레벨업',
-      attrs: { type: 'button', 'data-testid': 'hero-levelup-all', ...(g.canLevel > 0 ? {} : { disabled: '' }) },
-      on: {
-        click: () => {
-          const r = progress.levelUpAll(g.owned.map((c) => c.id));
-          if (r.ups.length > 0) opts.toast(`⬆ 영웅 ${r.ups.length}명 레벨업 · 🃏 ${r.cards} · 🔥 ${fmt(r.flame)} 사용`, 2200);
-        },
-      },
+    const levelAll = createButton({
+      label: g.canLevel > 0 ? `⬆ 모두 레벨업 ${g.canLevel}` : '⬆ 모두 레벨업', variant: 'secondary', disabled: g.canLevel === 0,
+      onClick: () => { const r = progress.levelUpAll(g.owned.map(c => c.id)); if (r.ups.length > 0) opts.toast(`⬆ 영웅 ${r.ups.length}명 레벨업 · 🃏 ${r.cards} · 🔥 ${fmt(r.flame)} 사용`, 2200); },
     });
+    levelAll.classList.add('hero-levelup-all'); levelAll.dataset.testid = 'hero-levelup-all';
+    if (g.canLevel > 0) levelAll.querySelector('.rtd-button-label')?.replaceChildren('⬆ 모두 레벨업 ', createNumberBadge(g.canLevel));
+    const info = createButton({ label: '성장 보너스 안내', variant: 'close', icon: 'info', onClick: () => growthHelp.open() });
+    info.dataset.testid = 'hero-growth-open'; info.setAttribute('aria-haspopup', 'dialog');
     heroesPanel.replaceChildren(
       h('div', { class: 'lobby-panel-head' }, h('h2', { class: 'lobby-panel-title', text: '영웅 수집' }), h('div', { class: 'lobby-segs' }, tabBtn('heroes', '영웅'), tabBtn('mythic', `신·${GRADE_NAMES.hidden}`))),
+      h('section', { class: 'hero-summary', attrs: { role: 'group', 'aria-label': '영웅 성장 요약' } },
+        h('div', {}, h('p', { class: 'hero-summary-level' }, '영웅 종합 레벨 ', h('strong', { text: fmt(summary.levelSum), attrs: { 'data-testid': 'hero-level-sum' } })),
+          h('p', { class: 'hero-summary-bonus' }, '영웅별 공격력 ', h('strong', { text: summary.bonusRange, attrs: { 'data-testid': 'hero-bonus-range' } }))), info),
       h('div', { class: 'lobby-sortbar' }, h('span', { class: 'lobby-count', text: `보유 ${g.owned.length}/${g.owned.length + g.unowned.length}` }), levelAll),
       h('div', { class: 'lobby-sortbar hero-sorts' }, h('div', { class: 'lobby-segs' }, sortBtn('grade', '등급 순'), sortBtn('level', '레벨 순'), sortBtn('ready', '레벨업 가능'))),
       h(
@@ -611,7 +619,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     detailDlg.body.replaceChildren(
       h(
         'div',
-        { class: `hero-detail grade-${d.grade}`, attrs: { style: `--grade-color:${d.color}`, 'data-hero': d.id } },
+        { class: `hero-detail grade-${d.grade}`, attrs: { style: `--grade-color:${d.color}`, 'data-hero': d.id, 'data-grade': d.grade } },
         h(
           'div',
           { class: 'hero-detail-top' },
@@ -974,6 +982,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     recruitDlg.dialog,
     settingsDlg?.dialog ?? null,
     menuDlg.dialog,
+    growthHelp.el,
     // 설정 창 위에 여는 창 → 문서 순서도 맨 끝 (nativeBack이 마지막 열린 창부터 닫는다)
     opts.settings?.feedback?.el ?? null,
   );
@@ -1012,6 +1021,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     },
     destroy() {
       unsubscribe();
+      growthHelp.destroy();
     },
   };
 }
