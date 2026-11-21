@@ -4,7 +4,7 @@ let pending: Promise<void> | undefined;
 export function loadDesignFont(): Promise<void> {
   return pending ??= (async () => {
     if (typeof FontFace === 'undefined') return;
-    const face = new FontFace('RTD Jua', `url("${assetUrl('assets/fonts/Jua-Regular.woff')}") format("woff")`, { weight: '400', style: 'normal', display: 'swap' });
+    const face = new FontFace('RTD Jua', `url("${assetUrl('assets/fonts/Jua-Regular.subset.woff2')}") format("woff2")`, { weight: '400', style: 'normal', display: 'swap' });
     await face.load();
     document.fonts.add(face);
   })();
