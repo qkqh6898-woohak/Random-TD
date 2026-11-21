@@ -60,7 +60,7 @@ for(const width of [320,360,393,412])test(`PR-E ${width}px: four columns, seven 
     await shot(page,`${tab}-${width}`);
     expect(m.bad).toEqual([]);expect(m.columns).toBe(4);expect(m.overflow).toBe(false);expect(m.gap).toBeCloseTo(.08,2);
     const palette:Record<string,[string,string]>={normal:['#B7AC8E','#F3EBD3'],rare:['#3E4F8C','#5B8BE0'],unique:['#6A3A9C','#9B6AD8'],hero:['#E3A92B','#FFE07A'],legend:['#E2772A','#FF9A3C'],god:['#B8323A','#FF6B6B'],hidden:['#2B2A5E','#FFD54A']};
-    for(const t of m.tokens)expect([t.bg,t.border]).toEqual(palette[t.grade]);
+    for(const t of m.tokens)expect([t.bg,t.border]).toEqual(palette[t.grade!]);
     if(tab==='mythic')expect(m.hiddenRibbon).toBe(true);
     captured.push({tab,...m});
   }

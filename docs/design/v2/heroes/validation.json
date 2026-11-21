@@ -1,0 +1,39 @@
+{
+  "baseMain": "3abfda6e943a5c0bccbb2a0710c80ceac00f57e9",
+  "parent": "c12af1fcfc1c4de5fd415857e3d2405abe5b9e16",
+  "implementation": "acb5787",
+  "unit": {
+    "files": 114,
+    "passed": 1632,
+    "skipped": 5
+  },
+  "check": "passed",
+  "build": "passed",
+  "singleBuild": "passed, 18.02 MB, 278 embedded assets",
+  "uiDefaultChromium": {
+    "passed": 6,
+    "coverage": "four widths; actual level-up; short safe-area/reduced-motion/dialog/back"
+  },
+  "uiCanvas": {
+    "passed": 7,
+    "coverage": "same six plus rendered contrast and disabled/pressed states"
+  },
+  "relatedCanvasBeforeFinalStyling": {
+    "passed": 19,
+    "files": [
+      "g3.spec.ts",
+      "fb31.spec.ts",
+      "fb61.spec.ts",
+      "design-system.spec.ts"
+    ]
+  },
+  "screens": "screens/{heroes,mythic}-{320,360,393,412}.png + info-short-320.png + pressed.png",
+  "fullRegression": "pending combined local integration check with independent field-context branch",
+  "physicalAndroid": "not tested",
+  "mainPushedOrMerged": false,
+  "contrast": {
+    "samples": 161,
+    "minimum": 6.478645438933269,
+    "outlinedText": "foreground versus rendered 1.5px outline; other text versus actual ancestor surface"
+  }
+}
