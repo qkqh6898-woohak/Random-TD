@@ -146,6 +146,8 @@ export class UiRoot {
   /** Presentation only: no timer, reward or stage state is changed. */
   waveRibbon(stage: number): void {
     if (!this.el.classList.contains('battle-v2') || !Number.isFinite(stage) || stage < 1) return;
+    // 피드백 #75 '✨ 화려한 효과' 꺼짐(.fx-off): 꾸밈 띠는 띄우지 않는다 — 단계 숫자는 HUD에 그대로 (V2-R21)
+    if (this.el.classList.contains('fx-off')) return;
     this.layers.cutin.querySelector('.wave-ribbon')?.remove();
     const ribbon = h('div', { class: 'wave-ribbon', attrs: { 'aria-hidden': 'true', 'data-testid': 'wave-ribbon' }, text: `WAVE ${stage}` });
     this.layers.cutin.append(ribbon);

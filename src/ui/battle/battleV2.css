@@ -169,6 +169,8 @@
 .battle-v2 .pause-switch.is-on { background:var(--rtd-primary); color:var(--rtd-outline); }
 .battle-v2 .hud-count.is-danger .hud-value { color:#FF8A8A; }
 .battle-v2 .hud-speed::before { content:''; display:inline-block; border-left:7px solid currentColor; border-top:5px solid transparent; border-bottom:5px solid transparent; margin-right:3px; }
+/* V2-R21: ART-2 힉스필드 배속 그림(ui-speed)이 있으면 PR-G의 CSS 삼각형은 겹치므로 숨긴다 (그림을 못 읽어도 대체 글리프가 같은 자리) */
+.battle-v2 .hud-speed:has(> .hud-speed-icon)::before { content:none; }
 @container (max-width:300px) {
  .battle-v2 .hud-bar { border-bottom:0; padding:0 3px; gap:0; }
  .battle-v2 .hud-menu.is-g1 { gap:0; padding-top:0; padding-bottom:var(--battle-safe-bottom); }

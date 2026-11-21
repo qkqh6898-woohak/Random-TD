@@ -50,3 +50,14 @@ test('PR-G short safe-area, reduced motion, unaffordable summon and real currenc
  await page.getByTestId('hud-ready').click();await expect(page.getByTestId('wave-ribbon')).toHaveCSS('animation-name','none');
  await page.getByTestId('battle-menu-toggle').click();await page.getByTestId('battle-menu-stats').click();const box=(await page.getByTestId('battle-stats').boundingBox())!;expect(box.y).toBeGreaterThanOrEqual(0);expect(box.y+box.height).toBeLessThanOrEqual(568);await shot(page,'stats-safe-short');await page.evaluate(()=>window.dispatchEvent(new Event('randomtd:native-back',{cancelable:true})));await expect(page.getByTestId('battle-stats')).toBeHidden();
 });
+test('V2-R21 effects off (#75 ✨ 화려한 효과 꺼짐): no WAVE ribbon, no crit numbers/impact; the switch stays in the battle settings',async({page})=>{
+ await page.addInitScript(()=>{const s=JSON.parse(localStorage.getItem('rtd.settings')??'{"v":2}');localStorage.setItem('rtd.settings',JSON.stringify({...s,effectsOff:true}));});
+ await start(page);await expect(page.locator('.battle-v2')).toHaveClass(/fx-off/);
+ await page.getByTestId('hud-summon').click();await expect.poll(()=>scene(page,s=>s.match.towers().length)).toBe(1);
+ await page.getByTestId('hud-ready').click();await expect.poll(()=>scene(page,s=>s.match.state.stage)).toBeGreaterThanOrEqual(1);
+ await page.waitForTimeout(400);await expect(page.getByTestId('wave-ribbon')).toHaveCount(0);
+ // 치명타 숫자(하늘색 '!')·타격 별도 띄우지 않는다 (DamageText.spawn·criticalImpact가 effectsOff를 본다)
+ expect(await scene(page,s=>s.floatingText.spawn(100,100,'99!','#4FD8F0',s.time.now,true,true))).toBe(false);
+ await page.getByTestId('battle-menu-toggle').click();await page.getByTestId('battle-menu-settings').click();
+ await expect(page.getByTestId('pause-effects-off')).toBeVisible();await expect(page.getByTestId('pause-effects-off')).toHaveAttribute('aria-checked','false');
+});
