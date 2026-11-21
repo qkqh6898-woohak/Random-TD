@@ -1,0 +1,30 @@
+{
+  "base": "68052a7e429d139eaa1d1ca2560ddbcb83981da5",
+  "game_js_css_byte_identical": true,
+  "files": [
+    {
+      "file": "Gallery-Cp8bgIj2.css",
+      "identical": true,
+      "sha256": "b5d405e6fbecbcf1cac78d49729aeace316a87e007d21427c8fe98871e51e68c",
+      "bytes": 2613
+    },
+    {
+      "file": "index-CSAwYnZ-.js",
+      "identical": true,
+      "sha256": "7456500753293e0eba6b2cb3daaec84276ffc0886524afa00db01979d44a0b17",
+      "bytes": 2043693
+    },
+    {
+      "file": "Gallery-BQ-vq7gR.js",
+      "identical": true,
+      "sha256": "fb8ecbb3ed8d6974627dde10b76204c05ef689fae59eadc25c2c4bcc4f1ae724",
+      "bytes": 11852
+    },
+    {
+      "file": "index-CbiH0wOw.css",
+      "identical": true,
+      "sha256": "d33dc22bdca8265e980fb1c625ae7a81d781f10c8d05ef04d334ed2dd736a64a",
+      "bytes": 91320
+    }
+  ]
+}

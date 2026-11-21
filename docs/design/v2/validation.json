@@ -1,0 +1,155 @@
+{
+  "date_utc": "2026-11-19",
+  "base_commit": "68052a7e429d139eaa1d1ca2560ddbcb83981da5",
+  "branch": "design/v2-pr-b",
+  "tools": {
+    "node": "v24.22.1",
+    "npm": "11.9.0",
+    "chromium": "156.0.8078.79 (/usr/bin/chromium)",
+    "browser_install_performed": false
+  },
+  "npm_ci": "PASS",
+  "unit": {
+    "files": 102,
+    "passed": 1539,
+    "skipped": 5,
+    "log": "tmp/v2/unit-final.log"
+  },
+  "check": {
+    "result": "PASS",
+    "log": "tmp/v2/check-delivery.log"
+  },
+  "build": {
+    "result": "PASS",
+    "log": "tmp/v2/build-delivery.log"
+  },
+  "single_build": {
+    "result": "PASS",
+    "bytes": 18835782,
+    "sha256": "81b0f771dd825c0a27e04699a0b9cf5436affbad49eb13849192e4e9707eef1c",
+    "embedded_files": 276,
+    "log": "tmp/v2/single-delivery.log"
+  },
+  "gallery_final_chromium": {
+    "passed": 7,
+    "failed": 0,
+    "viewports": [
+      320,
+      360,
+      393,
+      412
+    ],
+    "dpr": [
+      2,
+      3
+    ],
+    "text_pairs_per_viewport": 20,
+    "minimum_text_contrast": 5.310086793389508,
+    "touch_targets_min_px": 44,
+    "font_smallest_px": 12,
+    "external_requests": 0,
+    "font_hangul_coverage": 247,
+    "safe_area": "CSS env declarations + emulated custom-property top/bottom insets; physical Android not tested",
+    "log": "tmp/v2/design-e2e-delivery.log"
+  },
+  "full_canvas_e2e": {
+    "total": 241,
+    "passed": 230,
+    "failed": 5,
+    "skipped": 6,
+    "minutes": 22.9,
+    "command": "PW_CHROMIUM_PATH=/workspace/Random-TD-v2-design/tmp/v2/chromium-canvas E2E_PORT=5196 npm run e2e",
+    "wrapper": "exec /usr/bin/chromium --disable-webgl \"$@\"",
+    "existing_test_expectations_modified": false,
+    "log": "tmp/v2/e2e-full-canvas.log",
+    "skip_reason": "Six existing screenshot-only tests require SAVE_SCREENS=1."
+  },
+  "baseline_hud_comparison": {
+    "commit": "68052a7e429d139eaa1d1ca2560ddbcb83981da5",
+    "failed": 4,
+    "same_assertion": "e2e/hud-layout.spec.ts:134",
+    "measurements": [
+      {
+        "viewport": "412x915",
+        "branch": {
+          "expected_max": 184.75555555555556,
+          "actual": 209.0582733154297
+        },
+        "baseline": {
+          "expected_max": 184.75555555555556,
+          "actual": 209.15625
+        }
+      },
+      {
+        "viewport": "360x640",
+        "branch": {
+          "expected_max": 167.83333333333331,
+          "actual": 188.5
+        },
+        "baseline": {
+          "expected_max": 167.83333333333331,
+          "actual": 188.5
+        }
+      },
+      {
+        "viewport": "320x568",
+        "branch": {
+          "expected_max": 154.87037037037035,
+          "actual": 173.21875
+        },
+        "baseline": {
+          "expected_max": 154.87037037037035,
+          "actual": 173.21875
+        }
+      },
+      {
+        "viewport": "915x412",
+        "branch": {
+          "expected_max": 83.88541666666666,
+          "actual": 142.40625
+        },
+        "baseline": {
+          "expected_max": 123.88541666666666,
+          "actual": 142.40625
+        }
+      }
+    ],
+    "note": "Same four failures reproduced. Measured bounds differ between runs and are recorded separately, not claimed pixel-identical.",
+    "log": "tmp/v2/baseline-hud.log"
+  },
+  "final_checks_after_full_run": "Notification accessible names and popup-demo spacing were refined; the seven new gallery tests, all unit tests, check, build and single build were rerun. Existing gameplay JS/CSS remains byte-identical to baseline.",
+  "production_bundle_comparison": "production-bundle-comparison.json",
+  "production_and_single_http_probe": {
+    "filePolicy": "Error: page.goto: net::ERR_BLOCKED_BY_ADMINISTRATOR at file:///workspace/Random-TD-v2-design/tmp/v2/file-policy.html",
+    "production": {
+      "galleryAbsent": true,
+      "newAssetRequests": [],
+      "errors": []
+    },
+    "singleHttpComplement": {
+      "requests": [
+        "http://127.0.0.1:5199/%EC%9A%B4%EB%B9%A8%EB%94%94%ED%8E%9C%EC%8A%A4-test.html"
+      ],
+      "errors": [],
+      "embedded": {
+        "files": 276,
+        "icons": 29,
+        "iconsLoaded": true,
+        "font": "loaded"
+      },
+      "gold": "900원"
+    }
+  },
+  "limitations": [
+    "Four existing HUD banner reservation failures reproduce on the unchanged baseline in this environment.",
+    "Managed Chromium blocks file:// navigation even for an empty HTML; HTTP single-file verification is complementary evidence, not a passed file:// test.",
+    "No full WebGL gameplay suite run. Gallery seven tests use default Chromium; full suite uses supported Canvas fallback.",
+    "Physical Android notch/touch testing remains for integration."
+  ],
+  "delivery": {
+    "main_push": false,
+    "merge": false,
+    "signed_release": false,
+    "raw_tmp_committed": false
+  }
+}

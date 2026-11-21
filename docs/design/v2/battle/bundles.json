@@ -1,0 +1,39 @@
+{
+  "production": {
+    "lobby": {
+      "inert": false,
+      "icons": 21,
+      "missing": 0,
+      "font": true,
+      "backgroundDecoded": true,
+      "backgroundInline": false
+    },
+    "game": {
+      "inert": false,
+      "speed": 16,
+      "gold": "978원"
+    },
+    "httpRequests": 250,
+    "externalRequests": [],
+    "errors": []
+  },
+  "singleHttp": {
+    "lobby": {
+      "inert": false,
+      "icons": 21,
+      "missing": 0,
+      "font": true,
+      "backgroundDecoded": true,
+      "backgroundInline": true
+    },
+    "game": {
+      "inert": false,
+      "speed": 16,
+      "gold": "978원"
+    },
+    "embeddedAssets": 278,
+    "httpRequests": 1,
+    "externalRequests": [],
+    "errors": []
+  }
+}

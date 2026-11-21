@@ -9,7 +9,7 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
-import { clickStart } from './title';
+import { clickStart, openLobbyMenu } from './title';
 
 const PREFIX = 'https://github.com/qkqh6898-woohak/Random-TD/issues/new?';
 
@@ -47,6 +47,7 @@ const urls = (page: Page): Promise<string[]> => page.evaluate(() => (window as u
 async function openLobbyFeedback(page: Page): Promise<void> {
   await page.goto('/');
   await expect(page.locator('[data-screen="title"][data-lobby="1"]')).toBeVisible();
+  await openLobbyMenu(page);
   await page.locator('[data-action="settings"]').click();
   await expect(page.getByTestId('settings-dialog')).toBeVisible();
   await page.getByTestId('settings-dialog').getByTestId('feedback-open').click();
@@ -234,6 +235,7 @@ test('FB-1 d. 뒤로 가기: 피드백 창 → 설정 창 → (로비 전투 탭
   expect(await back(page)).toBe(true);
   await expect(page.getByTestId('settings-dialog')).toBeHidden();
   // Esc도 닫는다
+  await openLobbyMenu(page);
   await page.locator('[data-action="settings"]').click();
   await page.getByTestId('settings-dialog').getByTestId('feedback-open').click();
   await expect(page.getByTestId('feedback-dialog')).toBeVisible();

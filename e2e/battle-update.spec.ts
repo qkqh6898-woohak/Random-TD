@@ -70,7 +70,7 @@ test('일반 Lv1: 모든 배속 선택·×16 소환/고용 입력·실시간 효
   expect(errors).toEqual([]);
 });
 
-test('×16 프레임 초반 치명타도 큰 주황 숫자와 짧은 타격 효과, 일반 피해보다 우선', async ({ page }) => {
+test('×16 프레임 초반 치명타도 큰 하늘색 숫자와 짧은 타격 효과, 일반 피해보다 우선', async ({ page }) => {
   await start(page);
   for (let i = 0; i < 4; i++) await page.getByRole('button', { name: '배속', exact: true }).click();
   const labels = await scene(page, (s) => {
@@ -83,12 +83,14 @@ test('×16 프레임 초반 치명타도 큰 주황 숫자와 짧은 타격 효�
     const internals = s as unknown as { frameStartTick: number; handleEvents(time: number): void };
     internals.frameStartTick = t;
     internals.handleEvents(s.time.now);
-    return { bounds: s.floatingTextBounds(), critical: s.abilityFxCount('critical') };
+    const rendered = (s as unknown as { floatingText: { active: { text: { text: string; style: { color: string } } }[] } }).floatingText.active;
+    return { bounds: s.floatingTextBounds(), critical: s.abilityFxCount('critical'), criticalColor: rendered.find(a => a.text.text === '123!')?.text.style.color };
   });
   const critical = labels.bounds.find((b) => b.label === '123!');
   expect(critical?.big).toBe(true);
   expect(critical!.h).toBeGreaterThan(50);
   expect(labels.critical).toBe(1);
+  expect(labels.criticalColor?.toUpperCase()).toBe('#4FD8F0');
   mkdirSync('docs/screens', { recursive: true });
   await page.screenshot({ path: 'docs/screens/battle-update-critical.png' });
 });

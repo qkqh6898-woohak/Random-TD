@@ -1,0 +1,176 @@
+{
+  "captured": [
+    {
+      "tab": "heroes",
+      "bad": [],
+      "columns": 4,
+      "gap": 0.07994159518160249,
+      "overflow": false,
+      "scrollHeight": 2105,
+      "clientHeight": 469,
+      "colors": [
+        "legend:rgba(0, 0, 0, 0)",
+        "hero:rgb(227, 169, 43)",
+        "unique:rgb(106, 58, 156)",
+        "rare:rgb(62, 79, 140)",
+        "normal:rgb(183, 172, 142)"
+      ],
+      "tokens": [
+        {
+          "grade": "legend",
+          "bg": "#E2772A",
+          "border": "#FF9A3C"
+        },
+        {
+          "grade": "legend",
+          "bg": "#E2772A",
+          "border": "#FF9A3C"
+        },
+        {
+          "grade": "legend",
+          "bg": "#E2772A",
+          "border": "#FF9A3C"
+        },
+        {
+          "grade": "legend",
+          "bg": "#E2772A",
+          "border": "#FF9A3C"
+        },
+        {
+          "grade": "legend",
+          "bg": "#E2772A",
+          "border": "#FF9A3C"
+        },
+        {
+          "grade": "hero",
+          "bg": "#E3A92B",
+          "border": "#FFE07A"
+        },
+        {
+          "grade": "hero",
+          "bg": "#E3A92B",
+          "border": "#FFE07A"
+        },
+        {
+          "grade": "hero",
+          "bg": "#E3A92B",
+          "border": "#FFE07A"
+        },
+        {
+          "grade": "hero",
+          "bg": "#E3A92B",
+          "border": "#FFE07A"
+        },
+        {
+          "grade": "hero",
+          "bg": "#E3A92B",
+          "border": "#FFE07A"
+        },
+        {
+          "grade": "unique",
+          "bg": "#6A3A9C",
+          "border": "#9B6AD8"
+        },
+        {
+          "grade": "unique",
+          "bg": "#6A3A9C",
+          "border": "#9B6AD8"
+        },
+        {
+          "grade": "unique",
+          "bg": "#6A3A9C",
+          "border": "#9B6AD8"
+        },
+        {
+          "grade": "unique",
+          "bg": "#6A3A9C",
+          "border": "#9B6AD8"
+        },
+        {
+          "grade": "unique",
+          "bg": "#6A3A9C",
+          "border": "#9B6AD8"
+        },
+        {
+          "grade": "rare",
+          "bg": "#3E4F8C",
+          "border": "#5B8BE0"
+        },
+        {
+          "grade": "rare",
+          "bg": "#3E4F8C",
+          "border": "#5B8BE0"
+        },
+        {
+          "grade": "rare",
+          "bg": "#3E4F8C",
+          "border": "#5B8BE0"
+        },
+        {
+          "grade": "rare",
+          "bg": "#3E4F8C",
+          "border": "#5B8BE0"
+        },
+        {
+          "grade": "rare",
+          "bg": "#3E4F8C",
+          "border": "#5B8BE0"
+        },
+        {
+          "grade": "normal",
+          "bg": "#B7AC8E",
+          "border": "#F3EBD3"
+        },
+        {
+          "grade": "normal",
+          "bg": "#B7AC8E",
+          "border": "#F3EBD3"
+        },
+        {
+          "grade": "normal",
+          "bg": "#B7AC8E",
+          "border": "#F3EBD3"
+        },
+        {
+          "grade": "normal",
+          "bg": "#B7AC8E",
+          "border": "#F3EBD3"
+        },
+        {
+          "grade": "normal",
+          "bg": "#B7AC8E",
+          "border": "#F3EBD3"
+        }
+      ],
+      "hiddenRibbon": false
+    },
+    {
+      "tab": "mythic",
+      "bad": [],
+      "columns": 4,
+      "gap": 0.07994159518160249,
+      "overflow": false,
+      "scrollHeight": 816,
+      "clientHeight": 469,
+      "colors": [
+        "hidden:rgb(43, 42, 94)",
+        "god:rgb(184, 50, 58)"
+      ],
+      "tokens": [
+        {
+          "grade": "hidden",
+          "bg": "#2B2A5E",
+          "border": "#FFD54A"
+        },
+        {
+          "grade": "god",
+          "bg": "#B8323A",
+          "border": "#FF6B6B"
+        }
+      ],
+      "hiddenRibbon": true
+    }
+  ],
+  "errors": [],
+  "remote": []
+}

@@ -9,6 +9,7 @@
  * 스크린샷 (SAVE_SCREENS=1): docs/screens/A1-title.png · A1-records.png · A1-pause.png · A1-dice.png (412×915, deviceScaleFactor 1).
  */
 import { expect, test, type Page } from '@playwright/test';
+import { openLobbyMenu } from './title';
 
 const SAVE_DOCS = process.env.SAVE_SCREENS === '1';
 
@@ -176,6 +177,7 @@ test('A-1 전투 기록: 빈 기록 → 20단계 패배(박쥐 여왕·도전 1 
   test.slow();
   await openTitle(page, '?seed=61');
   const dialog = page.getByTestId('records-dialog');
+  await openLobbyMenu(page);
   await page.getByRole('button', { name: '기록', exact: true }).click();
   await expect(dialog).toBeVisible();
   await expect(page.getByTestId('records-best')).toHaveText('기록 없음');
@@ -221,6 +223,7 @@ test('A-1 전투 기록: 빈 기록 → 20단계 패배(박쥐 여왕·도전 1 
   await over.getByRole('button', { name: '로비로' }).click();
 
   await page.reload();
+  await openLobbyMenu(page);
   await page.getByRole('button', { name: '기록', exact: true }).click();
   await expect(page.getByTestId('records-best')).toHaveText('20단계');
   await expect(dialog.locator('li').filter({ hasText: '박쥐 여왕' })).toContainText('10단계');

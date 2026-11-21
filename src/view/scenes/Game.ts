@@ -39,6 +39,7 @@
  * - 맵 배치: DOM HUD(2줄 + 보스 막대 자리)의 실제 높이를 재서 그 아래에 맵을 놓는다 → HUD가 맵 칸을 가리지 않는다.
  *   버튼 최소 44px 때문에 좁은·가로 화면일수록 HUD가 기준 px로 커지므로, 화면 크기가 바뀌면(ResizeObserver) 다시 배치한다.
  */
+import '../../ui/battle/battleV2.css';
 import Phaser from 'phaser';
 import { GRADE_COLORS, hexToInt } from '../../art/palette';
 import type { Grade } from '../../data/load';
@@ -234,7 +235,6 @@ import { setSideBackground } from '../../ui/stage';
 import { assetUrl } from '../../assets';
 import { backgroundBand, upcomingBand } from '../artBand';
 import { passiveAuraGlows, type AuraGlow } from '../render/abilityModel';
-import { buildHintAlpha } from '../render/buildHint';
 import { mobLookView, mobScaleMul, mobStatusView } from '../render/statusModel';
 /** HUD 띠 아래 끝과 알림 사이 간격 (무대 너비 비율, 2cqw) */
 const TOAST_GAP_OF_WIDTH = 0.02;
@@ -267,8 +267,6 @@ interface GroundPress {
   auto: boolean;
   /** 마지막으로 소환을 시도한 시각 */
   lastMs: number;
-  /** 배치 칸이 아닌 곳(길·빈 땅)을 눌렀는가 — 짧게 떼면 배치 칸을 잠깐 보여준다 (T-3) */
-  hint: boolean;
 }
 
 /** 타워를 누르고 있는 중 (탭 또는 길게 눌러 끌기). */
@@ -293,6 +291,8 @@ interface PressState {
 
 export interface GameSceneData {
   seed: number;
+  /** PR-D view-only choice; saved matches always keep their own speed. */
+  initialSpeed?: number;
   mode?: MatchMode;
   /** 캠페인 테마 (기본 1) */
   theme?: number;
@@ -372,7 +372,7 @@ export class GameScene extends Phaser.Scene {
   private summonFxCount = 0;
   /** 만든 승급 연출 수 (E2E 확인용) */
   private mergeFxCount = 0;
-  private sceneData: Required<Omit<GameSceneData, 'saved'>> = { seed: 0, mode: 'infinite', theme: 1 };
+  private sceneData: Required<Omit<GameSceneData, 'saved' | 'initialSpeed'>> = { seed: 0, mode: 'infinite', theme: 1 };
   /** 판 식별자 · 마지막 저장 토큰 · 마지막 저장 시점 (A-1 자동 저장) */
   private runId = '';
   private saveToken: string | null = null;
@@ -451,8 +451,6 @@ export class GameScene extends Phaser.Scene {
   private chanceQueuedTick = -1;
   /** 마지막 강화 명령을 넣은 틱 (그 명령이 실행되기 전에는 다음을 넣지 않는다 — 길게 누르기가 돈보다 많이 넣지 않게) */
   private upgradeQueuedTick = -1;
-  /** 배치 칸을 잠깐 보이기 시작한 때 (T-3 타일 숨김: 판 시작·배치할 수 없는 곳을 누름). 없으면 null */
-  private buildHintAt: number | null = null;
   // ---- F10 첫 10단계 개선 ----
   private guideLayer!: GuideLayer;
   /** 첫 승급 안내 (계정마다 한 번): 안내하는 타워 종류·결과 칸 타워·단계 (없으면 null) */
@@ -510,7 +508,8 @@ export class GameScene extends Phaser.Scene {
     this.tickMeter.reset();
     this.speeds = availableSpeeds(config.speeds, this.ctx.accountLevel, this.ctx.debug, config.devSpeeds);
     // 이어 하기면 저장한 배속 (지금 쓸 수 있는 배속이 아니면 ×1)
-    const startSpeed = saved && this.speeds.includes(saved.speed) ? saved.speed : 1;
+    const requestedSpeed = saved ? saved.speed : data?.initialSpeed ?? 1;
+    const startSpeed = this.speeds.includes(requestedSpeed) ? requestedSpeed : 1;
     this.clock = new TickClock({ speed: startSpeed, maxFrameMs: config.maxFrameMs });
     this.resumeSpeed = startSpeed;
     this.runId = saved?.runId ?? newRunId();
@@ -522,6 +521,7 @@ export class GameScene extends Phaser.Scene {
     // 피드백 #62: 새 판이면 지난 판의 자동 판매·필살기 자동을 끈다 (이어 하기는 그대로)
     else resetMatchSettings(this.ctx.settings);
     this.paused = false;
+    this.ctx.ui.el.classList.add('rtd-v2', 'battle-v2');
     this.gameOver = false;
     this.prevProgress = new Map();
     this.prevProjectiles = new Map();
@@ -557,7 +557,6 @@ export class GameScene extends Phaser.Scene {
     this.sellConfirm = null;
     this.convertOpen = false;
     this.chanceQueuedTick = -1;
-    this.buildHintAt = this.time.now;
     this.guide = null;
     this.guideCard = null;
     this.guideDone = false;
@@ -621,12 +620,12 @@ export class GameScene extends Phaser.Scene {
       this.resizeObserver = new ResizeObserver(() => {
         this.layoutDirty = true;
       });
-      this.resizeObserver.observe(this.hud.band);
-      this.resizeObserver.observe(this.hud.bottomBand);
-      this.resizeObserver.observe(this.hud.menuBar);
-      this.resizeObserver.observe(this.ctx.ui.el);
+      this.resizeObserver.observe(this.hud.band, { box: 'border-box' });
+      this.resizeObserver.observe(this.hud.bottomBand, { box: 'border-box' });
+      this.resizeObserver.observe(this.hud.menuBar, { box: 'border-box' });
+      this.resizeObserver.observe(this.ctx.ui.el, { box: 'border-box' });
       // 알림 한 줄 높이가 바뀌면 (스타일·글꼴이 늦게 적용됨 등) 알림 자리·위쪽 패널 위치를 다시 잰다 (T-3 병합, m3a 알림 겹침)
-      this.resizeObserver.observe(this.ctx.ui.toastProbe);
+      this.resizeObserver.observe(this.ctx.ui.toastProbe, { box: 'border-box' });
     }
     // 화면 크기·방향이 바뀌어 논리 높이가 달라지면 (T-3): 배경을 새 크기로 덮고 맵을 다시 배치
     this.scale.on(Phaser.Scale.Events.RESIZE, this.onResize, this);
@@ -646,6 +645,8 @@ export class GameScene extends Phaser.Scene {
     window.addEventListener(NATIVE_PAUSE_EVENT, this.onNativePause);
     setBackHandler(() => this.goBack());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.ctx.ui.el.classList.remove('battle-v2', 'rtd-v2');
+      this.game.events.emit('rtd:scene-loading');
       // 타이틀로 나가거나 다시 하기: 진행 중이면 마지막 상태를 남긴다 (패배한 판은 이미 지움)
       if (!this.gameOver) this.saveMatch();
       window.removeEventListener('pagehide', this.onPageHide);
@@ -818,6 +819,7 @@ export class GameScene extends Phaser.Scene {
       this.resume();
       return true;
     }
+    if (this.hud.closeTransientMenu()) return true;
     if (this.convertOpen) this.closeConvertPicker();
     else if (this.ctx.ui.has('card')) this.ctx.ui.clear('card');
     else if (this.guide) this.endGuide(true);
@@ -861,10 +863,19 @@ export class GameScene extends Phaser.Scene {
     return { played: this.cutin?.played ?? 0, showing: this.cutin?.showing ?? false, preloaded: this.cutinPreload.length };
   }
 
-  /** 배치 칸 진하기 0~1 (T-3: 끄는 중 1, 판 시작·배치할 수 없는 곳을 누른 뒤 잠깐, 평소 0) — E2E */
+  /** 표시 전용: 이동은 가능한 칸, 판매·승급은 선택한 무더기와 같은 종류, 강화는 내 타워 칸만. */
+  get fieldHighlights(): readonly (readonly [number, number])[] {
+    if (this.paused || this.gameOver) return [];
+    if (this.press?.dragging || this.moveMode) return this.match.map.buildable;
+    const towers = this.match.towers().filter(t => t.owner === LOCAL_PLAYER);
+    const selected = this.panel ? this.selectedTower() : null;
+    const relevant = this.sheetKind === 'upgrade' && this.upgradeTab !== 'gamble' ? towers : selected ? towers.filter(t => t.tower === selected.tower) : [];
+    return [...new Map(relevant.map(t => [`${t.tx},${t.ty}`, [t.tx, t.ty] as const])).values()];
+  }
+
+  /** 현재 실제로 그리는 조작 칸의 진하기 (E2E). 평상시·일시정지에는 0. */
   get buildHint(): number {
-    const showing = this.press?.dragging === true || this.moveMode !== null;
-    return buildHintAlpha(showing, this.time.now, this.buildHintAt, effectsOff());
+    return this.fieldHighlights.length ? 1 : 0;
   }
 
   /** 지금 보이는 전투 배경 텍스처 키 (E2E, HF-2). 그림이 아직 없으면 null */
@@ -1149,10 +1160,7 @@ export class GameScene extends Phaser.Scene {
     if (fail === null && summonStackCheck(this.match.ctx, this.match.world, LOCAL_PLAYER) === 'cap') fail = 'cap';
     // 빈 땅 (T-2): 누르고 있으면 0.3초 뒤부터 자동 칸에 연속 소환 (맵 안이면 배치 칸이 아니어도)
     const inMap = tx >= 0 && ty >= 0 && tx < this.match.map.width && ty < this.match.map.height;
-    const hint = fail === 'notBuildable';
-    if (inMap) this.groundPress = { pointer, downMs: now, downX: pointer.worldX, downY: pointer.worldY, auto: false, lastMs: now, hint };
-    // 길·빈 땅을 짧게 누르면 배치 칸을 잠깐 보여준다 (T-3: 평소에는 칸을 숨김). 맵 안은 뗄 때(꾹 눌러 연속 소환이면 안 보임), 맵 밖은 바로
-    else if (hint) this.buildHintAt = now;
+    if (inMap) this.groundPress = { pointer, downMs: now, downX: pointer.worldX, downY: pointer.worldY, auto: false, lastMs: now };
     const action = decideTap(fail, tx, ty, summonCost(this.match.ctx, LOCAL_PLAYER));
     if (action.kind === 'summon') {
       if (!tapAllowed(this.lastTapMs, now)) return;
@@ -1231,8 +1239,6 @@ export class GameScene extends Phaser.Scene {
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
     const g = this.groundPress;
     if (g?.pointer === pointer) {
-      // 짧게 누른 길·빈 땅 (꾹 눌러 연속 소환이 시작되지 않음) → 배치 칸 잠깐 보이기
-      if (g.hint && !g.auto) this.buildHintAt = this.time.now;
       this.groundPress = null;
     }
     const p = this.press;
@@ -1669,6 +1675,7 @@ export class GameScene extends Phaser.Scene {
       (x) => auraSpecOf(this.match.ctx, x)?.area ?? null,
       (area) => auraRadiusOf(rules, area),
     );
+    const highlightedCells = this.fieldHighlights;
     this.selectionLayer.draw(
       {
         auras: this.auraGlows,
@@ -1687,7 +1694,7 @@ export class GameScene extends Phaser.Scene {
         sameKind: t && !p ? sameKindTowers(this.match.world, t.tower, t.owner).map((x) => ({ tx: x.tx, ty: x.ty })) : [],
         drop: p && p.drop && stats && t ? { ...p.drop, range: towerRange(this.match.state, t.owner, stats.range) } : null,
         moveMode: this.moveModeView(),
-        buildable: { tiles: this.match.map.buildable, alpha: this.buildHint },
+        buildable: { tiles: highlightedCells, alpha: highlightedCells.length ? 1 : 0 },
       },
       timeMs,
     );
@@ -1829,6 +1836,7 @@ export class GameScene extends Phaser.Scene {
       const recent = eventFxVisible('bulk', ev.tick, now, frameStart);
       switch (ev.type) {
         case 'stageStart':
+          this.ctx.ui.waveRibbon(Number(ev.stage));
           lastStage = { stage: Number(ev.stage), boss: ev.boss === true };
           break;
         case 'victory':
@@ -2482,6 +2490,7 @@ export class GameScene extends Phaser.Scene {
 
   /** 일시정지 메뉴 열기: 게임 시간을 멈춘다 (배속 0). */
   private pause(): void {
+    this.hud.closeTransientMenu();
     if (this.paused || this.gameOver) return;
     this.paused = true;
     this.cancelPress(this.time.now);
@@ -2830,8 +2839,7 @@ export class GameScene extends Phaser.Scene {
   private refreshHud(): void {
     // 일시정지 중에도 배속 칩은 계속하면 돌아갈 배속을 보여준다
     const speed = this.paused ? this.resumeSpeed : this.gameOver ? 1 : this.clock.speed;
-    this.hud.update(
-      buildHudModel(
+    const view = buildHudModel(
         {
           state: this.match.state,
           ticksLeft: this.match.ticksToNextStage(),
@@ -2850,8 +2858,9 @@ export class GameScene extends Phaser.Scene {
           menu: menuBadges(this.match.ctx, this.match.tick, LOCAL_PLAYER),
         },
         this.ctx.data.game.hud,
-      ),
-    );
+      );
+    this.hud.update(view);
+    this.choice?.setBattleTime(view.timer);
   }
 
   // ---------------------------------------------------------------- M5 바텀 시트

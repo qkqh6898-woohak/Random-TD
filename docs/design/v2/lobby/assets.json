@@ -1,0 +1,34 @@
+{
+  "stage": "PR-D",
+  "new": [
+    {
+      "path": "public/assets/ui/v2/lobby/camp.svg",
+      "kind": "original vector background",
+      "viewBox": "0 0 360 915",
+      "creator": "Codex",
+      "externalSources": [],
+      "bytes": 1459,
+      "sha256": "b6bec4636b9c971ed9f233725854ea08cf3c74ee9a6c4d740272f9a06bac6f66"
+    }
+  ],
+  "reused": {
+    "font": "public/assets/fonts/Jua-Regular.woff (OFL, PR-B)",
+    "character": "public/assets/characters/miner.webp (unchanged)",
+    "svgIcons": [
+      "shop",
+      "heroes",
+      "battle",
+      "codex",
+      "campaign",
+      "menu",
+      "quests",
+      "stats",
+      "settings",
+      "gold",
+      "diamond"
+    ],
+    "iconBase": "public/assets/ui/v2/"
+  },
+  "runtimeExternalAssets": false,
+  "characterFilesChanged": 0
+}

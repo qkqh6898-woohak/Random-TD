@@ -1,7 +1,7 @@
 /**
  * 맵 그리기 (DEV_PLAN M1-7): 테마 1 「국경 평원」·순환의 정원 색.
  *
- * - B-1 (사용자 결정, T-3 '타일 숨김'을 뒤집음): 배치 칸은 칸 전체를 덮는 소환 바닥으로 늘 표시한다. 붙어 있는 칸은 빈틈 없이 이어지며 바깥쪽에만 두꺼운 가장자리를 둔다.
+ * - 배치 칸 바닥은 투명하다. 잔디는 이어지고 조작 중 칸 표시는 SelectionLayer에서만 그린다.
  *   힉스필드 전투 배경 그림(BattleBackground)이 판 뒤를 덮고, 그림이 없을 때는 절차 풀밭을 쓴다.
  * - 길(경로)은 언제나 또렷하게: 어두운 테두리 + 흙길 + 진행 방향 화살표. 칸을 이어 그려 꺾임·교차가 끊기지 않는다.
  * - 몹 등장 지점 = 녹스 군단의 보라 균열(빙글빙글 도는 소용돌이), 캠페인 출구 = 왕국 성문.
@@ -13,7 +13,7 @@
  */
 import Phaser from 'phaser';
 import { COLORS, hexToInt, lerpColor, shade } from '../../art/palette';
-import { isBuildable, type SimMap } from '../../sim/map';
+import type { SimMap } from '../../sim/map';
 import { pathCells, tileCenterPx, type MapLayout } from '../layout';
 
 /** 테마 1 풀밭 색 (ART.md 1장: 땅 = 풀밭, 경로 = 흙길). */
@@ -24,11 +24,11 @@ export const MEADOW = {
   ground: 0x4f9a3f,
   groundLight: 0x67b24f,
   tuft: 0x5a9e45,
-  dirt: 0xcaa46c,
-  dirtDark: 0x7a5a34,
-  dirtLight: 0xe2c592,
+  dirt: 0xe9c77a,
+  dirtDark: 0x8a5a32,
+  dirtLight: 0xf3da98,
   pebble: 0xa8844f,
-  chevron: 0x8f6a3d,
+  chevron: 0xbf9c5a,
   rift: 0x9b4dff,
   riftCore: 0x2a0b4d,
   stone: 0x9aa0a6,
@@ -42,7 +42,6 @@ const BACKDROP_RES = 0.5;
 /** 길 너비 (칸 대비): 테두리 · 흙 */
 const ROAD_EDGE = 0.9;
 const ROAD_FILL = 0.76;
-const SUMMON_PAD = { base: 0x568f65, shade: 0x2c654d, edge: 0x214639, shine: 0xc9ed9e, rune: 0xf9e4a4 } as const;
 
 /** 화면용 고정 시드 난수. */
 function lcg(seed: number): () => number {
@@ -92,7 +91,7 @@ export class MapRenderer {
     private readonly opts: MapRendererOptions,
   ) {
     // 칸 크기만이 아니라 위치도 키에 넣는다: HUD 높이에 따라 같은 칸 크기로 위아래만 달라질 수 있다
-    this.textureKey = `map-${map.id}-${layout.tile}-${layout.originX}-${layout.originY}`;
+    this.textureKey = `map-v2-natural-${map.id}-${layout.tile}-${layout.originX}-${layout.originY}`;
     this.groundKey = `${this.textureKey}-ground`;
   }
 
@@ -128,9 +127,17 @@ export class MapRenderer {
       b.setVisible(this.backdropVisible);
       this.objects.push(b);
     }
+    // Continuous grass and an original forest frame sit above band artwork, below the road.
+    const fieldKey = `${this.textureKey}-v2-field`;
+    if (!this.scene.textures.exists(fieldKey)) {
+      const field = this.scene.make.graphics({}, false);
+      this.drawNaturalField(field, board.w, board.h);
+      field.generateTexture(fieldKey, board.w, board.h);
+      field.destroy();
+    }
+    this.objects.push(this.scene.add.image(board.x, board.y, fieldKey).setOrigin(0).setDepth(-1));
     if (!this.scene.textures.exists(this.textureKey)) {
       const g = this.scene.make.graphics({}, false);
-      this.drawSummonPads(g, board.x, board.y);
       this.drawRoad(g, board.x, board.y);
       g.generateTexture(this.textureKey, board.w, board.h);
       g.destroy();
@@ -140,34 +147,29 @@ export class MapRenderer {
     if (this.map.exit) this.drawExitGate(this.map.exit[0], this.map.exit[1]);
   }
 
-  /** 각 칸의 바닥과 맞닿은 가장자리를 같은 텍스처에 굽는다. */
-  private drawSummonPads(g: Phaser.GameObjects.Graphics, ox: number, oy: number): void {
-    const { layout: L, map } = this;
-    const t = L.tile;
-    const edge = Math.max(2, Math.round(t * 0.04));
-    for (const [tx, ty] of map.buildable) {
-      const left = L.originX + tx * t - ox;
-      const top = L.originY + ty * t - oy;
-      g.fillStyle((tx + ty) % 2 === 0 ? SUMMON_PAD.base : SUMMON_PAD.shade, 0.91).fillRect(left, top, t, t);
-      g.fillStyle(SUMMON_PAD.shine, 0.16).fillRect(left, top, t, t * 0.62);
-      g.fillStyle(SUMMON_PAD.edge, 0.25).fillRect(left, top + t * 0.78, t, t * 0.22);
-
-      g.fillStyle(SUMMON_PAD.edge, 0.92);
-      if (!isBuildable(map, tx - 1, ty)) g.fillRect(left, top, edge, t);
-      if (!isBuildable(map, tx + 1, ty)) g.fillRect(left + t - edge, top, edge, t);
-      if (!isBuildable(map, tx, ty + 1)) g.fillRect(left, top + t - edge * 1.5, t, edge * 1.5);
-      if (!isBuildable(map, tx, ty - 1)) {
-        g.fillStyle(SUMMON_PAD.shine, 0.75).fillRect(left, top, t, edge);
-      }
-
-      const cx = left + t / 2;
-      const cy = top + t * 0.56;
-      const r = t * 0.13;
-      g.fillStyle(SUMMON_PAD.edge, 0.6).fillCircle(cx, cy, r);
-      g.lineStyle(Math.max(2, t * 0.024), SUMMON_PAD.rune, 0.88);
-      g.lineBetween(cx - r * 0.46, cy, cx + r * 0.46, cy);
-      g.lineBetween(cx, cy - r * 0.46, cx, cy + r * 0.46);
+  /** Original flat cartoon field. Decorations use a view-only fixed seed, never buildable cell borders. */
+  private drawNaturalField(g: Phaser.GameObjects.Graphics, w: number, h: number): void {
+    const t = this.layout.tile;
+    const rnd = lcg(seedOf(`v2-field-${this.map.id}`));
+    g.fillStyle(0x3f6b22).fillRoundedRect(0, 0, w, h, t * 0.2);
+    g.fillStyle(0x8a5a32).fillRoundedRect(t * 0.2, t * 0.25, w - t * 0.4, h - t * 0.4, t * 0.15);
+    g.fillStyle(0x7ba83a).fillRoundedRect(t * 0.2, t * 0.2, w - t * 0.4, h - t * 0.45, t * 0.15);
+    for (let i = 0; i < Math.round(w * h / (t * t) * 2); i++) {
+      const x = t * 0.4 + rnd() * (w - t * 0.8), y = t * 0.4 + rnd() * (h - t * 0.8);
+      g.lineStyle(Math.max(2, t * 0.015), 0x95ba52, 0.55);
+      g.lineBetween(x - t * 0.035, y, x, y + t * 0.035);
+      g.lineBetween(x, y + t * 0.035, x + t * 0.04, y - t * 0.02);
     }
+    const tree = (x: number, y: number): void => {
+      const r = t * (0.20 + rnd() * 0.04), yellow = rnd() < 0.18;
+      g.fillStyle(0x7a4e36).fillRoundedRect(x - r * 0.2, y, r * 0.4, r * 0.95, r * 0.1);
+      const line = Math.max(2, t * 0.025);
+      g.fillStyle(0x3b2314).fillCircle(x, y - r * 0.45, r * 0.8).fillCircle(x - r * 0.4, y + r * 0.05, r * 0.7).fillCircle(x + r * 0.4, y + r * 0.05, r * 0.7);
+      g.fillStyle(yellow ? 0xe8b33a : 0x3f6b22).fillCircle(x, y - r * 0.45, r * 0.8 - line).fillCircle(x - r * 0.4, y + r * 0.05, r * 0.7 - line).fillCircle(x + r * 0.4, y + r * 0.05, r * 0.7 - line);
+      g.fillStyle(yellow ? 0xffd971 : 0x649537).fillEllipse(x - r * 0.2, y - r * 0.55, r, r * 0.25);
+    };
+    for (let x = t * 0.26; x < w; x += t * 0.43) { tree(x, t * 0.26); tree(x, h - t * 0.26); }
+    for (let y = t * 0.65; y < h - t * 0.3; y += t * 0.43) { tree(t * 0.26, y); tree(w - t * 0.26, y); }
   }
 
   /**
@@ -182,7 +184,7 @@ export class MapRenderer {
     this.objects.length = 0;
     this.backdrops = [];
     if (removeTexture) {
-      for (const k of [this.textureKey, this.groundKey]) if (this.scene.textures.exists(k)) this.scene.textures.remove(k);
+      for (const k of [this.textureKey, this.groundKey, `${this.textureKey}-v2-field`]) if (this.scene.textures.exists(k)) this.scene.textures.remove(k);
     }
   }
 

@@ -21,3 +21,9 @@ export async function clickStart(page: Page): Promise<void> {
     await start.click();
   }
 }
+
+/** PR-D: records/settings retain their selectors, now reached through the lobby menu. */
+export async function openLobbyMenu(page: Page): Promise<void> {
+  await page.locator('[data-action="lobby-menu"]').click();
+  await expect(page.getByTestId('lobby-menu')).toBeVisible();
+}

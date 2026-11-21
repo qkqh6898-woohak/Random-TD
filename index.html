@@ -9,6 +9,18 @@
     <title>운빨 디펜스</title>
   </head>
   <body>
+    <!-- Critical startup shell: visible before the JavaScript/CSS bundle arrives. No external assets. -->
+    <style>
+      #rtd-boot-placeholder { position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:repeating-conic-gradient(from -12deg at 50% 28%,#FFDE59 0deg 15deg,#FFF0A3 15deg 30deg);color:#FFFFFF;font-family:'Malgun Gothic',system-ui,sans-serif;text-align:center }
+      #rtd-boot-placeholder strong { font-size:clamp(40px,14vw,64px);line-height:1;font-weight:900;-webkit-text-stroke:3px #3B2314;paint-order:stroke fill;text-shadow:0 4px #3B2314;transform:rotate(-3deg) }
+      #rtd-boot-placeholder strong span { display:block;color:#F7D23E;margin-top:6px }
+      #rtd-boot-placeholder p { margin:28px 16px 0;padding:8px 16px;border-radius:999px;background:#3A2A22;font-size:16px }
+    </style>
+    <div id="rtd-boot-placeholder" role="status" aria-label="게임 시작 준비">
+      <strong aria-hidden="true">운빨<span>디펜스</span></strong>
+      <p>모험을 준비하고 있어요…</p>
+      <noscript>운빨 디펜스는 자바스크립트가 필요해요.</noscript>
+    </div>
     <div id="app">
       <div id="stage">
         <div id="game"></div>

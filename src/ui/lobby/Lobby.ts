@@ -1,4 +1,5 @@
 /**
+ * PR-D: V2 shared chrome/camp, menu, and view-only new-game speed. Subpanels remain G-3.
  * 로비 (G-3, docs/UI.md 12장): 부팅 뒤 첫 화면 — 예전 타이틀 자리 (타이틀 그림은 Phaser Boot 장면이 뒤에 그대로 깐다).
  *
  * 구성
@@ -19,6 +20,13 @@
  */
 import { h } from '../dom';
 import { GRADE_NAMES } from '../../data/grades';
+import { assetUrl } from '../../assets';
+import { createButton, createGradeCard, createNumberBadge, createPopup, createUpgradeArrow, createCurrencyBar, createIcon, createProgress, formatCompactNumber, loadDesignFont, type DesignIcon } from '../design-system';
+import { availableSpeeds, nextSpeed } from '../hud/speed';
+import './lobbyV2.css';
+import './heroesV2.css';
+import './detailsV2.css';
+import { heroCollectionSummary } from './heroCollectionModel';
 import { artIcon } from '../artIcon';
 import type { UiArt } from '../../art/uiIcons';
 import type { UiView } from '../root';
@@ -71,7 +79,7 @@ export interface LobbyOptions {
   progress: ProgressStore;
   keyArt?: boolean;
   /** [빠른 시작] → 무한 모드 */
-  onStart: () => void;
+  onStart: (speed?: number) => void;
   /** 캠페인 테마 1 (캠페인 탭이 열렸을 때 · 개발자 [캠페인 1]) */
   onCampaign: () => void;
   /** 개발자 모드: [캠페인 1 (디버그)]·[🛠 +재화] */
@@ -93,21 +101,23 @@ export interface LobbyView extends UiView {
   back(): boolean;
 }
 
-const NAV: Record<LobbyTab, { icon: string; label: string }> = {
-  shop: { icon: '🛒', label: '상점' },
-  heroes: { icon: '🦸', label: '영웅' },
-  battle: { icon: '⚔️', label: '전투' },
-  codex: { icon: '📖', label: '도감' },
-  locked: { icon: '🔒', label: '캠페인' },
+const NAV: Record<LobbyTab, { icon: DesignIcon; label: string }> = {
+  shop: { icon: 'shop', label: '상점' },
+  heroes: { icon: 'heroes', label: '영웅' },
+  battle: { icon: 'battle', label: '전투' },
+  codex: { icon: 'codex', label: '도감' },
+  locked: { icon: 'campaign', label: '캠페인' },
 };
 
 const fmt = (n: number): string => n.toLocaleString('ko-KR');
 
 function dialogShell(id: string, title: string, testid: string, ...body: (Node | null)[]): { dialog: HTMLDialogElement; body: HTMLElement; title: HTMLElement } {
-  const close = h('button', { class: 'btn lobby-close', text: '닫기', attrs: { type: 'button', 'data-testid': `${testid}-close` } });
+  const close = createButton({ label: '닫기', variant: 'close', icon: 'close' });
+  close.classList.add('lobby-close');
+  close.dataset.testid = `${testid}-close`;
   const titleEl = h('h2', { attrs: { id }, text: title });
   const content = h('div', { class: 'lobby-dialog-body' }, ...body);
-  const dialog = h('dialog', { class: 'title-dialog lobby-dialog', attrs: { 'aria-labelledby': id, 'data-testid': testid } }, h('header', { class: 'lobby-dialog-head' }, titleEl, close), content);
+  const dialog = h('dialog', { class: 'rtd-v2 title-dialog lobby-dialog lobby-popup-v2', attrs: { 'aria-labelledby': id, 'data-testid': testid } }, h('header', { class: 'lobby-dialog-head' }, titleEl, close), content);
   close.addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', (ev) => {
     if (ev.target === dialog) dialog.close();
@@ -128,12 +138,20 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   let heroSort: HeroSort = 'grade';
   let detailId: string | null = null;
   let questTab: 'daily' | 'achievements' = 'daily';
+  let selectedSpeed = 1;
+  const speeds = availableSpeeds(data.game.speeds, progress.state.level, opts.debug, data.game.devSpeeds);
+  void loadDesignFont().catch(() => { /* System font remains usable offline if the bundled font fails. */ });
   const startButtons: HTMLButtonElement[] = [];
   const lockAll = (): void => {
     for (const b of startButtons) b.disabled = true;
   };
 
   // ---------- 창들 ----------
+  const growthCopy = h('div', { class: 'hero-growth-copy' });
+  const growthHelp = createPopup({ title: '영웅 성장 안내', variant: 'pinned', content: growthCopy, primaryLabel: '확인', onPrimary: () => growthHelp.close() });
+  growthHelp.el.dataset.testid = 'hero-growth-info';
+  growthHelp.el.classList.add('hero-growth-dialog');
+
   const grantDlg = dialogShell('lobby-grant-title', '받았어요', 'grant-dialog');
   const detailDlg = dialogShell('hero-detail-title', '영웅', 'hero-detail');
   detailDlg.dialog.classList.add('hero-detail-dialog');
@@ -194,28 +212,37 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
 
   // ---------- 위 띠 ----------
   const top = h('header', { class: 'lobby-top', attrs: { 'data-testid': 'lobby-top' } });
+  function wallet(kind: 'gold' | 'diamond', label: string, value: number, testid: string): HTMLElement {
+    const bar = createCurrencyBar({ kind, label, value });
+    bar.dataset.testid = testid;
+    bar.setAttribute('role', 'group');
+    bar.querySelector('.rtd-currency-value')?.setAttribute('aria-hidden', 'true');
+    bar.setAttribute('aria-label', `${label} ${value.toLocaleString('ko-KR')}`);
+    return bar;
+  }
   function renderTop(): void {
     const t = topBar(progress.state, pd);
     top.replaceChildren(
       h(
         'div',
-        { class: 'lobby-profile', attrs: { 'data-testid': 'lobby-profile', 'aria-label': `계정 레벨 ${t.level}, 경험치 ${t.xp}/${t.xpNeed}` } },
-        h('span', { class: 'lobby-avatar', attrs: { 'aria-hidden': 'true' } }, h('span', { class: 'lobby-avatar-lv', text: String(t.level) })),
+        { class: 'lobby-profile', attrs: { 'data-testid': 'lobby-profile', role: 'group', 'aria-label': `계정 레벨 ${t.level}, 경험치 ${t.xp}/${t.xpNeed}` } },
+        h('span', { class: 'lobby-avatar', attrs: { 'aria-hidden': 'true' } }, portrait('miner', '광부', 'lobby-avatar-art'), h('span', { class: 'lobby-avatar-lv', text: String(t.level) })),
         h(
           'span',
           { class: 'lobby-xp' },
+          h('span', { class: 'lobby-profile-name', text: '원정대' }),
           h('span', { class: 'lobby-xp-text', text: `Lv ${t.level}`, attrs: { 'data-testid': 'lobby-level' } }),
-          h('span', { class: 'lobby-xpbar' }, h('span', { class: 'lobby-xpfill', attrs: { style: `width:${Math.round(t.xpRatio * 100)}%` } })),
+          createProgress(t.xpRatio * 100, `계정 경험치 ${t.xp}/${t.xpNeed}`, 'experience'),
           h('span', { class: 'lobby-xp-num', text: `${fmt(t.xp)}/${fmt(t.xpNeed)}` }),
         ),
       ),
       h(
         'div',
         { class: 'lobby-wallet' },
-        h('span', { class: 'lobby-coin', attrs: { 'data-testid': 'lobby-gold', 'aria-label': `골드 ${t.gold}` } }, h('span', { class: 'lobby-coin-icon', text: '💰', attrs: { 'aria-hidden': 'true' } }), fmt(t.gold)),
-        h('span', { class: 'lobby-coin is-gem', attrs: { 'data-testid': 'lobby-gems', 'aria-label': `보석 ${t.gems}` } }, h('span', { class: 'lobby-coin-icon', text: '💎', attrs: { 'aria-hidden': 'true' } }), fmt(t.gems)),
-        // V2.0 PR-A 🔥 불꽃: 영웅 레벨업에만 쓴다
-        h('span', { class: 'lobby-coin is-flame', attrs: { 'data-testid': 'lobby-flame', 'aria-label': `불꽃 ${t.flame}` } }, h('span', { class: 'lobby-coin-icon', text: '🔥', attrs: { 'aria-hidden': 'true' } }), fmt(t.flame)),
+        wallet('gold', '골드', t.gold, 'lobby-gold'),
+        wallet('diamond', '보석', t.gems, 'lobby-gems'),
+        // Preserve PR-A's existing flame binding and emoji. No new flame asset/API connection.
+        h('span', { class: 'lobby-coin is-flame', attrs: { 'data-testid': 'lobby-flame', role: 'group', 'aria-label': `불꽃 ${t.flame}` } }, h('span', { class: 'lobby-coin-icon', text: '🔥', attrs: { 'aria-hidden': 'true' } }), h('span', { class: 'lobby-flame-value', text: formatCompactNumber(t.flame), attrs: { 'aria-hidden': 'true' } })),
       ),
     );
   }
@@ -244,7 +271,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       ok.disabled = true;
       lockAll();
       dialog.close();
-      opts.onStart();
+      opts.onStart(selectedSpeed);
     });
   }
 
@@ -274,15 +301,17 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
           on: {
             click: () => {
               lockAll();
-              opts.onStart();
+              opts.onStart(selectedSpeed);
             },
           },
         },
         h('span', { class: 'btn-icon', text: '▶', attrs: { 'aria-hidden': 'true' } }),
-        h('span', { text: '빠른 시작' }),
+        h('span', { text: '빠른 시작!' }),
+        h('small', { class: 'lobby-start-note', text: '무한 모드' }),
       );
   startButtons.push(start);
   const below: HTMLButtonElement[] = [];
+  let debugCampaign: HTMLButtonElement | null = null;
   if (confirmNew) {
     const b = h('button', {
       class: 'btn btn-campaign btn-new-game',
@@ -309,7 +338,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       h('span', { class: 'btn-icon', text: '🏰', attrs: { 'aria-hidden': 'true' } }),
       h('span', { text: '캠페인 1 (디버그)' }),
     );
-    below.push(b);
+    debugCampaign = b;
     startButtons.push(b);
   }
 
@@ -368,61 +397,83 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     });
   }
 
+  function rail(icon: DesignIcon, label: string, detail: string, action: string, onClick: () => void, count = 0): HTMLButtonElement {
+    const b = createButton({ label, variant: 'icon', icon, onClick });
+    b.classList.add('lobby-side-btn');
+    b.dataset.action = action;
+    b.setAttribute('aria-label', `${label} · ${detail}${count > 0 ? ` · 받을 항목 ${count}개` : ''}`);
+    if (action === 'quests' || action === 'recruit') b.setAttribute('aria-haspopup', 'dialog');
+    b.append(h('small', { class: 'lobby-rail-detail', text: detail }));
+    const notice = badge(count);
+    if (notice) b.append(notice);
+    return b;
+  }
+
   function renderSide(): void {
     const s = progress.state;
     const quests = claimableQuests(s, pd, progress.today());
-    const recruitPct = Math.min(100, Math.round((s.recruit / pd.recruit.goal) * 100));
+    const recruit = rail('heroes', '영웅 모집', `${Math.min(s.recruit, pd.recruit.goal)}/${pd.recruit.goal}`, 'recruit', () => openRecruit(), s.recruit >= pd.recruit.goal ? 1 : 0);
+    recruit.querySelector('.lobby-rail-detail')?.setAttribute('data-testid', 'recruit-gauge');
     side.replaceChildren(
-      h(
-        'button',
-        { class: 'btn lobby-side-btn', attrs: { type: 'button', 'data-action': 'quests', 'aria-haspopup': 'dialog', 'aria-label': '퀘스트' }, on: { click: () => openQuests() } },
-        h('span', { class: 'lobby-side-icon', text: '📜', attrs: { 'aria-hidden': 'true' } }),
-        h('span', { text: '퀘스트' }),
-        badge(quests),
-      ),
-      h(
-        'button',
-        { class: 'btn lobby-side-btn', attrs: { type: 'button', 'data-action': 'recruit', 'aria-haspopup': 'dialog', 'aria-label': `영웅 모집 ${s.recruit}/${pd.recruit.goal}` }, on: { click: () => openRecruit() } },
-        h('span', { class: 'lobby-side-icon', text: '🎺', attrs: { 'aria-hidden': 'true' } }),
-        h('span', { text: '영웅 모집' }),
-        h('span', { class: 'lobby-gauge', attrs: { 'aria-hidden': 'true' } }, h('span', { class: 'lobby-gauge-fill', attrs: { style: `width:${recruitPct}%` } })),
-        h('small', { class: 'lobby-gauge-text', text: `${Math.min(s.recruit, pd.recruit.goal)}/${pd.recruit.goal}`, attrs: { 'data-testid': 'recruit-gauge' } }),
-        badge(s.recruit >= pd.recruit.goal ? 1 : 0),
-      ),
+      rail('quests', '퀘스트', '일일 · 업적', 'quests', () => openQuests(), quests),
+      recruit,
     );
-    const rightKids: HTMLElement[] = [];
-    if (recordsDialog) {
-      rightKids.push(
-        h(
-          'button',
-          { class: 'btn lobby-side-btn', attrs: { type: 'button', 'data-action': 'records', 'aria-haspopup': 'dialog', 'aria-label': '기록' }, on: { click: () => recordsDialog.showModal() } },
-          h('span', { class: 'lobby-side-icon', text: '🏆', attrs: { 'aria-hidden': 'true' } }),
-          h('span', { text: '기록' }),
-        ),
-      );
-    }
-    if (settingsDlg) {
-      rightKids.push(
-        h(
-          'button',
-          { class: 'btn lobby-side-btn', attrs: { type: 'button', 'data-action': 'settings', 'aria-haspopup': 'dialog', 'aria-label': '설정' }, on: { click: () => settingsDlg.dialog.showModal() } },
-          h('span', { class: 'lobby-side-icon', text: '⚙️', attrs: { 'aria-hidden': 'true' } }),
-          h('span', { text: '설정' }),
-        ),
-      );
-    }
-    if (opts.debug) {
-      rightKids.push(
-        h(
-          'button',
-          { class: 'btn lobby-side-btn', attrs: { type: 'button', 'data-action': 'dev-grant', 'aria-label': '개발자 재화 추가' }, on: { click: () => progress.devGrant() } },
-          h('span', { class: 'lobby-side-icon', text: '🛠', attrs: { 'aria-hidden': 'true' } }),
-          h('span', { text: '+재화' }),
-        ),
-      );
-    }
-    sideR.replaceChildren(...rightKids);
+    sideR.replaceChildren(
+      rail('codex', GRADE_NAMES.hidden, '조각 수집', 'open-codex', () => select('codex'), codexReady(s, pd, data)),
+      rail('shop', '카드 상점', '골드 · 보석', 'open-shop', () => select('shop')),
+    );
   }
+
+  // Menu uses a native dialog so Escape/Android back and modal focus retain the existing behavior.
+  const menuDlg = dialogShell('lobby-menu-title', '원정 메뉴', 'lobby-menu');
+  menuDlg.dialog.classList.add('lobby-menu-dialog');
+  const menuButton = createButton({ label: '메뉴', variant: 'pill', icon: 'menu', onClick: () => {
+    menuButton.setAttribute('aria-expanded', 'true');
+    menuDlg.dialog.showModal();
+  } });
+  menuButton.dataset.action = 'lobby-menu';
+  menuButton.setAttribute('aria-haspopup', 'dialog');
+  menuButton.setAttribute('aria-controls', 'lobby-menu-dialog');
+  menuButton.setAttribute('aria-expanded', 'false');
+  menuDlg.dialog.id = 'lobby-menu-dialog';
+  menuDlg.dialog.addEventListener('close', () => { menuButton.setAttribute('aria-expanded', 'false'); if (!el.querySelector('dialog[open]')) menuButton.focus(); });
+  const menuItems: HTMLElement[] = [];
+  function menuItem(icon: DesignIcon, label: string, action: string, onClick: () => void): void {
+    const button = createButton({ label, icon, variant: 'secondary', onClick: () => { menuDlg.dialog.close(); onClick(); } });
+    button.dataset.action = action;
+    button.setAttribute('aria-haspopup', 'dialog');
+    menuItems.push(button);
+  }
+  if (recordsDialog) menuItem('stats', '기록', 'records', () => recordsDialog.showModal());
+  if (settingsDlg) menuItem('settings', '설정', 'settings', () => settingsDlg.dialog.showModal());
+  if (opts.debug) {
+    const debug = createButton({ label: '+재화', variant: 'pill', onClick: () => progress.devGrant() });
+    debug.dataset.action = 'dev-grant';
+    menuItems.push(debug);
+  }
+  menuDlg.body.replaceChildren(...menuItems);
+  const toolbar = h('div', { class: 'lobby-toolbar' }, h('span', { class: 'lobby-location', text: '원정대 야영지' }), menuButton);
+  const speedButton = createButton({ label: '새 게임 배속 ×1', variant: 'pill', onClick: () => {
+    selectedSpeed = nextSpeed(selectedSpeed, speeds);
+    const label = `새 게임 배속 ×${selectedSpeed}`;
+    speedButton.querySelector('.rtd-button-label')!.textContent = label;
+    speedButton.setAttribute('aria-label', label);
+  } });
+  speedButton.dataset.action = 'lobby-speed';
+  speedButton.setAttribute('aria-describedby', 'lobby-speed-hint');
+  const auxiliaries = h('div', { class: 'lobby-aux' },
+    createButton({ label: '영웅 준비', variant: 'pill', onClick: () => select('heroes') }),
+    createButton({ label: '웨이브 보상', variant: 'pill', onClick: () => {
+      const target = road.querySelector<HTMLElement>('.is-ready') ?? road.querySelector<HTMLElement>('.wave-here');
+      if (target) road.scrollTop = Math.max(0, target.offsetTop - road.clientHeight / 2 + target.offsetHeight / 2);
+      road.focus({ preventScroll: true });
+    } }),
+  );
+  auxiliaries.append(...below);
+  road.tabIndex = 0;
+  const camp = h('div', { class: 'lobby-camp', attrs: { 'aria-hidden': 'true' } },
+    h('span', { class: 'lobby-camp-halo' }), portrait('miner', '광부', 'lobby-camp-hero'),
+    h('span', { class: 'lobby-camp-caption', text: '오늘도 한 걸음 더!' }));
 
   const battlePanel = h(
     'section',
@@ -434,75 +485,77 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       h('h1', { class: 'title-name', text: '운빨 디펜스' }),
       h('span', { class: 'title-crest title-crest-right', attrs: { 'aria-hidden': 'true' } }),
     ),
-    h('div', { class: 'lobby-middle' }, side, h('div', { class: 'wave-column' }, bestLabel, road), sideR),
-    // [빠른 시작] 아래 한 줄은 늘 같은 높이 → [새 게임]·[캠페인 1(디버그)]이 있어도 [빠른 시작] 자리가 같다 (없으면 다음 웨이브 보상 안내)
-    h('div', { class: 'title-actions lobby-actions' }, start, h('div', { class: `title-debug lobby-below${below.length > 1 ? ' is-pair' : ''}` }, ...(below.length > 0 ? below : [nextHint]))),
+    h('div', { class: 'lobby-middle' }, side, h('div', { class: 'wave-column' }, camp, bestLabel, road), sideR),
+    // Saved/new-game controls share the auxiliary row; the primary keeps the same position.
+    h('div', { class: 'title-actions lobby-actions' }, auxiliaries, start,
+      nextHint, h('div', { class: `lobby-followup${debugCampaign ? ' has-debug' : ''}` }, speedButton, debugCampaign), h('small', { class: 'lobby-speed-hint', attrs: { id: 'lobby-speed-hint' }, text: saved ? '이어 하기는 저장된 배속을 사용해요' : '입장 비용 없이 바로 출발해요' })),
   );
 
   // ---------- 영웅 탭 ----------
-  const heroesPanel = h('section', { class: 'lobby-panel lobby-heroes', attrs: { 'data-panel': 'heroes', 'aria-label': '영웅' } });
+  const heroesPanel = h('section', { class: 'lobby-panel lobby-heroes heroes-v2', attrs: { 'data-panel': 'heroes', 'aria-label': '영웅' } });
 
   function heroCardEl(c: HeroCardModel): HTMLElement {
-    const label = `${c.name} ${c.gradeName}${c.owned ? ` Lv ${c.level}` : c.locked ? ' 잠김' : ' 보유하지 않음'}`;
-    return h(
-      'button',
-      {
-        class: `hero-card grade-${c.grade}${c.owned ? '' : ' is-unowned'}${c.ready ? ' is-ready' : ''}${c.locked ? ' is-locked' : ''}`,
-        attrs: { type: 'button', style: `--grade-color:${c.color}`, 'data-hero': c.id, 'data-grade': c.grade, 'data-level': String(c.level), 'aria-label': label },
-        on: { click: () => openDetail(c.id) },
-      },
-      h('span', { class: 'hero-card-art' }, portrait(c.id, c.name), c.ready ? h('span', { class: 'hero-up', text: '▲', attrs: { 'aria-hidden': 'true', 'data-testid': 'hero-up' } }) : null),
-      h('span', { class: 'hero-card-lv', text: c.owned ? `Lv ${c.level}` : c.locked ? '🔒' : '—' }),
-      h('span', { class: 'hero-card-name', text: c.name }),
-      h(
-        'span',
-        { class: 'hero-card-count' },
-        h('span', { class: 'hero-card-bar', attrs: { 'aria-hidden': 'true' } }, h('span', { class: 'hero-card-fill', attrs: { style: `width:${c.need ? Math.min(100, Math.round((c.cards / c.need) * 100)) : 100}%` } })),
-        h('span', { class: 'hero-card-num', text: c.max ? 'MAX' : c.need !== null ? `${c.cards}/${c.need}` : `${c.cards}` }),
-      ),
-    );
+    const count = c.max ? 'MAX' : c.need !== null ? `${formatCompactNumber(c.cards)}/${formatCompactNumber(c.need)}` : c.owned ? formatCompactNumber(c.cards) : '미보유';
+    const exactCount = c.need !== null ? `${fmt(c.cards)}/${fmt(c.need)}` : fmt(c.cards);
+    const progressLabel = c.max ? `${c.name} 최고 레벨` : c.locked ? `${c.name} 조각 ${exactCount}` : `${c.name} 카드 ${exactCount}`;
+    const card = createGradeCard({ grade: c.grade, name: c.name, level: c.level, owned: c.owned,
+      portrait: opts.portraitOf(c.id), progress: c.need ? c.cards / c.need * 100 : c.max ? 100 : 0,
+      progressLabel, progressText: count, onClick: () => openDetail(c.id) });
+    card.classList.add('hero-card', `grade-${c.grade}`);
+    card.classList.toggle('is-ready', c.ready);
+    card.classList.toggle('is-locked', c.locked);
+    card.dataset.hero = c.id;
+    card.dataset.level = String(c.level);
+    card.setAttribute('aria-label', `${c.name} · ${c.gradeName} · ${c.owned ? `Lv ${c.level}` : c.locked ? '잠김' : '보유하지 않음'} · ${progressLabel}${c.ready ? c.locked ? ' · 해방 가능' : ' · 레벨업 가능' : ''}`);
+    card.querySelector('.rtd-card-portrait')?.classList.add('hero-portrait');
+    const level = card.querySelector('.rtd-card-level');
+    level?.classList.add('hero-card-lv');
+    if (c.locked && level) level.textContent = '잠김';
+    card.querySelector('.rtd-card-count')?.classList.add('hero-card-num');
+    card.querySelector('.rtd-card-name')?.classList.add('hero-card-name');
+    if (c.ready) {
+      const arrow = createUpgradeArrow(c.locked ? '해방 가능' : '레벨업 가능');
+      arrow.classList.add('hero-up');
+      arrow.dataset.testid = 'hero-up';
+      arrow.setAttribute('aria-hidden', 'true');
+      card.querySelector('.rtd-card-face')?.append(arrow);
+    }
+    return card;
   }
 
   function renderHeroes(): void {
     const g = heroGrid(progress.state, pd, data, heroTab, heroSort);
-    const tabBtn = (id: HeroTab, label: string): HTMLElement =>
-      h('button', {
-        class: `btn btn-chip lobby-seg${heroTab === id ? ' is-on' : ''}`,
-        text: label,
-        attrs: { type: 'button', 'aria-pressed': String(heroTab === id), 'data-hero-tab': id },
-        on: {
-          click: () => {
-            heroTab = id;
-            renderHeroes();
-          },
-        },
-      });
-    const sortBtn = (id: HeroSort, label: string): HTMLElement =>
-      h('button', {
-        class: `btn btn-chip lobby-seg${heroSort === id ? ' is-on' : ''}`,
-        text: label,
-        attrs: { type: 'button', 'aria-pressed': String(heroSort === id), 'data-sort': id },
-        on: {
-          click: () => {
-            heroSort = id;
-            renderHeroes();
-          },
-        },
-      });
+    const summary = heroCollectionSummary(progress.state, pd, data);
+    growthCopy.replaceChildren(
+      h('p', { text: `영웅 종합 레벨은 계정에 기록된 영웅 레벨의 합계예요. 지금은 ${fmt(summary.levelSum)}입니다.` }),
+      h('p', { text: `공격력 보너스는 영웅마다 따로 적용돼요. 레벨이 1 오를 때 그 영웅의 공격력이 ${summary.perLevel} 증가해요.` }),
+      h('p', { text: `현재 보유 영웅의 전투 적용 범위는 ${summary.bonusRange}예요. 종합 레벨이 모든 영웅에게 같은 공격력 보너스를 주지는 않아요.` }),
+      h('p', { text: '초록 화살표는 기존 카드·불꽃 조건을 만족한 레벨업 또는 조각이 모인 리미티드 해방을 뜻해요. 필요한 수치는 영웅 상세에서 확인할 수 있어요.' }),
+    );
+    const tabBtn = (id: HeroTab, label: string): HTMLElement => {
+      const b = createButton({ label, variant: 'pill', selected: heroTab === id, onClick: () => { heroTab = id; renderHeroes(); } });
+      b.classList.add('lobby-seg'); b.classList.toggle('is-on', heroTab === id); b.dataset.heroTab = id;
+      return b;
+    };
+    const sortBtn = (id: HeroSort, label: string): HTMLElement => {
+      const b = createButton({ label, variant: 'pill', selected: heroSort === id, onClick: () => { heroSort = id; renderHeroes(); } });
+      b.classList.add('lobby-seg'); b.classList.toggle('is-on', heroSort === id); b.dataset.sort = id;
+      return b;
+    };
     // 피드백 #31: 지금 탭의 보유 영웅을 보이는 순서대로 모두 레벨업 (돌아가며 한 레벨씩)
-    const levelAll = h('button', {
-      class: `btn btn-chip ${g.canLevel > 0 ? 'btn-primary' : ''} hero-levelup-all`,
-      text: g.canLevel > 0 ? `⬆ 모두 레벨업 ${g.canLevel}` : '⬆ 모두 레벨업',
-      attrs: { type: 'button', 'data-testid': 'hero-levelup-all', ...(g.canLevel > 0 ? {} : { disabled: '' }) },
-      on: {
-        click: () => {
-          const r = progress.levelUpAll(g.owned.map((c) => c.id));
-          if (r.ups.length > 0) opts.toast(`⬆ 영웅 ${r.ups.length}명 레벨업 · 🃏 ${r.cards} · 🔥 ${fmt(r.flame)} 사용`, 2200);
-        },
-      },
+    const levelAll = createButton({
+      label: g.canLevel > 0 ? `⬆ 모두 레벨업 ${g.canLevel}` : '⬆ 모두 레벨업', variant: 'secondary', disabled: g.canLevel === 0,
+      onClick: () => { const r = progress.levelUpAll(g.owned.map(c => c.id)); if (r.ups.length > 0) opts.toast(`⬆ 영웅 ${r.ups.length}명 레벨업 · 🃏 ${r.cards} · 🔥 ${fmt(r.flame)} 사용`, 2200); },
     });
+    levelAll.classList.add('hero-levelup-all'); levelAll.dataset.testid = 'hero-levelup-all';
+    if (g.canLevel > 0) levelAll.querySelector('.rtd-button-label')?.replaceChildren('⬆ 모두 레벨업 ', createNumberBadge(g.canLevel));
+    const info = createButton({ label: '성장 보너스 안내', variant: 'close', icon: 'info', onClick: () => growthHelp.open() });
+    info.dataset.testid = 'hero-growth-open'; info.setAttribute('aria-haspopup', 'dialog');
     heroesPanel.replaceChildren(
       h('div', { class: 'lobby-panel-head' }, h('h2', { class: 'lobby-panel-title', text: '영웅 수집' }), h('div', { class: 'lobby-segs' }, tabBtn('heroes', '영웅'), tabBtn('mythic', `신·${GRADE_NAMES.hidden}`))),
+      h('section', { class: 'hero-summary', attrs: { role: 'group', 'aria-label': '영웅 성장 요약' } },
+        h('div', {}, h('p', { class: 'hero-summary-level' }, '영웅 종합 레벨 ', h('strong', { text: fmt(summary.levelSum), attrs: { 'data-testid': 'hero-level-sum' } })),
+          h('p', { class: 'hero-summary-bonus' }, '영웅별 공격력 ', h('strong', { text: summary.bonusRange, attrs: { 'data-testid': 'hero-bonus-range' } }))), info),
       h('div', { class: 'lobby-sortbar' }, h('span', { class: 'lobby-count', text: `보유 ${g.owned.length}/${g.owned.length + g.unowned.length}` }), levelAll),
       h('div', { class: 'lobby-sortbar hero-sorts' }, h('div', { class: 'lobby-segs' }, sortBtn('grade', '등급 순'), sortBtn('level', '레벨 순'), sortBtn('ready', '레벨업 가능'))),
       h(
@@ -569,7 +622,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     detailDlg.body.replaceChildren(
       h(
         'div',
-        { class: `hero-detail grade-${d.grade}`, attrs: { style: `--grade-color:${d.color}`, 'data-hero': d.id } },
+        { class: `hero-detail grade-${d.grade}`, attrs: { style: `--grade-color:${d.color}`, 'data-hero': d.id, 'data-grade': d.grade } },
         h(
           'div',
           { class: 'hero-detail-top' },
@@ -860,6 +913,14 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   const nav = h('nav', { class: 'lobby-nav', attrs: { 'aria-label': '로비 메뉴', 'data-testid': 'lobby-nav' } });
   const panels: Record<LobbyTab, HTMLElement> = { shop: shopPanel, heroes: heroesPanel, battle: battlePanel, codex: codexPanel, locked: lockedPanel };
 
+  function navIcon(icon: DesignIcon): HTMLElement {
+    const image = createIcon(icon);
+    const wrapper = h('span', { class: `lobby-nav-icon${icon === 'shop' ? ' ui-art-icon' : ''}`, attrs: { 'aria-hidden': 'true', ...(icon === 'shop' ? { 'data-art-icon': 'shop' } : {}) } }, image);
+    image.addEventListener('load', () => wrapper.classList.add('is-loaded'));
+    image.addEventListener('error', () => wrapper.classList.remove('is-loaded'));
+    return wrapper;
+  }
+
   function renderNav(): void {
     const s = progress.state;
     const counts: Record<LobbyTab, number> = {
@@ -873,15 +934,15 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     nav.replaceChildren(
       ...LOBBY_TABS.map((id) => {
         const item = NAV[id];
-        const icon = id === 'locked' && campaignOpen ? '🏰' : item.icon;
+        const icon = item.icon;
         return h(
           'button',
           {
             class: `lobby-nav-btn${tab === id ? ' is-on' : ''}${id === 'battle' ? ' is-main' : ''}`,
-            attrs: { type: 'button', 'data-tab': id, 'aria-current': tab === id ? 'page' : 'false', 'aria-label': item.label },
+            attrs: { type: 'button', 'data-tab': id, 'aria-current': tab === id ? 'page' : 'false', 'aria-label': `${item.label}${id === 'locked' && !campaignOpen ? ' · 잠김' : ''}${counts[id] > 0 ? ` · 받을 항목 ${counts[id]}개` : ''}` },
             on: { click: () => select(id) },
           },
-          id === 'shop' ? artIcon('shop', icon, 'lobby-nav-icon') : h('span', { class: 'lobby-nav-icon', text: icon, attrs: { 'aria-hidden': 'true' } }),
+          navIcon(icon),
           h('span', { class: 'lobby-nav-label', text: item.label }),
           badge(counts[id]),
         );
@@ -908,10 +969,11 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   const el = h(
     'div',
     {
-      class: `screen lobby-screen title-screen${opts.keyArt ? ' has-keyart' : ''}`,
-      attrs: { 'data-screen': 'title', 'data-lobby': '1', 'data-keyart': opts.keyArt ? '1' : '0', 'data-tab': tab },
+      class: `rtd-v2 screen lobby-screen lobby-v2 title-screen${opts.keyArt ? ' has-keyart' : ''}`,
+      attrs: { style: `--lobby-backdrop:url("${assetUrl('assets/ui/v2/lobby/camp.svg')}")`, 'data-screen': 'title', 'data-lobby': '1', 'data-keyart': opts.keyArt ? '1' : '0', 'data-tab': tab },
     },
     top,
+    toolbar,
     body,
     h('div', { class: 'title-version lobby-version', text: opts.version }),
     nav,
@@ -922,6 +984,8 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     questDlg.dialog,
     recruitDlg.dialog,
     settingsDlg?.dialog ?? null,
+    menuDlg.dialog,
+    growthHelp.el,
     // 설정 창 위에 여는 창 → 문서 순서도 맨 끝 (nativeBack이 마지막 열린 창부터 닫는다)
     opts.settings?.feedback?.el ?? null,
   );
@@ -960,6 +1024,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     },
     destroy() {
       unsubscribe();
+      growthHelp.destroy();
     },
   };
 }

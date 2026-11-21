@@ -1,0 +1,132 @@
+{
+  "date_utc": "2026-11-19",
+  "main_base": "68052a7e429d139eaa1d1ca2560ddbcb83981da5",
+  "parent_branch": "design/v2-pr-b",
+  "parent_commit": "3eb907ae668d59f3727a8ea59bed799f13e773fe",
+  "parent_pr": 73,
+  "branch": "design/v2-pr-c",
+  "npm_ci": "PASS",
+  "unit": {
+    "files": 103,
+    "passed": 1548,
+    "skipped": 5,
+    "log": "tmp/pr-c/unit.log"
+  },
+  "check": {
+    "result": "PASS",
+    "log": "tmp/pr-c/check-final.log"
+  },
+  "build": {
+    "result": "PASS",
+    "log": "tmp/pr-c/build.log"
+  },
+  "single_build": {
+    "result": "PASS",
+    "bytes": 18857619,
+    "sha256": "5c0ecb28ade15a2077b22a60d617b74fdbb0875e108f867e3ee185e5ed0bf53f",
+    "embedded_files": 277,
+    "log": "tmp/pr-c/single.log"
+  },
+  "default_chromium_loading_e2e": {
+    "passed": 13,
+    "failed": 0,
+    "viewports": [
+      320,
+      360,
+      393,
+      412
+    ],
+    "screens": 8,
+    "minimum_recorded_contrast": 9.915261104889264,
+    "contrast_method": "Outlined logo/hint: fill vs dark outline; version: fill vs actual background.",
+    "log": "tmp/pr-c/loading-e2e2.log"
+  },
+  "full_canvas_e2e": {
+    "tests": 254,
+    "passed": 243,
+    "failed": 5,
+    "skipped": 6,
+    "minutes": 23.1,
+    "skip_reason": "Six existing SAVE_SCREENS-only capture tests.",
+    "command": "PW_CHROMIUM_PATH=/workspace/Random-TD-v2-loading/tmp/pr-c/chromium-canvas E2E_PORT=5196 npm run e2e",
+    "wrapper": "exec /usr/bin/chromium --disable-webgl \"$@\"",
+    "existing_selectors_expectations_timeouts_changed": false,
+    "new_loading_tests_passed": 13,
+    "log": "tmp/pr-c/e2e-full.log"
+  },
+  "parent_failure_comparison": {
+    "same_failure_locations_and_titles": true,
+    "failures": [
+      "e2e/devtools.spec.ts:243:3 › 한 파일 빌드 (npm run build:single → release/운빨디펜스-test.html) › file://로 (서버 없이) 타이틀 → 시작 → 소환, 개발자 도구(⏭·×16)가 주소 옵션 없이 보이고 콘솔 오류 없음",
+      "e2e/hud-layout.spec.ts:99:3 › 보스 단계 HUD가 맵 0줄을 덮지 않고, 0줄 칸 위쪽 탭이 캔버스에 들어간다 (412x915)",
+      "e2e/hud-layout.spec.ts:99:3 › 보스 단계 HUD가 맵 0줄을 덮지 않고, 0줄 칸 위쪽 탭이 캔버스에 들어간다 (360x640)",
+      "e2e/hud-layout.spec.ts:99:3 › 보스 단계 HUD가 맵 0줄을 덮지 않고, 0줄 칸 위쪽 탭이 캔버스에 들어간다 (320x568)",
+      "e2e/hud-layout.spec.ts:99:3 › 보스 단계 HUD가 맵 0줄을 덮지 않고, 0줄 칸 위쪽 탭이 캔버스에 들어간다 (915x412 가로)"
+    ],
+    "evidence": "Parent PR-B validation.json and tmp/v2/e2e-full-canvas.log (230 passed, same 5 failures, 6 skipped); main680 focused HUD comparison already reproduced all 4. Pixel bounds are not claimed identical.",
+    "parent_report": "../validation.json"
+  },
+  "bundle_probe": {
+    "filePolicy": "Error: page.goto: net::ERR_BLOCKED_BY_ADMINISTRATOR at file:///workspace/Random-TD-v2-loading/tmp/pr-c/policy.html",
+    "production": {
+      "title": {
+        "observed": {
+          "startupMounted": true,
+          "transitionMounted": false
+        },
+        "inert": false,
+        "placeholder": false
+      },
+      "game": {
+        "inert": false,
+        "loading": 0,
+        "gold": "900원"
+      },
+      "httpRequests": 180,
+      "externalRequests": [],
+      "errors": []
+    },
+    "singleHttp": {
+      "title": {
+        "observed": {
+          "startupMounted": true,
+          "transitionMounted": false
+        },
+        "inert": false,
+        "placeholder": false
+      },
+      "game": {
+        "inert": false,
+        "loading": 0,
+        "gold": "900원"
+      },
+      "embedded": {
+        "files": 277,
+        "pattern": true,
+        "font": true
+      },
+      "singleTransitionPattern": {
+        "inlineCss": true,
+        "decoded": true,
+        "source": "view event only; no match or clock mutation"
+      },
+      "httpRequests": 1,
+      "externalRequests": [],
+      "errors": []
+    }
+  },
+  "bundle_probe_log": "tmp/pr-c/bundle-probe.log",
+  "limitations": [
+    "Four existing HUD banner reservation assertions fail under the same environment in parent/main baseline.",
+    "file:// is blocked by managed Chromium even for an empty file. HTTP standalone verification does not count as a passed file:// test.",
+    "Full gameplay WebGL suite was not rerun; new 13 tests pass with default Chromium and again in full Canvas suite.",
+    "Android safe-area checks use browser emulation; physical-device notch/touch remains for integration."
+  ],
+  "browser": "preinstalled /usr/bin/chromium (156.0.8078.79); no playwright install",
+  "delivery": {
+    "main_push": false,
+    "merge": false,
+    "release": false,
+    "raw_tmp_committed": false
+  }
+}
