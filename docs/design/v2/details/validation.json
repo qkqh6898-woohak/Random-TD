@@ -1,1 +1,28 @@
-{"mainBase":"3abfda6","parent":"5de156b","unit":{"files":114,"passed":1632,"skipped":5},"check":"passed","build":"passed","focusedCanvas":{"passed":23,"files":["details-v2.spec.ts","g3.spec.ts","fb31.spec.ts","fb61.spec.ts","lobby-v2.spec.ts"]},"defaultChromium":"running","fullRegression":"pending PR-G integration","physicalAndroid":"not tested","mainPushedOrMerged":false}
+{
+  "mainBase": "3abfda6",
+  "parent": "5de156b",
+  "unit": {
+    "files": 114,
+    "passed": 1632,
+    "skipped": 5
+  },
+  "check": "passed",
+  "build": "passed",
+  "focusedCanvas": {
+    "passed": 23,
+    "files": [
+      "details-v2.spec.ts",
+      "g3.spec.ts",
+      "fb31.spec.ts",
+      "fb61.spec.ts",
+      "lobby-v2.spec.ts"
+    ]
+  },
+  "defaultChromium": {
+    "passed": 1,
+    "viewport": 393
+  },
+  "fullRegression": "pending PR-G integration",
+  "physicalAndroid": "not tested",
+  "mainPushedOrMerged": false
+}
