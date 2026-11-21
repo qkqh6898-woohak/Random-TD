@@ -22,6 +22,7 @@ export interface ChoicePanelView extends UiView {
   readonly collapsed: boolean;
   /** 알약으로 접는다 (타워 정보 패널을 열 때 — 바텀 시트 둘이 겹치지 않게) */
   collapse(): void;
+  setBattleTime(label: string): void;
 }
 
 export interface ChoicePanelOptions {
@@ -66,12 +67,22 @@ export function createChoicePanel(model: ChoiceModel, onPick: (index: number) =>
     text: '나중에',
     on: { click: () => setCollapsed(true) },
   });
+  const battleTime = h('span', { class: 'cp-battle-time', attrs: { 'data-testid': 'choice-battle-time' } });
+  const peek = h('button', { class: 'btn cp-peek', attrs: { type: 'button', 'data-testid': 'choice-peek', 'aria-label': '꾹 눌러 전장 보기' }, text: '꾹 눌러 전장 보기' });
+  const setPeek = (on: boolean): void => { panel.classList.toggle('is-peeking', on); peek.setAttribute('aria-pressed', String(on)); };
+  peek.addEventListener('pointerdown', e => { peek.setPointerCapture(e.pointerId); setPeek(true); });
+  for (const name of ['pointerup','pointercancel','lostpointercapture']) peek.addEventListener(name, () => setPeek(false));
+  peek.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setPeek(true); } });
+  peek.addEventListener('keyup', () => setPeek(false));
+  const stopPeek = (): void => setPeek(false);
+  peek.addEventListener('blur', stopPeek);
+  window.addEventListener('blur', stopPeek);
   const panel = h(
     'div',
     { class: `choice-panel is-${model.kind}`, attrs: { role: 'dialog', 'aria-label': model.title, 'data-testid': `choice-${model.kind}` } },
     h('div', { class: 'cp-head' }, h('div', { class: 'cp-title', text: model.title }), later),
     model.sub ? h('div', { class: 'cp-sub', text: model.sub }) : null,
-    h('div', { class: `cp-options cp-n${options.length}` }, ...options),
+    battleTime, h('div', { class: `cp-options cp-n${options.length}` }, ...options), peek,
   );
   const pillLabel = model.kind === 'card' ? '카드 고르기' : '결과 고르기';
   const pill = h(
@@ -98,10 +109,15 @@ export function createChoicePanel(model: ChoiceModel, onPick: (index: number) =>
     get collapsed() {
       return collapsed;
     },
+    setBattleTime(label) {
+      const text = `웨이브 남은 시간 ${label}`;
+      if (battleTime.textContent !== text) battleTime.textContent = text;
+    },
     collapse() {
       if (!collapsed) setCollapsed(true);
     },
     destroy() {
+      window.removeEventListener('blur', stopPeek);
       pill.remove();
     },
   };

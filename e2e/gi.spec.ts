@@ -73,7 +73,7 @@ test('로비: 금테 테마 · 영웅 초상이 바깥 그림(WebP)', async ({ p
   expect(errors).toEqual([]);
 });
 
-test('전투: 마당 맵 무더기 1·2·3개 + 금테 아래 묶음 [리미티드][소환][도박]/[강화]', async ({ page }) => {
+test('전투: 마당 맵 무더기 1·2·3개 + V2 아래 묶음 [리미티드][소환][도박]/[강화]', async ({ page }) => {
   const errors = collectErrors(page);
   await start(page, '?dev=1&seed=42');
   const pads = await inScene(page, (s) => s.match.map.buildable, null);
@@ -106,9 +106,10 @@ test('전투: 마당 맵 무더기 1·2·3개 + 금테 아래 묶음 [리미티�
   );
   expect(per).toEqual([1, 1, 2, 2, 3, 3, 3]);
   for (const id of ['menu-mythic', 'hud-summon', 'menu-gamble', 'menu-upgrade']) await expect(page.getByTestId(id)).toBeVisible();
-  // 금테 테마가 G-1 묶음 버튼에도 (나무 배경 변수)
+  // PR-G: flat navy limited button with a dark brown outline. Existing stack/input checks stay intact.
   const bg = await page.getByTestId('menu-mythic').evaluate((el) => getComputedStyle(el).backgroundImage);
-  expect(bg).toContain('gradient');
+  expect(bg).toBe('none');
+  expect(await page.getByTestId('menu-mythic').evaluate(el => ({ bg:getComputedStyle(el).backgroundColor, line:getComputedStyle(el).borderTopColor }))).toEqual({ bg:'rgb(40, 48, 81)', line:'rgb(59, 35, 20)' });
   await page.waitForTimeout(600);
   await shot(page, 'GI-battle');
   expect(errors).toEqual([]);

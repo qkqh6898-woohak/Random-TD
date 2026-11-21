@@ -109,7 +109,7 @@ test('자동 승급: 메뉴 줄(기본 꺼짐·하나만·한 화면 안) → �
     [6, 'merchant', 3],
   ]);
   await expect.poll(async () => (await fullGrades(page)).filter((g) => g === 'normal' || g === 'rare').length).toBe(0);
-  expect(await inScene(page, (s) => s.match.state.merges, null)).toBeGreaterThanOrEqual(3);
+  await expect.poll(() => inScene(page, (s) => s.match.state.merges, null)).toBeGreaterThanOrEqual(3);
   await expect(page.getByTestId('hud-merge-all')).toBeHidden();
   // 유니크 무더기는 그대로 — [⏫ 모두 승급 1]로 손으로
   const before = await inScene(page, (s) => s.match.state.merges, null);
