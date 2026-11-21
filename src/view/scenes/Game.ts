@@ -235,6 +235,7 @@ import { setSideBackground } from '../../ui/stage';
 import { assetUrl } from '../../assets';
 import { backgroundBand, upcomingBand } from '../artBand';
 import { passiveAuraGlows, type AuraGlow } from '../render/abilityModel';
+import { fieldContext, startsBuildHint, type FieldCell } from '../render/buildHint';
 import { mobLookView, mobScaleMul, mobStatusView } from '../render/statusModel';
 /** HUD 띠 아래 끝과 알림 사이 간격 (무대 너비 비율, 2cqw) */
 const TOAST_GAP_OF_WIDTH = 0.02;
@@ -267,6 +268,8 @@ interface GroundPress {
   auto: boolean;
   /** 마지막으로 소환을 시도한 시각 */
   lastMs: number;
+  /** 배치 칸이 아닌 곳(길·막힌 칸)을 눌렀는가 — 짧게 떼면 배치 칸을 잠깐 보여준다 (#79 잘못 누르기 안내) */
+  hint: boolean;
 }
 
 /** 타워를 누르고 있는 중 (탭 또는 길게 눌러 끌기). */
@@ -451,6 +454,8 @@ export class GameScene extends Phaser.Scene {
   private chanceQueuedTick = -1;
   /** 마지막 강화 명령을 넣은 틱 (그 명령이 실행되기 전에는 다음을 넣지 않는다 — 길게 누르기가 돈보다 많이 넣지 않게) */
   private upgradeQueuedTick = -1;
+  /** 잘못 누르기 안내를 시작한 화면 시각 (#79: 놓을 수 없는 곳을 짧게 누름 → BUILD_HINT_MS 동안 배치 칸). 없으면 null */
+  private buildHintAt: number | null = null;
   // ---- F10 첫 10단계 개선 ----
   private guideLayer!: GuideLayer;
   /** 첫 승급 안내 (계정마다 한 번): 안내하는 타워 종류·결과 칸 타워·단계 (없으면 null) */
@@ -557,6 +562,8 @@ export class GameScene extends Phaser.Scene {
     this.sellConfirm = null;
     this.convertOpen = false;
     this.chanceQueuedTick = -1;
+    // 판 시작에는 칸을 보이지 않는다 (지난 판의 잘못 누르기 안내도 지움)
+    this.buildHintAt = null;
     this.guide = null;
     this.guideCard = null;
     this.guideDone = false;
@@ -863,19 +870,31 @@ export class GameScene extends Phaser.Scene {
     return { played: this.cutin?.played ?? 0, showing: this.cutin?.showing ?? false, preloaded: this.cutinPreload.length };
   }
 
-  /** 표시 전용: 이동은 가능한 칸, 판매·승급은 선택한 무더기와 같은 종류, 강화는 내 타워 칸만. */
-  get fieldHighlights(): readonly (readonly [number, number])[] {
-    if (this.paused || this.gameOver) return [];
-    if (this.press?.dragging || this.moveMode) return this.match.map.buildable;
-    const towers = this.match.towers().filter(t => t.owner === LOCAL_PLAYER);
-    const selected = this.panel ? this.selectedTower() : null;
-    const relevant = this.sheetKind === 'upgrade' && this.upgradeTab !== 'gamble' ? towers : selected ? towers.filter(t => t.tower === selected.tower) : [];
-    return [...new Map(relevant.map(t => [`${t.tx},${t.ty}`, [t.tx, t.ty] as const])).values()];
+  /**
+   * 표시 전용 (buildHint.ts fieldContext): 이동은 가능한 칸, 판매·승급은 선택한 무더기와 같은 종류, 강화는 내 타워 칸만,
+   * 놓을 수 없는 곳을 짧게 누른 뒤 BUILD_HINT_MS 동안은 배치 가능한 전체 칸. 일시정지·게임 종료면 없음.
+   */
+  private fieldView(): { tiles: readonly FieldCell[]; alpha: number } {
+    const blocked = this.paused || this.gameOver;
+    const moving = !blocked && (this.press?.dragging === true || this.moveMode !== null);
+    let relevant: readonly FieldCell[] = [];
+    if (!blocked && !moving) {
+      const towers = this.match.towers().filter(t => t.owner === LOCAL_PLAYER);
+      const selected = this.panel ? this.selectedTower() : null;
+      const cells = this.sheetKind === 'upgrade' && this.upgradeTab !== 'gamble' ? towers : selected ? towers.filter(t => t.tower === selected.tower) : [];
+      relevant = [...new Map(cells.map(t => [`${t.tx},${t.ty}`, [t.tx, t.ty] as const])).values()];
+    }
+    return fieldContext({ blocked, moving, relevant, buildable: this.match.map.buildable, nowMs: this.time.now, hintAtMs: this.buildHintAt, noFade: effectsOff() });
   }
 
-  /** 현재 실제로 그리는 조작 칸의 진하기 (E2E). 평상시·일시정지에는 0. */
+  /** 지금 칠하는 조작 칸 (E2E). 평상시·일시정지에는 빈 배열. */
+  get fieldHighlights(): readonly FieldCell[] {
+    return this.fieldView().tiles;
+  }
+
+  /** 지금 칠하는 조작 칸의 진하기 0~1 (E2E). 선택·이동·강화 중 1, 잘못 누른 뒤 잠깐(끝에 서서히 0), 평상시·일시정지 0. */
   get buildHint(): number {
-    return this.fieldHighlights.length ? 1 : 0;
+    return this.fieldView().alpha;
   }
 
   /** 지금 보이는 전투 배경 텍스처 키 (E2E, HF-2). 그림이 아직 없으면 null */
@@ -1160,13 +1179,18 @@ export class GameScene extends Phaser.Scene {
     if (fail === null && summonStackCheck(this.match.ctx, this.match.world, LOCAL_PLAYER) === 'cap') fail = 'cap';
     // 빈 땅 (T-2): 누르고 있으면 0.3초 뒤부터 자동 칸에 연속 소환 (맵 안이면 배치 칸이 아니어도)
     const inMap = tx >= 0 && ty >= 0 && tx < this.match.map.width && ty < this.match.map.height;
-    if (inMap) this.groundPress = { pointer, downMs: now, downX: pointer.worldX, downY: pointer.worldY, auto: false, lastMs: now };
+    const hint = startsBuildHint(fail);
+    if (inMap) this.groundPress = { pointer, downMs: now, downX: pointer.worldX, downY: pointer.worldY, auto: false, lastMs: now, hint };
+    // 길·막힌 칸을 짧게 누르면 배치 칸을 잠깐 보여준다 (#79: 평소에는 칸을 숨김). 맵 안은 뗄 때(꾹 눌러 연속 소환이면 안 보임), 맵 밖은 바로
+    else if (hint) this.buildHintAt = now;
     const action = decideTap(fail, tx, ty, summonCost(this.match.ctx, LOCAL_PLAYER));
     if (action.kind === 'summon') {
       if (!tapAllowed(this.lastTapMs, now)) return;
       this.lastTapMs = now;
       // G-1 칸 무더기: 같은 타워의 덜 찬 칸이 있으면 그 칸에, 없으면 누른 칸에 (summonPad)
       if (this.match.world.enqueue({ type: 'summonPad', x: action.x, y: action.y }).ok) this.autoSummonTick = this.match.tick;
+      // 배치 칸을 찾아 소환했으면 잘못 누르기 안내는 끝
+      this.buildHintAt = null;
     } else if (action.kind === 'toast') {
       // 돈 부족·빈 칸 없음이면 꾹 눌러도 연속 소환하지 않는다
       this.groundPress = null;
@@ -1239,6 +1263,8 @@ export class GameScene extends Phaser.Scene {
   private onPointerUp(pointer: Phaser.Input.Pointer): void {
     const g = this.groundPress;
     if (g?.pointer === pointer) {
+      // 짧게 누른 길·막힌 칸 (꾹 눌러 연속 소환이 시작되지 않음) → 배치 칸 잠깐 보이기
+      if (g.hint && !g.auto) this.buildHintAt = this.time.now;
       this.groundPress = null;
     }
     const p = this.press;
@@ -1675,7 +1701,7 @@ export class GameScene extends Phaser.Scene {
       (x) => auraSpecOf(this.match.ctx, x)?.area ?? null,
       (area) => auraRadiusOf(rules, area),
     );
-    const highlightedCells = this.fieldHighlights;
+    const field = this.fieldView();
     this.selectionLayer.draw(
       {
         auras: this.auraGlows,
@@ -1694,7 +1720,7 @@ export class GameScene extends Phaser.Scene {
         sameKind: t && !p ? sameKindTowers(this.match.world, t.tower, t.owner).map((x) => ({ tx: x.tx, ty: x.ty })) : [],
         drop: p && p.drop && stats && t ? { ...p.drop, range: towerRange(this.match.state, t.owner, stats.range) } : null,
         moveMode: this.moveModeView(),
-        buildable: { tiles: highlightedCells, alpha: highlightedCells.length ? 1 : 0 },
+        buildable: field,
       },
       timeMs,
     );
@@ -2454,6 +2480,7 @@ export class GameScene extends Phaser.Scene {
     this.gameOver = true;
     this.cancelPress(this.time.now);
     this.groundPress = null;
+    this.buildHintAt = null;
     this.moveMode = null;
     this.closeConvertPicker();
     this.closePanel();
@@ -2494,6 +2521,8 @@ export class GameScene extends Phaser.Scene {
     if (this.paused || this.gameOver) return;
     this.paused = true;
     this.cancelPress(this.time.now);
+    this.groundPress = null;
+    this.buildHintAt = null;
     this.resumeSpeed = this.clock.speed;
     this.clock.speed = 0;
     this.ctx.ui.clearToasts();

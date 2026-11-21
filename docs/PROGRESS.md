@@ -1794,3 +1794,9 @@
 ### 최종 보상 배지 대비 확인
 
 전체284회귀의 기준은 e868a62이며 검사 중 소스 해시는 동일했다. 이후 G의 일반 보상 등급 배지에 흰 글자 CSS 속성 하나를 추가하고, 기존 실제 선택 흐름에 글자12px/AA4.5 검증을 추가했다. 이 보완은 최종 Canvas9/9(일반4폭·선택/peek·안전영역·×16 입력/저장/효과음·치명타)와 기본 Chromium 실제 선택1/1, check/build/단일 HTML 빌드 및 배포/단일 HTML HTTP로 따로 확인했다. 네 폭 최종 캡처를 다시 생성했다. F의 제품 코드는 그대로이며 통합 검사와 후속 검사 범위·각 해시는 post-regression.json에서 구분한다.
+
+### #79 🔴 수정 (Claude): 놓을 수 없는 곳을 누르면 1.2초 동안 배치 칸 표시
+
+- 문제: 칸을 숨기니 `crossroads`의 X(배치 불가) 칸과 B 칸이 똑같이 보이고, #79가 T-3 '배치할 수 없는 곳 탭 → 칸 잠깐 보이기'까지 없애 첫 타워 뒤 X 칸·길을 눌러도 아무 반응이 없었다.
+- 수정(`v2/field-context-fix`): 예전 `buildHintAt`·`GroundPress.hint`(`g.hint && !g.auto`) 경로와 `src/view/render/buildHint.ts`를 되살려 재사용. `fieldContext`(순수)가 일시정지/종료 → 끌기·이동 → 선택·강화 → 잘못 누르기 안내 순으로 칠할 칸·진하기를 정하고 `Game.fieldHighlights`·`buildHint`·`SelectionLayer`가 그대로 쓴다. 1200ms(끝 400ms 서서히, 연출 끄기면 바로 꺼짐), 화면 시계. 일시정지·게임 종료·새 판·빈 칸 소환 탭이 지운다. 판 시작에는 띄우지 않는다.
+- sim·명령·데이터·배치 판정·좌표 그대로, SIM_VERSION 그대로. 문서: `docs/design/field-context/README.md` '잘못 누르기 안내', `docs/UI.md`.

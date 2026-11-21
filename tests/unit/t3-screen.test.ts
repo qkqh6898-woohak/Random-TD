@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { GAME_HEIGHT, GAME_MAX_HEIGHT, GAME_MIN_HEIGHT, GAME_WIDTH } from '../../src/view/config';
 import { fitStage, logicalHeight } from '../../src/view/viewport';
 import { BOTTOM_UI_PX, computeMapLayout, cssToGamePx, mapAreaBelowHud } from '../../src/view/layout';
-import { BUILD_HINT_FADE_MS, BUILD_HINT_MS, buildHintAlpha } from '../../src/view/render/buildHint';
+import { BUILD_HINT_FADE_MS, BUILD_HINT_MS, buildHintAlpha, fieldContext, startsBuildHint } from '../../src/view/render/buildHint';
 import { buildMatchRules } from '../../src/sim/rules';
 import { effectiveStats } from '../../src/sim/stats';
 import { data } from '../helpers/match';
@@ -104,19 +104,62 @@ describe('가변 높이 맵 영역 (layout.ts mapAreaBelowHud + computeMapLayout
   });
 });
 
-describe('배치 칸 잠깐 보이기 (buildHint.ts, T-3 타일 숨김)', () => {
-  it('끄는 중이면 1, 평소 0, 누른 뒤 BUILD_HINT_MS 동안 보였다가 끝에 서서히', () => {
-    expect(buildHintAlpha(true, 5000, null)).toBe(1);
-    expect(buildHintAlpha(false, 5000, null)).toBe(0);
-    expect(buildHintAlpha(false, 1000, 1000)).toBe(1);
-    expect(buildHintAlpha(false, 1000 + BUILD_HINT_MS - BUILD_HINT_FADE_MS, 1000)).toBe(1);
-    expect(buildHintAlpha(false, 1000 + BUILD_HINT_MS - BUILD_HINT_FADE_MS / 2, 1000)).toBeCloseTo(0.5, 6);
-    expect(buildHintAlpha(false, 1000 + BUILD_HINT_MS, 1000)).toBe(0);
-    expect(buildHintAlpha(false, 900, 1000)).toBe(0);
-    // 연출 끄기: 서서히 사라지지 않고 바로 꺼짐 (보이는 동안은 같음)
-    expect(buildHintAlpha(false, 1000 + BUILD_HINT_MS - BUILD_HINT_FADE_MS, 1000, true)).toBe(1);
-    expect(buildHintAlpha(false, 1000 + BUILD_HINT_MS - BUILD_HINT_FADE_MS / 2, 1000, true)).toBe(0);
-    expect(buildHintAlpha(true, 5000, null, true)).toBe(1);
+describe('전투 칸 표시 · 잘못 누르기 안내 (buildHint.ts, #79 검토)', () => {
+  const buildable = [
+    [1, 1],
+    [2, 1],
+    [1, 2],
+    [2, 2],
+  ] as const;
+  const base = { blocked: false, moving: false, relevant: [] as const, buildable, nowMs: 5000, hintAtMs: null, noFade: false };
+
+  it('약 1.2초: 상수가 실제 시간 ms (화면 시계)', () => {
+    expect(BUILD_HINT_MS).toBe(1200);
+    expect(BUILD_HINT_FADE_MS).toBeLessThan(BUILD_HINT_MS);
+  });
+
+  it('놓을 수 없는 곳(notBuildable)만 안내를 시작한다 — 빈 칸 소환·돈 부족·가득 참·타워 칸·단계 사이는 아님', () => {
+    expect(startsBuildHint('notBuildable')).toBe(true);
+    for (const f of [null, 'gold', 'full', 'cap', 'occupied', 'phase'] as const) expect(startsBuildHint(f)).toBe(false);
+  });
+
+  it('진하기: 평소 0, 누른 뒤 BUILD_HINT_MS 동안 보였다가 끝 BUILD_HINT_FADE_MS 동안 서서히, 그 뒤 0', () => {
+    expect(buildHintAlpha(5000, null)).toBe(0);
+    expect(buildHintAlpha(1000, 1000)).toBe(1);
+    expect(buildHintAlpha(1000 + BUILD_HINT_MS - BUILD_HINT_FADE_MS, 1000)).toBe(1);
+    expect(buildHintAlpha(1000 + BUILD_HINT_MS - BUILD_HINT_FADE_MS / 2, 1000)).toBeCloseTo(0.5, 6);
+    expect(buildHintAlpha(1000 + BUILD_HINT_MS, 1000)).toBe(0);
+    expect(buildHintAlpha(900, 1000)).toBe(0);
+    // 연출 끄기: 서서히 사라지지 않고 BUILD_HINT_MS 동안 그대로, 그 뒤 바로 꺼짐
+    expect(buildHintAlpha(1000 + BUILD_HINT_MS - 1, 1000, true)).toBe(1);
+    expect(buildHintAlpha(1000 + BUILD_HINT_MS, 1000, true)).toBe(0);
+  });
+
+  it('시작 직후·평소에는 칸 없음 (hidden at idle)', () => {
+    expect(fieldContext(base)).toEqual({ tiles: [], alpha: 0 });
+  });
+
+  it('잘못 누른 뒤: 배치 가능한 전체 칸 → 시간이 지나면 빈 배열', () => {
+    const at = 5000;
+    const view = (now: number) => fieldContext({ ...base, nowMs: now, hintAtMs: at });
+    expect(view(at)).toEqual({ tiles: buildable, alpha: 1 });
+    expect(view(at + BUILD_HINT_MS - BUILD_HINT_FADE_MS).tiles).toBe(buildable);
+    const fading = view(at + BUILD_HINT_MS - BUILD_HINT_FADE_MS / 2);
+    expect(fading.tiles).toBe(buildable);
+    expect(fading.alpha).toBeGreaterThan(0);
+    expect(fading.alpha).toBeLessThan(1);
+    expect(view(at + BUILD_HINT_MS)).toEqual({ tiles: [], alpha: 0 });
+    expect(view(at + 2000)).toEqual({ tiles: [], alpha: 0 });
+  });
+
+  it('일시정지·게임 종료면 안내가 남아 있어도 없음', () => {
+    expect(fieldContext({ ...base, blocked: true, hintAtMs: 5000 })).toEqual({ tiles: [], alpha: 0 });
+    expect(fieldContext({ ...base, blocked: true, moving: true, relevant: [[1, 1]] })).toEqual({ tiles: [], alpha: 0 });
+  });
+
+  it('기존 규칙 유지: 끄기·이동은 전체 칸, 선택·강화는 관련 칸이 안내보다 앞선다', () => {
+    expect(fieldContext({ ...base, moving: true })).toEqual({ tiles: buildable, alpha: 1 });
+    expect(fieldContext({ ...base, relevant: [[2, 2]], hintAtMs: 5000 })).toEqual({ tiles: [[2, 2]], alpha: 1 });
   });
 });
 
