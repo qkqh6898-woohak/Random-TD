@@ -8,7 +8,7 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
-import { clickStart } from './title';
+import { clickStart, openLobbyMenu } from './title';
 import { useDefaultSettings } from './seed';
 
 test.describe.configure({ timeout: 150_000 });
@@ -106,7 +106,9 @@ test('결정 R: 로비 설정 체크 박스 — 자동 승급 체크를 끄면 �
   await page.goto('/?seed=89');
   await useDefaultSettings(page);
   await expect(page.locator('[data-screen="title"][data-lobby="1"]')).toBeVisible();
-  await page.locator('[data-action="settings"]').click();
+  // PR-D: [설정]은 로비 메뉴 안
+  await openLobbyMenu(page);
+  await page.locator('[data-action=\"settings\"]').click();
   const box = page.getByTestId('lobby-match-reset');
   await expect(box).toBeVisible();
   await expect(box).toContainText('새 판을 시작하면 기본값으로');
@@ -172,7 +174,9 @@ test('결정 R: 로비 설정 체크 박스 — 자동 승급 체크를 끄면 �
 
   // 다시 열어도 체크 상태가 남는다
   await page.goto('/?seed=89');
-  await page.locator('[data-action="settings"]').click();
+  // PR-D: [설정]은 로비 메뉴 안
+  await openLobbyMenu(page);
+  await page.locator('[data-action=\"settings\"]').click();
   await expect(page.getByTestId('lobby-reset-automerge')).not.toBeChecked();
   await expect(page.getByTestId('lobby-reset-ult')).toBeChecked();
   expect(errors).toEqual([]);

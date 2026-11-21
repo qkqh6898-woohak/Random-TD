@@ -5,7 +5,7 @@
  * 메뉴는 한 줄이 늘어도 412×915 한 화면 안.
  */
 import { expect, test, type Page } from '@playwright/test';
-import { clickStart } from './title';
+import { clickStart, openLobbyMenu } from './title';
 
 test.describe.configure({ timeout: 150_000 });
 
@@ -88,7 +88,9 @@ test('✨ 화려한 효과: 일시정지 메뉴 스위치를 끄면 소환 반�
   await page.goto('/?seed=42');
   await expect(page.locator('[data-screen="title"][data-lobby="1"]')).toBeVisible();
   await expect(root).toHaveClass(/fx-off/);
-  await page.locator('[data-action="settings"]').click();
+  // PR-D: [설정]은 로비 메뉴 안
+  await openLobbyMenu(page);
+  await page.locator('[data-action=\"settings\"]').click();
   const lobbySw = page.getByTestId('lobby-effects-off');
   await expect(lobbySw).toHaveAttribute('aria-checked', 'false');
   await expect(lobbySw).toHaveText('꺼짐');
@@ -106,7 +108,9 @@ test('✨ 화려한 효과: 일시정지 메뉴 스위치를 끄면 소환 반�
 
   // 로비 설정에서 다시 켜면 저장값 effectsOff false, .fx-off도 빠진다
   await page.goto('/?seed=42');
-  await page.locator('[data-action="settings"]').click();
+  // PR-D: [설정]은 로비 메뉴 안
+  await openLobbyMenu(page);
+  await page.locator('[data-action=\"settings\"]').click();
   await page.getByTestId('lobby-effects-off').click();
   await expect(page.getByTestId('lobby-effects-off')).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByTestId('lobby-effects-off')).toHaveText('켜짐');
