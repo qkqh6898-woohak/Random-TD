@@ -1893,3 +1893,45 @@
 - **스크린샷** (deviceScaleFactor 1, 412×915): `docs/screens/ART2-lobby.png`·`ART2-hud.png`(하단 메뉴)·`ART2-shop.png`·`ART2-sheet.png`(도박 시트 제목·✕)·`ART2-pause.png`. 320×568은 scratchpad만.
 - **남은 문제 · 다음**: 웨이브 길·영웅 레벨업 비용 같은 작은 글자 줄의 재화 이모지는 그대로(칸을 다시 짤 때 아이콘으로). 안 쓰는 8장(우편·친구·더하기·지우기·메뉴·통계·룰렛·판매)은 그 화면이 생기면 `UI_ICONS_UNUSED`에서 빼고 연결.
   PR-D(로비 다시 짜기)는 자체 design-system 아이콘을 쓰므로 합칠 때 로비 쪽 `uiIcon` 자리를 그쪽 아이콘과 맞춰야 한다(같은 V2 그림을 쓰는 것이 사용자 결정). `artIcon`·`WORKER_PORTRAIT`는 V2 그림으로 이어 두었다.
+
+## v0.1.21 V2 통합 (갈래 `v2/release-0.1.21`, main 3abfda6 = v0.1.20에서 · 큰 묶음 → 전체 E2E)
+
+> 사용자 승인: 남은 고칠 것은 Claude가 고치고, 검사를 모두 통과하면 main 병합·릴리스. 이 갈래만 푸시하고 main은 조정자가 올린다.
+
+- **합친 것** (고정 SHA, 작업 중 원격 머리 이동 없음 — 마지막에 `git ls-remote`로 다시 확인):
+  1. `design/v2-pr-g` @ 9667e43 (Codex PR-B #73 → C #74 → D #77 → E #78 → F #80 → battle-base(F + 필드 #79 ba0d3c8) → G #81) — main 위에 충돌 없이 (병합 커밋 9d2cf1c).
+  2. `v2/field-context-fix` @ aac7f6c (#79 🔴 잘못 누르면 배치 칸 1.2초) — 충돌 PROGRESS·UI.md(필드 절은 #79 고침 문장, PR-F·G 절 유지). Game.ts는 G의 변경과 자동 병합(fieldView·buildHintAt 경로 그대로).
+  3. `v2/font-subset` @ fe5e15f — 충돌 없음. `font-subset` 단위(src 한글 전부 KS X 1001)가 G·F·#75·#76·아이콘 글자까지 그대로 통과 → 문구 바꿀 것 없음.
+  4. `v2/fb-75-76` @ 5c66f5f — 충돌 Lobby.ts renderSide(PR-D `rail()` 모양 + #76 `recruitDialogModel().progressText`·`recruitReady()` 빨간 점), a1.spec import 두 줄, PROGRESS. PauseMenu는 G가 손대지 않아 자동.
+  5. `art/v2-icons` @ 9aa3979 — 충돌 Lobby.ts(가져오기·NAV·재화·rail·아래 탭), g2.spec(G의 V2 색 + 소환 그림 주소 `assets/ui/icons/hud-summon.webp`), PROGRESS. Hud.ts는 자동 병합됐지만 G의 `replaceChildren(createIcon(...))`가 WebP를 덮고 있었다(아래 4).
+- **sim·리플레이 변경 없음** → **SIM_VERSION 2 그대로**(진행 중 판 이어 함). 합친 갈래 전부 `src/sim`·`tests/replays`·게임 데이터 변경 0, `progression.json`에 `recruit.multiClaim` 한 줄(데이터 지문 밖, 메타 전용). 저장 형식·타워 ID 변경 없음, 새 설정 키(#75 effectsOff·결정 R 체크)는 없으면 기본값.
+- **고칠 것 (조정자 목록 + #80/#81 검토)**:
+  - 🔴 글꼴: 배포물에는 줄인 판 `Jua-Regular.subset.woff2`(187,664B)만 — `dist/assets/fonts`·한 파일 HTML(data:font/woff2 1개) 확인, 723KB woff 없음. 🟠 시작 화면은 `Promise.race([글꼴, 300ms])` 뒤 닫힘(`LoadingController.completeStartup`, `FONT_WAIT_MS`), 그 사이 들어온 화면 전환 요청은 끝난 뒤 처리. E2E loading 'V2-R21 startup closes only after the V2 font…'(닫는 순간 글꼴 읽힘 · 글꼴 응답이 막혀도 로비가 열림).
+  - 🔴 재화 잘림(lobby-v2:18 @320/360): 무대 360px 이하에서 재화 글자 14px(`lobbyV2.css` 끝 @container). 시험은 그대로 통과.
+  - 🔴 rtd-v2 범위: PR-B 바탕 `.rtd-v2 :is(button,input){font:inherit}` → `:where(.rtd-v2) :where(button,input)`(특정도 0). 측정(412×915, 단추·입력 전부, 로비 9화면 + 전투 HUD·시트 5종·타워 패널·전투 메뉴·일시정지): 로비·V2 팝업 바뀐 것 0, 전투 시트·패널·일시정지 단추 굵기만 400 → 예전 700(⬆ 800·ℹ 900). 그리고 #81 🟠7: ui 루트에는 `battle-v2`(토큰 — tokens.css가 `.rtd-v2, .battle-v2`)만, `.rtd-v2`는 HUD(`hud-root`) 안에만.
+  - 아이콘(힉스필드 WebP가 기준): PR-B `createIcon(id)`가 `DESIGN_ICON_ART` 표로 WebP(`uiIcon`, class `ui-icon rtd-icon`, data-icon)를 내고 못 읽으면 같은 img가 PR-B SVG로(`uiIcon` `fallbackSrc`). `createButton({iconArt})`·rail·메뉴로 고름(모집 side-recruit, 기록 side-records, 불꽃 cur-flame). HUD: ⏸·돈(cur-gold, 대체 battle-coin)·도전(hud-challenge)·미션(hud-mission)을 V2 자리에, 배속은 그림이 있으면 CSS 삼각형 숨김. 개발용 갤러리 표본만 벡터(art: null). `UI_ICONS_UNUSED`에서 ui-menu·ui-stats 뺌. art2-icons E2E 그대로 통과.
+  - #75·#76·자동 기본값 × V2 화면: 로비 설정에 '✨ 화려한 효과'·'새 판을 시작하면 기본값으로' 체크 3개(스위치 켜짐 = 노랑, #80 🟠8), 일시정지에 pause-effects-off·자동 승급 줄·필살기 자동·자동 판매 안내(412×915 한 화면, fb63), 모집 창은 받은 뒤에도 열린 채 결과 상자·recruit-claim-10, 빨간 점 recruitReady. 효과 끄기면 WAVE 띠 없음(`UiRoot.waveRibbon`), 치명타 숫자·별은 원래 effectsOff를 봄 — E2E battle-v2 'V2-R21 effects off'. fb75·fb-auto-defaults E2E는 [설정]이 PR-D 메뉴 안이라 `openLobbyMenu` 뒤 누름(기대값 그대로).
+  - 버전: package.json·lock·AndroidManifest versionName 0.1.21 → `node tools/release-version.mjs --tags-file …` = `version=0.1.21 versionCode=1021 previousTag=android-v0.1.20`(Manifest versionCode 10보다 큼).
+  - #81 🔴1 맵 크기: HUD 웨이브 60→48 · 배너 칸 44→36([준비 완료]는 ::after 위아래 12px로 터치 60px) · 알림 길 52→38(두 줄 배너 14+12px) · 자원·몹 줄 여백 · 아래 메뉴 78/46→70/44 · 아래 띠 52→48. 412×915 칸 150→**173**(논리)·57.2→**66px**(main 179·68.3), 320×640 37.9→**41.2px**(= main). g1 바닥값 되살림: 논리 ≥170 · CSS ≥64px(G가 '≥44px'로 낮췄던 것).
+  - #81 🔴2 보상 선택 창: 웨이브 시간·[👁 전장 보기](touch-action:none)를 머리줄로, 여백 줄임, 맵 높이 50%(360px 이하 60%, 그 폭은 보조 설명 줄 숨김). 412: 349→230px·덮는 줄 2~7→4~7(main 246·4~7), 320: 319px·전부+스크롤→196px·3~7·스크롤 없음(main 202). m3b에 창 높이 ≤ 맵 50% · 0~3줄 안 덮음 검사.
+  - #81 🔴3 결과 창: 보상 상자·칩·영웅 카드를 종이 톤 + 진한 글자(NEW 12px). E2E battle-v2 'V2-R21 game over' readable(≥4.5:1·≥12px).
+  - #81 🟠4 전투 기록 줄(battle-log) 없앰(알림과 겹치고 둥근 버튼 뒤에서 잘림) · 안 쓰는 `.toast-banner-probe` CSS. 🟠6 하단 메뉴 배지 max(12px, 2.4cqw). 🟠9 효과음 값 글자 진하게(로비 설정·일시정지). #80 🟠10 비활성 글자는 차분한 잉크, 빨강은 '모자라요'(`.is-short`: 골드·보석·카드·불꽃·조각)만. #80 🟠11 확인: #76 모집 결과 상자·게이지·10번 받기는 종이 위에서 읽힘, 320px 일시정지 '도움말 다시 보기'·'유니크 이하' 잘림은 360px 이하 14px로.
+  - 🟡 해 둔 것: V2 로비가 덮는 캔버스 타이틀(그림·절차 배경·캐릭터)을 그리지 않음(미리 받기는 넓은 화면 양옆 배경 `--side-bg`에 써서 유지), 잠긴 캠페인 탭 회색 + 🔒(aria '· 잠김'), 짧은 무대(≤700px) 영웅 목록 2줄 이상(320×640 1→2줄), 이동 모드는 옮길 수 있는 칸 + 지금 칸만(`fieldContext.moveTargets`, 단위 t3-screen·E2E field-context 정확한 칸 목록), 360px 이하 둥근 ⚔·📋 세로(오른쪽 아래 블록 모서리 안 가림), 카드 초상 `decoding=async`, ×8 이상 WAVE 띠 생략, battle-v2:41 경쟁(클래스·색 한 번에 읽기).
+  - 건너뛴 것: 카드 초상 `loading=lazy`(스크롤 상자 밖 초상이 안 읽혀 heroes-v2의 '모든 초상 읽힘' 대기가 끝나지 않음 — 시험을 바꿔야 해서 되돌림), 치명타 하늘색 테두리 진하게(#81 🟢), 불투명 필드 아래 바닥 텍스처 굽기 생략(MapRenderer, field-context가 구운 바닥 알파를 읽음 — 따로).
+- **Codex PR이 바꾼 기존 기대값** (약해졌는지 확인): g1 칸 바닥값(176 → CSS 44px, **되살림**), fb57 [기록]·[설정] 왼쪽 줄 대칭 검사 삭제(메뉴 안으로 옮겨 대칭 개념이 없어짐 — 정렬·44px·화면 안 검사는 유지), m3b 보상 창 [나중에] 누르기 추가(유지 + 창 크기 검사 추가), t2 '길 누르면 칸 보임' → #79 고침이 다시 되살림, battle-update 치명타 색 #4FD8F0(색만), fb63 승급 수 즉시 → poll(비동기 명령 기다림, 약화 아님), gi 금테 → V2 색.
+- **완료 조건** (HEAD, 마지막 CSS 고침 뒤 다시): Vitest **118파일 1,674 통과 · 3 건너뜀**, `npm run check`(타입·결정성 79파일·곡선·데이터), `npm run build`(글꼴 = subset.woff2 187,664B 하나), `npm run build:single`(17.51MB, data:font/woff2 1개), `bash android/check-java.sh`(AssetPaths·UpdateLogic·FeedbackLinks), `npm run bot:first-boss`(A 20/20·37.1초, B 20/20·26.7초 — 전과 같음), `node tools/release-version.mjs` = 0.1.21 / 1021.
+- **전체 E2E** (`E2E_PORT=5184`, 295개, 네 묶음으로 순서대로 — 코드 = cff3510):
+
+  | 묶음 | 스펙 | 결과 | 시간 |
+  |------|------|------|------|
+  | A | a1·art·art2-icons·b1·battle-update·battle-v2·characters·design-system·details-v2·devtools·f10-boss·f10 | 71 통과 · 1 건너뜀 · **1 실패** | 32.8분 |
+  | B | fb* 23개·feedback-design·feedback·field-context·g1·g2-shots·g2 | 74 통과 · 1 건너뜀 | 25.9분 |
+  | C | g3·gi·heroes-v2·hud-layout·loading·lobby-v2·m1·m2 | 70 통과 | 13.9분 |
+  | E | m3a·m3b·m4·m5·map-fill·smoke·t2·t3-screen·update·v14-shots·v19-shots | 73 통과 · 4 건너뜀 | 26.6분 |
+
+  - 실패 1 = `devtools:155` '⏭ 길게 누르면 초당 약 4번'(1.35초에 2번 — 타이머 시간 검사) → **혼자 다시 돌려 통과 = 부하 흔들림**. 나머지 실패 0. 건너뜀 6 = SAVE_SCREENS 스크린샷 테스트.
+  - 예전 흔들림·기존 실패: `m3b:256`(main에서 실패하던 것) **이번엔 통과**, `m2:267`·`b1:339`·`m3a:236`·`smoke:165`·`t2:*`·`m5:*` 모두 통과.
+  - 마지막 고침(V2-R21-16, 320px 도박 배지 여백) 뒤 battle-v2·g1·art2-icons 19개 다시 통과. 다시 찍힌 스크린샷(docs/screens·docs/art/feedback-design 9장)은 되돌림.
+  - 헤드리스 메모: 소프트웨어 렌더의 화면 반영이 1초쯤 늦어 1.2초 잘못 누르기 안내는 스크린샷에 잘 안 잡힌다(값·칸 수는 E2E가 확인). 스크롤이 생긴 DOM 층 위로 캔버스 일부가 흰 네모로 찍히는 일도 있었다(실기기와 무관, 창이 스크롤 없이 맞으면 사라짐).
+- **스크린샷** (deviceScaleFactor 1): `docs/screens/V2-{loading,lobby,heroes,shop,settings,recruit-claimed,battle,battle-menu,pause,field-mistap}.png`(412×915). 320×640 판은 커밋하지 않고 작업 폴더에만.
+- **남은 문제 · 사용자 확인**: 전투 맵 칸은 main보다 3% 작다(412: 66 vs 68px — V2 HUD 띠·몹 막대가 조금 더 큼). 로비 옆 rail 단추 글자가 320·412에서 2px 넘침(PR-D, 보이는 잘림 없음). 치명타 하늘색(#4FD8F0)과 마법 피해(#8FD8FF)가 비슷함(#81 🟢, 손대지 않음). 카드 초상 lazy·숨은 바닥 텍스처 굽기 생략은 시험을 바꿔야 해 다음으로.
