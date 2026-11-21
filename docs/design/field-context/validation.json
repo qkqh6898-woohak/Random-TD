@@ -1,0 +1,49 @@
+{
+  "baseMain": "3abfda6e943a5c0bccbb2a0710c80ceac00f57e9",
+  "unit": {
+    "files": 111,
+    "passed": 1609,
+    "skipped": 5
+  },
+  "check": "passed",
+  "build": "passed",
+  "relatedCanvas": {
+    "passed": 16,
+    "files": [
+      "field-context.spec.ts",
+      "t3-screen.spec.ts",
+      "fb27.spec.ts"
+    ]
+  },
+  "finalCanvas": {
+    "passed": 5,
+    "coverage": "four widths plus missing-background campaign drag; final capture waits for covered background; pause/resume"
+  },
+  "defaultChromium": {
+    "passed": 1,
+    "coverage": "320px actual texture alpha and select/move/upgrade/sell/pause/resume"
+  },
+  "textureProof": "Every buildable cell center in actual baked terrain texture has alpha 0 in both maps",
+  "screens": "screens/{idle,selected,move,upgrade}-{320,360,393,412}.png; fallback-{idle,drag,drop}.png",
+  "fullRegression": {
+    "scope": "Local validation merge of V2 PR-E 949b63f and independent field-context 3fc73be; delivery branches remain separate. No main merge/push/release.",
+    "commit": "d7ccb86469dfa4d7fadfe56cc6013e7662af78fe",
+    "sourceHash": "2c3d439d236978688f4c11fab55f2e83444166dda69b20f373cfd491df9c32f1",
+    "collected": 273,
+    "summary": {
+      "passed": 262,
+      "failed": 5,
+      "skipped": 6,
+      "flaky": 0
+    },
+    "report": "regression.json",
+    "missingIds": [],
+    "duplicateIds": []
+  },
+  "physicalAndroid": "not tested",
+  "mainPushedOrMerged": false,
+  "patchApplyCheck": "passed on clean parent worktree",
+  "combinedProductionAndSingleHttp": "passed; bundles.json",
+  "implementation": "3fc73be",
+  "screensCapture": "Idle recaptured after summon effects settled; no application source changes."
+}

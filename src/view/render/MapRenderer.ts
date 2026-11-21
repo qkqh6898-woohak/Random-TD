@@ -1,7 +1,7 @@
 /**
  * 맵 그리기 (DEV_PLAN M1-7): 테마 1 「국경 평원」·순환의 정원 색.
  *
- * - B-1 (사용자 결정, T-3 '타일 숨김'을 뒤집음): 배치 칸은 칸 전체를 덮는 소환 바닥으로 늘 표시한다. 붙어 있는 칸은 빈틈 없이 이어지며 바깥쪽에만 두꺼운 가장자리를 둔다.
+ * - 배치 칸 바닥은 투명하다. 잔디는 이어지고 조작 중 칸 표시는 SelectionLayer에서만 그린다.
  *   힉스필드 전투 배경 그림(BattleBackground)이 판 뒤를 덮고, 그림이 없을 때는 절차 풀밭을 쓴다.
  * - 길(경로)은 언제나 또렷하게: 어두운 테두리 + 흙길 + 진행 방향 화살표. 칸을 이어 그려 꺾임·교차가 끊기지 않는다.
  * - 몹 등장 지점 = 녹스 군단의 보라 균열(빙글빙글 도는 소용돌이), 캠페인 출구 = 왕국 성문.
@@ -13,7 +13,7 @@
  */
 import Phaser from 'phaser';
 import { COLORS, hexToInt, lerpColor, shade } from '../../art/palette';
-import { isBuildable, type SimMap } from '../../sim/map';
+import type { SimMap } from '../../sim/map';
 import { pathCells, tileCenterPx, type MapLayout } from '../layout';
 
 /** 테마 1 풀밭 색 (ART.md 1장: 땅 = 풀밭, 경로 = 흙길). */
@@ -42,7 +42,6 @@ const BACKDROP_RES = 0.5;
 /** 길 너비 (칸 대비): 테두리 · 흙 */
 const ROAD_EDGE = 0.9;
 const ROAD_FILL = 0.76;
-const SUMMON_PAD = { base: 0x568f65, shade: 0x2c654d, edge: 0x214639, shine: 0xc9ed9e, rune: 0xf9e4a4 } as const;
 
 /** 화면용 고정 시드 난수. */
 function lcg(seed: number): () => number {
@@ -92,7 +91,7 @@ export class MapRenderer {
     private readonly opts: MapRendererOptions,
   ) {
     // 칸 크기만이 아니라 위치도 키에 넣는다: HUD 높이에 따라 같은 칸 크기로 위아래만 달라질 수 있다
-    this.textureKey = `map-${map.id}-${layout.tile}-${layout.originX}-${layout.originY}`;
+    this.textureKey = `map-natural-${map.id}-${layout.tile}-${layout.originX}-${layout.originY}`;
     this.groundKey = `${this.textureKey}-ground`;
   }
 
@@ -130,7 +129,6 @@ export class MapRenderer {
     }
     if (!this.scene.textures.exists(this.textureKey)) {
       const g = this.scene.make.graphics({}, false);
-      this.drawSummonPads(g, board.x, board.y);
       this.drawRoad(g, board.x, board.y);
       g.generateTexture(this.textureKey, board.w, board.h);
       g.destroy();
@@ -138,36 +136,6 @@ export class MapRenderer {
     this.objects.push(this.scene.add.image(board.x, board.y, this.textureKey).setOrigin(0).setDepth(0));
     this.drawSpawnRift();
     if (this.map.exit) this.drawExitGate(this.map.exit[0], this.map.exit[1]);
-  }
-
-  /** 각 칸의 바닥과 맞닿은 가장자리를 같은 텍스처에 굽는다. */
-  private drawSummonPads(g: Phaser.GameObjects.Graphics, ox: number, oy: number): void {
-    const { layout: L, map } = this;
-    const t = L.tile;
-    const edge = Math.max(2, Math.round(t * 0.04));
-    for (const [tx, ty] of map.buildable) {
-      const left = L.originX + tx * t - ox;
-      const top = L.originY + ty * t - oy;
-      g.fillStyle((tx + ty) % 2 === 0 ? SUMMON_PAD.base : SUMMON_PAD.shade, 0.91).fillRect(left, top, t, t);
-      g.fillStyle(SUMMON_PAD.shine, 0.16).fillRect(left, top, t, t * 0.62);
-      g.fillStyle(SUMMON_PAD.edge, 0.25).fillRect(left, top + t * 0.78, t, t * 0.22);
-
-      g.fillStyle(SUMMON_PAD.edge, 0.92);
-      if (!isBuildable(map, tx - 1, ty)) g.fillRect(left, top, edge, t);
-      if (!isBuildable(map, tx + 1, ty)) g.fillRect(left + t - edge, top, edge, t);
-      if (!isBuildable(map, tx, ty + 1)) g.fillRect(left, top + t - edge * 1.5, t, edge * 1.5);
-      if (!isBuildable(map, tx, ty - 1)) {
-        g.fillStyle(SUMMON_PAD.shine, 0.75).fillRect(left, top, t, edge);
-      }
-
-      const cx = left + t / 2;
-      const cy = top + t * 0.56;
-      const r = t * 0.13;
-      g.fillStyle(SUMMON_PAD.edge, 0.6).fillCircle(cx, cy, r);
-      g.lineStyle(Math.max(2, t * 0.024), SUMMON_PAD.rune, 0.88);
-      g.lineBetween(cx - r * 0.46, cy, cx + r * 0.46, cy);
-      g.lineBetween(cx, cy - r * 0.46, cx, cy + r * 0.46);
-    }
   }
 
   /**

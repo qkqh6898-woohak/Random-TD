@@ -73,7 +73,7 @@ export class SelectionLayer {
     const L = this.layout;
     const line = Math.max(2, L.tile * 0.035);
     if (view.buildable && view.buildable.alpha > 0) this.drawBuildable(g, view.buildable.tiles, view.buildable.alpha, line);
-    this.drawPassiveAuras(g, view.auras ?? [], timeMs, line);
+    this.drawPassiveAuras(g, view.auras ?? [], timeMs);
     if (view.selected) {
       const c = tileCenterPx(L, view.selected.tx, view.selected.ty);
       const r = this.px(view.selected.range);
@@ -124,49 +124,23 @@ export class SelectionLayer {
     }
   }
 
-  /**
-   * 배치 칸: 칸마다 옅게 칠하고, 이웃이 배치 칸이 아닌 쪽에만 테두리 → 2×2 블록이 한 덩어리로 보인다 (칸 사이 격자선 없음).
-   */
+  /** 조작 중에만 각 칸을 옅은 사각형으로 표시한다. 지형·배치 판정은 바꾸지 않는다. */
   private drawBuildable(g: Phaser.GameObjects.Graphics, tiles: readonly (readonly [number, number])[], alpha: number, line: number): void {
     const L = this.layout;
-    const t = L.tile;
-    const set = new Set(tiles.map(([x, y]) => `${x},${y}`));
-    g.fillStyle(BUILD_COLOR, 0.2 * alpha);
+    const size = L.tile * 0.92;
     for (const [x, y] of tiles) {
-      const left = L.originX + x * t;
-      const top = L.originY + y * t;
-      g.fillRect(left, top, t, t);
-    }
-    g.lineStyle(line, BUILD_COLOR, 0.6 * alpha);
-    for (const [x, y] of tiles) {
-      const left = L.originX + x * t;
-      const top = L.originY + y * t;
-      const hasL = set.has(`${x - 1},${y}`);
-      const hasR = set.has(`${x + 1},${y}`);
-      const hasU = set.has(`${x},${y - 1}`);
-      const hasD = set.has(`${x},${y + 1}`);
-      if (!hasU) g.lineBetween(left, top, left + t, top);
-      if (!hasD) g.lineBetween(left, top + t, left + t, top + t);
-      if (!hasL) g.lineBetween(left, top, left, top + t);
-      if (!hasR) g.lineBetween(left + t, top, left + t, top + t);
+      const c = tileCenterPx(L, x, y);
+      g.fillStyle(BUILD_COLOR, 0.14 * alpha).fillRoundedRect(c.x - size / 2, c.y - size / 2, size, size, L.tile * 0.06);
+      g.lineStyle(line, BUILD_COLOR, 0.36 * alpha).strokeRoundedRect(c.x - size / 2, c.y - size / 2, size, size, L.tile * 0.06);
     }
   }
 
-  /** 평소 오라 빛: 효과 칸 네모를 아주 옅게 칠하고 테두리도 옅게 (2.4초 주기로 숨 쉼). 전체 오라는 발밑 타원만. */
-  private drawPassiveAuras(g: Phaser.GameObjects.Graphics, glows: readonly AuraGlow[], timeMs: number, line: number): void {
-    if (glows.length === 0) return;
-    const L = this.layout;
+  /** 평소 오라는 발밑 빛만. 정확한 효과 범위는 타워를 고른 동안 위에서 표시한다. */
+  private drawPassiveAuras(g: Phaser.GameObjects.Graphics, glows: readonly AuraGlow[], timeMs: number): void {
     const breath = 0.75 + 0.25 * Math.sin((timeMs / 2400) * Math.PI * 2);
     for (const a of glows) {
-      const c = tileCenterPx(L, a.tx, a.ty);
-      if (a.radius > 0) {
-        // 잔디(초록) 위에서도 보이게 옅은 박하색으로 칠하고, 테두리는 고른 때(0.75)보다 옅게
-        const half = (a.radius + 0.5) * L.tile;
-        g.fillStyle(AURA_GLOW_COLOR, 0.13 * breath).fillRoundedRect(c.x - half, c.y - half, half * 2, half * 2, L.tile * 0.15);
-        g.lineStyle(line * 0.9, AURA_GLOW_COLOR, 0.42 * breath).strokeRoundedRect(c.x - half, c.y - half, half * 2, half * 2, L.tile * 0.15);
-      } else {
-        g.fillStyle(AURA_GLOW_COLOR, 0.32 * breath).fillEllipse(c.x, c.y + L.tile * FOOT_OFFSET_TILES, L.tile * 0.92, L.tile * 0.44);
-      }
+      const c = tileCenterPx(this.layout, a.tx, a.ty);
+      g.fillStyle(AURA_GLOW_COLOR, 0.32 * breath).fillEllipse(c.x, c.y + this.layout.tile * FOOT_OFFSET_TILES, this.layout.tile * 0.92, this.layout.tile * 0.44);
     }
   }
 
