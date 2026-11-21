@@ -55,7 +55,6 @@ export class UiRoot {
    * (T-3 병합: 첫 배치 때 잰 높이(약 21px)가 실제 알림(약 39px)보다 작아 알림이 위쪽 패널 머리줄을 11px 덮던 것).
    */
   readonly toastProbe: HTMLElement;
-  private readonly battleLog = h('div', { class: 'battle-log', attrs: { 'aria-hidden': 'true' } });
 
   constructor(readonly el: HTMLElement) {
     el.replaceChildren();
@@ -71,7 +70,6 @@ export class UiRoot {
       card: h('div', { class: 'layer layer-card' }),
       toast: h('div', { class: 'layer layer-toast', attrs: { role: 'status', 'aria-live': 'polite' } }),
     };
-    this.layers.hud.append(this.battleLog);
     this.toastProbe = h('div', { class: 'toast-probe', text: '가' });
     const measure = h('div', { class: 'layer layer-measure', attrs: { 'aria-hidden': 'true' } }, this.toastProbe);
     el.append(
@@ -116,7 +114,6 @@ export class UiRoot {
    * 알림은 게임 상태를 바꾸지 않는다 (보여주기만).
    */
   toast(text: string, ms = 1600): HTMLElement {
-    this.logBattle(text);
     const layer = this.layers.toast;
     // 같은 글자가 이미 떠 있으면 그것을 지우고 새로 띄운다 (연타해도 같은 알림이 쌓이지 않게)
     for (const child of [...layer.children]) if (child.textContent === text) child.remove();
@@ -127,18 +124,10 @@ export class UiRoot {
     return el;
   }
 
-  private logBattle(text: string): void {
-    if (!this.el.classList.contains('battle-v2')) return;
-    if (this.battleLog.lastElementChild?.textContent === text) return;
-    this.battleLog.append(h('div', { text }));
-    while (this.battleLog.childElementCount > 2) this.battleLog.firstElementChild?.remove();
-  }
-
   private static readonly MAX_TOASTS = 3;
 
   /** 떠 있는 알림·배너를 모두 지운다 (패배·일시정지 화면을 열 때 — 알림 층이 화면 층보다 위라 제목을 가린다, M4 검토 반영). */
   clearToasts(): void {
-    this.battleLog.replaceChildren();
     this.layers.cutin.querySelector('.wave-ribbon')?.remove();
     this.layers.toast.replaceChildren();
   }
@@ -161,7 +150,6 @@ export class UiRoot {
    * 제목이 이름 중간에서 끊겨 배너가 3줄(72px)이 되어 맵 0줄을 반 넘게 덮던 것 (검토 반영).
    */
   banner(title: string, sub: string | null, ms = 3200, tone: 'warn' | 'shadow' | 'boss' | 'gold' | 'mission' | 'challenge' | 'merge' = 'warn'): HTMLElement {
-    this.logBattle(title);
     const layer = this.layers.toast;
     const key = sub ? `${title}\n${sub}` : title;
     for (const child of [...layer.children]) if ((child as HTMLElement).dataset.key === key) child.remove();

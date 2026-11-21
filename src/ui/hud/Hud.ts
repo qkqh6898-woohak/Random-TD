@@ -457,7 +457,7 @@ export function createHud(opts: HudOptions): HudView {
     menuBtns.get(kind)?.btn.querySelector('.hud-menu-icon')?.replaceWith(h('span', { class: 'hud-menu-icon', attrs: { 'aria-hidden': 'true' } }, icon));
   }
   const dock = h('div', { class: 'hud-dock' }, sideBar, bottomBand, menuBar);
-  const el = h('div', { class: 'hud-root hud-v2', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band, dock, stats.el);
+  const el = h('div', { class: 'rtd-v2 hud-root hud-v2', attrs: { 'data-screen': 'game', 'data-tick': '0' } }, edgeEl, band, dock, stats.el);
 
   let last: Partial<HudModel> = {};
   let readyState: 'hidden' | 'ready' | 'sent' = 'hidden';

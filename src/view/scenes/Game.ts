@@ -526,7 +526,8 @@ export class GameScene extends Phaser.Scene {
     // 피드백 #62: 새 판이면 지난 판의 자동 판매·필살기 자동을 끈다 (이어 하기는 그대로)
     else resetMatchSettings(this.ctx.settings);
     this.paused = false;
-    this.ctx.ui.el.classList.add('rtd-v2', 'battle-v2');
+    // V2-R21 (#81 검토 🟠7): ui 루트에는 전투 V2 범위(battle-v2, 토큰)만. PR-B 바탕 규칙(.rtd-v2)은 V2로 다시 그린 HUD 안에만 (Hud.ts hud-root)
+    this.ctx.ui.el.classList.add('battle-v2');
     this.gameOver = false;
     this.prevProgress = new Map();
     this.prevProjectiles = new Map();
@@ -652,7 +653,7 @@ export class GameScene extends Phaser.Scene {
     window.addEventListener(NATIVE_PAUSE_EVENT, this.onNativePause);
     setBackHandler(() => this.goBack());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.ctx.ui.el.classList.remove('battle-v2', 'rtd-v2');
+      this.ctx.ui.el.classList.remove('battle-v2');
       this.game.events.emit('rtd:scene-loading');
       // 타이틀로 나가거나 다시 하기: 진행 중이면 마지막 상태를 남긴다 (패배한 판은 이미 지움)
       if (!this.gameOver) this.saveMatch();
@@ -1865,7 +1866,8 @@ export class GameScene extends Phaser.Scene {
       const recent = eventFxVisible('bulk', ev.tick, now, frameStart);
       switch (ev.type) {
         case 'stageStart':
-          this.ctx.ui.waveRibbon(Number(ev.stage));
+          // V2-R21 (#81 검토 🟢): ×8 이상은 단계가 2~4초마다 바뀌어 띠가 화면을 계속 가린다 → 띄우지 않음 (단계는 HUD에)
+          if (this.clock.speed < 8) this.ctx.ui.waveRibbon(Number(ev.stage));
           lastStage = { stage: Number(ev.stage), boss: ev.boss === true };
           break;
         case 'victory':

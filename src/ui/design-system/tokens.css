@@ -1,5 +1,6 @@
-/* PR-B: opt-in tokens only. Never replace existing :root / --gold / .btn tokens. */
-.rtd-v2 {
+/* PR-B: opt-in tokens only. Never replace existing :root / --gold / .btn tokens.
+   V2-R21: 전투 V2(.battle-v2)는 토큰만 쓰고 PR-B 바탕 규칙(.rtd-v2)은 HUD 안에만 붙인다. */
+.rtd-v2, .battle-v2 {
   --rtd-bg: #6B5046;
   --rtd-panel: #3A2A22;
   --rtd-outline: #3B2314;
@@ -48,10 +49,10 @@
   color-scheme: light;
 }
 /* Existing order: normal, rare, unique, hero, legend, god, hidden. Names are not remapped. */
-.rtd-v2 [data-grade='normal'] { --rtd-grade-bg: #B7AC8E; --rtd-grade-border: #F3EBD3; --rtd-grade-small: #D9D0B8; }
-.rtd-v2 [data-grade='rare'] { --rtd-grade-bg: #3E4F8C; --rtd-grade-border: #5B8BE0; --rtd-grade-small: #4FC3F7; }
-.rtd-v2 [data-grade='unique'] { --rtd-grade-bg: #6A3A9C; --rtd-grade-border: #9B6AD8; --rtd-grade-small: #E58CF0; }
-.rtd-v2 [data-grade='hero'] { --rtd-grade-bg: #E3A92B; --rtd-grade-border: #FFE07A; --rtd-grade-small: #FFD54A; }
-.rtd-v2 [data-grade='legend'] { --rtd-grade-bg: #E2772A; --rtd-grade-bg-end: #F5A04A; --rtd-grade-border: #FF9A3C; --rtd-grade-small: #FFB46B; }
-.rtd-v2 [data-grade='god'] { --rtd-grade-bg: #B8323A; --rtd-grade-border: #FF6B6B; --rtd-grade-small: #FF8A8A; }
-.rtd-v2 [data-grade='hidden'] { --rtd-grade-bg: #2B2A5E; --rtd-grade-border: #FFD54A; --rtd-grade-small: #8C86FF; }
+:is(.rtd-v2, .battle-v2) [data-grade='normal'] { --rtd-grade-bg: #B7AC8E; --rtd-grade-border: #F3EBD3; --rtd-grade-small: #D9D0B8; }
+:is(.rtd-v2, .battle-v2) [data-grade='rare'] { --rtd-grade-bg: #3E4F8C; --rtd-grade-border: #5B8BE0; --rtd-grade-small: #4FC3F7; }
+:is(.rtd-v2, .battle-v2) [data-grade='unique'] { --rtd-grade-bg: #6A3A9C; --rtd-grade-border: #9B6AD8; --rtd-grade-small: #E58CF0; }
+:is(.rtd-v2, .battle-v2) [data-grade='hero'] { --rtd-grade-bg: #E3A92B; --rtd-grade-border: #FFE07A; --rtd-grade-small: #FFD54A; }
+:is(.rtd-v2, .battle-v2) [data-grade='legend'] { --rtd-grade-bg: #E2772A; --rtd-grade-bg-end: #F5A04A; --rtd-grade-border: #FF9A3C; --rtd-grade-small: #FFB46B; }
+:is(.rtd-v2, .battle-v2) [data-grade='god'] { --rtd-grade-bg: #B8323A; --rtd-grade-border: #FF6B6B; --rtd-grade-small: #FF8A8A; }
+:is(.rtd-v2, .battle-v2) [data-grade='hidden'] { --rtd-grade-bg: #2B2A5E; --rtd-grade-border: #FFD54A; --rtd-grade-small: #8C86FF; }

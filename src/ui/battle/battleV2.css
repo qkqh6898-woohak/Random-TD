@@ -1,9 +1,7 @@
 /* PR-G: scoped view styling. Match rules, IDs, costs and the Phaser/DOM layer contract remain intact. */
-.toast-banner-probe { position:relative; visibility:hidden; animation:none!important; transform:none!important; }
-.battle-log { display:none; }
 .battle-v2 { --battle-safe-top:env(safe-area-inset-top,0px); --battle-safe-bottom:env(safe-area-inset-bottom,0px); color:white; }
 .battle-v2 .hud { padding-top:var(--battle-safe-top); }
-.battle-v2 .hud-bar { padding:8px 8px 4px; border:0; background:var(--rtd-wood); border-bottom:3px solid var(--rtd-outline); border-radius:0 0 12px 12px; box-shadow:inset 0 2px #AD7B58; }
+.battle-v2 .hud-bar { padding:6px 8px 3px; border:0; background:var(--rtd-wood); border-bottom:3px solid var(--rtd-outline); border-radius:0 0 12px 12px; box-shadow:inset 0 2px #AD7B58; }
 .battle-v2 .hud-top-row { display:grid; grid-template-columns:auto minmax(68px,1fr) auto; gap:6px; align-items:center; }
 .battle-v2 .hud-side-l,.battle-v2 .hud-side-r { display:flex; gap:4px; min-width:0; }
 .battle-v2 .hud-side-l { flex-wrap:wrap; max-width:148px; }
@@ -15,11 +13,11 @@
 .battle-v2 .hud-root .btn { min-width:44px; min-height:44px; border:2px solid var(--rtd-outline); border-radius:9px; padding:4px 7px; background:var(--rtd-secondary); color:white; font:14px/1.2 var(--rtd-title-font); text-shadow:none; box-shadow:inset 0 2px #ffffff33,0 3px var(--rtd-outline); transition:transform 100ms,filter 100ms; }
 .battle-v2 .hud-root .btn:active:not(:disabled) { transform:scale(.95); filter:brightness(.96); }
 .battle-v2 .hud-root .btn:is(:disabled,.is-off) { background:var(--rtd-disabled); color:var(--rtd-danger-ink); opacity:1; filter:none; box-shadow:0 2px var(--rtd-outline); }
-.battle-v2 .hud-resources { gap:8px; margin:4px 0 0; padding:2px 6px; background:var(--rtd-panel); border:1px solid var(--rtd-outline); border-radius:99px; }
-.battle-v2 .hud-resources .hud-value { font:16px/1.3 var(--rtd-title-font); color:white; }
-.battle-v2 .hud-count-row { margin-top:4px; }
+.battle-v2 .hud-resources { gap:8px; margin:2px 0 0; padding:1px 6px; background:var(--rtd-panel); border:1px solid var(--rtd-outline); border-radius:99px; }
+.battle-v2 .hud-resources .hud-value { font:15px/1.2 var(--rtd-title-font); color:white; }
+.battle-v2 .hud-count-row { margin-top:2px; }
 .battle-v2 .hud-count { background:var(--rtd-panel); border:2px solid var(--rtd-outline); border-radius:99px; }
-.battle-v2 .hud-count .hud-value { color:white; font:16px/1.2 var(--rtd-title-font); }
+.battle-v2 .hud-count .hud-value { color:white; font:14px/1.1 var(--rtd-title-font); }
 .battle-v2 .hud-count-fill { background:var(--rtd-progress); }
 .battle-v2 .hud-banner-slot { height:34px; margin:5px 8px 0; }
 .battle-v2 .hud-banner { border:2px solid var(--rtd-outline); border-radius:7px; background:var(--rtd-panel); }
@@ -29,20 +27,20 @@
 .battle-v2 .hud-banner-challenge .hud-banner-fill { background:var(--rtd-experience); }
 .battle-v2 .hud-root .hud-ready { width:100%; min-height:34px; background:var(--rtd-primary); color:var(--rtd-outline); font-size:14px; }
 .battle-v2 .hud-dock { background:transparent; }
-.battle-v2 .hud-bottom.is-g1 { min-height:52px; padding:5px 8px; gap:6px; border:0; background:var(--rtd-panel); border-top:2px solid var(--rtd-outline); border-radius:12px 12px 0 0; }
+.battle-v2 .hud-bottom.is-g1 { min-height:48px; padding:2px 8px; gap:6px; border:0; background:var(--rtd-panel); border-top:2px solid var(--rtd-outline); border-radius:12px 12px 0 0; }
 .battle-v2 .hud-bottom .hud-value { font-size:16px; color:white; }
 .battle-v2 .hud-bottom .hud-hint { color:white; font-size:12px; }
 .battle-v2 .hud-root .hud-hire { min-width:92px; padding:4px; font-size:12px; }
-.battle-v2 .hud-menu.is-g1 { grid-template-columns:20% minmax(0,1fr) 20%; grid-template-rows:78px 46px; gap:7px; padding:6px 8px calc(10px + var(--battle-safe-bottom)); border:0; background:var(--rtd-bg); }
+.battle-v2 .hud-menu.is-g1 { grid-template-columns:20% minmax(0,1fr) 20%; grid-template-rows:70px 44px; gap:5px; padding:5px 8px calc(8px + var(--battle-safe-bottom)); border:0; background:var(--rtd-bg); }
 .battle-v2 .hud-menu.is-g1>.hud-menu-btn { min-height:44px; padding:4px; }
 .battle-v2 .hud-menu.is-g1>.is-upgrade { grid-column:2; grid-row:2; background:var(--rtd-secondary); font-size:20px; }
 .battle-v2 .hud-menu.is-g1>:is(.is-mythic,.is-gamble) { align-self:center; min-height:68px; border-radius:16px 8px; background:var(--rtd-secondary-shadow); }
 .battle-v2 .hud-menu.is-g1>:is(.is-mythic,.is-gamble) .hud-menu-label { font-size:12px; }
 .battle-v2 .hud-menu-character { width:30px; height:30px; }
-.battle-v2 .hud-menu.is-g1>.hud-summon { background:var(--rtd-primary); color:var(--rtd-outline); border:3px solid var(--rtd-outline); border-radius:12px; box-shadow:inset 0 3px #FFF4AD,0 4px var(--rtd-primary-shadow); padding:5px 4px; }
+.battle-v2 .hud-menu.is-g1>.hud-summon { background:var(--rtd-primary); color:var(--rtd-outline); border:3px solid var(--rtd-outline); border-radius:12px; box-shadow:inset 0 3px #FFF4AD,0 4px var(--rtd-primary-shadow); padding:3px 4px; }
 .battle-v2 .hud-summon-character { position:absolute; left:6px; top:8px; width:22px; height:22px; opacity:1; }
-.battle-v2 .hud-summon-word { font:24px/1 var(--rtd-title-font); }
-.battle-v2 .hud-summon-cost { padding:2px 12px; border-radius:99px; background:var(--rtd-panel); color:white; font:18px/1 var(--rtd-title-font); }
+.battle-v2 .hud-summon-word { font:22px/1 var(--rtd-title-font); }
+.battle-v2 .hud-summon-cost { padding:2px 12px; border-radius:99px; background:var(--rtd-panel); color:white; font:16px/1 var(--rtd-title-font); }
 .battle-v2 .hud-summon-pity { color:var(--rtd-outline); font:12px/1 var(--rtd-title-font); }
 .battle-v2 .hud-summon.is-off .hud-summon-cost { color:var(--rtd-notification); }
 .battle-v2 .hud-side-btns { gap:6px; }
@@ -77,15 +75,12 @@
 .battle-v2 .cp-battle-time { display:block; color:var(--rtd-outline); font:14px/1.4 var(--rtd-title-font); text-align:center; padding:6px; }
 .battle-v2 .cp-name { color:var(--rtd-outline); font-size:16px; }
 .battle-v2 .cp-desc { font-size:12px; }
-.battle-v2 .cp-peek { width:100%; margin-top:10px; }
 .battle-v2 .choice-panel.is-peeking { background:transparent; border-color:transparent; box-shadow:none; }
-.battle-v2 .choice-panel.is-peeking>:not(.cp-peek) { visibility:hidden; pointer-events:none; }
 .battle-v2 .choice-panel[hidden] { display:none; }
 .battle-v2 .wave-ribbon { position:absolute; top:42%; left:0; width:100%; padding:14px; background:#3B2314C9; color:white; text-align:center; font:32px/1.2 var(--rtd-title-font); -webkit-text-stroke:1.5px var(--rtd-outline); paint-order:stroke fill; pointer-events:none; animation:rtd-wave-in 150ms ease-out; }
-.battle-v2 .battle-log { display:block; position:absolute; bottom:calc(var(--dock-h,180px) + 8px); right:8px; max-width:84%; max-height:38px; overflow:hidden; color:white; font:12px/1.4 var(--rtd-title-font); -webkit-text-stroke:1.5px var(--rtd-outline); paint-order:stroke fill; text-align:right; pointer-events:none; }
 .battle-v2 .toast { color:white; font-size:14px; background:var(--rtd-panel); border:2px solid var(--rtd-outline); }
-.battle-v2 .toast-banner .toast-title { font:16px/1.2 var(--rtd-title-font); }
-.battle-v2 .toast-banner .toast-sub { font:12px/1.3 var(--rtd-body-font); }
+.battle-v2 .toast-banner .toast-title { font:14px/1.15 var(--rtd-title-font); }
+.battle-v2 .toast-banner .toast-sub { font:12px/1.15 var(--rtd-body-font); }
 .battle-v2 .toast-banner.is-gold { background:var(--rtd-primary); color:var(--rtd-outline); border-color:var(--rtd-outline); }
 .battle-v2 .toast-banner.is-gold .toast-title { color:var(--rtd-outline); }
 @keyframes rtd-wave-in { from { opacity:0; transform:scaleY(.9); } to { opacity:1; transform:scaleY(1); } }
@@ -95,13 +90,14 @@
 .battle-v2 .hud-side-l>.btn { flex:none; }
 .battle-v2 .hud-menu.is-g1>.hud-summon.is-off { background:var(--rtd-disabled); box-shadow:0 3px var(--rtd-outline); }
 .battle-v2 .hud-menu.is-g1>.hud-summon.is-off .hud-summon-cost { color:#FF8A8A; }
-.battle-v2 .hud-banner-slot { height:44px; }
-.battle-v2 .hud-root .hud-ready { min-height:44px; }
+/* V2-R21 (#81 검토 🔴1): main(31px)에 가깝게 36px — [준비 완료]는 위아래 ::after 12px씩 넓힌 터치 영역(60px)으로 44px 이상 */
+.battle-v2 .hud-banner-slot { height:36px; }
+.battle-v2 .hud-root .hud-ready { min-height:36px; }
 /* One measured lane for both plain and two-line notices. Never overlay row zero or a unit panel. */
-.battle-v2 :is(.toast,.toast-probe) { box-sizing:border-box; height:52px; min-height:52px; max-width:92cqw; padding:4px 12px; border:2px solid var(--rtd-outline); display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:14px; line-height:1.2; }
-.battle-v2 .toast-banner:not(:has(.toast-sub)) { padding:4px 12px; }
+.battle-v2 :is(.toast,.toast-probe) { box-sizing:border-box; height:38px; min-height:38px; max-width:92cqw; padding:1px 10px; border:2px solid var(--rtd-outline); display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:14px; line-height:1.15; }
+.battle-v2 .toast-banner:not(:has(.toast-sub)) { padding:2px 10px; }
 /* Flat SD controls, one cost pill below the summon label. */
-.battle-v2 .hud-menu.is-g1>.hud-summon { display:flex; flex-direction:column; gap:3px; align-items:center; justify-content:center; }
+.battle-v2 .hud-menu.is-g1>.hud-summon { display:flex; flex-direction:column; gap:2px; align-items:center; justify-content:center; }
 .battle-v2 .hud-summon :is(.hud-summon-word,.hud-summon-cost,.hud-summon-pity) { position:static; margin:0; transform:none; }
 .battle-v2 :is(.hud-bar,.hud-bottom,.tower-panel,.bsheet) { background-image:none; border-image:none; }
 .battle-v2 :is(.hud-bar,.hud-bottom)::before,.battle-v2 :is(.hud-bar,.hud-bottom)::after { content:none; }
@@ -196,7 +192,7 @@
  .battle-v2 .hud-menu-badge { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
 }
 /* Wave/boss badges keep a stable header height, including three-digit debug stages. */
-.battle-v2 .hud-wave { height:60px; justify-content:center; min-width:0; }
+.battle-v2 .hud-wave { height:48px; padding:1px 7px; justify-content:center; min-width:0; }
 .battle-v2 .hud-wave .hud-stage { white-space:nowrap; font-size:clamp(12px,3.8cqw,18px); }
 .battle-v2 .hud-wave .hud-stage.is-boss { padding:0; border:0; background:transparent; box-shadow:none; }
 @media(max-height:650px) { .battle-v2 .hud-wave { height:44px; } }
@@ -215,3 +211,36 @@
 .battle-v2 .hud-side-btns .hud-menu-btn.is-alert::after { right:0; }
 /* V2-R21: 예전 굵기(700)로 돌아온 일시정지 단추가 320px에서 '도움말 다시 보기'·'유니크 이하'를 자르지 않게 좁은 무대만 14px */
 @container (max-width:360px) { .battle-v2 .pause-panel .btn { font-size:14px; } }
+/* V2-R21 (#79 검토 🟡): 360px 이하에서는 둥근 ⚔·📋를 세로로 — 가로로 두면 오른쪽 아래 블록 칸 모서리를 가렸다 (오른쪽 길 위에만 놓임) */
+@container (max-width:360px) { .battle-v2 .hud-side-btns { flex-direction:column-reverse; } }
+/* V2-R21 (#81 검토 🔴2): 보상 선택 창이 맵을 거의 다 덮던 것 — 웨이브 시간·[전장 보기]를 머리줄로, 여백을 줄이고 맵 높이의 절반까지만 (넘치면 창 안 스크롤) */
+.battle-v2 .choice-panel { padding:6px; gap:6px; max-height:min(calc(100% - var(--guide-top,140px) - var(--dock-h,180px) - 8px), calc((100% - var(--guide-top,140px) - var(--dock-h,180px)) * .5)); }
+.battle-v2 .cp-head { gap:6px; padding:4px 6px; }
+.battle-v2 .cp-head-text { display:flex; flex-direction:column; flex:1; min-width:0; }
+.battle-v2 .cp-title { font-size:max(14px,3.9cqw); line-height:1.2; }
+.battle-v2 .cp-battle-time { display:block; padding:0; color:white; font:12px/1.3 var(--rtd-title-font); text-align:left; -webkit-text-stroke:1px var(--rtd-outline); paint-order:stroke fill; }
+.battle-v2 .cp-sub { margin:0; font-size:12px; line-height:1.3; }
+.battle-v2 .cp-peek { flex:none; display:inline-flex; align-items:center; gap:3px; min-width:44px; padding:4px 8px; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+.battle-v2 .cp-peek-icon { font-size:16px; line-height:1; }
+@container (max-width:360px) { .battle-v2 .cp-peek-text { display:none; } }
+.battle-v2 .choice-panel.is-peeking { overflow:visible; }
+.battle-v2 .choice-panel.is-peeking * { visibility:hidden; pointer-events:none; }
+.battle-v2 .choice-panel.is-peeking .cp-peek, .battle-v2 .choice-panel.is-peeking .cp-peek * { visibility:visible; pointer-events:auto; }
+@container (max-width:360px) {
+ .battle-v2 .choice-panel { max-height:min(calc(100% - var(--guide-top,140px) - var(--dock-h,180px) - 8px), calc((100% - var(--guide-top,140px) - var(--dock-h,180px)) * .6)); }
+ .battle-v2 .choice-panel .cp-sub { display:none; }
+ .battle-v2 .choice-panel .cp-option { min-height:0; padding:10px 4px 4px; gap:0; }
+ .battle-v2 .choice-panel .cp-desc { line-height:1.25; }
+ .battle-v2 .choice-panel .cp-icon { font-size:20px; }
+ .battle-v2 .choice-panel .cp-name { font-size:14px; }
+}
+/* V2-R21 (#81 검토 🔴3): 종이 결과 창 안의 보상 상자·칩·영웅 카드가 어두운 바탕 + 어두운 글자(약 1.3:1)였다 → 종이 톤 + 진한 글자 (4.5:1 이상) */
+.battle-v2 .gameover-panel .go-rewards { background:#FFF8E6; border:1px solid #9C8266; box-shadow:none; color:var(--rtd-outline); }
+.battle-v2 .gameover-panel :is(.go-best,.go-level-text,.go-card-n,.go-frags,.go-recruit) { color:var(--rtd-outline); }
+.battle-v2 .gameover-panel .go-chip { background:#E4D5B7; color:var(--rtd-outline); border:1px solid #9C8266; box-shadow:none; }
+.battle-v2 .gameover-panel .go-card { background:color-mix(in srgb, var(--grade-color) 18%, #FFF8E6); color:var(--rtd-outline); }
+.battle-v2 .gameover-panel .go-xpbar { background:#D9D0B8; }
+.battle-v2 .gameover-panel .go-card-new { background:var(--rtd-danger-ink); color:white; font-size:12px; }
+/* V2-R21 (#81 검토 🟠9·6): 일시정지 효과음 값은 종이 위 진한 글자 · 하단 메뉴 배지 12px 이상 (예전 .hud-menu.is-g1 2.4cqw가 이겨 9.9px/7.7px) */
+.battle-v2 .pause-panel .pause-volume-value { color:var(--rtd-outline); }
+.battle-v2 .hud-menu.is-g1 .hud-menu-badge, .battle-v2 .hud-side-btns > .hud-menu-btn .hud-menu-badge { font-size:max(12px,2.4cqw); }

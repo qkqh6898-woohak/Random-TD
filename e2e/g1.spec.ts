@@ -143,6 +143,9 @@ test('마당 맵: 6×8 가운데 4×6 마당 24칸 + 둘레 고리, 24칸을 유
   // Keep all 24 cells and require a real 44px touch cell at the default 412px viewport.
   const stageWidth = (await page.locator('#stage').boundingBox())!.width;
   expect(L.tile * stageWidth / 1080).toBeGreaterThanOrEqual(44);
+  // V2-R21 (#81 검토 🔴1): V2 HUD가 맵을 다시 줄이지 않게 실제 바닥값 — main 179 / 68.3px, V2-R21 173 / 66px (412×915)
+  expect(L.tile).toBeGreaterThanOrEqual(170);
+  expect(L.tile * stageWidth / 1080).toBeGreaterThanOrEqual(64);
   for (const id of ['menu-mythic', 'hud-summon', 'menu-gamble', 'menu-upgrade', 'menu-challenge', 'menu-mission']) await expect(page.getByTestId(id)).toBeVisible();
   await expect(page.getByTestId('menu-mythic')).toContainText('리미티드');
   await expect(page.getByTestId('hud-summon')).toContainText('22원'); // V2.0 PR-A 첫 소환 22원

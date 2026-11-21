@@ -68,7 +68,13 @@ export function createChoicePanel(model: ChoiceModel, onPick: (index: number) =>
     on: { click: () => setCollapsed(true) },
   });
   const battleTime = h('span', { class: 'cp-battle-time', attrs: { 'data-testid': 'choice-battle-time' } });
-  const peek = h('button', { class: 'btn cp-peek', attrs: { type: 'button', 'data-testid': 'choice-peek', 'aria-label': '꾹 눌러 전장 보기' }, text: '꾹 눌러 전장 보기' });
+  // V2-R21 (#81 검토 🔴2): [꾹 눌러 전장 보기]는 머리줄에 (창이 스크롤돼도 늘 보임). 좁은 화면은 👁만, 이름은 aria-label
+  const peek = h(
+    'button',
+    { class: 'btn cp-peek', attrs: { type: 'button', 'data-testid': 'choice-peek', 'aria-label': '꾹 눌러 전장 보기', title: '꾹 눌러 전장 보기' } },
+    h('span', { class: 'cp-peek-icon', text: '👁', attrs: { 'aria-hidden': 'true' } }),
+    h('span', { class: 'cp-peek-text', text: '전장 보기', attrs: { 'aria-hidden': 'true' } }),
+  );
   const setPeek = (on: boolean): void => { panel.classList.toggle('is-peeking', on); peek.setAttribute('aria-pressed', String(on)); };
   peek.addEventListener('pointerdown', e => { peek.setPointerCapture(e.pointerId); setPeek(true); });
   for (const name of ['pointerup','pointercancel','lostpointercapture']) peek.addEventListener(name, () => setPeek(false));
@@ -80,9 +86,9 @@ export function createChoicePanel(model: ChoiceModel, onPick: (index: number) =>
   const panel = h(
     'div',
     { class: `choice-panel is-${model.kind}`, attrs: { role: 'dialog', 'aria-label': model.title, 'data-testid': `choice-${model.kind}` } },
-    h('div', { class: 'cp-head' }, h('div', { class: 'cp-title', text: model.title }), later),
+    h('div', { class: 'cp-head' }, h('div', { class: 'cp-head-text' }, h('div', { class: 'cp-title', text: model.title }), battleTime), peek, later),
     model.sub ? h('div', { class: 'cp-sub', text: model.sub }) : null,
-    battleTime, h('div', { class: `cp-options cp-n${options.length}` }, ...options), peek,
+    h('div', { class: `cp-options cp-n${options.length}` }, ...options),
   );
   const pillLabel = model.kind === 'card' ? '카드 고르기' : '결과 고르기';
   const pill = h(

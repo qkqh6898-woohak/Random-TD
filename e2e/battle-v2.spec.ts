@@ -20,7 +20,7 @@ for(const width of [320,360,393,412])test(`PR-G ${width}px: forest field, contro
  await page.setViewportSize({width,height:915});const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await start(page,false);
  for(let i=1;i<=3;i++){await page.getByTestId('hud-summon').click();await expect.poll(()=>scene(page,s=>s.match.towers().length)).toBe(i);}
  await expect.poll(()=>scene(page,s=>s.match.towers().length)).toBe(3);await page.waitForTimeout(1400);await expect.poll(()=>scene(page,s=>s.diceStats.active)).toBe(0);
- const m=await page.locator('.hud-root').evaluate(root=>{const r=root.getBoundingClientRect();return{bad:[...root.querySelectorAll<HTMLElement>('.hud button,.hud-dock button')].filter(b=>b.getClientRects().length&&getComputedStyle(b).visibility!=='hidden').filter(b=>{const q=b.getBoundingClientRect();return q.width<44||q.height<44||q.left<r.left-1||q.right>r.right+1;}).map(b=>({name:b.dataset.testid||b.textContent,w:b.offsetWidth,h:b.offsetHeight})),overflow:document.documentElement.scrollWidth>innerWidth};});
+ const m=await page.locator('.hud-root').evaluate(root=>{const r=root.getBoundingClientRect();return{bad:[...root.querySelectorAll<HTMLElement>('.hud button,.hud-dock button')].filter(b=>b.getClientRects().length&&getComputedStyle(b).visibility!=='hidden').filter(b=>{const q=b.getBoundingClientRect(),a=getComputedStyle(b,'::after'),ext=a.content!=='none'&&a.position==='absolute'?Math.max(0,-parseFloat(a.top)||0)+Math.max(0,-parseFloat(a.bottom)||0):0;/* V2-R21: 터치 영역 = 상자 + 위아래로 넓힌 ::after ([준비 완료] 36px + 12px×2) */return q.width<44||q.height+ext<44||q.left<r.left-1||q.right>r.right+1;}).map(b=>({name:b.dataset.testid||b.textContent,w:b.offsetWidth,h:b.offsetHeight})),overflow:document.documentElement.scrollWidth>innerWidth};});
  expect(m.bad).toEqual([]);expect(m.overflow).toBe(false);expect(await scene(page,s=>s.buildHint)).toBe(0);await shot(page,`battle-${width}`);
  await page.getByTestId('battle-menu-toggle').click();await expect(page.getByTestId('battle-menu-toggle')).toHaveAttribute('aria-expanded','true');
  await page.evaluate(()=>window.dispatchEvent(new Event('randomtd:native-back',{cancelable:true})));await expect(page.getByTestId('battle-menu-toggle')).toHaveAttribute('aria-expanded','false');expect(await scene(page,s=>s.paused)).toBe(false);await page.getByTestId('battle-menu-toggle').click();await shot(page,`menu-${width}`);
@@ -46,7 +46,7 @@ test('PR-G short safe-area, reduced motion, unaffordable summon and real currenc
  expect(geo.mapTop).toBeGreaterThanOrEqual(geo.hudBottom+geo.probe);
  for(let i=0;i<3;i++){const previous=await page.getByTestId('hud-workers').textContent();await page.getByTestId('hud-hire').click();await expect(page.getByTestId('hud-workers')).not.toHaveText(previous!);}
  const summon=page.getByTestId('hud-summon');for(let i=0;i<10&&!((await summon.getAttribute('class'))??'').includes('is-off');i++){const gold=await page.getByTestId('hud-gold').textContent();await summon.click();await expect(page.getByTestId('hud-gold')).not.toHaveText(gold!);}
- await expect(summon).toHaveClass(/is-off/);expect(await summon.evaluate(e=>getComputedStyle(e).backgroundColor)).toBe('rgb(210, 204, 194)');await shot(page,'disabled-safe-short');
+ /* V2-R21: 클래스와 색을 한 번에 읽는다 (사이에 돈이 들어와 다시 켜지는 경쟁 — 검토 #81) */await expect.poll(()=>summon.evaluate(e=>({off:e.classList.contains('is-off'),bg:getComputedStyle(e).backgroundColor}))).toEqual({off:true,bg:'rgb(210, 204, 194)'});await shot(page,'disabled-safe-short');
  await page.getByTestId('hud-ready').click();await expect(page.getByTestId('wave-ribbon')).toHaveCSS('animation-name','none');
  await page.getByTestId('battle-menu-toggle').click();await page.getByTestId('battle-menu-stats').click();const box=(await page.getByTestId('battle-stats').boundingBox())!;expect(box.y).toBeGreaterThanOrEqual(0);expect(box.y+box.height).toBeLessThanOrEqual(568);await shot(page,'stats-safe-short');await page.evaluate(()=>window.dispatchEvent(new Event('randomtd:native-back',{cancelable:true})));await expect(page.getByTestId('battle-stats')).toBeHidden();
 });
@@ -60,4 +60,11 @@ test('V2-R21 effects off (#75 ✨ 화려한 효과 꺼짐): no WAVE ribbon, no c
  expect(await scene(page,s=>s.floatingText.spawn(100,100,'99!','#4FD8F0',s.time.now,true,true))).toBe(false);
  await page.getByTestId('battle-menu-toggle').click();await page.getByTestId('battle-menu-settings').click();
  await expect(page.getByTestId('pause-effects-off')).toBeVisible();await expect(page.getByTestId('pause-effects-off')).toHaveAttribute('aria-checked','false');
+});
+test('V2-R21 game over on cream paper: reward box, chips and hero cards are readable (≥4.5:1, ≥12px)',async({page})=>{
+ await start(page,false);
+ await scene(page,s=>{const m=s.match;m.state.stage=19;m.state.bossesKilled=1;m.state.summons=60;m.state.merges=12;m.state.nextStageTick=m.tick;s.debugFastForward(1+m.rules.bossTimeTicks);});
+ await expect(page.locator('[data-screen="gameover"]')).toBeVisible();await expect(page.getByTestId('gameover-rewards')).toBeVisible();
+ await expect(page.getByTestId('go-cards')).toBeVisible();
+ await readable(page,'[data-testid="gameover-rewards"]');await shot(page,'gameover');
 });

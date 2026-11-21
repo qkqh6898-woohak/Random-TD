@@ -302,6 +302,15 @@ test('M3b 스크린샷: 상태 이상 아이콘·진흙 웅덩이·소환 병사
   expect(await inScene(page, (s) => s.match.state.stage, null)).toBe(15);
   await expect.poll(() => inScene(page, (s) => s.statusIconCount, null), { timeout: 15_000 }).toBeGreaterThan(1);
   await expect.poll(() => inScene(page, (s) => s.renderedPuddleCount + s.renderedSoldierCount, null), { timeout: 20_000 }).toBeGreaterThan(1);
+  // V2-R21 (#81 검토 🔴2): 보상 선택 창은 맵 높이의 절반 이하 · 위 4줄(0~3)은 덮지 않는다 (main 245px·4~7줄, PR-G는 349px·1~7줄이었다)
+  const cover = await page.evaluate(() => {
+    const s = (window as any).__rtd.game.scene.getScene('Game'), L = s.mapLayout, st = document.getElementById('stage')!.getBoundingClientRect(), k = st.width / 1080;
+    const p = document.querySelector<HTMLElement>('.choice-panel:not([hidden])')!.getBoundingClientRect();
+    const rowTop = (y: number) => st.top + (L.originY + y * L.tile) * k;
+    return { height: p.height, field: rowTop(s.match.map.height) - rowTop(0), firstCovered: [...Array(s.match.map.height).keys()].find((y) => rowTop(y + 1) > p.top + 1) };
+  });
+  expect(cover.height).toBeLessThanOrEqual(cover.field * 0.5 + 1);
+  expect(cover.firstCovered).toBeGreaterThanOrEqual(4);
   // PR-G's readable reward dialog overlaps this cell; collapse it with the actual player control first.
   await page.getByTestId('choice-later').click();
   await expect(page.getByTestId('choice-card')).toBeHidden();
