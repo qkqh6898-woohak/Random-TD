@@ -6,6 +6,7 @@
 import { h } from '../dom';
 import type { UiView } from '../root';
 import type { SettlementView } from '../lobby/lobbyModel';
+import { uiIcon, type UiIconId } from '../uiIcons';
 
 export interface GameOverOptions {
   /** 큰 제목 (기본 '패배'. 캠페인 클리어면 '테마 n 클리어!' — V2 L5) */
@@ -43,12 +44,18 @@ function reasonLine(reason: string): HTMLElement {
 /** 정산 상자 (G-3): 최고 웨이브 · 경험치 바 · 골드/보석/🔥 불꽃(V2.0 PR-A) · 카드(등급 색, 새 영웅 NEW) · 조각 */
 function rewardsBox(r: SettlementView): HTMLElement {
   const chips: HTMLElement[] = [];
-  const chip = (icon: string, text: string, testid: string): HTMLElement =>
-    h('span', { class: 'go-chip', attrs: { 'data-testid': testid } }, h('span', { class: 'go-chip-icon', text: icon, attrs: { 'aria-hidden': 'true' } }), h('span', { text }));
+  // ART-2: 골드·보석·불꽃은 V2 재화 아이콘 그림, 경험치 ⭐는 맞는 그림이 없어 글자 그대로
+  const chip = (icon: string | UiIconId, text: string, testid: string): HTMLElement =>
+    h(
+      'span',
+      { class: 'go-chip', attrs: { 'data-testid': testid } },
+      icon.startsWith('cur-') ? uiIcon(icon as UiIconId, { className: 'go-chip-icon' }) : h('span', { class: 'go-chip-icon', text: icon, attrs: { 'aria-hidden': 'true' } }),
+      h('span', { text }),
+    );
   chips.push(chip('⭐', `경험치 +${r.xp.toLocaleString('ko-KR')}`, 'go-xp'));
-  chips.push(chip('💰', `+${r.gold.toLocaleString('ko-KR')}`, 'go-gold'));
-  if (r.gems > 0) chips.push(chip('💎', `+${r.gems.toLocaleString('ko-KR')}`, 'go-gems'));
-  if (r.flame > 0) chips.push(chip('🔥', `+${r.flame.toLocaleString('ko-KR')}`, 'go-flame'));
+  chips.push(chip('cur-gold', `+${r.gold.toLocaleString('ko-KR')}`, 'go-gold'));
+  if (r.gems > 0) chips.push(chip('cur-gems', `+${r.gems.toLocaleString('ko-KR')}`, 'go-gems'));
+  if (r.flame > 0) chips.push(chip('cur-flame', `+${r.flame.toLocaleString('ko-KR')}`, 'go-flame'));
   const cardTotal = r.cards.reduce((a, c) => a + c.n, 0);
   const fragTotal = r.fragments.reduce((a, c) => a + c.n, 0);
   return h(
@@ -83,7 +90,7 @@ function rewardsBox(r: SettlementView): HTMLElement {
         )
       : null,
     fragTotal > 0
-      ? h('div', { class: 'go-frags', attrs: { 'data-testid': 'go-frags' } }, `🧩 리미티드 조각 ${r.fragments.map((f) => `${f.name} +${f.n}`).join(' · ')}`)
+      ? h('div', { class: 'go-frags', attrs: { 'data-testid': 'go-frags' } }, uiIcon('shop-fragments'), `리미티드 조각 ${r.fragments.map((f) => `${f.name} +${f.n}`).join(' · ')}`)
       : null,
     r.recruitGain > 0 ? h('div', { class: 'go-recruit', text: `영웅 모집 게이지 +${r.recruitGain}` }) : null,
   );

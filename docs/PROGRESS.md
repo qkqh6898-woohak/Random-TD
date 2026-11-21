@@ -1705,3 +1705,55 @@
 - **봇** (기록만, 조정 없음): 첫 보스(`npm run bot:first-boss`) A 19/20 · 42.0초 → **20/20 · 37.1초**(소환 40.8 → 44.6회), B 20/20 · 29.4초 → **20/20 · 26.7초**(소환 41.6 → 45.1회, 강화 Lv6 → 6.2). 살림 봇 + 강한 계정(12시드) 26.7 → 22.5단계(5시드 `npm run bot` 24 → 22) — 9/12 시드가 20단계 킹 슬라임에서 지는 건 같고 30단계 이상 간 시드 수가 흔들림. 부자 봇 40 그대로. 표: `docs/v2/economy.md` 3장.
 - 문서: `docs/v2/economy.md`(보상 행·봇 표·남은 것), `docs/BALANCE.md` 6장 머리글, `docs/ENEMIES.md` 1장 '보상', `docs/v2/pr-a-notes.md`, `src/sim/rules.ts` 머리 주석.
 - **완료 조건**: Vitest 111파일 **1,611 통과 · 3 건너뜀**, `npm run check`·`npm run build` 통과. 관련 E2E(`E2E_PORT=5184`, 84개: m2·m4·m5·devtools·t2·g1·smoke·m3a·g3·f10 — 처치 돈 글자를 보는 스펙은 m2뿐) **84개 모두 통과**. 기계가 바빠 세 번에 나눠 돌았다(1차는 시간 제한으로 69번째에서 끊김 · 2차 도중 개발 서버가 끊겨 smoke 1개·t2 9개가 연결 거부 → 다시 돌려 통과). m4 'SD 일꾼'은 1차에서 한 번 실패, 혼자 다시 돌려 통과(타워 없는 판이라 처치 보상과 무관한 흔들림). 다시 찍힌 스크린샷은 되돌림.
+
+## ART-2 V2 아이콘 39장 (힉스필드) 연결 (갈래 `art/v2-icons` = main 3abfda6 + 98080c1 아이콘 그림)
+
+> 조정자 요청 · 사용자 결정 '아이콘은 전부 힉스필드 그림' (피드백 #16 상점 아이콘, #18 일꾼·도박·리미티드 아이콘이 어색함 → 캐릭터 같은 그림).
+> 그림 39장 = `public/assets/ui/icons/<id>.webp` (192×192 투명 WebP, 프롬프트·한글 이름 `docs/art/higgsfield/icons/queue.json`, 변환 `tools/icon_build.py`).
+
+- **등록부 하나 `src/ui/uiIcons.ts`**: `UI_ICON_FALLBACK`(id → 예전 이모지, 39개, queue.json 순서) · `UI_ICONS` · `UiIconId` 타입 · `uiIconPath`/`uiIconUrl`(`assetUrl()` → 한 파일 빌드 `__RTD_ASSETS__` data URI) ·
+  `uiIcon(id, { className, fallback })` = `<img class="ui-icon" alt="" aria-hidden="true" draggable="false" decoding="async" data-icon=… data-fallback=…>`.
+  그림을 못 읽으면(`error`) **같은 img**의 src를 예전 글리프를 그린 SVG(`glyphSvgUrl`, 시스템 글꼴 · 외부 요청 없음)로 바꾸고 `data-icon-state="fallback"` — 빈칸이 생기지 않고, 요소를 갈아 끼우지 않아 부르는 쪽 참조·크기 CSS가 그대로다.
+  `SHOP_ICONS`(progression.json shop id → 아이콘, 데이터 변경 없음 — 데이터 `icon` 이모지가 대체 글리프), `GLYPH_ICONS`(데이터 이모지 🍀·🎲 → 그림, `glyphOrIcon`), `UI_ICONS_UNUSED`(아래).
+- **CSS** (`src/ui/feedback-design.css` 끝 'ART-2' 묶음): 기본값 `:where(.ui-icon)`(우선순위 0 → 칸마다의 크기 class가 늘 이김) 1.6em · `object-fit: contain` · `pointer-events: none`. 칸마다 px/cqw 크기만 정하고 버튼 크기·배치는 그대로(배속 버튼만 412px에서 45 → 47px, 320px 44 그대로). 터치 영역 44px 이상 그대로.
+- **예전 ART-1 그림 11장 지움** (`public/assets/ui/{worker,shop,gamble,mythic,summon,upgrade,pack-*,chest-legend,fragments,gold-bag}.webp` — 같은 개념을 V2 아이콘이 대신). 다른 갈래(PR-D 등)가 아직 쓰는 `artIcon()`·`uiArtUrl()`·`WORKER_PORTRAIT`는 **호환 창구로 남기고** 같은 뜻의 V2 아이콘을 가리키게 했다(`LEGACY_UI_ART`: worker→hud-worker, shop→nav-shop, mythic→hud-limited …). main 코드는 더 쓰지 않는다. (`docs/art/feedback-design/assets.json`은 Codex 전달 기록이라 그대로 — 거기 적힌 ART-1 파일은 이제 없다.)
+
+| 아이콘 | 쓰는 곳 (main 화면) |
+|------|------|
+| hud-limited · hud-summon · hud-gamble · hud-upgrade | 전투 하단 메뉴 [리미티드]·[소환]·[도박]·[강화] (예전 ART-1 그림 자리) + 그 시트 제목 앞(💠 리미티드 도감·✨ 소환·🎰 도박·⬆ 강화). hud-summon은 소환 시트 '일반 소환' 줄(🎲)에도 |
+| hud-challenge · hud-mission | 맵 오른쪽 둥근 [도전]·[미션] 버튼 (412px 33px · 320px 26px) + 도전·미션 시트 제목 |
+| hud-worker | 아래 띠 일꾼 수 · [고용 n원] 버튼 (예전 일꾼 초상 WebP·SVG 대신, `.hud-worker-art` class·끄덕임 그대로) |
+| hud-merge | 맵 오른쪽 위 [⏫ 모두 승급 n] — 글자는 '모두 승급 n'(모델 글자 `mergeAllButton`은 '⏫ …' 그대로, 화면에서 ⏫만 그림으로) |
+| ui-speed · ui-pause | 위 HUD 배속 [⏩ ×n](글자는 따로 span) · ⏸ |
+| cur-gold | 로비 위 띠 골드 · 상점 골드 가격 · 정산 칩 `go-gold` · 받은 보상 칩 `grant-gold`(새 testid) · 전투 HUD 돈(💰 자리) |
+| cur-gems · cur-flame | 로비 보석·불꽃(`lobby-gems`·`lobby-flame`) · 상점 보석 가격 · 정산 `go-gems`·`go-flame` · 받은 보상 `grant-gems`·`grant-flame` |
+| shop-pack-basic · shop-pack-fine · shop-chest-legend · shop-fragments · shop-gold-bag | 상점 상품 카드 (`SHOP_ICONS` id 표). shop-fragments는 정산 `go-frags`·받은 창 리미티드 조각 줄(🧩)에도 |
+| nav-shop · nav-heroes · nav-battle · nav-codex · nav-campaign | 로비 아래 메뉴 5칸. 캠페인이 잠겨 있으면 버튼 `.is-locked` → 회색 그림(대체 글리프 🔒), 열리면 컬러(🏰) |
+| side-quests · side-recruit · side-records · side-settings | 로비 [전투] 탭 옆 [퀘스트]·[영웅 모집]·[기록]·[설정] |
+| ui-close | 바텀 시트 ✕(`sheet-close`) · 타워 정보 패널 ✕ · 캐릭터 카드 ✕ · 첫 승급 안내 ✕ (모두 20px 이상) |
+| ui-info | 타워 패널 초상의 [ℹ] (20px) · 일시정지 [❔ 도움말 다시 보기] |
+| ui-chat | [💬 피드백 보내기] (일시정지 메뉴·로비 설정 공용 `feedbackButton`) |
+| ui-luck | 소환 시트 '행운 소환' 줄 · 강화 시트 '소환 확률' 줄 (데이터 icon 🍀) |
+| **안 씀** (`UI_ICONS_UNUSED`) | side-mail · side-friends (우편·친구 버튼 없음), ui-plus · ui-delete · ui-menu · ui-stats (그런 단추 없음), ui-roulette (룰렛 화면 없음), ui-sell (판매 칩은 평소 '판매 n원' 글자만 보이는 좁은 머리줄 칩 — 💰 span은 CSS로 숨김) |
+
+- **글자로 남긴 것과 이유**: 웨이브 길 보상·'다음 보상' 줄(💰🔥💎🧩🃏 — 11~12px 글자 줄, 20px 그림이면 V2-I6에서 이미 두 줄인 칸이 넘침) · 영웅 상세 레벨업 비용(🔥·카드)·도감 '🧩 n/5' 같은 작은 글자 줄 ·
+  알림·배너 글자(⚔ 도전 1단계 「…」, 📋 미션 n개 달성!, 🎰 대박!, 🍀 행운의 여신 — 글자 메시지) · 도박 릴 🎰(결과 연출 글자) · 시트 탭 라벨(💰 돈 도박·✨ 소환 도박) ·
+  위 HUD 👑·⏱·👾/❤/💔·🗼·⚡ 필살기 칩, 정산 ⭐ 경험치, 📘 등급·조합 설명, 🔊 미리 듣기, 📋 기록 복사(미션이 아니라 복사 뜻) — 맞는 그림이 없음 ·
+  타워 패널 [⬆ 승급]·[⬆⬆ 모두 승급]·[↔ 이동] (강화가 아니라 승급 동작, 패널 안 글자 버튼) · 로비 창 [닫기](원래 글자) ·
+  개발자 전용(🛠 개발·⏭·💰+·🛠 +재화·🛠 변환·변환 고르기 ✕·개발자 시트 제목).
+- **Phaser**: HUD 아이콘은 모두 DOM이라 `src/art` 로더는 건드리지 않았다. sim·저장·타워 ID·경제 변화 없음 → SIM_VERSION 그대로.
+- **테스트**: 새 단위 `tests/unit/ui-icons.test.ts`(39개·queue.json 순서, 파일 192×192 WebP·폴더와 1:1, 안 쓰는 아이콘 = `UI_ICONS_UNUSED`, 상점 id 표 = progression.json·대체 글리프 = 데이터 icon, 한 파일 빌드 data URI, ART-1 호환 주소, 글리프 SVG).
+  새 E2E `e2e/art2-icons.spec.ts`(412×915·320×568: 로비·상점·HUD 핵심 아이콘 naturalWidth > 0 · 대체 그림 아님 · 바깥 요청 0 · 버튼 44px · 넘침 없음 · 시트 ✕).
+  기대값만 바꾼 E2E(이모지 글자 → `[data-icon=…]` 그림 + 글자 라벨): fb26·fb63·fb65·m3a·v19-shots('⏫ 모두 승급 n' → '모두 승급 n' + hud-merge 그림), fb11·g3(받은 보상 '💰 +n' → `grant-gold` '+n' + cur-gold 그림, `go-gold` '💰+500' → '+500'),
+  feedback-design(상점·메뉴 그림 naturalWidth), g2(소환 그림 주소 `assets/ui/icons/hud-summon.webp`), battle-update(일꾼 그림 hud-worker 192px · 그림을 막으면 같은 img가 글리프 SVG로 · 도박 그림 대체 🎰).
+- **완료 조건**: Vitest **112파일 1,619 통과 · 3 건너뜀**, `npm run check`·`npm run build` 통과.
+  `npm run build:single`: 아이콘 39장이 data URI로 들어가고(`assets/ui/icons/*` 39개, file://에서 naturalWidth 192·바깥 요청 0 확인) — **17.03 MB(main 3abfda6, 그림·JSON 245개) → 17.40 MB(98080c1 아이콘만 더함, 284개) → 17.16 MB(이 갈래, 273개)**: 예전 ART-1 11장을 지워 아이콘 39장의 늘어남이 +0.13 MB.
+  **관련 E2E** (`E2E_PORT=5184` — 5188은 다른 세션의 preview가 쓰고 있어 비어 있던 5184): `related-e2e.sh origin/main` 24개 스펙 + gi·m4·fb17·devtools·fb66 = 29개 스펙 163개, 뒤에 m1·fb29·fb47·art·fb43.
+  - 1차(부하 load 11~12): 71 통과 · 5 건너뜀 · devtools:177 실패(5초 틱 수 ×1 35 < 60 — 부하) · g2 360px 도중 **내 vite 개발 서버가 꺼져** 그 뒤 86개가 연결 거부/그림 대체(g2 360 소환 그림이 글리프 SVG로 떨어진 것도 이것).
+  - 2차(Playwright가 서버를 직접 띄움): 꺼진 뒤의 스펙 전부(g2·g3·gi·hud-layout·m2·m3a·m4·m5·smoke·t2·v14/v19-shots) + devtools:177 → **87 통과 · 4 건너뜀 · m2:267 1개 실패**(처치 '+n원' 글자 기다림 시간 초과 — PR-A 때도 적힌 부하 흔들림) → 혼자 다시 돌려 통과.
+  - 앞서 battle-update:20(×16 배속 순환 중 로비로 돌아감)이 한 번 실패 → 혼자 다시 돌려 통과(부하 흔들림, 아이콘과 무관).
+  - 3차 m1·fb29·fb47·art·fb43(⏸·시트 줄 아이콘·✕ 주변) **16개 모두 통과**.
+  - 합계: 관련 스펙 전부 통과(위 흔들림 3개는 혼자 다시 돌려 통과), 건너뜀은 SAVE_SCREENS 스크린샷 테스트. 다시 찍힌 스크린샷(docs/screens·docs/art/feedback-design)은 되돌림.
+- **스크린샷** (deviceScaleFactor 1, 412×915): `docs/screens/ART2-lobby.png`·`ART2-hud.png`(하단 메뉴)·`ART2-shop.png`·`ART2-sheet.png`(도박 시트 제목·✕)·`ART2-pause.png`. 320×568은 scratchpad만.
+- **남은 문제 · 다음**: 웨이브 길·영웅 레벨업 비용 같은 작은 글자 줄의 재화 이모지는 그대로(칸을 다시 짤 때 아이콘으로). 안 쓰는 8장(우편·친구·더하기·지우기·메뉴·통계·룰렛·판매)은 그 화면이 생기면 `UI_ICONS_UNUSED`에서 빼고 연결.
+  PR-D(로비 다시 짜기)는 자체 design-system 아이콘을 쓰므로 합칠 때 로비 쪽 `uiIcon` 자리를 그쪽 아이콘과 맞춰야 한다(같은 V2 그림을 쓰는 것이 사용자 결정). `artIcon`·`WORKER_PORTRAIT`는 V2 그림으로 이어 두었다.

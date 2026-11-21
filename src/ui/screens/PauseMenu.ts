@@ -15,6 +15,7 @@
  */
 import { h } from '../dom';
 import type { UiView } from '../root';
+import { uiIcon } from '../uiIcons';
 import { feedbackButton, type FeedbackDialogView } from './FeedbackDialog';
 import { gradeGuideButton, type GradeGuideDialogView } from './GradeGuideDialog';
 import type { AutoMergeGrade } from '../../meta/settings';
@@ -190,11 +191,15 @@ export function createPauseMenu(opts: PauseMenuOptions): UiView {
     opts.screenShake !== undefined ? switchRow('화면 흔들림', '보스·큰 승급 때 화면을 흔들어요', opts.screenShake, 'pause-screen-shake', (v) => opts.onScreenShake?.(v)) : null;
   let help: HTMLButtonElement | null = null;
   if (opts.onHelpAgain) {
-    const b = h('button', {
-      class: 'btn pause-help',
-      attrs: { type: 'button', 'data-testid': 'pause-help', 'aria-label': '도움말 다시 보기' },
-      text: '❔ 도움말 다시 보기',
-    });
+    const b = h(
+      'button',
+      {
+        class: 'btn pause-help',
+        attrs: { type: 'button', 'data-testid': 'pause-help', 'aria-label': '도움말 다시 보기' },
+      },
+      uiIcon('ui-info', { fallback: '❔' }),
+      '도움말 다시 보기',
+    );
     b.addEventListener('click', () => {
       opts.onHelpAgain?.();
       b.textContent = '✓ 안내를 다시 보여 드려요';

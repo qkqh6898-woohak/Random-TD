@@ -75,7 +75,7 @@ test('자동 승급: 메뉴 줄(기본 꺼짐·하나만·한 화면 안) → �
 
   // 꺼져 있으면 가득 찬 노말 무더기가 그대로
   await put(page, [[0, 'goblin', 3]]);
-  await expect(page.getByTestId('hud-merge-all')).toHaveText('⏫ 모두 승급 1');
+  await expect(page.getByTestId('hud-merge-all')).toHaveText('모두 승급 1'); // ART-2: ⏫는 아이콘 그림 [data-icon="hud-merge"]
   await page.waitForTimeout(500);
   expect(await inScene(page, (s) => s.match.state.merges, null)).toBe(0);
 
@@ -114,7 +114,7 @@ test('자동 승급: 메뉴 줄(기본 꺼짐·하나만·한 화면 안) → �
   // 유니크 무더기는 그대로 — [⏫ 모두 승급 1]로 손으로
   const before = await inScene(page, (s) => s.match.state.merges, null);
   await put(page, [[9, 'icemage', 3]]);
-  await expect(page.getByTestId('hud-merge-all')).toHaveText('⏫ 모두 승급 1');
+  await expect(page.getByTestId('hud-merge-all')).toHaveText('모두 승급 1'); // ART-2: ⏫는 아이콘 그림 [data-icon="hud-merge"]
   await page.waitForTimeout(800);
   expect(await inScene(page, (s) => s.match.state.merges, null)).toBe(before);
   expect(await fullGrades(page)).toContain('unique');

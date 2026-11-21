@@ -68,7 +68,8 @@ async function setup(page: Page): Promise<void> {
     pads,
   );
   await expect(btn).toBeVisible();
-  await expect(btn).toHaveText('⏫ 모두 승급 3');
+  await expect(btn.locator('[data-icon="hud-merge"]')).toBeVisible(); // ART-2: ⏫는 V2 아이콘 그림
+  await expect(btn).toHaveText('모두 승급 3');
   // 위 띠 높이 그대로 (버튼은 띠 아래에 떠 있다) · 화면 안 · 오른쪽 위 · 누를 만한 크기
   expect(await page.locator('.hud').evaluate((el) => el.getBoundingClientRect().height)).toBe(bandBefore);
   const vp = page.viewportSize()!;

@@ -98,7 +98,7 @@ test.describe('G-2 a. 테두리 테마', () => {
       await clickStart(page);
       await expect(page.locator('[data-screen="game"]')).toBeVisible();
       await expect.poll(() => sim(page, (s) => s.mapLayout.tile)).toBeGreaterThan(0);
-      await expect(page.locator('[data-art-icon="summon"]')).toHaveClass(/is-loaded/);
+      await expect.poll(() => page.locator('[data-testid="hud-summon"] [data-icon="hud-summon"]').evaluate((e) => (e as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
 
       const look = await page.evaluate(() => {
         const cs = (sel: string, pseudo?: string) => getComputedStyle(document.querySelector(sel)!, pseudo);
@@ -111,7 +111,7 @@ test.describe('G-2 a. 테두리 테마', () => {
           bottomBg: cs('.hud-bottom').backgroundImage,
           menuBg: cs('.hud-menu').backgroundImage,
           mapFrame: cs('#game', '::after').boxShadow,
-          summonIcon: document.querySelector<HTMLImageElement>('[data-art-icon="summon"] img')!.getAttribute('src'),
+          summonIcon: document.querySelector<HTMLImageElement>('[data-testid="hud-summon"] [data-icon="hud-summon"]')!.getAttribute('src'),
           summonText: (document.querySelector('[data-testid="hud-summon"]')! as HTMLElement).innerText,
           pointer: [cs('.hud-bar', '::before').pointerEvents, cs('.hud-bottom', '::before').pointerEvents, cs('#game', '::after').pointerEvents],
         };
@@ -119,7 +119,7 @@ test.describe('G-2 a. 테두리 테마', () => {
       expect(look.corner).toMatch(/^url\("data:image\/svg\+xml/);
       expect(look.barLine).toBe('rgba(232, 182, 74, 0.85)'); // 금테
       for (const v of [look.barOrn, look.barGem, look.bottomOrn]) expect(v).toContain('data:image/svg+xml');
-      expect(look.summonIcon).toContain('assets/ui/summon.webp'); // FB-18: 힉스필드 캐릭터 그림
+      expect(look.summonIcon).toContain('assets/ui/icons/hud-summon.webp'); // ART-2: 힉스필드 V2 아이콘 그림
       expect(look.bottomBg).toContain('gradient');
       expect(look.menuBg).toContain('data:image/svg+xml'); // 금줄
       expect(look.mapFrame).toContain('rgba(232, 182, 74');

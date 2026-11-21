@@ -14,15 +14,18 @@ for (const width of [320, 412]) {
     await page.setViewportSize({ width, height: 915 });
     await page.goto('/?seed=42');
     await page.locator('.lobby-nav [data-tab="shop"]').click();
-    const icons = page.locator('.shop-icon.ui-art-icon');
+    // ART-2: 상점 상품·아래 메뉴는 V2 아이콘 그림 (img.ui-icon, 실제로 읽힘 = naturalWidth > 0)
+    const icons = page.locator('img.shop-icon.ui-icon');
     await expect(icons).toHaveCount(5);
-    await expect(page.locator('.shop-icon.is-loaded')).toHaveCount(5);
-    await expect(page.locator('.lobby-nav [data-art-icon="shop"]')).toHaveClass(/is-loaded/);
+    await expect.poll(() => icons.evaluateAll((els) => els.filter((e) => (e as HTMLImageElement).naturalWidth > 0).length)).toBe(5);
+    await expect.poll(() => page.locator('.lobby-nav [data-icon="nav-shop"]').evaluate((e) => (e as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
     const favicon = await page.locator('link[rel="icon"]').getAttribute('href');
     expect(favicon).toContain('assets/ui/app-192.png');
     if (width === 412) await shot(page, 'lobby-shop');
     await clickStart(page);
-    await expect(page.locator('.hud-menu .ui-art-icon.is-loaded')).toHaveCount(4);
+    const menuIcons = page.locator('.hud-menu img.ui-icon');
+    await expect(menuIcons).toHaveCount(4);
+    await expect.poll(() => menuIcons.evaluateAll((els) => els.filter((e) => (e as HTMLImageElement).naturalWidth > 0).length)).toBe(4);
     await expect(page.locator('.hud > .hud-bar .hud-gold')).toHaveCount(1);
     await expect(page.locator('.hud > .hud-bar .hud-towers')).toHaveCount(1);
     await expect(page.locator('.hud-bottom .hud-gold, .hud-bottom .hud-towers')).toHaveCount(0);

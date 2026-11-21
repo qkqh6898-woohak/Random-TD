@@ -45,8 +45,11 @@ test('피드백 #11: 퀘스트 [모두 받기]로 일일·보너스·업적 보�
   const grant = page.getByTestId('grant-dialog');
   await expect(grant).toBeVisible();
   // 골드 200 + 300, 보석 10 + 20(보너스) + 20(업적)
-  await expect(grant).toContainText('💰 +500');
-  await expect(grant).toContainText('💎 +50');
+  // ART-2: 💰·💎는 V2 재화 아이콘 그림 + 숫자
+  await expect(grant.getByTestId('grant-gold')).toHaveText('+500');
+  await expect(grant.getByTestId('grant-gold').locator('[data-icon="cur-gold"]')).toBeVisible();
+  await expect(grant.getByTestId('grant-gems')).toHaveText('+50');
+  await expect(grant.getByTestId('grant-gems').locator('[data-icon="cur-gems"]')).toBeVisible();
   await page.getByTestId('grant-dialog-close').click();
   await expect(all).toBeDisabled();
   await expect(all).toHaveText('모두 받기');

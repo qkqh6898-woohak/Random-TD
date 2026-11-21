@@ -22,6 +22,7 @@
  */
 import { h } from '../dom';
 import type { UiView } from '../root';
+import { uiIcon } from '../uiIcons';
 import type { StatCell, TowerPanelModel } from './towerPanelModel';
 
 export interface TowerPanelOptions {
@@ -113,19 +114,26 @@ export function createTowerPanel(opts: TowerPanelOptions): TowerPanelView {
   const name = h('span', { class: 'tp-name', attrs: { 'data-testid': 'tp-name' } });
   const level = h('span', { class: 'tp-level' });
   const subtitle = h('div', { class: 'tp-sub', attrs: { 'data-testid': 'tp-sub' } });
-  const close = h('button', {
-    class: 'btn btn-chip tp-close',
-    attrs: { type: 'button', 'aria-label': '닫기', 'data-action': 'panel-close' },
-    text: '✕',
-    on: { click: () => opts.onClose() },
-  });
+  // ART-2: ✕·ℹ는 V2 아이콘 그림 (이름은 aria-label)
+  const close = h(
+    'button',
+    {
+      class: 'btn btn-chip tp-close',
+      attrs: { type: 'button', 'aria-label': '닫기', 'data-action': 'panel-close' },
+      on: { click: () => opts.onClose() },
+    },
+    uiIcon('ui-close'),
+  );
   const info = opts.onInfo
-    ? h('button', {
-        class: 'btn btn-chip tp-info',
-        attrs: { type: 'button', 'aria-label': '캐릭터 카드', 'data-action': 'panel-info' },
-        text: 'ℹ',
-        on: { click: () => opts.onInfo?.() },
-      })
+    ? h(
+        'button',
+        {
+          class: 'btn btn-chip tp-info',
+          attrs: { type: 'button', 'aria-label': '캐릭터 카드', 'data-action': 'panel-info' },
+          on: { click: () => opts.onInfo?.() },
+        },
+        uiIcon('ui-info'),
+      )
     : null;
   if (opts.onInfo) {
     portrait.style.cursor = 'pointer';

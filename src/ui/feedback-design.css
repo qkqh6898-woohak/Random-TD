@@ -124,10 +124,71 @@
 
 /* 등장 시 말랑한 질감은 캐릭터의 squash/stretch와 함께, 숫자/제목은 크기 대비로 읽는다. */
 .hud-menu-btn:active .ui-art-icon,
-.hud-summon:active .ui-art-icon { transform: translateY(0.5cqw) scale(0.94, 1.04); }
-.ui-art-icon { transition: transform 140ms ease-out; }
+.hud-summon:active .ui-art-icon,
+.hud-menu-btn:active .ui-icon,
+.hud-summon:active .ui-icon { transform: translateY(0.5cqw) scale(0.94, 1.04); }
+.ui-art-icon,
+.hud-menu .ui-icon,
+.hud-side-btns .ui-icon { transition: transform 140ms ease-out; }
 @media (prefers-reduced-motion: reduce) {
-  .ui-art-icon { transition: none; }
+  .ui-art-icon,
+  .hud-menu .ui-icon,
+  .hud-side-btns .ui-icon { transition: none; }
   .hud-menu-btn:active .ui-art-icon,
-  .hud-summon:active .ui-art-icon { transform: none; }
+  .hud-summon:active .ui-art-icon,
+  .hud-menu-btn:active .ui-icon,
+  .hud-summon:active .ui-icon { transform: none; }
 }
+
+/* ---------- ART-2 V2 아이콘 39장 (src/ui/uiIcons.ts) ----------
+   꾸밈 그림 <img class="ui-icon">: 기본 1.6em 정사각형 · object-fit: contain. 칸마다 크기만 정하고 버튼 크기·배치는 그대로 둔다.
+   눌림 영역은 버튼(44px 이상)이 맡는다 — 그림은 누르기를 받지 않는다.
+   기본값은 :where()로 우선순위 0 — 칸마다의 크기 class(.hud-menu-character 등, 이 파일 앞쪽·styles.css)가 늘 이긴다. */
+:where(.ui-icon) {
+  display: inline-block;
+  width: 1.6em;
+  height: 1.6em;
+  flex: none;
+  object-fit: contain;
+  vertical-align: middle;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+/* 전투 HUD: 배속 [⏩ ×n] · ⏸ · 돈 · 모두 승급 · 도전/미션 둥근 버튼 */
+.hud-speed { gap: 0.3cqw; padding-inline: 1cqw; }
+.hud-pause { padding-inline: 1cqw; }
+.hud-speed-icon { width: max(16px, 4.6cqw); height: max(16px, 4.6cqw); }
+.hud-ctl-icon { width: max(22px, 6cqw); height: max(22px, 6cqw); }
+.hud-resources .hud-gold-icon { width: 5.6cqw; height: 5.6cqw; margin-block: -0.8cqw; }
+.hud-merge-all { gap: 0.8cqw; padding-left: 1.6cqw; }
+.hud-merge-icon { width: max(22px, 6cqw); height: max(22px, 6cqw); }
+.hud-menu-btn.is-mini .ui-icon.hud-menu-icon,
+.hud-side-btns > .hud-menu-btn .ui-icon.hud-menu-icon { width: max(26px, 8cqw); height: max(26px, 8cqw); }
+/* 시트·패널·카드·안내의 ✕ 닫기, 패널 초상의 [ℹ] (모두 20px 이상) */
+.bs-close .ui-icon,
+.tp-close .ui-icon,
+.cc-close .ui-icon,
+.guide-close .ui-icon { width: max(20px, 5.4cqw); height: max(20px, 5.4cqw); }
+.tp-portrait-wrap > .tp-info .ui-icon { width: 20px; height: 20px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
+/* 시트 제목 앞 그림 (🎰 도박 등) */
+.bs-title .bs-title-icon { width: max(22px, 6.4cqw); height: max(22px, 6.4cqw); margin: -1cqw 1cqw -1cqw 0; }
+/* 시트 줄 아이콘 (🍀 행운 소환·소환 확률, 🎲 일반 소환) */
+.up-icon.ui-icon { padding: 1cqw; }
+/* 일시정지 메뉴·설정의 [💬 피드백 보내기] · [❔ 도움말 다시 보기] */
+.feedback-open .ui-icon,
+.pause-help .ui-icon { width: max(20px, 1.4em); height: max(20px, 1.4em); }
+/* 로비: 위 띠 재화 · 아래 메뉴 · 옆 버튼 · 상점 */
+.lobby-coin-icon.ui-icon { width: max(20px, 5.4cqw); height: max(20px, 5.4cqw); margin-block: -0.6cqw; }
+.lobby-nav-icon.ui-icon { width: 12cqw; height: 10cqw; }
+.lobby-nav-btn.is-locked .lobby-nav-icon.ui-icon { filter: grayscale(1) brightness(0.8) drop-shadow(0 0.4cqw 0.4cqw rgba(0, 0, 0, 0.5)); }
+.lobby-side-icon.ui-icon { width: 7.6cqw; height: 7.6cqw; }
+.shop-icon.ui-icon { width: 14cqw; height: 15cqw; background: none; }
+.shop-buy { gap: 0.6cqw; }
+.shop-buy .ui-icon { width: max(20px, 1.4em); height: max(20px, 1.4em); margin-block: -0.3em; }
+/* 정산 상자·받은 보상 칩 (💰 💎 🔥) · 리미티드 조각 줄 (🧩) */
+.go-chip .ui-icon,
+.go-frags .ui-icon,
+.grant-frags .ui-icon { width: max(20px, 5cqw); height: max(20px, 5cqw); margin-block: -0.6cqw; }
+.go-frags .ui-icon,
+.grant-frags .ui-icon { margin-right: 0.8cqw; }

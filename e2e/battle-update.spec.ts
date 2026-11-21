@@ -97,8 +97,8 @@ test('일꾼과 보스 그림: 휴대폰 캡처, WebP 우선 · 파일이 없으
   await start(page);
   await expect(page.locator('.hud-hire .hud-worker-art')).toBeVisible();
   const src = await page.locator('.hud-hire .hud-worker-art').getAttribute('src');
-  expect(src).toContain('assets/ui/worker.webp'); // FB-18: 새 그림이 실제로 로딩되어야 한다.
-  await expect(page.locator('.hud-hire .hud-worker-art')).toHaveJSProperty('naturalWidth', 256);
+  expect(src).toContain('assets/ui/icons/hud-worker.webp'); // ART-2 (피드백 #18): V2 아이콘 그림이 실제로 로딩되어야 한다.
+  await expect(page.locator('.hud-hire .hud-worker-art')).toHaveJSProperty('naturalWidth', 192);
   await page.getByTestId('hud-hire').click();
   await page.screenshot({ path: 'docs/screens/battle-update-workers.png' });
   const keys = await page.evaluate(async () => {
@@ -141,15 +141,18 @@ test('일꾼과 보스 그림: 휴대폰 캡처, WebP 우선 · 파일이 없으
     document.body.append(sheet);
   });
   await page.screenshot({ path: 'docs/screens/battle-update-bosses.png' });
-  // FB-18: 새 파일이 없을 때도 일꾼·도박 버튼은 기존 그림/이모지로 작동한다.
-  await page.route('**/assets/ui/worker.webp', route => route.abort());
-  await page.route('**/assets/ui/gamble.webp', route => route.abort());
+  // FB-18 → ART-2: 그림 파일을 못 읽어도 일꾼·도박 버튼은 같은 자리에 예전 이모지(글리프 SVG)로 작동한다.
+  await page.route('**/assets/ui/icons/hud-worker.webp', route => route.abort());
+  await page.route('**/assets/ui/icons/hud-gamble.webp', route => route.abort());
   await start(page);
   const worker = page.locator('.hud-hire .hud-worker-art');
   await expect(worker).toHaveAttribute('src', /^data:image\/svg\+xml/);
+  await expect(worker).toHaveAttribute('data-icon-state', 'fallback');
   await expect.poll(() => worker.evaluate(img => (img as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-  await expect(page.locator('[data-art-icon="gamble"] .ui-art-fallback')).toBeVisible();
-  await expect(page.locator('[data-art-icon="gamble"]')).not.toHaveClass(/is-loaded/);
+  const gamble = page.locator('[data-testid="menu-gamble"] [data-icon="hud-gamble"]');
+  await expect(gamble).toHaveAttribute('data-icon-state', 'fallback');
+  expect(decodeURIComponent((await gamble.getAttribute('src'))!)).toContain('🎰');
+  await expect(gamble).toBeVisible();
   await page.getByTestId('menu-gamble').click();
   await expect(page.getByTestId('sheet-gamble')).toBeVisible();
 });

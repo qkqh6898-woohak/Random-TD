@@ -39,7 +39,7 @@ test('V19-battle · V19-settings', async ({ page }) => {
   });
   await page.getByTestId('hud-hire').click();
   await page.getByTestId('hud-hire').click();
-  await expect(page.getByTestId('hud-merge-all')).toHaveText('⏫ 모두 승급 3');
+  await expect(page.getByTestId('hud-merge-all')).toHaveText('모두 승급 3'); // ART-2: ⏫는 아이콘 그림
   await expect(page.getByTestId('hud-workers')).toHaveText('2/10');
   await page.waitForTimeout(600);
   await shot(page, 'V19-battle');

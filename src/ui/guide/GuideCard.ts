@@ -5,6 +5,7 @@
  */
 import { h } from '../dom';
 import type { UiView } from '../root';
+import { uiIcon } from '../uiIcons';
 
 export interface GuideCardOptions {
   onNext: () => void;
@@ -26,12 +27,15 @@ export function createGuideCard(opts: GuideCardOptions): GuideCardView {
     // 마지막 단계에선 [확인] = 닫기 (F10-4 검토: 예전엔 2/2에서도 [다음]이 보였고 눌러도 아무 일이 없었다)
     on: { click: () => (isLast ? opts.onClose() : opts.onNext()) },
   });
-  const close = h('button', {
-    class: 'btn guide-close',
-    attrs: { type: 'button', 'data-testid': 'guide-close', 'aria-label': '도움말 닫기' },
-    text: '✕',
-    on: { click: () => opts.onClose() },
-  });
+  const close = h(
+    'button',
+    {
+      class: 'btn guide-close',
+      attrs: { type: 'button', 'data-testid': 'guide-close', 'aria-label': '도움말 닫기' },
+      on: { click: () => opts.onClose() },
+    },
+    uiIcon('ui-close'),
+  );
   const el = h(
     'div',
     { class: 'guide-card is-bottom', attrs: { 'data-testid': 'guide-card', role: 'note' } },

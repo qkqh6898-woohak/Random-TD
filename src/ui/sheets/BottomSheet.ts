@@ -11,6 +11,17 @@
  */
 import { h } from '../dom';
 import type { UiView } from '../root';
+import { uiIcon, type UiIconId } from '../uiIcons';
+
+/** 시트 제목 앞 이모지 → V2 아이콘 (ART-2, 하단 메뉴와 같은 그림) */
+const SHEET_TITLE_ICONS: Readonly<Record<string, UiIconId>> = {
+  '🎰': 'hud-gamble',
+  '⚔': 'hud-challenge',
+  '📋': 'hud-mission',
+  '💠': 'hud-limited',
+  '⬆': 'hud-upgrade',
+  '✨': 'hud-summon',
+};
 
 export type SheetSize = 'half' | 'full';
 
@@ -65,14 +76,22 @@ export function createBottomSheet<T extends string>(opts: BottomSheetOptions<T>)
   let size: SheetSize = opts.size ?? 'half';
   let tab: T | null = opts.tab ?? opts.tabs?.[0]?.id ?? null;
   const extra = h('div', { class: 'bs-extra' });
-  const close = h('button', {
-    class: 'btn bs-close',
-    attrs: { type: 'button', 'aria-label': '닫기', 'data-testid': 'sheet-close' },
-    text: '✕',
-    on: { click: () => opts.onClose() },
-  });
+  const close = h(
+    'button',
+    {
+      class: 'btn bs-close',
+      attrs: { type: 'button', 'aria-label': '닫기', 'data-testid': 'sheet-close' },
+      on: { click: () => opts.onClose() },
+    },
+    uiIcon('ui-close'),
+  );
   const grip = h('div', { class: 'bs-grip', attrs: { 'data-testid': 'sheet-grip', 'aria-hidden': 'true' } }, h('span', { class: 'bs-grip-bar' }));
-  const title = h('div', { class: 'bs-title', text: opts.title });
+  // ART-2: 제목 앞 이모지가 V2 아이콘이 있는 메뉴(🎰 도박·⚔ 도전·📋 미션·💠 리미티드·⬆ 강화·✨ 소환)면 그림으로. aria-label은 제목 글자 그대로
+  const [titleGlyph, ...titleRest] = opts.title.split(' ');
+  const titleIcon = titleRest.length > 0 ? SHEET_TITLE_ICONS[titleGlyph ?? ''] : undefined;
+  const title = titleIcon
+    ? h('div', { class: 'bs-title' }, uiIcon(titleIcon, { className: 'bs-title-icon', fallback: titleGlyph }), titleRest.join(' '))
+    : h('div', { class: 'bs-title', text: opts.title });
   const head = h('div', { class: 'bs-head' }, title, extra, close);
   const tabButtons = new Map<T, HTMLButtonElement>();
   const tabBar = opts.tabs?.length

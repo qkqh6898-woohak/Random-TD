@@ -17,6 +17,7 @@ import { GRADE_COLORS } from '../../art/palette';
 import type { Grade } from '../../data/load';
 import { h } from '../dom';
 import { attachHoldRepeat, gambleHoldDelay, type HoldHandle } from '../hold';
+import { glyphOrIcon } from '../uiIcons';
 import { createBottomSheet, type BottomSheetView } from './BottomSheet';
 import type { GambleSheetModel, GambleTableModel, UpgradeRowModel, UpgradeSheetModel, UpgradeTab } from './sheetModels';
 import type { SlotFrame } from './slot';
@@ -107,7 +108,7 @@ export function createUpgradeSheet(opts: UpgradeSheetOptions, first: UpgradeShee
     const icon =
       grade && r.icon === '⬆'
         ? h('span', { class: 'up-icon up-icon-grade', text: r.name.slice(0, 2), attrs: { 'aria-hidden': 'true' } })
-        : h('span', { class: 'up-icon', text: r.icon, attrs: { 'aria-hidden': 'true' } });
+        : glyphOrIcon(r.icon, 'up-icon');
     if (grade) icon.style.setProperty('--grade-color', GRADE_COLORS[grade]);
     const lv = h('span', { class: 'up-lv' });
     const effect = h('div', { class: 'up-effect' });
