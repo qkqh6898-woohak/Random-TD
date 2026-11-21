@@ -1,0 +1,33 @@
+{
+  "fullRegressionCommit": "e868a6280d0f133e17b083511cdc48d6c41a4b65",
+  "fullRegressionSourceHash": "ee766dd93011a352bb89573259b2029a7dd8febb1c3ba9fb9bd8d980cd0be168",
+  "finalSourceHash": "016333ab0492fddb56a1d1b1cfdd0ad1ef75e87029fc22b31a3f31f0df035224",
+  "changedSourceFiles": [
+    "e2e/battle-v2.spec.ts",
+    "src/ui/battle/battleV2.css"
+  ],
+  "change": "After the full run, add white text to the normal choice-grade badge and run the existing readable/AA check on the actual choice panel. No TypeScript product logic changed.",
+  "canvas": {
+    "startTime": "2026-11-21T07:11:12.843Z",
+    "duration": 75003.808,
+    "expected": 9,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "canvasScope": "Final battle-v2 six + battle-update three; SAVE_SCREENS=1, four widths and actual choice/peek/critical captures.",
+  "defaultChromium": {
+    "startTime": "2026-11-21T07:12:37.706Z",
+    "duration": 39865.5,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "defaultScope": "Actual stage, choice time, all choice leaf text >=12px / contrast >=4.5, hold-to-see and real pick.",
+  "check": "passed",
+  "build": "passed",
+  "single": "passed, 18.05MB, 278 assets",
+  "productionAndSingleHttp": "passed, bundles.json",
+  "fullRunScope": "Full 284 ran on e868a62 before the badge-only supplement. Final supplement is verified by the focused runs above."
+}
