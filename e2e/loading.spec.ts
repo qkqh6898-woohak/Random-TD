@@ -143,3 +143,35 @@ test('PR-C missing mascot uses a local icon instead of an empty loading screen',
   await expect(page.locator('.rtd-loading-mascot')).toHaveAttribute('src', /assets\/ui\/v2\/heroes\.svg$/);
   await expect.poll(() => page.locator('.rtd-loading-mascot').evaluate(e => (e as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
 });
+
+/** 시작 화면이 사라진 순간 V2 글꼴(RTD Jua)이 이미 읽혔는지 기록 (V2-R21: 로비가 보인 뒤 글꼴이 바뀌어 보이지 않게) */
+async function recordFontAtClose(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    (window as any).__fontAtClose = null;
+    new MutationObserver((records) => {
+      for (const r of records) for (const n of r.removedNodes) {
+        if (n instanceof HTMLElement && n.matches('[data-testid="loading-startup"]')) {
+          (window as any).__fontAtClose = [...document.fonts].some((f) => f.family.replaceAll('"', '') === 'RTD Jua' && f.status === 'loaded');
+        }
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
+}
+
+test('V2-R21 startup closes only after the V2 font, and a slow font never blocks the lobby (≤300 ms wait)', async ({ page }) => {
+  await recordFontAtClose(page);
+  await page.goto('/');
+  await expect(page.locator('[data-screen="title"]')).toBeVisible();
+  await expect(page.getByTestId('loading-startup')).toHaveCount(0);
+  expect(await page.evaluate(() => (window as any).__fontAtClose)).toBe(true);
+  // 글꼴 응답이 오지 않아도 300 ms 뒤 시스템 글꼴로 로비를 연다 (멈추지 않음)
+  let release!: () => void; const gate = new Promise<void>((r) => { release = r; });
+  await page.route('**/assets/fonts/*.woff2', async (route) => { await gate; await route.continue(); });
+  try {
+    await page.reload();
+    await expect(page.locator('[data-screen="title"]')).toBeVisible();
+    await expect(page.getByTestId('loading-startup')).toHaveCount(0);
+    expect(await page.evaluate(() => (window as any).__fontAtClose)).toBe(false);
+    expect(await page.locator('#app').evaluate((e) => (e as HTMLElement).inert)).toBe(false);
+  } finally { release(); }
+});

@@ -1,6 +1,6 @@
 import { loadDesignFont } from '../design-system/font';
 import { createLoadingView, type LoadingView } from './LoadingView';
-import { loadingProgress, LOADING_HINT_MS, LOADING_HINTS, TRANSITION_DELAY_MS } from './model';
+import { FONT_WAIT_MS, loadingProgress, LOADING_HINT_MS, LOADING_HINTS, TRANSITION_DELAY_MS } from './model';
 
 export interface LoadingController {
   setProgress(value: number): void;
@@ -28,7 +28,14 @@ export function createLoadingController(host: HTMLElement, target: HTMLElement, 
   const clearDelay = (): void => { if (delay !== null) clearTimeout(delay); delay = null; };
   const clearHints = (): void => { if (hints !== null) clearInterval(hints); hints = null; };
   // Font failure falls back to the bundled screen's system font; it never blocks ready.
-  void loadDesignFont().catch(() => undefined);
+  // V2-R21 (PR-C 검토 🟠): 로비가 보인 뒤 글꼴이 바뀌어 보이지 않게, 시작 화면을 닫기 전에 글꼴을 최대 FONT_WAIT_MS만 기다린다
+  // (Promise.race — 이미 읽었으면 바로, 늦거나 실패하면 시스템 글꼴로 그냥 진행).
+  let fontSettled = false;
+  const fontGate = Promise.race([
+    loadDesignFont().then(() => undefined, () => undefined),
+    new Promise<void>((resolve) => setTimeout(resolve, FONT_WAIT_MS)),
+  ]).then(() => { fontSettled = true; });
+  let finishing = false;
   if (showStartup) {
     block();
     view = createLoadingView('startup', version);
@@ -50,12 +57,20 @@ export function createLoadingController(host: HTMLElement, target: HTMLElement, 
       view?.progress(progress);
     },
     completeStartup() {
-      if (destroyed || startupDone) return;
-      startupDone = true;
-      clearHints();
-      view?.progress(1);
-      clearView();
-      unblock();
+      if (destroyed || startupDone || finishing) return;
+      const finish = (): void => {
+        finishing = false;
+        if (destroyed || startupDone) return;
+        startupDone = true;
+        clearHints();
+        view?.progress(1);
+        clearView();
+        unblock();
+      };
+      if (fontSettled || !view) { finish(); return; }
+      finishing = true;
+      view.progress(1);
+      void fontGate.then(finish);
     },
     beginTransition() {
       if (destroyed || !startupDone || transitioning) return;
