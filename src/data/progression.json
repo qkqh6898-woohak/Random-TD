@@ -151,6 +151,7 @@
   "recruit": {
     "summonsPerPoint": 5,
     "goal": 30,
+    "multiClaim": 10,
     "reward": { "cards": 5, "gems": 10 },
     "weights": { "normal": 2000, "rare": 3500, "unique": 3000, "hero": 1200, "legend": 300 }
   },

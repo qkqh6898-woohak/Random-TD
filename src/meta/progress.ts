@@ -650,10 +650,42 @@ export function readyMilestones(state: ProgressState, pd: ProgressionData): numb
 // 영웅 모집 게이지
 // ---------------------------------------------------------------------------
 
+/**
+ * 게이지는 목표(goal)를 넘어 쌓인다 (정산이 recruitGain을 그대로 더함) → 지금 받을 수 있는 모집 보상 횟수 = ⌊게이지 / goal⌋.
+ * 로비 [영웅 모집] 빨간 점·버튼이 모두 이 값을 본다 (피드백 #76).
+ */
+export function recruitClaimable(state: ProgressState, pd: ProgressionData): number {
+  return state.recruit >= pd.recruit.goal ? Math.floor(state.recruit / pd.recruit.goal) : 0;
+}
+
+/** [n번 한 번에 받기]가 이번에 받을 횟수 = min(받을 수 있는 횟수, multiClaim) */
+export function recruitMultiCount(state: ProgressState, pd: ProgressionData): number {
+  return Math.min(recruitClaimable(state, pd), pd.recruit.multiClaim);
+}
+
 export function claimRecruit(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers'>): Grant | null {
   if (state.recruit < pd.recruit.goal) return null;
   state.recruit -= pd.recruit.goal;
   return applyReward(state, pd, data, pd.recruit.reward, accountRng(state, 'recruit'), pd.recruit.weights);
+}
+
+/**
+ * 피드백 #76 '10배 한번에 받기': 모집 보상을 최대 max번(기본 multiClaim) 한 번에. 한 번 받기(claimRecruit)를 그대로 되풀이하므로
+ * 카드 뽑기·게이지 차감이 n번 따로 누른 것과 똑같고 (같은 계정 난수 순서), 보상은 mergeGrants로 합친다. 받을 것이 없으면 null.
+ */
+export function claimRecruitMany(
+  state: ProgressState,
+  pd: ProgressionData,
+  data: Pick<GameData, 'towers'>,
+  max = pd.recruit.multiClaim,
+): { count: number; grant: Grant } | null {
+  const got: Grant[] = [];
+  while (got.length < max) {
+    const g = claimRecruit(state, pd, data);
+    if (!g) break;
+    got.push(g);
+  }
+  return got.length === 0 ? null : { count: got.length, grant: mergeGrants(got) };
 }
 
 // ---------------------------------------------------------------------------

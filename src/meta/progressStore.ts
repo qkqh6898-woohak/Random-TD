@@ -26,6 +26,7 @@ import {
   claimMilestone,
   claimQuest,
   claimRecruit,
+  claimRecruitMany,
   heroEntry,
   heroMatchLevels,
   levelUpAllHeroes,
@@ -228,6 +229,13 @@ export class ProgressStore {
 
   claimRecruit(): Grant | null {
     return this.after(claimRecruit(this.state, this.pd, this.data));
+  }
+
+  /** 피드백 #76: 모집 보상 여러 번 한 번에 (최대 multiClaim번) — 저장·알림은 한 번 */
+  claimRecruitMany(): { count: number; grant: Grant } | null {
+    const r = claimRecruitMany(this.state, this.pd, this.data);
+    if (r) this.changed();
+    return r;
   }
 
   claimQuest(id: string): Grant | null {

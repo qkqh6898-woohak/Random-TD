@@ -36,6 +36,9 @@ import {
   heroGrid,
   heroesReady,
   codexReady,
+  recruitDialogModel,
+  recruitReady,
+  recruitResultText,
   rewardText,
   topBar,
   waveRoad,
@@ -165,7 +168,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     grantDlg.dialog.setAttribute('aria-description', grantLine(v));
   }
 
-  function grantBody(v: GrantView): HTMLElement {
+  function grantBody(v: GrantView, testid = 'grant-body'): HTMLElement {
     const chips: HTMLElement[] = [];
     if (v.gold) chips.push(h('span', { class: 'go-chip', text: `💰 +${fmt(v.gold)}` }));
     if (v.gems) chips.push(h('span', { class: 'go-chip', text: `💎 +${fmt(v.gems)}` }));
@@ -174,7 +177,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     if (v.levelUps.length) chips.push(h('span', { class: 'go-chip', text: `계정 Lv ${v.levelUps[v.levelUps.length - 1]}` }));
     return h(
       'div',
-      { class: 'grant-body', attrs: { 'data-testid': 'grant-body' } },
+      { class: 'grant-body', attrs: { 'data-testid': testid } },
       chips.length ? h('div', { class: 'go-chips' }, ...chips) : null,
       v.cards.length
         ? h(
@@ -375,7 +378,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   function renderSide(): void {
     const s = progress.state;
     const quests = claimableQuests(s, pd, progress.today());
-    const recruitPct = Math.min(100, Math.round((s.recruit / pd.recruit.goal) * 100));
+    const rm = recruitDialogModel(s, pd);
     side.replaceChildren(
       h(
         'button',
@@ -389,9 +392,9 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
         { class: 'btn lobby-side-btn', attrs: { type: 'button', 'data-action': 'recruit', 'aria-haspopup': 'dialog', 'aria-label': `영웅 모집 ${s.recruit}/${pd.recruit.goal}` }, on: { click: () => openRecruit() } },
         h('span', { class: 'lobby-side-icon', text: '🎺', attrs: { 'aria-hidden': 'true' } }),
         h('span', { text: '영웅 모집' }),
-        h('span', { class: 'lobby-gauge', attrs: { 'aria-hidden': 'true' } }, h('span', { class: 'lobby-gauge-fill', attrs: { style: `width:${recruitPct}%` } })),
-        h('small', { class: 'lobby-gauge-text', text: `${Math.min(s.recruit, pd.recruit.goal)}/${pd.recruit.goal}`, attrs: { 'data-testid': 'recruit-gauge' } }),
-        badge(s.recruit >= pd.recruit.goal ? 1 : 0),
+        h('span', { class: 'lobby-gauge', attrs: { 'aria-hidden': 'true' } }, h('span', { class: 'lobby-gauge-fill', attrs: { style: `width:${rm.pct}%` } })),
+        h('small', { class: 'lobby-gauge-text', text: rm.progressText, attrs: { 'data-testid': 'recruit-gauge' } }),
+        badge(recruitReady(s, pd)),
       ),
     );
     const rightKids: HTMLElement[] = [];
@@ -796,36 +799,68 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     questDlg.dialog.showModal();
   }
 
+  /**
+   * 피드백 #76: 보상을 받아도 창은 닫지 않는다 — 받은 것은 창 안 '방금 받은 보상' 상자에 보이고, 게이지·버튼이 그 자리에서 바뀐다
+   * (닫기·바깥 누르기·Esc로만 닫힘). [10번 한 번에 받기]는 최대 multiClaim번을 한 번에 (같은 한 번 받기를 되풀이, 저장 한 번).
+   */
+  let recruitLast: { count: number; view: GrantView } | null = null;
+
+  function claimRecruitInPlace(many: boolean): void {
+    let got: { count: number; grant: Grant } | null;
+    if (many) got = progress.claimRecruitMany();
+    else {
+      const g = progress.claimRecruit();
+      got = g ? { count: 1, grant: g } : null;
+    }
+    if (!got) return;
+    recruitLast = { count: got.count, view: grantView(got.grant, data) };
+    // 저장소 알림(progress.subscribe → renderAll)이 열린 창도 다시 그리지만, 알림 구독과 상관없이 맞게 한 번 더.
+    // 창 스크롤은 옮기지 않는다 — 버튼·남은 횟수가 그대로 보이고, 카드가 많으면 결과 상자 안에서만 스크롤 (lobby.css .recruit-result)
+    renderRecruit();
+    // 누른 버튼이 새로 그려져 초점이 사라지지 않게: 같은 버튼(아직 누를 수 있으면) → 아니면 [닫기]
+    const again = recruitDlg.body.querySelector<HTMLButtonElement>(`[data-testid="${many ? 'recruit-claim-10' : 'recruit-claim'}"]`);
+    (again && !again.disabled ? again : recruitDlg.dialog.querySelector<HTMLElement>('[data-testid="recruit-dialog-close"]'))?.focus({ preventScroll: true });
+  }
+
   function renderRecruit(): void {
-    const s = progress.state;
-    const ready = s.recruit >= pd.recruit.goal;
+    const m = recruitDialogModel(progress.state, pd);
+    const last = recruitLast;
     recruitDlg.body.replaceChildren(
       h('p', { class: 'lobby-note', text: `전투에서 영웅을 ${pd.recruit.summonsPerPoint}번 소환할 때마다 게이지가 1칸 차요. ${pd.recruit.goal}칸을 채우면 영웅 카드를 받아요.` }),
       h(
         'div',
         { class: 'recruit-gauge' },
-        h('span', { class: 'lobby-gauge is-big' }, h('span', { class: 'lobby-gauge-fill', attrs: { style: `width:${Math.min(100, Math.round((s.recruit / pd.recruit.goal) * 100))}%` } })),
-        h('strong', { attrs: { 'data-testid': 'recruit-progress' }, text: `${Math.min(s.recruit, pd.recruit.goal)}/${pd.recruit.goal}` }),
+        h('span', { class: 'lobby-gauge is-big' }, h('span', { class: 'lobby-gauge-fill', attrs: { style: `width:${m.pct}%` } })),
+        h('strong', { attrs: { 'data-testid': 'recruit-progress' }, text: m.progressText }),
       ),
       h('p', { class: 'recruit-reward', text: `보상: ${rewardText(pd.recruit.reward)} (레어 이상이 잘 나와요)` }),
+      h('p', { class: 'recruit-count', attrs: { 'data-testid': 'recruit-count' }, text: m.claimable > 0 ? `받을 수 있는 모집 ${m.claimable}번` : '받을 수 있는 모집이 없어요' }),
       h('button', {
-        class: `btn ${ready ? 'btn-primary' : ''} recruit-claim`,
-        text: ready ? '모집 보상 받기' : '게이지를 채워 주세요',
-        attrs: { type: 'button', 'data-testid': 'recruit-claim', ...(ready ? {} : { disabled: '' }) },
-        on: {
-          click: () => {
-            const g = progress.claimRecruit();
-            if (g) {
-              recruitDlg.dialog.close();
-              showGrant('영웅 모집', g);
-            }
-          },
-        },
+        class: `btn ${m.singleEnabled ? 'btn-primary' : ''} recruit-claim`,
+        text: m.singleText,
+        attrs: { type: 'button', 'data-testid': 'recruit-claim', ...(m.singleEnabled ? {} : { disabled: '' }) },
+        on: { click: () => claimRecruitInPlace(false) },
       }),
+      h('button', {
+        class: `btn ${m.multiEnabled ? 'btn-primary' : ''} recruit-claim recruit-claim-many`,
+        text: m.multiText,
+        attrs: { type: 'button', 'data-testid': 'recruit-claim-10', 'aria-label': m.multiAria, ...(m.multiEnabled ? {} : { disabled: '' }) },
+        on: { click: () => claimRecruitInPlace(true) },
+      }),
+      last
+        ? h(
+            'section',
+            { class: 'recruit-result', attrs: { 'data-testid': 'recruit-result', 'aria-live': 'polite', 'aria-label': '방금 받은 보상' } },
+            h('h3', { class: 'recruit-result-title', text: '방금 받은 보상' }),
+            h('p', { class: 'recruit-result-line', attrs: { 'data-testid': 'recruit-result-line' }, text: recruitResultText(last.count, last.view) }),
+            grantBody(last.view, 'recruit-result-body'),
+          )
+        : '',
     );
   }
 
   function openRecruit(): void {
+    recruitLast = null;
     renderRecruit();
     recruitDlg.dialog.showModal();
   }
@@ -870,7 +905,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     const counts: Record<LobbyTab, number> = {
       shop: 0,
       heroes: heroesReady(s, pd, data),
-      battle: waveRoad(s, pd).ready + claimableQuests(s, pd, progress.today()) + (s.recruit >= pd.recruit.goal ? 1 : 0),
+      battle: waveRoad(s, pd).ready + claimableQuests(s, pd, progress.today()) + recruitReady(s, pd),
       codex: codexReady(s, pd, data),
       locked: 0,
     };

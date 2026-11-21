@@ -13,6 +13,8 @@ import {
   heroEntry,
   levelUpCost,
   milestoneState,
+  recruitClaimable,
+  recruitMultiCount,
   xpToNext,
   type Grant,
   type LevelUpCheck,
@@ -314,6 +316,67 @@ export function grantLine(g: GrantView): string {
   if (cards) parts.push(`🃏 ${cards}장`);
   const frags = g.fragments.reduce((a, c) => a + c.n, 0);
   if (frags) parts.push(`🧩 ${frags}개`);
+  if (g.levelUps.length) parts.push(`계정 Lv ${g.levelUps[g.levelUps.length - 1]}`);
+  return parts.join(' · ');
+}
+
+// ---------------------------------------------------------------------------
+// 영웅 모집 창 (피드백 #76)
+// ---------------------------------------------------------------------------
+
+/** [영웅 모집] 빨간 점 (옆 버튼·[전투] 탭 수): 받을 수 있으면 1 — 여러 번 받은 뒤에도 recruitClaimable 한 규칙 */
+export function recruitReady(state: ProgressState, pd: ProgressionData): number {
+  return recruitClaimable(state, pd) > 0 ? 1 : 0;
+}
+
+export interface RecruitDialogModel {
+  /** 게이지 글자 '17/30' (목표를 넘어 쌓여도 목표까지만) */
+  progressText: string;
+  /** 게이지 채움 % (0~100) */
+  pct: number;
+  /** 지금 받을 수 있는 횟수 */
+  claimable: number;
+  /** [모집 보상 받기] (한 번) */
+  singleText: string;
+  singleEnabled: boolean;
+  /** [10번 한 번에 받기 (가능 n)] — 받을 수 있는 횟수가 2번 이상일 때만 누를 수 있다 (1번이면 [모집 보상 받기]와 같음) */
+  multiText: string;
+  multiEnabled: boolean;
+  /** 이번에 누르면 받을 횟수 = min(가능, multiClaim) */
+  multiCount: number;
+  /** 화면 읽기용 이름 = 보이는 글자 + 이번에 받을 횟수 ('10번 한 번에 받기 (가능 3) · 이번에 3번 받아요') */
+  multiAria: string;
+}
+
+export function recruitDialogModel(state: ProgressState, pd: ProgressionData): RecruitDialogModel {
+  const { goal, multiClaim } = pd.recruit;
+  const claimable = recruitClaimable(state, pd);
+  const multiCount = recruitMultiCount(state, pd);
+  return {
+    progressText: `${Math.min(state.recruit, goal)}/${goal}`,
+    pct: Math.min(100, Math.round((state.recruit / goal) * 100)),
+    claimable,
+    singleText: claimable > 0 ? '모집 보상 받기' : '게이지를 채워 주세요',
+    singleEnabled: claimable > 0,
+    multiText: `${multiClaim}번 한 번에 받기 (가능 ${claimable})`,
+    multiEnabled: multiCount >= 2,
+    multiCount,
+    multiAria: multiCount >= 2 ? `${multiClaim}번 한 번에 받기 (가능 ${claimable}) · 이번에 ${multiCount}번 받아요` : `${multiClaim}번 한 번에 받기 (가능 ${claimable})`,
+  };
+}
+
+/** 방금 받은 모집 보상 한 줄: '모집 3번 · 영웅 카드 ×15 · 💎 +30' (1번이면 앞부분 없이) */
+export function recruitResultText(count: number, g: GrantView): string {
+  const parts: string[] = [];
+  if (count > 1) parts.push(`모집 ${count}번`);
+  const cards = g.cards.reduce((a, c) => a + c.n, 0);
+  if (cards) parts.push(`영웅 카드 ×${cards}`);
+  if (g.gems) parts.push(`💎 +${g.gems.toLocaleString('ko-KR')}`);
+  if (g.gold) parts.push(`💰 +${g.gold.toLocaleString('ko-KR')}`);
+  if (g.flame) parts.push(`🔥 +${g.flame.toLocaleString('ko-KR')}`);
+  const frags = g.fragments.reduce((a, c) => a + c.n, 0);
+  if (frags) parts.push(`🧩 +${frags}`);
+  if (g.xp) parts.push(`⭐ +${g.xp.toLocaleString('ko-KR')}`);
   if (g.levelUps.length) parts.push(`계정 Lv ${g.levelUps[g.levelUps.length - 1]}`);
   return parts.join(' · ');
 }

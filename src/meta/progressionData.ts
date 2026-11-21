@@ -88,7 +88,8 @@ export interface ProgressionData {
   };
   hidden: { unlockFragments: number };
   waveRoad: { milestones: { wave: number; reward: RewardSpec }[] };
-  recruit: { summonsPerPoint: number; goal: number; reward: RewardSpec; weights: Partial<Record<Grade, number>> };
+  /** multiClaim = [n번 한 번에 받기]가 한 번에 받는 최대 횟수 (피드백 #76) */
+  recruit: { summonsPerPoint: number; goal: number; multiClaim: number; reward: RewardSpec; weights: Partial<Record<Grade, number>> };
   quests: { daily: QuestData[]; dailyAllBonus: RewardSpec; achievements: QuestData[] };
   shop: ShopItemData[];
   modes: { id: string; name: string; unlockLevel: number; desc: string }[];
@@ -158,7 +159,7 @@ export const progressionSchema: Schema = s.obj({
       for (let i = 1; i < v.length; i++) if ((v[i] as { wave: number }).wave <= (v[i - 1] as { wave: number }).wave) issues.push({ path: `${path}[${i}].wave`, message: '웨이브가 오름차순이 아니다' });
     }),
   }),
-  recruit: s.obj({ summonsPerPoint: s.int({ min: 1 }), goal: s.int({ min: 1 }), reward, weights }),
+  recruit: s.obj({ summonsPerPoint: s.int({ min: 1 }), goal: s.int({ min: 1 }), multiClaim: s.int({ min: 2 }), reward, weights }),
   quests: s.obj({
     daily: s.arr(quest, { minLength: 1, uniqueBy: 'id' }),
     dailyAllBonus: reward,

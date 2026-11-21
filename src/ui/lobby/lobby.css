@@ -1049,6 +1049,49 @@
   font-size: 3.3cqw;
 }
 
+/* 피드백 #76: 받을 수 있는 횟수 · [10번 한 번에 받기] · 창 안 '방금 받은 보상' (창은 닫히지 않는다) */
+.recruit-count {
+  margin: 0;
+  font-size: 3.3cqw;
+  font-weight: 800;
+  color: var(--frame-gold-hi, #ffe7a3);
+}
+
+.recruit-claim-many {
+  min-height: max(11cqw, 44px);
+  font-size: 4cqw;
+}
+
+.recruit-result {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6cqw;
+  padding: 2.4cqw;
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 2.4cqw;
+  box-shadow: inset 0 0 0 0.3cqw var(--frame-line-soft, rgba(232, 182, 74, 0.42));
+}
+
+.recruit-result-title {
+  margin: 0;
+  font-size: 3.6cqw;
+  font-weight: 900;
+}
+
+/* 10번에 카드 50장 → 카드 칸이 길어져도 버튼이 화면 밖으로 밀리지 않게 상자 안에서만 스크롤 */
+.recruit-result .grant-body {
+  max-height: 72cqw;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.recruit-result-line {
+  margin: 0;
+  font-size: 3.4cqw;
+  font-weight: 800;
+  color: #fff7d6;
+}
+
 .lobby-setting {
   display: flex;
   align-items: center;
