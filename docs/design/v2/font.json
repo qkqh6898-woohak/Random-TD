@@ -5,11 +5,20 @@
   "license": "SIL Open Font License 1.1",
   "license_file": "public/assets/fonts/Jua-OFL.txt",
   "source_ttf_sha256": "769677aef240bfc3b9965f2b50748075bff885e6c6992fc591a3fb268279f898",
-  "woff_sha256": "75bfc6f13e1e15a7864b8e2af69e73aadefddb3d738201f509c2c13e9c703811",
-  "woff_bytes": 723748,
-  "conversion": "fontTools TTFont.flavor=woff; glyph outlines unchanged; no subset",
-  "runtime_network": "same-origin bundled asset only via assetUrl; font opt-in",
+  "conversion": "tools/font_subset.py (fontTools subset → woff2, 힌팅 제거, 레이아웃 기능 유지). 원본 woff(723,748 bytes, sha256 75bfc6f1…) 윤곽은 그대로",
+  "runtime_network": "same-origin bundled asset only via assetUrl; font opt-in; 범위 밖 글자는 다음 글꼴(시스템 한글)로 그림",
   "gallery_hangul_glyphs_checked": 247,
   "missing_gallery_hangul_glyphs": [],
-  "license_normalization": "Trailing whitespace removed; license wording retained."
+  "license_normalization": "Trailing whitespace removed; license wording retained.",
+  "subset": {
+    "file": "public/assets/fonts/Jua-Regular.subset.woff2",
+    "bytes": 187664,
+    "sha256": "4f3e1cc96b74cc181659d544e16a24cdd42684bdb44a01bc6489656ac8a7572f",
+    "glyph_codepoints": 2500,
+    "hangul": "KS X 1001 완성형 2,350자 전부",
+    "extra": "ASCII, 한글 호환 자모, 자주 쓰는 문장 부호·화살표·기호, 전각 기호",
+    "limit_bytes": 307200,
+    "decision": "결정 A: 앱에는 subset woff2 ≤300KB만",
+    "guard": "tests/unit/font-subset.test.ts — src/의 모든 한글이 KS X 1001 안에 있는지"
+  }
 }

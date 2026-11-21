@@ -23,7 +23,7 @@ docs/design/v2/screens/popup-pinned.png
 docs/design/v2/validation.json
 e2e/design-system.spec.ts
 public/assets/fonts/Jua-OFL.txt
-public/assets/fonts/Jua-Regular.woff
+public/assets/fonts/Jua-Regular.subset.woff2
 public/assets/ui/v2/battle-coin.svg
 public/assets/ui/v2/battle.svg
 public/assets/ui/v2/campaign.svg

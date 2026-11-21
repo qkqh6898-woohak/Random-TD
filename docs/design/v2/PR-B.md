@@ -42,7 +42,7 @@ CSS 원본: `src/ui/design-system/tokens.css`. 모든 이름은 `--rtd-` 접두�
 
 진행 초록과 알림 빨강은 요청 색을 그대로 쓴다. 그 위에 작은 흰 숫자를 바로 놓으면 4.5:1이 안 되므로, 숫자 배지는 더 진한 초록 바탕 + 밝은 초록 하이라이트를 쓴다. 비활성 비용도 원색 빨강 대신 종이 바탕에 대비되는 진한 빨강을 쓴다. 장식용 색과 글자용 색을 구분하며 원본 토큰 값을 몰래 바꾸지 않는다.
 
-글꼴: `--rtd-title-font` = 앱에 포함한 **배민 주아체(RTD Jua)**, 본문은 시스템 한글 글꼴. 주아체는 SIL OFL 1.1이며 `public/assets/fonts/Jua-OFL.txt` 동봉. 외부 폰트 요청 없음. `loadDesignFont()`는 `assetUrl`로 WOFF를 읽어 일반/단일 HTML 내장 자산 모두 지원한다. 글리프 변경·서브셋 없음. 출처·해시는 `font.json`.
+글꼴: `--rtd-title-font` = 앱에 포함한 **배민 주아체(RTD Jua)**, 본문은 시스템 한글 글꼴. 주아체는 SIL OFL 1.1이며 `public/assets/fonts/Jua-OFL.txt` 동봉. 외부 폰트 요청 없음. `loadDesignFont()`는 `assetUrl`로 **줄인 WOFF2(KS X 1001 한글 2,350자 + 기호, 188KB)**를 읽어 일반/단일 HTML 내장 자산 모두 지원한다(결정 A: ≤300KB). 다시 만들기: `python3 -I tools/font_subset.py <원본>`. 범위 밖 글자는 시스템 한글 글꼴로 그려진다. 출처·해시는 `font.json`.
 
 크기: 작은 글자 12px / 본문 14px / 재화 숫자 18px / 주요 버튼 24px. 아이콘·카드 선 2px, 강조 제목 글자 선 1.5px. 모서리 12px, 기본 간격 8px, 최소 터치 영역 44px. `--rtd-safe-{top,right,bottom,left}`는 각각 `env(safe-area-inset-*,0px)`를 사용한다.
 
@@ -101,7 +101,7 @@ container.append(createButton({
 - 탭 다섯 번째는 기존 로비처럼 캠페인, 네 번째는 도감. 추가 로비/인게임/재화/강화/모드 아이콘 포함. 배속 그림의 ×2는 SVG 경로이며 외부 글꼴에 의존하지 않는다.
 - 48×48 viewBox, 기본 2px 진갈색 선, 사물 중심 약 80%, 한 단계 단색 음영과 하이라이트. SVG는 DPR 2/3에서도 벡터로 표시하므로 중복 PNG는 만들지 않았다.
 - 기존 miner 등 WebP는 갤러리의 캐릭터 샘플로 재사용하고 수정하지 않았다. 새 캐릭터/원작 이미지·로고·문구 복제 없음.
-- 폰트: `public/assets/fonts/Jua-Regular.woff`, 라이선스. 기존 시스템 글꼴은 그대로.
+- 폰트: `public/assets/fonts/Jua-Regular.subset.woff2`(188KB, `tools/font_subset.py`), 라이선스. 기존 시스템 글꼴은 그대로.
 - 구현: `src/ui/design-system/{tokens.css,components.css,icons.ts,components.ts,format.ts,font.ts,index.ts,gallery.ts,gallery.css}`.
 - 기존 파일 변경: `src/main.ts` 개발용 진입점, `docs/PROGRESS.md` 끝에 진행 기록만.
 - 새 검증: `tests/unit/design-system.test.ts`, `e2e/design-system.spec.ts`. 기존 E2E 파일/선택자/기대값 변경 없음.
