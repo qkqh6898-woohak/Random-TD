@@ -130,3 +130,8 @@
 .lobby-v2 .lobby-wallet { min-width: 172px; }
 .lobby-v2 .lobby-wallet .rtd-currency { padding-left: 18px; padding-right: 4px; }
 @media (max-width: 345px) { .lobby-v2 .lobby-profile-name { font-size: 14px; } }
+/* V2-R21 (PR-D 검토 🔴): 360px 이하 무대에서 재화 두 칸(글자 칸 약 53px)에 '999.9K'(16px 굵게 약 58px)가 잘리던 것 →
+   글자 14px(약 51px). 접근성 이름은 그대로 정확한 값, 12px 하한보다 크다. */
+@container (max-width: 360px) {
+  .lobby-v2 .lobby-wallet .rtd-currency-value, .lobby-v2 .lobby-flame-value { font-size: 14px; }
+}
