@@ -61,7 +61,7 @@ export function createGradeCard(props: CardProps): HTMLButtonElement {
   const gradeName = GRADE_NAMES[props.grade];
   const el = h('button', { class: `rtd-card${props.owned ? '' : ' is-unowned'}`, attrs: { type: 'button', 'data-grade': props.grade, 'aria-label': `${props.name} · ${gradeName} · ${props.owned ? `Lv.${props.level}` : '미보유'}${props.notification ? ' · 새 알림' : ''}` }, on: { click: () => props.onClick?.() } });
   const art = props.portrait
-    ? h('img', { class: 'rtd-card-portrait', attrs: { src: props.portrait, alt: '', 'aria-hidden': 'true', draggable: 'false' } })
+    ? h('img', { class: 'rtd-card-portrait', attrs: { src: props.portrait, alt: '', 'aria-hidden': 'true', draggable: 'false', loading: 'lazy', decoding: 'async' } })
     : h('span', { class: 'rtd-card-portrait is-text', text: props.name.slice(0, 1), attrs: { 'aria-hidden': 'true' } });
   const progress = createProgress(props.progress, props.progressLabel);
   if (props.progressText !== undefined) {

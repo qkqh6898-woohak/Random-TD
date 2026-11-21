@@ -100,14 +100,18 @@ export class BootScene extends Phaser.Scene {
     const { data } = this.ctx;
     const kingdom = data.towers.factions.kingdom?.color ?? '#2E5AAC';
     // 타이틀 그림이 있으면 그것만 (절차 배경·캐릭터는 숨김), 없으면 예전 절차 타이틀
-    this.keyArtView = this.keyArtKey !== null ? drawTitleKeyArt(this, this.keyArtKey) : null;
-    const keyArt = this.keyArtView !== null;
-    if (!keyArt) drawTitleBackdrop(this, { kingdomColor: kingdom });
+    // V2 로비(PR-D~F)는 모든 탭이 불투명한 배경으로 캔버스를 다 덮는다 → 캔버스 타이틀(그림·절차 배경·캐릭터)은 그리지 않는다
+    // (보이지 않는 그림을 매 프레임 그리지 않게, V2-R21). 그림 파일은 넓은 화면 양옆 배경(--side-bg)에 그대로 쓴다.
+    const lobbyCovers = !!this.ctx.progress;
+    const keyArtReady = this.keyArtKey !== null && this.textures.exists(this.keyArtKey);
+    this.keyArtView = keyArtReady && !lobbyCovers ? drawTitleKeyArt(this, this.keyArtKey!) : null;
+    const keyArt = lobbyCovers ? keyArtReady : this.keyArtView !== null;
+    if (!keyArt && !lobbyCovers) drawTitleBackdrop(this, { kingdomColor: kingdom });
     setSideBackground(keyArt && this.keyArtN !== null ? assetUrl(titleArtPath(this.keyArtN)) : null);
 
     const towers = new Map(data.towers.towers.map((t) => [t.id, t]));
     this.titleChars = [];
-    if (!keyArt) TITLE_TOWERS.forEach((tt, i) => {
+    if (!keyArt && !lobbyCovers) TITLE_TOWERS.forEach((tt, i) => {
       const t = towers.get(tt.towerId) ?? data.towers.towers[i];
       if (!t) return;
       const titled = TitleCharacter.create(this, t.id, tt.x, tt.y, tt.scale, [0.13, 0.57, 0.81][i] ?? 0.3);
