@@ -176,7 +176,7 @@ test('바텀 시트: 하단 메뉴 → 55%, 손잡이를 끌어 85%, 게임은 �
     const menu0 = (await page.locator('.hud-menu').boundingBox())!;
     expect(Math.abs(ch.y + ch.height - menu0.y)).toBeLessThan(2);
   }
-  await page.getByTestId('menu-challenge').click();
+  await page.getByTestId('sheet-close').click(); // 작아진 도전 시트가 오른쪽 아래 둥근 ⚔ 버튼을 덮는다 → ✕로 닫기
   await expect(page.getByTestId('sheet-challenge')).toHaveCount(0);
   await page.getByTestId('menu-mission').click();
   const sheet = page.getByTestId('sheet-mission');

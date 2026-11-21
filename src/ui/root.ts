@@ -16,7 +16,7 @@
  * UI는 sim 상태를 읽기만 하고, 바꾸려면 명령을 만들어 world.enqueue() 한다 (CLAUDE.md 2장).
  */
 import { h } from './dom';
-import { MAX_VISIBLE_NOTICES, fitFontPx, nextNotice, noticeCountText, type NoticeSlot } from './noticeLane';
+import { MAX_VISIBLE_NOTICES, NOTICE_BANNER_HOLD_MS, NOTICE_PRIORITY, fitFontPx, nextNotice, noticeCountText, noticeWaitMs, type NoticeSlot } from './noticeLane';
 
 export interface UiView {
   el: HTMLElement;
@@ -127,29 +127,74 @@ export class UiRoot {
     return this.pushNotice(el, kind ?? text, ms, () => fitBannerLines(el, '.toast-text'));
   }
 
-  /** 알림 줄에 하나를 올린다 (바꿔 치기·같은 종류 합치기). */
-  private pushNotice(el: HTMLElement, kind: string, ms: number, fit: () => void): HTMLElement {
+  /** 배너가 다 보이기 전에 온 가벼운 알림 하나 (가장 최근 것만 — 같은 종류면 수를 더함). 배너의 최소 시간이 지나면 띄운다 */
+  private pendingNotice: { el: HTMLElement; kind: string; ms: number; fit: () => void; count: number } | null = null;
+  private pendingTimer: ReturnType<typeof setTimeout> | undefined;
+
+  /** 알림 줄에 하나를 올린다 (바꿔 치기·같은 종류 합치기 · 배너는 NOTICE_BANNER_HOLD_MS 동안 일반 알림에 밀리지 않음). */
+  private pushNotice(el: HTMLElement, kind: string, ms: number, fit: () => void, prio: number = NOTICE_PRIORITY.plain): HTMLElement {
     const layer = this.layers.toast;
     const current = layer.lastElementChild as HTMLElement | null;
-    const slot: NoticeSlot | null = current?.dataset.kind !== undefined ? { kind: current.dataset.kind, count: Number(current.dataset.count) || 1 } : null;
-    const next = nextNotice(slot, kind);
-    el.dataset.kind = next.kind;
-    el.dataset.count = String(next.count);
-    const countText = noticeCountText(next.count);
+    const now = performance.now();
+    const holder = current?.dataset.kind !== undefined ? { kind: current.dataset.kind, prio: Number(current.dataset.prio) || NOTICE_PRIORITY.plain, holdUntil: Number(current.dataset.holdUntil) || 0 } : null;
+    const wait = noticeWaitMs(holder, kind, prio, now);
+    if (wait > 0) {
+      const count = this.pendingNotice && this.pendingNotice.kind === kind ? this.pendingNotice.count + 1 : 1;
+      this.pendingNotice = { el, kind, ms, fit, count };
+      clearTimeout(this.pendingTimer);
+      this.pendingTimer = setTimeout(() => this.flushPendingNotice(), wait);
+      return el;
+    }
+    if (this.pendingNotice && prio >= NOTICE_PRIORITY.banner) {
+      // 배너가 또 오면 기다리던 가벼운 알림은 그 배너 뒤로 (시간을 다시 잰다)
+      clearTimeout(this.pendingTimer);
+      this.pendingTimer = setTimeout(() => this.flushPendingNotice(), NOTICE_BANNER_HOLD_MS);
+    } else if (this.pendingNotice) {
+      // 더 새 알림이 바로 뜨면 기다리던 것은 버린다 (한 줄에 가장 최근 것)
+      this.dropPendingNotice();
+    }
+    const slot: NoticeSlot | null = holder ? { kind: holder.kind, count: Number(current?.dataset.count) || 1 } : null;
+    this.showNotice(el, nextNotice(slot, kind), ms, fit, prio, now);
+    return el;
+  }
+
+  private showNotice(el: HTMLElement, slot: NoticeSlot, ms: number, fit: () => void, prio: number, now: number): void {
+    const layer = this.layers.toast;
+    el.dataset.kind = slot.kind;
+    el.dataset.count = String(slot.count);
+    el.dataset.prio = String(prio);
+    el.dataset.holdUntil = String(prio >= NOTICE_PRIORITY.banner ? now + Math.min(ms, NOTICE_BANNER_HOLD_MS) : 0);
+    const countText = noticeCountText(slot.count);
     if (countText) {
       el.classList.add('is-merged');
-      el.append(h('span', { class: 'toast-count', text: countText, attrs: { 'aria-label': `${next.count}번` } }));
+      el.append(h('span', { class: 'toast-count', text: countText, attrs: { 'aria-label': `${slot.count}번` } }));
     }
     while (layer.childElementCount >= MAX_VISIBLE_NOTICES) layer.firstElementChild?.remove();
     layer.append(el);
     fit();
     setTimeout(() => el.remove(), ms);
-    return el;
+  }
+
+  private flushPendingNotice(): void {
+    const p = this.pendingNotice;
+    this.pendingNotice = null;
+    this.pendingTimer = undefined;
+    if (!p) return;
+    const current = this.layers.toast.lastElementChild as HTMLElement | null;
+    const same = current?.dataset.kind === p.kind ? Number(current.dataset.count) || 1 : 0;
+    this.showNotice(p.el, { kind: p.kind, count: same + p.count }, p.ms, p.fit, NOTICE_PRIORITY.plain, performance.now());
+  }
+
+  private dropPendingNotice(): void {
+    clearTimeout(this.pendingTimer);
+    this.pendingTimer = undefined;
+    this.pendingNotice = null;
   }
 
   /** 떠 있는 알림·배너를 모두 지운다 (패배·일시정지 화면을 열 때 — 알림 층이 화면 층보다 위라 제목을 가린다, M4 검토 반영). */
   clearToasts(): void {
     this.layers.cutin.querySelector('.wave-ribbon')?.remove();
+    this.dropPendingNotice();
     this.layers.toast.replaceChildren();
   }
 
@@ -178,7 +223,7 @@ export class UiRoot {
       h('span', { class: 'toast-title', text: title }),
       sub ? h('span', { class: 'toast-sub', text: sub }) : null,
     );
-    return this.pushNotice(el, key, ms, () => fitBannerLines(el, '.toast-title, .toast-sub'));
+    return this.pushNotice(el, key, ms, () => fitBannerLines(el, '.toast-title, .toast-sub'), NOTICE_PRIORITY.banner);
   }
 
   /**

@@ -121,8 +121,11 @@ for (const [W, H] of SIZES) {
         s.ctx.ui.banner('보스 등장!', null, 4000, 'boss');
         s.ctx.ui.toast('🔥 원소 지배자의 필살 폭격!', 4000, 'ult-nuke');
       });
+      // 배너(보스 등장)는 같은 프레임의 일반 알림에 바로 밀리지 않는다 (최소 1.5초) → 그 뒤 가장 최근 일반 알림
       await expect(lane).toHaveCount(1);
+      await expect(page.getByTestId('banner-boss')).toBeVisible();
       await expect(page.locator('.layer-toast .toast-text')).toHaveText('🔥 원소 지배자의 필살 폭격!');
+      await expect(lane).toHaveCount(1);
       // 긴 알림: 12px 아래로 줄지 않고, 넘치면 두 줄 — 알림이 무대 밖으로 나가지 않는다
       await scene(page, (s, t: string) => s.ctx.ui.toast(t, 4000), LONG);
       const m = await page.evaluate(() => {
