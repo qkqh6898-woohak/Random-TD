@@ -16,7 +16,7 @@
  * UI는 sim 상태를 읽기만 하고, 바꾸려면 명령을 만들어 world.enqueue() 한다 (CLAUDE.md 2장).
  */
 import { h } from './dom';
-import { MAX_VISIBLE_NOTICES, NOTICE_BANNER_HOLD_MS, NOTICE_PRIORITY, fitFontPx, nextNotice, noticeCountText, noticeWaitMs, type NoticeSlot } from './noticeLane';
+import { MAX_VISIBLE_NOTICES, NOTICE_BANNER_HOLD_MS, NOTICE_PRIORITY, fitFontPx, nextNotice, noticeCountText, noticeWaitMs, replacesPending, type NoticeSlot } from './noticeLane';
 
 export interface UiView {
   el: HTMLElement;
@@ -127,32 +127,28 @@ export class UiRoot {
     return this.pushNotice(el, kind ?? text, ms, () => fitBannerLines(el, '.toast-text'));
   }
 
-  /** 배너가 다 보이기 전에 온 가벼운 알림 하나 (가장 최근 것만 — 같은 종류면 수를 더함). 배너의 최소 시간이 지나면 띄운다 */
-  private pendingNotice: { el: HTMLElement; kind: string; ms: number; fit: () => void; count: number } | null = null;
+  /** 배너가 다 보이기 전에 온 알림 하나 (무게가 같거나 큰 가장 최근 것 — 같은 종류면 수를 더함). 배너의 최소 시간이 지나면 띄운다 */
+  private pendingNotice: { el: HTMLElement; kind: string; ms: number; fit: () => void; count: number; prio: number } | null = null;
   private pendingTimer: ReturnType<typeof setTimeout> | undefined;
 
-  /** 알림 줄에 하나를 올린다 (바꿔 치기·같은 종류 합치기 · 배너는 NOTICE_BANNER_HOLD_MS 동안 일반 알림에 밀리지 않음). */
+  /** 알림 줄에 하나를 올린다 (바꿔 치기·같은 종류 합치기 · 배너는 NOTICE_BANNER_HOLD_MS 동안 밀리지 않음 — noticeLane). */
   private pushNotice(el: HTMLElement, kind: string, ms: number, fit: () => void, prio: number = NOTICE_PRIORITY.plain): HTMLElement {
     const layer = this.layers.toast;
     const current = layer.lastElementChild as HTMLElement | null;
     const now = performance.now();
     const holder = current?.dataset.kind !== undefined ? { kind: current.dataset.kind, prio: Number(current.dataset.prio) || NOTICE_PRIORITY.plain, holdUntil: Number(current.dataset.holdUntil) || 0 } : null;
-    const wait = noticeWaitMs(holder, kind, prio, now);
+    const wait = noticeWaitMs(holder, kind, now);
     if (wait > 0) {
-      const count = this.pendingNotice && this.pendingNotice.kind === kind ? this.pendingNotice.count + 1 : 1;
-      this.pendingNotice = { el, kind, ms, fit, count };
+      const pending = this.pendingNotice;
+      if (!replacesPending(pending ? pending.prio : null, prio)) return el; // 배너가 기다리는 동안 온 일반 알림은 버린다
+      const count = pending && pending.kind === kind ? pending.count + 1 : 1;
+      this.pendingNotice = { el, kind, ms, fit, count, prio };
       clearTimeout(this.pendingTimer);
       this.pendingTimer = setTimeout(() => this.flushPendingNotice(), wait);
       return el;
     }
-    if (this.pendingNotice && prio >= NOTICE_PRIORITY.banner) {
-      // 배너가 또 오면 기다리던 가벼운 알림은 그 배너 뒤로 (시간을 다시 잰다)
-      clearTimeout(this.pendingTimer);
-      this.pendingTimer = setTimeout(() => this.flushPendingNotice(), NOTICE_BANNER_HOLD_MS);
-    } else if (this.pendingNotice) {
-      // 더 새 알림이 바로 뜨면 기다리던 것은 버린다 (한 줄에 가장 최근 것)
-      this.dropPendingNotice();
-    }
+    // 바로 뜨는 새 알림이 기다리던 것보다 새것 — 기다리던 것은 버린다 (한 줄에 가장 최근 것)
+    this.dropPendingNotice();
     const slot: NoticeSlot | null = holder ? { kind: holder.kind, count: Number(current?.dataset.count) || 1 } : null;
     this.showNotice(el, nextNotice(slot, kind), ms, fit, prio, now);
     return el;
@@ -182,7 +178,7 @@ export class UiRoot {
     if (!p) return;
     const current = this.layers.toast.lastElementChild as HTMLElement | null;
     const same = current?.dataset.kind === p.kind ? Number(current.dataset.count) || 1 : 0;
-    this.showNotice(p.el, { kind: p.kind, count: same + p.count }, p.ms, p.fit, NOTICE_PRIORITY.plain, performance.now());
+    this.showNotice(p.el, { kind: p.kind, count: same + p.count }, p.ms, p.fit, p.prio, performance.now());
   }
 
   private dropPendingNotice(): void {

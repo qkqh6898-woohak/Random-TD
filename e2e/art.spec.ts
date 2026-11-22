@@ -254,8 +254,9 @@ test('정보 패널: 캐릭터 설명 두 문장 + [ℹ] 캐릭터 카드 (✕ �
   await expect(page.getByTestId('cc-lore')).toHaveText('광산일을 마치고 전투에 참여한 드워프 광부다.');
   await expect(page.getByTestId('cc-role')).toContainText('돈을 캐낸다');
   await expect(card).toContainText('각성');
-  // 힉스필드 초상 (텍스처 → data URL)
-  expect(await page.getByTestId('cc-portrait').getAttribute('src')).toMatch(/^data:image\//);
+  // 힉스필드 초상 — v0.1.22: 텍스처를 다시 구운 data URL 대신 그 WebP 파일 주소(로비와 같음, ui/panels/portraitSource), 실제로 읽힌다
+  expect(await page.getByTestId('cc-portrait').getAttribute('src')).toMatch(/assets\/characters\/miner\.webp$/);
+  await expect.poll(() => page.getByTestId('cc-portrait').evaluate((img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0)).toBe(true);
   expect(await card.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
   await page.waitForTimeout(300);
   await shot(page, 'T2-art-card');

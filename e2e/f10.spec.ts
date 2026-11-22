@@ -327,7 +327,8 @@ test('두 묶음이 함께 준비되면: 다른 묶음 타워를 누르면 안�
   await expect(page.getByTestId('guide-next')).toHaveText('확인');
   await page.getByTestId('guide-next').click();
   await expect(page.getByTestId('guide-card')).toBeHidden();
-  expect(await page.evaluate(() => (JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { guides?: string[] }).guides)).toEqual(['firstMerge']);
+  // v0.1.22 E①: 첫 판에서 타워를 놓아 'firstSummon'도 함께 (첫 승급 안내 기록은 하나 그대로)
+  expect(await page.evaluate(() => (JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { guides?: string[] }).guides)).toEqual(['firstMerge', 'firstSummon']);
   expect(errors).toEqual([]);
 });
 
@@ -360,7 +361,8 @@ test('안내: ✕로 닫으면 계정에 한 번 기록 → 재시작한 판엔 
   // ✕ → 닫힘 + 계정 기록
   await page.getByTestId('guide-close').click();
   await expect(page.getByTestId('guide-card')).toBeHidden();
-  expect(await page.evaluate(() => (JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { guides?: string[] }).guides)).toEqual(['firstMerge']);
+  // v0.1.22 E①: 첫 판에서 타워를 놓아 'firstSummon'도 함께 (첫 승급 안내 기록은 하나 그대로)
+  expect(await page.evaluate(() => (JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { guides?: string[] }).guides)).toEqual(['firstMerge', 'firstSummon']);
   // 재시작 (타이틀로 → 시작): 다시 3개를 놓아도 안내 없음
   await page.locator('[data-action="pause"]').click();
   await page.locator('[data-action="exit"]').click();

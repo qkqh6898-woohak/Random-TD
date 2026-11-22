@@ -203,8 +203,17 @@ test('바텀 시트: 하단 메뉴 → 55%, 손잡이를 끌어 85%, 게임은 �
   box = (await sheet.boundingBox())!;
   expect(Math.abs(box.y - (st.top + st.height * 0.15))).toBeLessThan(3);
   // 85%로 펼친 동안 알림은 시트 아래쪽 (머리줄·탭·✕를 덮지 않게 — M5 검토 반영)
-  await inScene(page, (s) => (s as unknown as { ctx: { ui: { toast(t: string): void } } }).ctx.ui.toast('알림 자리 확인'), null);
-  const fullToast = (await page.locator('.toast', { hasText: '알림 자리 확인' }).boundingBox())!;
+  // v0.1.22 A①: 알림은 한 줄에 하나 — 게임이 그 사이 다른 알림(단계·보스 예고)을 띄우면 바뀌므로, 보일 때까지 다시 띄워 잰다
+  const toastBox = async (text: string) => {
+    let b: { x: number; y: number; width: number; height: number } | null = null;
+    await expect.poll(async () => {
+      await inScene(page, (s, t) => (s as unknown as { ctx: { ui: { toast(t: string, ms: number): void } } }).ctx.ui.toast(t, 4000), text);
+      b = await page.locator('.toast', { hasText: text }).boundingBox({ timeout: 2500 }).catch(() => null);
+      return b !== null;
+    }, { timeout: 20_000 }).toBe(true);
+    return b!;
+  };
+  const fullToast = await toastBox('알림 자리 확인');
   const head = (await sheet.locator('.bs-head').boundingBox())!;
   expect(fullToast.y).toBeGreaterThan(head.y + head.height + 20);
   expect(fullToast.y + fullToast.height).toBeLessThanOrEqual(menu.y + 1);
@@ -234,8 +243,7 @@ test('바텀 시트: 하단 메뉴 → 55%, 손잡이를 끌어 85%, 게임은 �
   expect(await inScene(page, (s) => s.sheetOpen, null)).toBeNull();
   // 55%로 다시 열면 알림은 다시 HUD 아래
   await page.getByTestId('menu-mission').click();
-  await inScene(page, (s) => (s as unknown as { ctx: { ui: { toast(t: string): void } } }).ctx.ui.toast('반쪽 알림'), null);
-  const halfToast = (await page.locator('.toast', { hasText: '반쪽 알림' }).boundingBox())!;
+  const halfToast = await toastBox('반쪽 알림');
   const halfSheet = (await page.getByTestId('sheet-mission').boundingBox())!;
   expect(halfToast.y + halfToast.height).toBeLessThan(halfSheet.y);
   await page.getByTestId('sheet-close').click();

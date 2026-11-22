@@ -125,7 +125,8 @@ test('FB-29/30: 접은 종족 선택의 7개 선택과 상단 판매·고등급 
   const panel = page.getByTestId('tower-panel');
   await expect(panel).toBeVisible();
   const sell = page.getByTestId('tp-sell');
-  await expect(page.locator('.tp-head > [data-testid="tp-sell"]')).toBeVisible();
+  // v0.1.22 B①: 머리줄 버튼 묶음(.tp-head-actions) 안 — [⬆ 승급] [↔ 이동] [판매] [✕]
+  await expect(page.locator('.tp-head > .tp-head-actions > [data-testid="tp-sell"]')).toBeVisible();
   const b = (await sell.boundingBox())!; expect(b.height).toBeGreaterThanOrEqual(44); expect(b.x + b.width).toBeLessThanOrEqual(320);
   await shot(page, 'sell-header-320');
   // 기존 t2 판매 검사와 같은 방식: 소프트웨어 렌더러의 도구 왕복이 2초 확인창을 넘기지 않게 두 누름을 한 번에 관측한다.

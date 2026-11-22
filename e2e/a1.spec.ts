@@ -489,7 +489,8 @@ test.describe('A-1b 뒤로 가기: 장면 넘어가는 중·첫 승급 안내', 
     expect(await back()).toBe(true);
     await expect(page.getByTestId('guide-card')).toBeHidden();
     await expect(page.locator('[data-screen="pause"]')).toHaveCount(0);
-    expect(await page.evaluate(() => (JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { guides?: string[] }).guides)).toEqual(['firstMerge']);
+    // v0.1.22 E①: 첫 판에서 타워를 놓으면 'firstSummon'도 적힌다 (다음 판부터 추천 칸 없음) — 첫 승급 안내 기록은 그대로 하나
+    expect(await page.evaluate(() => (JSON.parse(localStorage.getItem('rtd.account') ?? '{}') as { guides?: string[] }).guides)).toEqual(['firstMerge', 'firstSummon']);
     // 닫을 것이 없으면 일시정지
     expect(await back()).toBe(true);
     await expect(page.locator('[data-screen="pause"]')).toBeVisible();

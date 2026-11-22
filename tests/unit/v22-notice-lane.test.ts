@@ -4,7 +4,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { MAX_VISIBLE_NOTICES, NOTICE_BANNER_HOLD_MS, NOTICE_MIN_FONT_PX, fitFontPx, nextNotice, noticeCountText, noticeWaitMs } from '../../src/ui/noticeLane';
+import { MAX_VISIBLE_NOTICES, NOTICE_BANNER_HOLD_MS, NOTICE_MIN_FONT_PX, fitFontPx, nextNotice, noticeCountText, noticeWaitMs, replacesPending } from '../../src/ui/noticeLane';
 
 describe('v0.1.22 알림 한 줄', () => {
   it('한 번에 하나만 보인다', () => {
@@ -30,15 +30,19 @@ describe('v0.1.22 알림 한 줄', () => {
     expect(fitFontPx(18, 1000, 300)).toBe(12);
     expect(fitFontPx(40, 1000, 300)).toBe(24); // 원래의 60%가 12px보다 크면 그것
   });
-  it('배너는 1.5초 동안 일반 알림에 밀리지 않는다 (배너끼리·같은 종류는 바로 바뀜)', () => {
+  it('배너는 1.5초 동안 다른 알림에 밀리지 않는다 (같은 종류는 바로 합침, 일반 알림은 붙잡지 않음) · 기다리는 자리는 무거운 것 우선', () => {
     expect(NOTICE_BANNER_HOLD_MS).toBe(1500);
     const banner = { kind: '히든 미션 발견!', prio: 2, holdUntil: 1500 };
-    expect(noticeWaitMs(null, 'x', 1, 0)).toBe(0);
-    expect(noticeWaitMs(banner, '5단계 시작!', 1, 100)).toBe(1400);
-    expect(noticeWaitMs(banner, '5단계 시작!', 1, 1600)).toBe(0);
-    expect(noticeWaitMs(banner, '보스 등장!', 2, 100)).toBe(0);
-    expect(noticeWaitMs(banner, '히든 미션 발견!', 1, 100)).toBe(0);
-    expect(noticeWaitMs({ kind: 'a', prio: 1, holdUntil: 0 }, 'b', 1, 0)).toBe(0);
+    expect(noticeWaitMs(null, 'x', 0)).toBe(0);
+    expect(noticeWaitMs(banner, '5단계 시작!', 100)).toBe(1400);
+    expect(noticeWaitMs(banner, '보스 등장!', 100)).toBe(1400);
+    expect(noticeWaitMs(banner, '5단계 시작!', 1600)).toBe(0);
+    expect(noticeWaitMs(banner, '히든 미션 발견!', 100)).toBe(0);
+    expect(noticeWaitMs({ kind: 'a', prio: 1, holdUntil: 0 }, 'b', 0)).toBe(0);
+    expect(replacesPending(null, 1)).toBe(true);
+    expect(replacesPending(2, 1)).toBe(false);
+    expect(replacesPending(2, 2)).toBe(true);
+    expect(replacesPending(1, 2)).toBe(true);
   });
   it('UiRoot는 알림과 배너 모두 한 줄 규칙을 쓰고, 필살기 알림은 종류로 합친다', () => {
     const root = readFileSync(new URL('../../src/ui/root.ts', import.meta.url), 'utf8');
