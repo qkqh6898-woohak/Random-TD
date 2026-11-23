@@ -27,5 +27,20 @@
   ],
   "generation_count": 167,
   "accepted_count": 159,
-  "rejected_count": 8
+  "rejected_count": 8,
+  "original_batch_counts_note": "Root generation_count/accepted_count/rejected_count describe the original chunky batch. Subsequent base refresh is recorded separately below.",
+  "latest_base_refresh": {
+    "path": "docs/art/higgsfield/hero-base-refresh/",
+    "base_commit": "c13d9b27de7cc46f4afd51b2fc2b326d19d56d23",
+    "model": "gpt_image_2_6",
+    "quality": "medium",
+    "resolution": "1k",
+    "generation_count": 65,
+    "applied_count": 65,
+    "retained_count": 0,
+    "credits_spent": 65,
+    "awakened_images_changed": 0,
+    "enemy_images_changed": 0,
+    "person_images_changed": 0
+  }
 }
