@@ -1,0 +1,2222 @@
+{
+  "version": 1,
+  "base_commit": "c13d9b27de7cc46f4afd51b2fc2b326d19d56d23",
+  "requests": [
+    {
+      "index": 0,
+      "id": "miner",
+      "name": "광부",
+      "grade": "normal",
+      "source_job_id": "1599d909-5c19-4fbf-8324-c26adea2146f",
+      "source_sha256": "4604c21626d8468686820e62d194e6e754391f6ccf071c941d166ecd40959697",
+      "source_path": "public/assets/characters/miner.webp",
+      "awaken_exists": true,
+      "direction": "Big cheerful toothy bean smile and raised brow; lean the round belly into a broad planted stance, pickaxe laid diagonally behind the helmet, lamp unobstructed. Keep the rust beard unmistakable.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A cheerful stocky dwarf miner: oversized orange mining helmet with one round cream headlamp, a large simple rust-red beard, rolled cream sleeves, brown overalls and heavy boots; one broad iron pickaxe rests over his shoulder, both hands and the whole pickaxe visible. NEW DIRECTION: Big cheerful toothy bean smile and raised brow; lean the round belly into a broad planted stance, pickaxe laid diagonally behind the helmet, lamp unobstructed. Keep the rust beard unmistakable.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "1599d909-5c19-4fbf-8324-c26adea2146f"
+          },
+          {
+            "role": "image_references",
+            "value": "b03965d6-a418-430c-a6a8-33a058054187"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 1,
+      "id": "drummer",
+      "name": "북치기",
+      "grade": "normal",
+      "source_job_id": "25d45e4d-a941-4c92-9a42-3bb547e830ce",
+      "source_sha256": "f5e8d22dcdab84031c0fc8ca61098f9a76e01971e5544f530fd116f58bf14cad",
+      "source_path": "public/assets/characters/drummer.webp",
+      "awaken_exists": true,
+      "direction": "An exuberant open bean smile, one drumstick held high and the other touching the large belly drum; lift one tiny boot in a frozen marching beat. Keep both sticks clearly separate.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A cheerful short green orc drummer child with a big round head, orange-brown headband, tiny tusks and stubby feet; one big red-brown drum attached to the belly and two short thick drumsticks. NEW DIRECTION: An exuberant open bean smile, one drumstick held high and the other touching the large belly drum; lift one tiny boot in a frozen marching beat. Keep both sticks clearly separate.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "25d45e4d-a941-4c92-9a42-3bb547e830ce"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 2,
+      "id": "goblin",
+      "name": "고블린",
+      "grade": "normal",
+      "source_job_id": "f28906c5-f513-4fb5-a7d2-331925a91d51",
+      "source_sha256": "1672598ecc70523e397b81799e0e7567de981ccfc9f3b8a7880495ae163b474d",
+      "source_path": "public/assets/characters/goblin.webp",
+      "awaken_exists": true,
+      "direction": "One ear lifted and one tilted, confident mischievous bean grin, a low forward lean with the single dagger pointed sideways away from the face. Emphasize the proud orange scarf.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A mischievous friendly green goblin: huge sideways ears, tiny dark dot eyes, orange-brown scarf, simple dark vest and very short boots; holding one broad little dagger, leaning forward with a squat belly. NEW DIRECTION: One ear lifted and one tilted, confident mischievous bean grin, a low forward lean with the single dagger pointed sideways away from the face. Emphasize the proud orange scarf.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "f28906c5-f513-4fb5-a7d2-331925a91d51"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 3,
+      "id": "archer",
+      "name": "궁수",
+      "grade": "normal",
+      "source_job_id": "c86413f5-d70a-4e88-a523-4f35fd889453",
+      "source_sha256": "ffd8f8820128d17e720db7bdbd64980421867fa44f8455289ad1e63f4663773c",
+      "source_path": "public/assets/characters/archer.webp",
+      "awaken_exists": true,
+      "direction": "A focused yet friendly raised brow; turn the squat body three-quarters while holding the oversized wooden bow diagonally away from the face. One small boot steps out, green hood folds simple.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A little elf archer: oversized cream-blond head, long simple pointed ears, short leaf-green hood and cape, brown tunic, stubby boots; one broad wooden bow and a simple leaf-shaped quiver. Make the elf round and short, never tall or slender. NEW DIRECTION: A focused yet friendly raised brow; turn the squat body three-quarters while holding the oversized wooden bow diagonally away from the face. One small boot steps out, green hood folds simple.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "c86413f5-d70a-4e88-a523-4f35fd889453"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 4,
+      "id": "apprentice",
+      "name": "견습 마법사",
+      "grade": "normal",
+      "source_job_id": "616c24dd-2867-44af-8a8e-1941cb5dc6d9",
+      "source_sha256": "fc8bf5202cef33a06e3a7a4dedc0704e1abf8c772022400cc05acfd936422e90",
+      "source_path": "public/assets/characters/apprentice.webp",
+      "awaken_exists": true,
+      "direction": "The huge soft blue hat droops comically over one eye; the other dot eye and surprised bean mouth stay readable. Tilt the head to peek under the brim, tiny wand held forward.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A round-faced apprentice wizard child nearly hidden under an oversized soft blue pointed hat; short blue robe, cream collar, tiny brown boots; holding one simple wooden wand with an opaque round cream tip, no light or particles. NEW DIRECTION: The huge soft blue hat droops comically over one eye; the other dot eye and surprised bean mouth stay readable. Tilt the head to peek under the brim, tiny wand held forward.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "616c24dd-2867-44af-8a8e-1941cb5dc6d9"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 5,
+      "id": "warrior",
+      "name": "전사",
+      "grade": "normal",
+      "source_job_id": "7aa05909-a9d1-40a6-ad02-7acf5f5b31db",
+      "source_sha256": "2fe009008a8721fe7788d3ce9625a2677ed27a4ba436c4b641dfe3f761e13db9",
+      "source_path": "public/assets/characters/warrior.webp",
+      "awaken_exists": true,
+      "direction": "A brave determined tiny smile with one brow lowered; plant the round shield firmly to one side and hold the short sword upward, with air gaps between shield, cheek and sword.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A stout little kingdom foot soldier: oversized rounded silver-grey helmet, two dot eyes, royal-blue tabard, tiny legs; one big plain round shield and a short wide sword, confident simple face. NEW DIRECTION: A brave determined tiny smile with one brow lowered; plant the round shield firmly to one side and hold the short sword upward, with air gaps between shield, cheek and sword.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "7aa05909-a9d1-40a6-ad02-7acf5f5b31db"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 6,
+      "id": "spearman",
+      "name": "창병",
+      "grade": "normal",
+      "source_job_id": "27ea3369-ca06-4d0a-b0c5-c734f61e4f59",
+      "source_sha256": "7e9bdd3d58ce77c0ab267af9cf51a645c13d4fd5b4234f99f64d62f9e004b825",
+      "source_path": "public/assets/characters/spearman.webp",
+      "awaken_exists": true,
+      "direction": "A slightly embarrassed but proud bean smile, broad stable stance, spear held diagonally and full leaf tip clear. Keep the kite shield to the opposite side so the silhouette reads spear-and-shield.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A chunky little kingdom spearman with a large rounded steel helmet, blue scarf, compact padded vest and tiny boots; one thick wooden spear with a broad leaf-shaped tip and one simple kite shield, all tips inside the image. NEW DIRECTION: A slightly embarrassed but proud bean smile, broad stable stance, spear held diagonally and full leaf tip clear. Keep the kite shield to the opposite side so the silhouette reads spear-and-shield.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "27ea3369-ca06-4d0a-b0c5-c734f61e4f59"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 7,
+      "id": "stonegolem",
+      "name": "돌 골렘",
+      "grade": "normal",
+      "source_job_id": "db8500cb-cd71-4381-a46f-9f3ad41066c9",
+      "source_sha256": "2ab290dd169f8ba1ca63715a0d0f0ec356a1cc5231a22d8d9a9ad8c2d0b14ff5",
+      "source_path": "public/assets/characters/stonegolem.webp",
+      "awaken_exists": true,
+      "direction": "A shy gentle face on a big mossy boulder head, one huge rounded stone hand carefully offering the smooth rock and the other tucked close. Keep a squat asymmetric pebble silhouette.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One friendly squat stone golem, a massive rounded moss-grey head above a tiny blocky torso, thick short boulder arms and stumpy feet; two plain dark dot eyes, a broad simple green chest mark, holding one smooth rock. No luminous runes. NEW DIRECTION: A shy gentle face on a big mossy boulder head, one huge rounded stone hand carefully offering the smooth rock and the other tucked close. Keep a squat asymmetric pebble silhouette.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "db8500cb-cd71-4381-a46f-9f3ad41066c9"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 8,
+      "id": "ninja",
+      "name": "표창 닌자",
+      "grade": "normal",
+      "source_job_id": "daf783d9-93e0-4a03-b8a7-b14960d0ad70",
+      "source_sha256": "c2efff022ff99e20ceb8f69fb1b8fc89878e093264e65335c39c9c33f5411173",
+      "source_path": "public/assets/characters/ninja.webp",
+      "awaken_exists": true,
+      "direction": "A low springy crouch with a confident single raised brow above the mask; hold the one huge four-point shuriken out to the side, separate from the cheek, short scarf bends behind.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A squat dark-elf ninja: lavender face partly covered by a charcoal mask, large simple plum hood, short scarf, tiny booted feet; holding one oversized four-point shuriken. No smoke and no shadow clones. NEW DIRECTION: A low springy crouch with a confident single raised brow above the mask; hold the one huge four-point shuriken out to the side, separate from the cheek, short scarf bends behind.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "daf783d9-93e0-4a03-b8a7-b14960d0ad70"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 9,
+      "id": "k9",
+      "name": "군견병",
+      "grade": "normal",
+      "source_job_id": "7fbc1253-dc7d-4e8b-b60d-ce2bcc46e2f8",
+      "source_sha256": "d473513087af9a96222f214de38fb35542114e9c8572181e0d653f79ed426e61",
+      "source_path": "public/assets/characters/k9.webp",
+      "awaken_exists": true,
+      "direction": "Previously quoted six-hero design, preserve identity and emphasize role silhouette.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign this existing ORIGINAL Random-TD unit. Reference 1 is the current hero and preserves identity; reference 2 supplies the established chunky rendering ONLY. Do not copy the reference miner's beard, helmet, pickaxe or face. Keep a comically large round head, two-head-tall squat body, tiny mitten hands and stubby feet. Broad dark cocoa-brown organic outlines, flat opaque earthy colors with ONE hard-edged shadow patch, at most five major color families and one bold accent. Readable coherent silhouette at 64 pixels; distinctive personality through brow, mouth, posture and one role-defining prop rather than realistic eyes or ornament. Full unit three-quarter front view, all feet, wings, companion and equipment comfortably inside a 1:1 square with white margin; about 75 percent fill. Pure WHITE background. No text, logos, border, platform, scenery, gradients, glossy rendering, rim glow, aura, particles or detached decorative companions. Do not reproduce any commercial game's character. Visual redesign only: preserve the hero's species, role, name and equipment logic. Keep the existing friendly human military dog-handler, olive helmet and uniform, but make a loyal round shepherd dog clearly visible pressed beside his left boot, its ears and cream muzzle outside the human silhouette. Draw ONE inseparable handler-and-dog unit, not a second independently floating character. Dog occupies about one third of the unit, leaning forward eagerly with a determined happy face; handler leans back with a surprised warm smile and one oversized treat pouch. Preserve human and canine identities, no transformation into a dog soldier. Dog and soldier must both read as a team at 64 pixels; do not add a firearm.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "7fbc1253-dc7d-4e8b-b60d-ce2bcc46e2f8"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 10,
+      "id": "merchant",
+      "name": "상인",
+      "grade": "rare",
+      "source_job_id": "59a9bb96-5277-4c9d-a1eb-19df27ada78f",
+      "source_sha256": "32204ba8b641646faa6d3c1c0511d4644305fbc41cc3d94b8834f401c9d807db",
+      "source_path": "public/assets/characters/merchant.webp",
+      "awaken_exists": true,
+      "direction": "A delighted welcoming bean smile, one arm presenting a single large coin while the enormous money sack tips the body slightly backward. Preserve the blue cap, orange beard and round belly.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A jovial dwarf merchant with an enormous orange beard, oversized soft blue cap, cream shirt, brown vest, round belly and short brown boots; one large ochre money sack on his back and one plain coin in his hand, no coin shower. NEW DIRECTION: A delighted welcoming bean smile, one arm presenting a single large coin while the enormous money sack tips the body slightly backward. Preserve the blue cap, orange beard and round belly.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "59a9bb96-5277-4c9d-a1eb-19df27ada78f"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 11,
+      "id": "mudshaman",
+      "name": "진흙 주술사",
+      "grade": "rare",
+      "source_job_id": "5e9764d5-b1c1-42d4-a290-adc0f2bfae37",
+      "source_sha256": "36fcf1174ff73a65016b6c3c2a4a614a52a0d27c997345bd53aeb230c5a711b2",
+      "source_path": "public/assets/characters/mudshaman.webp",
+      "awaken_exists": true,
+      "direction": "A wide rustic half-mask and an inquisitive tilted head, the round mud lump balanced proudly in one palm; thick staff held on the opposite side. Separate mask, shoulders and staff clearly.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A squat green orc mud shaman wearing a very simple ochre wooden half-mask and brown poncho; one broad mud-topped totem staff and a round mud lump, short bare feet, no tiny charms. NEW DIRECTION: A wide rustic half-mask and an inquisitive tilted head, the round mud lump balanced proudly in one palm; thick staff held on the opposite side. Separate mask, shoulders and staff clearly.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "5e9764d5-b1c1-42d4-a290-adc0f2bfae37"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 12,
+      "id": "bard",
+      "name": "음유시인",
+      "grade": "rare",
+      "source_job_id": "4f16fa65-1848-4c5f-81ce-282272645533",
+      "source_sha256": "83ecc5eedad8b4861e32ab6249ca2843da6fbab944088d53108d7dbea0654599",
+      "source_path": "public/assets/characters/bard.webp",
+      "awaken_exists": true,
+      "direction": "A joyful closed-eye curved smile, cheek pressed near the large lute and one tiny foot lifted while strumming. Three broad strings only, tiny fairy wings remain visibly attached.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A round little fairy bard with a big rosy-blond head, short green cap, small rounded fairy wings and a plum tunic; holding one chunky wooden lute with only three thick strings. No floating music notes. NEW DIRECTION: A joyful closed-eye curved smile, cheek pressed near the large lute and one tiny foot lifted while strumming. Three broad strings only, tiny fairy wings remain visibly attached.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "4f16fa65-1848-4c5f-81ce-282272645533"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 13,
+      "id": "scout",
+      "name": "정찰병",
+      "grade": "rare",
+      "source_job_id": "1064cd9f-7db2-409e-95bd-13cd56edc4f7",
+      "source_sha256": "009577f65c7dd6ce88d136f050941492427ecafa282d6b2ce62a6c50a66727a5",
+      "source_path": "public/assets/characters/scout.webp",
+      "awaken_exists": true,
+      "direction": "An intent dot-eyed face with one brow raised; tilt the blank tablet outward and lean as if listening to the folded drone attached to the backpack. Preserve olive goggles and coat.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One chubby modern recon scout, oversized olive cap with goggles perched on top, short olive coat and chunky boots; holding a broad blank dark tablet with a folded small drone attached to the backpack, no detached flying object. NEW DIRECTION: An intent dot-eyed face with one brow raised; tilt the blank tablet outward and lean as if listening to the folded drone attached to the backpack. Preserve olive goggles and coat.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "1064cd9f-7db2-409e-95bd-13cd56edc4f7"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 14,
+      "id": "flamemage",
+      "name": "화염 마법사",
+      "grade": "rare",
+      "source_job_id": "0d677ccb-cb04-44a6-bbf1-d2f25f9872d5",
+      "source_sha256": "b2d33716cfc4dbd0ff67f8173f3d5a9b3c14e5e317736d0436cbbe6630798373",
+      "source_path": "public/assets/characters/flamemage.webp",
+      "awaken_exists": true,
+      "direction": "A cheeky apologetic grin, one brow raised and hood leaning backward; hold the solid orange flame topper away from the face as a bold teardrop silhouette. A lively broad stepping pose.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A round little fire mage with a big rust-red hood, cream face, tiny dot eyes, short orange-red robe and brown shoes; holding one opaque orange flame-shaped wooden staff topper, no cast light, sparks or floating fire. NEW DIRECTION: A cheeky apologetic grin, one brow raised and hood leaning backward; hold the solid orange flame topper away from the face as a bold teardrop silhouette. A lively broad stepping pose.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "0d677ccb-cb04-44a6-bbf1-d2f25f9872d5"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 15,
+      "id": "cleaver",
+      "name": "광역딜 전사",
+      "grade": "rare",
+      "source_job_id": "8290cc74-2d5e-4e1f-a254-49a381e95a27",
+      "source_sha256": "fb9907a63cd52100c877e0a64d216265ea158264f1669208afd5a4d2040b137f",
+      "source_path": "public/assets/characters/cleaver.webp",
+      "awaken_exists": true,
+      "direction": "A broad happy tusked grin and absurdly tiny legs; lean into the oversized shoulder cleaver with the free hand on the hip. Keep the entire blade separate from the head.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A very squat broad green orc bruiser with a huge round jaw, tiny tusks, reddish-brown tunic and tiny boots; resting one enormous broad grey cleaver on the shoulder, whole blade and handle visible. NEW DIRECTION: A broad happy tusked grin and absurdly tiny legs; lean into the oversized shoulder cleaver with the free hand on the hip. Keep the entire blade separate from the head.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "8290cc74-2d5e-4e1f-a254-49a381e95a27"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 16,
+      "id": "duelist",
+      "name": "단일딜 전사",
+      "grade": "rare",
+      "source_job_id": "422727c7-2768-47af-9f26-f82e54b55478",
+      "source_sha256": "2260807c37182f7443c1a87a7d31d019d0d5a0a495005d7dc2493fff03a7934c",
+      "source_path": "public/assets/characters/duelist.webp",
+      "awaken_exists": true,
+      "direction": "A smug half smile and one raised brow under the plum hood; a compact side-on fencing stance with two daggers pointing different directions, never crossing the face.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A short round dark-elf duelist with a plum hood, lavender face, compact charcoal leather vest and little boots; holding two broad blunt-looking steel daggers close to the body, no spinning effects. NEW DIRECTION: A smug half smile and one raised brow under the plum hood; a compact side-on fencing stance with two daggers pointing different directions, never crossing the face.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "422727c7-2768-47af-9f26-f82e54b55478"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 17,
+      "id": "gunner",
+      "name": "기관총 사수",
+      "grade": "rare",
+      "source_job_id": "19825e90-2f7d-49d0-b8a5-3c44185b554e",
+      "source_sha256": "32c084e662f98216d780e0f5b9fdbc6319cf87a108645d9b2acc84ba8dbc20e3",
+      "source_path": "public/assets/characters/gunner.webp",
+      "awaken_exists": true,
+      "direction": "An easygoing humming bean smile and rounded cheeks; hug the one large gun slightly angled down, knees apart in a stable stance. Simplify the ammo band into a few broad blocks.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One chubby olive-uniformed machine gunner with an oversized rounded helmet, short vest and boots; hugging a chunky simplified machine gun against the belly, a single broad ammo band, no loose casings or extra crew. NEW DIRECTION: An easygoing humming bean smile and rounded cheeks; hug the one large gun slightly angled down, knees apart in a stable stance. Simplify the ammo band into a few broad blocks.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "19825e90-2f7d-49d0-b8a5-3c44185b554e"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 18,
+      "id": "dwarfbomber",
+      "name": "드워프 폭탄병",
+      "grade": "rare",
+      "source_job_id": "f0577305-50b4-4481-b005-452cc472cd9e",
+      "source_sha256": "5a1df4a950028204c4d86142298a644f8d3405e446a5609ef80d35317156ee93",
+      "source_path": "public/assets/characters/dwarfbomber.webp",
+      "awaken_exists": true,
+      "direction": "A comically cautious sideways glance, giant orange beard, one oversized matte black bomb held well away from the face in both mitten hands; short unlit cord stays visible.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A stout dwarf bomber with a broad orange beard, oversized brown leather cap and plain goggles, thick cream sleeves and boots; holding one big matte black round bomb with a short unlit cord, no sparks. NEW DIRECTION: A comically cautious sideways glance, giant orange beard, one oversized matte black bomb held well away from the face in both mitten hands; short unlit cord stays visible.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "f0577305-50b4-4481-b005-452cc472cd9e"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 19,
+      "id": "windarcher",
+      "name": "바람 궁수",
+      "grade": "rare",
+      "source_job_id": "ba540f69-f359-47e1-9a1c-cd4c300ed2f4",
+      "source_sha256": "646726a27f7eac5a8f21e1e684050c728aebb2291496367cd73593edab56e97a",
+      "source_path": "public/assets/characters/windarcher.webp",
+      "awaken_exists": true,
+      "direction": "A relaxed closed-eye smile and tilted blond head, green cape forms one broad side-swept wedge; hold the bow wide with one attached feather accent, feet in a small skipping stance.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A round little elf wind archer with large pale-blond head, short leaf-green cloak and chunky boots; one broad curved wooden bow with a single attached feather-shaped accent, no wind trails or particles. NEW DIRECTION: A relaxed closed-eye smile and tilted blond head, green cape forms one broad side-swept wedge; hold the bow wide with one attached feather accent, feet in a small skipping stance.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "ba540f69-f359-47e1-9a1c-cd4c300ed2f4"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 20,
+      "id": "icemage",
+      "name": "얼음 마법사",
+      "grade": "unique",
+      "source_job_id": "2376c40a-1097-4143-aedd-7246ec822c5f",
+      "source_sha256": "726137ccc5cde8ca56075a17fbf58e17c675bf324a01ee6aeed3c70aa2e3108a",
+      "source_path": "public/assets/characters/icemage.webp",
+      "awaken_exists": true,
+      "direction": "A serene tiny smile and slightly tilted head, two compact ears visible; hold the three-facet cyan staff out from the pale-blue hood, crisp negative space around the crystals.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A little round elf ice mage with oversized pale-blond head and pointed ears, soft pale-blue hood and short blue-cream robe; holding one thick brown staff topped with three large opaque cyan ice facets. No snow, breath, shine or particles. NEW DIRECTION: A serene tiny smile and slightly tilted head, two compact ears visible; hold the three-facet cyan staff out from the pale-blue hood, crisp negative space around the crystals.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "2376c40a-1097-4143-aedd-7246ec822c5f"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 21,
+      "id": "gambler",
+      "name": "도박꾼",
+      "grade": "unique",
+      "source_job_id": "22d85c1c-2192-4eea-96eb-ba60dfdd176b",
+      "source_sha256": "45ea721100387b6076c96b1e7c70d397bf36701a43c8c43fa02fb896e996ed3d",
+      "source_path": "public/assets/characters/gambler.webp",
+      "awaken_exists": true,
+      "direction": "Previously quoted six-hero design, preserve identity and emphasize role silhouette.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign this existing ORIGINAL Random-TD unit. Reference 1 is the current hero and preserves identity; reference 2 supplies the established chunky rendering ONLY. Do not copy the reference miner's beard, helmet, pickaxe or face. Keep a comically large round head, two-head-tall squat body, tiny mitten hands and stubby feet. Broad dark cocoa-brown organic outlines, flat opaque earthy colors with ONE hard-edged shadow patch, at most five major color families and one bold accent. Readable coherent silhouette at 64 pixels; distinctive personality through brow, mouth, posture and one role-defining prop rather than realistic eyes or ornament. Full unit three-quarter front view, all feet, wings, companion and equipment comfortably inside a 1:1 square with white margin; about 75 percent fill. Pure WHITE background. No text, logos, border, platform, scenery, gradients, glossy rendering, rim glow, aura, particles or detached decorative companions. Do not reproduce any commercial game's character. Visual redesign only: preserve the hero's species, role, name and equipment logic. Keep the existing squat dark-elf gambler's pale lavender skin, pointed ears, plum cap and burgundy waistcoat. Keep the existing ivory die and enlarge it into ONE clearly readable role-defining prop with a few large indented circular pips cupped in one hand, separated from the body. A tiny raised eyebrow and confident sideways bean smile convey mischievous confidence; a tilted cap and low crouched leaning pose give a clear asymmetric silhouette. No playing cards, no extra dice, no written numbers, no casino branding.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "22d85c1c-2192-4eea-96eb-ba60dfdd176b"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 22,
+      "id": "blacksmith",
+      "name": "대장장이",
+      "grade": "unique",
+      "source_job_id": "5c53d755-2a4f-4e68-8e5c-d8cb9f4f14ae",
+      "source_sha256": "29603ee4e6a8480508a6ac928a781456fdb2b238068325e297f2ca7f8c4e8ede",
+      "source_path": "public/assets/characters/blacksmith.webp",
+      "awaken_exists": true,
+      "direction": "A proud determined smile beneath the rust beard; raise the broad hammer beside the goggles while cradling the tiny anvil near the opposite hip. Big confident belly, very short legs.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A chubby dwarf blacksmith with a huge rust beard, simple dark goggles on the forehead, cream sleeves, brown apron and boots; one oversized broad hammer and one small anvil held in the other hand, no flying sparks. NEW DIRECTION: A proud determined smile beneath the rust beard; raise the broad hammer beside the goggles while cradling the tiny anvil near the opposite hip. Big confident belly, very short legs.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "5c53d755-2a4f-4e68-8e5c-d8cb9f4f14ae"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 23,
+      "id": "goblinchief",
+      "name": "고블린 족장",
+      "grade": "unique",
+      "source_job_id": "e8fd6fb2-56da-4e9a-a5bd-9843fd73bf43",
+      "source_sha256": "40aa97dd1427834b32251dff3b0ce088c8f97d24e9a84033f67b430026eadfbb",
+      "source_path": "public/assets/characters/goblinchief.webp",
+      "awaken_exists": true,
+      "direction": "A proudly puffed cheek and mischievous confident brow; enormous ears and one oversized feather make a clear asymmetric crown silhouette. Thick wooden staff held to one side.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One proud little green goblin chief, big round head and wide ears, short fur-brown cape and a large single feather in a plain headband; holding a thick simple wooden staff, no followers. NEW DIRECTION: A proudly puffed cheek and mischievous confident brow; enormous ears and one oversized feather make a clear asymmetric crown silhouette. Thick wooden staff held to one side.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "e8fd6fb2-56da-4e9a-a5bd-9843fd73bf43"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "individual_quote"
+    },
+    {
+      "index": 24,
+      "id": "astrologer",
+      "name": "점성술사",
+      "grade": "unique",
+      "source_job_id": "5d4711a9-fbac-435b-b7d7-986b906d194f",
+      "source_sha256": "67b9698bc96498ca055ed980ab1ee8a00955fe78491553076150b53a6b8b6151",
+      "source_path": "public/assets/characters/astrologer.webp",
+      "awaken_exists": true,
+      "direction": "An absent-minded curious tiny open mouth, big navy crescent cap tilted to one side; cradle the large lavender ball at chest height without hiding the face or wing outlines.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A round fairy astrologer with a large soft navy cap, short muted-purple coat and two simple rounded wings; cradling one opaque pale-lavender crystal ball with one flat crescent mark, no stars or light. NEW DIRECTION: An absent-minded curious tiny open mouth, big navy crescent cap tilted to one side; cradle the large lavender ball at chest height without hiding the face or wing outlines.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "5d4711a9-fbac-435b-b7d7-986b906d194f"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 25,
+      "id": "banker",
+      "name": "은행가",
+      "grade": "unique",
+      "source_job_id": "47fc9182-a37a-48ba-aaa0-7ccee876b44a",
+      "source_sha256": "5e04a3fae59d09967ac0b9d8c01300840433fecdafbbd402359a230b56df218d",
+      "source_path": "public/assets/characters/banker.webp",
+      "awaken_exists": true,
+      "direction": "A delightfully stern pinched bean mouth and big round glasses; hug the thick ledger tightly and show one plain coin in a tiny raised hand. Preserve orange beard and blue cap.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A plump dwarf banker with an oversized blue cap, broad orange beard, simple round black spectacles, brown waistcoat and boots; holding one thick closed ochre ledger and one plain cream coin, no writing. NEW DIRECTION: A delightfully stern pinched bean mouth and big round glasses; hug the thick ledger tightly and show one plain coin in a tiny raised hand. Preserve orange beard and blue cap.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "47fc9182-a37a-48ba-aaa0-7ccee876b44a"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 26,
+      "id": "sniper",
+      "name": "저격수",
+      "grade": "unique",
+      "source_job_id": "236bce8e-93e4-4f45-b851-a74b5f43a03d",
+      "source_sha256": "684593930b68147c5452d6f2e7c70f21b540d0516a2916e56943f1afd58b6aae",
+      "source_path": "public/assets/characters/sniper.webp",
+      "awaken_exists": true,
+      "direction": "A calm patient half-lidded face peeking out of the moss hood; use a compact low stance with a large clearly round scope and the full broad rifle held across the lower body.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One squat modern sniper with a large moss-olive hood, little round face, tiny black eyes and short boots; one long but broad simple rifle with a big round scope held close across the belly. Entire rifle fits with wide margins. NEW DIRECTION: A calm patient half-lidded face peeking out of the moss hood; use a compact low stance with a large clearly round scope and the full broad rifle held across the lower body.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "236bce8e-93e4-4f45-b851-a74b5f43a03d"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 27,
+      "id": "berserker",
+      "name": "광전사",
+      "grade": "unique",
+      "source_job_id": "a4e57114-f668-4752-b5ee-1ec11142f2fc",
+      "source_sha256": "c1af8c78b653e9dfc75062e1e70c583323e3917c08122d0e20c03675a6fe4270",
+      "source_path": "public/assets/characters/berserker.webp",
+      "awaken_exists": true,
+      "direction": "An exaggerated grumpy brow and tiny puffed cheeks, never realistic rage; red mohawk above a huge round head. Two broad axes point outward with clean gaps from the cheeks.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One chunky green orc berserker with a huge round head, tiny tusks, rust-red mohawk, brown sleeveless tunic and short heavy boots; holding two broad simple axes, stern dot eyes, no steam or flame. NEW DIRECTION: An exaggerated grumpy brow and tiny puffed cheeks, never realistic rage; red mohawk above a huge round head. Two broad axes point outward with clean gaps from the cheeks.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "a4e57114-f668-4752-b5ee-1ec11142f2fc"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 28,
+      "id": "lightning",
+      "name": "번개 마법사",
+      "grade": "unique",
+      "source_job_id": "845feb60-c11a-4728-95cf-06404bd77eb8",
+      "source_sha256": "f4e296154c2b2aabd1c63dbbe9c073a31e3fb6c4da83398c3e0780cde744868d",
+      "source_path": "public/assets/characters/lightning.webp",
+      "awaken_exists": true,
+      "direction": "A startled funny bean mouth, all the big cream hair pushed upward into one lightning-like silhouette; hold the yellow zigzag staff aside in an unbalanced but planted little stance.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A round little kingdom lightning mage with large blocky cream hair pointing upward, short mustard-and-blue robe and tiny boots; one thick staff with an opaque yellow zigzag-shaped top, no electricity, glow or particles. NEW DIRECTION: A startled funny bean mouth, all the big cream hair pushed upward into one lightning-like silhouette; hold the yellow zigzag staff aside in an unbalanced but planted little stance.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "845feb60-c11a-4728-95cf-06404bd77eb8"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 29,
+      "id": "poisonarcher",
+      "name": "독 궁수",
+      "grade": "unique",
+      "source_job_id": "849c90c2-1903-4a91-b09a-f6a9cc969be4",
+      "source_sha256": "a5b741346a95782aba042bcbda914aefc25423e27937e6ce4e5ab2710af16f4d",
+      "source_path": "public/assets/characters/poisonarcher.webp",
+      "awaken_exists": true,
+      "direction": "A sly confident tiny grin beneath the plum hood; bring the sealed purple poison bottle into view on the belt and hold one broad purple-tipped arrow alongside the bow.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A short round dark-elf poison archer with plum hood, lavender face, charcoal tunic and short boots; a broad brown bow, one simple purple arrow tip and one big sealed poison bottle on the belt, no mist. NEW DIRECTION: A sly confident tiny grin beneath the plum hood; bring the sealed purple poison bottle into view on the belt and hold one broad purple-tipped arrow alongside the bow.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "849c90c2-1903-4a91-b09a-f6a9cc969be4"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 30,
+      "id": "summoner",
+      "name": "소환사",
+      "grade": "hero",
+      "source_job_id": "1939c46d-1660-4f11-a01d-06b7dbd3fea2",
+      "source_sha256": "4b7519aceff7d98f29b1e251055fa736925a32951e15b39990c860dcdd237d1b",
+      "source_path": "public/assets/characters/summoner.webp",
+      "awaken_exists": true,
+      "direction": "An intent curious face with a gentle half-smile; pull the plum hood rim away from the cheeks, present the opaque violet teardrop staff topper as one large clean silhouette.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One little round dark-elf summoner, oversized plum hood with an ochre hem, lavender face, short purple robe and stubby brown boots; holding a short dark staff with one opaque violet teardrop-shaped topper. No spirit, orbiting creature or magic circle. NEW DIRECTION: An intent curious face with a gentle half-smile; pull the plum hood rim away from the cheeks, present the opaque violet teardrop staff topper as one large clean silhouette.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "1939c46d-1660-4f11-a01d-06b7dbd3fea2"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 31,
+      "id": "scholar",
+      "name": "학자",
+      "grade": "hero",
+      "source_job_id": "4d3b35a3-9260-4252-8ea4-d447885c0f6c",
+      "source_sha256": "435fbda9d32fa8423222bf4366bf9ae51befce9a8a2f05a94cf4b49dcb603c6f",
+      "source_path": "public/assets/characters/scholar.webp",
+      "awaken_exists": true,
+      "direction": "A wonderfully serious tiny bean mouth behind oversize round spectacles; one finger points to the blank open book while the big blond head leans toward the reader. Fairy wings visible.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One round little fairy scholar with oversized cream-blond head, big simple round spectacles, short muted-blue cape and rounded small wings; holding one open chunky cream book with completely blank pages. NEW DIRECTION: A wonderfully serious tiny bean mouth behind oversize round spectacles; one finger points to the blank open book while the big blond head leans toward the reader. Fairy wings visible.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "4d3b35a3-9260-4252-8ea4-d447885c0f6c"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 32,
+      "id": "chronomancer",
+      "name": "시간술사",
+      "grade": "hero",
+      "source_job_id": "424ad9e1-c1d6-423c-9ea5-525110be0735",
+      "source_sha256": "429647e75113b217c67d87a4bbb909517a6ad7c87161535373f5ee0f00b62d9f",
+      "source_path": "public/assets/characters/chronomancer.webp",
+      "awaken_exists": true,
+      "direction": "A mildly flustered surprised expression contrasting the important large pocket watch; lean the round fairy head toward the watch, blue robe and tiny belt hourglass clear.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A squat little fairy time mage in a soft ochre hood and short muted-blue robe; holding one oversized simple pocket watch with two thick hands and one small hourglass attached to the belt, no numerals, aura or floating clocks. NEW DIRECTION: A mildly flustered surprised expression contrasting the important large pocket watch; lean the round fairy head toward the watch, blue robe and tiny belt hourglass clear.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "424ad9e1-c1d6-423c-9ea5-525110be0735"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 33,
+      "id": "alchemist",
+      "name": "연금술사",
+      "grade": "hero",
+      "source_job_id": "aa26fdda-71f8-45ec-a39c-57a772ab6e5a",
+      "source_sha256": "e66a594f74b680573537f93c8f9e78d8d55830e9551eae67d21e037c655258dc",
+      "source_path": "public/assets/characters/alchemist.webp",
+      "awaken_exists": true,
+      "direction": "A delighted discovery grin, goggles up and rust beard spread wide; hold the large corked turquoise flask high on one side and the thick mixing spoon at the opposite hip.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One round dwarf alchemist with a large orange beard, plain goggles on the forehead, short olive apron and boots; holding one big opaque turquoise flask with a cork and a simple red-brown mixing spoon, no bubbles in the air. NEW DIRECTION: A delighted discovery grin, goggles up and rust beard spread wide; hold the large corked turquoise flask high on one side and the thick mixing spoon at the opposite hip.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "aa26fdda-71f8-45ec-a39c-57a772ab6e5a"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 34,
+      "id": "paladin",
+      "name": "수호 기사",
+      "grade": "hero",
+      "source_job_id": "15efe46d-96bf-419b-a76b-e9644d4effc1",
+      "source_sha256": "d3810054de14787d53908daae86cac09bd93a261280e7a8e1c17606a5479e8fd",
+      "source_path": "public/assets/characters/paladin.webp",
+      "awaken_exists": true,
+      "direction": "A reassuring tiny smile, rounded helmet framing the face; huge blue-striped tower shield makes a bold rectangular side silhouette, short sword angled away from it and the face.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: A very squat kingdom paladin, large rounded cream-and-steel helmet, tiny face, blue cape and stumpy boots; one huge simple tower shield with one broad blue vertical band and one short thick sword. NEW DIRECTION: A reassuring tiny smile, rounded helmet framing the face; huge blue-striped tower shield makes a bold rectangular side silhouette, short sword angled away from it and the face.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "15efe46d-96bf-419b-a76b-e9644d4effc1"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 35,
+      "id": "necromancer",
+      "name": "사령술사",
+      "grade": "hero",
+      "source_job_id": "ff5a27cf-06fe-4914-b176-12467df6fe8f",
+      "source_sha256": "7c12a6d2558789af0afec9f2186a7816a289f31ec351d4233a4bb64901e2da04",
+      "source_path": "public/assets/characters/necromancer.webp",
+      "awaken_exists": true,
+      "direction": "A gentle affectionate small smile instead of a menacing scowl; tilt the lavender face toward the large ivory skull staff, both faces clearly separated under a round charcoal hood.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One round dark-elf necromancer, oversized charcoal hood, lavender face, short muted-purple robe and little boots; holding one simple ivory skull-shaped staff with two solid dark eye holes, no ghosts or flames. NEW DIRECTION: A gentle affectionate small smile instead of a menacing scowl; tilt the lavender face toward the large ivory skull staff, both faces clearly separated under a round charcoal hood.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "ff5a27cf-06fe-4914-b176-12467df6fe8f"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 36,
+      "id": "artillery",
+      "name": "포병 대장",
+      "grade": "hero",
+      "source_job_id": "6219b69c-f988-4c3e-ac09-d9993cb84f60",
+      "source_sha256": "12b65babb65edf295d318a3a328bde0aa408426954a5484abf0324f05853bac7",
+      "source_path": "public/assets/characters/artillery.webp",
+      "awaken_exists": true,
+      "direction": "A confident commanding open bean mouth, big olive beret and headset; hold large binoculars just below the chin so the actual eyes remain visible, one little boot steps forward.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One chunky modern artillery captain with oversized olive beret, a broad dark headset, short coat and boots; holding big simple binoculars, one plain radio pouch on the belt. No crew, backdrop or detached cannon. NEW DIRECTION: A confident commanding open bean mouth, big olive beret and headset; hold large binoculars just below the chin so the actual eyes remain visible, one little boot steps forward.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "6219b69c-f988-4c3e-ac09-d9993cb84f60"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 37,
+      "id": "prophet",
+      "name": "예언자",
+      "grade": "hero",
+      "source_job_id": "8042a01a-5361-4ce5-a026-53b1d613df81",
+      "source_sha256": "db4940ce11f6d58771bba372fd80ae0900df2acc0efaa55b6090dbd242a16923",
+      "source_path": "public/assets/characters/prophet.webp",
+      "awaken_exists": true,
+      "direction": "A peaceful almost sleepy smile; closed curved eyes and the single oval forehead mark all clearly visible below a broad cream headwrap. Hands together, head tilted slightly.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One small rounded elf prophet with a large pale head, simple cream headwrap and short muted-blue robe; closed eyes shown as tiny curved strokes and one single opaque oval forehead mark, hands together, no luminous aura. NEW DIRECTION: A peaceful almost sleepy smile; closed curved eyes and the single oval forehead mark all clearly visible below a broad cream headwrap. Hands together, head tilted slightly.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "8042a01a-5361-4ce5-a026-53b1d613df81"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 38,
+      "id": "swordsaint",
+      "name": "검성",
+      "grade": "hero",
+      "source_job_id": "82951001-ef28-4847-8f63-f1c22327232f",
+      "source_sha256": "d9fa963061b14f698194be1dde8578a4f591dbf33bab672c3ec9db696d4e4ddf",
+      "source_path": "public/assets/characters/swordsaint.webp",
+      "awaken_exists": true,
+      "direction": "A calm confident tiny smile and closed dot-like eyes; cream ponytail in one broad curve, navy robe flaring just a little as both tiny hands rest on the broad sheathed curved sword.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One squat calm elf sword saint with oversized tied-back cream hair and long simple ears, short dark-blue robe and stubby boots; one broad sheathed curved sword held at the waist, no streaks or floating petals. NEW DIRECTION: A calm confident tiny smile and closed dot-like eyes; cream ponytail in one broad curve, navy robe flaring just a little as both tiny hands rest on the broad sheathed curved sword.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "82951001-ef28-4847-8f63-f1c22327232f"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 39,
+      "id": "stormarcher",
+      "name": "폭풍 궁수",
+      "grade": "hero",
+      "source_job_id": "0bd34216-229c-4a42-945c-657ff58b00da",
+      "source_sha256": "e51940b760239c781c5371431e18ad3ece263eb39d1b93ef8a8a2865e5e71fc4",
+      "source_path": "public/assets/characters/stormarcher.webp",
+      "awaken_exists": true,
+      "direction": "A determined playful brow and windswept silver-blond fringe; diagonally hold the broad dark bow so its one mustard zigzag accent and the short grey-blue cape both read clearly.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One short chubby elf storm archer with a large silver-blond head, short grey-blue cape and tiny boots; one broad dark bow with a single opaque mustard zigzag ornament attached to it, no wind or lightning effects. NEW DIRECTION: A determined playful brow and windswept silver-blond fringe; diagonally hold the broad dark bow so its one mustard zigzag accent and the short grey-blue cape both read clearly.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "0bd34216-229c-4a42-945c-657ff58b00da"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 40,
+      "id": "dragoncaller",
+      "name": "용 소환사",
+      "grade": "legend",
+      "source_job_id": "6aec3404-4e5a-4db0-9c6b-58bdda87ec7a",
+      "source_sha256": "7dfcdc4467027e1d2f4b6eba79467943de1788ee82220343b5a194a1993aee38",
+      "source_path": "public/assets/characters/dragoncaller.webp",
+      "awaken_exists": true,
+      "direction": "Previously quoted six-hero design, preserve identity and emphasize role silhouette.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign this existing ORIGINAL Random-TD unit. Reference 1 is the current hero and preserves identity; reference 2 supplies the established chunky rendering ONLY. Do not copy the reference miner's beard, helmet, pickaxe or face. Keep a comically large round head, two-head-tall squat body, tiny mitten hands and stubby feet. Broad dark cocoa-brown organic outlines, flat opaque earthy colors with ONE hard-edged shadow patch, at most five major color families and one bold accent. Readable coherent silhouette at 64 pixels; distinctive personality through brow, mouth, posture and one role-defining prop rather than realistic eyes or ornament. Full unit three-quarter front view, all feet, wings, companion and equipment comfortably inside a 1:1 square with white margin; about 75 percent fill. Pure WHITE background. No text, logos, border, platform, scenery, gradients, glossy rendering, rim glow, aura, particles or detached decorative companions. Do not reproduce any commercial game's character. Visual redesign only: preserve the hero's species, role, name and equipment logic. Keep the existing friendly tiny pink-haired fairy dragon caller with warm orange-brown clothing. The visual focus must be a REAL round baby orange dragon perched and firmly touching one shoulder, its oversize head and two blunt horns visible beside the fairy face. ONE inseparable fairy-and-shoulder-dragon unit. Dragon has puffed cheeks about to sneeze; fairy has a delighted squint and leans gently the other way. Replace the dragon-shaped costume hood that could be mistaken for the actual dragon with a simple hood folded down. Baby dragon, not a dragon hat, costume or remote pet. No flame effect or detached magic.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "6aec3404-4e5a-4db0-9c6b-58bdda87ec7a"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 41,
+      "id": "warlord",
+      "name": "전쟁 군주",
+      "grade": "legend",
+      "source_job_id": "7bb251d1-9d7c-4d50-a307-b1db83aadc29",
+      "source_sha256": "a9a7bc981171966fe20d21caa0a5f12726c309f30a0bb552754f20b7652b5397",
+      "source_path": "public/assets/characters/warlord.webp",
+      "awaken_exists": true,
+      "direction": "A big proud tusked grin, huge green jaw and tiny legs; broad banner and red cape form separate simple shapes behind the head, one large sword rests diagonally to the side.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One very stout green orc warlord, huge round jaw, tiny tusks, simple dark armour, rust-red cape and short heavy boots; one broad ochre-backed battle banner attached to the back and a large plain grey sword, no army. NEW DIRECTION: A big proud tusked grin, huge green jaw and tiny legs; broad banner and red cape form separate simple shapes behind the head, one large sword rests diagonally to the side.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "7bb251d1-9d7c-4d50-a307-b1db83aadc29"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 42,
+      "id": "archmage",
+      "name": "대마법사",
+      "grade": "legend",
+      "source_job_id": "9f6dcb9e-c1f8-4d9f-89c6-3b321ac96f83",
+      "source_sha256": "40c727d0f316a5481c0540a25c79c62f04e5f25102fcdc35c85c0009c238a45c",
+      "source_path": "public/assets/characters/archmage.webp",
+      "awaken_exists": true,
+      "direction": "An amused knowing smile barely visible above a huge cream beard; hat bends sideways, thick closed book hugged at the belly and broad wooden staff planted firmly opposite.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One squat old kingdom archmage with huge cream beard, oversized muted-blue wizard hat, short navy robe and little brown boots; holding one thick closed spellbook and one broad simple wooden staff, no floating effects. NEW DIRECTION: An amused knowing smile barely visible above a huge cream beard; hat bends sideways, thick closed book hugged at the belly and broad wooden staff planted firmly opposite.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "9f6dcb9e-c1f8-4d9f-89c6-3b321ac96f83"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 43,
+      "id": "assassin",
+      "name": "그림자 암살자",
+      "grade": "legend",
+      "source_job_id": "6d4e5fdb-5f51-4e7b-a692-83a1dec5e6dd",
+      "source_sha256": "03f19752fa68e4b23eb0e39723c6047f26a792581daf9a34889f8728a52875c7",
+      "source_path": "public/assets/characters/assassin.webp",
+      "awaken_exists": true,
+      "direction": "A tiny confident smirk and raised brow visible inside the deep charcoal hood; low compact crouch and two simple daggers spread at hip level, never crossing the face.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One squat dark-elf assassin with an oversized deep charcoal hood, tiny dark dot eyes within a lavender face, short plum scarf and stubby boots; two broad simple dark daggers, fully solid body, no shadow clone or smoke. NEW DIRECTION: A tiny confident smirk and raised brow visible inside the deep charcoal hood; low compact crouch and two simple daggers spread at hip level, never crossing the face.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "6d4e5fdb-5f51-4e7b-a692-83a1dec5e6dd"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 44,
+      "id": "fortuna",
+      "name": "행운의 여신",
+      "grade": "legend",
+      "source_job_id": "4100ebd7-de7d-4fa0-a7e3-aafde523a311",
+      "source_sha256": "8fc99250a9c2f03401b01bb2e8992d8dd5f688890463d44e700cb7a49e762658",
+      "source_path": "public/assets/characters/fortuna.webp",
+      "awaken_exists": true,
+      "direction": "An inviting joyful smile, fluffy cream hair and soft pink wings; lean affectionately toward the single oversized four-leaf clover, moss dress flares in one simple bell shape.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One rounded fairy lady of luck with oversized cream-blond head, small soft pink wings and a short moss-green dress; holding one large solid four-leaf-clover-shaped staff, no glitter, falling clovers or glow. NEW DIRECTION: An inviting joyful smile, fluffy cream hair and soft pink wings; lean affectionately toward the single oversized four-leaf clover, moss dress flares in one simple bell shape.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "4100ebd7-de7d-4fa0-a7e3-aafde523a311"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 45,
+      "id": "spearsgod",
+      "name": "창술의 신",
+      "grade": "legend",
+      "source_job_id": "1a110f8c-e349-4030-8e23-624c0327bf6e",
+      "source_sha256": "35460509b37c227304d73fd4478ee2dc12fc193c37439be16ba3c5b965d957e9",
+      "source_path": "public/assets/characters/spearsgod.webp",
+      "awaken_exists": true,
+      "direction": "Previously quoted six-hero design, preserve identity and emphasize role silhouette.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign this existing ORIGINAL Random-TD unit. Reference 1 is the current hero and preserves identity; reference 2 supplies the established chunky rendering ONLY. Do not copy the reference miner's beard, helmet, pickaxe or face. Keep a comically large round head, two-head-tall squat body, tiny mitten hands and stubby feet. Broad dark cocoa-brown organic outlines, flat opaque earthy colors with ONE hard-edged shadow patch, at most five major color families and one bold accent. Readable coherent silhouette at 64 pixels; distinctive personality through brow, mouth, posture and one role-defining prop rather than realistic eyes or ornament. Full unit three-quarter front view, all feet, wings, companion and equipment comfortably inside a 1:1 square with white margin; about 75 percent fill. Pure WHITE background. No text, logos, border, platform, scenery, gradients, glossy rendering, rim glow, aura, particles or detached decorative companions. Do not reproduce any commercial game's character. Visual redesign only: preserve the hero's species, role, name and equipment logic. Keep the existing golden-haired blue-and-ivory ELF spear master, pointed ears and calm confident expression; do not change species, class or equipment into a knight. The defining feature is ONE huge broad leaf-shaped spearhead with a short thick shaft, held at an angle behind the shoulder; the complete weapon fits within the canvas and is separate from the face. One hand rests on the hip, chest tilted forward, one raised brow and a small assured smile. Use a simple flowing angular blue cape with no armor filigree. Contrast clearly with the ordinary spearman: no shield, no generic helmet, one bold weapon silhouette.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "1a110f8c-e349-4030-8e23-624c0327bf6e"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 46,
+      "id": "stormlord",
+      "name": "폭풍의 군주",
+      "grade": "legend",
+      "source_job_id": "005043d6-9d86-48dd-871d-0f8c020cedb2",
+      "source_sha256": "76e30a08809d24d206b5367ab10cc3811df2eed174b1fe567ffe58f408727cbe",
+      "source_path": "public/assets/characters/stormlord.webp",
+      "awaken_exists": true,
+      "direction": "A mildly displeased puffed-cheek face inside a large blue-grey hood; rounded mantle curves around the tiny body like a raincloud while one thick yellow zigzag staff stays clear.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One squat elf storm lord with an oversized dark blue-grey hood and round pale face, short charcoal robe and stubby boots; one thick staff topped by a single solid yellow zigzag and a simple rounded blue-grey mantle, no weather effects. NEW DIRECTION: A mildly displeased puffed-cheek face inside a large blue-grey hood; rounded mantle curves around the tiny body like a raincloud while one thick yellow zigzag staff stays clear.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "005043d6-9d86-48dd-871d-0f8c020cedb2"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 47,
+      "id": "tycoon",
+      "name": "재벌",
+      "grade": "legend",
+      "source_job_id": "8f5a7ee7-8d8e-4b6e-b7ad-f40596c8accb",
+      "source_sha256": "9055b082ea53a27ba0d6db14ff95a7cb8961fc488bacd9dc693cacee6c038a24",
+      "source_path": "public/assets/characters/tycoon.webp",
+      "awaken_exists": true,
+      "direction": "An exaggerated smug bean smile below opaque sunglasses; show the big ochre folding fan beside the face rather than blocking it, round suit belly proudly thrust forward.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One chubby modern tycoon with a huge round head, simple opaque black sunglasses, short cream shirt and dark brown suit, tiny shoes; holding one broad ochre folding fan, no throne or pile of coins. NEW DIRECTION: An exaggerated smug bean smile below opaque sunglasses; show the big ochre folding fan beside the face rather than blocking it, round suit belly proudly thrust forward.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "8f5a7ee7-8d8e-4b6e-b7ad-f40596c8accb"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 48,
+      "id": "saint",
+      "name": "성녀",
+      "grade": "legend",
+      "source_job_id": "19c171ca-82c0-4e52-b00a-33e440db95ec",
+      "source_sha256": "fc2c7a3b0d8dc9f89d64783b1c6d7b9ac95dc55787c79e073f24e5fd119b0478",
+      "source_path": "public/assets/characters/saint.webp",
+      "awaken_exists": true,
+      "direction": "An especially warm gentle closed-eye smile and hands together, cream hood forms one soft heart-like frame around the face; keep a single attached ochre halo ring unobstructed.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One round gentle kingdom saint with an oversized cream hood framing the whole face, tiny dot eyes, short ivory robe with an ochre hem and little brown shoes; hands together, one solid ochre halo ring attached visually to the hood, no illumination. NEW DIRECTION: An especially warm gentle closed-eye smile and hands together, cream hood forms one soft heart-like frame around the face; keep a single attached ochre halo ring unobstructed.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "19c171ca-82c0-4e52-b00a-33e440db95ec"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 49,
+      "id": "dimensionist",
+      "name": "차원술사",
+      "grade": "legend",
+      "source_job_id": "077433b0-6f7b-4216-8ef4-8907fdc48315",
+      "source_sha256": "1ad2e7d0425e5992f6cc9accb739617be8d4f35a997f17517f1e38d3cc131c1d",
+      "source_path": "public/assets/characters/dimensionist.webp",
+      "awaken_exists": true,
+      "direction": "A curious delighted face below oversized blue goggles; hold the large solid blue ring device outward so the true white hole is clear, lab coat and tiny boots remain compact.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One squat modern dimension engineer with an oversized round head, broad plain blue goggles, a short cream lab coat and chunky dark boots; holding one large solid blue ring-shaped device, no portal or energy effects. NEW DIRECTION: A curious delighted face below oversized blue goggles; hold the large solid blue ring device outward so the true white hole is clear, lab coat and tiny boots remain compact.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "077433b0-6f7b-4216-8ef4-8907fdc48315"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 50,
+      "id": "fate",
+      "name": "운명의 신",
+      "grade": "god",
+      "source_job_id": "f3357728-4656-451b-8485-2b6d6b39a7ce",
+      "source_sha256": "4e3212d8b799b55924940ceac978ba4de04d1f24ede8dae8cba443639c88816e",
+      "source_path": "public/assets/characters/fate.webp",
+      "awaken_exists": true,
+      "direction": "A calm playful knowing half smile; large cream curls and the eight-spoke ochre wheel are two clearly separated round shapes. Hold the wheel aside with an easy confident stance.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One round lady deity of fate with large wavy pale-blond hair, tiny dot eyes, a short ivory robe with broad ochre accents and small brown shoes; holding one solid ochre eight-spoke wheel on a short staff. No aura, rainbow or sparkles. NEW DIRECTION: A calm playful knowing half smile; large cream curls and the eight-spoke ochre wheel are two clearly separated round shapes. Hold the wheel aside with an easy confident stance.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "f3357728-4656-451b-8485-2b6d6b39a7ce"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 51,
+      "id": "plenty",
+      "name": "풍요의 신",
+      "grade": "god",
+      "source_job_id": "1cea7c6a-c42d-4940-8280-0a76b85240eb",
+      "source_sha256": "053e96c5875687fa43a999ffe13a4954eca4ae96e6056c0408e87ecf8267e92f",
+      "source_path": "public/assets/characters/plenty.webp",
+      "awaken_exists": true,
+      "direction": "A warm generous closed-eye smile; round auburn hair and leaf-green hood, the big curved basket horn cradled forward with exactly one bold red apple and one broad green leaf visible.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One rounded goddess of plenty with oversized soft auburn hair, a simple leaf-green hood, short cream-and-ochre dress and little brown shoes; carrying one large curved basket horn containing just one red apple and one broad green leaf, no shower of objects. NEW DIRECTION: A warm generous closed-eye smile; round auburn hair and leaf-green hood, the big curved basket horn cradled forward with exactly one bold red apple and one broad green leaf visible.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "1cea7c6a-c42d-4940-8280-0a76b85240eb"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 52,
+      "id": "ruin",
+      "name": "파멸의 신",
+      "grade": "god",
+      "source_job_id": "e6cb889c-db63-45aa-993c-b5e50fbe186c",
+      "source_sha256": "cf7a6915f66c99289b0bec2d111bc921f6abfe7462cb7fef70f662388ee5ca2e",
+      "source_path": "public/assets/characters/ruin.webp",
+      "awaken_exists": true,
+      "direction": "Previously quoted six-hero design, preserve identity and emphasize role silhouette.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign this existing ORIGINAL Random-TD unit. Reference 1 is the current hero and preserves identity; reference 2 supplies the established chunky rendering ONLY. Do not copy the reference miner's beard, helmet, pickaxe or face. Keep a comically large round head, two-head-tall squat body, tiny mitten hands and stubby feet. Broad dark cocoa-brown organic outlines, flat opaque earthy colors with ONE hard-edged shadow patch, at most five major color families and one bold accent. Readable coherent silhouette at 64 pixels; distinctive personality through brow, mouth, posture and one role-defining prop rather than realistic eyes or ornament. Full unit three-quarter front view, all feet, wings, companion and equipment comfortably inside a 1:1 square with white margin; about 75 percent fill. Pure WHITE background. No text, logos, border, platform, scenery, gradients, glossy rendering, rim glow, aura, particles or detached decorative companions. Do not reproduce any commercial game's character. Visual redesign only: preserve the hero's species, role, name and equipment logic. Keep the existing original pale-faced ancient destruction deity, charcoal armor, blunt curved horns and muted purple accent. Replace many little armor details with a large simple horn crown silhouette and two broad BLACK wings attached to the back, compactly curled around the shoulders like a heavy cape with two blunt feather lobes on each side. Make the face plainly visible: calm half-lidded dot eyes, an almost sleepy tiny mouth, unexpectedly cute composure contrasting with powerful broad wings. Short thick limbs and a low grounded stance. No skull mask, no blood, no grim realistic demon anatomy, no scythe, no floating spell object.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "e6cb889c-db63-45aa-993c-b5e50fbe186c"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 53,
+      "id": "elemental",
+      "name": "원소 지배자",
+      "grade": "hidden",
+      "source_job_id": "c9d44863-4638-4605-b3cc-18609a63f784",
+      "source_sha256": "2c1026805538ec0a849b7e090204d5f467cf0ad1a0db624bde56389e8db88003",
+      "source_path": "public/assets/characters/elemental.webp",
+      "awaken_exists": false,
+      "direction": "A cheeky confident grin beneath the cream hair, the short patchwork robe divided into four broad red/blue/ochre/green areas. Present one staff with four chunky color segments.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One squat master of elements with a round cream-haired head, a simple four-colour patchwork short robe and tiny boots; holding one chunky staff with four large opaque red, blue, ochre and green segments in its topper, no orbiting elements. NEW DIRECTION: A cheeky confident grin beneath the cream hair, the short patchwork robe divided into four broad red/blue/ochre/green areas. Present one staff with four chunky color segments.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "c9d44863-4638-4605-b3cc-18609a63f784"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 54,
+      "id": "goldking",
+      "name": "황금 왕",
+      "grade": "hidden",
+      "source_job_id": "fa2bf50d-a0c8-4cd8-9565-46321d93a6e8",
+      "source_sha256": "d061866f8ab8b6e7b085b281df04d3606a16d2dd231e61c924ea5c94cf7d54b2",
+      "source_path": "public/assets/characters/goldking.webp",
+      "awaken_exists": false,
+      "direction": "An exuberant kingly laugh behind the enormous orange beard; three-point crown on a jaunty angle and a broad gold pickaxe angled proudly over the shoulder, tiny legs planted wide.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One round dwarf golden king with huge orange beard, a plain three-point ochre crown, short brown-and-ochre cape and little boots; holding one broad gold-coloured pickaxe, no throne, coins or juggling. NEW DIRECTION: An exuberant kingly laugh behind the enormous orange beard; three-point crown on a jaunty angle and a broad gold pickaxe angled proudly over the shoulder, tiny legs planted wide.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "fa2bf50d-a0c8-4cd8-9565-46321d93a6e8"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 55,
+      "id": "celestial",
+      "name": "천상의 궁수",
+      "grade": "hidden",
+      "source_job_id": "e7aaf402-a6c0-4a78-b899-00a69e88f124",
+      "source_sha256": "31ca44b4fb6f8ea833d7162ebc5a1329643ea4e9a7611f9d8dbfe120c3771ad3",
+      "source_path": "public/assets/characters/celestial.webp",
+      "awaken_exists": false,
+      "direction": "A quietly confident smile and broad cream fringe, the two attached ivory wings form large simple curves; the broad ivory bow and its single ochre crescent are clear beside the face.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One round elf celestial archer with oversized cream hair, a short pale-blue cloak and two simple attached ivory wings; one broad ivory bow with a single ochre crescent on it, no light or stars. NEW DIRECTION: A quietly confident smile and broad cream fringe, the two attached ivory wings form large simple curves; the broad ivory bow and its single ochre crescent are clear beside the face.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "e7aaf402-a6c0-4a78-b899-00a69e88f124"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 56,
+      "id": "legion",
+      "name": "불멸의 군단장",
+      "grade": "hidden",
+      "source_job_id": "e5a223f6-0f56-4dc3-af7f-4884e1882318",
+      "source_sha256": "df29a0b47d6abf9125175a035a6038a91491295dc61d4a79b3a8fab47a301a7e",
+      "source_path": "public/assets/characters/legion.webp",
+      "awaken_exists": false,
+      "direction": "A reassuring resolute brow under the round grey helmet; hold the broad short sword diagonally out, attached red-brown banner tilts the other way to form a strong compact silhouette.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One squat immortal legion commander, oversized rounded grey helmet, a little pale face, short dark-blue coat and boots; one large plain attached red-brown banner and a broad short sword. No other soldiers or ghosts. NEW DIRECTION: A reassuring resolute brow under the round grey helmet; hold the broad short sword diagonally out, attached red-brown banner tilts the other way to form a strong compact silhouette.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "e5a223f6-0f56-4dc3-af7f-4884e1882318"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 57,
+      "id": "infiniteblade",
+      "name": "무한의 검",
+      "grade": "hidden",
+      "source_job_id": "481174d5-7480-4294-9705-58dc1c221629",
+      "source_sha256": "ec38824a690a4b3908e4f7d276522f6d24b092c66543d6736508071872170026",
+      "source_path": "public/assets/characters/infiniteblade.webp",
+      "awaken_exists": false,
+      "direction": "Previously quoted six-hero design, preserve identity and emphasize role silhouette.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign this existing ORIGINAL Random-TD unit. Reference 1 is the current hero and preserves identity; reference 2 supplies the established chunky rendering ONLY. Do not copy the reference miner's beard, helmet, pickaxe or face. Keep a comically large round head, two-head-tall squat body, tiny mitten hands and stubby feet. Broad dark cocoa-brown organic outlines, flat opaque earthy colors with ONE hard-edged shadow patch, at most five major color families and one bold accent. Readable coherent silhouette at 64 pixels; distinctive personality through brow, mouth, posture and one role-defining prop rather than realistic eyes or ornament. Full unit three-quarter front view, all feet, wings, companion and equipment comfortably inside a 1:1 square with white margin; about 75 percent fill. Pure WHITE background. No text, logos, border, platform, scenery, gradients, glossy rendering, rim glow, aura, particles or detached decorative companions. Do not reproduce any commercial game's character. Visual redesign only: preserve the hero's species, role, name and equipment logic. Keep the existing original SILVER-HAIRED sword master with navy hood, charcoal outfit and warm brick-red necktie accent. The current picture already has one held sword and four sword hilts on the back; preserve the same total sword count, but reveal the four full blades as described below. Make EXACTLY FIVE distinct short broad swords clearly countable: one held with its tip down beside the right boot, four levitating upright in a spacious fan behind the shoulders, two on each side. Leave white gaps between all five blades; do not put blades across the face or outside the canvas. The floating blades are the hero's defining combat equipment, not decorative rarity particles. A compact stable standing pose and a confident tiny smirk; no shield, no generic knight helmet, no glowing sword trails.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "481174d5-7480-4294-9705-58dc1c221629"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 58,
+      "id": "timelord",
+      "name": "시간의 지배자",
+      "grade": "hidden",
+      "source_job_id": "5d9fa597-bf56-44e2-8b68-76f16a778173",
+      "source_sha256": "f748ca88b9b1aeb6a86bf9e23b3884b8feeda7232f2479d130cb857944b32d45",
+      "source_path": "public/assets/characters/timelord.webp",
+      "awaken_exists": false,
+      "direction": "An amusingly patient half-lidded smile and broad cream beard; one giant solid clock disc behind the head as a strong circle, held hourglass staff clear on one side with no numerals.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One squat lord of time with a large cream head and soft grey-blue hood, short ivory-and-ochre robe and tiny boots; one big solid ochre clock-shaped disc attached to the back and a thick short hourglass staff, no symbols or sparkle. NEW DIRECTION: An amusingly patient half-lidded smile and broad cream beard; one giant solid clock disc behind the head as a strong circle, held hourglass staff clear on one side with no numerals.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "5d9fa597-bf56-44e2-8b68-76f16a778173"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 59,
+      "id": "goblinking",
+      "name": "고블린 대왕",
+      "grade": "hidden",
+      "source_job_id": "bd4578c7-0277-4ff5-ba92-0f379f1b89fe",
+      "source_sha256": "95354166d4934d8e4a42220888c16275aa509be9bfd86b559f935c0f1efde5df",
+      "source_path": "public/assets/characters/goblinking.webp",
+      "awaken_exists": false,
+      "direction": "A smug delighted tusked grin, enormous ears and belly, three-point crown leaning slightly; hold one thick wooden sceptre proudly upright, no other goblins or minions.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One big-bellied squat green goblin king with huge ears, tiny dot eyes, a plain three-point ochre crown, short rust cape and little boots; holding one thick plain wooden sceptre, absolutely no minions. NEW DIRECTION: A smug delighted tusked grin, enormous ears and belly, three-point crown leaning slightly; hold one thick wooden sceptre proudly upright, no other goblins or minions.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "bd4578c7-0277-4ff5-ba92-0f379f1b89fe"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 60,
+      "id": "deathlord",
+      "name": "죽음의 군주",
+      "grade": "hidden",
+      "source_job_id": "058cc85f-56dd-4b4e-b025-3c024c28d82b",
+      "source_sha256": "da68893134e8affd608a524f51acf583c6cfc20ae432d190b2d036beff78870c",
+      "source_path": "public/assets/characters/deathlord.webp",
+      "awaken_exists": false,
+      "direction": "A cute friendly tiny skull smile and round eye holes beneath the huge plum hood; one broad scythe curves around the side with generous white gaps, very short little boots.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One very round little skeletal death lord, oversized dark hood, a simple ivory skull face with dot eye holes, short plum robe and stubby boots; one large broad scythe, no skeleton companions, poison or fog. NEW DIRECTION: A cute friendly tiny skull smile and round eye holes beneath the huge plum hood; one broad scythe curves around the side with generous white gaps, very short little boots.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "058cc85f-56dd-4b4e-b025-3c024c28d82b"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 61,
+      "id": "goldbattery",
+      "name": "황금 포격대",
+      "grade": "hidden",
+      "source_job_id": "a9278e71-6463-439a-9421-2b4910b3d27c",
+      "source_sha256": "4dc2cdb08d972e5dd424066a6b1e29cd3635701f42d180bacf57a490fa2a2bc1",
+      "source_path": "public/assets/characters/goldbattery.webp",
+      "awaken_exists": false,
+      "direction": "An excited orange-bearded dwarf operator peeking clearly above ONE short wide golden cannon barrel; one connected cart, big round wheels and single operator remain fully in frame. A proud joyful bean smile, uniform flat fills and no crew.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One chubby dwarf artillery operator with an oversized orange beard, brown cap and short ochre coat, seated within one compact matte ochre cannon cart as a single inseparable unit; only one operator, a short wide cannon barrel, no crew or coins. STRICT CORRECTION: make the WHOLE operator-and-cannon unit much SMALLER, occupying only the central 60 percent of image height, at least 150 pixels of pure white below the wheels and above the cap on a 1024-square canvas. Use completely UNIFORM FLAT SOLID fills: one uniform orange beard colour, one uniform ochre cart colour, one uniform grey barrel colour; only ONE sharply bounded flat shadow patch per material. Absolutely no airbrush, painted texture, mottling, soft edge shading or gradients. Keep the entire cart including all wheels and the complete operator head inside the image. NEW DIRECTION: An excited orange-bearded dwarf operator peeking clearly above ONE short wide golden cannon barrel; one connected cart, big round wheels and single operator remain fully in frame. A proud joyful bean smile, uniform flat fills and no crew.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "a9278e71-6463-439a-9421-2b4910b3d27c"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 62,
+      "id": "fateseer",
+      "name": "운명의 예언자",
+      "grade": "hidden",
+      "source_job_id": "eae03dfa-ed74-4159-9d00-6c63218ee054",
+      "source_sha256": "10ac0ec09275ac75789856fc2485c553ba76aca0b256c33912eb0ea79c4cd446",
+      "source_path": "public/assets/characters/fateseer.webp",
+      "awaken_exists": false,
+      "direction": "A curious pondering tiny mouth, oval forehead mark and dot eyes visible; the lavender ball is held to one side and a single large plain cream die attached to the belt on the other.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One squat seer of fate with an oversized cream hood, round pale face, a single simple oval third-eye mark, short plum robe and tiny boots; cradling one large solid lavender ball and one plain cream die attached to the belt, no floating objects. NEW DIRECTION: A curious pondering tiny mouth, oval forehead mark and dot eyes visible; the lavender ball is held to one side and a single large plain cream die attached to the belt on the other.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "eae03dfa-ed74-4159-9d00-6c63218ee054"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 63,
+      "id": "festival",
+      "name": "축제의 왕",
+      "grade": "hidden",
+      "source_job_id": "94b04ba4-2a8a-4317-96d8-119fc5905f5f",
+      "source_sha256": "a858075b7264d3ff45dd6383470fc677edbce325dea71167250c847084ee5856",
+      "source_path": "public/assets/characters/festival.webp",
+      "awaken_exists": false,
+      "direction": "A huge laughing bean smile and jaunty three-point party crown, big orange fringe; strike the large belly drum with one thick stick while the other points up, one tiny foot lifted.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One round cheerful festival king with a big orange-haired head, plain three-point ochre party crown, short brown coat and little boots; one large red-brown drum strapped across the belly, no confetti, streamers or extra musicians. NEW DIRECTION: A huge laughing bean smile and jaunty three-point party crown, big orange fringe; strike the large belly drum with one thick stick while the other points up, one tiny foot lifted.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "94b04ba4-2a8a-4317-96d8-119fc5905f5f"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    },
+    {
+      "index": 64,
+      "id": "stormavatar",
+      "name": "폭풍의 화신",
+      "grade": "hidden",
+      "source_job_id": "a71cbfda-1b29-4ac5-941a-d7105523d950",
+      "source_sha256": "01cd569752b78e815d928632027ae44f32fdbe08c0ad3a2c0fa046a257f8acd5",
+      "source_path": "public/assets/characters/stormavatar.webp",
+      "awaken_exists": false,
+      "direction": "An impish happy curved mouth and one lifted brow formed by the rounded blue-grey cloud head; a broad attached ochre zigzag chest mark, one tiny arm confidently on the hip, stout planted feet.",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign ONE existing ORIGINAL Random-TD hero for more charm and instant role recognition. Reference 1 is this exact hero: preserve its species, age impression, hair color, outfit palette and defining equipment. Reference 2 guides rendering ONLY, never transfer its face or costume. Keep a big round head, squat TWO-HEAD-TALL body, tiny mitten hands and stubby feet. Simple dot eyes with a distinct tiny brow and bean mouth; a lively asymmetric pose and one oversized role-defining prop. Broad organic dark COCOA-BROWN outlines, uniform flat opaque earthy colors, only ONE hard-edged darker shade per material, at most five main color families. No glossy gradients, airbrush, glow, aura, ornamental particles, ground shadow, pedestal, UI, text or logo. Full body three-quarter front view, all feet and weapon tips INSIDE a square, 75 percent canvas fill, pure WHITE background to all edges. One complete unit, no extra people. Readable at 64 pixels. Do not copy a commercial character. Existing identity: One squat blue-grey storm spirit mascot with an oversized rounded cloud-shaped head, tiny dark dot eyes, a little compact torso, thick short arms and stubby feet; one broad solid ochre zigzag chest mark, no floating sparks or surrounding clouds. NEW DIRECTION: An impish happy curved mouth and one lifted brow formed by the rounded blue-grey cloud head; a broad attached ochre zigzag chest mark, one tiny arm confidently on the hip, stout planted feet.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "a71cbfda-1b29-4ac5-941a-d7105523d950"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "estimated_credits": 1,
+      "pricing_source": "same_model_quality_resolution_count_and_reference_count_unit_price"
+    }
+  ],
+  "generation_count": 65,
+  "total_generation_credits": 65,
+  "retries": 0,
+  "scope": "65 base-form heroes only; 53 awakened variants, enemies and people excluded",
+  "status": "completed_reviewed_and_applied",
+  "applied_count": 65
+}
