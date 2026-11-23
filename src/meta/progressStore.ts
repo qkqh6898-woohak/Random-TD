@@ -56,6 +56,18 @@ import {
   upgradeRelic,
 } from './v3/relics';
 
+import {
+  buyGolden,
+  buyPackage,
+  claimPass,
+  claimStamps,
+  nextPassSeason,
+  openSupplyBoxes,
+  pickFirstHero,
+  redeemCode,
+  takeGrowthChoice,
+} from './v3/progression';
+
 export const PROGRESS_KEY = 'rtd.progress';
 export const PROGRESS_KEY_DEV = 'rtd.progress.dev';
 
@@ -214,6 +226,64 @@ export class ProgressStore {
   exchangeRelics(spend: Readonly<Record<string, number>>): ReturnType<typeof exchangeRelicFragments> {
     const r = exchangeRelicFragments(this.state.v3, this.pd, spend);
     if (typeof r === 'number') this.changed();
+    return r;
+  }
+
+  // ---------- V3 P3 진행도 보상 ----------
+
+  private rngFn = (name: string) => accountRng(this.state, name);
+
+  openBoxes(n?: number): ReturnType<typeof openSupplyBoxes> {
+    const r = openSupplyBoxes(this.state, this.pd, n);
+    if (r) this.changed();
+    return r;
+  }
+
+  claimStamps(): ReturnType<typeof claimStamps> {
+    const r = claimStamps(this.state, this.pd, this.data, this.rngFn);
+    if (r) this.changed();
+    return r;
+  }
+
+  claimPass(): ReturnType<typeof claimPass> {
+    const r = claimPass(this.state, this.pd, this.data, this.rngFn);
+    if (r) this.changed();
+    return r;
+  }
+
+  buyGolden(): ReturnType<typeof buyGolden> {
+    const r = buyGolden(this.state, this.pd);
+    if (r === 'ok') this.changed();
+    return r;
+  }
+
+  nextPassSeason(): ReturnType<typeof nextPassSeason> {
+    const r = nextPassSeason(this.state, this.pd, this.data, this.rngFn);
+    if (r) this.changed();
+    return r;
+  }
+
+  takeGrowthChoice(pick: { hero: string } | 'relic'): ReturnType<typeof takeGrowthChoice> {
+    const r = takeGrowthChoice(this.state, this.pd, this.data, pick);
+    if (typeof r !== 'string') this.changed();
+    return r;
+  }
+
+  buyPackage(id: string): ReturnType<typeof buyPackage> {
+    const r = buyPackage(this.state, this.pd, this.data, id, this.rngFn);
+    if (typeof r !== 'string') this.changed();
+    return r;
+  }
+
+  pickFirstHero(id: string): ReturnType<typeof pickFirstHero> {
+    const r = pickFirstHero(this.state, this.pd, this.data, id);
+    if (r) this.changed();
+    return r;
+  }
+
+  redeemCode(text: string): ReturnType<typeof redeemCode> {
+    const r = redeemCode(this.state, this.pd, this.data, text, this.rngFn);
+    if (typeof r !== 'string') this.changed();
     return r;
   }
 

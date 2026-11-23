@@ -21,7 +21,6 @@ import { fnv1a32 } from '../sim/hash';
 import type { ProgressionData, QuestData, QuestStat, RewardSpec, ShopItemData } from './progressionData';
 import { newV3State, parseV3State, type V3State } from './v3/state';
 import { addExplore, type ExploreGain } from './v3/explore';
-import { addTargetFragments } from './v3/relics';
 
 /**
  * 저장 형식 버전. 2 = V2.0 PR-A 🔥 불꽃(flame) 추가. 1 → 2 이전: flame이 없으면 progression.json account.legacyFlame을 한 번 준다
@@ -124,8 +123,11 @@ export interface MatchSettlement {
   newBest: boolean;
   /** 영웅 모집 게이지에 더한 칸 */
   recruitGain: number;
-  /** V3 탐험 보상 (유효 전투·완료 웨이브·보급 — 보급 1개 = 열쇠·목표 조각, P2는 정산에서 바로 준다) */
-  explore: ExploreGain & { keys: number; targetFragments: number; target: string };
+  /**
+   * V3 탐험 보상 (유효 전투·완료 웨이브·보급). P3부터 보급은 **보급 상자**로 쌓이고(boxes), 상자를 열 때 열쇠·목표 조각을 준다
+   * (P2의 정산 직접 지급을 대체 — 같은 보급이 두 번 지급되지 않는다). keys·targetFragments는 정산에서 바로 준 양(P3 = 0).
+   */
+  explore: ExploreGain & { keys: number; targetFragments: number; target: string; boxes: number; stamps: number; passWaves: number };
 }
 
 export function emptyStats(): StatBlock {
@@ -623,16 +625,14 @@ export function settleMatch(state: ProgressState, pd: ProgressionData, data: Pic
   state.recruit += recruitGain;
   state.recruitSummons = total % pd.recruit.summonsPerPoint;
   // V3 탐험 (같은 runId 장부 안 — 위에서 처음 정산하는 판만 여기까지 온다). 날짜와 무관.
+  // P3: 보급 → 보급 상자, 유효 전투 → 도장 1칸, 완료 웨이브 → 패스 진행.
   const ex = addExplore(state.v3.explore, result, pd.v3);
-  const keys = ex.supplies * pd.v3.explore.supplyReward.keys;
-  const targetFragments = ex.supplies * pd.v3.explore.supplyReward.targetFragments;
-  if (keys > 0) {
-    state.v3.keys += keys;
-    grant.keys += keys;
-  }
-  const target = state.v3.target;
-  addTargetFragments(state.v3, pd, targetFragments);
-  return { grant, stage, bestWave: state.bestWave, newBest, recruitGain, explore: { ...ex, keys, targetFragments, target } };
+  state.v3.boxes += ex.supplies;
+  const stamps = ex.effective ? 1 : 0;
+  state.v3.stamp.filled += stamps;
+  const passWaves = ex.effective ? ex.completed : 0;
+  state.v3.pass.waves += passWaves;
+  return { grant, stage, bestWave: state.bestWave, newBest, recruitGain, explore: { ...ex, keys: 0, targetFragments: 0, target: state.v3.target, boxes: ex.supplies, stamps, passWaves } };
 }
 
 // ---------------------------------------------------------------------------

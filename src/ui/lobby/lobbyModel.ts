@@ -231,13 +231,14 @@ export interface WaveRoadModel {
   ready: number;
 }
 
-export function rewardText(r: { gold?: number; gems?: number; flame?: number; cards?: number; fragments?: number }): string {
+export function rewardText(r: { gold?: number; gems?: number; flame?: number; cards?: number; fragments?: number; keys?: number }): string {
   const parts: string[] = [];
   if (r.gold) parts.push(`💰 ${r.gold.toLocaleString('ko-KR')}`);
   if (r.gems) parts.push(`💎 ${r.gems.toLocaleString('ko-KR')}`);
   if (r.flame) parts.push(`🔥 ${r.flame.toLocaleString('ko-KR')}`);
   if (r.cards) parts.push(`🃏 ${r.cards}`);
   if (r.fragments) parts.push(`🧩 ${r.fragments}`);
+  if (r.keys) parts.push(`🗝️ ${r.keys}`);
   return parts.join(' · ');
 }
 
@@ -397,11 +398,17 @@ export interface SettlementView extends GrantView {
   explore: string;
 }
 
-/** V3 정산 요약 글: '완료 27웨이브 → 보급 2 · 잔여 7 (다음 보급까지 3웨이브) · 🗝️ +2 · 목표 조각 +2' / 9웨이브 판은 안내 */
+/**
+ * V3 정산 요약 글 (P3): '완료 27웨이브 → 보급 상자 +2 · 잔여 7 (다음 보급까지 3웨이브) · 도장 +1 · 패스 +27웨이브 · 성장 선택 +1'.
+ * 9웨이브 판은 안내만. 긴 판의 여러 상자는 상자 수로 요약하고 탐험 화면에서 한 번에 연다.
+ */
 export function exploreSummary(s: MatchSettlement, names: ReadonlyMap<string, string>, minWaves: number): string {
   const e = s.explore;
   if (!e.effective) return `완료 ${e.completed}웨이브 — 탐험 보상은 ${minWaves}웨이브 이상 끝낸 전투부터 (기존 보상은 그대로)`;
-  const parts = [`완료 ${e.completed}웨이브 → 보급 ${e.supplies}`, `잔여 ${e.supplyRest} (다음 보급까지 ${e.toNextSupply}웨이브)`];
+  const parts = [`완료 ${e.completed}웨이브 → 보급 상자 +${e.boxes}`, `잔여 ${e.supplyRest} (다음 보급까지 ${e.toNextSupply}웨이브)`];
+  if (e.stamps > 0) parts.push(`도장 +${e.stamps}`);
+  if (e.passWaves > 0) parts.push(`패스 +${e.passWaves}웨이브`);
+  if (e.choices > 0) parts.push(`성장 선택 +${e.choices}`);
   if (e.keys > 0) parts.push(`🗝️ 열쇠 +${e.keys}`);
   if (e.targetFragments > 0) parts.push(e.target ? `${names.get(e.target) ?? e.target} 조각 +${e.targetFragments}` : `목표 조각 +${e.targetFragments} (보관)`);
   return parts.join(' · ');

@@ -189,13 +189,12 @@ test('V3 P2 e. 패배 정산: 기존 보상 아래 탐험 — 완료 29 → 보�
   });
   await expect(page.locator('[data-screen="gameover"]')).toBeVisible();
   const ex = page.getByTestId('go-explore');
-  await expect(ex).toContainText('완료 29웨이브 → 보급 2');
+  // P3부터 보급은 보급 상자로 (열 때 열쇠·목표 조각) — v3-p3 스펙이 상자 열기를 확인
+  await expect(ex).toContainText('완료 29웨이브 → 보급 상자 +2');
   await expect(ex).toContainText('잔여 9');
-  await expect(ex).toContainText('🗝️ 열쇠 +2');
-  await expect(ex).toContainText('대장장이 숫돌 조각 +2');
   await expect(page.getByTestId('go-gold')).toBeVisible();
   await shot(page, 'V3-P2-gameover');
   const p = await progress(page);
-  expect(p.v3.keys).toBe(2);
+  expect(p.v3.boxes).toBe(2);
   expect(p.v3.explore).toMatchObject({ battles: 1, waves: 29, supplyRest: 9, supplyTotal: 2 });
 });

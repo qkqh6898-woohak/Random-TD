@@ -4,7 +4,7 @@
  */
 import type { GameData } from '../../data/load';
 import type { ProgressionData } from '../progressionData';
-import { newExploreState, parseExploreState, type ExploreState } from './explore';
+import { newExploreState, parseExploreState, type ExploreState, type PassState, type StampState } from './explore';
 
 export interface RelicEntry {
   /** 0 = 미보유, 1 ~ 최대 Lv */
@@ -27,12 +27,22 @@ export interface V3State {
   explore: ExploreState;
   /** 1회 지급 장부 (지급ID, 정렬) */
   granted: string[];
+  /** (P3) 열지 않은 보급 상자 — 보급 1개 = 상자 1개, 열면 supplyReward (P2 정산 직접 지급을 대체) */
+  boxes: number;
+  /** (P3) 탐험 도장 (유효 전투 1판 = 1칸, 회차를 넘어 누적) */
+  stamp: StampState;
+  /** (P3) 진행도 패스 */
+  pass: PassState;
 }
 
 export function newV3State(pd: ProgressionData): V3State {
   const relics: Record<string, RelicEntry> = {};
   for (const id of pd.v3.relics.pool) relics[id] = { level: 0, fragments: 0 };
-  return { keys: 0, relics, target: '', targetBank: 0, pulls: 0, explore: newExploreState(), granted: [] };
+  return { keys: 0, relics, target: '', targetBank: 0, pulls: 0, explore: newExploreState(), granted: [], boxes: 0, stamp: { filled: 0, claimed: 0 }, pass: newPassState() };
+}
+
+export function newPassState(): PassState {
+  return { season: 1, waves: 0, freeClaimed: 0, golden: false, goldenClaimed: 0, history: [] };
 }
 
 const nn = (v: unknown): number => (Number.isSafeInteger(v) && (v as number) >= 0 ? (v as number) : 0);
@@ -55,7 +65,11 @@ export function parseV3State(raw: unknown, pd: ProgressionData, data: Pick<GameD
   }
   const target = typeof o.target === 'string' && pd.v3.relics.pool.includes(o.target) ? o.target : '';
   const extras: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(o)) if (!['keys', 'relics', 'target', 'targetBank', 'pulls', 'explore', 'granted'].includes(k)) extras[k] = v;
+  for (const [k, v] of Object.entries(o)) if (!['keys', 'relics', 'target', 'targetBank', 'pulls', 'explore', 'granted', 'boxes', 'stamp', 'pass'].includes(k)) extras[k] = v;
+  const st = (o.stamp && typeof o.stamp === 'object' ? o.stamp : {}) as Partial<StampState>;
+  const filled = nn(st.filled);
+  const ps = (o.pass && typeof o.pass === 'object' ? o.pass : {}) as Partial<Record<keyof PassState, unknown>>;
+  const cells = pd.v3.pass.cells;
   return {
     ...extras,
     keys: nn(o.keys),
@@ -65,6 +79,16 @@ export function parseV3State(raw: unknown, pd: ProgressionData, data: Pick<GameD
     pulls: nn(o.pulls),
     explore: o.explore === undefined ? newExploreState() : parseExploreState(o.explore, pd.v3),
     granted: Array.isArray(o.granted) ? [...new Set(o.granted.filter((x): x is string => typeof x === 'string'))].sort() : [],
+    boxes: nn(o.boxes),
+    stamp: { filled, claimed: Math.min(nn(st.claimed), filled) },
+    pass: {
+      season: Math.max(1, nn(ps.season)),
+      waves: nn(ps.waves),
+      freeClaimed: Math.min(nn(ps.freeClaimed), cells),
+      golden: ps.golden === true,
+      goldenClaimed: Math.min(nn(ps.goldenClaimed), cells),
+      history: Array.isArray(ps.history) ? ps.history.filter((x): x is number => Number.isSafeInteger(x) && (x as number) >= 1) : [],
+    },
   };
 }
 

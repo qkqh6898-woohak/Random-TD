@@ -24,6 +24,7 @@ import {
   setRelicTarget,
 } from '../../src/meta/v3/relics';
 import { settleAbandonedRun } from '../../src/save/settleAbandoned';
+import { openSupplyBoxes } from '../../src/meta/v3/progression';
 
 const data = loadGameData();
 const pd = loadProgression(data);
@@ -74,6 +75,7 @@ describe('첫 유물 선택권 · 목표', () => {
   it('목표가 없을 때 받은 목표 조각은 보관했다가 목표를 정하면 옮긴다 (첫 조각 = 자동 해금)', () => {
     const s = fresh();
     settleMatch(s, pd, data, result({ stage: 31 }), '2026-01-01');
+    openSupplyBoxes(s, pd); // P3: 보급은 상자 → 열면 열쇠·목표 조각
     expect(s.v3.targetBank).toBe(3);
     setRelicTarget(s.v3, pd, 'relic-pinwheel');
     expect(s.v3.targetBank).toBe(0);
@@ -174,16 +176,19 @@ describe('정산 보급 (같은 runId 장부, 날짜 무관)', () => {
     const s = fresh();
     const r = settle(s, { stage: 10 })!;
     expect(r.grant.gold).toBeGreaterThan(0);
-    expect(r.explore).toMatchObject({ effective: false, completed: 9, supplies: 0, keys: 0, targetFragments: 0 });
-    expect(s.v3.keys).toBe(0);
+    expect(r.explore).toMatchObject({ effective: false, completed: 9, supplies: 0, boxes: 0, stamps: 0, passWaves: 0 });
+    expect(s.v3.boxes).toBe(0);
   });
-  it('완료 10 → 열쇠 1·목표 조각 1, 완료 27 → 2 + 잔여 7, 이어서 13 → 2 + 잔여 0, 80 → 8', () => {
+  it('완료 10 → 상자 1, 완료 27 → 2 + 잔여 7, 이어서 13 → 2 + 잔여 0, 80 → 8 · 상자를 열면 상자당 열쇠 1·목표 조각 1 (P3: P2 직접 지급 대체)', () => {
     const s = fresh();
     pickFirstRelic(s.v3, pd, 'relic-whetstone');
-    expect(settle(s, { runId: 'a', stage: 11 })!.explore).toMatchObject({ supplies: 1, keys: 1, targetFragments: 1, target: 'relic-whetstone' });
-    expect(settle(s, { runId: 'b', stage: 28 })!.explore).toMatchObject({ supplies: 2, supplyRest: 7, keys: 2 });
+    expect(settle(s, { runId: 'a', stage: 11 })!.explore).toMatchObject({ supplies: 1, boxes: 1, keys: 0, targetFragments: 0, target: 'relic-whetstone' });
+    expect(settle(s, { runId: 'b', stage: 28 })!.explore).toMatchObject({ supplies: 2, supplyRest: 7, boxes: 2 });
     expect(settle(s, { runId: 'c', stage: 14 })!.explore).toMatchObject({ supplies: 2, supplyRest: 0 });
-    expect(settle(s, { runId: 'd', stage: 81 })!.explore).toMatchObject({ supplies: 8, keys: 8, targetFragments: 8 });
+    expect(settle(s, { runId: 'd', stage: 81 })!.explore).toMatchObject({ supplies: 8, boxes: 8 });
+    expect([s.v3.boxes, s.v3.keys]).toEqual([13, 0]);
+    expect(openSupplyBoxes(s, pd)).toEqual({ boxes: 13, keys: 13, targetFragments: 13, target: 'relic-whetstone' });
+    expect(openSupplyBoxes(s, pd)).toBeNull();
     expect(s.v3.keys).toBe(13);
     expect(s.v3.relics['relic-whetstone']!.fragments).toBe(13);
   });
@@ -198,9 +203,9 @@ describe('정산 보급 (같은 runId 장부, 날짜 무관)', () => {
     const st = new ProgressStore(new MemoryStorage(), pd, data, { seed: 1 });
     const run = { runId: 'ab', seed: 3, mode: 'infinite' as const, stage: 25, bossesKilled: 2, summons: 10, merges: 2, dev: false };
     expect(settleAbandonedRun(run as never, { progress: st })).toBe(true);
-    expect(st.state.v3.keys).toBe(2); // 완료 24 → 보급 2
+    expect(st.state.v3.boxes).toBe(2); // 완료 24 → 보급 2
     expect(settleAbandonedRun(run as never, { progress: st })).toBe(false);
-    expect(st.state.v3.keys).toBe(2);
+    expect(st.state.v3.boxes).toBe(2);
   });
   it('날짜를 과거·미래로 바꿔도 V3 결과는 같다 (일일 기록만 날짜를 쓴다)', () => {
     const a = fresh();
@@ -220,12 +225,12 @@ describe('정산 보급 (같은 runId 장부, 날짜 무관)', () => {
     const mem = new MemoryStorage();
     const st = new ProgressStore(mem, pd, data, { seed: 1 });
     st.settle(result({ runId: 'k', stage: 31 }));
-    expect(JSON.parse(mem.getItem(PROGRESS_KEY)!).v3.keys).toBe(3);
-    expect(new ProgressStore(mem, pd, data, { seed: 2 }).state.v3.keys).toBe(3);
+    expect(JSON.parse(mem.getItem(PROGRESS_KEY)!).v3.boxes).toBe(3);
+    expect(new ProgressStore(mem, pd, data, { seed: 2 }).state.v3.boxes).toBe(3);
   });
 });
 
-describe('실제 정산 코드 재측정: 주력 유물 Lv1 → Lv10 (P2 단독 — 도장·패스·성장 선택 없음)', () => {
+describe('실제 정산 코드 재측정: 주력 유물 Lv1 → Lv10 (보급만 — 도장·패스·성장 선택은 v3-p3 테스트)', () => {
   it('표준 10웨이브 판 반복, 열쇠는 바로 발견, 교환 없음 → p50이 50~70판 (골드는 판 골드로 충분)', () => {
     const battles: number[] = [];
     let goldShort = 0;
@@ -237,6 +242,7 @@ describe('실제 정산 코드 재측정: 주력 유물 Lv1 → Lv10 (P2 단독 
       while (st.state.v3.relics['relic-whetstone']!.level < 10 && n < 200) {
         n += 1;
         st.settle(result({ runId: `s${seed}-${n}`, seed: seed * 1000 + n, stage: 11 }));
+        st.openBoxes();
         if (st.state.v3.keys > 0) st.discoverRelics(st.state.v3.keys);
         for (;;) {
           const r = st.upgradeRelic('relic-whetstone');

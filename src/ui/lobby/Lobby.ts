@@ -30,6 +30,8 @@ import './detailsV2.css';
 import './v3.css';
 import { newMilestones } from '../../meta/v3/milestones';
 import { mountRelicDialog } from './RelicDialog';
+import { mountExploreDialog } from './ExploreDialog';
+import { exploreReady } from '../../meta/v3/progression';
 import { KEY_ART, relicBadge, RELIC_ART } from './relicModel';
 import { heroCollectionSummary } from './heroCollectionModel';
 import { SHOP_ICONS, uiIcon, type UiIconId } from '../uiIcons';
@@ -203,6 +205,9 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   // V3 P2 유물 진열장
   const relicDlg = dialogShell('relic-title', '유물 진열장', 'relic-dialog');
   const relicUi = mountRelicDialog(relicDlg, { progress, data, toast: (t, ms) => opts.toast(t, ms ?? 1800) });
+  // V3 P3 탐험 (보급 상자·성장 선택·도장·패스·꾸러미·비밀 코드)
+  const exploreDlg = dialogShell('explore-title', '탐험', 'explore-dialog');
+  const exploreUi = mountExploreDialog(exploreDlg, { progress, data, toast: (t, ms) => opts.toast(t, ms ?? 1800) });
   const settingsDlg = opts.settings ? dialogShell('lobby-settings-title', '설정', 'settings-dialog') : null;
   const recordsDialog = opts.records ? createRecordsDialog(opts.records) : null;
 
@@ -466,6 +471,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
       recruit,
     );
     renderRelicPill();
+    renderExplorePill();
     sideR.replaceChildren(
       rail('codex', 'nav-codex', GRADE_NAMES.hidden, '조각 수집', 'open-codex', () => select('codex'), codexReady(s, pd, data)),
       rail('shop', 'nav-shop', '카드 상점', '골드 · 보석', 'open-shop', () => select('shop')),
@@ -514,7 +520,14 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     );
     relicPill.setAttribute('aria-label', `유물 진열장 · 탐험 열쇠 ${s.v3.keys.toLocaleString('ko-KR')}개${n > 0 ? ` · 할 수 있는 것 ${n}개` : ''}`);
   }
-  const toolbar = h('div', { class: 'lobby-toolbar' }, h('span', { class: 'lobby-location', text: '원정대 야영지' }), relicPill, menuButton);
+  // V3 P3: 탐험 입구 (🧭 · 빨간 점 = 실제로 받을 수 있는 상자·도장·패스·성장 선택·첫 영웅 선택권)
+  const explorePill = h('button', { class: 'btn lobby-relic-pill lobby-explore-pill', attrs: { type: 'button', 'data-action': 'explore', 'aria-haspopup': 'dialog' }, on: { click: () => exploreUi.open() } });
+  function renderExplorePill(): void {
+    const n = exploreReady(progress.state, pd);
+    explorePill.replaceChildren(h('span', { class: 'lobby-explore-pill-icon', attrs: { 'aria-hidden': 'true' }, text: '🧭' }), h('span', { class: 'lobby-relic-pill-label', text: '탐험' }), ...(n > 0 ? [badge(n) as HTMLElement] : []));
+    explorePill.setAttribute('aria-label', `탐험 · ${n > 0 ? `받을 수 있는 보상 ${n}개` : '받을 보상 없음'}`);
+  }
+  const toolbar = h('div', { class: 'lobby-toolbar' }, h('span', { class: 'lobby-location', text: '원정대 야영지' }), explorePill, relicPill, menuButton);
   const speedButton = createButton({ label: '새 게임 배속 ×1', variant: 'pill', onClick: () => {
     selectedSpeed = nextSpeed(selectedSpeed, speeds);
     const label = `새 게임 배속 ×${selectedSpeed}`;
@@ -1156,6 +1169,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     grantDlg.dialog,
     detailDlg.dialog,
     relicDlg.dialog,
+    exploreDlg.dialog,
     questDlg.dialog,
     recruitDlg.dialog,
     settingsDlg?.dialog ?? null,
@@ -1173,6 +1187,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     el.dataset.tab = tab;
     if (detailDlg.dialog.open) renderDetail();
     relicUi.render();
+    exploreUi.render();
     if (questDlg.dialog.open) renderQuests();
     if (recruitDlg.dialog.open) renderRecruit();
   }
