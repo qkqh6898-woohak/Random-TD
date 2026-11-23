@@ -1,0 +1,219 @@
+{
+  "version": 1,
+  "status": "quote_only_generation_not_authorized",
+  "model": "gpt_image_2_6",
+  "quality": "medium",
+  "resolution": "1k",
+  "date": "2026-11-22",
+  "total_credits": 6,
+  "reference_sources": [
+    "docs/art/higgsfield/chunky/reference/miner.webp",
+    "docs/art/higgsfield/chunky/reference/icemage.webp"
+  ],
+  "requests": [
+    {
+      "id": "relic-acorn-bank",
+      "name": "도토리 저금통",
+      "category": "유물",
+      "phase": "P2",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Draw one original mobile game inventory icon: a chubby acorn-shaped bronze piggy bank with a large acorn cap, a coin slot and two gold coins tucked into the slot. Same original chunky casual cartoon style as the reference artwork: blunt rounded shapes, squat proportions, broad dark cocoa-brown organic ink outline, flat opaque warm colors, one hard-edged shade patch, at most one small flat highlight, no gradients. The references guide line weight and palette ONLY; do not reproduce their people, tools or costume. No face on the object. Exactly one centered subject at about 80 percent canvas fill, readable at 32 pixels, pure white background. No text, logo, frame, button, glow, particles, shadow or cropped edges.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          },
+          {
+            "role": "image_references",
+            "value": "b03965d6-a418-430c-a6a8-33a058054187"
+          }
+        ]
+      },
+      "quote": {
+        "credits_exact": 1,
+        "credits": 1,
+        "checked_date": "2026-11-22",
+        "status": "estimated_only",
+        "generation_submitted": false
+      }
+    },
+    {
+      "id": "relic-smith-whetstone",
+      "name": "대장장이 숫돌",
+      "category": "유물",
+      "phase": "P2",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Draw one original mobile game inventory icon: a thick rounded blue-gray sharpening whetstone resting in a small warm-brown wooden holder, with one simple incised diagonal edge mark. Same original chunky casual cartoon style as the reference artwork: blunt rounded shapes, squat proportions, broad dark cocoa-brown organic ink outline, flat opaque warm colors, one hard-edged shade patch, at most one small flat highlight, no gradients. The references guide line weight and palette ONLY; do not reproduce their people, tools or costume. No face on the object. Exactly one centered subject at about 80 percent canvas fill, readable at 32 pixels, pure white background. No text, logo, frame, button, glow, particles, shadow or cropped edges.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          },
+          {
+            "role": "image_references",
+            "value": "b03965d6-a418-430c-a6a8-33a058054187"
+          }
+        ]
+      },
+      "quote": {
+        "credits_exact": 1,
+        "credits": 1,
+        "checked_date": "2026-11-22",
+        "status": "estimated_only",
+        "generation_submitted": false
+      }
+    },
+    {
+      "id": "relic-frost-crystal",
+      "name": "서리 결정",
+      "category": "유물",
+      "phase": "P2",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Draw one original mobile game inventory icon: a chunky pale-cyan six-point frost crystal with broad rounded geometric branches, one cobalt hard-edged shade patch, and a small warm ivory center. Same original chunky casual cartoon style as the reference artwork: blunt rounded shapes, squat proportions, broad dark cocoa-brown organic ink outline, flat opaque warm colors, one hard-edged shade patch, at most one small flat highlight, no gradients. The references guide line weight and palette ONLY; do not reproduce their people, tools or costume. No face on the object. Exactly one centered subject at about 80 percent canvas fill, readable at 32 pixels, pure white background. No text, logo, frame, button, glow, particles, shadow or cropped edges.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          },
+          {
+            "role": "image_references",
+            "value": "b03965d6-a418-430c-a6a8-33a058054187"
+          }
+        ]
+      },
+      "quote": {
+        "credits_exact": 1,
+        "credits": 1,
+        "checked_date": "2026-11-22",
+        "status": "estimated_only",
+        "generation_submitted": false
+      }
+    },
+    {
+      "id": "spirit-sprout-fox",
+      "name": "새싹 여우",
+      "category": "정령 외형 검토",
+      "phase": "P4 외형 시범만",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Draw a tiny cheerful round forest fox spirit: warm cream body, moss-green ear tips, one large curled leaf-shaped tail and a tiny two-leaf sprout on its forehead. Match the reference artwork's chunky casual cartoon rendering, squat rounded proportions, broad dark cocoa-brown organic ink outline, flat opaque warm colors and one hard-edged shade patch. Design an ORIGINAL cute animal-like tiny spirit, full body, friendly face, three-quarter view, short limbs and a simple clear silhouette, not a humanoid and carrying no weapon. Exactly one centered character at about 80 percent canvas fill, pure white background, readable at 64 pixels. No text, logo, badge, frame, gradients, glow, particles, shadow or cropped edges.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          },
+          {
+            "role": "image_references",
+            "value": "b03965d6-a418-430c-a6a8-33a058054187"
+          }
+        ]
+      },
+      "quote": {
+        "credits_exact": 1,
+        "credits": 1,
+        "checked_date": "2026-11-22",
+        "status": "estimated_only",
+        "generation_submitted": false
+      }
+    },
+    {
+      "id": "spirit-snow-otter",
+      "name": "눈송이 수달",
+      "category": "정령 외형 검토",
+      "phase": "P4 외형 시범만",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Draw a tiny playful round snow otter spirit: pale powder-blue body, warm ivory muzzle and belly, small rounded paws, a broad short paddle tail and one simple icy-blue snowflake marking on its forehead. Match the reference artwork's chunky casual cartoon rendering, squat rounded proportions, broad dark cocoa-brown organic ink outline, flat opaque warm colors and one hard-edged shade patch. Design an ORIGINAL cute animal-like tiny spirit, full body, friendly face, three-quarter view, short limbs and a simple clear silhouette, not a humanoid and carrying no weapon. Exactly one centered character at about 80 percent canvas fill, pure white background, readable at 64 pixels. No text, logo, badge, frame, gradients, glow, particles, shadow or cropped edges.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          },
+          {
+            "role": "image_references",
+            "value": "b03965d6-a418-430c-a6a8-33a058054187"
+          }
+        ]
+      },
+      "quote": {
+        "credits_exact": 1,
+        "credits": 1,
+        "checked_date": "2026-11-22",
+        "status": "estimated_only",
+        "generation_submitted": false
+      }
+    },
+    {
+      "id": "currency-explorer-key",
+      "name": "탐험 열쇠",
+      "category": "신규 재화",
+      "phase": "P2/P3",
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Draw one original mobile game currency icon: a chunky antique golden exploration key with a thick circular bow enclosing a small acorn-shaped hole, a short broad shaft and two large rounded teeth. Same original chunky casual cartoon style as the reference artwork: blunt rounded shapes, squat proportions, broad dark cocoa-brown organic ink outline, flat opaque warm colors, one hard-edged shade patch, at most one small flat highlight, no gradients. The references guide line weight and palette ONLY; do not reproduce their people, tools or costume. No face on the object. Exactly one centered subject at about 80 percent canvas fill, readable at 32 pixels, pure white background. No text, logo, frame, button, glow, particles, shadow or cropped edges.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          },
+          {
+            "role": "image_references",
+            "value": "b03965d6-a418-430c-a6a8-33a058054187"
+          }
+        ]
+      },
+      "quote": {
+        "credits_exact": 1,
+        "credits": 1,
+        "checked_date": "2026-11-22",
+        "status": "estimated_only",
+        "generation_submitted": false
+      }
+    }
+  ]
+}
