@@ -27,6 +27,8 @@ import { availableSpeeds, nextSpeed } from '../hud/speed';
 import './lobbyV2.css';
 import './heroesV2.css';
 import './detailsV2.css';
+import './v3.css';
+import { newMilestones } from '../../meta/v3/milestones';
 import { heroCollectionSummary } from './heroCollectionModel';
 import { SHOP_ICONS, uiIcon, type UiIconId } from '../uiIcons';
 import type { UiView } from '../root';
@@ -170,6 +172,9 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   let heroTab: HeroTab = 'heroes';
   let heroSort: HeroSort = 'grade';
   let detailId: string | null = null;
+  /** V3 P1: 상세에서 고른 마일스톤 칸 (null = 다음 목표 또는 마지막 달성) · 방금 레벨업으로 새로 달성한 마일스톤 글 */
+  let detailMs: number | null = null;
+  let detailMsNews: string[] = [];
   let questTab: 'daily' | 'achievements' = 'daily';
   let selectedSpeed = 1;
   const speeds = availableSpeeds(data.game.speeds, progress.state.level, opts.debug, data.game.devSpeeds);
@@ -613,6 +618,10 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   }
 
   function openDetail(id: string): void {
+    if (detailId !== id) {
+      detailMs = null;
+      detailMsNews = [];
+    }
     detailId = id;
     renderDetail();
     if (!detailDlg.dialog.open) detailDlg.dialog.showModal();
@@ -648,8 +657,18 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
           attrs: { type: 'button', 'data-testid': 'hero-levelup', 'aria-label': `레벨업 카드 ${d.cost.cards} 불꽃 ${d.cost.flame}`, ...(d.check === 'ok' ? {} : { disabled: '' }) },
           on: {
             click: () => {
+              const from = d.level;
+              detailMsNews = [];
               const r = progress.levelUp(d.id);
-              if (typeof r === 'number') opts.toast(`⬆ ${d.name} Lv ${r}!`, 1800);
+              if (typeof r === 'number') {
+                // V3 P1: 바뀐 수치(전투 공격력)는 상세가 다시 그리고, 새로 달성한 마일스톤은 띠 위에 함께 보여 준다
+                const news = newMilestones(data, d.id, from, r);
+                detailMsNews = news.map((m) => `Lv${m.level} 달성 — ${m.detail.replace(' (기존 레벨 효과에 더해요)', '')}`);
+                if (news.length > 0) detailMs = (news[news.length - 1] as { level: number }).level;
+                opts.toast(news.length > 0 ? `⬆ ${d.name} Lv ${r}! ✨ 마일스톤 달성` : `⬆ ${d.name} Lv ${r}!`, 1800);
+                // 저장 알림이 이미 상세를 다시 그렸다 → 새 마일스톤 글을 넣어 한 번 더
+                renderDetail();
+              }
             },
           },
         },
@@ -677,12 +696,62 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
         ),
         h('p', { class: 'hero-detail-lore', text: d.lore }),
         h('dl', { class: 'hero-stats' }, ...d.stats.flatMap((s) => [h('dt', { text: s.label }), h('dd', { text: s.value })])),
+        milestoneBand(d),
         d.ability ? h('p', { class: 'hero-detail-ability' }, h('strong', { text: '특색 ' }), d.ability) : null,
         d.awaken ? h('p', { class: 'hero-detail-ability' }, h('strong', { text: '각성 ' }), d.awaken) : null,
         d.recipe.length ? h('p', { class: 'hero-detail-ability' }, h('strong', { text: '조합 ' }), d.recipe.join(' + ')) : null,
         h('p', { class: 'hero-detail-role', text: d.role }),
         h('div', { class: 'hero-detail-actions' }, action, d.cost && d.check !== 'ok' ? h('span', { class: 'hero-detail-why', text: why[d.check] ?? '' }) : null),
       ),
+    );
+  }
+
+  /** V3 P1 마일스톤 띠 (ui-contract P1): 5칸 고정, 잠김 = 🔒 + 필요 Lv, 달성 = ✓ + 적용됨. 자세한 효과는 고른 칸 아래 */
+  function milestoneBand(d: NonNullable<ReturnType<typeof heroDetail>>): HTMLElement {
+    const items = d.milestones;
+    const next = items.find((m) => !m.reached);
+    const reached = items.filter((m) => m.reached);
+    const selLevel = detailMs ?? next?.level ?? reached[reached.length - 1]?.level ?? items[0]?.level ?? 0;
+    const sel = items.find((m) => m.level === selLevel) ?? items[0];
+    return h(
+      'section',
+      { class: 'hero-ms', attrs: { 'data-testid': 'hero-milestones', 'aria-label': '레벨 마일스톤' } },
+      detailMsNews.length > 0 ? h('p', { class: 'hero-ms-new', attrs: { 'data-testid': 'hero-ms-new', role: 'status' } }, ...detailMsNews.map((t) => h('span', { text: `✨ ${t}` }))) : null,
+      h(
+        'div',
+        { class: 'hero-ms-band', attrs: { role: 'group' } },
+        ...items.map((m) =>
+          h(
+            'button',
+            {
+              class: `hero-ms-cell${m.reached ? ' is-reached' : ' is-locked'}${m.level === sel?.level ? ' is-selected' : ''}`,
+              attrs: {
+                type: 'button',
+                'data-level': String(m.level),
+                'aria-pressed': m.level === sel?.level ? 'true' : 'false',
+                'aria-label': `Lv${m.level} ${m.short} · ${m.reached ? '적용됨' : `잠김, Lv${m.level} 필요`}`,
+              },
+              on: {
+                click: () => {
+                  detailMs = m.level;
+                  renderDetail();
+                },
+              },
+            },
+            h('span', { class: 'hero-ms-mark', attrs: { 'aria-hidden': 'true' }, text: m.reached ? '✓' : '🔒' }),
+            h('strong', { text: `Lv${m.level}` }),
+            h('small', { text: m.short }),
+          ),
+        ),
+      ),
+      sel
+        ? h(
+            'p',
+            { class: 'hero-ms-detail', attrs: { 'data-testid': 'hero-ms-detail' } },
+            h('strong', { text: sel.reached ? `Lv${sel.level} ✓ 적용됨 ` : `Lv${sel.level} 🔒 잠김 ` }),
+            sel.detail,
+          )
+        : null,
     );
   }
 

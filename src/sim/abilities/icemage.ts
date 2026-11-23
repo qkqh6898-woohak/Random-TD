@@ -6,6 +6,7 @@
  */
 import { applyHardCc, cdReady, setCd } from '../systems/Status';
 import { NON_NEG, POSITIVE } from './params';
+import { ccTicks } from '../milestones';
 import { defineAbility } from './types';
 
 export interface IcemageParams {
@@ -17,10 +18,10 @@ export interface IcemageParams {
 export default defineAbility<IcemageParams>({
   id: 'icemage',
   compile: (r) => ({ freezeTicks: r.ticks('freeze', POSITIVE), cdTicks: r.ticks('perMobCd', NON_NEG) }),
-  onHit(env, mob, p) {
+  onHit(env, mob, p, hit) {
     const tick = env.world.tick;
     if (!cdReady(mob, 'icemage', tick)) return;
     const status = env.ctx.rules.status;
-    if (applyHardCc(status, mob, tick, 'freeze', p.freezeTicks, status.freezeVulnBp)) setCd(mob, 'icemage', tick, p.cdTicks);
+    if (applyHardCc(status, mob, tick, 'freeze', ccTicks(env.ctx, hit.owner ?? 0, 'icemage', p.freezeTicks), status.freezeVulnBp)) setCd(mob, 'icemage', tick, p.cdTicks);
   },
 });

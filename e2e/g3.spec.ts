@@ -167,11 +167,16 @@ test('G-3 c. 레벨업: 카드 + 🔥 불꽃(V2.0 PR-A, 예전 골드)을 쓰고
   await page.getByTestId('hero-levelup').click();
   await expect(page.getByTestId('hero-detail-level')).toHaveText('Lv 2');
   await expect(page.getByTestId('hero-detail-cards')).toHaveText('🃏 카드 3/3');
-  await expect(page.getByTestId('hero-detail-bonus')).toHaveText('전투 공격력 +4% → +8%');
+  await expect(page.getByTestId('hero-detail-bonus')).toHaveText('전투 공격력 +4% → +13%');
   await expect(page.getByTestId('lobby-flame')).toContainText('90');
   // 카드 3장 · 불꽃 90 → 한 번 더 (Lv2 → 3: 카드 3, 불꽃 15)
   await page.getByTestId('hero-levelup').click();
   await expect(page.getByTestId('hero-detail-level')).toHaveText('Lv 3');
+  // V3 P1: Lv3 마일스톤 달성 — 띠 칸 ✓ + 새로 달성 글, 바뀐 전투 공격력
+  await expect(page.getByTestId('hero-ms-new')).toContainText('Lv3 달성');
+  await expect(page.locator('.hero-ms-cell[data-level="3"]')).toHaveClass(/is-reached/);
+  await expect(page.locator('.hero-ms-cell[data-level="6"]')).toHaveClass(/is-locked/);
+  await expect(page.getByTestId('hero-detail-bonus')).toHaveText('전투 공격력 +13% → +17%');
   await expect(page.getByTestId('hero-levelup')).toBeDisabled();
   await expect(dlg.locator('.hero-detail-why')).toHaveText('카드가 모자라요');
   expect((await progress(page)).heroes.miner).toEqual({ level: 3, cards: 0 });

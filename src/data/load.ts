@@ -529,6 +529,20 @@ export interface TowerLevelConfig {
   max: number;
   /** 레벨당 공격력 증가 (0.04 = +4%, Lv1 = 0) */
   atkPerLevel: number;
+  /** V3 P1 영웅 마일스톤 (그 레벨 이상이면 더함): 공격력%·공속%·특색 강화 1단계 */
+  milestones: TowerMilestoneConfig[];
+  /** 특색 강화 종류·단계당 값 */
+  traitBoost: { default: TraitBoostKind; values: Record<TraitBoostKind, number>; byTower: Record<string, TraitBoostKind> };
+}
+
+export const TRAIT_BOOST_KINDS = ['aura', 'cc', 'crit'] as const;
+export type TraitBoostKind = (typeof TRAIT_BOOST_KINDS)[number];
+
+export interface TowerMilestoneConfig {
+  level: number;
+  atkPct?: number;
+  apsPct?: number;
+  trait?: boolean;
 }
 
 /** HUD 경고 기준 (UI.md 4.2). */
@@ -1517,6 +1531,20 @@ export const gameSchema: Schema = s.obj({
   towerLevel: s.obj({
     max: s.int({ min: 2, max: 100 }),
     atkPerLevel: s.num({ min: 0, max: 1 }),
+    milestones: s.withCheck<TowerMilestoneConfig[]>(
+      s.arr(s.obj({ level: s.int({ min: 2, max: 100 }), atkPct: s.opt(s.num({ min: 0, max: 1 })), apsPct: s.opt(s.num({ min: 0, max: 1 })), trait: s.opt(s.bool()) }), { uniqueBy: 'level' }),
+      (v, path, issues) => {
+        for (let i = 1; i < v.length; i++) if ((v[i] as TowerMilestoneConfig).level <= (v[i - 1] as TowerMilestoneConfig).level) issues.push({ path: `${path}[${i}].level`, message: '레벨이 오름차순이 아니다' });
+        v.forEach((m, i) => {
+          if (!m.atkPct && !m.apsPct && !m.trait) issues.push({ path: `${path}[${i}]`, message: '효과가 비어 있다 (atkPct·apsPct·trait)' });
+        });
+      },
+    ),
+    traitBoost: s.obj({
+      default: s.str({ enum: TRAIT_BOOST_KINDS }),
+      values: s.obj({ aura: s.num({ min: 0, max: 1 }), cc: s.num({ min: 0, max: 1 }), crit: s.num({ min: 0, max: 1 }) }),
+      byTower: s.rec(s.str({ enum: TRAIT_BOOST_KINDS })),
+    }),
   }),
   worker: s.obj({
     cost: s.int({ min: 0 }),
@@ -1752,6 +1780,13 @@ export function crossCheck(data: GameData): Issue[] {
   const elementIds = new Set(Object.keys(towers.elements));
   const towerIds = new Set(towers.towers.map((t) => t.id));
   const mobIds = new Set(enemies.mobs.map((m) => m.id));
+
+  for (const id of Object.keys(data.game.towerLevel.traitBoost.byTower)) {
+    if (!towerIds.has(id)) issues.push({ file: 'game.json', path: `towerLevel.traitBoost.byTower.${id}`, message: `없는 타워: ${id}` });
+  }
+  for (const [i, m] of data.game.towerLevel.milestones.entries()) {
+    if (m.level > data.game.towerLevel.max) issues.push({ file: 'game.json', path: `towerLevel.milestones[${i}].level`, message: `최대 레벨(${data.game.towerLevel.max})보다 크다` });
+  }
 
   towers.towers.forEach((t, i) => {
     if (!factionIds.has(t.faction)) issues.push({ file: 'towers.json', path: `towers[${i}].faction`, message: `없는 종족: ${t.faction}` });

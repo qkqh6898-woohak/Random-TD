@@ -7,6 +7,7 @@
 import { applyHardCc } from '../systems/Status';
 import { restartTimer, revealedMobs, timerReady } from './common';
 import { POSITIVE } from './params';
+import { ccTicks } from '../milestones';
 import { defineAbility } from './types';
 
 export interface ChronomancerParams {
@@ -23,8 +24,10 @@ export default defineAbility<ChronomancerParams>({
     const mobs = revealedMobs(world);
     if (mobs.length === 0) return;
     let stopped = 0;
-    for (const m of mobs) if (applyHardCc(ctx.rules.status, m, world.tick, 'stop', p.stopTicks)) stopped++;
+    // V3 P1 마일스톤 제어% (특색 강화 cc)
+    const stopTicks = ccTicks(ctx, tower.owner, 'chronomancer', p.stopTicks);
+    for (const m of mobs) if (applyHardCc(ctx.rules.status, m, world.tick, 'stop', stopTicks)) stopped++;
     restartTimer(tower, world.tick, p.cdTicks);
-    world.emit('timeStop', { tower: tower.id, x: tower.x, y: tower.y, ticks: p.stopTicks, count: stopped });
+    world.emit('timeStop', { tower: tower.id, x: tower.x, y: tower.y, ticks: stopTicks, count: stopped });
   },
 });

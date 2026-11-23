@@ -47,7 +47,8 @@ describe('노말', () => {
     const miner = placeTower(m.world, 'miner', 0, 4, 2);
     const gold0 = m.state.gold;
     m.stepN(2000);
-    expect(miner.attacks).toBe(100);
+    // 공속 1회/초 × 100초 = 100번 + V3 P1 마일스톤 Lv9·Lv15 공속 +5%·+5% → 110번
+    expect(miner.attacks).toBe(110);
     const gains = eventsOf(m, 'abilityGold');
     expect(gains.length).toBeGreaterThanOrEqual(8);
     expect(gains.length).toBeLessThanOrEqual(35);

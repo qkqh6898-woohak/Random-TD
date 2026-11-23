@@ -211,7 +211,8 @@ describe('영웅 레벨업', () => {
     const m = createMatch(data, { seed: 1, mode: 'infinite', levels: [lv] });
     const [x, y] = m.map.buildable[0]!;
     const t = placeTower(m.world, 'miner', 0, x, y);
-    expect(towerBonus(m.ctx, t, new Map()).atkPctBp).toBe(800);
+    // (3 − 1) × 4% = 800 + V3 P1 Lv3 마일스톤 +5% = 1300
+    expect(towerBonus(m.ctx, t, new Map()).atkPctBp).toBe(800 + 500);
     expect(matchInputs(m).levels).toEqual([{ archer: 2, miner: 3 }]);
     expect(heroLevelSum(s)).toBe(25 + 2 + 1);
   });

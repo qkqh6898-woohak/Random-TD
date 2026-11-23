@@ -11,6 +11,7 @@ import { applySlow } from '../systems/Status';
 import { leaderRuleFor, pickTarget, targetCandidates } from '../systems/Targeting';
 import { restartTimer, timerReady } from './common';
 import { POSITIVE, RATIO } from './params';
+import { ccTicks } from '../milestones';
 import { defineAbility } from './types';
 import { towerRange } from '../stats';
 
@@ -37,8 +38,8 @@ export default defineAbility<MudshamanParams>({
     puddleTicks: r.ticks('puddleDur', POSITIVE),
     puddleR: r.units('puddleRadius', POSITIVE),
   }),
-  onHit(env, mob, p) {
-    applySlow(env.ctx.rules.status, mob, env.world.tick, 'mudshaman', p.slowBp, p.slowTicks);
+  onHit(env, mob, p, hit) {
+    applySlow(env.ctx.rules.status, mob, env.world.tick, 'mudshaman', p.slowBp, ccTicks(env.ctx, hit.owner ?? 0, 'mudshaman', p.slowTicks));
   },
   tick(env, tower, p) {
     const { ctx, world } = env;
@@ -58,7 +59,7 @@ export default defineAbility<MudshamanParams>({
       r: p.puddleR,
       slowBp: p.puddleSlowBp,
       bornTick: world.tick,
-      until: world.tick + p.puddleTicks,
+      until: world.tick + ccTicks(ctx, tower.owner, 'mudshaman', p.puddleTicks),
     } satisfies Omit<Puddle, 'id'>) as Puddle;
     restartTimer(tower, world.tick, p.puddleCdTicks);
     world.emit('puddle', { id: puddle.id, tower: tower.id, x: puddle.x, y: puddle.y, r: puddle.r });

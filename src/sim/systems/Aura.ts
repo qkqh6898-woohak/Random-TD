@@ -18,7 +18,7 @@ import { isTower, type Tower } from '../entities/Tower';
 import type { MatchRules } from '../rules';
 import type { MatchContext } from '../state';
 import type { TowerBonus } from '../stats';
-import { abilityOf, abilityParams, towerLevel } from '../abilities';
+import { abilityOf, abilityParams, towerLevel, towerMilestone } from '../abilities';
 import type { AuraArea, AuraSpec } from '../abilities/types';
 import { gradeUpgradeBp } from './Upgrade';
 import { chanceBonus } from '../chances';
@@ -51,7 +51,7 @@ export function auraSources(ctx: MatchContext, world: World): AuraSource[] {
     if (!isTower(e)) continue;
     const def = abilityOf(e.tower);
     if (!def?.aura) continue;
-    out.push({ tower: e, spec: def.aura(abilityParams(ctx, e.owner, def)) });
+    out.push({ tower: e, spec: boostAura(def.aura(abilityParams(ctx, e.owner, def)), towerMilestone(ctx, e.owner, e.tower).auraBp) });
   }
   return out;
 }
@@ -102,9 +102,11 @@ export function towerBonus(ctx: MatchContext, tower: Tower, auras: AuraMap): Tow
   // 등급 강화 (M5-3): 그 타워 등급군의 공격력% — 지금 타워와 앞으로 나올 타워 모두 (등급은 데이터, 강화 레벨은 주인 것)
   const grade = ctx.rules.towers.get(tower.tower)?.grade;
   const gradeUp = grade ? gradeUpgradeBp(ctx, tower.owner, grade) : 0;
-  let atk = (a?.atkPctBp ?? 0) + (level - 1) * ctx.rules.atkPerLevelBp + gradeUp;
+  // V3 P1 영웅 마일스톤: 기존 (레벨 − 1) × 4% 위에 더한다 (공격력·공속 합연산, 치명 확률 기존 상한)
+  const ms = towerMilestone(ctx, tower.owner, tower.tower);
+  let atk = (a?.atkPctBp ?? 0) + (level - 1) * ctx.rules.atkPerLevelBp + gradeUp + ms.atkBp;
   // 필살기 '전군 가속' (G-1): 그 플레이어 모든 타워 공속% (끝나면 Ultimate 시스템이 0으로)
-  let aps = (a?.apsPctBp ?? 0) + (ctx.state.rallyBp?.[tower.owner] ?? 0);
+  let aps = (a?.apsPctBp ?? 0) + (ctx.state.rallyBp?.[tower.owner] ?? 0) + ms.apsBp;
   let boss = BP_ONE;
   const def = abilityOf(tower.tower);
   if (def) {
@@ -114,7 +116,7 @@ export function towerBonus(ctx: MatchContext, tower: Tower, auras: AuraMap): Tow
   }
   if (atk < -BP_ONE) atk = -BP_ONE;
   // 개발자 확률 조정 'critBonus' (T-2): 모든 타워 치명타 확률 + (한도는 effectiveStats가 자른다)
-  const crit = chanceBonus(ctx.state, 'critBonus');
+  const crit = chanceBonus(ctx.state, 'critBonus') + ms.critBp;
   return crit > 0 ? { atkPctBp: atk, apsPctBp: aps, bossMulBp: boss, critBp: crit } : { atkPctBp: atk, apsPctBp: aps, bossMulBp: boss };
 }
 
@@ -122,7 +124,13 @@ export function towerBonus(ctx: MatchContext, tower: Tower, auras: AuraMap): Tow
 export function auraSpecOf(ctx: MatchContext, tower: Pick<Tower, 'tower' | 'owner'>): AuraSpec | null {
   const def = abilityOf(tower.tower);
   if (!def?.aura) return null;
-  return def.aura(abilityParams(ctx, tower.owner, def));
+  return boostAura(def.aura(abilityParams(ctx, tower.owner, def)), towerMilestone(ctx, tower.owner, tower.tower).auraBp);
+}
+
+/** 마일스톤 특색 강화(오라 종류): 오라 값 × (1 + bonus) 내림. bonus 0이면 그대로 (V3 P1). */
+export function boostAura(spec: AuraSpec, bonusBp: number): AuraSpec {
+  if (bonusBp <= 0) return spec;
+  return { ...spec, atkPctBp: mulBp(spec.atkPctBp, BP_ONE + bonusBp), apsPctBp: mulBp(spec.apsPctBp, BP_ONE + bonusBp) };
 }
 
 /** 지원 효과 범위 → 칸 거리 (주변 8칸 1, 24칸 2, 전체 0). */

@@ -2,6 +2,7 @@
  * 로비 화면 모델 (G-3, 순수 — DOM 없음): 영웅 카드 목록·정렬, 웨이브 길, 리미티드 조각, 상단 바, 정산 요약.
  * 화면(Lobby.ts·GameOverScreen.ts)은 이 모델을 그리기만 한다. 수치는 progression.json · towers.json에서.
  */
+import { heroMilestones, heroTotalAtkBp, type MilestoneItem } from '../../meta/v3/milestones';
 import { GRADE_NAMES, GRADE_RANK } from '../../data/grades';
 import type { GameData, Grade, TowerData } from '../../data/load';
 import { GRADE_COLORS } from '../../art/palette';
@@ -9,7 +10,6 @@ import type { ProgressionData } from '../../meta/progressionData';
 import {
   checkLevelUp,
   checkUnlock,
-  heroAtkBonusBp,
   heroEntry,
   levelUpCost,
   milestoneState,
@@ -152,6 +152,8 @@ export interface HeroDetailModel extends HeroCardModel {
   /** 잠긴 히든: 해방 가능 */
   canUnlock: boolean;
   recipe: string[];
+  /** V3 P1 마일스톤 5칸 (보유 영웅은 레벨로 바로 적용됨) */
+  milestones: MilestoneItem[];
 }
 
 const DAMAGE_KO: Record<string, string> = { physical: '물리', magic: '마법', hybrid: '물리+마법', true: '고정' };
@@ -161,7 +163,7 @@ function pctText(bp: number): string {
   return `+${Math.round(bp / 100)}%`;
 }
 
-export function heroDetail(state: ProgressState, pd: ProgressionData, data: Pick<GameData, 'towers' | 'decks' | 'game'>, id: string): HeroDetailModel | null {
+export function heroDetail(state: ProgressState, pd: ProgressionData, data: GameData, id: string): HeroDetailModel | null {
   const t = data.towers.towers.find((x) => x.id === id);
   if (!t) return null;
   const card = heroCard(state, pd, t, deckIds(data));
@@ -180,12 +182,14 @@ export function heroDetail(state: ProgressState, pd: ProgressionData, data: Pick
       { label: '사거리', value: t.range >= 50 ? '맵 전체' : `${t.range}칸` },
       { label: '공격', value: `${DAMAGE_KO[t.damageType] ?? t.damageType} · ${SHAPE_KO[t.shape] ?? t.shape}` },
     ],
-    bonus: pctText(heroAtkBonusBp(Math.max(1, card.level), data)),
-    nextBonus: cost ? pctText(heroAtkBonusBp(card.level + 1, data)) : null,
+    // V3 P1: 기존 (Lv−1)×4% + 마일스톤 공격력 (Lv3·Lv15)
+    bonus: pctText(heroTotalAtkBp(data, t.id, Math.max(1, card.level))),
+    nextBonus: cost ? pctText(heroTotalAtkBp(data, t.id, card.level + 1)) : null,
     cost,
     check: checkLevelUp(state, pd, t),
     canUnlock: checkUnlock(state, pd, t) === 'ok',
     recipe: (t.recipe ?? []).map((r) => names.get(r) ?? r),
+    milestones: heroMilestones(data, t.id, card.owned ? card.level : 0),
   };
 }
 

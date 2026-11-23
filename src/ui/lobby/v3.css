@@ -1,0 +1,18 @@
+/* V3 (docs/v3/ui-contract.md): 기존 디자인 시스템 토큰(종이 바탕·나무 머리줄·진한 잉크·44px 터치)만 쓴다. 상태는 색 + 자물쇠/체크/숫자/글로 함께. */
+
+/* P1 영웅 마일스톤 띠 — 320px에서도 5칸 한 줄 */
+.hero-ms { display:flex; flex-direction:column; gap:6px; }
+.hero-ms-band { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:4px; }
+.hero-ms-cell { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; min-width:0; min-height:var(--rtd-touch, 44px); padding:4px 2px; border:2px solid var(--rtd-outline); border-radius:8px; background:var(--rtd-disabled); color:var(--rtd-muted-ink); font:inherit; line-height:1.15; cursor:pointer; }
+.hero-ms-cell strong { font:14px/1.1 var(--rtd-title-font); color:inherit; }
+.hero-ms-cell small { max-width:100%; font-size:var(--rtd-type-small, 12px); overflow-wrap:anywhere; text-align:center; color:inherit; }
+.hero-ms-mark { font-size:12px; line-height:1; }
+.hero-ms-cell.is-reached { background:var(--rtd-progress); color:var(--rtd-outline); }
+.hero-ms-cell.is-selected { box-shadow:0 0 0 2px var(--rtd-primary), 0 3px var(--rtd-outline); }
+.hero-ms-cell:focus-visible { outline:3px solid var(--rtd-experience); outline-offset:1px; }
+.hero-ms-detail { margin:0; padding:8px 10px; border:1px solid #9C8266; border-radius:8px; background:#FFF8E6; color:var(--rtd-outline); font-size:var(--rtd-type-body, 14px); line-height:1.5; }
+.hero-ms-new { display:flex; flex-direction:column; gap:2px; margin:0; padding:6px 10px; border:2px solid var(--rtd-badge); border-radius:8px; background:#E9F7E4; color:var(--rtd-outline); font-weight:700; font-size:14px; animation:rtd-popup-in 200ms ease-out; }
+@container (max-width: 340px) {
+  .hero-ms-cell small { font-size:12px; }
+  .hero-ms-cell strong { font-size:13px; }
+}

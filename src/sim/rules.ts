@@ -38,12 +38,21 @@ import type {
   TargetRule,
   ThemeData,
   TowerData,
+  TraitBoostKind,
   UpgradeStat,
 } from '../data/load';
 import { BP_ONE, bp, idiv, mulBp, tiles } from './Fixed';
 import { TICK_HZ, secondsToTicks } from './World';
 
 /** 몹 하나의 기본 스탯 (단계 성장 전, 정수). */
+/** V3 P1 영웅 마일스톤 한 칸 (정수 bp) */
+export interface MilestoneRule {
+  readonly level: number;
+  readonly atkBp: number;
+  readonly apsBp: number;
+  readonly trait: boolean;
+}
+
 export interface MobStats {
   readonly id: string;
   readonly name: string;
@@ -399,6 +408,12 @@ export interface MatchRules {
   /** 타워 최대 레벨 (15)·레벨당 공격력 (bp, +4% = 400) */
   readonly towerLevelMax: number;
   readonly atkPerLevelBp: number;
+  /** V3 P1 영웅 마일스톤 (레벨 오름차순, bp) — sim/milestones.ts */
+  readonly milestones: readonly MilestoneRule[];
+  /** 특색 강화: 타워 id → 종류 (없으면 traitDefault), 종류별 단계당 bp */
+  readonly traitKind: ReadonlyMap<string, TraitBoostKind>;
+  readonly traitDefault: TraitBoostKind;
+  readonly traitStepBp: Readonly<Record<TraitBoostKind, number>>;
   /** towers.json 순서의 타워 id (개발용 debugTower 명령이 번호로 고른다) */
   readonly towerOrder: readonly string[];
   // ---- M4 ----
@@ -730,6 +745,16 @@ export function buildMatchRules(data: GameData): MatchRules {
     auraAround24: int('game.json aura.around24', game.aura.around24),
     towerLevelMax: int('game.json towerLevel.max', game.towerLevel.max),
     atkPerLevelBp: bp(game.towerLevel.atkPerLevel),
+    milestones: Object.freeze(
+      game.towerLevel.milestones.map((m) => Object.freeze({ level: m.level, atkBp: exactBp(`game.json towerLevel.milestones ${m.level}.atkPct`, m.atkPct ?? 0), apsBp: exactBp(`game.json towerLevel.milestones ${m.level}.apsPct`, m.apsPct ?? 0), trait: m.trait === true })),
+    ),
+    traitKind: new Map(Object.entries(game.towerLevel.traitBoost.byTower).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))),
+    traitDefault: game.towerLevel.traitBoost.default,
+    traitStepBp: Object.freeze({
+      aura: exactBp('game.json towerLevel.traitBoost.values.aura', game.towerLevel.traitBoost.values.aura),
+      cc: exactBp('game.json towerLevel.traitBoost.values.cc', game.towerLevel.traitBoost.values.cc),
+      crit: exactBp('game.json towerLevel.traitBoost.values.crit', game.towerLevel.traitBoost.values.crit),
+    }),
     towerOrder: Object.freeze(data.towers.towers.map((t) => t.id)),
     ...buildM4Rules(data, mobOrder),
     ...buildM5Rules(data),

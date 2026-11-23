@@ -110,11 +110,14 @@ describe('타워 레벨 주입 (기본 1, 나중에 계정 M9)', () => {
     expect(mob.slowBp).toBe(4000);
   });
 
-  it('레벨당 공격력 +4% (Lv15 = +56%)', () => {
-    const m = infinite(1, { levels: [{ archer: 15 }] });
+  it('레벨당 공격력 +4% (Lv15 = +56%) + V3 P1 마일스톤 Lv3 +5%·Lv15 +5% (기존 +4%/Lv는 그대로)', () => {
+    const m = infinite(1, { levels: [{ archer: 15, warrior: 2 }] });
     const archer = placeTower(m.world, 'archer', 0, 4, 4);
-    expect(towerBonus(m.ctx, archer, computeAuras(m.ctx, m.world)).atkPctBp).toBe(5600);
-    expect(effectiveStats(rules, rules.towers.get('archer')!, NO_MODS, towerBonus(m.ctx, archer, new Map())).atkMulBp).toBe(15_600);
+    expect(towerBonus(m.ctx, archer, computeAuras(m.ctx, m.world)).atkPctBp).toBe(5600 + 1000);
+    expect(effectiveStats(rules, rules.towers.get('archer')!, NO_MODS, towerBonus(m.ctx, archer, new Map())).atkMulBp).toBe(16_600);
+    // Lv2는 마일스톤이 없다 → 예전과 같은 +4%
+    const warrior = placeTower(m.world, 'warrior', 0, 2, 4);
+    expect(towerBonus(m.ctx, warrior, new Map()).atkPctBp).toBe(400);
   });
 
   it('잘못된 레벨·없는 타워는 판을 만들 때 에러', () => {

@@ -69,8 +69,9 @@ describe('영웅 상세', () => {
     s.heroes.miner = { level: 3, cards: 10 };
     const d = heroDetail(s, pd, data, 'miner')!;
     expect(d.cost).toEqual({ cards: 4, flame: 20 }); // V2.0 PR-A: 골드 → 🔥 불꽃
-    expect(d.bonus).toBe('+8%');
-    expect(d.nextBonus).toBe('+12%');
+    // (Lv−1)×4% + V3 P1 Lv3 마일스톤 +5%
+    expect(d.bonus).toBe('+13%');
+    expect(d.nextBonus).toBe('+17%');
     expect(d.check).toBe('ok');
     expect(d.ability).toContain('%');
     expect(d.stats.map((x) => x.label)).toEqual(['공격력', '공격 속도', '사거리', '공격']);

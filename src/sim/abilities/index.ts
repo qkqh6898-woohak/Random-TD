@@ -11,6 +11,7 @@ import type { World } from '../World';
 import { isTower, type Tower } from '../entities/Tower';
 import type { MatchContext } from '../state';
 import { ParamReader } from './params';
+export { towerMilestone, ccTicks } from '../milestones';
 import type { AbilityDef, AbilityEnv } from './types';
 import alchemist from './alchemist';
 import archmage from './archmage';
