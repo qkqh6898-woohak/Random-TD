@@ -535,6 +535,27 @@ export interface TowerLevelConfig {
   traitBoost: { default: TraitBoostKind; values: Record<TraitBoostKind, number>; byTower: Record<string, TraitBoostKind> };
 }
 
+export const RELIC_EFFECTS = ['atkPct', 'apsPct', 'bossPct', 'physPct', 'magicPct', 'goldAtk', 'ccPct', 'interestCap', 'startGold', 'workerIncome', 'gambleRefund', 'leakLimit'] as const;
+export type RelicEffect = (typeof RELIC_EFFECTS)[number];
+/** 정수 값(원·명·칸)으로 읽는 유물 효과. 나머지는 비율 → bp */
+export const RELIC_INT_EFFECTS: readonly RelicEffect[] = ['interestCap', 'startGold', 'workerIncome', 'leakLimit'];
+export const RELIC_ROLES = ['combat', 'economy', 'relief', 'utility', 'control'] as const;
+
+/** V3 P2 유물 (game.json relics) */
+export interface RelicConfig {
+  id: string;
+  name: string;
+  role: (typeof RELIC_ROLES)[number];
+  maxLevel: number;
+  effect: RelicEffect;
+  base: number;
+  perLevel: number;
+  /** goldAtk 합 상한 */
+  cap?: number;
+  /** interestCap: 100원당 이자 +n원 (레벨 무관) */
+  rateBonus?: number;
+}
+
 export const TRAIT_BOOST_KINDS = ['aura', 'cc', 'crit'] as const;
 export type TraitBoostKind = (typeof TRAIT_BOOST_KINDS)[number];
 
@@ -724,6 +745,8 @@ export interface GameConfig {
   status: StatusConfig;
   aura: AuraConfig;
   towerLevel: TowerLevelConfig;
+  /** V3 P2 유물 (첫 공개 12종) */
+  relics: RelicConfig[];
   worker: WorkerConfig;
   interest: InterestConfig;
   boss: BossConfig;
@@ -1528,6 +1551,29 @@ export const gameSchema: Schema = s.obj({
     around8: s.int({ min: 1, max: 10 }),
     around24: s.int({ min: 1, max: 10 }),
   }),
+  relics: s.withCheck<RelicConfig[]>(
+    s.arr(
+      s.obj({
+        id: s.str({ nonEmpty: true }),
+        name: s.str({ nonEmpty: true }),
+        role: s.str({ enum: RELIC_ROLES }),
+        maxLevel: s.int({ min: 1, max: 30 }),
+        effect: s.str({ enum: RELIC_EFFECTS }),
+        base: s.num({ min: 0 }),
+        perLevel: s.num({ min: 0 }),
+        cap: s.opt(s.num({ min: 0 })),
+        rateBonus: s.opt(s.int({ min: 0 })),
+      }),
+      { uniqueBy: 'id' },
+    ),
+    (v, path, issues) => {
+      v.forEach((r, i) => {
+        if (r.base <= 0 && r.perLevel <= 0) issues.push({ path: `${path}[${i}]`, message: '효과가 0이다' });
+        if (r.maxLevel > 1 && r.perLevel <= 0) issues.push({ path: `${path}[${i}].perLevel`, message: '레벨이 올라도 효과가 같다 (헛 레벨)' });
+        if (RELIC_INT_EFFECTS.includes(r.effect) && (!Number.isInteger(r.base) || !Number.isInteger(r.perLevel))) issues.push({ path: `${path}[${i}]`, message: `${r.effect}는 정수 값이어야 한다` });
+      });
+    },
+  ),
   towerLevel: s.obj({
     max: s.int({ min: 2, max: 100 }),
     atkPerLevel: s.num({ min: 0, max: 1 }),

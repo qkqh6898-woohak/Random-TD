@@ -29,6 +29,8 @@ import './heroesV2.css';
 import './detailsV2.css';
 import './v3.css';
 import { newMilestones } from '../../meta/v3/milestones';
+import { mountRelicDialog } from './RelicDialog';
+import { relicBadge, RELIC_ART } from './relicModel';
 import { heroCollectionSummary } from './heroCollectionModel';
 import { SHOP_ICONS, uiIcon, type UiIconId } from '../uiIcons';
 import type { UiView } from '../root';
@@ -198,6 +200,9 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
   });
   const questDlg = dialogShell('quest-title', '퀘스트', 'quest-dialog');
   const recruitDlg = dialogShell('recruit-title', '영웅 모집', 'recruit-dialog');
+  // V3 P2 유물 진열장
+  const relicDlg = dialogShell('relic-title', '유물 진열장', 'relic-dialog');
+  const relicUi = mountRelicDialog(relicDlg, { progress, data, toast: (t, ms) => opts.toast(t, ms ?? 1800) });
   const settingsDlg = opts.settings ? dialogShell('lobby-settings-title', '설정', 'settings-dialog') : null;
   const recordsDialog = opts.records ? createRecordsDialog(opts.records) : null;
 
@@ -456,9 +461,16 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     const rm = recruitDialogModel(s, pd);
     const recruit = rail('heroes', 'side-recruit', '영웅 모집', rm.progressText, 'recruit', () => openRecruit(), recruitReady(s, pd));
     recruit.querySelector('.lobby-rail-detail')?.setAttribute('data-testid', 'recruit-gauge');
+    // V3 P2: 유물 진열장 (배지 = 지금 강화할 수 있는 유물 + 첫 유물 선택권 — 실제로 할 수 있을 때만)
+    const relic = rail('shop', 'nav-shop', '유물', `🗝️ ${s.v3.keys.toLocaleString('ko-KR')}`, 'relics', () => relicUi.open(), relicBadge(s, pd, data));
+    relic.setAttribute('aria-haspopup', 'dialog');
+    relic.querySelector('.lobby-rail-detail')?.setAttribute('data-testid', 'relic-rail-keys');
+    const relicImg = relic.querySelector('img');
+    if (relicImg) relicImg.setAttribute('src', assetUrl(RELIC_ART['relic-whetstone'] as string));
     side.replaceChildren(
       rail('quests', 'side-quests', '퀘스트', '일일 · 업적', 'quests', () => openQuests(), quests),
       recruit,
+      relic,
     );
     sideR.replaceChildren(
       rail('codex', 'nav-codex', GRADE_NAMES.hidden, '조각 수집', 'open-codex', () => select('codex'), codexReady(s, pd, data)),
@@ -1135,6 +1147,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     recordsDialog,
     grantDlg.dialog,
     detailDlg.dialog,
+    relicDlg.dialog,
     questDlg.dialog,
     recruitDlg.dialog,
     settingsDlg?.dialog ?? null,
@@ -1151,6 +1164,7 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     for (const id of LOBBY_TABS) panels[id].hidden = id !== tab;
     el.dataset.tab = tab;
     if (detailDlg.dialog.open) renderDetail();
+    relicUi.render();
     if (questDlg.dialog.open) renderQuests();
     if (recruitDlg.dialog.open) renderRecruit();
   }

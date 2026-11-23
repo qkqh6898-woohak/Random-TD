@@ -19,6 +19,9 @@ import type { GameData, Grade, TowerData } from '../data/load';
 import { Rng, deriveSeed } from '../sim/Rng';
 import { fnv1a32 } from '../sim/hash';
 import type { ProgressionData, QuestData, QuestStat, RewardSpec, ShopItemData } from './progressionData';
+import { newV3State, parseV3State, type V3State } from './v3/state';
+import { addExplore, type ExploreGain } from './v3/explore';
+import { addTargetFragments } from './v3/relics';
 
 /**
  * 저장 형식 버전. 2 = V2.0 PR-A 🔥 불꽃(flame) 추가. 1 → 2 이전: flame이 없으면 progression.json account.legacyFlame을 한 번 준다
@@ -78,8 +81,10 @@ export interface ProgressState {
   daily: DailyState;
   /** 받은 업적 id */
   achievements: string[];
-  /** 보상을 준 판 id (최근 REWARDED_RUNS_KEEP개) */
+  /** 보상을 준 판 id (최근 REWARDED_RUNS_KEEP개) — V3 보급도 같은 장부로 한 번만 (docs/v3/p0-spec.md 4.3) */
   rewardedRuns: string[];
+  /** V3 (P2~): 탐험 열쇠·유물·보급 진행·1회 지급 장부. 없으면 기본값 */
+  v3: V3State;
 }
 
 /** 받은 것 (화면 표시용 요약) */
@@ -92,6 +97,8 @@ export interface Grant {
   fragments: { id: string; n: number }[];
   /** 이번에 오른 계정 레벨들 */
   levelUps: number[];
+  /** 🗝️ 탐험 열쇠 (V3) */
+  keys: number;
 }
 
 export interface MatchResult {
@@ -117,6 +124,8 @@ export interface MatchSettlement {
   newBest: boolean;
   /** 영웅 모집 게이지에 더한 칸 */
   recruitGain: number;
+  /** V3 탐험 보상 (유효 전투·완료 웨이브·보급 — 보급 1개 = 열쇠·목표 조각, P2는 정산에서 바로 준다) */
+  explore: ExploreGain & { keys: number; targetFragments: number; target: string };
 }
 
 export function emptyStats(): StatBlock {
@@ -124,7 +133,7 @@ export function emptyStats(): StatBlock {
 }
 
 function emptyGrant(): Grant {
-  return { xp: 0, gold: 0, gems: 0, flame: 0, cards: [], fragments: [], levelUps: [] };
+  return { xp: 0, gold: 0, gems: 0, flame: 0, cards: [], fragments: [], levelUps: [], keys: 0 };
 }
 
 /** 영웅 수집에 나오는 타워 (모든 등급, 데이터 순서) */
@@ -133,7 +142,7 @@ export function heroTowers(data: Pick<GameData, 'towers'>): readonly TowerData[]
 }
 
 /** 새 계정. legacy = 예전 저장에서 옮길 값 (rtd.account 레벨, rtd.records 최고 단계) */
-export function newProgress(pd: ProgressionData, data: Pick<GameData, 'decks' | 'towers'>, seed: number, legacy: { level?: number; bestWave?: number } = {}): ProgressState {
+export function newProgress(pd: ProgressionData, data: Pick<GameData, 'decks' | 'towers' | 'game'>, seed: number, legacy: { level?: number; bestWave?: number } = {}): ProgressState {
   const heroes: Record<string, HeroEntry> = {};
   for (const t of data.towers.towers) heroes[t.id] = { level: 0, cards: 0 };
   const base = data.decks.base;
@@ -158,6 +167,7 @@ export function newProgress(pd: ProgressionData, data: Pick<GameData, 'decks' | 
     daily: { date: '', stats: emptyStats(), claimed: [], bonusClaimed: false },
     achievements: [],
     rewardedRuns: [],
+    v3: newV3State(pd),
   };
 }
 
@@ -205,7 +215,7 @@ export function progressIsNewer(raw: string | null): boolean {
 
 /** parseProgress가 아는 최상위 필드 (나머지는 그대로 들고 다닌다 — 새 앱이 더한 필드를 옛 앱이 지우지 않게, 검토 M4) */
 const KNOWN_KEYS: ReadonlySet<string> = new Set([
-  'v', 'seed', 'rolls', 'level', 'xp', 'gold', 'gems', 'flame', 'heroes', 'bestWave', 'claimedWaves', 'recruit', 'recruitSummons', 'totals', 'daily', 'achievements', 'rewardedRuns',
+  'v', 'seed', 'rolls', 'level', 'xp', 'gold', 'gems', 'flame', 'heroes', 'bestWave', 'claimedWaves', 'recruit', 'recruitSummons', 'totals', 'daily', 'achievements', 'rewardedRuns', 'v3',
 ]);
 
 /**
@@ -213,7 +223,7 @@ const KNOWN_KEYS: ReadonlySet<string> = new Set([
  * 데이터에 없는 타워 id의 영웅 기록과 모르는 최상위 필드는 버리지 않고 그대로 들고 다닌다 (검토 M4 — id가 데이터에 돌아오면 다시 쓰인다).
  * 새 타워는 미보유로 채운다. 버전 1 → 2: 🔥 불꽃이 없으면 account.legacyFlame을 한 번 준다 (FLAME_VERSION).
  */
-export function parseProgress(raw: string | null, pd: ProgressionData, data: Pick<GameData, 'decks' | 'towers'>, seed: number, legacy: { level?: number; bestWave?: number } = {}): ProgressState {
+export function parseProgress(raw: string | null, pd: ProgressionData, data: Pick<GameData, 'decks' | 'towers' | 'game'>, seed: number, legacy: { level?: number; bestWave?: number } = {}): ProgressState {
   const fresh = newProgress(pd, data, seed, legacy);
   if (raw === null) return fresh;
   let o: Partial<Record<keyof ProgressState, unknown>>;
@@ -262,6 +272,7 @@ export function parseProgress(raw: string | null, pd: ProgressionData, data: Pic
     daily: { date: typeof d.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.date) ? d.date : '', stats: readStats(d.stats), claimed: strList(d.claimed), bonusClaimed: d.bonusClaimed === true },
     achievements: strList(o.achievements),
     rewardedRuns: Array.isArray(o.rewardedRuns) ? o.rewardedRuns.filter((x): x is string => typeof x === 'string').slice(-REWARDED_RUNS_KEEP) : [],
+    v3: parseV3State(o.v3, pd, data),
   };
 }
 
@@ -544,6 +555,10 @@ export function applyReward(
     state.flame += spec.flame;
     grant.flame += spec.flame;
   }
+  if (spec.keys) {
+    state.v3.keys += spec.keys;
+    grant.keys += spec.keys;
+  }
   if (spec.cards) addCards(state, data, rollCards(rng.fork('cards'), data, weights, spec.cards), grant);
   if (spec.fragments) addCards(state, data, rollFragments(rng.fork('fragments'), state, data, spec.fragments), grant);
   return grant;
@@ -607,7 +622,17 @@ export function settleMatch(state: ProgressState, pd: ProgressionData, data: Pic
   const recruitGain = Math.floor(total / pd.recruit.summonsPerPoint);
   state.recruit += recruitGain;
   state.recruitSummons = total % pd.recruit.summonsPerPoint;
-  return { grant, stage, bestWave: state.bestWave, newBest, recruitGain };
+  // V3 탐험 (같은 runId 장부 안 — 위에서 처음 정산하는 판만 여기까지 온다). 날짜와 무관.
+  const ex = addExplore(state.v3.explore, result, pd.v3);
+  const keys = ex.supplies * pd.v3.explore.supplyReward.keys;
+  const targetFragments = ex.supplies * pd.v3.explore.supplyReward.targetFragments;
+  if (keys > 0) {
+    state.v3.keys += keys;
+    grant.keys += keys;
+  }
+  const target = state.v3.target;
+  addTargetFragments(state.v3, pd, targetFragments);
+  return { grant, stage, bestWave: state.bestWave, newBest, recruitGain, explore: { ...ex, keys, targetFragments, target } };
 }
 
 // ---------------------------------------------------------------------------
@@ -785,6 +810,7 @@ function mergeGrants(got: Grant[]): Grant {
     total.gold += g.gold;
     total.gems += g.gems;
     total.flame += g.flame;
+    total.keys += g.keys;
     total.levelUps.push(...g.levelUps);
     for (const c of g.cards) {
       const t = total.cards.find((x) => x.id === c.id);

@@ -22,6 +22,7 @@ import { abilityOf, abilityParams, towerLevel, towerMilestone } from '../abiliti
 import type { AuraArea, AuraSpec } from '../abilities/types';
 import { gradeUpgradeBp } from './Upgrade';
 import { chanceBonus } from '../chances';
+import { relicGoldAtkBp, relicSum } from '../relics';
 
 /** 오라 하나가 받는 타워에게 닿는가. */
 export function auraCovers(
@@ -104,9 +105,9 @@ export function towerBonus(ctx: MatchContext, tower: Tower, auras: AuraMap): Tow
   const gradeUp = grade ? gradeUpgradeBp(ctx, tower.owner, grade) : 0;
   // V3 P1 영웅 마일스톤: 기존 (레벨 − 1) × 4% 위에 더한다 (공격력·공속 합연산, 치명 확률 기존 상한)
   const ms = towerMilestone(ctx, tower.owner, tower.tower);
-  let atk = (a?.atkPctBp ?? 0) + (level - 1) * ctx.rules.atkPerLevelBp + gradeUp + ms.atkBp;
+  let atk = (a?.atkPctBp ?? 0) + (level - 1) * ctx.rules.atkPerLevelBp + gradeUp + ms.atkBp + relicAtkBp(ctx, tower);
   // 필살기 '전군 가속' (G-1): 그 플레이어 모든 타워 공속% (끝나면 Ultimate 시스템이 0으로)
-  let aps = (a?.apsPctBp ?? 0) + (ctx.state.rallyBp?.[tower.owner] ?? 0) + ms.apsBp;
+  let aps = (a?.apsPctBp ?? 0) + (ctx.state.rallyBp?.[tower.owner] ?? 0) + ms.apsBp + relicSum(ctx, tower.owner, 'apsPct');
   let boss = BP_ONE;
   const def = abilityOf(tower.tower);
   if (def) {
@@ -114,10 +115,25 @@ export function towerBonus(ctx: MatchContext, tower: Tower, auras: AuraMap): Tow
     if (def.apsBonusBp) aps += def.apsBonusBp(tower, p);
     if (def.bossMulBp) boss = mulBp(boss, def.bossMulBp(p));
   }
+  // V3 P2 사냥꾼 표식: 보스 피해 ×(1 + 값)
+  const bossRelic = relicSum(ctx, tower.owner, 'bossPct');
+  if (bossRelic > 0) boss = mulBp(boss, BP_ONE + bossRelic);
   if (atk < -BP_ONE) atk = -BP_ONE;
   // 개발자 확률 조정 'critBonus' (T-2): 모든 타워 치명타 확률 + (한도는 effectiveStats가 자른다)
   const crit = chanceBonus(ctx.state, 'critBonus') + ms.critBp;
   return crit > 0 ? { atkPctBp: atk, apsPctBp: aps, bossMulBp: boss, critBp: crit } : { atkPctBp: atk, apsPctBp: aps, bossMulBp: boss };
+}
+
+/**
+ * V3 P2 유물 공격력% (합연산): 숫돌(모든 타워) + 쇠뇌 깃털(물리·혼합) + 별빛 잉크(마법·혼합) + 금화 망치(보유금 1,000원당, 상한).
+ * 유물이 없으면 0.
+ */
+export function relicAtkBp(ctx: MatchContext, tower: Pick<Tower, 'owner' | 'tower'>): number {
+  const dmg = ctx.rules.towers.get(tower.tower)?.damageType;
+  let v = relicSum(ctx, tower.owner, 'atkPct');
+  if (dmg === 'physical' || dmg === 'hybrid') v += relicSum(ctx, tower.owner, 'physPct');
+  if (dmg === 'magic' || dmg === 'hybrid') v += relicSum(ctx, tower.owner, 'magicPct');
+  return v + relicGoldAtkBp(ctx, tower.owner, ctx.state.gold);
 }
 
 /** 타워 하나가 주는 지원 효과 (없으면 null) — 화면이 범위를 그릴 때 읽는다. */

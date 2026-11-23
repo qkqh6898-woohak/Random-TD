@@ -239,6 +239,11 @@ export interface MatchContext {
    * 조합 규칙은 sim/unlocks.ts `isHiddenLocked`로 읽는다.
    */
   readonly lockedHidden: readonly ReadonlySet<string>[];
+  /**
+   * 플레이어별 유물 (V3 P2, 유물 id → Lv). 판 시작 때 정해진 입력 (해시 밖, 리플레이·판 저장에 기록). 빈 객체 = 유물 없음(예전과 같음).
+   * 효과는 sim/relics.ts.
+   */
+  readonly relics: readonly Readonly<Record<string, number>>[];
 }
 
 /**

@@ -17,6 +17,7 @@
  * - 타워 레벨: 플레이어별 (타워 id → 1~15, 생략하면 모두 1). 판 시작 때 복사·동결 (특색 수치 보간·레벨당 공격력, M3-8).
  * 화면은 match.state·mobs()·towers()를 읽기만 하고, 바꾸려면 명령을 world.enqueue() 한다.
  */
+import { relicSum } from './relics';
 import type { GameData } from '../data/load';
 import { World, type System } from './World';
 import { listMobs, countMobs, type Mob } from './entities/Mob';
@@ -84,6 +85,11 @@ export interface MatchOptions {
    * 개발자 판(debug)은 치트 판이라 그대로 받는다 (E2E·개발 도구가 판을 빨리 만드는 데 쓴다). 판 상태가 아니라 설정 (해시 밖).
    */
   legacyCommands?: boolean;
+  /**
+   * 플레이어별 유물 (V3 P2, 유물 id → 1~최대 Lv, game.json relics). 판 밖 계정(src/meta/v3/relics.ts)이 넣는다.
+   * 생략·빈 객체 = 유물 없음(예전과 같음). 판 시작 때 정해진 입력 (해시 밖, 리플레이·판 저장에 기록).
+   */
+  relics?: readonly Readonly<Record<string, number>>[];
 }
 
 /** 칸 무더기(G-1) 전의 예전 명령 — 리플레이·개발자 판에서만 받는다 (V2 L2). */
@@ -195,7 +201,24 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
   const map = buildSimMap(mapData);
   if (opts.mode === 'campaign' && map.lives === null) throw new Error(`캠페인 맵 ${mapId}에 lives가 없다`);
   if (opts.mode === 'infinite' && map.mobLimit === null) throw new Error(`무한 모드 맵 ${mapId}에 mobLimit이 없다`);
-  const lives = opts.mode === 'campaign' ? (map.lives as number) : 0;
+  // V3 P2 유물 (판 입력 검사 — 없는 유물·범위 밖 레벨은 판을 만들 때 에러)
+  const players0 = opts.players ?? 1;
+  const relics: Readonly<Record<string, number>>[] = [];
+  for (let p = 0; p < players0; p++) {
+    const src = opts.relics?.[p] ?? {};
+    const out: Record<string, number> = {};
+    for (const id of Object.keys(src).sort()) {
+      const lv = src[id] as number;
+      const rule = rules.relics.get(id);
+      if (!rule) throw new Error(`플레이어 ${p} 유물: 없는 유물 ${id}`);
+      if (!Number.isSafeInteger(lv) || lv < 1 || lv > rule.maxLevel) throw new Error(`플레이어 ${p} 유물: ${id} = ${lv} (1~${rule.maxLevel} 정수여야 한다)`);
+      out[id] = lv;
+    }
+    relics.push(Object.freeze(out));
+  }
+  const relicCtx = { rules, relics, cache: new Map<string, unknown>() };
+  const leakBonus = relicSum(relicCtx, 0, 'leakLimit');
+  const lives = opts.mode === 'campaign' ? (map.lives as number) + leakBonus : 0;
 
   const state: MatchState = {
     mode: opts.mode,
@@ -206,10 +229,10 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     nextStageTick: rules.prepTicks,
     lastStage,
     bossStage: false,
-    gold: rules.startGold,
+    gold: rules.startGold + relicSum(relicCtx, 0, 'startGold'),
     lives,
     maxLives: lives,
-    mobLimit: opts.mode === 'infinite' ? (map.mobLimit as number) : 0,
+    mobLimit: opts.mode === 'infinite' ? (map.mobLimit as number) + leakBonus : 0,
     leaked: 0,
     spawned: 0,
     summons: 0,
@@ -334,6 +357,7 @@ export function createMatch(data: GameData, opts: MatchOptions): Match {
     cache: new Map(),
     accountLevels: Object.freeze(accountLevels),
     lockedHidden: Object.freeze(lockedHidden),
+    relics: Object.freeze(relics),
   };
   // 특색 수치가 잘못되면 판을 만들 때 바로 드러나게 (덱에 있는 타워만이 아니라 모든 능력 모듈)
   checkAllAbilityParams(ctx);

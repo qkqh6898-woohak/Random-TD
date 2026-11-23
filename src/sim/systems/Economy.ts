@@ -11,6 +11,7 @@
  *   실패하면 상태를 바꾸지 않고 'hireFail' { reason: phase · max · gold }. 일꾼 수입은 일시정지 중 멈춘다(틱이 멈춤). 일꾼은 판이 끝나면 사라진다.
  * 돈은 판 상태(state.gold)라 해시에 들어간다. 지금은 한 판에 지갑 하나 (2인 지갑 분리는 M13).
  */
+import { relicSum } from '../relics';
 import type { System, World } from '../World';
 import { BP_ONE, mulBp } from '../Fixed';
 import type { MatchContext, MatchState } from '../state';
@@ -73,7 +74,8 @@ export function hireWorker(ctx: MatchContext, world: World, player: number): boo
 
 /** 일꾼 한 번 수입 (원): 일꾼 수 × 1명당 수입 × 배율. */
 export function workerIncome(ctx: MatchContext): number {
-  return ctx.state.workers * ctx.rules.workerIncome * ctx.state.workerMul;
+  // V3 P2 성실 장갑: 1명당 수입 +값 (플레이어 0 — 판 돈은 하나)
+  return ctx.state.workers * (ctx.rules.workerIncome + relicSum(ctx, 0, 'workerIncome')) * ctx.state.workerMul;
 }
 
 /** 경제 시스템 (틱마다, 전투 다음·패배 판정 앞): 수입 간격(100틱)마다 일꾼 수입. */

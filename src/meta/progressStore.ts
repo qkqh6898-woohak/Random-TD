@@ -18,6 +18,7 @@ import { RECORDS_KEY, parseRecord } from '../save/BattleRecords';
 import type { KeyValueStorage } from '../save/storage';
 import type { ProgressionData } from './progressionData';
 import {
+  accountRng,
   accountSeedFrom,
   buyShopItem,
   claimAllMilestones,
@@ -45,6 +46,15 @@ import {
   type MatchSettlement,
   type ProgressState,
 } from './progress';
+
+import {
+  discoverRelics,
+  exchangeRelicFragments,
+  matchRelics,
+  pickFirstRelic,
+  setRelicTarget,
+  upgradeRelic,
+} from './v3/relics';
 
 export const PROGRESS_KEY = 'rtd.progress';
 export const PROGRESS_KEY_DEV = 'rtd.progress.dev';
@@ -167,11 +177,50 @@ export class ProgressStore {
    * 판 입력 (G-1·전투가 createMatch에 펼쳐 넣는다): 영웅 레벨 → levels, 잠긴 히든 → lockedHidden.
    * 개발자 판은 히든을 잠그지 않는다 (개발 도구로 히든 조합을 확인할 수 있게).
    */
-  matchOptions(dev: boolean): { levels: Record<string, number>[]; lockedHidden?: string[][] } {
+  matchOptions(dev: boolean): { levels: Record<string, number>[]; lockedHidden?: string[][]; relics?: Record<string, number>[] } {
     const levels = [heroMatchLevels(this.state, this.pd, this.data)];
-    if (dev) return { levels };
+    // V3 P2: 보유 유물 → 판 입력 (없으면 필드 없음 — 예전 판과 같은 입력)
+    const r = matchRelics(this.state.v3, this.data);
+    const relics = Object.keys(r).length > 0 ? { relics: [r] } : {};
+    if (dev) return { levels, ...relics };
     const locked = lockedHiddenIds(this.state, this.data);
-    return locked.length > 0 ? { levels, lockedHidden: [locked] } : { levels };
+    return locked.length > 0 ? { levels, lockedHidden: [locked], ...relics } : { levels, ...relics };
+  }
+
+  // ---------- V3 P2 유물 ----------
+
+  /** 열쇠 n개로 유물 발견 (계정 굴림) */
+  discoverRelics(n = 1): ReturnType<typeof discoverRelics> {
+    const r = discoverRelics(this.state.v3, this.pd, this.data, accountRng(this.state, 'relic'), n);
+    if (r !== 'keys') this.changed();
+    return r;
+  }
+
+  upgradeRelic(id: string): ReturnType<typeof upgradeRelic> {
+    const r = upgradeRelic(this.state.v3, this.pd, this.data, this.state.gold, id);
+    if (typeof r !== 'string') {
+      this.state.gold -= r.gold;
+      this.changed();
+    }
+    return r;
+  }
+
+  setRelicTarget(id: string): boolean {
+    const ok = setRelicTarget(this.state.v3, this.pd, id);
+    if (ok) this.changed();
+    return ok;
+  }
+
+  exchangeRelics(spend: Readonly<Record<string, number>>): ReturnType<typeof exchangeRelicFragments> {
+    const r = exchangeRelicFragments(this.state.v3, this.pd, spend);
+    if (typeof r === 'number') this.changed();
+    return r;
+  }
+
+  pickFirstRelic(id: string): boolean {
+    const ok = pickFirstRelic(this.state.v3, this.pd, id);
+    if (ok) this.changed();
+    return ok;
   }
 
   /**
@@ -261,6 +310,7 @@ export class ProgressStore {
     this.state.gold += 10000;
     this.state.gems += 1000;
     this.state.flame += 1000;
+    this.state.v3.keys += 30;
     for (const t of this.data.towers.towers) {
       const e = (this.state.heroes[t.id] ??= { level: 0, cards: 0 });
       e.cards += t.grade === 'hidden' ? this.pd.hidden.unlockFragments : 20;

@@ -14,6 +14,7 @@
  *   준비 단계(0단계) → 1단계는 이자 없음. 카드 '황금 손' 보너스는 붙이지 않는다 (도박 당첨금과 같은 규칙).
  * - 준비 완료 (F10, readyNow 명령): 준비 단계에서 누르면 1단계를 바로 시작 (`readyNow`). 60초를 기다리는 길도 그대로.
  */
+import { relicInterestRate, relicSum } from '../relics';
 import type { System, World } from '../World';
 import { isMob } from '../entities/Mob';
 import { isBossStage } from '../rules';
@@ -36,9 +37,13 @@ export function stageStartTick(prepTicks: number, stageTicks: number, stage: num
 }
 
 /** 가진 돈 gold에 붙는 단계 이자 (원): min(⌊gold ÷ per⌋ × amount, max). */
-export function stageInterest(ctx: Pick<MatchContext, 'rules'>, gold: number): number {
+export function stageInterest(ctx: Pick<MatchContext, 'rules'> & Partial<Pick<MatchContext, 'relics' | 'cache'>>, gold: number): number {
   const { interestPer, interestAmount, interestMax } = ctx.rules;
-  return Math.min(Math.floor(gold / interestPer) * interestAmount, interestMax);
+  // V3 P2 도토리 저금통 (플레이어 0 — 판 돈은 하나): 1회 상한 +값, 100원당 +rateBonus원. 유물이 없으면 기존 그대로
+  const r = ctx.relics && ctx.cache ? { rules: ctx.rules, relics: ctx.relics, cache: ctx.cache } : null;
+  const max = interestMax + (r ? relicSum(r, 0, 'interestCap') : 0);
+  const amount = interestAmount + (r ? relicInterestRate(r, 0) : 0);
+  return Math.min(Math.floor(gold / interestPer) * amount, max);
 }
 
 /** 다음 단계 시작: (1단계 이상을 마쳤으면 단계 이자) 단계 +1, 시작 틱 = 지금, 다음 단계 = 지금 + 단계 길이 (보스 단계는 max(단계 길이, 보스 시간)), 'stageStart' 사건. (단계 시스템·단계 건너뛰기 공용) */

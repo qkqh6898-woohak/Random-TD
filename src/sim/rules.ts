@@ -43,6 +43,7 @@ import type {
 } from '../data/load';
 import { BP_ONE, bp, idiv, mulBp, tiles } from './Fixed';
 import { TICK_HZ, secondsToTicks } from './World';
+import { buildRelicRules, type RelicRule } from './relics';
 
 /** 몹 하나의 기본 스탯 (단계 성장 전, 정수). */
 /** V3 P1 영웅 마일스톤 한 칸 (정수 bp) */
@@ -414,6 +415,8 @@ export interface MatchRules {
   readonly traitKind: ReadonlyMap<string, TraitBoostKind>;
   readonly traitDefault: TraitBoostKind;
   readonly traitStepBp: Readonly<Record<TraitBoostKind, number>>;
+  /** V3 P2 유물 규칙 (id → 정수 규칙) — sim/relics.ts */
+  readonly relics: ReadonlyMap<string, RelicRule>;
   /** towers.json 순서의 타워 id (개발용 debugTower 명령이 번호로 고른다) */
   readonly towerOrder: readonly string[];
   // ---- M4 ----
@@ -755,6 +758,7 @@ export function buildMatchRules(data: GameData): MatchRules {
       cc: exactBp('game.json towerLevel.traitBoost.values.cc', game.towerLevel.traitBoost.values.cc),
       crit: exactBp('game.json towerLevel.traitBoost.values.crit', game.towerLevel.traitBoost.values.crit),
     }),
+    relics: buildRelicRules(game.relics),
     towerOrder: Object.freeze(data.towers.towers.map((t) => t.id)),
     ...buildM4Rules(data, mobOrder),
     ...buildM5Rules(data),

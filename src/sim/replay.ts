@@ -41,6 +41,8 @@ export interface ReplayFile {
   accountLevels?: number[];
   /** 플레이어별 잠긴 히든 타워 id (G-3). 없으면 모두 열림 — 아무도 잠기지 않은 판은 이 필드를 적지 않는다 (예전 파일과 같은 모양) */
   lockedHidden?: string[][];
+  /** 플레이어별 유물 (V3 P2). 아무도 유물이 없으면 적지 않는다 (예전 파일과 같은 모양) */
+  relics?: Record<string, number>[];
   /** 데이터 지문 (fnv1a32, 키 정렬 JSON) — 다르면 수치가 바뀐 것 */
   dataHash: number;
   /** 끝 틱: 0틱부터 이 틱 수만큼 돌린다 */
@@ -70,11 +72,11 @@ export function dataFingerprint(data: GameData): number {
   return fnv1a32(stableJson(data));
 }
 
-type InputKeys = 'seed' | 'mode' | 'theme' | 'players' | 'debug' | 'decks' | 'levels' | 'accountLevels' | 'lockedHidden';
+type InputKeys = 'seed' | 'mode' | 'theme' | 'players' | 'debug' | 'decks' | 'levels' | 'accountLevels' | 'lockedHidden' | 'relics';
 
 /** 판 → 그 판을 다시 만드는 입력. */
 export function matchInputs(match: Match): Pick<ReplayFile, InputKeys> {
-  const { state, decks, levels, accountLevels, lockedHidden } = match.ctx;
+  const { state, decks, levels, accountLevels, lockedHidden, relics } = match.ctx;
   const locked = lockedHidden.map((set) => [...set].sort());
   return {
     seed: match.world.seed,
@@ -86,6 +88,7 @@ export function matchInputs(match: Match): Pick<ReplayFile, InputKeys> {
     levels: levels.map((l) => ({ ...l })),
     accountLevels: [...accountLevels],
     ...(locked.some((l) => l.length > 0) ? { lockedHidden: locked } : {}),
+    ...(relics.some((r) => Object.keys(r).length > 0) ? { relics: relics.map((r) => ({ ...r })) } : {}),
   };
 }
 
@@ -101,6 +104,7 @@ export function replayMatchOptions(file: Pick<ReplayFile, InputKeys>): MatchOpti
     levels: file.levels,
     ...(file.accountLevels ? { accountLevels: file.accountLevels } : {}),
     ...(file.lockedHidden ? { lockedHidden: file.lockedHidden } : {}),
+    ...(file.relics ? { relics: file.relics } : {}),
   };
 }
 

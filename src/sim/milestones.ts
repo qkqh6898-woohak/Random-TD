@@ -12,6 +12,7 @@
 import type { MatchRules, MilestoneRule } from './rules';
 import type { MatchContext } from './state';
 import { BP_ONE, mulBp } from './Fixed';
+import { relicSum } from './relics';
 import type { TraitBoostKind } from '../data/load';
 
 export interface MilestoneBonus {
@@ -73,7 +74,8 @@ export function towerMilestone(ctx: Pick<MatchContext, 'levels' | 'rules' | 'cac
 }
 
 /** 그 타워가 거는 제어(둔화·빙결·정지) 지속 틱 — 마일스톤 제어% 반영, 내림 (보스·저항 배율은 Status가 그 뒤에). */
-export function ccTicks(ctx: Pick<MatchContext, 'levels' | 'rules' | 'cache'>, owner: number, towerId: string, ticks: number): number {
-  const bonus = towerMilestone(ctx, owner, towerId).ccBp;
+export function ccTicks(ctx: Pick<MatchContext, 'levels' | 'rules' | 'cache' | 'relics'>, owner: number, towerId: string, ticks: number): number {
+  // 마일스톤 제어% + V3 P2 서리 결정 (합연산)
+  const bonus = towerMilestone(ctx, owner, towerId).ccBp + relicSum(ctx, owner, 'ccPct');
   return bonus > 0 ? mulBp(ticks, BP_ONE + bonus) : ticks;
 }

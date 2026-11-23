@@ -21,6 +21,7 @@
  * - 실패하면 상태·난수를 바꾸지 않고 'gambleFail' { player, t, reason: phase · unknown · locked · gold }.
  *   성공하면 'gamble' { player, t, cost, mul(bp), win, jackpot, gauge, before(도박 직전 보유금) } — 미션(연속 0원·인생 역전·도박왕)이 구독한다.
  */
+import { relicGambleRefund } from '../relics';
 import type { Rng } from '../Rng';
 import type { World } from '../World';
 import { streamGamble } from '../World';
@@ -167,6 +168,9 @@ export function gamble(ctx: MatchContext, world: World, player: number, t: numbe
   const out = rollGamble(world.rng(streamGamble(player)), gambleRulesOf(ctx), zeroCut, jackpot, rules);
   const win = gamblePayout(table.cost, out.mulBp);
   state.gold += win;
+  // V3 P2 위로의 쿠키: ×0이면 그 시도 비용 × 환급% 한 번 (당첨금이 아니라 비용 기준, 잭팟 게이지·재시도와 무관)
+  const refund = out.mulBp === 0 ? relicGambleRefund(ctx, player, table.cost) : 0;
+  if (refund > 0) state.gold += refund;
   if (jackpot) g.gauge = 0;
   else if (out.mulBp === 0 && g.gauge < rules.jackpotGauge) g.gauge += 1;
   if (rules.gambleRecent > 0) {
@@ -174,6 +178,6 @@ export function gamble(ctx: MatchContext, world: World, player: number, t: numbe
     while (g.recent.length > rules.gambleRecent) g.recent.shift();
   }
   state.gambles += 1;
-  world.emit('gamble', { player, t, cost: table.cost, mul: out.mulBp, win, jackpot, gauge: g.gauge, before });
+  world.emit('gamble', { player, t, cost: table.cost, mul: out.mulBp, win, jackpot, gauge: g.gauge, before, ...(refund > 0 ? { refund } : {}) });
   return win;
 }
