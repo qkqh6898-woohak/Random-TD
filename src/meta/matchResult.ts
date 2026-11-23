@@ -15,5 +15,6 @@ export function matchResultOf(match: Match, runId: string): MatchResult {
     summons: s.summons,
     merges: s.merges,
     dev: s.debug || s.debugUsed,
+    victory: s.phase === 'victory',
   };
 }

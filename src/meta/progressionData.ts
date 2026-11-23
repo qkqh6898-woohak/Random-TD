@@ -22,6 +22,8 @@ export interface RewardSpec {
   flame?: number;
   cards?: number;
   fragments?: number;
+  /** 🗝️ 탐험 열쇠 (V3 P2 — 유물 발견에 쓴다). 신규 재화는 이것 하나만 노출 */
+  keys?: number;
 }
 
 export type QuestStat = 'matches' | 'summons' | 'merges' | 'bossKills' | 'bestWave' | 'heroLevelSum';
@@ -45,6 +47,37 @@ export interface ShopItemData {
   weights?: Partial<Record<Grade, number>>;
   fragments?: number;
   gold?: number;
+}
+
+/** V3 P0~P3 판 밖 진행도 데이터 (docs/v3/p0-spec.md) — 날짜가 아니라 유효 전투·완료 웨이브로만 센다 */
+export interface V3Data {
+  notes: string;
+  explore: {
+    /** 유효 전투 = 치트 없는 판에서 완료 웨이브가 이 값 이상 */
+    minCompletedWaves: number;
+    /** 완료 웨이브 누적 n마다 보급 1개 (나머지 보존) */
+    wavesPerSupply: number;
+    /** 보급 n개마다 성장 선택 1회 */
+    supplyPerChoice: number;
+    /** 보급 1개가 주는 것: 탐험 열쇠·목표 유물 조각 */
+    supplyReward: { keys: number; targetFragments: number };
+  };
+  growthChoice: { cardsPct: number; flamePct: number; relicKeys: number };
+  relics: {
+    pool: string[];
+    unlockFragments: number;
+    /** Lv n → n+1 추가 조각 (index n−1). 최대 Lv m 유물은 앞 m−1칸 */
+    fragmentCost: number[];
+    goldCost: number[];
+    pityEvery: number;
+    exchangeRate: number;
+    firstPick: number;
+  };
+  stamp: { cells: number; rewards: RewardSpec[] };
+  pass: { wavesPerCell: number; cells: number; goldenPriceGems: number; free: RewardSpec[]; golden: RewardSpec[] };
+  packages: { id: string; name: string; unlockLevel: number; price: { gold?: number; gems?: number }; reward: RewardSpec }[];
+  firstHero: { grade: Grade; newCards: number; ownedCards: number };
+  secretCodes: { id: string; hash: number; reward: RewardSpec }[];
 }
 
 export interface ProgressionData {
@@ -93,15 +126,54 @@ export interface ProgressionData {
   quests: { daily: QuestData[]; dailyAllBonus: RewardSpec; achievements: QuestData[] };
   shop: ShopItemData[];
   modes: { id: string; name: string; unlockLevel: number; desc: string }[];
+  v3: V3Data;
 }
 
 const nonNeg = s.int({ min: 0 });
 const reward: Schema = s.withCheck<RewardSpec>(
-  s.obj({ gold: s.opt(nonNeg), gems: s.opt(nonNeg), flame: s.opt(nonNeg), cards: s.opt(nonNeg), fragments: s.opt(nonNeg) }),
+  s.obj({ gold: s.opt(nonNeg), gems: s.opt(nonNeg), flame: s.opt(nonNeg), cards: s.opt(nonNeg), fragments: s.opt(nonNeg), keys: s.opt(nonNeg) }),
   (v, path, issues) => {
-    if (!v.gold && !v.gems && !v.flame && !v.cards && !v.fragments) issues.push({ path, message: '보상이 비어 있다' });
+    if (!v.gold && !v.gems && !v.flame && !v.cards && !v.fragments && !v.keys) issues.push({ path, message: '보상이 비어 있다' });
   },
 );
+const price: Schema = s.withCheck<{ gold?: number; gems?: number }>(s.obj({ gold: s.opt(s.int({ min: 1 })), gems: s.opt(s.int({ min: 1 })) }), (v, path, issues) => {
+  if ((v.gold === undefined) === (v.gems === undefined)) issues.push({ path, message: '가격은 gold·gems 중 하나만' });
+});
+const ladder = (min: number): Schema => s.arr(s.int({ min }), { minLength: 1 });
+const v3Schema: Schema = s.obj({
+  notes: s.str(),
+  explore: s.obj({
+    minCompletedWaves: s.int({ min: 1 }),
+    wavesPerSupply: s.int({ min: 1 }),
+    supplyPerChoice: s.int({ min: 1 }),
+    supplyReward: s.obj({ keys: nonNeg, targetFragments: nonNeg }),
+  }),
+  growthChoice: s.obj({ cardsPct: s.int({ min: 1, max: 1000 }), flamePct: s.int({ min: 0, max: 1000 }), relicKeys: s.int({ min: 1 }) }),
+  relics: s.obj({
+    pool: s.withCheck<string[]>(s.arr(s.str({ nonEmpty: true }), { minLength: 1 }), (v, path, issues) => {
+      if (new Set(v).size !== v.length) issues.push({ path, message: '공개 풀에 같은 유물이 두 번 있다' });
+    }),
+    unlockFragments: s.int({ min: 1 }),
+    fragmentCost: ladder(1),
+    goldCost: ladder(0),
+    pityEvery: s.int({ min: 2 }),
+    exchangeRate: s.int({ min: 2 }),
+    firstPick: nonNeg,
+  }),
+  stamp: s.withCheck<{ cells: number; rewards: unknown[] }>(s.obj({ cells: s.int({ min: 1 }), rewards: s.arr(reward, { minLength: 1 }) }), (v, path, issues) => {
+    if (v.rewards.length !== v.cells) issues.push({ path: `${path}.rewards`, message: `칸 수(${v.cells})와 보상 수(${v.rewards.length})가 다르다` });
+  }),
+  pass: s.withCheck<{ cells: number; free: unknown[]; golden: unknown[] }>(
+    s.obj({ wavesPerCell: s.int({ min: 1 }), cells: s.int({ min: 1 }), goldenPriceGems: s.int({ min: 1 }), free: s.arr(reward, { minLength: 1 }), golden: s.arr(reward, { minLength: 1 }) }),
+    (v, path, issues) => {
+      if (v.free.length !== v.cells) issues.push({ path: `${path}.free`, message: `칸 수(${v.cells})와 보상 수(${v.free.length})가 다르다` });
+      if (v.golden.length !== v.cells) issues.push({ path: `${path}.golden`, message: `칸 수(${v.cells})와 보상 수(${v.golden.length})가 다르다` });
+    },
+  ),
+  packages: s.arr(s.obj({ id: s.str({ nonEmpty: true }), name: s.str({ nonEmpty: true }), unlockLevel: s.int({ min: 1 }), price, reward }), { uniqueBy: 'id' }),
+  firstHero: s.obj({ grade: s.str({ enum: GRADES }), newCards: nonNeg, ownedCards: s.int({ min: 1 }) }),
+  secretCodes: s.arr(s.obj({ id: s.str({ nonEmpty: true }), hash: s.int({ min: 0, max: 0xffffffff }), reward }), { uniqueBy: 'id' }),
+});
 const weights: Schema = s.withCheck<Record<string, number>>(s.rec(nonNeg), (v, path, issues) => {
   for (const k of Object.keys(v)) if (!(GRADES as readonly string[]).includes(k) || k === 'hidden') issues.push({ path: `${path}.${k}`, message: `카드가 나올 수 없는 등급: ${k}` });
   if (Object.values(v).reduce((a, b) => a + b, 0) <= 0) issues.push({ path, message: '가중치 합이 0' });
@@ -187,6 +259,7 @@ export const progressionSchema: Schema = s.obj({
     { minLength: 1, uniqueBy: 'id' },
   ),
   modes: s.arr(s.obj({ id: s.str({ nonEmpty: true }), name: s.str({ nonEmpty: true }), unlockLevel: s.int({ min: 1 }), desc: s.str({ nonEmpty: true }) }), { uniqueBy: 'id' }),
+  v3: v3Schema,
 });
 
 /** 게임 데이터와 교차 검사 (영웅 최대 레벨 ≤ sim 타워 레벨 최대, 비용 표 길이, 히든 타워가 있어야 조각이 의미 있음). */
@@ -213,6 +286,10 @@ export function crossCheckProgression(p: ProgressionData, data: Pick<GameData, '
     ids.add(q.id);
   }
   for (const [i, q] of p.quests.daily.entries()) if (q.stat === 'heroLevelSum') issues.push({ path: `quests.daily[${i}].stat`, message: 'heroLevelSum은 업적에만 쓴다' });
+  // V3: 유물 비용 표는 같은 길이 (가장 긴 최대 레벨 − 1), 첫 영웅 선택권 등급에 타워가 있어야 한다
+  const r3 = p.v3.relics;
+  if (r3.goldCost.length !== r3.fragmentCost.length) issues.push({ path: 'v3.relics.goldCost', message: `길이 ${r3.goldCost.length} ≠ fragmentCost 길이 ${r3.fragmentCost.length}` });
+  if (!hasGrade(p.v3.firstHero.grade)) issues.push({ path: 'v3.firstHero.grade', message: `그 등급 타워가 없다: ${p.v3.firstHero.grade}` });
   return issues;
 }
 

@@ -22,6 +22,8 @@ export function abandonedMatchResult(run: AbandonedRun): MatchResult {
     summons: run.summons,
     merges: run.merges,
     dev: run.dev,
+    // 진행 중이던 판 → 승리가 아니다 (V3 완료 웨이브 = 도달 단계 − 1)
+    victory: false,
   };
 }
 

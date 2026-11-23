@@ -106,6 +106,8 @@ export interface MatchResult {
   merges: number;
   /** 개발자 판·치트 판 — 보상은 주되(개발자 계정 슬롯) 최고 웨이브·웨이브 길은 일반 계정처럼 센다 */
   dev?: boolean;
+  /** 캠페인 마지막 단계를 버텼는가 (V3 완료 웨이브 = 승리면 도달 단계, 아니면 도달 − 1 — src/meta/v3/explore.ts) */
+  victory?: boolean;
 }
 
 export interface MatchSettlement {
