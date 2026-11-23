@@ -30,7 +30,7 @@ import './detailsV2.css';
 import './v3.css';
 import { newMilestones } from '../../meta/v3/milestones';
 import { mountRelicDialog } from './RelicDialog';
-import { relicBadge, RELIC_ART } from './relicModel';
+import { KEY_ART, relicBadge, RELIC_ART } from './relicModel';
 import { heroCollectionSummary } from './heroCollectionModel';
 import { SHOP_ICONS, uiIcon, type UiIconId } from '../uiIcons';
 import type { UiView } from '../root';
@@ -461,17 +461,11 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     const rm = recruitDialogModel(s, pd);
     const recruit = rail('heroes', 'side-recruit', '영웅 모집', rm.progressText, 'recruit', () => openRecruit(), recruitReady(s, pd));
     recruit.querySelector('.lobby-rail-detail')?.setAttribute('data-testid', 'recruit-gauge');
-    // V3 P2: 유물 진열장 (배지 = 지금 강화할 수 있는 유물 + 첫 유물 선택권 — 실제로 할 수 있을 때만)
-    const relic = rail('shop', 'nav-shop', '유물', `🗝️ ${s.v3.keys.toLocaleString('ko-KR')}`, 'relics', () => relicUi.open(), relicBadge(s, pd, data));
-    relic.setAttribute('aria-haspopup', 'dialog');
-    relic.querySelector('.lobby-rail-detail')?.setAttribute('data-testid', 'relic-rail-keys');
-    const relicImg = relic.querySelector('img');
-    if (relicImg) relicImg.setAttribute('src', assetUrl(RELIC_ART['relic-whetstone'] as string));
     side.replaceChildren(
       rail('quests', 'side-quests', '퀘스트', '일일 · 업적', 'quests', () => openQuests(), quests),
       recruit,
-      relic,
     );
+    renderRelicPill();
     sideR.replaceChildren(
       rail('codex', 'nav-codex', GRADE_NAMES.hidden, '조각 수집', 'open-codex', () => select('codex'), codexReady(s, pd, data)),
       rail('shop', 'nav-shop', '카드 상점', '골드 · 보석', 'open-shop', () => select('shop')),
@@ -506,7 +500,21 @@ export function createLobbyScreen(opts: LobbyOptions): LobbyView {
     menuItems.push(debug);
   }
   menuDlg.body.replaceChildren(...menuItems);
-  const toolbar = h('div', { class: 'lobby-toolbar' }, h('span', { class: 'lobby-location', text: '원정대 야영지' }), menuButton);
+  // V3 P2: 유물 진열장 입구 — 머리줄 '메뉴' 옆 알약 (🗝️ 열쇠 수 32px · 배지 = 지금 강화 가능 + 첫 유물 선택권, 실제로 할 수 있을 때만).
+  // 320×640에서도 레일·시작 버튼을 가리지 않게 레일 대신 머리줄에 둔다.
+  const relicPill = h('button', { class: 'btn lobby-relic-pill', attrs: { type: 'button', 'data-action': 'relics', 'aria-haspopup': 'dialog' }, on: { click: () => relicUi.open() } });
+  function renderRelicPill(): void {
+    const s = progress.state;
+    const n = relicBadge(s, pd, data);
+    relicPill.replaceChildren(
+      h('img', { class: 'lobby-relic-pill-art', attrs: { src: assetUrl(RELIC_ART['relic-whetstone'] as string), alt: '', 'aria-hidden': 'true' } }),
+      h('span', { class: 'lobby-relic-pill-label', text: '유물' }),
+      h('span', { class: 'lobby-relic-pill-keys', attrs: { 'data-testid': 'relic-rail-keys' } }, h('img', { attrs: { src: assetUrl(KEY_ART), alt: '', 'aria-hidden': 'true' } }), h('span', { text: s.v3.keys.toLocaleString('ko-KR') })),
+      ...(n > 0 ? [badge(n) as HTMLElement] : []),
+    );
+    relicPill.setAttribute('aria-label', `유물 진열장 · 탐험 열쇠 ${s.v3.keys.toLocaleString('ko-KR')}개${n > 0 ? ` · 할 수 있는 것 ${n}개` : ''}`);
+  }
+  const toolbar = h('div', { class: 'lobby-toolbar' }, h('span', { class: 'lobby-location', text: '원정대 야영지' }), relicPill, menuButton);
   const speedButton = createButton({ label: '새 게임 배속 ×1', variant: 'pill', onClick: () => {
     selectedSpeed = nextSpeed(selectedSpeed, speeds);
     const label = `새 게임 배속 ×${selectedSpeed}`;

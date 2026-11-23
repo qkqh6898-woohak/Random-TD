@@ -393,11 +393,25 @@ export interface SettlementView extends GrantView {
   /** 정산 뒤 계정 레벨·경험치 */
   level: number;
   xpRatio: number;
+  /** V3 탐험 보상 요약 (기존 보상 아래 — 완료 웨이브·보급·잔여·열쇠·목표 조각). 같은 판을 다시 정산하면 정산 자체가 없다 */
+  explore: string;
 }
 
-export function settlementView(s: MatchSettlement, data: Pick<GameData, 'towers'>, state: ProgressState, pd?: ProgressionData): SettlementView {
+/** V3 정산 요약 글: '완료 27웨이브 → 보급 2 · 잔여 7 (다음 보급까지 3웨이브) · 🗝️ +2 · 목표 조각 +2' / 9웨이브 판은 안내 */
+export function exploreSummary(s: MatchSettlement, names: ReadonlyMap<string, string>, minWaves: number): string {
+  const e = s.explore;
+  if (!e.effective) return `완료 ${e.completed}웨이브 — 탐험 보상은 ${minWaves}웨이브 이상 끝낸 전투부터 (기존 보상은 그대로)`;
+  const parts = [`완료 ${e.completed}웨이브 → 보급 ${e.supplies}`, `잔여 ${e.supplyRest} (다음 보급까지 ${e.toNextSupply}웨이브)`];
+  if (e.keys > 0) parts.push(`🗝️ 열쇠 +${e.keys}`);
+  if (e.targetFragments > 0) parts.push(e.target ? `${names.get(e.target) ?? e.target} 조각 +${e.targetFragments}` : `목표 조각 +${e.targetFragments} (보관)`);
+  return parts.join(' · ');
+}
+
+export function settlementView(s: MatchSettlement, data: Pick<GameData, 'towers' | 'game'>, state: ProgressState, pd?: ProgressionData): SettlementView {
   const need = pd ? xpToNext(pd, state.level) : 0;
+  const names = new Map((data.game?.relics ?? []).map((r) => [r.id, r.name]));
   return {
+    explore: s.explore ? exploreSummary(s, names, pd?.v3.explore.minCompletedWaves ?? 10) : '',
     ...grantView(s.grant, data),
     stage: s.stage,
     best: s.bestWave,

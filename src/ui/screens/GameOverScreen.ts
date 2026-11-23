@@ -74,6 +74,7 @@ function rewardsBox(r: SettlementView): HTMLElement {
       h('span', { class: 'go-xpbar', attrs: { 'aria-hidden': 'true' } }, h('span', { class: 'go-xpfill', attrs: { style: `width:${Math.round(r.xpRatio * 100)}%` } })),
     ),
     h('div', { class: 'go-chips' }, ...chips),
+    r.explore ? h('p', { class: 'go-explore', attrs: { 'data-testid': 'go-explore' } }, h('strong', { text: '🧭 탐험 ' }), r.explore) : null,
     cardTotal > 0
       ? h(
           'div',

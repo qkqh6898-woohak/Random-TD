@@ -113,10 +113,12 @@ export interface FirstBossOptions {
   onTick?: (m: Match) => void;
   /** 예전 명령(summon·merge, 한 칸 하나) — G-1 전 규칙으로 비교 */
   legacy?: boolean;
+  /** V3 P2 유물 판 입력 (유물 봇 비교 — tests/integration/v3-relic-bots.test.ts) */
+  relics?: Record<string, number>;
 }
 
 /** 0.2초마다 고르는 행동 하나 (없으면 null). */
-function decide(m: Match, strategy: Strategy, summons: number, opts: FirstBossOptions): CommandInput | null {
+export function decide(m: Match, strategy: Strategy, summons: number, opts: FirstBossOptions): CommandInput | null {
   const workerMax = opts.workerMax ?? WORKER_MAX;
   const perSummons = opts.upgradePerSummons ?? UPGRADE_PER_SUMMONS;
   const ctx = m.ctx;
@@ -159,7 +161,7 @@ function decide(m: Match, strategy: Strategy, summons: number, opts: FirstBossOp
 
 /** 한 판: 10단계 보스를 잡거나 패배할 때까지. */
 export function runFirstBoss(d: GameData, seed: number, strategy: Strategy, opts: FirstBossOptions = {}, bossStage = 10): FirstBossResult {
-  const m = createMatch(d, { seed, mode: 'infinite', legacyCommands: true });
+  const m = createMatch(d, { seed, mode: 'infinite', legacyCommands: true, ...(opts.relics ? { relics: [opts.relics] } : {}) });
   const w = m.world;
   let summons = 0;
   let merges = 0;
