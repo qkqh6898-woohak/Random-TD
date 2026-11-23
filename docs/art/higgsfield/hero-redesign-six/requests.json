@@ -1,0 +1,246 @@
+{
+  "version": 1,
+  "status": "estimated_only_generation_not_authorized",
+  "date": "2026-11-22",
+  "timezone": "Pacific/Honolulu",
+  "base_commit": "c13d9b27de7cc46f4afd51b2fc2b326d19d56d23",
+  "scope": "six existing heroes, one base-form proposal each; no awakened variants or animations",
+  "generation_submitted": false,
+  "total_credits": 6,
+  "requests": [
+    {
+      "id": "k9",
+      "name": "군견병",
+      "grade": "normal",
+      "lore": "충직한 셰퍼드와 한 팀인 현대군 병사로, 간식 주머니가 무전기보다 크다.",
+      "role": "군견이 가까운 적 하나를 물어뜯어 물리 피해를 주고, 출혈로 잠시 고정 피해가 이어진다.",
+      "source_job_id": "7fbc1253-dc7d-4e8b-b60d-ce2bcc46e2f8",
+      "source_path": "public/assets/characters/k9.webp",
+      "awaken_exists": true,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign this existing ORIGINAL Random-TD unit. Reference 1 is the current hero and preserves identity; reference 2 supplies the established chunky rendering ONLY. Do not copy the reference miner's beard, helmet, pickaxe or face. Keep a comically large round head, two-head-tall squat body, tiny mitten hands and stubby feet. Broad dark cocoa-brown organic outlines, flat opaque earthy colors with ONE hard-edged shadow patch, at most five major color families and one bold accent. Readable coherent silhouette at 64 pixels; distinctive personality through brow, mouth, posture and one role-defining prop rather than realistic eyes or ornament. Full unit three-quarter front view, all feet, wings, companion and equipment comfortably inside a 1:1 square with white margin; about 75 percent fill. Pure WHITE background. No text, logos, border, platform, scenery, gradients, glossy rendering, rim glow, aura, particles or detached decorative companions. Do not reproduce any commercial game's character. Visual redesign only: preserve the hero's species, role, name and equipment logic. Keep the existing friendly human military dog-handler, olive helmet and uniform, but make a loyal round shepherd dog clearly visible pressed beside his left boot, its ears and cream muzzle outside the human silhouette. Draw ONE inseparable handler-and-dog unit, not a second independently floating character. Dog occupies about one third of the unit, leaning forward eagerly with a determined happy face; handler leans back with a surprised warm smile and one oversized treat pouch. Preserve human and canine identities, no transformation into a dog soldier. Dog and soldier must both read as a team at 64 pixels; do not add a firearm.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "7fbc1253-dc7d-4e8b-b60d-ce2bcc46e2f8"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "quote": {
+        "credits": 1,
+        "credits_exact": 1,
+        "checked_date": "2026-11-22",
+        "status": "estimated_only",
+        "generation_submitted": false
+      },
+      "source_sha256": "d473513087af9a96222f214de38fb35542114e9c8572181e0d653f79ed426e61"
+    },
+    {
+      "id": "gambler",
+      "name": "도박꾼",
+      "grade": "unique",
+      "lore": "모르시엘 뒷골목 도박장의 단골이며, 빛나는 주사위를 손에서 놓는 법이 없다.",
+      "role": "중거리의 적 하나에 주사위를 던져 눈만큼 혼합 피해를 주고, 판 위에 있으면 도박 꽝이 줄어든다.",
+      "source_job_id": "22d85c1c-2192-4eea-96eb-ba60dfdd176b",
+      "source_path": "public/assets/characters/gambler.webp",
+      "awaken_exists": true,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign this existing ORIGINAL Random-TD unit. Reference 1 is the current hero and preserves identity; reference 2 supplies the established chunky rendering ONLY. Do not copy the reference miner's beard, helmet, pickaxe or face. Keep a comically large round head, two-head-tall squat body, tiny mitten hands and stubby feet. Broad dark cocoa-brown organic outlines, flat opaque earthy colors with ONE hard-edged shadow patch, at most five major color families and one bold accent. Readable coherent silhouette at 64 pixels; distinctive personality through brow, mouth, posture and one role-defining prop rather than realistic eyes or ornament. Full unit three-quarter front view, all feet, wings, companion and equipment comfortably inside a 1:1 square with white margin; about 75 percent fill. Pure WHITE background. No text, logos, border, platform, scenery, gradients, glossy rendering, rim glow, aura, particles or detached decorative companions. Do not reproduce any commercial game's character. Visual redesign only: preserve the hero's species, role, name and equipment logic. Keep the existing squat dark-elf gambler's pale lavender skin, pointed ears, plum cap and burgundy waistcoat. Keep the existing ivory die and enlarge it into ONE clearly readable role-defining prop with a few large indented circular pips cupped in one hand, separated from the body. A tiny raised eyebrow and confident sideways bean smile convey mischievous confidence; a tilted cap and low crouched leaning pose give a clear asymmetric silhouette. No playing cards, no extra dice, no written numbers, no casino branding.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "22d85c1c-2192-4eea-96eb-ba60dfdd176b"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "quote": {
+        "credits": 1,
+        "credits_exact": 1,
+        "checked_date": "2026-11-22",
+        "status": "estimated_only",
+        "generation_submitted": false
+      },
+      "source_sha256": "45ea721100387b6076c96b1e7c70d397bf36701a43c8c43fa02fb896e996ed3d"
+    },
+    {
+      "id": "dragoncaller",
+      "name": "용 소환사",
+      "grade": "legend",
+      "lore": "알에서 막 깬 아기 용을 어깨에 태운 요정, 용이 재채기만 해도 불꽃이 튄다.",
+      "role": "아기 용이 꽤 먼 적들에게 광역 마법 브레스를 뿜고, 맞은 적은 잠시 피해를 더 받는다.",
+      "source_job_id": "6aec3404-4e5a-4db0-9c6b-58bdda87ec7a",
+      "source_path": "public/assets/characters/dragoncaller.webp",
+      "awaken_exists": true,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign this existing ORIGINAL Random-TD unit. Reference 1 is the current hero and preserves identity; reference 2 supplies the established chunky rendering ONLY. Do not copy the reference miner's beard, helmet, pickaxe or face. Keep a comically large round head, two-head-tall squat body, tiny mitten hands and stubby feet. Broad dark cocoa-brown organic outlines, flat opaque earthy colors with ONE hard-edged shadow patch, at most five major color families and one bold accent. Readable coherent silhouette at 64 pixels; distinctive personality through brow, mouth, posture and one role-defining prop rather than realistic eyes or ornament. Full unit three-quarter front view, all feet, wings, companion and equipment comfortably inside a 1:1 square with white margin; about 75 percent fill. Pure WHITE background. No text, logos, border, platform, scenery, gradients, glossy rendering, rim glow, aura, particles or detached decorative companions. Do not reproduce any commercial game's character. Visual redesign only: preserve the hero's species, role, name and equipment logic. Keep the existing friendly tiny pink-haired fairy dragon caller with warm orange-brown clothing. The visual focus must be a REAL round baby orange dragon perched and firmly touching one shoulder, its oversize head and two blunt horns visible beside the fairy face. ONE inseparable fairy-and-shoulder-dragon unit. Dragon has puffed cheeks about to sneeze; fairy has a delighted squint and leans gently the other way. Replace the dragon-shaped costume hood that could be mistaken for the actual dragon with a simple hood folded down. Baby dragon, not a dragon hat, costume or remote pet. No flame effect or detached magic.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "6aec3404-4e5a-4db0-9c6b-58bdda87ec7a"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "quote": {
+        "credits": 1,
+        "credits_exact": 1,
+        "checked_date": "2026-11-22",
+        "status": "estimated_only",
+        "generation_submitted": false
+      },
+      "source_sha256": "7dfcdc4467027e1d2f4b6eba79467943de1788ee82220343b5a194a1993aee38"
+    },
+    {
+      "id": "spearsgod",
+      "name": "창술의 신",
+      "grade": "legend",
+      "lore": "거대한 창을 한 손으로 가볍게 세워 드는 이 엘프를 숲에선 창술의 시조라 부른다.",
+      "role": "창을 던져 꽤 먼 일직선의 적 다섯을 꿰뚫는 물리 피해를 주고, 맞은 적의 방어력을 영구히 깎는다.",
+      "source_job_id": "1a110f8c-e349-4030-8e23-624c0327bf6e",
+      "source_path": "public/assets/characters/spearsgod.webp",
+      "awaken_exists": true,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign this existing ORIGINAL Random-TD unit. Reference 1 is the current hero and preserves identity; reference 2 supplies the established chunky rendering ONLY. Do not copy the reference miner's beard, helmet, pickaxe or face. Keep a comically large round head, two-head-tall squat body, tiny mitten hands and stubby feet. Broad dark cocoa-brown organic outlines, flat opaque earthy colors with ONE hard-edged shadow patch, at most five major color families and one bold accent. Readable coherent silhouette at 64 pixels; distinctive personality through brow, mouth, posture and one role-defining prop rather than realistic eyes or ornament. Full unit three-quarter front view, all feet, wings, companion and equipment comfortably inside a 1:1 square with white margin; about 75 percent fill. Pure WHITE background. No text, logos, border, platform, scenery, gradients, glossy rendering, rim glow, aura, particles or detached decorative companions. Do not reproduce any commercial game's character. Visual redesign only: preserve the hero's species, role, name and equipment logic. Keep the existing golden-haired blue-and-ivory ELF spear master, pointed ears and calm confident expression; do not change species, class or equipment into a knight. The defining feature is ONE huge broad leaf-shaped spearhead with a short thick shaft, held at an angle behind the shoulder; the complete weapon fits within the canvas and is separate from the face. One hand rests on the hip, chest tilted forward, one raised brow and a small assured smile. Use a simple flowing angular blue cape with no armor filigree. Contrast clearly with the ordinary spearman: no shield, no generic helmet, one bold weapon silhouette.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "1a110f8c-e349-4030-8e23-624c0327bf6e"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "quote": {
+        "credits": 1,
+        "credits_exact": 1,
+        "checked_date": "2026-11-22",
+        "status": "estimated_only",
+        "generation_submitted": false
+      },
+      "source_sha256": "35460509b37c227304d73fd4478ee2dc12fc193c37439be16ba3c5b965d957e9"
+    },
+    {
+      "id": "ruin",
+      "name": "파멸의 신",
+      "grade": "god",
+      "lore": "만물의 끝을 맡은 고대신이 검은 날개를 펴면 세상의 가장자리가 어두워진다.",
+      "role": "검은 파동이 맵 위 보이는 모든 적에게 고정 피해를 주고, 최대 체력에 비례한 피해를 더 얹는다.",
+      "source_job_id": "e6cb889c-db63-45aa-993c-b5e50fbe186c",
+      "source_path": "public/assets/characters/ruin.webp",
+      "awaken_exists": true,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign this existing ORIGINAL Random-TD unit. Reference 1 is the current hero and preserves identity; reference 2 supplies the established chunky rendering ONLY. Do not copy the reference miner's beard, helmet, pickaxe or face. Keep a comically large round head, two-head-tall squat body, tiny mitten hands and stubby feet. Broad dark cocoa-brown organic outlines, flat opaque earthy colors with ONE hard-edged shadow patch, at most five major color families and one bold accent. Readable coherent silhouette at 64 pixels; distinctive personality through brow, mouth, posture and one role-defining prop rather than realistic eyes or ornament. Full unit three-quarter front view, all feet, wings, companion and equipment comfortably inside a 1:1 square with white margin; about 75 percent fill. Pure WHITE background. No text, logos, border, platform, scenery, gradients, glossy rendering, rim glow, aura, particles or detached decorative companions. Do not reproduce any commercial game's character. Visual redesign only: preserve the hero's species, role, name and equipment logic. Keep the existing original pale-faced ancient destruction deity, charcoal armor, blunt curved horns and muted purple accent. Replace many little armor details with a large simple horn crown silhouette and two broad BLACK wings attached to the back, compactly curled around the shoulders like a heavy cape with two blunt feather lobes on each side. Make the face plainly visible: calm half-lidded dot eyes, an almost sleepy tiny mouth, unexpectedly cute composure contrasting with powerful broad wings. Short thick limbs and a low grounded stance. No skull mask, no blood, no grim realistic demon anatomy, no scythe, no floating spell object.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "e6cb889c-db63-45aa-993c-b5e50fbe186c"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "quote": {
+        "credits": 1,
+        "credits_exact": 1,
+        "checked_date": "2026-11-22",
+        "status": "estimated_only",
+        "generation_submitted": false
+      },
+      "source_sha256": "cf7a6915f66c99289b0bec2d111bc921f6abfe7462cb7fef70f662388ee5ca2e"
+    },
+    {
+      "id": "infiniteblade",
+      "name": "무한의 검",
+      "grade": "hidden",
+      "lore": "다섯 검사에게 칼을 한 자루씩 물려받은 검의 달인으로, 그 칼들이 곁을 맴돈다.",
+      "role": "근접한 주위 적들을 다섯 검으로 베어 물리 피해를 주고, 벨 때마다 이번 판 공격력이 쌓여 오른다.",
+      "source_job_id": "481174d5-7480-4294-9705-58dc1c221629",
+      "source_path": "public/assets/characters/infiniteblade.webp",
+      "awaken_exists": false,
+      "params": {
+        "model": "gpt_image_2_6",
+        "quality": "medium",
+        "resolution": "1k",
+        "aspect_ratio": "1:1",
+        "background": "opaque",
+        "output_format": "png",
+        "count": 1,
+        "batch_size": 1,
+        "prompt": "Redesign this existing ORIGINAL Random-TD unit. Reference 1 is the current hero and preserves identity; reference 2 supplies the established chunky rendering ONLY. Do not copy the reference miner's beard, helmet, pickaxe or face. Keep a comically large round head, two-head-tall squat body, tiny mitten hands and stubby feet. Broad dark cocoa-brown organic outlines, flat opaque earthy colors with ONE hard-edged shadow patch, at most five major color families and one bold accent. Readable coherent silhouette at 64 pixels; distinctive personality through brow, mouth, posture and one role-defining prop rather than realistic eyes or ornament. Full unit three-quarter front view, all feet, wings, companion and equipment comfortably inside a 1:1 square with white margin; about 75 percent fill. Pure WHITE background. No text, logos, border, platform, scenery, gradients, glossy rendering, rim glow, aura, particles or detached decorative companions. Do not reproduce any commercial game's character. Visual redesign only: preserve the hero's species, role, name and equipment logic. Keep the existing original SILVER-HAIRED sword master with navy hood, charcoal outfit and warm brick-red necktie accent. The current picture already has one held sword and four sword hilts on the back; preserve the same total sword count, but reveal the four full blades as described below. Make EXACTLY FIVE distinct short broad swords clearly countable: one held with its tip down beside the right boot, four levitating upright in a spacious fan behind the shoulders, two on each side. Leave white gaps between all five blades; do not put blades across the face or outside the canvas. The floating blades are the hero's defining combat equipment, not decorative rarity particles. A compact stable standing pose and a confident tiny smirk; no shield, no generic knight helmet, no glowing sword trails.",
+        "medias": [
+          {
+            "role": "image_references",
+            "value": "481174d5-7480-4294-9705-58dc1c221629"
+          },
+          {
+            "role": "image_references",
+            "value": "aedbf596-c8ac-464b-9189-def219d797ab"
+          }
+        ]
+      },
+      "quote": {
+        "credits": 1,
+        "credits_exact": 1,
+        "checked_date": "2026-11-22",
+        "status": "estimated_only",
+        "generation_submitted": false
+      },
+      "source_sha256": "ec38824a690a4b3908e4f7d276522f6d24b092c66543d6736508071872170026"
+    }
+  ]
+}
