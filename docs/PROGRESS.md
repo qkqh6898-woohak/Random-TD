@@ -1978,3 +1978,12 @@
     - 부하 흔들림 (혼자 다시 돌려 통과): m3b:256 '특색 연출'(주사위 연출 기다림 — v0.1.21에도 main에서 실패하던 것), m5:421 도박 릴 is-spin(1초 창), m2:267 처치 '+n원'(4.4fps 헤드리스에서 처치 연출이 '최근 틱'에 걸려야 보임 — 내 코드 3번 실패 뒤 4번 연속 통과, main 3번 통과 · 마지막 전체 판 통과). 실패 뒤 다시 찍힌 스크린샷(docs/screens·docs/art/feedback-design)은 되돌림.
 - **스크린샷** (deviceScaleFactor 1, 마지막 판의 v22-screens가 찍음): `docs/screens/V2-R22-{notice,panel-normal,panel-limited,panel-merge-hold,codex,reward,challenge,start-first,start-later}.png`(412×915). 320×640 판은 작업 폴더에만(`R22_SHOTS=<폴더> npx playwright test e2e/v22-screens.spec.ts`로 다시 찍는다). panel-merge-hold·panel-limited는 `?debug=1` 판이라 개발자 [🛠]이 보인다(320은 다음 줄).
 - **남은 문제 · 사용자 확인**: ① 배너 1.5초 붙잡기(위)는 결정 A①에 더한 것 — 원하면 끄기 쉽다(`NOTICE_BANNER_HOLD_MS`). ② 꾹 누르기 = 판 전체 모두 승급([⏫ 모두 승급]과 같음)으로 정했다 — G-1부터 패널의 '모두 승급'은 그 칸 승급과 같은 명령이었다. ③ 첫 판이 아닌 판은 시작할 때 놓을 칸이 전혀 안 보인다(결정 E① 그대로 — 길을 누르면 1.2초 안내). ④ 보상 창 머리줄 가림은 기본 글자로는 재현되지 않아 '휴대폰 글자 크기로 창이 넘칠 때'를 원인으로 보고 고쳤다 — 실기기에서 다시 보면 좋다. ⑤ 판매 확인 글자 '한 번 더 누르면 판매'는 예전대로 10px(머리줄 칸이 좁음). ⑥ 412 가운데·아래 타워는 패널이 낮아진 만큼 덜 접어 정보를 더 보여 주므로 놓인 패널 높이는 늘 수 있다(같은 접기 단계에서는 늘 낮음).
+
+
+## DOCS-LD — 운빨존많겜 참고 자료 3종 통합 V2 (2026-11-22, 상태: 완료)
+
+- 만든 것: `docs/reference/lucky-defense-final.md`. 입력 문서 3종과 SHA-256, 유물·펫·캐릭터·강화·BM·모드·브랜드를 통합하고 확인·공식 / 확인·비공식 / 계산 / 충돌 / 미확인을 구분했다. 충돌·정정 15건(X01~X15), 미확인 18건(U01~U18), 출처 URL 48개, 표 31개. 기존 `research.md` 머리에 통합본 링크만 추가했다.
+- 주요 결정: 유물 2→3 조각 4/5, 펫 효과, 불멸 일반/픽업 풀은 양쪽 출처를 보존하고 보류. 클래식·불덩이·릴레이의 잘못 연결된 패치 버전은 공식 스토어 기록으로 정정. APK 대조는 운영자의 주장과 직접 검증을 분리했다. 외부 게임 참고 자료이며 Random-TD 코드·JSON·저장 형식·SIM_VERSION·릴리스 버전 변경 없음.
+- 검증: 문서 표 열 수·링크/목차·출처 ID·입력 해시·JSON 예시·조각/배터리 합계 검사 통과, `git diff --check` 통과. `npm test`: 123파일, 1,753 통과·5 건너뜀. `npm run check` 및 `npm run build` 통과.
+- 환경 한계: 관련 E2E `e2e/smoke.spec.ts` 5건을 시도했으나 Chromium 시작 시 `socket() failed: Operation not permitted`/SIGABRT로 본문 테스트 실행 전 실패. 전체 E2E는 실행하지 않았다. `bash android/check-java.sh`는 `javac: command not found`로 실행 불가. 게임 동작 실패로 판정하지 않으며, 통과했다고 기록하지 않는다.
+- 전달: 문서 브랜치 `docs/lucky-defense-research-final`와 PR로 전달. main 병합·APK 릴리스 없음. 다음 작업자는 통합본 9장의 우선순위와 8장의 보류 판정을 보고 추가 근거를 확보한다.
