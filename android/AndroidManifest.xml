@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.woohak.randomtd"
     android:versionCode="10"
-    android:versionName="0.1.22">
+    android:versionName="0.1.23">
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="35" />
     <!-- 앱 안 업데이트 (U-1): 자바(Updater)가 GitHub 릴리스를 HTTPS로 확인·받는다. WebView는 APK 안 파일만 연다 (GameActivity.GameAssets) -->
     <uses-permission android:name="android.permission.INTERNET" />

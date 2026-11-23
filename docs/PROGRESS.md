@@ -2073,3 +2073,14 @@
   - 실패 1 = `m3a:236` '모두 승급 연쇄' 토스트 기다림(15초 안에 '승급 가능' 토스트 0개) → **혼자 2번 다시 돌려 2번 통과** = 부하 흔들림(v0.1.21 기록의 흔들림 목록에 있던 스펙). 건너뜀 6 = SAVE_SCREENS 스크린샷 전용. 다시 찍힌 스크린샷은 되돌림.
 - **스크린샷**: 작업 폴더 `test-results/screens/V3-P3-{explore,pass}-{320,412}[-text130].png`(커밋 안 함). 헤드리스 Chromium 확인이며 **실기기 확인이 아니다**.
 - **남은 결정 (사용자)**: ① 황금 트랙 보석 300·성장 꾸러미 가격·도장/패스 보상량은 후보값(실측은 무료 트랙만). ② 영웅 꾸러미가 '1회 = 1레벨 확정'이라 레전드도 성장 선택만으로 42판에 Lv15 — 너무 빠르면 flamePct를 낮춘다(불꽃 병목이 다시 생김). ③ 비밀 코드 `V3START`는 테스트용(오프라인 해시라 진짜 비밀은 아님). ④ 65종 고유 특색 강화·미공개 유물 12종·유물 그림 9종은 후속.
+
+
+## v0.1.23 V3 P0~P3 통합·릴리스 (갈래 `v3/p3-progress` → main 앞으로 당기기, 사용자 승인 2026-11-23)
+
+> 사용자 승인: "V3 P0~P3 PR #84~#89 main 병합 승인할게. 순서대로 합치고 릴리스까지 진행해줘." main 푸시마다 자동 서명 릴리스가 나가므로 PR을 하나씩 병합하지 않고, 모든 갈래(#83 기획·시범 아트 → #84 P0 → #86 P1 → #87 P2 → #89 P3)를 포함한 P3 갈래로 main을 **한 번** 앞으로 당겨 릴리스는 1번만 나가게 했다.
+
+- **합친 것**: main c13d9b2(v0.1.22) 위로 `docs/v3-growth-revision` f174dce → `v3/p0-spec` → `v3/p1-milestones` → `v3/p2-relics` → `v3/p3-progress`. P0 갈래의 마지막 커밋(PROGRESS E2E 결과)이 P1 이후 갈래에 빠져 있어 P3에 합침(충돌 없음).
+- **버전**: package.json·lock·AndroidManifest versionName 0.1.23 → `node tools/release-version.mjs --tags-file …` = `version=0.1.23 versionCode=1023 previousTag=android-v0.1.22`.
+- **진행 중 판**: SIM_VERSION 2 → 4·데이터 지문 변경 → 업데이트 때 진행 중 판은 기존 정책대로 runId로 한 번 정산한 뒤 버린다(계정·재화·기록 유지, V3 탐험 진행도 같은 정산에서 한 번).
+- **검사 (이 트리 그대로)**: `npm test` 130파일 1,958 통과 · 4 건너뜀, `npm run check`, `npm run build`, `npm run build:single`(17.68MB), `bash android/check-java.sh`, `npm run bot:first-boss`(지금 데이터 A 20/20·37.1초, B 20/20·26.7초 — v0.1.22와 같음). 전체 E2E는 위 V3 P3 절(코드 76ccb5b — 이후 바뀐 것은 PROGRESS·버전 문자열뿐).
+- **실기기 확인 전**: 화면은 헤드리스 Chromium만. 휴대폰에서 로비 머리줄 [🧭 탐험]·[유물], 진열장·탐험 창, 영웅 상세 마일스톤 띠를 확인해 주세요.
