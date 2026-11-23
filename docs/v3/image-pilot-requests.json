@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "status": "quote_only_generation_not_authorized",
+  "status": "completed_after_user_followup",
   "model": "gpt_image_2_6",
   "quality": "medium",
   "resolution": "1k",
@@ -215,5 +215,7 @@
         "generation_submitted": false
       }
     }
-  ]
+  ],
+  "generation_result": "../art/higgsfield/v3-pilot/jobs.json",
+  "authorization": "후속 사용자 지시에 따라 기존 총6크레딧 견적 범위의 시범6장 생성. 추가 생성은 포함하지 않음."
 }

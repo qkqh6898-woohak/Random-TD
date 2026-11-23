@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "status": "completed_and_reviewed",
+  "generation_count": 6,
+  "total_credits": 6,
+  "assets": [
+    {
+      "id": "relic-acorn-bank",
+      "request_id": "relic-acorn-bank",
+      "job_id": "94437654-3968-4bb0-ae20-8f312c9c00b3",
+      "status": "completed",
+      "review_status": "accepted_for_pilot",
+      "phase": "P2-P3",
+      "path": "public/assets/v3/pilot/relic-acorn-bank.webp",
+      "width": 232,
+      "height": 256,
+      "bytes": 11130,
+      "source_size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "88725551afdaf0b980ce0f3a1139269b771287d4edcf19d192b30e29fab3feaa",
+      "sha256": "6d3da0b1ec14db8dd9f02f504a6ab1856c26afafa51f9fd36e74abc695a1b4ff",
+      "credits": 1,
+      "keyhole_background_pixels_removed": 0
+    },
+    {
+      "id": "relic-whetstone",
+      "request_id": "relic-smith-whetstone",
+      "job_id": "308f471d-98b8-4415-afdc-534be5d37c05",
+      "status": "completed",
+      "review_status": "accepted_for_pilot",
+      "phase": "P2-P3",
+      "path": "public/assets/v3/pilot/relic-whetstone.webp",
+      "width": 256,
+      "height": 219,
+      "bytes": 9338,
+      "source_size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "35ce4b0a36adbccf14abb78d16e75b131518b57529f48afda6d1d8d3ae65ee4b",
+      "sha256": "d001786c629411e4559509c3111830487cf881279550d5d68c1673c937cd89f5",
+      "credits": 1,
+      "keyhole_background_pixels_removed": 0
+    },
+    {
+      "id": "relic-frost-crystal",
+      "request_id": "relic-frost-crystal",
+      "job_id": "b14e1a74-646f-4ed8-94c7-517081b229b1",
+      "status": "completed",
+      "review_status": "accepted_for_pilot",
+      "phase": "P2-P3",
+      "path": "public/assets/v3/pilot/relic-frost-crystal.webp",
+      "width": 234,
+      "height": 256,
+      "bytes": 14438,
+      "source_size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "abc12096694604b668a301c869f195ace970aee3a8ff5991c7e832fb2f552618",
+      "sha256": "053a601b6f1485fede30bdcff5e5a61aa5b3a4ecd55fb648952eea4de53c6fb1",
+      "credits": 1,
+      "keyhole_background_pixels_removed": 0
+    },
+    {
+      "id": "spirit-sprout-fox",
+      "request_id": "spirit-sprout-fox",
+      "job_id": "23921217-2b12-4df9-ac45-97ae3fe35b2b",
+      "status": "completed",
+      "review_status": "accepted_for_pilot",
+      "phase": "P4-art-only",
+      "path": "public/assets/v3/pilot/spirit-sprout-fox.webp",
+      "width": 256,
+      "height": 229,
+      "bytes": 15218,
+      "source_size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "e956a86924cbdfdc3d34bf2193295b0362019dc7e2e5b6d19cda232a4b1d133b",
+      "sha256": "20ab3b60e4bca61250ed507e9c33e45b5a86e19a9eaaefa29ab9eb91d8c08c2b",
+      "credits": 1,
+      "keyhole_background_pixels_removed": 0
+    },
+    {
+      "id": "spirit-snow-otter",
+      "request_id": "spirit-snow-otter",
+      "job_id": "7aa38497-8c1e-415f-8d65-59ad011417f9",
+      "status": "completed",
+      "review_status": "accepted_for_pilot",
+      "phase": "P4-art-only",
+      "path": "public/assets/v3/pilot/spirit-snow-otter.webp",
+      "width": 247,
+      "height": 256,
+      "bytes": 14870,
+      "source_size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "b66adb49704aab9a0e0170b392d7bfa82fcda9b08b2b148ae6aa9f1a33b8f736",
+      "sha256": "34c8ac5cc22a2184c0e14169e4d359ee72bdfd7a58055737e8e6344f82a5469c",
+      "credits": 1,
+      "keyhole_background_pixels_removed": 0
+    },
+    {
+      "id": "currency-explorer-key",
+      "request_id": "currency-explorer-key",
+      "job_id": "7407d6ab-e423-42eb-b20f-42d9fd6a8529",
+      "status": "completed",
+      "review_status": "accepted_for_pilot",
+      "phase": "P2-P3",
+      "path": "public/assets/v3/pilot/currency-explorer-key.webp",
+      "width": 238,
+      "height": 256,
+      "bytes": 11396,
+      "source_size": [
+        1024,
+        1024
+      ],
+      "source_sha256": "c3caec863b0f3f9e4d3927c305fa8a23897290ef625a7290a94c8830ddcd7e99",
+      "sha256": "23d028be00b89216d173cae507da4c64e7cfed84109b65b6d165468734f472b9",
+      "credits": 1,
+      "keyhole_background_pixels_removed": 46200
+    }
+  ]
+}
